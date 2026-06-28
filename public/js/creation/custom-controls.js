@@ -239,9 +239,16 @@ function _applyAddress(input, p) {
   var street = p.name || ((p.housenumber ? p.housenumber + ' ' : '') + (p.street || ''));
   var city = p.city || '';
   var postal = p.postcode || '';
-  var stepContent = input.closest('.step-content[data-step="1"]');
-  var villeInput = stepContent ? stepContent.querySelector('input[placeholder="Ville"]') : null;
-  var cpInput = stepContent ? stepContent.querySelector('input[placeholder="Code postal"]') : null;
+  // Champs ville/CP liés : la banque a ses propres champs, sinon ceux du siège (étape 1)
+  var villeInput, cpInput;
+  if (input.id === 'banque-autre-adresse') {
+    villeInput = document.getElementById('banque-autre-ville');
+    cpInput = document.getElementById('banque-autre-cp');
+  } else {
+    var stepContent = input.closest('.step-content[data-step="1"]');
+    villeInput = stepContent ? stepContent.querySelector('input[placeholder="Ville"]') : null;
+    cpInput = stepContent ? stepContent.querySelector('input[placeholder="Code postal"]') : null;
+  }
   if (villeInput && cpInput) {
     // Étape 1 société : rue dans l'input, ville/CP dans des champs séparés
     input.value = street || p.label || '';

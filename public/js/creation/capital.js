@@ -251,7 +251,7 @@ function updateCapitalDistribution() {
 
   document.getElementById('capital-progress-pct').textContent = pct.toFixed(0) + '%';
   document.getElementById('capital-progress-pct').style.color = pct === 100 ? '#22c55e' : pct > 100 ? '#ef4444' : '#111';
-  document.getElementById('capital-progress-label').textContent = fmtEuro(distributedAmount) + ' \u20AC distribu\u00e9s sur ' + fmtEuro(capital) + ' \u20AC';
+  document.getElementById('capital-progress-label').textContent = fmtEuro(distributedAmount) + ' \u20AC distribu\u00e9' + (distributedAmount >= 2 ? 's' : '') + ' sur ' + fmtEuro(capital) + ' \u20AC';
   var partsWordD = getPartWord(distributedParts > 1);
   var partsWordT = getPartWord(totalParts > 1);
   document.getElementById('capital-parts-distributed').textContent = distributedParts + ' ' + partsWordD + ' distribu\u00e9' + (distributedParts > 1 ? 'es' : 'e');

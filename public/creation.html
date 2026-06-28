@@ -358,12 +358,12 @@
               <input type="text" placeholder="Adresse compl&egrave;te" class="addr-auto">
             </div>
             <div class="field">
-              <label>Ville <span class="required">*</span></label>
-              <input type="text" placeholder="Ville">
-            </div>
-            <div class="field">
               <label>Code postal <span class="required">*</span></label>
               <input type="text" placeholder="Code postal">
+            </div>
+            <div class="field">
+              <label>Ville <span class="required">*</span></label>
+              <input type="text" placeholder="Ville">
             </div>
             <div class="field">
               <label>Mode de domiciliation</label>
@@ -595,8 +595,7 @@
                   <div class="field"><label>Num&eacute;ro SIRET</label><input type="text" placeholder="SIRET" data-field="siret"></div>
                 </div>
                 <div class="form-grid" style="margin-top:16px;">
-                  <div class="field"><label>Si&egrave;ge social</label><input type="text" placeholder="Adresse du si&egrave;ge" class="addr-auto" data-field="siege"></div>
-                  <div class="field"><label>Email <span class="required">*</span></label><input type="email" placeholder="email@exemple.com" data-field="emailM"></div>
+                  <div class="field full"><label>Si&egrave;ge social</label><input type="text" placeholder="Adresse du si&egrave;ge" class="addr-auto" data-field="siege"></div>
                 </div>
                 <div class="form-subsection" style="margin-top:24px;">Repr&eacute;sentant l&eacute;gal</div>
                 <div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">
@@ -690,9 +689,6 @@
                   <div class="form-grid" style="margin-top:16px;">
                     <div class="field"><label>Nationalit&eacute;</label><input type="text" value="Fran&ccedil;aise"></div>
                     <div class="field"><label>Situation matrimoniale</label><select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C&eacute;libataire</option><option>Mari&eacute;(e)</option><option>Pacs&eacute;(e)</option><option>Divorc&eacute;(e)</option><option>Veuf(ve)</option></select></div>
-                  </div>
-                  <div class="form-grid" style="margin-top:16px;">
-                    <div class="field full"><label>Email <span style="font-weight:400;color:#999;">(pour signature)</span></label><input type="email" placeholder="Email du dirigeant" data-field="dir-email"></div>
                   </div>
                 </div>
 

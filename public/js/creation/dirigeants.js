@@ -494,7 +494,7 @@ function dirigeantPanelHTML(n) {
     + '<div class="form-grid" style="margin-top:16px;">'
     + '<div class="field"><label>Nationalit\u00e9</label><input type="text" value="Fran\u00e7aise"></div>'
     + '<div class="field"><label>Situation matrimoniale</label><select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C\u00e9libataire</option><option>Mari\u00e9(e)</option><option>Pacs\u00e9(e)</option><option>Divorc\u00e9(e)</option><option>Veuf(ve)</option></select></div></div>'
-    + '<div class="form-grid" style="margin-top:16px;"><div class="field full"><label>Email <span style="font-weight:400;color:#999;">(pour signature)</span></label><input type="email" placeholder="Email du dirigeant" data-field="dir-email"></div></div></div>'
+    + '</div>'
     + '<div class="dirigeant-type-panel" data-type="morale">'
     + '<div class="form-subsection">Informations de la soci\u00e9t\u00e9</div>'
     + '<div class="form-grid">'
