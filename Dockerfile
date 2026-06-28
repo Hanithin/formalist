@@ -32,4 +32,6 @@ RUN rm -rf /app/data /app/uploads \
 
 EXPOSE 3000
 
-CMD ["node", "index.js"]
+# Crée les cibles des liens symboliques sur le disque monté (/app/persist)
+# avant de démarrer, sinon mkdir('/app/data') échoue (lien cassé au 1er boot).
+CMD ["sh", "-c", "mkdir -p /app/persist/data /app/persist/uploads && node index.js"]
