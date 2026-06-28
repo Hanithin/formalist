@@ -65,6 +65,9 @@ function isFormaliteLocked() {
 window.isFormaliteLocked = isFormaliteLocked;
 
 function applyLockedMode() {
+  // Pendant une demande de correction, on garde les champs déverrouillés
+  // même si la navigation rappelle applyLockedMode().
+  if (window._correctionMode) return;
   var locked = isFormaliteLocked();
   for (var s = 1; s <= 6; s++) {
     var step = document.querySelector('.step-content[data-step="' + s + '"]');
@@ -74,15 +77,15 @@ function applyLockedMode() {
       if (!existingBanner) {
         var banner = document.createElement('div');
         banner.className = 'locked-banner';
-        // Sur l'étape Offres (6), pas de "Proposer une modification" : la modification disponible
+        // Sur l'étape Offres (6), pas de "Demander une modification" : la modification disponible
         // est l'upgrade d'offre via les cartes ci-dessous.
         var isOffres = (s === 6);
         var bannerText = isOffres
           ? 'Le paiement est validé. Vous pouvez upgrader vers une offre supérieure ci-dessous : seule la différence vous sera facturée.'
-          : 'Le paiement est validé et les documents générés. Pour modifier une information, soumettez une demande à votre avocat qui la validera avant régénération.';
+          : 'Paiement validé et documents générés. Pour corriger une information, demandez une modification à votre avocat.';
         var actions = isOffres
           ? '<button class="btn-back-docs" type="button" onclick="goToStep(7)">Retour à Mes documents →</button>'
-          : '<button class="btn-propose-mod" type="button" onclick="openProposeMod()">Proposer une modification</button>'
+          : '<button class="btn-propose-mod" type="button" onclick="openProposeMod()">Demander une modification</button>'
             + '<button class="btn-back-docs" type="button" onclick="goToStep(7)">Retour à Mes documents →</button>';
         banner.innerHTML =
           '<div class="locked-banner-icon">'
@@ -119,11 +122,216 @@ function applyLockedMode() {
 }
 window.applyLockedMode = applyLockedMode;
 
-function openProposeMod() {
+/* ===== MODE CORRECTION (demander une modification) =====
+   L'utilisateur déverrouille ses propres champs, corrige directement, puis
+   envoie les changements (diff auto + note) à son avocat. */
+
+// Champs éditables des étapes de données (1 à 5).
+function _cmFields() {
+  var out = [];
+  for (var s = 1; s <= 5; s++) {
+    var step = document.querySelector('.step-content[data-step="' + s + '"]');
+    if (!step) continue;
+    step.querySelectorAll('input:not([type="file"]):not([type="hidden"]), select, textarea').forEach(function(el) {
+      out.push(el);
+    });
+  }
+  return out;
+}
+function _cmRaw(el) {
+  if (el.type === 'checkbox' || el.type === 'radio') return el.checked ? '1' : '0';
+  return el.value != null ? el.value : '';
+}
+function _cmShow(el, raw) {
+  if (el.type === 'checkbox' || el.type === 'radio') return raw === '1' ? 'Oui' : 'Non';
+  return (raw && raw.trim()) ? raw : '(vide)';
+}
+// Libellé lisible d'un champ (label nettoyé + contexte étape/associé).
+function _cmLabel(el) {
+  var field = el.closest('.field, .form-group');
+  var labelEl = field ? field.querySelector('label') : null;
+  var label = '';
+  if (labelEl) {
+    var clone = labelEl.cloneNode(true);
+    clone.querySelectorAll('.tooltip-wrap, .required').forEach(function(n) { n.remove(); });
+    label = clone.textContent.replace(/\s+/g, ' ').trim();
+  }
+  if (!label) label = el.getAttribute('placeholder') || el.getAttribute('name') || el.id || 'Champ';
+
+  // Contexte : nom de l'étape + numéro d'associé/dirigeant si applicable
+  var prefix = '';
+  var step = el.closest('.step-content[data-step]');
+  if (step) {
+    var h2 = step.querySelector('h2');
+    if (h2) prefix = h2.textContent.replace(/\s+/g, ' ').trim();
+  }
+  var panel = el.closest('.associe-panel, .dirigeant-panel');
+  if (panel) {
+    var sel = panel.classList.contains('associe-panel') ? '.associe-panel' : '.dirigeant-panel';
+    var panels = Array.prototype.slice.call(document.querySelectorAll(sel));
+    var idx = panels.indexOf(panel);
+    if (idx >= 0) prefix = (prefix ? prefix + ' · ' : '') + (panel.classList.contains('associe-panel') ? 'Associé ' : 'Dirigeant ') + (idx + 1);
+  }
+  return prefix ? prefix + ' › ' + label : label;
+}
+
+// Élément visible à mettre en évidence (le contrôle custom le cas échéant).
+function _cmVisual(el) {
+  return el.closest('.cselect') || el.closest('.cdp') || el;
+}
+// Marque/démarque un champ comme modifié (bordure + texte violet).
+function _cmOnInput(e) {
+  if (!window._correctionMode) return;
+  var el = e.target;
+  if (!('cmOrig' in el.dataset)) return;
+  _cmVisual(el).classList.toggle('cm-modified', _cmRaw(el) !== el.dataset.cmOrig);
+}
+
+function _cmComputeChanges() {
+  var changes = [];
+  _cmFields().forEach(function(el) {
+    if (!('cmOrig' in el.dataset)) return;
+    var now = _cmRaw(el);
+    if (now !== el.dataset.cmOrig) {
+      changes.push({ label: _cmLabel(el), from: _cmShow(el, el.dataset.cmOrig), to: _cmShow(el, now) });
+    }
+  });
+  return changes;
+}
+
+// Déverrouille les champs (comme la branche "unlock" de applyLockedMode).
+function enterCorrectionMode() {
+  window._correctionMode = true;
+  // Mémorise les verrous actifs pour les restaurer en sortie (2 systèmes :
+  // applyLockedMode = disabled, applyUserReadOnly = readOnly + body.user-readonly).
+  window._cmWasUserReadonly = document.body.classList.contains('user-readonly');
+  window._cmWasLocked = !!document.querySelector('.locked-banner');
+  document.body.classList.add('correction-mode');
+  document.body.classList.remove('user-readonly');
+  for (var s = 1; s <= 5; s++) {
+    var step = document.querySelector('.step-content[data-step="' + s + '"]');
+    if (!step) continue;
+    var yellow = step.querySelector('.locked-banner');
+    if (yellow) yellow.style.display = 'none';
+    step.querySelectorAll('input, select, textarea').forEach(function(f) {
+      f.disabled = false;
+      f.readOnly = false;
+      f.removeAttribute('tabindex');
+    });
+    step.querySelectorAll('.cselect.locked, .cdp.locked').forEach(function(c) { c.classList.remove('locked'); });
+    step.classList.remove('step-locked');
+  }
+  // Snapshot des valeurs d'origine + écoute des modifications (mise en évidence)
+  _cmFields().forEach(function(el) {
+    el.dataset.cmOrig = _cmRaw(el);
+    if (!el._cmBound) {
+      el._cmBound = true;
+      el.addEventListener('input', _cmOnInput);
+      el.addEventListener('change', _cmOnInput);
+    }
+  });
+  // Barre flottante d'action
+  var bar = document.getElementById('correction-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'correction-bar';
+    bar.className = 'correction-bar';
+    bar.innerHTML =
+      '<div class="correction-bar-text"><strong>Mode correction</strong><span>Modifiez les champs à corriger, puis envoyez la demande à votre avocat.</span></div>'
+      + '<div class="correction-bar-actions">'
+      + '<button type="button" class="cbar-cancel" onclick="cancelCorrectionMode()">Annuler</button>'
+      + '<button type="button" class="cbar-send" onclick="openCorrectionConfirm()">Envoyer la demande</button>'
+      + '</div>';
+    document.body.appendChild(bar);
+  }
+  bar.classList.add('active');
+}
+// Conservé pour compat : le bouton appelle openProposeMod()
+function openProposeMod() { enterCorrectionMode(); }
+window.openProposeMod = openProposeMod;
+window.enterCorrectionMode = enterCorrectionMode;
+
+// Sort du mode correction. restore=true : on remet les valeurs d'origine
+// (la demande est en attente de validation avocat).
+function exitCorrectionMode(restore) {
+  _cmFields().forEach(function(el) {
+    if (restore && ('cmOrig' in el.dataset)) {
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = el.dataset.cmOrig === '1';
+      else el.value = el.dataset.cmOrig;
+    }
+    delete el.dataset.cmOrig;
+  });
+  window._correctionMode = false;
+  document.body.classList.remove('correction-mode');
+  document.querySelectorAll('.cm-modified').forEach(function(n) { n.classList.remove('cm-modified'); });
+  var bar = document.getElementById('correction-bar');
+  if (bar) bar.classList.remove('active');
+  // Réaffiche les bandeaux et reverrouille selon le(s) système(s) d'origine
+  document.querySelectorAll('.locked-banner').forEach(function(b) { b.style.display = ''; });
+  if (window._cmWasLocked && typeof applyLockedMode === 'function') applyLockedMode();
+  if (window._cmWasUserReadonly) {
+    document.body.classList.add('user-readonly');
+    if (typeof applyUserReadOnly === 'function') applyUserReadOnly();
+  }
+}
+function cancelCorrectionMode() { exitCorrectionMode(true); }
+window.cancelCorrectionMode = cancelCorrectionMode;
+
+// Ouvre la modale de confirmation avec le récap des changements + note.
+function openCorrectionConfirm() {
+  var changes = _cmComputeChanges();
+  if (!changes.length) {
+    showAppDialog({
+      type: 'warning',
+      title: 'Aucune modification',
+      message: 'Modifiez au moins un champ (il passera en violet) avant d\'envoyer votre demande.',
+      button: 'Compris'
+    });
+    return;
+  }
+  var box = document.getElementById('propose-mod-changes');
+  if (box) {
+    box.innerHTML = changes.map(function(c) {
+      return '<div class="pm-change"><div class="pm-change-label">' + _escHtml(c.label) + '</div>'
+        + '<div class="pm-change-vals"><span class="pm-from">' + _escHtml(c.from) + '</span>'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'
+        + '<span class="pm-to">' + _escHtml(c.to) + '</span></div></div>';
+    }).join('');
+  }
+  window._pendingChanges = changes;
   var overlay = document.getElementById('propose-mod-overlay');
   if (overlay) overlay.classList.add('active');
 }
-window.openProposeMod = openProposeMod;
+window.openCorrectionConfirm = openCorrectionConfirm;
+
+// Dialogue applicatif stylé (remplace alert()).
+function showAppDialog(opts) {
+  opts = opts || {};
+  var ov = document.getElementById('app-dialog');
+  if (!ov) { alert(opts.message || ''); return; }
+  document.getElementById('app-dialog-title').textContent = opts.title || '';
+  document.getElementById('app-dialog-msg').textContent = opts.message || '';
+  var icon = document.getElementById('app-dialog-icon');
+  var type = opts.type || 'success';
+  icon.className = 'app-dialog-icon ' + type;
+  icon.innerHTML = (type === 'warning')
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  document.getElementById('app-dialog-btn').textContent = opts.button || 'Compris';
+  ov.classList.add('active');
+}
+window.showAppDialog = showAppDialog;
+function closeAppDialog() {
+  var ov = document.getElementById('app-dialog');
+  if (ov) ov.classList.remove('active');
+}
+window.closeAppDialog = closeAppDialog;
+
+function _escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
 
 function closeProposeMod() {
   var overlay = document.getElementById('propose-mod-overlay');
@@ -137,7 +345,9 @@ window.closeProposeMod = closeProposeMod;
 // L'offre actuelle est marquée, les offres inférieures sont grisées (downgrade interdit),
 // les offres supérieures restent cliquables avec un bouton "Passer à X (+Y€)".
 function _applyUpgradeUI(stepEl) {
-  var PRICES = { starter: 245, business: 499, premium: 649 };
+  // Totaux HT du forfait (service + 180€ d'annonce légale). La différence
+  // entre deux offres reste le surcoût réel à payer pour un upgrade.
+  var PRICES = { starter: 269, business: 580, premium: 780 };
   var ORDER = ['starter', 'business', 'premium'];
   var current = (typeof selectedOffer !== 'undefined' && selectedOffer) ? selectedOffer : null;
   if (!current) {
@@ -236,23 +446,33 @@ function proposeUpgrade(newOffer, diff) {
 window.proposeUpgrade = proposeUpgrade;
 
 function submitProposeMod() {
-  var ta = document.getElementById('propose-mod-text');
-  var text = ta ? ta.value.trim() : '';
-  if (!text) {
-    alert('Veuillez décrire la modification souhaitée.');
+  var changes = window._pendingChanges || [];
+  if (!changes.length) {
+    showAppDialog({ type: 'warning', title: 'Aucune modification', message: 'Aucun changement à envoyer.', button: 'Compris' });
     return;
   }
+  var ta = document.getElementById('propose-mod-text');
+  var note = ta ? ta.value.trim() : '';
   var lc = loadLifecycle();
   lc.pendingModifications = lc.pendingModifications || [];
   lc.pendingModifications.push({
     id: 'mod_' + Date.now(),
-    text: text,
+    changes: changes,
+    note: note,
     requestedAt: new Date().toISOString(),
     status: 'pending'
   });
   saveLifecycle(lc);
+  window._pendingChanges = null;
   closeProposeMod();
-  alert('Votre demande a été transmise à votre avocat. Vous serez notifié(e) une fois la modification validée et les documents régénérés.');
+  // Demande en attente de validation : on remet les valeurs d'origine.
+  exitCorrectionMode(true);
+  showAppDialog({
+    type: 'success',
+    title: 'Demande envoyée',
+    message: changes.length + ' champ' + (changes.length > 1 ? 's' : '') + ' à corriger transmis à votre avocat. Il validera votre demande puis régénérera vos documents. Vous serez notifié(e) dès que c\'est fait.',
+    button: 'Compris'
+  });
 }
 window.submitProposeMod = submitProposeMod;
 
@@ -1934,7 +2154,7 @@ function buildRecapStep() {
   var nomSociete = document.querySelector('.step-content[data-step="1"] input[placeholder="Nom de la soci\u00e9t\u00e9"]');
   var forme = document.getElementById('forme-juridique');
   var capital = document.getElementById('capital-social');
-  var offerNames = { starter: 'Starter 245\u20AC', business: 'Business 499\u20AC', premium: 'Premium 649\u20AC' };
+  var offerNames = { starter: 'Starter 269\u20AC', business: 'Business 580\u20AC', premium: 'Premium 780\u20AC' };
 
   document.getElementById('recap-societe').textContent = nomSociete && nomSociete.value ? nomSociete.value : 'Non renseign\u00e9';
   document.getElementById('recap-forme').textContent = forme ? forme.value : '-';
@@ -1974,11 +2194,11 @@ function showUpgradeModal() {
   var rank = { starter: 1, business: 2, premium: 3 };
   var currentRank = rank[selectedOffer] || 1;
   var offers = [
-    { key: 'business', name: 'Business', price: 499, features: 'Accompagnement avocat, r\u00e9vision compl\u00e8te, d\u00e9p\u00f4t au guichet unique' },
-    { key: 'premium', name: 'Premium', price: 649, features: 'Business + suivi prioritaire, avocat d\u00e9di\u00e9, assistance illimit\u00e9e' }
+    { key: 'business', name: 'Business', price: 580, features: 'Accompagnement avocat, r\u00e9vision compl\u00e8te, d\u00e9p\u00f4t au guichet unique' },
+    { key: 'premium', name: 'Premium', price: 780, features: 'Business + suivi prioritaire, avocat d\u00e9di\u00e9, assistance illimit\u00e9e' }
   ];
-  var prices = { starter: 245, business: 499, premium: 649 };
-  var currentPrice = prices[selectedOffer] || 245;
+  var prices = { starter: 269, business: 580, premium: 780 };
+  var currentPrice = prices[selectedOffer] || 269;
   var html = '';
   var available = 0;
   for (var i = 0; i < offers.length; i++) {
@@ -2017,9 +2237,9 @@ window.closeUpgradeModal = closeUpgradeModal;
 function processUpgrade() {
   if (!_selectedUpgradeOffer) return;
   var newOffer = _selectedUpgradeOffer;
-  var prices = { starter: 245, business: 499, premium: 649 };
+  var prices = { starter: 269, business: 580, premium: 780 };
   var names = { starter: 'Starter', business: 'Business', premium: 'Premium' };
-  var complement = prices[newOffer] - (prices[selectedOffer] || 245);
+  var complement = prices[newOffer] - (prices[selectedOffer] || 269);
 
   // Close upgrade modal
   document.getElementById('upgrade-overlay').classList.remove('active');
@@ -2056,7 +2276,7 @@ function processUpgrade() {
     saveFormData();
 
     // Update recap banner
-    var offerNames = { starter: 'Starter 245\u20AC', business: 'Business 499\u20AC', premium: 'Premium 649\u20AC' };
+    var offerNames = { starter: 'Starter 269\u20AC', business: 'Business 580\u20AC', premium: 'Premium 780\u20AC' };
     document.getElementById('recap-offre').textContent = offerNames[selectedOffer] || '-';
 
     // Show/hide upgrade button

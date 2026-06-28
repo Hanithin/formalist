@@ -95,3 +95,51 @@
   color: #047857;
 }
 .welcome-badge strong { color: #065f46; }
+
+/* ---------- Écran d'accueil : améliorations UX ---------- */
+
+/* Hover plus net + flèche au survol (#3) */
+.welcome-path { position: relative; }
+.welcome-path:hover { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06); }
+.welcome-path-arrow {
+  position: absolute; top: 18px; right: 18px;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border: 1px solid #ececec; color: #111;
+  opacity: 0; transform: translateX(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.welcome-path-arrow svg { width: 14px; height: 14px; }
+.welcome-path:hover .welcome-path-arrow { opacity: 1; transform: translateX(0); }
+
+/* Carte mise en avant : "Créer ma société" (#2) */
+.welcome-path.featured {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  border: 1.5px solid #10b981;
+}
+.welcome-path.featured:hover { border-color: #059669; box-shadow: 0 8px 22px rgba(16, 185, 129, 0.16); }
+.welcome-path.featured .welcome-path-icon { background: #10b981; color: #fff; }
+.welcome-path.featured .welcome-path-arrow {
+  background: #10b981; border-color: #10b981; color: #fff;
+  opacity: 1; transform: none;
+}
+.welcome-path-badge {
+  display: inline-flex; align-items: center;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
+  color: #047857; background: rgba(16, 185, 129, 0.14);
+  padding: 3px 8px; border-radius: 20px; margin-bottom: 12px;
+}
+
+/* Ligne d'onboarding première visite (#4) */
+.welcome-onboard {
+  display: flex; align-items: center; gap: 10px;
+  margin: 2px 0 24px; padding: 12px 16px;
+  background: #f7f7f8; border: 1px solid #ececec; border-radius: 12px;
+  font-size: 13.5px; color: #555; position: relative; z-index: 2;
+}
+.welcome-onboard strong { color: #111; font-weight: 600; }
+.welcome-onboard .step {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+  background: #111; color: #fff; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}

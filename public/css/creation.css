@@ -141,6 +141,7 @@
       display: none;
       opacity: 0;
       transform: translateX(30px);
+      scroll-margin: 24px 0 32px;
     }
     .step-content.active {
       display: block;
@@ -651,9 +652,16 @@
     .donut-segment-hover .donut-chart { filter: brightness(0.97); }
 
     /* PRICING CARDS */
+    /* L'étape "Choisissez votre offre" élargit le conteneur (qui reste centré
+       via margin:auto, donc aucun décalage) pour aérer les 3 cartes. */
+    @media (min-width: 1080px) {
+      .content:has(.step-content[data-step="6"].active) { max-width: 1200px; }
+      .form-card.step-content[data-step="6"] { padding: 48px; }
+    }
+
     .pricing-grid {
-      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px;
-      align-items: stretch; padding-top: 16px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px;
+      align-items: stretch; padding-top: 20px;
     }
     .pricing-card {
       border: 1.5px solid #e5e5e5; border-radius: 18px;
@@ -662,6 +670,7 @@
       position: relative; display: flex; flex-direction: column;
     }
     .pricing-card:hover { border-color: #999; box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+    .pricing-card:not(.recommended):not(.selected):hover { transform: translateY(-4px); }
     .pricing-card.recommended {
       border-color: #111; border-width: 2px;
       padding: 36px 28px 32px;
@@ -708,6 +717,10 @@
     .pricing-price sup {
       font-size: 14px; font-weight: 500; color: #999;
       vertical-align: baseline; margin-left: 0; top: 0;
+    }
+    .pricing-price-note {
+      font-size: 12.5px; color: #888; font-weight: 500;
+      margin-bottom: 2px; white-space: nowrap;
     }
     .pricing-desc {
       font-size: 14px; color: #666; line-height: 1.5;
@@ -1731,11 +1744,103 @@
       font-size: 14px;
       color: #555;
       line-height: 1.55;
-      margin: 0 0 20px;
+      margin: 0 0 16px;
     }
+    /* Récap des changements dans la modale */
+    .propose-mod-changes {
+      max-height: 260px; overflow-y: auto;
+      border: 1px solid #eee; border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .propose-mod-changes:empty { display: none; }
+    .pm-change { padding: 12px 14px; border-bottom: 1px solid #f0f0f0; }
+    .pm-change:last-child { border-bottom: none; }
+    .pm-change-label { font-size: 12px; font-weight: 600; color: #111; margin-bottom: 5px; }
+    .pm-change-vals { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+    .pm-from { color: #b91c1c; text-decoration: line-through; background: #fef2f2; padding: 2px 8px; border-radius: 6px; }
+    .pm-to { color: #047857; background: #ecfdf5; padding: 2px 8px; border-radius: 6px; font-weight: 500; }
+    .pm-change-vals svg { width: 14px; height: 14px; color: #999; flex-shrink: 0; }
+    .propose-mod-note-label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+
+    /* Barre flottante du mode correction */
+    .correction-bar {
+      position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 140%);
+      width: min(720px, calc(100vw - 48px));
+      background: #111; color: #fff; border-radius: 16px;
+      padding: 14px 18px; display: flex; align-items: center; gap: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.28); z-index: 900;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); opacity: 0;
+    }
+    .correction-bar.active { transform: translate(-50%, 0); opacity: 1; }
+    .correction-bar-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .correction-bar-text strong { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 14.5px; }
+    .correction-bar-text span { font-size: 12.5px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+    .correction-bar-actions { display: flex; gap: 10px; flex-shrink: 0; }
+    .correction-bar-actions button {
+      padding: 10px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 500;
+      cursor: pointer; font-family: inherit; border: 1.5px solid transparent; transition: all 0.15s;
+    }
+    .cbar-cancel { background: transparent; color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.25); }
+    .cbar-cancel:hover { border-color: #fff; color: #fff; }
+    .cbar-send { background: #fff; color: #111; }
+    .cbar-send:hover { background: #ececec; }
+
+    /* Dialogue applicatif (succès / avertissement) */
+    .app-dialog-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1200;
+      background: rgba(17,17,17,0.5); backdrop-filter: blur(3px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .app-dialog-overlay.active { display: flex; animation: appDlgFade 0.15s ease; }
+    @keyframes appDlgFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes appDlgRise { from { transform: translateY(10px) scale(0.98); opacity: 0.6; } to { transform: none; opacity: 1; } }
+    .app-dialog {
+      background: #fff; border-radius: 20px; padding: 32px 32px 28px;
+      max-width: 420px; width: 100%; text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+      animation: appDlgRise 0.2s cubic-bezier(0.22,1,0.36,1);
+    }
+    .app-dialog-icon {
+      width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .app-dialog-icon svg { width: 28px; height: 28px; }
+    .app-dialog-icon.success { background: #ecfdf5; color: #059669; }
+    .app-dialog-icon.warning { background: #fffbeb; color: #d97706; }
+    .app-dialog-title {
+      font-family: 'Cal Sans','Inter',sans-serif; font-size: 21px; font-weight: 600;
+      color: #111; margin: 0 0 8px; letter-spacing: -0.2px;
+    }
+    .app-dialog-msg { font-size: 14.5px; color: #555; line-height: 1.6; margin: 0 0 24px; }
+    .app-dialog-btn {
+      background: #111; color: #fff; border: none; border-radius: 100px;
+      padding: 12px 32px; font-size: 14.5px; font-weight: 500; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
+    }
+    .app-dialog-btn:hover { background: #000; }
+
+    /* Champs éditables mis en évidence pendant la correction */
+    body.correction-mode .field input:not([disabled]),
+    body.correction-mode .field textarea:not([disabled]),
+    body.correction-mode .field select:not([disabled]) {
+      background: #fff; border-color: #c7c7cc;
+    }
+    body.correction-mode .step-content { padding-bottom: 96px; }
+
+    /* Champ modifié pendant la correction : bordure + texte violet */
+    input.cm-modified,
+    textarea.cm-modified,
+    .cselect.cm-modified .cselect-trigger,
+    .cdp.cm-modified input {
+      border-color: #7c3aed !important;
+      color: #7c3aed !important;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12) !important;
+    }
+    .cselect.cm-modified .cselect-trigger { font-weight: 500; }
+
     .propose-mod-modal textarea {
       width: 100%;
-      min-height: 120px;
+      min-height: 90px;
       border: 1.5px solid #e0e0e0;
       border-radius: 12px;
       padding: 14px 16px;

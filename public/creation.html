@@ -875,7 +875,9 @@
             <!-- Starter -->
             <div class="pricing-card" data-offer="starter" onclick="selectOffer(this)">
               <div class="pricing-name">Starter</div>
-              <div class="pricing-price">245&euro;<sup>HT</sup></div>
+              <div class="pricing-price">89&euro;<sup>HT</sup></div>
+              <div class="pricing-price-note">+ 180&euro; HT de frais d'annonce l&eacute;gale</div>
+              <div class="pricing-price-note">D&eacute;p&ocirc;t au greffe &agrave; votre charge</div>
               <div class="pricing-desc">D&eacute;marrez votre entreprise en quelques clics.</div>
               <button class="pricing-select-btn" type="button">S&eacute;lectionner</button>
               <ul class="pricing-features">
@@ -892,7 +894,9 @@
             <div class="pricing-card recommended" data-offer="business" onclick="selectOffer(this)">
               <span class="pricing-badge">Recommand&eacute;</span>
               <div class="pricing-name">Business</div>
-              <div class="pricing-price">499&euro;<sup>HT</sup></div>
+              <div class="pricing-price">345&euro;<sup>HT</sup></div>
+              <div class="pricing-price-note">+ 180&euro; HT de frais d'annonce l&eacute;gale</div>
+              <div class="pricing-price-note">+ 55&euro; de frais de greffe</div>
               <div class="pricing-desc">Cr&eacute;ez votre soci&eacute;t&eacute; en toute s&eacute;curit&eacute;, valid&eacute;e par un avocat.</div>
               <button class="pricing-select-btn" type="button">S&eacute;lectionner</button>
               <div class="pricing-includes">Tout ce qui est inclus dans le forfait Starter</div>
@@ -908,7 +912,9 @@
             <!-- Premium -->
             <div class="pricing-card" data-offer="premium" onclick="selectOffer(this)">
               <div class="pricing-name">Premium</div>
-              <div class="pricing-price">649&euro;<sup>HT</sup></div>
+              <div class="pricing-price">545&euro;<sup>HT</sup></div>
+              <div class="pricing-price-note">+ 180&euro; HT de frais d'annonce l&eacute;gale</div>
+              <div class="pricing-price-note">+ 55&euro; de frais de greffe</div>
               <div class="pricing-desc">Votre formalit&eacute; trait&eacute;e en urgence par un avocat !</div>
               <button class="pricing-select-btn" type="button">S&eacute;lectionner</button>
               <div class="pricing-includes">Tout ce qui est inclus dans le forfait Business</div>
@@ -1152,7 +1158,6 @@
   <script src="/js/creation/chat.js"></script>
   <script src="/js/creation/app.js"></script>
   <script src="/js/creation/dev-fill.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhbemAxywbRwH0Tj2crK1LBvQRsBGlGRU&libraries=places&callback=onGoogleMapsLoaded" async defer></script>
 
   <!-- BEGIN sidebar refresh JS (auto-generated) -->
   <script>
@@ -1507,21 +1512,31 @@
     };
   </script>
 
-  <!-- Modal: Proposer une modification (dossier verrouillé) -->
+  <!-- Modal: Demander une modification (dossier verrouillé) -->
   <div class="propose-mod-overlay" id="propose-mod-overlay" onclick="if(event.target===this)closeProposeMod()">
     <div class="propose-mod-modal">
-      <h3>Proposer une modification</h3>
+      <h3>Demander une modification</h3>
       <p class="propose-mod-desc">
-        Votre dossier est verrouill&eacute; car le paiement est valid&eacute;.
-        D&eacute;crivez la modification que vous souhaitez apporter : votre avocat
-        recevra la demande, la v&eacute;rifiera et r&eacute;g&eacute;n&eacute;rera
-        les documents apr&egrave;s validation.
+        V&eacute;rifiez les changements ci-dessous. Votre avocat les recevra,
+        les validera puis r&eacute;g&eacute;n&eacute;rera les documents.
       </p>
-      <textarea id="propose-mod-text" placeholder="Exemple : Modifier l'adresse du si&egrave;ge social en 25 rue de la Paix, 75002 Paris."></textarea>
+      <div id="propose-mod-changes" class="propose-mod-changes"></div>
+      <label class="propose-mod-note-label">Note pour l'avocat <span style="color:#999;font-weight:400;">(optionnel)</span></label>
+      <textarea id="propose-mod-text" placeholder="Pr&eacute;cisez un d&eacute;tail si besoin&hellip;"></textarea>
       <div class="propose-mod-actions">
         <button type="button" class="btn-cancel" onclick="closeProposeMod()">Annuler</button>
         <button type="button" class="btn-submit" onclick="submitProposeMod()">Envoyer la demande</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Dialogue applicatif (remplace les alert() natifs) -->
+  <div class="app-dialog-overlay" id="app-dialog" onclick="if(event.target===this)closeAppDialog()">
+    <div class="app-dialog">
+      <div class="app-dialog-icon" id="app-dialog-icon"></div>
+      <h3 class="app-dialog-title" id="app-dialog-title"></h3>
+      <p class="app-dialog-msg" id="app-dialog-msg"></p>
+      <button type="button" class="app-dialog-btn" id="app-dialog-btn" onclick="closeAppDialog()">Compris</button>
     </div>
   </div>
 </body>

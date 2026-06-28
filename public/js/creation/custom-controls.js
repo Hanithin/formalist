@@ -233,51 +233,80 @@ function initAllCustomDates() {
 window.initAllCustomDates = initAllCustomDates;
 
 // ==================== GOOGLE PLACES AUTOCOMPLETE ====================
+// Autocomplétion d'adresse via la Base Adresse Nationale (api-adresse.data.gouv.fr).
+// Gratuite, sans clé, dédiée aux adresses françaises. Remplit rue + ville + CP.
+function _applyAddress(input, p) {
+  var street = p.name || ((p.housenumber ? p.housenumber + ' ' : '') + (p.street || ''));
+  var city = p.city || '';
+  var postal = p.postcode || '';
+  var stepContent = input.closest('.step-content[data-step="1"]');
+  var villeInput = stepContent ? stepContent.querySelector('input[placeholder="Ville"]') : null;
+  var cpInput = stepContent ? stepContent.querySelector('input[placeholder="Code postal"]') : null;
+  if (villeInput && cpInput) {
+    // Étape 1 société : rue dans l'input, ville/CP dans des champs séparés
+    input.value = street || p.label || '';
+    if (city) { villeInput.value = city; villeInput.dispatchEvent(new Event('input')); }
+    if (postal) { cpInput.value = postal; cpInput.dispatchEvent(new Event('input')); }
+  } else {
+    // Associés/dirigeants : adresse complète dans un seul champ
+    var parts = [];
+    if (street) parts.push(street);
+    if (postal) parts.push(postal);
+    if (city) parts.push(city);
+    input.value = parts.join(', ') || p.label || '';
+  }
+  // Notifie la sauvegarde sans rouvrir le dropdown
+  input._skipAutocomplete = true;
+  input.dispatchEvent(new Event('input'));
+}
+
 function initAddressAutocomplete(input) {
-  if (!window.google || !google.maps || !google.maps.places) return;
   if (input._autocompleteInit) return;
   input._autocompleteInit = true;
 
-  var ac = new google.maps.places.Autocomplete(input, {
-    types: ['address'],
-    componentRestrictions: { country: 'fr' },
-    fields: ['address_components', 'formatted_address']
+  var dropdown = document.createElement('div');
+  dropdown.className = 'addr-dropdown';
+  dropdown.style.cssText = 'display:none;position:absolute;z-index:10000;background:#fff;border:1px solid #e0e0e0;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.1);max-height:240px;overflow-y:auto;margin-top:2px;';
+  input.parentNode.style.position = 'relative';
+  input.parentNode.appendChild(dropdown);
+
+  var debounceTimer = null;
+  var feats = [];
+  input.addEventListener('input', function() {
+    // Ignore l'événement déclenché par la sélection d'une suggestion
+    // (sinon le dropdown se rouvre aussitôt).
+    if (input._skipAutocomplete) { input._skipAutocomplete = false; dropdown.style.display = 'none'; return; }
+    var q = input.value.trim();
+    if (q.length < 3) { dropdown.style.display = 'none'; return; }
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function() {
+      fetch('https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(q) + '&limit=6&autocomplete=1')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          feats = (data && data.features) || [];
+          if (!feats.length) { dropdown.style.display = 'none'; return; }
+          dropdown.innerHTML = feats.map(function(f, i) {
+            var esc = document.createElement('div');
+            esc.textContent = (f.properties && f.properties.label) || '';
+            return '<div class="addr-option" data-index="' + i + '" style="padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid #f0f0f0;">' + esc.innerHTML + '</div>';
+          }).join('');
+          dropdown.style.display = 'block';
+          dropdown.style.width = input.offsetWidth + 'px';
+          dropdown.querySelectorAll('.addr-option').forEach(function(opt) {
+            opt.addEventListener('mouseenter', function() { opt.style.background = '#f7f7f7'; });
+            opt.addEventListener('mouseleave', function() { opt.style.background = '#fff'; });
+            opt.addEventListener('mousedown', function(e) {
+              e.preventDefault();
+              var f = feats[parseInt(opt.dataset.index)];
+              dropdown.style.display = 'none';
+              if (f && f.properties) _applyAddress(input, f.properties);
+            });
+          });
+        })
+        .catch(function() { dropdown.style.display = 'none'; });
+    }, 250);
   });
-
-  ac.addListener('place_changed', function() {
-    var place = ac.getPlace();
-    if (!place || !place.address_components) return;
-
-    var street_number = '', route = '', city = '', postal = '';
-    place.address_components.forEach(function(c) {
-      if (c.types.indexOf('street_number') !== -1) street_number = c.long_name;
-      if (c.types.indexOf('route') !== -1) route = c.long_name;
-      if (c.types.indexOf('locality') !== -1) city = c.long_name;
-      if (c.types.indexOf('postal_code') !== -1) postal = c.long_name;
-    });
-
-    // Build clean street address
-    var streetAddr = (street_number ? street_number + ' ' : '') + route;
-
-    // Try to auto-fill ville and code postal siblings (step 1 societe)
-    var stepContent = input.closest('.step-content[data-step="1"]');
-    var villeInput = stepContent ? stepContent.querySelector('input[placeholder="Ville"]') : null;
-    var cpInput = stepContent ? stepContent.querySelector('input[placeholder="Code postal"]') : null;
-
-    if (villeInput && cpInput) {
-      // Step 1 societe: rue dans l'input, ville/CP dans champs separes
-      if (streetAddr) input.value = streetAddr;
-      if (city) { villeInput.value = city; villeInput.dispatchEvent(new Event('input')); }
-      if (postal) { cpInput.value = postal; cpInput.dispatchEvent(new Event('input')); }
-    } else {
-      // Associes/dirigeants: adresse complete dans un seul champ
-      var parts = [];
-      if (streetAddr) parts.push(streetAddr);
-      if (postal) parts.push(postal);
-      if (city) parts.push(city);
-      input.value = parts.join(', ');
-    }
-  });
+  input.addEventListener('blur', function() { setTimeout(function() { dropdown.style.display = 'none'; }, 150); });
 }
 window.initAddressAutocomplete = initAddressAutocomplete;
 
@@ -398,6 +427,9 @@ window.onGoogleMapsLoaded = onGoogleMapsLoaded;
 
 // Init on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.addr-auto').forEach(function(input) {
+    initAddressAutocomplete(input);
+  });
   document.querySelectorAll('.city-birth-auto').forEach(function(input) {
     initCityBirthAutocomplete(input);
   });

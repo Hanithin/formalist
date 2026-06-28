@@ -130,7 +130,7 @@
     }
 
     /* ============================
-       ÉTAT 0 — Aucune formalité
+       ÉTAT 0 - Aucune formalité
        ============================ */
     .welcome-hero {
       background: linear-gradient(135deg, #111 0%, #2a2a2c 100%);
@@ -217,7 +217,7 @@
     }
 
     /* ============================
-       ÉTAT 1 — Une seule formalité (focus)
+       ÉTAT 1 - Une seule formalité (focus)
        ============================ */
     .single-hero {
       background: #fff; border: 1px solid #eee; border-radius: 20px;
@@ -263,7 +263,7 @@
     .single-hero-btn.ghost { background: transparent; color: #666; border: 1px solid #e5e5e7; }
     .single-hero-btn.ghost:hover { background: #f5f5f7; color: #111; }
 
-    /* État 1 — Société terminée : célébration + roadmap */
+    /* État 1 - Société terminée : célébration + roadmap */
     .single-celebrate {
       background: linear-gradient(135deg, #065f46 0%, #047857 100%);
       color: #fff;
@@ -315,7 +315,7 @@
     .roadmap-step.done .roadmap-step-title { color: #888; text-decoration: line-through; text-decoration-thickness: 1px; }
 
     /* ============================
-       ÉTAT 2+ — KPI strip + top action
+       ÉTAT 2+ - KPI strip + top action
        ============================ */
     .top-action {
       background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
@@ -754,7 +754,7 @@
       font-weight: 600;
     }
 
-    /* DOSSIER FILTERS — tab style with counts */
+    /* DOSSIER FILTERS - tab style with counts */
     .dossiers-toolbar {
       display: flex;
       align-items: center;
@@ -1108,7 +1108,7 @@
     .lawyer-detail.open { display: block; }
     .ld-row { padding: 10px 0; }
     .ld-row + .ld-row { border-top: 1px solid #ececef; }
-    /* Notes cliquables — jump vers la conversation messagerie */
+    /* Notes cliquables - jump vers la conversation messagerie */
     a.ld-row-link {
       display: block; position: relative;
       text-decoration: none; color: inherit;
@@ -1367,23 +1367,13 @@
       document.querySelector('.user-email').textContent = data.user.email;
       var initials = data.user.name.split(' ').map(function(n) { return n[0]; }).join('').substring(0,2).toUpperCase();
       document.querySelector('.avatar').textContent = initials;
-      // Update greeting with user name
+      // Salutation neutre ; le message contextuel est posé par renderDashboardByState()
       var gHour = new Date().getHours();
       var gName = data.user.name.split(' ')[0];
       var gGreet = (gHour >= 18 || gHour < 5) ? 'Bonsoir' : 'Bonjour';
-      var gPhrases;
-      if (gHour >= 5 && gHour < 12) {
-        gPhrases = ['Pr\u00eat \u00e0 avancer sur vos dossiers ?','Une belle journ\u00e9e pour entreprendre.','Quoi de pr\u00e9vu ce matin ?','On d\u00e9marre la journ\u00e9e en beaut\u00e9.'];
-      } else if (gHour >= 12 && gHour < 18) {
-        gPhrases = ['Comment avancent vos projets ?','Besoin de finaliser un dossier ?','On continue sur notre lanc\u00e9e.','Un bon apr\u00e8s-midi pour avancer.'];
-      } else {
-        gPhrases = ['Encore un peu de travail ce soir ?','On termine la journ\u00e9e en beaut\u00e9.','Vos dossiers vous attendent.','Une derni\u00e8re v\u00e9rification avant la fin de journ\u00e9e ?'];
-      }
-      var gSub = gPhrases[Math.floor(Math.random() * gPhrases.length)];
       var gEl = document.getElementById('greeting-text');
       var gSubEl = document.getElementById('greeting-sub');
-      // Phrase complète en une ligne : "Bonjour, Jean — on continue sur notre lancée."
-      if (gEl) gEl.textContent = gGreet + ' ' + gName + ', ' + gSub.charAt(0).toLowerCase() + gSub.slice(1);
+      if (gEl) gEl.textContent = gGreet + ' ' + gName;
       if (gSubEl) { gSubEl.textContent = ''; gSubEl.style.display = 'none'; }
       if (data.notifications > 0) {
         var bell = document.getElementById('notif-bell');
@@ -1676,39 +1666,13 @@
         if (u.name) firstName = u.name.split(' ')[0];
       } catch(e) {}
 
-      var greet, subtitle;
-      if (hour >= 5 && hour < 12) {
-        greet = 'Bonjour';
-        var mornings = [
-          'Pr\u00eat \u00e0 avancer sur vos dossiers ?',
-          'Une belle journ\u00e9e pour entreprendre.',
-          'Quoi de pr\u00e9vu ce matin ?',
-          'On d\u00e9marre la journ\u00e9e en beaut\u00e9.'
-        ];
-        subtitle = mornings[Math.floor(Math.random() * mornings.length)];
-      } else if (hour >= 12 && hour < 18) {
-        greet = 'Bonjour';
-        var afternoons = [
-          'Comment avancent vos projets ?',
-          'Besoin de finaliser un dossier ?',
-          'On continue sur notre lanc\u00e9e.',
-          'Un bon apr\u00e8s-midi pour avancer.'
-        ];
-        subtitle = afternoons[Math.floor(Math.random() * afternoons.length)];
-      } else {
-        greet = 'Bonsoir';
-        var evenings = [
-          'Encore un peu de travail ce soir ?',
-          'On termine la journ\u00e9e en beaut\u00e9.',
-          'Vos dossiers vous attendent.',
-          'Une derni\u00e8re v\u00e9rification avant la fin de journ\u00e9e ?'
-        ];
-        subtitle = evenings[Math.floor(Math.random() * evenings.length)];
-      }
-
+      // Salutation neutre au chargement ; le message contextuel (bienvenue
+      // vs retour) est pos\u00e9 par renderDashboardByState() une fois les dossiers
+      // connus.
+      var greet = (hour >= 18 || hour < 5) ? 'Bonsoir' : 'Bonjour';
       var el = document.getElementById('greeting-text');
       var subEl = document.getElementById('greeting-sub');
-      if (el) el.textContent = greet + ' ' + firstName + ', ' + subtitle.charAt(0).toLowerCase() + subtitle.slice(1);
+      if (el) el.textContent = greet + ' ' + firstName;
       if (subEl) { subEl.textContent = ''; subEl.style.display = 'none'; }
     })();
 
@@ -1770,6 +1734,30 @@
       }
     }
 
+    // Construit le message d'accueil : phrases de bienvenue pour un nouvel
+    // utilisateur (aucun dossier), sinon phrases contextuelles selon l'heure.
+    function buildGreeting(firstName, isNew) {
+      var hour = new Date().getHours();
+      var greet = (hour >= 18 || hour < 5) ? 'Bonsoir' : 'Bonjour';
+      var phrases;
+      if (isNew) {
+        phrases = [
+          'bienvenue sur Formalist !',
+          'ravi de vous accueillir.',
+          'prêt à lancer votre première société ?',
+          'on commence quand vous voulez.'
+        ];
+      } else if (hour >= 5 && hour < 12) {
+        phrases = ['prêt à avancer sur vos dossiers ?','une belle journée pour entreprendre.','quoi de prévu ce matin ?','on démarre la journée en beauté.'];
+      } else if (hour >= 12 && hour < 18) {
+        phrases = ['comment avancent vos projets ?','besoin de finaliser un dossier ?','on continue sur notre lancée.','un bon après-midi pour avancer.'];
+      } else {
+        phrases = ['encore un peu de travail ce soir ?','on termine la journée en beauté.','vos dossiers vous attendent.','une dernière vérification avant la fin de journée ?'];
+      }
+      var sub = phrases[Math.floor(Math.random() * phrases.length)];
+      return greet + ' ' + firstName + ', ' + sub;
+    }
+
     // Router : choisit le bon rendu selon le nombre de sociétés
     function renderDashboardByState() {
       var emptyEl = document.getElementById('state-empty');
@@ -1783,6 +1771,14 @@
       // On distingue les "sociétés" (formalité de type création) des contrats
       var societes = allDossiers.filter(function(d){ return d.type === 'formalite'; });
       var count = societes.length;
+
+      // Message d'accueil adapté : bienvenue si aucun dossier, sinon contextuel
+      try {
+        var gName = (_currentUser && _currentUser.name) ? _currentUser.name
+                    : (JSON.parse(sessionStorage.getItem('user') || '{}').name || 'Jean');
+        var gEl = document.getElementById('greeting-text');
+        if (gEl) gEl.textContent = buildGreeting(gName.split(' ')[0], allDossiers.length === 0);
+      } catch (e) {}
 
       // Reset visibility
       if (emptyEl) emptyEl.style.display = 'none';
@@ -2044,7 +2040,7 @@
           meta = ACTION_META[n.action] || { label: humanizeField(n.action || 'Note'), bg: '#f3f4f6', color: '#374151' };
         }
         var pill = '<span class="ld-pill" style="background:' + meta.bg + ';color:' + meta.color + ';">' + escapeHtmlText(meta.label) + '</span>';
-        var body = n.comment ? escapeHtmlText(n.comment) : (n.target_field ? escapeHtmlText(n.target_field) : '—');
+        var body = n.comment ? escapeHtmlText(n.comment) : (n.target_field ? escapeHtmlText(n.target_field) : '-');
         // Lien vers la conversation messagerie + scroll auto sur l'horodatage de la note
         // (le serveur crée un message typé en même temps que l'audit ; on retombe au
         // plus proche en passant le timestamp ISO via ?t=)
@@ -2098,7 +2094,7 @@
       input.click();
     }
 
-    // -------- ÉTAT 0 — Aucune formalité --------
+    // -------- ÉTAT 0 - Aucune formalité --------
     function renderEmptyState() {
       // Récupère le greeting personnalisé du topbar puis masque celui-ci
       var topbarEl = document.querySelector('.topbar');
@@ -2111,6 +2107,8 @@
         {
           href: '/creation.html?new=1&type=creation',
           group: 'creer',
+          featured: true,
+          badge: 'Recommandé',
           icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0"/></svg>',
           title: 'Créer ma société',
           desc: 'SAS, SARL, SCI, SASU, EURL',
@@ -2168,8 +2166,10 @@
         var items = paths.filter(function(p){ return p.group === groupKey; });
         var inner = '<div class="welcome-group-label">' + label + '</div><div class="welcome-paths">';
         items.forEach(function(p) {
-          inner += '<a href="' + p.href + '" class="welcome-path">'
+          inner += '<a href="' + p.href + '" class="welcome-path' + (p.featured ? ' featured' : '') + '">'
+            + '<div class="welcome-path-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>'
             + '<div class="welcome-path-icon">' + p.icon + '</div>'
+            + (p.badge ? '<div class="welcome-path-badge">' + p.badge + '</div>' : '')
             + '<div class="welcome-path-title">' + p.title + '</div>'
             + '<div class="welcome-path-desc">' + p.desc + '</div>'
             + '<div class="welcome-path-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ' + p.time + ' &middot; ' + p.price + '</div>'
@@ -2188,10 +2188,10 @@
         +       '<span>100% sécurisé · <strong>Validé par nos avocats</strong></span>'
         +     '</div>'
         +   '</div>'
-        +   '<p>Créez, modifiez ou fermez votre société en quelques minutes.</p>'
+        +   '<p>Lancez votre activité en quelques minutes, accompagné par nos avocats.</p>'
+        +   '<div class="welcome-onboard"><span class="step">1</span><span>Première étape : <strong>créez votre société</strong>. Vos documents et le suivi se débloquent ensuite.</span></div>'
         +   renderGroup('creer', 'Démarrer une activité')
-        +   renderGroup('gerer', 'Gérer une société existante')
-        +   renderGroup('services', 'Services juridiques')
+        +   renderGroup('services', 'Besoin d\'autre chose ?')
         + '</div>';
 
       var emptyEl = document.getElementById('state-empty');
@@ -2199,7 +2199,7 @@
       emptyEl.style.display = 'block';
     }
 
-    // -------- ÉTAT 1 — Une seule société (focus) --------
+    // -------- ÉTAT 1 - Une seule société (focus) --------
     function renderSingleState(d) {
       var isDone = d.status === 'done';
       var circumference = 2 * Math.PI * 56;
@@ -2261,7 +2261,7 @@
           + '<div class="single-hero-body">'
           +   '<span class="single-hero-eyebrow">' + escapeHtml(d.typeBadgeLabel) + '</span>'
           +   '<div class="single-hero-title">' + escapeHtml(d.title) + '</div>'
-          +   '<div class="single-hero-desc">' + stepInfo + (stepInfo ? ' — ' : '') + escapeHtml(nextAction) + '</div>'
+          +   '<div class="single-hero-desc">' + stepInfo + (stepInfo ? ' · ' : '') + escapeHtml(nextAction) + '</div>'
           +   '<div class="single-hero-actions">'
           +     '<a href="' + d.link + '" class="single-hero-btn">Continuer <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>'
           +     '<button class="single-hero-btn ghost" onclick="openNewActionModal()">+ Nouvelle formalité</button>'
@@ -2293,7 +2293,7 @@
       singleEl.style.display = 'block';
     }
 
-    // -------- ÉTAT 2+ — Plusieurs sociétés --------
+    // -------- ÉTAT 2+ - Plusieurs sociétés --------
     function buildActionFromIndex(idx) {
       var list = window._actionList || [];
       if (!list[idx]) return null;
@@ -2490,7 +2490,7 @@
       multiEl.innerHTML = html;
       multiEl.style.display = 'block';
 
-      // Masque la liste détaillée (disponible sur /formalites.html — pas de doublon)
+      // Masque la liste détaillée (disponible sur /formalites.html - pas de doublon)
       var toolbarEl = document.getElementById('dossiers-toolbar');
       var containerEl = document.getElementById('dossiers-container');
       var paginationEl = document.getElementById('dossiers-pagination');
@@ -2542,7 +2542,7 @@
         var stepInfo = d.phaseName ? '\u00c9tape en cours : ' + d.phaseName + ' (' + d.phase + '/' + d.totalPhases + ')' : '';
         banner.innerHTML = '<div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
           + '<div class="hero-content"><div class="hero-title">Reprendre la cr\u00e9ation de ' + escapeHtml(d.title) + '</div>'
-          + '<div class="hero-desc">' + stepInfo + (stepInfo && action ? ' \u2014 ' : '') + action + '</div></div>'
+          + '<div class="hero-desc">' + stepInfo + (stepInfo && action ? ' - ' : '') + action + '</div></div>'
           + '<a href="' + d.link + '" class="hero-btn">Continuer <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>';
         banner.style.display = 'flex';
         return;
@@ -2560,7 +2560,7 @@
         return;
       }
 
-      // Priority 4: no dossiers at all — onboarding
+      // Priority 4: no dossiers at all - onboarding
       if (allDossiers.length === 0) {
         banner.innerHTML = '<div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>'
           + '<div class="hero-content"><div class="hero-title">Bienvenue' + (firstName ? ', ' + firstName : '') + ' !</div>'
@@ -2570,7 +2570,7 @@
         return;
       }
 
-      // Priority 5: all done — congratulations
+      // Priority 5: all done - congratulations
       var allDone = allDossiers.every(function(d) { return d.status === 'done'; });
       if (allDone && allDossiers.length > 0) {
         banner.style.background = 'linear-gradient(135deg, #065f46 0%, #064e3b 100%)';
@@ -2609,7 +2609,14 @@
             : fData.BANQUE_REVOLUT ? 'Revolut'
             : null;
           var forme = fData.FORME_JURIDIQUE || f.forme;
+          var formeUp = (forme || '').toString().toUpperCase().trim();
           var infosComplete = !!(fData.NOM_SOCIETE && forme && fData.CAPITAL && (fData.PRESIDENT_NOM || fData.GERANT_NOM));
+          // Après paiement, l'étape "Informations" est terminée : on évite
+          // d'afficher "Étape 1 / Informations" alors que l'utilisateur en est
+          // déjà au dépôt du capital.
+          var displayPhase = Math.max(f.phase || 1, infosComplete ? 2 : 1);
+          currentPhaseName = phaseNames[Math.min(displayPhase - 1, phaseNames.length - 1)];
+          progress = Math.round((displayPhase / totalSteps) * 100);
           var sp = f.business_sub_phase || '';
 
           var nextAction = '';
@@ -2624,8 +2631,8 @@
           // PRIORIT\u00c9 1 : Documents rejet\u00e9s par l'avocat \u2192 user doit renvoyer
           if (rejectedDocs > 0 && f.status !== 'terminee') {
             nextAction = rejectedDocs > 1
-              ? rejectedDocs + ' documents ont \u00e9t\u00e9 rejet\u00e9s \u2014 t\u00e9l\u00e9versez-en de nouveaux avant validation'
-              : 'Un document a \u00e9t\u00e9 rejet\u00e9 \u2014 t\u00e9l\u00e9versez un nouveau justificatif avant validation';
+              ? rejectedDocs + ' documents ont \u00e9t\u00e9 rejet\u00e9s - t\u00e9l\u00e9versez-en de nouveaux avant validation'
+              : 'Un document a \u00e9t\u00e9 rejet\u00e9 - t\u00e9l\u00e9versez un nouveau justificatif avant validation';
             needsUserAction = true;
           }
           // PRIORIT\u00c9 2 : Signatures en attente \u2192 user doit signer
@@ -2637,11 +2644,11 @@
           }
           // PRIORIT\u00c9 3 : \u00c9tats finaux c\u00f4t\u00e9 avocat
           else if (f.status === 'terminee' || effectiveSp === '5e') {
-            nextAction = 'Votre soci\u00e9t\u00e9 est immatricul\u00e9e \u2014 le Kbis est disponible';
+            nextAction = 'Votre soci\u00e9t\u00e9 est immatricul\u00e9e - le Kbis est disponible';
           } else if (effectiveSp === '5c' || effectiveSp === '5d') {
-            nextAction = 'Vos documents sont valid\u00e9s \u2014 pr\u00e9paration du d\u00e9p\u00f4t au greffe';
+            nextAction = 'Vos documents sont valid\u00e9s - pr\u00e9paration du d\u00e9p\u00f4t au greffe';
           } else if ((f.phase || 1) >= 6) {
-            nextAction = 'Dossier d\u00e9pos\u00e9 au greffe \u2014 r\u00e9ception du Kbis sous 24 \u00e0 72 h';
+            nextAction = 'Dossier d\u00e9pos\u00e9 au greffe - r\u00e9ception du Kbis sous 24 \u00e0 72 h';
           } else if (effectiveSp === '5a' || effectiveSp === '5b') {
             nextAction = hasAvocat
               ? 'Un avocat v\u00e9rifie l\u2019ensemble de vos documents avant le d\u00e9p\u00f4t au greffe'
@@ -2693,11 +2700,11 @@
             typeBadgeLabel: (function() {
               var t = (f.type || 'Cr\u00e9ation').trim();
               if (t.toLowerCase() === 'creation') t = 'Cr\u00e9ation';
-              // Retire la forme (SAS/SASU/SARL/EURL/SCI) du type \u2014 elle figure d\u00e9j\u00e0 dans le titre
+              // Retire la forme (SAS/SASU/SARL/EURL/SCI) du type - elle figure d\u00e9j\u00e0 dans le titre
               t = t.replace(/\s*(SAS|SASU|SARL|EURL|SCI)\s*$/i, '').trim();
               return t || 'Cr\u00e9ation';
             })(),
-            title: f.societe || 'Sans nom',
+            title: (formeUp ? formeUp + ' ' : '') + (f.societe || 'Sans nom'),
             status: statusClass,
             statusLabel: statusLabel,
             progress: progress,
@@ -2707,7 +2714,7 @@
             phaseName: currentPhaseName,
             nextAction: nextAction,
             needsUserAction: needsUserAction,
-            phase: f.phase || 1,
+            phase: displayPhase,
             totalPhases: phaseNames.length
           });
         });

@@ -162,6 +162,17 @@ function goToStep(target) {
   }
   currentStep = target;
   updateStepIndicators();
+
+  // Cadre l'étape à l'arrivée. Sur l'étape Offres (6), on cale le BAS de
+  // l'étape pour que le bouton "Procéder au paiement" soit visible ; sinon
+  // on remonte en haut de l'étape.
+  if (targetStep) {
+    var scrollBlock = (String(target) === '6') ? 'end' : 'start';
+    requestAnimationFrame(function() {
+      try { targetStep.scrollIntoView({ behavior: 'smooth', block: scrollBlock }); }
+      catch (_) { targetStep.scrollIntoView(); }
+    });
+  }
 }
 window.goToStep = goToStep;
 
@@ -400,13 +411,20 @@ function startPayment() {
   // CAS 2 : cr\u00e9ation initiale (paiement classique)
   saveFormData();
 
-  var prices = { starter: '245', business: '499', premium: '649' };
-  var names = { starter: 'Starter', business: 'Business', premium: 'Premium' };
+  // Chaque offre = service + 180\u20AC d'annonce l\u00E9gale (+ frais de greffe pour
+  // Business/Premium qui incluent l'immatriculation au Guichet Unique).
+  var OFFERS = {
+    starter:  { name: 'Starter',  service: 89,  annonce: 180, greffe: 0 },
+    business: { name: 'Business', service: 345, annonce: 180, greffe: 55 },
+    premium:  { name: 'Premium',  service: 545, annonce: 180, greffe: 55 }
+  };
+  var o = OFFERS[selectedOffer] || OFFERS.starter;
+  var total = o.service + o.annonce + o.greffe;
 
   var overlay = document.getElementById('payment-overlay');
   overlay.classList.add('active');
-  document.getElementById('payment-amount').textContent = prices[selectedOffer] + '\u20AC HT';
-  document.getElementById('payment-offer-label').textContent = 'Offre ' + names[selectedOffer];
+  document.getElementById('payment-amount').textContent = total + '\u20AC HT';
+  document.getElementById('payment-offer-label').textContent = 'Offre ' + o.name + ' \u00B7 ' + o.service + '\u20AC service + ' + o.annonce + '\u20AC annonce l\u00E9gale' + (o.greffe ? ' + ' + o.greffe + '\u20AC greffe' : '');
 
   var icon = document.getElementById('payment-icon');
   icon.className = 'payment-modal-icon loading';
@@ -608,13 +626,14 @@ function updateSubmitButtonLabel() {
         loadCurrentStatusAndRender();
       }
     } else {
-      // User sur dossier existant \u2192 mode consultation read-only + bouton "Signaler une erreur"
-      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Signaler une erreur \u00e0 mon avocat';
+      // User sur dossier existant \u2192 mode consultation read-only + bouton "Demander une modification"
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Demander une modification';
       btn.disabled = false;
-      btn.title = 'Envoyer un message \u00e0 l\'avocat assign\u00e9 pour signaler une erreur';
+      btn.title = 'Demander une modification \u00e0 votre avocat assign\u00e9';
       btn.onclick = function(e){
         e.preventDefault();
-        if (typeof window.openContactAvocatModal === 'function') window.openContactAvocatModal();
+        if (typeof window.enterCorrectionMode === 'function') window.enterCorrectionMode();
+        else if (typeof window.openContactAvocatModal === 'function') window.openContactAvocatModal();
         else window.location.href = '/messagerie.html?formalite=' + _currentFormaliteId;
       };
       // Active le mode read-only sur tout le formulaire
@@ -632,7 +651,7 @@ function updateSubmitButtonLabel() {
           + '</div>'
           + '<div style="flex:1;">'
           +   '<div style="font-family:\'Cal Sans\',sans-serif;font-size:15.5px;font-weight:600;color:#1e3a8a;">Mode consultation</div>'
-          +   '<div style="font-size:13px;color:#1e40af;margin-top:2px;">Vos informations ne sont plus modifiables. Pour signaler une erreur ou demander une correction, utilisez le bouton <strong>Signaler une erreur \u00e0 mon avocat</strong>.</div>'
+          +   '<div style="font-size:13px;color:#1e40af;margin-top:2px;">Vos informations ne sont plus modifiables. Pour corriger une information, utilisez le bouton <strong>Demander une modification</strong>.</div>'
           + '</div>';
         var formSection = document.getElementById('form-section');
         if (formSection && formSection.firstChild) {
