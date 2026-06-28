@@ -16,6 +16,11 @@ services:
       # Renseigner ces secrets dans le dashboard Render (Environment) :
       - key: GEMINI_API_KEY
         sync: false
+      # INPI RNE — requis pour capital, statuts, OCR et extraction du représentant
+      - key: INPI_USERNAME
+        sync: false
+      - key: INPI_PASSWORD
+        sync: false
       - key: SEED_ADMIN_PASSWORD
         sync: false
       - key: SEED_AVOCAT_PASSWORD
