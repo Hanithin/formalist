@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration · Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family: 'Cal Sans'; src: url('/fonts/CalSans-SemiBold.otf') format('opentype'); font-weight: 600; font-display: block; }
+    @font-face { font-family: 'Matter'; src: url('/fonts/Matter-Regular.ttf') format('truetype'); font-weight: 400; font-display: block; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: 'Matter', 'Inter', -apple-system, sans-serif; color: #111; background: #f5f5f7; display: flex; }
+    a { text-decoration: none; color: inherit; }
+
+    /* SIDEBAR — aligné avec dashboard.html */
+    .sidebar {
+      width: 270px;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      display: flex; flex-direction: column;
+      padding: 28px 0 0;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed; top: 0; left: 0; z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo a { display: inline-flex; align-items: baseline; gap: 3px; color: #111; text-decoration: none; }
+    .logo-badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 8px; border-radius: 6px;
+      font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      line-height: 1;
+    }
+    .logo-badge.avocat { background: #f3e8ff; color: #7c3aed; }
+    .logo-badge.admin  { background: #111; color: #fff; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 30px; font-weight: 700;
+      letter-spacing: 0; line-height: 1;
+      color: #111;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    .sidebar-cta-link {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit; text-decoration: none;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta-link:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta-link:active { transform: scale(0.99); }
+    .sidebar-cta-link svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav button, .sidebar-nav a {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%; text-align: left;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer;
+      margin-bottom: 2px;
+      border: none; background: none;
+      font-family: inherit; text-decoration: none;
+    }
+    .sidebar-nav button:hover, .sidebar-nav a:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav button.active, .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav button svg, .sidebar-nav a svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav button:hover svg, .sidebar-nav a:hover svg { opacity: 0.95; }
+    .sidebar-nav button.active svg, .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-nav a.avocat {
+      color: #7c3aed; background: #faf5ff;
+      border: 1px solid #e9d5ff;
+    }
+    .sidebar-nav a.avocat:hover { background: #f3e8ff; border-color: #d8b4fe; color: #7c3aed; }
+    .sidebar-nav a.avocat svg { opacity: 0.95; }
+    .sidebar-section {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.6px; color: #aaa;
+      padding: 20px 12px 8px; margin-top: 4px;
+    }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+
+    .sidebar-bottom { padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef; display: flex; align-items: center; gap: 12px; }
+    .sidebar-bottom .avatar { width: 36px; height: 36px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px; }
+    .sidebar-bottom .info { flex: 1; min-width: 0; }
+    .sidebar-bottom .name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .sidebar-bottom .email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .sidebar-bottom button {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .sidebar-bottom button:hover { color: #111; background: #f3f3f4; }
+    .sidebar-bottom button svg { width: 16px; height: 16px; }
+
+    /* MAIN */
+    .main { flex: 1; margin-left: 270px; min-height: 100vh; padding: 28px 40px 30px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .page-header h1 { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 26px; font-weight: 600; letter-spacing: -0.3px; color: #111; }
+    .page-header p { font-size: 13.5px; color: #888; margin-top: 4px; }
+
+    /* CARDS */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
+    @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
+    .stat-card {
+      background: #fff; border: 1px solid #eee; border-radius: 14px;
+      padding: 18px 20px; position: relative; overflow: hidden;
+      transition: all 0.15s;
+    }
+    .stat-card.clickable { cursor: pointer; }
+    .stat-card.clickable:hover {
+      border-color: #d0d0d4; transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.05);
+    }
+    .stat-card-head {
+      position: absolute; top: 16px; right: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .stat-card-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-card-icon svg { width: 18px; height: 18px; }
+    .stat-card-icon.blue { background: #eff6ff; color: #2563eb; }
+    .stat-card-icon.green { background: #ecfdf5; color: #059669; }
+    .stat-card-icon.amber { background: #fef3c7; color: #b45309; }
+    .stat-card-icon.violet { background: #f5f3ff; color: #7c3aed; }
+    .stat-card-icon.red { background: #fef2f2; color: #dc2626; }
+    .stat-card-icon.gray { background: #f3f4f6; color: #555; }
+    .stat-card .alert-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .stat-card .label {
+      font-size: 11.5px; font-weight: 600; color: #888;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+      padding-right: 56px;
+    }
+    .stat-card .value {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 26px; font-weight: 700; color: #111;
+      line-height: 1.1; letter-spacing: 0;
+    }
+    .stat-card .value-row {
+      display: flex; align-items: baseline; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .stat-card .sub {
+      font-size: 13px; color: #888;
+      display: flex; align-items: center; gap: 6px;
+      flex: 1; min-width: 0;
+    }
+    .stat-card .sub .arrow-r {
+      margin-left: 2px; opacity: 0; transition: all 0.15s;
+      color: #999;
+    }
+    .stat-card.clickable:hover .sub .arrow-r { opacity: 1; transform: translateX(3px); }
+    .stat-card.alert .value { color: #b45309; }
+    .stat-card .stat-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #ecfdf5; color: #059669;
+      padding: 6px 12px; border-radius: 999px;
+      font-size: 13px; font-weight: 500;
+    }
+    .stat-card .stat-badge svg { stroke: #059669; }
+    .stat-card .stat-badge.neutral { background: #f3f4f6; color: #6b7280; }
+    .stat-card .stat-badge.neutral svg { stroke: #6b7280; }
+
+    .activity-row:hover { background: #fafafa; }
+    .activity-row[role="button"]:hover { background: #f5f5f7; }
+    #activity-feed > .activity-row:last-of-type { border-bottom: none; }
+    .activity-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+    .activity-kpi {
+      background: #fff; border: 1px solid #ececef; border-radius: 14px; padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden;
+    }
+    .activity-kpi .kpi-label { font-size: 11.5px; color: #888; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .activity-kpi .kpi-value { font-family: 'Cal Sans', sans-serif; font-size: 28px; font-weight: 600; color: #111; line-height: 1.15; margin-top: 6px; }
+    .activity-kpi .kpi-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+    .activity-kpi .kpi-accent { position: absolute; top: 18px; right: 20px; width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+    .activity-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+    @media (max-width: 1100px) { .activity-grid { grid-template-columns: 1fr; } .activity-kpis { grid-template-columns: repeat(2, 1fr); } }
+    .activity-side-card {
+      background: #fff; border: 1px solid #ececef; border-radius: 14px; padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+    .activity-side-card h3 {
+      font-family: 'Cal Sans', sans-serif; font-size: 14px; font-weight: 600; color: #111;
+      margin: 0 0 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .activity-side-card h3 svg { width: 14px; height: 14px; color: #888; }
+    .top-actor-row {
+      display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px;
+    }
+    .top-actor-row + .top-actor-row { border-top: 1px solid #f5f5f5; }
+    .top-actor-avatar {
+      width: 28px; height: 28px; border-radius: 50%; background: #111; color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .breakdown-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 12.5px; }
+    .breakdown-bar { flex: 1; height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; }
+    .breakdown-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+    .breakdown-count { color: #6b7280; font-variant-numeric: tabular-nums; min-width: 28px; text-align: right; }
+
+    /* TWO-COL OVERVIEW LAYOUT */
+    .two-col {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 1100px) { .two-col { grid-template-columns: 1fr; } }
+    .col {
+      background: #fff; border: 1px solid #eee; border-radius: 14px;
+      overflow: hidden;
+    }
+    .col-header {
+      padding: 14px 18px; border-bottom: 1px solid #f0f0f2;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .col-header-text { min-width: 0; }
+    .col-header h2 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 18px; font-weight: 600; color: #111;
+      letter-spacing: -0.1px;
+    }
+    .col-header p { font-size: 13.5px; color: #888; margin-top: 3px; }
+    .col-header-link {
+      font-size: 13.5px; font-weight: 600; color: #2563eb;
+      background: none; border: none; cursor: pointer;
+      font-family: inherit; padding: 0; flex-shrink: 0;
+      text-decoration: none;
+    }
+    .col-header-link:hover { color: #1d4ed8; }
+    .col-body {
+      padding: 4px 4px 20px; max-height: 440px; overflow-y: auto;
+      scroll-padding-bottom: 20px;
+      -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent);
+              mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent);
+    }
+    .col-body::-webkit-scrollbar { width: 8px; }
+    .col-body::-webkit-scrollbar-thumb { background: #e5e5e7; border-radius: 4px; }
+    .col-body::-webkit-scrollbar-thumb:hover { background: #d4d4d8; }
+    .col-body::-webkit-scrollbar-track { background: transparent; }
+
+    /* ACTIVITY FEED */
+    .activity-feed { display: flex; flex-direction: column; }
+    .activity-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 10px;
+      transition: background 0.15s;
+      scroll-snap-align: start;
+    }
+    .activity-item + .activity-item { border-top: none; }
+    .activity-item:hover { background: #fafafa; }
+    .activity-body { flex: 1; min-width: 0; }
+    .activity-line { font-size: 14.5px; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .activity-sub { font-size: 13px; color: #888; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .activity-time { font-size: 13px; color: #888; flex-shrink: 0; white-space: nowrap; }
+
+    /* PRIORITY LIST (unassigned formalites) */
+    .priority-list { display: flex; flex-direction: column; padding: 4px; }
+    .priority-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 10px;
+      transition: background 0.15s;
+      scroll-snap-align: start;
+    }
+    .priority-item:hover { background: #fafafa; }
+    .priority-icon {
+      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+      background: #f5f3ff; color: #7c3aed;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.2px;
+    }
+    .priority-body { flex: 1; min-width: 0; }
+    .priority-title {
+      font-size: 15px; font-weight: 600; color: #111;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .priority-meta {
+      font-size: 13px; color: #888; margin-top: 3px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .priority-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #ccc; }
+    .priority-badge-type {
+      display: inline-block; padding: 2px 7px;
+      background: #f3f4f6; color: #555;
+      border-radius: 5px; font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .priority-urgency {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 500;
+      padding: 2px 8px; border-radius: 5px;
+    }
+    .priority-urgency.ok    { color: #6b7280; background: #f3f4f6; }
+    .priority-urgency.warn  { color: #b45309; background: #fef3c7; }
+    .priority-urgency.late  { color: #b91c1c; background: #fee2e2; }
+    .priority-urgency svg { width: 11px; height: 11px; }
+    .priority-assign {
+      flex-shrink: 0; position: relative;
+    }
+    .assign-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 12px;
+      background: #f3f0ff; color: #7c3aed;
+      border: 1px solid #e5deff; border-radius: 8px;
+      font-size: 13px; font-weight: 500; font-family: inherit;
+      cursor: pointer; min-width: 160px;
+      transition: all 0.15s; text-align: left;
+    }
+    .assign-btn:hover { background-color: #ebe5ff; border-color: #d8ccff; }
+    .assign-btn.assigned { background: #fff; color: #111; border-color: #e5e5e7; }
+    .assign-btn.assigned:hover { background-color: #fafafa; border-color: #d4d4d8; }
+    .assign-btn .label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .assign-btn .chev { width: 12px; height: 12px; opacity: 0.7; flex-shrink: 0; }
+    .assign-menu {
+      position: absolute; top: calc(100% + 6px); right: 0;
+      min-width: 220px; background: #fff;
+      border: 1px solid #e5e5e7; border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+      padding: 6px; z-index: 50;
+      display: none; max-height: 280px; overflow-y: auto;
+    }
+    .assign-menu.open { display: block; }
+    .assign-menu-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 7px;
+      font-size: 13.5px; color: #111; cursor: pointer;
+      transition: background 0.12s;
+    }
+    .assign-menu-item:hover { background: #f6f4ff; color: #7c3aed; }
+    .assign-menu-item.selected { background: #f3f0ff; color: #7c3aed; font-weight: 600; }
+    .assign-menu-item .ic-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #f3f0ff; color: #7c3aed;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .assign-menu-item.remove { color: #b91c1c; }
+    .assign-menu-item.remove:hover { background: #fef2f2; color: #b91c1c; }
+    .assign-menu-item.remove .ic-avatar { background: #fef2f2; color: #b91c1c; }
+    .assign-menu-divider { height: 1px; background: #f0f0f2; margin: 4px 4px; }
+    .priority-empty {
+      padding: 32px 24px; text-align: center;
+    }
+    .priority-empty .ic {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #ecfdf5; color: #059669;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 10px;
+    }
+    .priority-empty .ic svg { width: 22px; height: 22px; }
+    .priority-empty .t { font-size: 14px; font-weight: 600; color: #111; }
+    .priority-empty .s { font-size: 12.5px; color: #888; margin-top: 4px; }
+    .priority-footer {
+      padding: 10px 16px; border-top: 1px solid #f3f3f5;
+      text-align: center;
+    }
+    .priority-footer button {
+      background: none; border: none; cursor: pointer;
+      color: #2563eb; font-size: 12.5px; font-weight: 600;
+      font-family: inherit;
+    }
+    .priority-footer button:hover { color: #1d4ed8; }
+
+    /* TABLE */
+    .table-wrap {
+      background: #fff; border: 1px solid #eee;
+      border-radius: 14px; overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    thead {
+      background: #fafafa; border-bottom: 1px solid #eee;
+    }
+    th {
+      text-align: left; padding: 14px 18px;
+      font-size: 11.5px; font-weight: 600;
+      color: #777; text-transform: uppercase; letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    td {
+      padding: 18px 18px; border-bottom: 1px solid #f3f3f5;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #fafafa; }
+    tbody tr.row-clickable { cursor: pointer; }
+
+    .chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 6px;
+      font-size: 11.5px; font-weight: 500;
+    }
+    .chip.role-user { background: #eff6ff; color: #2563eb; }
+    .chip.role-avocat { background: #f5f3ff; color: #7c3aed; }
+    .chip.role-admin { background: #fef2f2; color: #dc2626; }
+    .chip.green { background: #ecfdf5; color: #047857; }
+    .chip.amber { background: #fffbeb; color: #b45309; }
+    .chip.gray { background: #f3f4f6; color: #555; }
+    .chip.red { background: #fef2f2; color: #b91c1c; }
+    .chip.blue { background: #eff6ff; color: #2563eb; }
+
+    .row-actions {
+      display: flex; align-items: center; gap: 6px; justify-content: flex-end;
+    }
+    .row-actions button, .row-actions select {
+      padding: 5px 10px; border: 1px solid #e5e5e7;
+      background: #fff; border-radius: 7px; cursor: pointer;
+      font-size: 12px; font-weight: 500; color: #555;
+      font-family: inherit;
+    }
+    .row-actions button:hover, .row-actions select:hover { background: #f5f5f7; color: #111; }
+    .row-actions select { padding: 5px 6px; }
+
+    /* Multi-role chip toggles */
+    .roles-chips { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+    .role-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 6px;
+      font-size: 11.5px; font-weight: 500;
+      border: 1px solid transparent; cursor: pointer;
+      transition: all 0.15s; user-select: none;
+      background: #f3f4f6; color: #888;
+    }
+    .role-chip:hover { background: #e5e7eb; color: #111; }
+    .role-chip.active.user { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+    .role-chip.active.avocat { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+    .role-chip.active.admin { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+    .role-chip.disabled { cursor: not-allowed; opacity: 0.5; }
+
+    .user-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .user-cell .av {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #111; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-cell .info { min-width: 0; }
+    .user-cell .name { font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-cell .email { font-size: 11.5px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .empty-state {
+      padding: 60px 24px; text-align: center; color: #888;
+    }
+    .empty-state .ic {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #f5f5f7; display: inline-flex; align-items: center;
+      justify-content: center; margin-bottom: 12px;
+    }
+    .empty-state .ic svg { width: 22px; height: 22px; color: #aaa; }
+    .empty-state-title { font-size: 14px; font-weight: 600; color: #555; }
+    .empty-state-sub { font-size: 13px; color: #888; margin-top: 4px; }
+
+    /* DRAWER (right side panel) */
+    .av-tab {
+      background: none; border: none; padding: 14px 18px;
+      font-family: inherit; font-size: 13.5px; font-weight: 500; color: #888;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+    .av-tab:hover { color: #555; }
+    .av-tab.active { color: #111; font-weight: 600; border-bottom-color: #111; }
+    .av-candidate {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; cursor: pointer; transition: background .12s;
+      border-bottom: 1px solid #f5f5f7;
+    }
+    .av-candidate:last-child { border-bottom: none; }
+    .av-candidate:hover { background: #f5f3ff; }
+    .av-cand-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #5b21b6); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0;
+    }
+    .av-cand-info { flex: 1; min-width: 0; }
+    .av-cand-name { font-size: 14px; font-weight: 600; color: #111; }
+    .av-cand-email { font-size: 12.5px; color: #888; margin-top: 2px; }
+    .av-cand-action {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #f3f4f6; color: #555;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all .15s;
+    }
+    .av-candidate:hover .av-cand-action { background: #7c3aed; color: #fff; }
+    .drawer-backdrop {
+      position: fixed; inset: 0; background: rgba(17,17,17,0.4);
+      backdrop-filter: blur(2px); z-index: 200; display: none;
+    }
+    .drawer-backdrop.open { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 560px; max-width: 95vw; background: #fff;
+      box-shadow: -8px 0 32px rgba(0,0,0,0.1);
+      z-index: 201; transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header {
+      padding: 14px 20px; border-bottom: 1px solid #eee;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .drawer-header h2 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 16px; font-weight: 600; color: #888;
+    }
+    .drawer-close {
+      background: none; border: none; cursor: pointer; color: #888;
+      padding: 6px; border-radius: 8px;
+    }
+    .drawer-close:hover { background: #f5f5f7; color: #111; }
+    .drawer-close svg { width: 18px; height: 18px; }
+    .drawer-back {
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer; color: #555;
+      padding: 6px; border-radius: 8px;
+    }
+    .drawer-back[hidden] { display: none; }
+    .drawer-back:hover { background: #f5f5f7; color: #111; }
+    .drawer-body { padding: 0 0 24px; overflow-y: auto; flex: 1; }
+    .drawer-section { margin: 0 24px 22px; }
+    .drawer-section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #888; margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* Hero header (avatar + name + email + role chips) */
+    .drawer-hero {
+      padding: 24px 24px 20px; border-bottom: 1px solid #f0f0f2;
+      display: flex; align-items: flex-start; gap: 16px;
+    }
+    .drawer-hero .av-big {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: linear-gradient(135deg, #7c3aed, #5b21b6); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 700; flex-shrink: 0; letter-spacing: 0.5px;
+      position: relative;
+    }
+    .drawer-hero .online-dot {
+      position: absolute; bottom: -2px; right: -2px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #10b981; border: 3px solid #fff;
+    }
+    .drawer-hero .meta { flex: 1; min-width: 0; }
+    .drawer-hero .name {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 22px; font-weight: 700; color: #111; line-height: 1.2;
+    }
+    .drawer-hero .email {
+      font-size: 13.5px; color: #777; margin-top: 4px;
+      word-break: break-all;
+    }
+    .drawer-hero .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .offer-badge {
+      display: inline-flex; align-items: center;
+      padding: 5px 11px; border-radius: 7px;
+      font-size: 11.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .offer-badge.gray   { background: #f3f4f6; color: #4b5563; }
+    .offer-badge.blue   { background: #eff6ff; color: #1d4ed8; }
+    .offer-badge.violet { background: #f5f3ff; color: #6d28d9; }
+
+    /* Stat tiles inside drawer */
+    .drawer-stats {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 10px; margin: 18px 24px 22px;
+    }
+    .d-tile {
+      background: #fafafa; border: 1px solid #f0f0f2; border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .d-tile .lab { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #888; }
+    .d-tile .val { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; font-weight: 700; color: #111; margin-top: 6px; line-height: 1; }
+    .d-tile .sub { font-size: 12px; color: #888; margin-top: 4px; }
+
+    /* Meta lines (Email/Inscrit/Dernière co dans une carte compact) */
+    .drawer-meta {
+      background: #fff; border: 1px solid #f0f0f2; border-radius: 12px;
+      padding: 4px 14px;
+    }
+    .drawer-meta .row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid #f5f5f7;
+      font-size: 13px;
+    }
+    .drawer-meta .row:last-child { border-bottom: none; }
+    .drawer-meta .row .k { color: #888; display: inline-flex; align-items: center; gap: 8px; }
+    .drawer-meta .row .k svg { width: 14px; height: 14px; opacity: 0.6; }
+    .drawer-meta .row .v { color: #111; font-weight: 500; text-align: right; }
+
+    /* Sub-list inside drawer */
+    .sub-list {
+      background: #fff; border: 1px solid #f0f0f2;
+      border-radius: 12px; overflow: hidden;
+    }
+    .sub-list-item {
+      padding: 12px 14px; border-bottom: 1px solid #f5f5f7;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 13px;
+    }
+    .sub-list-item:last-child { border-bottom: none; }
+    .sub-list-item .left { flex: 1; min-width: 0; }
+    .sub-list-item .left .t { font-weight: 600; color: #111; }
+    .sub-list-item .left .s { font-size: 12px; color: #888; margin-top: 2px; }
+    .sub-list-item .right { font-size: 12.5px; color: #555; text-align: right; flex-shrink: 0; }
+
+    /* Session item (avec device icon) */
+    .ses-item {
+      padding: 12px 14px; border-bottom: 1px solid #f5f5f7;
+      display: flex; align-items: center; gap: 12px; font-size: 13px;
+    }
+    .ses-item:last-child { border-bottom: none; }
+    .ses-item .dev-ic {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: #f5f3ff; color: #7c3aed;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ses-item .dev-ic svg { width: 18px; height: 18px; }
+    .ses-item .ses-body { flex: 1; min-width: 0; }
+    .ses-item .ses-t { font-weight: 600; color: #111; font-size: 13.5px; }
+    .ses-item .ses-s { font-size: 12px; color: #888; margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .ses-item .ses-dur {
+      flex-shrink: 0; font-size: 12px; font-weight: 500; color: #555;
+      background: #f5f5f7; padding: 4px 9px; border-radius: 6px;
+    }
+    .ses-item .ses-dur.live { background: #d1fae5; color: #047857; }
+
+    /* PAGE TABS (sub-navigation) */
+    .toolbar {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .toolbar input {
+      padding: 8px 14px; border: 1px solid #e5e5e7;
+      border-radius: 9px; font-size: 13px; font-family: inherit;
+      background: #fff; outline: none; min-width: 220px;
+    }
+    .toolbar input:focus { border-color: #111; }
+    .toolbar select {
+      padding: 8px 12px; border: 1px solid #e5e5e7;
+      border-radius: 9px; font-size: 13px; font-family: inherit;
+      background: #fff; outline: none; cursor: pointer;
+    }
+    .toolbar-count { margin-left: auto; font-size: 13px; color: #888; }
+
+    /* Section visibility */
+    .section { display: none; }
+    .section.active { display: block; animation: fadeUp 0.18s ease; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+      <span class="logo-badge admin">Admin</span>
+    </div>
+
+    <a href="/dashboard.html?new=1" class="sidebar-cta-link">
+      Cr&eacute;er une formalit&eacute;
+    </a>
+
+    <nav class="sidebar-nav">
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+      </a>
+
+      <div class="sidebar-section">Administration</div>
+      <button class="active" data-section="overview" onclick="showSection('overview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        Vue d'ensemble
+      </button>
+      <button data-section="users" onclick="showSection('users')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Utilisateurs
+      </button>
+      <button data-section="formalites" onclick="showSection('formalites')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Formalités (toutes)
+      </button>
+      <button data-section="avocats" onclick="showSection('avocats')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/></svg>
+        Avocats
+      </button>
+      <button data-section="payments" onclick="showSection('payments')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg>
+        Paiements
+      </button>
+      <button data-section="consultations" onclick="showSection('consultations')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Consultations
+      </button>
+      <button data-section="activity" onclick="showSection('activity')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Activité
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="avatar" id="me-initials">A</div>
+      <div class="info">
+        <div class="name" id="me-name">Administrateur</div>
+        <div class="email" id="me-email">admin@formalist.fr</div>
+      </div>
+      <button onclick="logout()" title="Déconnexion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- OVERVIEW -->
+    <section class="section active" id="section-overview">
+      <div class="page-header">
+        <div>
+          <h1>Vue d'ensemble</h1>
+          <p>Activité globale de la plateforme</p>
+        </div>
+      </div>
+      <div class="stats-grid" id="overview-stats"></div>
+
+      <div class="two-col">
+        <div class="col">
+          <div class="col-header">
+            <div class="col-header-text">
+              <h2>Formalités à assigner</h2>
+              <p>Assigner un avocat en 1 clic</p>
+            </div>
+            <button class="col-header-link" id="priority-see-all" style="display:none;" onclick="showSection('formalites'); document.getElementById('formalites-assign-filter').value='unassigned'; renderFormalites();">Voir tout →</button>
+          </div>
+          <div class="col-body" id="overview-priority"></div>
+        </div>
+        <div class="col">
+          <div class="col-header">
+            <div class="col-header-text">
+              <h2>Activité récente</h2>
+              <p>Derniers événements sur la plateforme</p>
+            </div>
+          </div>
+          <div class="col-body" id="overview-recent"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- USERS -->
+    <section class="section" id="section-users">
+      <div class="page-header">
+        <div>
+          <h1>Utilisateurs</h1>
+          <p>Liste de tous les comptes et activité</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input type="text" placeholder="Rechercher (nom, email)…" oninput="filterUsers(this.value)">
+        <select id="users-role-filter" onchange="renderUsers()">
+          <option value="all">Tous les rôles</option>
+          <option value="user">Utilisateurs</option>
+          <option value="avocat">Avocats</option>
+          <option value="admin">Admins</option>
+        </select>
+        <span class="toolbar-count" id="users-count">0</span>
+      </div>
+      <div class="table-wrap" id="users-table"></div>
+    </section>
+
+    <!-- FORMALITES -->
+    <section class="section" id="section-formalites">
+      <div class="page-header">
+        <div>
+          <h1 style="display:inline-flex;align-items:baseline;gap:14px;"><span>Formalités</span><span id="formalites-count" style="font-family:'Matter','Inter',sans-serif;font-size:14.5px;font-weight:400;color:#888;letter-spacing:0;">0 formalité</span></h1>
+          <p>Toutes les démarches et leur assignation</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input type="text" placeholder="Rechercher (société, client)…" oninput="filterFormalites(this.value)">
+        <select id="formalites-status-filter" onchange="renderFormalites()">
+          <option value="all">Tous statuts</option>
+          <option value="en_cours">En cours</option>
+          <option value="en_attente">En attente</option>
+          <option value="terminee">Terminée</option>
+        </select>
+        <select id="formalites-assign-filter" onchange="renderFormalites()">
+          <option value="all">Toutes assignations</option>
+          <option value="unassigned">Non assignées</option>
+          <option value="assigned">Assignées</option>
+        </select>
+        <select id="formalites-avocat-filter" onchange="renderFormalites()">
+          <option value="all">Tous les avocats</option>
+          <option value="none">— Non assigné</option>
+        </select>
+      </div>
+      <div class="table-wrap" id="formalites-table"></div>
+
+      <!-- Barre d'actions groupées -->
+      <div id="bulk-assign-bar" style="display:none;position:sticky;bottom:24px;margin:18px auto 0;max-width:720px;background:#111;color:#fff;border-radius:14px;padding:14px 20px;display:none;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-weight:600;" id="bulk-count">0 sélectionnée(s)</span>
+          <button onclick="bulkClear()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;padding:5px 10px;border-radius:7px;font-family:inherit;font-size:12px;cursor:pointer;">Désélectionner</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <select id="bulk-avocat-select" style="padding:8px 12px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;border-radius:8px;font-family:inherit;font-size:13px;">
+            <option value="">Choisir un avocat...</option>
+          </select>
+          <button onclick="bulkAssign()" style="padding:9px 18px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;">Assigner</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- AVOCATS -->
+    <section class="section" id="section-avocats">
+      <div class="page-header">
+        <div>
+          <h1>Avocats</h1>
+          <p>Avocats actifs et leur charge de travail</p>
+        </div>
+        <button onclick="openCreateAvocat()" style="padding:9px 16px;background:#111;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">+ Ajouter un avocat</button>
+      </div>
+      <div class="table-wrap" id="avocats-table"></div>
+    </section>
+
+    <!-- PAYMENTS -->
+    <section class="section" id="section-payments">
+      <div class="page-header">
+        <div>
+          <h1>Paiements</h1>
+          <p>Historique des transactions</p>
+        </div>
+      </div>
+      <div class="stats-grid" id="payments-stats"></div>
+      <div class="table-wrap" id="payments-table"></div>
+    </section>
+
+    <!-- CONSULTATIONS -->
+    <section class="section" id="section-consultations">
+      <div class="page-header">
+        <div>
+          <h1>Consultations juridiques</h1>
+          <p>Rendez-vous avec les avocats</p>
+        </div>
+      </div>
+      <div class="table-wrap" id="consultations-table"></div>
+    </section>
+
+    <!-- ACTIVITÉ -->
+    <section class="section" id="section-activity">
+      <div class="page-header">
+        <div>
+          <h1>Activité de la plateforme</h1>
+          <p>Flux d'événements récents : modifications, paiements, consultations, inscriptions</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="activity-filter-type" onchange="window._activityPage=1;renderActivity()" style="padding:8px 12px;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:13px;background:#fff;cursor:pointer;">
+            <option value="">Tous les événements</option>
+            <option value="audit">Modifications de dossier</option>
+            <option value="payment">Paiements</option>
+            <option value="consultation">Consultations</option>
+            <option value="signup">Inscriptions</option>
+            <option value="formalite_created">Nouveaux dossiers</option>
+          </select>
+          <select id="activity-filter-role" onchange="window._activityPage=1;renderActivity()" style="padding:8px 12px;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:13px;background:#fff;cursor:pointer;">
+            <option value="">Tous les rôles</option>
+            <option value="admin">Admin</option>
+            <option value="avocat">Avocat</option>
+            <option value="user">Client</option>
+          </select>
+          <select id="activity-filter-days" onchange="loadActivity()" style="padding:8px 12px;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:13px;background:#fff;cursor:pointer;">
+            <option value="1">Aujourd'hui</option>
+            <option value="7" selected>7 jours</option>
+            <option value="30">30 jours</option>
+            <option value="90">90 jours</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <div id="activity-kpis" class="activity-kpis"></div>
+
+      <!-- 2-col layout : feed + side panels -->
+      <div class="activity-grid">
+        <div id="activity-feed" style="background:#fff;border:1px solid #ececef;border-radius:14px;overflow:hidden;"></div>
+        <aside id="activity-side"></aside>
+      </div>
+    </section>
+
+    <!-- SUPPORT -->
+    <section class="section" id="section-support">
+      <div class="page-header">
+        <div>
+          <h1>Support</h1>
+          <p>Conversations support en cours</p>
+        </div>
+      </div>
+      <div class="table-wrap" id="support-table"></div>
+    </section>
+  </main>
+
+  <!-- AVOCAT CREATE MODAL -->
+  <div id="avocat-create-modal" style="display:none;position:fixed;inset:0;background:rgba(17,17,17,0.5);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:24px;" onclick="if(event.target===this)closeCreateAvocatModal()">
+    <div style="background:#fff;border-radius:18px;width:560px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.2);overflow:hidden;">
+      <div style="padding:20px 24px;border-bottom:1px solid #ececef;display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="font-family:'Cal Sans',sans-serif;font-size:19px;font-weight:600;color:#111;">Ajouter un avocat</h3>
+        <button onclick="closeCreateAvocatModal()" style="background:none;border:none;cursor:pointer;color:#999;padding:6px;border-radius:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <!-- Tabs -->
+      <div style="display:flex;border-bottom:1px solid #ececef;padding:0 24px;">
+        <button id="av-mode-existing" class="av-tab active" onclick="switchAvocatMode('existing')">Promouvoir un utilisateur</button>
+        <button id="av-mode-new" class="av-tab" onclick="switchAvocatMode('new')">Inviter une nouvelle personne</button>
+      </div>
+      <div style="padding:22px 24px;overflow-y:auto;flex:1;">
+        <!-- Panel : utilisateur existant -->
+        <div id="av-existing-panel">
+          <p style="font-size:13.5px;color:#666;margin-bottom:14px;line-height:1.5;">Sélectionnez un utilisateur déjà inscrit pour lui ajouter le rôle <strong>avocat</strong>.</p>
+          <div style="position:relative;margin-bottom:14px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#888;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="av-search-input" placeholder="Rechercher par nom ou email..." oninput="renderAvocatCandidates(this.value)" style="width:100%;padding:10px 14px 10px 40px;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:14px;">
+          </div>
+          <div id="av-candidates-list" style="max-height:340px;overflow-y:auto;border:1px solid #ececef;border-radius:12px;"></div>
+        </div>
+        <!-- Panel : nouveau -->
+        <div id="av-new-panel" style="display:none;">
+          <p style="font-size:13.5px;color:#666;margin-bottom:16px;line-height:1.5;">Créez un compte avocat avec un mot de passe temporaire que vous communiquerez à la personne.</p>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <label style="font-size:13px;font-weight:600;color:#555;display:block;margin-bottom:6px;">Nom complet</label>
+              <input type="text" id="av-new-name" placeholder="Me. Jean Martin" style="width:100%;padding:10px 14px;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;color:#555;display:block;margin-bottom:6px;">Email</label>
+              <input type="email" id="av-new-email" placeholder="jean.martin@cabinet.fr" style="width:100%;padding:10px 14px;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;color:#555;display:block;margin-bottom:6px;">Mot de passe temporaire</label>
+              <input type="text" id="av-new-password" placeholder="Min. 8 caractères" style="width:100%;padding:10px 14px;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:14px;">
+              <div style="font-size:12px;color:#888;margin-top:6px;">L'avocat pourra le modifier à sa première connexion.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="av-new-footer" style="padding:14px 24px;border-top:1px solid #ececef;display:none;justify-content:flex-end;gap:10px;">
+        <button onclick="closeCreateAvocatModal()" style="padding:10px 18px;background:#fff;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:13.5px;font-weight:500;color:#555;cursor:pointer;">Annuler</button>
+        <button onclick="createNewAvocat()" style="padding:10px 18px;background:#111;border:none;border-radius:10px;font-family:inherit;font-size:13.5px;font-weight:600;color:#fff;cursor:pointer;">Créer le compte</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER DRAWER -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="drawer-back" id="drawer-back" onclick="drawerBack()" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
+        <h2 id="drawer-title">Détails utilisateur</h2>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+
+  <script>
+    // ============================================================
+    //  STATE
+    // ============================================================
+    var state = {
+      users: [],
+      avocats: [],
+      formalites: [],
+      payments: [],
+      consultations: [],
+      support: [],
+      filters: {
+        usersSearch: '',
+        formalitesSearch: ''
+      }
+    };
+
+    // ============================================================
+    //  AUTH + INIT
+    // ============================================================
+    fetch('/api/auth/me').then(function(r) {
+      if (r.status !== 200) { window.location.href = '/connexion.html'; return null; }
+      return r.json();
+    }).then(function(data) {
+      if (!data) return;
+      var roles = data.user.roles && data.user.roles.length ? data.user.roles : [data.user.role];
+      if (roles.indexOf('admin') === -1) { window.location.href = '/dashboard.html'; return; }
+      document.getElementById('me-name').textContent = data.user.name;
+      document.getElementById('me-email').textContent = data.user.email;
+      document.getElementById('me-initials').textContent = (data.user.name || 'A').split(' ').map(function(n){return n[0]||'';}).join('').slice(0,2).toUpperCase();
+
+      // Inject "Espace avocat" violet link si role inclut 'avocat' (cohérent avec les autres pages)
+      if (roles.indexOf('avocat') !== -1) {
+        var nav = document.querySelector('.sidebar-nav');
+        if (nav) {
+          var adminSection = Array.prototype.find.call(nav.querySelectorAll('.sidebar-section'), function(el){ return el.textContent.trim() === 'Administration'; });
+          var section = document.createElement('div');
+          section.className = 'sidebar-section';
+          section.textContent = 'Services';
+          var a = document.createElement('a');
+          a.href = '/avocat.html';
+          a.className = 'avocat';
+          a.style.cssText = 'margin:6px 0;';
+          a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.9;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>Espace avocat';
+          if (adminSection) {
+            nav.insertBefore(section, adminSection);
+            nav.insertBefore(a, adminSection);
+          }
+        }
+      }
+
+      loadAll();
+    });
+
+    function logout() {
+      fetch('/api/auth/logout', { method: 'POST' }).then(function() {
+        window.location.href = '/connexion.html';
+      });
+    }
+
+    // ============================================================
+    //  LOAD ALL DATA
+    // ============================================================
+    function loadAll() {
+      Promise.all([
+        fetch('/api/admin/users-stats').then(function(r){return r.json();}),
+        fetch('/api/admin/avocats').then(function(r){return r.json();}),
+        fetch('/api/admin/formalites').then(function(r){return r.json();}),
+        fetch('/api/admin/payments').then(function(r){return r.json();}),
+        fetch('/api/admin/consultations').then(function(r){return r.json();}),
+        fetch('/api/admin/support').then(function(r){return r.json();})
+      ]).then(function(res) {
+        state.users = res[0].users || [];
+        state.avocats = res[1].avocats || [];
+        state.formalites = res[2].formalites || [];
+        state.payments = res[3].payments || [];
+        state.consultations = res[4].consultations || [];
+        state.support = (res[5].active || []).concat(res[5].archived || []);
+        renderAll();
+      }).catch(function(e) { console.error(e); });
+    }
+
+    function renderAll() {
+      // Active la bonne section AVANT les renders (en cas d'erreur d'un render, la section reste correcte)
+      var initial = (location.hash || '#overview').slice(1) || 'overview';
+      showSection(initial, { fromHistory: true });
+      try { renderOverview(); } catch(e) { console.error(e); }
+      try { renderUsers(); } catch(e) { console.error(e); }
+      try { renderFormalites(); } catch(e) { console.error(e); }
+      try { renderAvocats(); } catch(e) { console.error(e); }
+      try { renderPayments(); } catch(e) { console.error(e); }
+      try { renderConsultations(); } catch(e) { console.error(e); }
+      try { renderSupport(); } catch(e) { console.error(e); }
+    }
+
+    // ============================================================
+    //  ROUTING (show section)
+    // ============================================================
+    function showSection(name, opts) {
+      document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+      var el = document.getElementById('section-' + name);
+      if (el) el.classList.add('active');
+      document.querySelectorAll('.sidebar-nav button').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.section === name);
+      });
+      if (!opts || !opts.fromHistory) {
+        var newHash = '#' + name;
+        if (location.hash !== newHash) {
+          history.pushState({ section: name }, '', newHash);
+        }
+      }
+      // Lazy-load activity feed quand on entre dans la section
+      if (name === 'activity' && !window._activityLoaded) {
+        loadActivity();
+      }
+    }
+    window.addEventListener('popstate', function(e) {
+      var name = (location.hash || '#overview').slice(1) || 'overview';
+      showSection(name, { fromHistory: true });
+    });
+
+    // ============================================================
+    //  HELPERS
+    // ============================================================
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/[&<>"']/g, function(c){ return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]; });
+    }
+    function initials(name) {
+      return (name || '?').split(' ').map(function(n){ return (n && n[0]) || ''; }).join('').slice(0, 2).toUpperCase();
+    }
+    function formatMoney(cents, currency) {
+      if (cents == null) return '—';
+      var amount = (cents / 100).toFixed(2).replace('.', ',');
+      return amount + ' ' + (currency === 'USD' ? '$' : '€');
+    }
+    function formatMoneyShort(cents, currency) {
+      if (cents == null) return '—';
+      var amount = Math.round(cents / 100).toString();
+      return amount + ' ' + (currency === 'USD' ? '$' : '€');
+    }
+    function formatRelative(iso) {
+      if (!iso) return 'Jamais';
+      var d = new Date(iso.replace(' ', 'T') + (iso.endsWith('Z') ? '' : 'Z'));
+      var now = new Date();
+      var diff = now - d;
+      if (isNaN(diff)) return iso;
+      var min = Math.floor(diff / 60000);
+      if (min < 1) return 'À l\'instant';
+      if (min < 60) return 'Il y a ' + min + ' min';
+      var h = Math.floor(min / 60);
+      if (h < 24) return 'Il y a ' + h + ' h';
+      var dy = Math.floor(h / 24);
+      if (dy < 7) return 'Il y a ' + dy + ' j';
+      var s = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+    function formatDateTime(iso) {
+      if (!iso) return '—';
+      var d = new Date(iso.replace(' ', 'T') + (iso.endsWith('Z') ? '' : 'Z'));
+      if (isNaN(d)) return iso;
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+    function formatDuration(seconds) {
+      if (!seconds || seconds < 60) return (seconds || 0) + 's';
+      var min = Math.floor(seconds / 60);
+      if (min < 60) return min + ' min';
+      var h = Math.floor(min / 60);
+      var rem = min % 60;
+      if (h < 24) return h + 'h' + (rem > 0 ? ' ' + rem + 'min' : '');
+      var d = Math.floor(h / 24);
+      return d + 'j ' + (h % 24) + 'h';
+    }
+
+    function emptyState(icon, title, sub) {
+      return '<div class="empty-state">'
+        + '<div class="ic">' + icon + '</div>'
+        + '<div class="empty-state-title">' + title + '</div>'
+        + (sub ? '<div class="empty-state-sub">' + sub + '</div>' : '')
+        + '</div>';
+    }
+    var iconEmpty = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>';
+
+    // ============================================================
+    //  RENDER : OVERVIEW
+    // ============================================================
+    function renderOverview() {
+      var nbUsers = state.users.filter(function(u){ return parseUserRoles(u).indexOf('user') >= 0; }).length;
+      var nbAvocats = state.users.filter(function(u){ return parseUserRoles(u).indexOf('avocat') >= 0; }).length;
+      var onlineThreshold = Date.now() - 5 * 60 * 1000;
+      var nbOnline = state.users.filter(function(u){
+        if (!u.last_seen_at) return false;
+        return new Date(u.last_seen_at.replace(' ','T') + 'Z').getTime() >= onlineThreshold;
+      }).length;
+      var totalRevenue = state.payments.filter(function(p){return p.status==='paid';}).reduce(function(a,p){ return a + (p.amount_cents || 0); }, 0);
+      var nbFormalites = state.formalites.length;
+      var nbUnassigned = state.formalites.filter(function(f){ return !f.assigned_avocat_id; }).length;
+      var nbConsultUpcoming = state.consultations.filter(function(c){
+        if (c.status !== 'scheduled' || !c.scheduled_at) return false;
+        return new Date(c.scheduled_at.replace(' ','T') + (c.scheduled_at.endsWith('Z') ? '' : 'Z')) > new Date();
+      }).length;
+      var nbSupportActive = state.support.filter(function(s){ return !s.archived; }).length;
+      var now = new Date(); var weekAgo = new Date(now - 7 * 86400000);
+      var revenueWeek = state.payments.filter(function(p){
+        if (p.status !== 'paid') return false;
+        var d = new Date((p.paid_at || p.created_at).replace(' ','T') + 'Z');
+        return d >= weekAgo;
+      }).reduce(function(a,p){ return a + (p.amount_cents || 0); }, 0);
+
+      var I = {
+        users:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
+        folder:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+        cash:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 5.5A8 8 0 1019.5 18.5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="13" y2="14"/></svg>',
+        calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+        chat:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+        shield:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+      };
+
+      var cards = [
+        { icon: I.users,    cls: 'blue',   label: 'Utilisateurs en ligne', value: nbOnline,                     sub: 'sur ' + state.users.length + ' utilisateur' + (state.users.length > 1 ? 's' : ''), action: function(){ showSection('users'); document.getElementById('users-role-filter').value = 'all'; renderUsers(); } },
+        { icon: I.folder,   cls: nbUnassigned > 0 ? 'amber' : 'green', label: nbUnassigned > 0 ? 'À assigner' : 'Formalités', value: nbUnassigned > 0 ? nbUnassigned : nbFormalites, sub: nbUnassigned > 0 ? ('formalité' + (nbUnassigned > 1 ? 's' : '') + ' sans avocat') : 'toutes assignées', alert: nbUnassigned > 0, action: function(){ showSection('formalites'); document.getElementById('formalites-assign-filter').value = nbUnassigned > 0 ? 'unassigned' : 'all'; renderFormalites(); } },
+        { icon: I.cash,     cls: 'green',  label: 'Chiffre d\'affaires', value: formatMoneyShort(totalRevenue, 'EUR'), sub: formatMoneyShort(revenueWeek, 'EUR') + ' cette semaine', action: function(){ showSection('payments'); } },
+        { icon: I.calendar, cls: 'violet', label: 'Consultations à venir', value: nbConsultUpcoming, sub: 'Voir le planning', badge: nbConsultUpcoming === 0 ? { text: 'aucune programmée', style: 'neutral' } : null, action: function(){ showSection('consultations'); } },
+        { icon: I.chat,     cls: nbSupportActive > 0 ? 'amber' : 'green', label: 'Support actif', value: nbSupportActive, sub: 'conversation' + (nbSupportActive > 1 ? 's' : '') + ' en cours', alert: nbSupportActive > 0, badge: nbSupportActive === 0 ? 'tout traité' : null, action: function(){ showSection('support'); } },
+        { icon: I.shield,   cls: 'violet', label: 'Avocats actifs',   value: nbAvocats,                        sub: 'sur ' + state.users.length + ' comptes',           action: function(){ showSection('avocats'); } }
+      ];
+
+      var container = document.getElementById('overview-stats');
+      container.innerHTML = '';
+      cards.forEach(function(c, i) {
+        var el = document.createElement('div');
+        el.className = 'stat-card clickable' + (c.alert ? ' alert' : '');
+        var body;
+        if (c.badge) {
+          var badgeText = typeof c.badge === 'string' ? c.badge : c.badge.text;
+          var badgeStyle = typeof c.badge === 'object' && c.badge.style ? c.badge.style : '';
+          var badgeIcon = badgeStyle === 'neutral'
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>';
+          body = '<div class="value-row">'
+            +   '<div class="stat-badge ' + badgeStyle + '">' + badgeIcon + badgeText + '</div>'
+            + '</div>';
+        } else {
+          body = '<div class="value-row">'
+            +   '<div class="value">' + c.value + '</div>'
+            +   '<div class="sub">' + c.sub + '<svg class="arrow-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div>'
+            + '</div>';
+        }
+        el.innerHTML = ''
+          + '<div class="stat-card-head">'
+          +   '<div class="stat-card-icon ' + c.cls + '">' + c.icon + '</div>'
+          + '</div>'
+          + '<div class="label">' + c.label + '</div>'
+          + body;
+        el.addEventListener('click', c.action);
+        container.appendChild(el);
+      });
+
+      // ----- 2 colonnes : activité récente + alertes priorité -----
+      // Activité
+      var recent = [];
+      state.payments.slice(0, 6).forEach(function(p) {
+        var sub = (p.description || '').replace(/\s*[—–]\s*/g, ' ');
+        recent.push({ ts: p.paid_at || p.created_at, kind: 'pay', user: p.user_name, label: 'a payé ' + formatMoney(p.amount_cents, p.currency), sub: sub });
+      });
+      state.formalites.slice(0, 6).forEach(function(f) {
+        recent.push({ ts: f.created_at, kind: 'form', user: f.user_name, label: 'a démarré ' + (f.societe || 'Sans nom'), sub: f.type || 'Création' });
+      });
+      state.consultations.slice(0, 4).forEach(function(c) {
+        recent.push({ ts: c.created_at, kind: 'consult', user: c.user_name, label: 'a réservé une consultation', sub: 'avec ' + (c.avocat_name || '—') });
+      });
+      recent.sort(function(a,b){ return new Date(b.ts || 0) - new Date(a.ts || 0); });
+      recent = recent.slice(0, 20);
+
+      var rh = '';
+      if (recent.length === 0) {
+        rh = emptyState(iconEmpty, 'Aucune activité récente');
+      } else {
+        rh = '<div class="activity-feed">';
+        recent.forEach(function(r) {
+          var kindIcon = r.kind === 'pay' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>'
+                       : r.kind === 'form' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>'
+                       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>';
+          var kindCls = r.kind === 'pay' ? 'green' : r.kind === 'form' ? 'blue' : 'violet';
+          rh += '<div class="activity-item">'
+            + '<div class="stat-card-icon ' + kindCls + '" style="width:38px;height:38px;border-radius:10px;">' + kindIcon + '</div>'
+            + '<div class="activity-body"><div class="activity-line"><strong>' + escapeHtml(r.user || 'User') + '</strong> ' + escapeHtml(r.label) + '</div>'
+            + '<div class="activity-sub">' + escapeHtml(r.sub) + '</div></div>'
+            + '<div class="activity-time">' + formatRelative(r.ts) + '</div>'
+            + '</div>';
+        });
+        rh += '</div>';
+      }
+      document.getElementById('overview-recent').innerHTML = rh;
+
+      // ----- Priorité (formalités à assigner inline) -----
+      var priorityEl = document.getElementById('overview-priority');
+      if (priorityEl) {
+        var allUnassigned = state.formalites.filter(function(f){ return !f.assigned_avocat_id; });
+        // Sort par ancienneté (les + anciens à assigner d'abord)
+        allUnassigned.sort(function(a, b) { return new Date(a.created_at || 0) - new Date(b.created_at || 0); });
+        var unassigned = allUnassigned.slice(0, 15);
+
+        if (unassigned.length === 0) {
+          priorityEl.innerHTML = '<div class="priority-empty">'
+            + '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+            + '<div class="t">Tout est assigné</div>'
+            + '<div class="s">Aucune formalité en attente d\'avocat</div>'
+            + '</div>';
+        } else {
+          var pHtml = '<div class="priority-list">';
+          unassigned.forEach(function(f) {
+            var userInitials = (f.user_name || '?').split(' ').map(function(n){ return (n && n[0]) || ''; }).join('').slice(0, 2).toUpperCase();
+            var ageDays = f.created_at ? Math.floor((new Date() - new Date(f.created_at.replace(' ','T')+'Z')) / 86400000) : 0;
+            var urgencyCls = ageDays >= 7 ? 'late' : ageDays >= 3 ? 'warn' : 'ok';
+            var urgencyLabel = ageDays === 0 ? "aujourd'hui" : ageDays === 1 ? '1 jour' : ageDays + ' jours';
+            var urgencyIcon = ageDays >= 3
+              ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+              : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+            pHtml += '<div class="priority-item">'
+              + '<div class="priority-icon">' + escapeHtml(userInitials) + '</div>'
+              + '<div class="priority-body">'
+              +   '<div class="priority-title">' + escapeHtml((f.forme || 'SAS') + ' ' + (f.societe || 'Sans nom'))
+              +   '</div>'
+              +   '<div class="priority-meta">'
+              +     '<span>' + escapeHtml(f.user_name || 'Client') + '</span>'
+              +     '<span class="dot"></span>'
+              +     '<span class="priority-urgency ' + urgencyCls + '">' + urgencyIcon + urgencyLabel + '</span>'
+              +   '</div>'
+              + '</div>'
+              + '<div class="priority-assign">' + assignSelect(f) + '</div>'
+              + '</div>';
+          });
+          pHtml += '</div>';
+          priorityEl.innerHTML = pHtml;
+        }
+        // Toggle "Voir tout →" dans le header
+        var seeAll = document.getElementById('priority-see-all');
+        if (seeAll) seeAll.style.display = allUnassigned.length > 0 ? '' : 'none';
+      }
+    }
+
+    // ============================================================
+    //  RENDER : USERS
+    // ============================================================
+    function filterUsers(q) { state.filters.usersSearch = (q || '').toLowerCase(); renderUsers(); }
+    function renderUsers() {
+      var roleF = document.getElementById('users-role-filter').value;
+      var q = state.filters.usersSearch;
+      var list = state.users.filter(function(u) {
+        if (roleF !== 'all') {
+          var roles = parseUserRoles(u);
+          if (roles.indexOf(roleF) === -1) return false;
+        }
+        if (q && ((u.name||'').toLowerCase().indexOf(q) === -1) && ((u.email||'').toLowerCase().indexOf(q) === -1)) return false;
+        return true;
+      });
+      document.getElementById('users-count').textContent = list.length + ' compte' + (list.length > 1 ? 's' : '');
+
+      if (list.length === 0) {
+        document.getElementById('users-table').innerHTML = emptyState(iconEmpty, 'Aucun utilisateur');
+        return;
+      }
+
+      var html = '<table><thead><tr>'
+        + '<th>Utilisateur</th><th>Rôles</th><th>Dernière connexion</th><th>Temps total</th>'
+        + '<th style="text-align:right;">Formalités</th><th style="text-align:right;">Payé</th><th></th>'
+        + '</tr></thead><tbody>';
+      list.forEach(function(u) {
+        html += '<tr class="row-clickable" onclick="openUserDrawer(' + u.id + ')">'
+          + '<td><div class="user-cell"><div class="av">' + initials(u.name) + '</div>'
+          +   '<div class="info"><div class="name">' + escapeHtml(u.name) + '</div>'
+          +   '<div class="email">' + escapeHtml(u.email) + '</div></div></div></td>'
+          + '<td onclick="event.stopPropagation()">' + rolesChips(u) + '</td>'
+          + '<td><div style="color:#111;">' + formatRelative(u.last_login_at) + '</div>'
+          +   (u.last_seen_at ? '<div style="font-size:11.5px;color:#888;">Vu ' + formatRelative(u.last_seen_at).toLowerCase() + '</div>' : '') + '</td>'
+          + '<td>' + formatDuration(u.total_time_seconds) + '</td>'
+          + '<td style="text-align:right;">' + (u.formalites_count || 0) + '</td>'
+          + '<td style="text-align:right;font-weight:600;">' + formatMoney(u.total_paid_cents, 'EUR') + '</td>'
+          + '<td><div class="row-actions">'
+          +   '<button onclick="event.stopPropagation(); openUserDrawer(' + u.id + ')">Détail</button>'
+          + '</div></td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('users-table').innerHTML = html;
+    }
+
+    function parseUserRoles(u) {
+      if (Array.isArray(u.roles)) return u.roles;
+      if (typeof u.roles === 'string' && u.roles) {
+        try { var arr = JSON.parse(u.roles); if (Array.isArray(arr)) return arr; } catch (e) {}
+      }
+      return [u.role];
+    }
+
+    function rolesChips(u) {
+      var current = parseUserRoles(u);
+      var html = '<div class="roles-chips">';
+      ['user', 'avocat', 'admin'].forEach(function(r) {
+        var on = current.indexOf(r) >= 0;
+        html += '<button type="button" class="role-chip ' + r + (on ? ' active' : '') + '" '
+          + 'onclick="toggleRole(' + u.id + ', \'' + r + '\')">' + r + '</button>';
+      });
+      html += '</div>';
+      return html;
+    }
+
+    window.toggleRole = function(userId, role) {
+      var u = state.users.find(function(x){ return x.id === userId; });
+      if (!u) return;
+      var current = parseUserRoles(u);
+      var next;
+      if (current.indexOf(role) >= 0) {
+        next = current.filter(function(r){ return r !== role; });
+        if (next.length === 0) { alert('Un utilisateur doit avoir au moins un rôle.'); return; }
+      } else {
+        next = current.concat([role]);
+      }
+      fetch('/api/admin/users/' + userId + '/role', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roles: next })
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (!d.ok) { alert(d.error || 'Erreur'); return; }
+        u.roles = d.roles;
+        u.role = d.role;
+        renderUsers();
+        renderOverview();
+      });
+    };
+
+    // ============================================================
+    //  RENDER : FORMALITES
+    // ============================================================
+    function filterFormalites(q) { state.filters.formalitesSearch = (q || '').toLowerCase(); renderFormalites(); }
+
+    // Selection state for bulk assign
+    var _bulkSelected = new Set();
+
+    function renderFormalites() {
+      var statusF = document.getElementById('formalites-status-filter').value;
+      var assignF = document.getElementById('formalites-assign-filter').value;
+      var avocatFEl = document.getElementById('formalites-avocat-filter');
+      var avocatF = avocatFEl ? avocatFEl.value : 'all';
+      var q = state.filters.formalitesSearch;
+
+      // Peuple le filtre avocats (et le select de bulk-assign)
+      if (avocatFEl && !avocatFEl.dataset.populated) {
+        state.avocats.forEach(function(a) {
+          var opt = document.createElement('option');
+          opt.value = String(a.id); opt.textContent = a.name;
+          avocatFEl.appendChild(opt);
+        });
+        avocatFEl.dataset.populated = '1';
+      }
+      var bulkSel = document.getElementById('bulk-avocat-select');
+      if (bulkSel && !bulkSel.dataset.populated) {
+        state.avocats.forEach(function(a) {
+          var opt2 = document.createElement('option');
+          opt2.value = String(a.id); opt2.textContent = a.name;
+          bulkSel.appendChild(opt2);
+        });
+        bulkSel.dataset.populated = '1';
+      }
+
+      var list = state.formalites.filter(function(f) {
+        if (statusF !== 'all' && f.status !== statusF) return false;
+        if (assignF === 'unassigned' && f.assigned_avocat_id) return false;
+        if (assignF === 'assigned' && !f.assigned_avocat_id) return false;
+        if (avocatF && avocatF !== 'all') {
+          if (avocatF === 'none' && f.assigned_avocat_id) return false;
+          else if (avocatF !== 'none' && String(f.assigned_avocat_id) !== avocatF) return false;
+        }
+        if (q) {
+          var m = (f.societe || '').toLowerCase().indexOf(q) !== -1
+               || (f.user_name || '').toLowerCase().indexOf(q) !== -1
+               || (f.user_email || '').toLowerCase().indexOf(q) !== -1;
+          if (!m) return false;
+        }
+        return true;
+      });
+      document.getElementById('formalites-count').textContent = list.length + ' formalité' + (list.length > 1 ? 's' : '');
+
+      if (list.length === 0) {
+        document.getElementById('formalites-table').innerHTML = emptyState(iconEmpty, 'Aucune formalité');
+        updateBulkBar();
+        return;
+      }
+
+      var allChecked = list.every(function(f){ return _bulkSelected.has(f.id); });
+      var html = '<table><thead><tr>'
+        + '<th style="width:36px;"><input type="checkbox" id="bulk-check-all" ' + (allChecked && list.length > 0 ? 'checked' : '') + ' onchange="bulkToggleAll(this)" style="cursor:pointer;"></th>'
+        + '<th>Société</th><th>Client</th><th>Type</th><th>Statut</th>'
+        + '<th>Avocat assigné</th><th>Créée</th><th></th>'
+        + '</tr></thead><tbody>';
+      list.forEach(function(f) {
+        var statusCls = f.status === 'terminee' ? 'green' : f.status === 'en_attente' ? 'amber' : 'gray';
+        var statusLabel = f.status === 'terminee' ? 'Terminée' : f.status === 'en_attente' ? 'En attente' : 'En cours';
+        var checked = _bulkSelected.has(f.id) ? 'checked' : '';
+        html += '<tr' + (_bulkSelected.has(f.id) ? ' style="background:#f5f3ff;"' : '') + '>'
+          + '<td style="text-align:center;"><input type="checkbox" ' + checked + ' onchange="bulkToggleOne(' + f.id + ', this.checked)" style="cursor:pointer;"></td>'
+          + '<td><div style="font-weight:600;color:#111;">' + escapeHtml(f.societe || 'Sans nom') + '</div>'
+          +   '<div style="font-size:12px;color:#888;">' + escapeHtml(f.forme || '') + ' · Étape ' + (f.phase || 1) + '</div></td>'
+          + '<td><div style="font-size:13px;">' + escapeHtml(f.user_name || '—') + '</div>'
+          +   '<div style="font-size:11.5px;color:#888;">' + escapeHtml(f.user_email || '') + '</div></td>'
+          + '<td><span class="chip gray">' + escapeHtml(f.type || 'Création') + '</span></td>'
+          + '<td><span class="chip ' + statusCls + '">' + statusLabel + '</span></td>'
+          + '<td>' + assignSelect(f) + '</td>'
+          + '<td style="color:#888;">' + formatRelative(f.created_at) + '</td>'
+          + '<td><div class="row-actions"><a href="/creation.html?id=' + f.id + '" target="_blank"><button>Ouvrir</button></a></div></td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('formalites-table').innerHTML = html;
+      window._formalitesCurrentList = list;
+      updateBulkBar();
+    }
+
+    // ----- Bulk assign helpers -----
+    window.bulkToggleOne = function(fid, checked) {
+      if (checked) _bulkSelected.add(fid);
+      else _bulkSelected.delete(fid);
+      renderFormalites();
+    };
+    window.bulkToggleAll = function(el) {
+      var list = window._formalitesCurrentList || [];
+      if (el.checked) list.forEach(function(f){ _bulkSelected.add(f.id); });
+      else list.forEach(function(f){ _bulkSelected.delete(f.id); });
+      renderFormalites();
+    };
+    window.bulkClear = function() { _bulkSelected.clear(); renderFormalites(); };
+    function updateBulkBar() {
+      var bar = document.getElementById('bulk-assign-bar');
+      if (!bar) return;
+      var n = _bulkSelected.size;
+      if (n === 0) { bar.style.display = 'none'; return; }
+      bar.style.display = 'flex';
+      var cnt = document.getElementById('bulk-count');
+      if (cnt) cnt.textContent = n + ' formalité' + (n > 1 ? 's' : '') + ' sélectionnée' + (n > 1 ? 's' : '');
+    }
+    window.bulkAssign = function() {
+      var sel = document.getElementById('bulk-avocat-select');
+      var avocatId = sel ? sel.value : '';
+      if (!avocatId) { alert('Sélectionnez un avocat'); return; }
+      var ids = Array.from(_bulkSelected);
+      if (ids.length === 0) return;
+      var promises = ids.map(function(fid){
+        return fetch('/api/admin/formalites/' + fid + '/assign', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avocat_id: parseInt(avocatId) })
+        }).then(function(r){ return r.json(); });
+      });
+      Promise.all(promises).then(function(results){
+        var ok = results.filter(function(d){ return d.ok; }).length;
+        ids.forEach(function(fid){
+          var f = state.formalites.find(function(x){ return x.id === fid; });
+          if (f) f.assigned_avocat_id = parseInt(avocatId);
+        });
+        _bulkSelected.clear();
+        renderFormalites();
+        renderOverview();
+        alert(ok + ' formalité' + (ok > 1 ? 's assignées' : ' assignée'));
+      });
+    };
+
+    function assignSelect(f) {
+      var assigned = !!f.assigned_avocat_id;
+      var assignedAvocat = assigned ? state.avocats.find(function(a){ return a.id === f.assigned_avocat_id; }) : null;
+      var label = assignedAvocat ? assignedAvocat.name : 'Assigner un avocat';
+      var cls = assigned ? 'assigned' : '';
+      var chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+      var menuItems = '';
+      state.avocats.forEach(function(a) {
+        var initials = (a.name || '?').split(' ').map(function(n){ return (n && n[0]) || ''; }).join('').slice(0, 2).toUpperCase();
+        var sel = f.assigned_avocat_id === a.id ? ' selected' : '';
+        menuItems += '<div class="assign-menu-item' + sel + '" onclick="assignAvocat(' + f.id + ', ' + a.id + ')">'
+                  +   '<span class="ic-avatar">' + escapeHtml(initials) + '</span>'
+                  +   '<span>' + escapeHtml(a.name) + '</span>'
+                  + '</div>';
+      });
+      if (assigned) {
+        menuItems += '<div class="assign-menu-divider"></div>'
+                  +  '<div class="assign-menu-item remove" onclick="assignAvocat(' + f.id + ', \'\')">'
+                  +    '<span class="ic-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>'
+                  +    '<span>Retirer l\'avocat</span>'
+                  +  '</div>';
+      }
+
+      return '<button type="button" class="assign-btn ' + cls + '" onclick="toggleAssignMenu(event, this)">'
+           +   '<span class="label">' + escapeHtml(label) + '</span>' + chev
+           + '</button>'
+           + '<div class="assign-menu" onclick="event.stopPropagation()">' + menuItems + '</div>';
+    }
+
+    window.toggleAssignMenu = function(e, btn) {
+      e.stopPropagation();
+      var menu = btn.nextElementSibling;
+      var alreadyOpen = menu.classList.contains('open');
+      // fermer toutes
+      document.querySelectorAll('.assign-menu.open').forEach(function(m){ m.classList.remove('open'); });
+      if (!alreadyOpen) menu.classList.add('open');
+    };
+    document.addEventListener('click', function() {
+      document.querySelectorAll('.assign-menu.open').forEach(function(m){ m.classList.remove('open'); });
+    });
+
+    window.assignAvocat = function(formaliteId, avocatId) {
+      fetch('/api/admin/formalites/' + formaliteId + '/assign', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avocat_id: avocatId || null })
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (!d.ok) { alert(d.error || 'Erreur'); return; }
+        var f = state.formalites.find(function(x){ return x.id === formaliteId; });
+        if (f) {
+          f.assigned_avocat_id = avocatId ? parseInt(avocatId) : null;
+          var av = state.avocats.find(function(a){ return a.id === f.assigned_avocat_id; });
+          f.avocat_name = av ? av.name : null;
+        }
+        renderFormalites();
+        renderAvocats();
+        renderOverview();
+      });
+    };
+
+    // ============================================================
+    //  RENDER : AVOCATS
+    // ============================================================
+    function renderAvocats() {
+      var counts = {};
+      state.formalites.forEach(function(f) {
+        if (f.assigned_avocat_id) {
+          counts[f.assigned_avocat_id] = counts[f.assigned_avocat_id] || { total: 0, en_cours: 0, terminee: 0 };
+          counts[f.assigned_avocat_id].total++;
+          if (f.status === 'en_cours') counts[f.assigned_avocat_id].en_cours++;
+          if (f.status === 'terminee') counts[f.assigned_avocat_id].terminee++;
+        }
+      });
+
+      var list = state.avocats;
+      if (list.length === 0) {
+        document.getElementById('avocats-table').innerHTML = emptyState(iconEmpty, 'Aucun avocat', 'Cliquez sur "Ajouter un avocat" pour créer un compte.');
+        return;
+      }
+
+      var html = '<table><thead><tr>'
+        + '<th>Avocat</th><th>Dossiers actifs</th><th>Terminés</th><th>Charge</th><th>Créé</th><th></th>'
+        + '</tr></thead><tbody>';
+      list.forEach(function(a) {
+        var c = counts[a.id] || { total: 0, en_cours: 0, terminee: 0 };
+        var load = c.en_cours === 0 ? 'green' : c.en_cours < 5 ? 'amber' : 'red';
+        var loadLabel = c.en_cours === 0 ? 'libre' : c.en_cours < 5 ? 'modérée' : 'élevée';
+        html += '<tr class="row-clickable" onclick="openUserDrawer(' + a.id + ')">'
+          + '<td><div class="user-cell"><div class="av" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);">' + initials(a.name) + '</div>'
+          +   '<div class="info"><div class="name">' + escapeHtml(a.name) + '</div>'
+          +   '<div class="email">' + escapeHtml(a.email) + '</div></div></div></td>'
+          + '<td>' + c.en_cours + '</td>'
+          + '<td>' + c.terminee + '</td>'
+          + '<td><span class="chip ' + load + '">' + loadLabel + '</span></td>'
+          + '<td style="color:#888;">' + formatRelative(a.created_at) + '</td>'
+          + '<td><div class="row-actions"><button onclick="event.stopPropagation(); openUserDrawer(' + a.id + ')">Détail</button></div></td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('avocats-table').innerHTML = html;
+    }
+
+    function openCreateAvocat() {
+      var modal = document.getElementById('avocat-create-modal');
+      if (modal) {
+        // Reset
+        document.getElementById('av-mode-existing').click();
+        document.getElementById('av-search-input').value = '';
+        document.getElementById('av-new-name').value = '';
+        document.getElementById('av-new-email').value = '';
+        document.getElementById('av-new-password').value = '';
+        renderAvocatCandidates('');
+        modal.style.display = 'flex';
+      }
+    }
+    function closeCreateAvocatModal() {
+      var modal = document.getElementById('avocat-create-modal');
+      if (modal) modal.style.display = 'none';
+    }
+    function switchAvocatMode(mode) {
+      document.getElementById('av-mode-existing').classList.toggle('active', mode === 'existing');
+      document.getElementById('av-mode-new').classList.toggle('active', mode === 'new');
+      document.getElementById('av-existing-panel').style.display = mode === 'existing' ? 'block' : 'none';
+      document.getElementById('av-new-panel').style.display = mode === 'new' ? 'block' : 'none';
+      var footer = document.getElementById('av-new-footer');
+      if (footer) footer.style.display = mode === 'new' ? 'flex' : 'none';
+    }
+    function renderAvocatCandidates(q) {
+      q = (q || '').toLowerCase().trim();
+      var list = document.getElementById('av-candidates-list');
+      if (!list) return;
+      // Liste les users qui n'ont PAS le rôle avocat
+      var candidates = state.users.filter(function(u) {
+        var roles = parseUserRoles(u);
+        if (roles.indexOf('avocat') !== -1) return false; // déjà avocat
+        if (!q) return true;
+        return (u.name || '').toLowerCase().indexOf(q) !== -1 || (u.email || '').toLowerCase().indexOf(q) !== -1;
+      }).slice(0, 30);
+      if (candidates.length === 0) {
+        list.innerHTML = '<div style="padding:24px;text-align:center;color:#888;font-size:13px;">Aucun utilisateur ' + (q ? 'ne correspond à votre recherche' : 'éligible') + '.</div>';
+        return;
+      }
+      list.innerHTML = candidates.map(function(u) {
+        var init = (u.name || '?').split(' ').map(function(n){return (n[0]||'').toUpperCase();}).join('').slice(0,2);
+        return '<div class="av-candidate" onclick="promoteToAvocat(' + u.id + ')">'
+          + '<div class="av-cand-avatar">' + init + '</div>'
+          + '<div class="av-cand-info"><div class="av-cand-name">' + escapeHtml(u.name) + '</div><div class="av-cand-email">' + escapeHtml(u.email) + '</div></div>'
+          + '<div class="av-cand-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>'
+          + '</div>';
+      }).join('');
+    }
+    function promoteToAvocat(userId) {
+      var u = state.users.find(function(x){ return x.id === userId; });
+      if (!u) return;
+      if (!confirm('Promouvoir ' + u.name + ' en avocat ?')) return;
+      var roles = parseUserRoles(u);
+      if (roles.indexOf('avocat') === -1) roles.push('avocat');
+      fetch('/api/admin/users/' + userId + '/role', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roles: roles })
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (!d.ok) { alert(d.error || 'Erreur'); return; }
+        closeCreateAvocatModal();
+        loadAll();
+      });
+    }
+    function createNewAvocat() {
+      var name = document.getElementById('av-new-name').value.trim();
+      var email = document.getElementById('av-new-email').value.trim();
+      var password = document.getElementById('av-new-password').value.trim();
+      if (!name || !email || !password) { alert('Tous les champs sont requis'); return; }
+      if (password.length < 8) { alert('Le mot de passe doit faire au moins 8 caractères'); return; }
+      fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, email: email, password: password, role: 'avocat' })
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (!d.ok) { alert(d.error || 'Erreur'); return; }
+        closeCreateAvocatModal();
+        loadAll();
+      });
+    }
+    window.closeCreateAvocatModal = closeCreateAvocatModal;
+    window.switchAvocatMode = switchAvocatMode;
+    window.promoteToAvocat = promoteToAvocat;
+    window.createNewAvocat = createNewAvocat;
+
+    // ============================================================
+    //  RENDER : PAYMENTS
+    // ============================================================
+    function statCard(label, value, sub, cls) {
+      return '<div class="stat-card">'
+        + '<div class="stat-card-head">'
+        +   '<div class="stat-card-icon ' + (cls || 'blue') + '">'
+        +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 5.5A8 8 0 1019.5 18.5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="13" y2="14"/></svg>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="label">' + label + '</div>'
+        + '<div class="value-row">'
+        +   '<div class="value">' + value + '</div>'
+        +   (sub ? '<div class="sub">' + sub + '</div>' : '')
+        + '</div>'
+        + '</div>';
+    }
+
+    function renderPayments() {
+      var total = state.payments.filter(function(p){return p.status==='paid';}).reduce(function(a,p){return a+(p.amount_cents||0);}, 0);
+      var today = new Date(); today.setHours(0,0,0,0);
+      var month = new Date(); month.setDate(month.getDate() - 30);
+      var totalToday = state.payments.filter(function(p){
+        if (p.status !== 'paid') return false;
+        var d = new Date((p.paid_at || p.created_at).replace(' ','T')+'Z');
+        return d >= today;
+      }).reduce(function(a,p){return a+p.amount_cents;}, 0);
+      var totalMonth = state.payments.filter(function(p){
+        if (p.status !== 'paid') return false;
+        var d = new Date((p.paid_at || p.created_at).replace(' ','T')+'Z');
+        return d >= month;
+      }).reduce(function(a,p){return a+p.amount_cents;}, 0);
+      var avg = state.payments.length ? Math.round(total / state.payments.length) : 0;
+
+      document.getElementById('payments-stats').innerHTML =
+          statCard('Total encaissé', formatMoney(total, 'EUR'), state.payments.length + ' transactions', 'green')
+        + statCard('Aujourd\'hui', formatMoney(totalToday, 'EUR'), '')
+        + statCard('30 derniers jours', formatMoney(totalMonth, 'EUR'), '')
+        + statCard('Panier moyen', formatMoney(avg, 'EUR'), '');
+
+      if (state.payments.length === 0) {
+        document.getElementById('payments-table').innerHTML = emptyState(iconEmpty, 'Aucun paiement');
+        return;
+      }
+      var html = '<table><thead><tr>'
+        + '<th>Client</th><th>Description</th><th>Société</th><th>Date</th><th>Statut</th><th style="text-align:right;">Montant</th>'
+        + '</tr></thead><tbody>';
+      state.payments.forEach(function(p) {
+        var statusCls = p.status === 'paid' ? 'green' : p.status === 'pending' ? 'amber' : p.status === 'refunded' ? 'gray' : 'red';
+        var statusLabel = p.status === 'paid' ? 'Payé' : p.status === 'pending' ? 'En attente' : p.status === 'refunded' ? 'Remboursé' : p.status === 'failed' ? 'Échoué' : p.status;
+        var cleanDesc = (p.description || '—').replace(/\s*[—–]\s*/g, ' ');
+        html += '<tr class="row-clickable" onclick="openPaymentDrawer(' + p.id + ')">'
+          + '<td><div style="font-weight:500;">' + escapeHtml(p.user_name || '—') + '</div>'
+          +   '<div style="font-size:11.5px;color:#888;">' + escapeHtml(p.user_email || '') + '</div></td>'
+          + '<td>' + escapeHtml(cleanDesc) + '</td>'
+          + '<td>' + escapeHtml(p.societe || '—') + '</td>'
+          + '<td style="font-size:12.5px;color:#555;">' + formatDateTime(p.paid_at || p.created_at) + '</td>'
+          + '<td><span class="chip ' + statusCls + '">' + statusLabel + '</span></td>'
+          + '<td style="text-align:right;font-weight:600;">' + formatMoney(p.amount_cents, p.currency) + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('payments-table').innerHTML = html;
+    }
+
+    // ============================================================
+    //  RENDER : ACTIVITÉ GLOBALE
+    // ============================================================
+    window._activityEvents = [];
+    window._activityLoaded = false;
+
+    // Dictionnaire de labels FR pour les champs courants (cohérent avec lifecycle.js)
+    var ACTIVITY_FIELD_LABELS = {
+      NOM_SOCIETE: 'Nom de la société', FORME_JURIDIQUE: 'Forme juridique',
+      CAPITAL: 'Capital social', VALEUR_NOMINALE: 'Valeur nominale', NB_PARTS: 'Nombre de parts',
+      ADRESSE_SIEGE: 'Adresse du siège', VILLE_SOCIETE: 'Ville',
+      NOM_BANQUE: 'Banque', DATE_DEBUT_ACTIVITE: "Date de début d'activité",
+      DATE_CLOTURE: 'Date de clôture', ANNEE_PREMIER_EXERCICE: 'Année premier exercice',
+      DUREE: 'Durée de vie', OBJET_SOCIAL: 'Objet social',
+      PRESIDENT_NOM: 'Président', CIVILITE_NOM_PRENOM: 'Dirigeant', ADRESSE_DIRIGEANT: 'Adresse du dirigeant',
+      DATE_NAISSANCE: 'Date de naissance', LIEU_NAISSANCE: 'Lieu de naissance',
+      NATIONALITE: 'Nationalité', SITUATION_MATRIMONIALE: 'Situation matrimoniale',
+      status: 'Statut', assigned_avocat_id: 'Avocat assigné',
+    };
+    var ACTIVITY_HIDDEN_FIELDS = new Set([
+      'NOM_SOCIETE_COMPLET','NB_PARTS_LETTRES','VALEUR_NOMINALE_LETTRES','CAPITAL_LETTRES',
+      'DATE_SIGNATURE','DATE_SIGNATURE_COURTE','NOM_JEUNE_FILLE','forme_label','RCS_VILLE',
+      'VILLE_SIGNATURE','REMUNERATION_DG','REMUNERATION_CO_GERANT','STATUT_OCCUPATION',
+      'DATE_DEBUT_EXERCICE','SIEGE_SOCIAL','VALEUR_NOMINALE_UNITE','MONTANT','LIBERATION_PCT_1',
+      'ASSOCIES','ACTIONNAIRES','DIRIGEANTS','DG_LIST',
+      'NB_ASSOCIES','NB_ACTIONNAIRES','NB_DIRIGEANTS','DG_COUNT',
+      'EST_HOMME','EST_FEMME','EST_PERSONNE_PHYSIQUE','EST_PERSONNE_MORALE',
+      'BANQUE_SHINE','BANQUE_REVOLUT','BANQUE_QONTO','BANQUE_AUTRE',
+      'GERANT_CIVILITE_NOM_PRENOM','GERANT_DATE_NAISSANCE','GERANT_LIEU_NAISSANCE',
+      'GERANT_NATIONALITE','GERANT_SITUATION_MATRIMONIALE','GERANT_ADRESSE',
+      'GERANT_EST_HOMME','GERANT_EST_FEMME',
+    ]);
+
+    function _humanizeField(key) {
+      if (!key) return '';
+      if (ACTIVITY_FIELD_LABELS[key]) return ACTIVITY_FIELD_LABELS[key];
+      var idxMatch = String(key).match(/^(.+)_(\d+)$/);
+      if (idxMatch && ACTIVITY_FIELD_LABELS[idxMatch[1]]) return ACTIVITY_FIELD_LABELS[idxMatch[1]] + ' · ' + idxMatch[2];
+      return String(key).split('_').filter(function(w){ return w; }).map(function(w, i){
+        var lw = w.toLowerCase();
+        return i === 0 ? lw.charAt(0).toUpperCase() + lw.slice(1) : lw;
+      }).join(' ');
+    }
+
+    function _isHiddenField(f) {
+      if (!f) return false;
+      if (String(f).indexOf('_raw_') === 0) return true;
+      if (String(f).charAt(0) === '_') return true;
+      if (/^HAS_/.test(f)) return true;
+      if (/^DG_\d+_/.test(f)) return true;
+      if (/_LETTRES$/.test(f)) return true;
+      if (/^OBJET_SOCIAL_\d+$/.test(f)) return true;
+      return ACTIVITY_HIDDEN_FIELDS.has(f);
+    }
+
+    window._activityEvents = [];
+    window._activityLoaded = false;
+    window._activityPage = 1;
+    window._activityPageSize = 15;
+
+    function loadActivity() {
+      var days = (document.getElementById('activity-filter-days') || {}).value || '7';
+      var feed = document.getElementById('activity-feed');
+      if (feed) feed.innerHTML = '<div style="padding:60px;text-align:center;color:#999;font-size:13px;">Chargement…</div>';
+      fetch('/api/admin/activity?days=' + encodeURIComponent(days) + '&limit=200').then(function(r){ return r.json(); }).then(function(data){
+        window._activityEvents = (data && data.events) || [];
+        window._activityLoaded = true;
+        window._activityPage = 1;
+        renderActivity();
+      }).catch(function(){
+        if (feed) feed.innerHTML = '<div style="padding:60px;text-align:center;color:#dc2626;font-size:13px;">Erreur de chargement</div>';
+      });
+    }
+    window.loadActivity = loadActivity;
+
+    // Filtre puis groupe les audits du même acteur sur le même dossier dans la même minute
+    function _prepareActivityEvents() {
+      var typeFilter = (document.getElementById('activity-filter-type') || {}).value || '';
+      var roleFilter = (document.getElementById('activity-filter-role') || {}).value || '';
+      var raw = (window._activityEvents || []).filter(function(e) {
+        if (e.type === 'audit' && e.subtype === 'field_update' && _isHiddenField(e.target_field)) return false;
+        if (typeFilter && e.type !== typeFilter) return false;
+        if (roleFilter && e.actor_role !== roleFilter) return false;
+        return true;
+      });
+      // Regroupe les field_update consécutifs du même acteur/même dossier dans la même minute
+      var grouped = [];
+      raw.forEach(function(e) {
+        var last = grouped[grouped.length - 1];
+        var canGroup = last && last.type === 'audit' && last.subtype === 'field_update'
+          && e.type === 'audit' && e.subtype === 'field_update'
+          && last.actor_id === e.actor_id && last.formalite_id === e.formalite_id
+          && Math.abs(new Date(String(last.ts).replace(' ', 'T') + 'Z') - new Date(String(e.ts).replace(' ', 'T') + 'Z')) < 60000;
+        if (canGroup) {
+          last._grouped = last._grouped || [last.target_field];
+          last._grouped.push(e.target_field);
+          last._changes = (last._changes || []).concat([{ field: e.target_field, before: e.before, after: e.after }]);
+        } else {
+          var clone = Object.assign({}, e);
+          if (clone.type === 'audit' && clone.subtype === 'field_update') {
+            clone._changes = [{ field: e.target_field, before: e.before, after: e.after }];
+          }
+          grouped.push(clone);
+        }
+      });
+      return grouped;
+    }
+
+    function renderActivity() {
+      var feed = document.getElementById('activity-feed');
+      var side = document.getElementById('activity-side');
+      var kpis = document.getElementById('activity-kpis');
+      if (!feed) return;
+      var events = _prepareActivityEvents();
+      // Toujours render les KPIs et side panels (basés sur TOUS les events visibles, pas la page)
+      if (kpis) kpis.innerHTML = renderActivityKpis(events);
+      if (side) side.innerHTML = renderActivitySide(events);
+      if (events.length === 0) {
+        feed.innerHTML = '<div style="padding:60px;text-align:center;color:#999;font-size:13px;">Aucun événement sur cette période avec ces filtres.</div>';
+        return;
+      }
+      var pageSize = window._activityPageSize;
+      var totalPages = Math.max(1, Math.ceil(events.length / pageSize));
+      if (window._activityPage > totalPages) window._activityPage = totalPages;
+      var start = (window._activityPage - 1) * pageSize;
+      var slice = events.slice(start, start + pageSize);
+      feed.innerHTML = slice.map(renderActivityRow).join('')
+        + renderActivityPagination(window._activityPage, totalPages, events.length);
+    }
+    window.renderActivity = renderActivity;
+
+    // ----- KPI cards (4 metrics) -----
+    function renderActivityKpis(events) {
+      var modifsCount = events.filter(function(e){ return e.type === 'audit' && (e.subtype === 'field_update' || !e.subtype); }).reduce(function(acc, e){
+        return acc + ((e._changes && e._changes.length) || 1);
+      }, 0);
+      var paymentsTotal = 0, paymentsCount = 0;
+      events.forEach(function(e){ if (e.type === 'payment') { paymentsTotal += (e.amount_cents || 0); paymentsCount++; } });
+      var signupsCount = events.filter(function(e){ return e.type === 'signup'; }).length;
+      var consultationsCount = events.filter(function(e){ return e.type === 'consultation'; }).length;
+      var newDossiers = events.filter(function(e){ return e.type === 'formalite_created'; }).length;
+
+      function kpi(label, value, sub, color, iconSvg) {
+        return '<div class="activity-kpi">'
+          + '<div class="kpi-accent" style="background:' + color + '20;color:' + color + ';">'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">' + iconSvg + '</svg>'
+          + '</div>'
+          + '<div class="kpi-label">' + label + '</div>'
+          + '<div class="kpi-value">' + value + '</div>'
+          + '<div class="kpi-sub">' + sub + '</div>'
+          + '</div>';
+      }
+      return ''
+        + kpi('Événements', events.length, modifsCount + ' modifications de champs', '#7c3aed',
+            '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>')
+        + kpi('Revenus', formatMoneyShort(paymentsTotal, 'EUR'), paymentsCount + ' paiement' + (paymentsCount > 1 ? 's' : ''), '#10b981',
+            '<rect x="2" y="6" width="20" height="13" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/>')
+        + kpi('Nouveaux comptes', signupsCount, newDossiers + ' nouveau' + (newDossiers > 1 ? 'x' : '') + ' dossier' + (newDossiers > 1 ? 's' : ''), '#ec4899',
+            '<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>')
+        + kpi('Consultations', consultationsCount, consultationsCount === 0 ? 'aucune réservée' : 'réservées sur la période', '#6366f1',
+            '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>');
+    }
+
+    // ----- Side panels (top actors + breakdown + top dossiers) -----
+    function renderActivitySide(events) {
+      // Top acteurs : par nombre d'actions (admin/avocat surtout)
+      var actorMap = {};
+      events.forEach(function(e) {
+        if (!e.actor_name) return;
+        var weight = (e._changes && e._changes.length) || 1;
+        var key = (e.actor_id || e.actor_name) + ':' + e.actor_role;
+        if (!actorMap[key]) actorMap[key] = { name: e.actor_name, role: e.actor_role, count: 0 };
+        actorMap[key].count += weight;
+      });
+      var topActors = Object.values(actorMap).sort(function(a, b){ return b.count - a.count; }).slice(0, 5);
+
+      // Répartition par type
+      var typeMap = {};
+      events.forEach(function(e) {
+        var k = e.type;
+        typeMap[k] = (typeMap[k] || 0) + 1;
+      });
+      var typeOrder = ['audit', 'payment', 'consultation', 'signup', 'formalite_created'];
+      var typeMeta = {
+        audit: { label: 'Modifications', color: '#7c3aed' },
+        payment: { label: 'Paiements', color: '#10b981' },
+        consultation: { label: 'Consultations', color: '#6366f1' },
+        signup: { label: 'Inscriptions', color: '#ec4899' },
+        formalite_created: { label: 'Nouveaux dossiers', color: '#111' },
+      };
+      var maxTypeCount = Math.max(1, ...typeOrder.map(function(t){ return typeMap[t] || 0; }));
+
+      // Top dossiers actifs
+      var dossierMap = {};
+      events.forEach(function(e) {
+        if (!e.formalite_id || !e.formalite_societe) return;
+        var w = (e._changes && e._changes.length) || 1;
+        if (!dossierMap[e.formalite_id]) dossierMap[e.formalite_id] = { id: e.formalite_id, societe: e.formalite_societe, count: 0 };
+        dossierMap[e.formalite_id].count += w;
+      });
+      var topDossiers = Object.values(dossierMap).sort(function(a, b){ return b.count - a.count; }).slice(0, 5);
+
+      function actorPanel() {
+        if (topActors.length === 0) return '';
+        var rows = topActors.map(function(a) {
+          var roleColor = a.role === 'admin' ? '#1f2937' : a.role === 'avocat' ? '#7c3aed' : a.role === 'user' ? '#0ea5e9' : '#999';
+          var inits = (a.name || '?').split(' ').map(function(n){ return n[0] || ''; }).join('').slice(0, 2).toUpperCase();
+          return '<div class="top-actor-row">'
+            + '<div class="top-actor-avatar" style="background:' + roleColor + ';">' + escapeHtml(inits) + '</div>'
+            + '<div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:#111;">' + escapeHtml(a.name) + '</div>'
+            + '<div style="font-size:12px;color:#888;font-variant-numeric:tabular-nums;">' + a.count + '</div>'
+            + '</div>';
+        }).join('');
+        return '<div class="activity-side-card">'
+          + '<h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Acteurs les plus actifs</h3>'
+          + rows + '</div>';
+      }
+
+      function breakdownPanel() {
+        var rows = typeOrder.filter(function(t){ return typeMap[t]; }).map(function(t) {
+          var pct = Math.round(((typeMap[t] || 0) / maxTypeCount) * 100);
+          var meta = typeMeta[t];
+          return '<div class="breakdown-row">'
+            + '<div style="width:100px;color:#444;">' + meta.label + '</div>'
+            + '<div class="breakdown-bar"><div class="breakdown-bar-fill" style="width:' + pct + '%;background:' + meta.color + ';"></div></div>'
+            + '<div class="breakdown-count">' + typeMap[t] + '</div>'
+            + '</div>';
+        }).join('');
+        if (!rows) return '';
+        return '<div class="activity-side-card">'
+          + '<h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Répartition</h3>'
+          + rows + '</div>';
+      }
+
+      function dossierPanel() {
+        if (topDossiers.length === 0) return '';
+        var rows = topDossiers.map(function(d) {
+          return '<a href="/avocat.html#dossier-' + d.id + '" class="top-actor-row" style="text-decoration:none;color:inherit;cursor:pointer;">'
+            + '<div style="width:6px;height:28px;background:#7c3aed;border-radius:3px;flex-shrink:0;"></div>'
+            + '<div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:#111;">' + escapeHtml(d.societe) + '</div>'
+            + '<div style="font-size:11px;color:#888;font-variant-numeric:tabular-nums;">' + d.count + ' évt</div>'
+            + '</a>';
+        }).join('');
+        return '<div class="activity-side-card">'
+          + '<h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Dossiers les plus actifs</h3>'
+          + rows + '</div>';
+      }
+
+      return actorPanel() + breakdownPanel() + dossierPanel();
+    }
+
+    function _activityIcon(e) {
+      if (e.type === 'audit') {
+        if (e.subtype === 'status_change') return { svg: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>', bg: '#f59e0b' };
+        if (e.subtype === 'avocat_assigned') return { svg: '<path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>', bg: '#0ea5e9' };
+        return { svg: '<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>', bg: '#7c3aed' };
+      }
+      if (e.type === 'payment') return { svg: '<rect x="2" y="6" width="20" height="13" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/>', bg: '#10b981' };
+      if (e.type === 'consultation') return { svg: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>', bg: '#6366f1' };
+      if (e.type === 'signup') return { svg: '<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>', bg: '#ec4899' };
+      if (e.type === 'formalite_created') return { svg: '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>', bg: '#111' };
+      return { svg: '<circle cx="12" cy="12" r="10"/>', bg: '#999' };
+    }
+
+    function _activityTitle(e) {
+      var actor = escapeHtml(e.actor_name || 'Système');
+      var societe = e.formalite_societe ? escapeHtml(e.formalite_societe) : '';
+      if (e.type === 'audit') {
+        if (e.subtype === 'status_change') {
+          var statusLabels = { en_cours: 'En cours', en_attente_validation: 'En attente de validation', corrections_demandees: 'Corrections demandées', valide: 'Validé', rejete: 'Rejeté' };
+          return actor + ' · statut → <strong style="color:#111;">' + escapeHtml(statusLabels[e.after] || e.after || '?') + '</strong>';
+        }
+        if (e.subtype === 'avocat_assigned') {
+          return actor + (e.before ? ' a réassigné l\'avocat de ' + escapeHtml(e.before) + ' → ' + escapeHtml(e.after || '—') : ' a assigné ' + escapeHtml(e.after || '—') + ' à un dossier');
+        }
+        // field_update — peut être groupé
+        var n = (e._changes || []).length || 1;
+        if (n > 1) return actor + ' a modifié ' + n + ' champs dans ' + (societe || 'un dossier');
+        return actor + ' a modifié <strong>' + escapeHtml(_humanizeField(e.target_field)) + '</strong> dans ' + (societe || 'un dossier');
+      }
+      if (e.type === 'payment') {
+        return actor + ' a payé <strong>' + formatMoney(e.amount_cents, e.currency) + '</strong>' + (societe ? ' · ' + societe : '');
+      }
+      if (e.type === 'consultation') {
+        return actor + ' a réservé une consultation' + (e.avocat_name ? ' avec ' + escapeHtml(e.avocat_name) : '') + (e.domain ? ' (' + escapeHtml(e.domain) + ')' : '');
+      }
+      if (e.type === 'signup') {
+        var roleLbl = ({ admin: 'Admin', avocat: 'Avocat', user: 'Client' })[e.subtype] || 'Compte';
+        return roleLbl + ' inscrit : <strong>' + actor + '</strong>';
+      }
+      if (e.type === 'formalite_created') {
+        return actor + ' a créé un dossier ' + (societe ? '<strong>' + societe + '</strong>' : '') + (e.subtype ? ' (' + escapeHtml(e.subtype) + ')' : '');
+      }
+      return actor;
+    }
+
+    function _activitySubtitle(e) {
+      if (e.type === 'audit' && e.subtype === 'field_update' && e._changes && e._changes.length > 1) {
+        var labels = e._changes.slice(0, 3).map(function(c){ return _humanizeField(c.field); });
+        var extra = e._changes.length - 3;
+        return labels.join(' · ') + (extra > 0 ? ' · +' + extra + ' autre' + (extra > 1 ? 's' : '') : '');
+      }
+      if (e.type === 'payment' && e.description) return escapeHtml(e.description);
+      if (e.type === 'signup' && e.user_email) return escapeHtml(e.user_email);
+      if (e.type === 'consultation' && e.scheduled_at) {
+        try { return 'Pour le ' + new Date(String(e.scheduled_at).replace(' ', 'T') + 'Z').toLocaleString('fr-FR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); } catch(_){ return ''; }
+      }
+      return '';
+    }
+
+    function _roleBadge(role) {
+      if (!role) return '';
+      var bg, txt;
+      if (role === 'admin') { bg = '#1f2937'; txt = 'Admin'; }
+      else if (role === 'avocat') { bg = '#7c3aed'; txt = 'Avocat'; }
+      else if (role === 'user') { bg = '#0ea5e9'; txt = 'Client'; }
+      else return '';
+      return '<span style="display:inline-flex;align-items:center;background:' + bg + ';color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;letter-spacing:0.3px;flex-shrink:0;">' + txt + '</span>';
+    }
+
+    function _formatRelative(ts) {
+      if (!ts) return '';
+      try {
+        var d = new Date(String(ts).replace(' ', 'T') + 'Z');
+        var diff = Math.floor((Date.now() - d) / 60000);
+        if (diff < 1) return "à l'instant";
+        if (diff < 60) return 'il y a ' + diff + ' min';
+        if (diff < 60 * 24) return 'il y a ' + Math.floor(diff / 60) + ' h';
+        var days = Math.floor(diff / (60 * 24));
+        if (days < 7) return 'il y a ' + days + ' j';
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+      } catch (e) { return ''; }
+    }
+
+    function _activityHref(e) {
+      if (e.formalite_id) return '/avocat.html#dossier-' + e.formalite_id;
+      if (e.type === 'consultation') return '/avocat.html#consultations';
+      if (e.type === 'signup' && e.actor_id) return '/admin.html#users';
+      return '';
+    }
+
+    function renderActivityRow(e) {
+      var icon = _activityIcon(e);
+      var href = _activityHref(e);
+      var clickAttr = href ? ' role="button" tabindex="0" onclick="window.location.href=\'' + href + '\'"' : '';
+      var cursorStyle = href ? 'cursor:pointer;' : 'cursor:default;';
+      var subtitle = _activitySubtitle(e);
+      return '<div class="activity-row"' + clickAttr + ' style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid #f5f5f5;transition:background 0.12s;' + cursorStyle + '">'
+        + '<div style="width:36px;height:36px;border-radius:10px;background:' + icon.bg + ';color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+        +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17">' + icon.svg + '</svg>'
+        + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#333;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+        +     _roleBadge(e.actor_role)
+        +     '<span style="overflow:hidden;text-overflow:ellipsis;">' + _activityTitle(e) + '</span>'
+        +   '</div>'
+        +   (subtitle ? '<div style="font-size:12px;color:#888;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + subtitle + '</div>' : '')
+        + '</div>'
+        + '<div style="font-size:11.5px;color:#9ca3af;flex-shrink:0;white-space:nowrap;">' + _formatRelative(e.ts) + '</div>'
+        + (href ? '<svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>' : '<div style="width:16px;flex-shrink:0;"></div>')
+        + '</div>';
+    }
+
+    function renderActivityPagination(page, totalPages, totalCount) {
+      if (totalPages <= 1) {
+        return '<div style="padding:14px 20px;font-size:12px;color:#888;text-align:center;">' + totalCount + ' événement' + (totalCount > 1 ? 's' : '') + '</div>';
+      }
+      var prevDisabled = page <= 1 ? ' disabled' : '';
+      var nextDisabled = page >= totalPages ? ' disabled' : '';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#fafafa;border-top:1px solid #f0f0f0;">'
+        + '<div style="font-size:12px;color:#888;">' + totalCount + ' événements · page ' + page + ' / ' + totalPages + '</div>'
+        + '<div style="display:flex;gap:8px;">'
+        +   '<button onclick="goActivityPage(' + (page - 1) + ')"' + prevDisabled + ' style="padding:6px 14px;border:1px solid #e5e5e7;border-radius:8px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:500;color:#555;cursor:pointer;' + (page <= 1 ? 'opacity:0.4;cursor:not-allowed;' : '') + '">‹ Précédent</button>'
+        +   '<button onclick="goActivityPage(' + (page + 1) + ')"' + nextDisabled + ' style="padding:6px 14px;border:1px solid #e5e5e7;border-radius:8px;background:#fff;font-family:inherit;font-size:12.5px;font-weight:500;color:#555;cursor:pointer;' + (page >= totalPages ? 'opacity:0.4;cursor:not-allowed;' : '') + '">Suivant ›</button>'
+        + '</div>'
+        + '</div>';
+    }
+
+    function goActivityPage(p) {
+      window._activityPage = Math.max(1, p);
+      renderActivity();
+      // Scroll vers le haut du feed pour ne pas perdre le contexte
+      var feed = document.getElementById('activity-feed');
+      if (feed) feed.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.goActivityPage = goActivityPage;
+
+    // ============================================================
+    //  RENDER : CONSULTATIONS
+    // ============================================================
+    function renderConsultations() {
+      if (state.consultations.length === 0) {
+        document.getElementById('consultations-table').innerHTML = emptyState(iconEmpty, 'Aucune consultation');
+        return;
+      }
+      var html = '<table><thead><tr>'
+        + '<th>Client</th><th>Avocat</th><th>Sujet</th><th>Date / heure</th><th>Durée</th><th>Statut</th><th style="text-align:right;">Prix</th>'
+        + '</tr></thead><tbody>';
+      state.consultations.forEach(function(c) {
+        var statusCls = c.status === 'done' ? 'green' : c.status === 'scheduled' ? 'gray' : 'red';
+        var statusLabel = c.status === 'done' ? 'Terminée' : c.status === 'scheduled' ? 'Programmée' : c.status === 'cancelled' ? 'Annulée' : 'No-show';
+        html += '<tr>'
+          + '<td><div style="font-weight:500;">' + escapeHtml(c.user_name || '—') + '</div>'
+          +   '<div style="font-size:11.5px;color:#888;">' + escapeHtml(c.user_email || '') + '</div></td>'
+          + '<td>' + escapeHtml(c.avocat_name || '—') + '</td>'
+          + '<td><div>' + escapeHtml(c.topic || '—') + '</div></td>'
+          + '<td style="font-size:12.5px;">' + formatDateTime(c.scheduled_at) + '</td>'
+          + '<td>' + (c.duration_minutes || 30) + ' min</td>'
+          + '<td><span class="chip ' + statusCls + '">' + statusLabel + '</span></td>'
+          + '<td style="text-align:right;font-weight:600;">' + formatMoney(c.price_cents, 'EUR') + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('consultations-table').innerHTML = html;
+    }
+
+    // ============================================================
+    //  RENDER : SUPPORT
+    // ============================================================
+    function renderSupport() {
+      if (state.support.length === 0) {
+        document.getElementById('support-table').innerHTML = emptyState(iconEmpty, 'Aucune conversation support');
+        return;
+      }
+      var offerLabels = { starter: 'Starter', business: 'Business', premium: 'Premium' };
+      var offerCls = { starter: 'gray', business: 'blue', premium: 'violet' };
+      var html = '<table><thead><tr>'
+        + '<th>Utilisateur</th><th>Société</th><th>Offre</th><th>Dernier message</th><th>Reçu</th><th>Non lus</th><th>Statut</th>'
+        + '</tr></thead><tbody>';
+      state.support.forEach(function(s) {
+        var societeCell = s.societe
+          ? '<div style="font-weight:500;">' + escapeHtml(s.societe) + '</div>'
+            + (s.forme ? '<div style="font-size:11px;color:#888;">' + escapeHtml(s.forme) + '</div>' : '')
+          : '<span style="color:#bbb;">—</span>';
+        var offerCell = s.offer
+          ? '<span class="offer-badge ' + (offerCls[s.offer] || 'gray') + '">' + escapeHtml(offerLabels[s.offer] || s.offer) + '</span>'
+          : '<span style="color:#bbb;">—</span>';
+        html += '<tr style="cursor:pointer;" onclick="openSupportConversation(' + s.user_id + ')">'
+          + '<td><div style="font-weight:500;">' + escapeHtml(s.user_name || s.email || '—') + '</div>'
+          +   '<div style="font-size:11px;color:#888;">' + escapeHtml(s.user_email || '') + '</div></td>'
+          + '<td>' + societeCell + '</td>'
+          + '<td>' + offerCell + '</td>'
+          + '<td style="max-width:320px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(s.last_message || '—') + '</td>'
+          + '<td style="color:#888;">' + formatRelative(s.last_message_at) + '</td>'
+          + '<td>' + (s.unread_count > 0 ? '<span class="chip amber">' + s.unread_count + '</span>' : '0') + '</td>'
+          + '<td><span class="chip ' + (s.archived ? 'gray' : 'amber') + '">' + (s.archived ? 'Archivée' : 'Active') + '</span></td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('support-table').innerHTML = html;
+    }
+
+    // --- Drawer conversation support (admin ↔ user) ---
+    window.openSupportConversation = function(userId) {
+      var conv = state.support.find(function(s){ return s.user_id === userId; });
+      if (!conv) return;
+      var offerLabels = { starter: 'Starter', business: 'Business', premium: 'Premium' };
+      var offerCls = { starter: 'gray', business: 'blue', premium: 'violet' };
+      var initials = (conv.user_name || '?').split(' ').map(function(n){return (n[0]||'').toUpperCase();}).join('').slice(0,2);
+      document.getElementById('drawer-back').hidden = true;
+      document.getElementById('drawer-title').textContent = 'Conversation support';
+      var head = '<div class="drawer-hero" style="padding:16px 24px;">'
+        +   '<div class="av-big">' + initials + '</div>'
+        +   '<div class="meta">'
+        +     '<div class="name">' + escapeHtml(conv.user_name || '—') + '</div>'
+        +     '<div style="font-size:12.5px;color:#666;">' + escapeHtml(conv.user_email || '') + '</div>'
+        +     '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px;">'
+        +       (conv.societe ? '<span style="background:#f5f5f7;padding:2px 8px;border-radius:6px;">' + escapeHtml((conv.forme ? conv.forme + ' · ' : '') + conv.societe) + '</span>' : '')
+        +       (conv.offer ? '<span class="offer-badge ' + (offerCls[conv.offer] || 'gray') + '">' + escapeHtml(offerLabels[conv.offer] || conv.offer) + '</span>' : '')
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+      var body = '<div id="supp-msgs" style="padding:0 24px;display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto;">Chargement…</div>'
+        + '<div style="padding:14px 24px;border-top:1px solid #eee;display:flex;gap:8px;align-items:flex-end;">'
+        +   '<textarea id="supp-reply" rows="2" placeholder="Votre réponse…" style="flex:1;padding:8px 12px;border:1px solid #e5e5e7;border-radius:10px;resize:none;font-family:inherit;font-size:13px;"></textarea>'
+        +   '<button id="supp-send" onclick="sendSupportReply(' + userId + ')" style="padding:9px 16px;background:#111;color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-weight:600;font-size:13px;">Envoyer</button>'
+        + '</div>';
+      document.getElementById('drawer-body').innerHTML = head + body;
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('drawer-backdrop').classList.add('open');
+      loadSupportMessages(userId);
+    };
+
+    function loadSupportMessages(userId) {
+      fetch('/api/admin/support/' + userId + '/messages').then(function(r){return r.json();}).then(function(data){
+        var el = document.getElementById('supp-msgs'); if (!el) return;
+        var msgs = data.messages || [];
+        if (msgs.length === 0) { el.innerHTML = '<div style="color:#888;padding:16px 0;">Aucun message</div>'; return; }
+        el.innerHTML = msgs.map(function(m){
+          var isAdmin = m.sender_role !== 'user';
+          var side = isAdmin ? 'flex-end' : 'flex-start';
+          var bg = isAdmin ? '#111' : '#f5f5f5';
+          var color = isAdmin ? '#fff' : '#111';
+          return '<div style="align-self:' + side + ';max-width:78%;background:' + bg + ';color:' + color + ';padding:8px 12px;border-radius:12px;font-size:13px;">'
+            + '<div style="font-size:11px;opacity:0.6;margin-bottom:2px;">' + escapeHtml(m.sender_name || '') + '</div>'
+            + escapeHtml(m.content || '')
+            + '</div>';
+        }).join('');
+        el.scrollTop = el.scrollHeight;
+        // Met à jour le compteur "non lus" localement
+        var idx = state.support.findIndex(function(s){ return s.user_id === userId; });
+        if (idx !== -1) { state.support[idx].unread_count = 0; renderSupport(); }
+      });
+    }
+
+    window.sendSupportReply = function(userId) {
+      var ta = document.getElementById('supp-reply');
+      var content = (ta.value || '').trim();
+      if (!content) return;
+      ta.disabled = true;
+      fetch('/api/admin/support/' + userId + '/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content })
+      }).then(function(r){return r.json();}).then(function(){
+        ta.value = ''; ta.disabled = false; ta.focus();
+        loadSupportMessages(userId);
+      });
+    };
+
+    // ============================================================
+    //  USER DRAWER (détail)
+    // ============================================================
+    function parseUA(ua) {
+      ua = ua || '';
+      var device = 'desktop';
+      if (/iPhone|Android.*Mobile|Mobile.*Safari/i.test(ua)) device = 'phone';
+      else if (/iPad|Tablet/i.test(ua)) device = 'tablet';
+      var browser = 'Navigateur';
+      if (/Edg\//.test(ua)) browser = 'Edge';
+      else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browser = 'Chrome';
+      else if (/Firefox\//.test(ua)) browser = 'Firefox';
+      else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = 'Safari';
+      var os = 'OS';
+      if (/Windows NT 10/.test(ua)) os = 'Windows';
+      else if (/Mac OS X/.test(ua)) os = 'macOS';
+      else if (/iPhone|iPad/.test(ua)) os = 'iOS';
+      else if (/Android/.test(ua)) os = 'Android';
+      else if (/Linux/.test(ua)) os = 'Linux';
+      return { device: device, browser: browser, os: os };
+    }
+    function deviceIcon(device) {
+      if (device === 'phone') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>';
+      if (device === 'tablet') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>';
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+    }
+
+    function openUserDrawer(userId, fromBack) {
+      // Track previous drawer if any
+      var current = window._currentDrawer;
+      if (!fromBack && current && (current.type !== 'user' || current.id !== userId)) {
+        pushDrawer(current.type, current.id);
+      }
+      window._currentDrawer = { type: 'user', id: userId };
+      updateDrawerBack();
+      fetch('/api/admin/users/' + userId).then(function(r){return r.json();}).then(function(d) {
+        if (!d.user) return;
+        var u = d.user;
+        document.getElementById('drawer-title').textContent = 'Détails utilisateur';
+
+        var online = u.last_seen_at && (Date.now() - new Date(u.last_seen_at.replace(' ','T')+'Z').getTime() < 5 * 60 * 1000);
+
+        var html = '';
+        // --- HERO ---
+        html += '<div class="drawer-hero">'
+          + '<div class="av-big">' + escapeHtml(initials(u.name))
+          +   (online ? '<span class="online-dot"></span>' : '')
+          + '</div>'
+          + '<div class="meta">'
+          +   '<div class="name">' + escapeHtml(u.name) + '</div>'
+          +   '<div class="email">' + escapeHtml(u.email) + '</div>'
+          +   '<div class="chips">' + rolesChips(u) + '</div>'
+          + '</div>'
+          + '</div>';
+
+        // --- STAT TILES ---
+        html += '<div class="drawer-stats">'
+          + '<div class="d-tile"><div class="lab">Formalités</div><div class="val">' + (u.formalites_count || 0) + '</div><div class="sub">dossiers ouverts</div></div>'
+          + '<div class="d-tile"><div class="lab">Total payé</div><div class="val">' + formatMoney(u.total_paid_cents, 'EUR') + '</div><div class="sub">depuis l\'inscription</div></div>'
+          + '<div class="d-tile"><div class="lab">Temps total</div><div class="val">' + formatDuration(u.total_time_seconds) + '</div><div class="sub">sur la plateforme</div></div>'
+          + '<div class="d-tile"><div class="lab">Dernière activité</div><div class="val" style="font-size:15px;">' + (online ? 'En ligne' : formatRelative(u.last_seen_at)) + '</div><div class="sub">' + (u.last_login_at ? 'connexion ' + formatRelative(u.last_login_at) : '—') + '</div></div>'
+          + '</div>';
+
+        // --- META INFOS ---
+        var iconCal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+        var iconClock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+        html += '<div class="drawer-section">'
+          + '<div class="drawer-section-title">Informations</div>'
+          + '<div class="drawer-meta">'
+          +   '<div class="row"><span class="k">' + iconCal + 'Inscrit le</span><span class="v">' + formatDateTime(u.created_at) + '</span></div>'
+          +   '<div class="row"><span class="k">' + iconClock + 'Dernière connexion</span><span class="v">' + formatDateTime(u.last_login_at) + '</span></div>'
+          + '</div>'
+          + '</div>';
+
+        // --- SESSIONS ---
+        if (d.sessions && d.sessions.length) {
+          html += '<div class="drawer-section">'
+            + '<div class="drawer-section-title"><span>Sessions récentes</span><span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing:0;">' + d.sessions.length + '</span></div>'
+            + '<div id="drawer-sessions"></div>'
+            + '</div>';
+        }
+
+        function renderFormaliteRow(f, showClient) {
+          var phaseLabels = {
+            1: 'Informations à compléter',
+            2: 'Dépôt du capital',
+            3: 'Justificatifs d\'identité',
+            4: 'Signature des statuts',
+            5: 'Traitement par l\'équipe',
+            6: 'Dossier finalisé'
+          };
+          var phaseLabel = phaseLabels[f.phase || 1] || 'Étape ' + (f.phase || 1);
+          if (f.status === 'terminee') phaseLabel = 'Dossier finalisé';
+          var statusLabel = f.status === 'terminee' ? 'Terminée'
+                          : f.status === 'en_attente' ? 'En attente'
+                          : f.status === 'en_cours' ? 'En cours'
+                          : (f.status || '');
+          var statusCls = f.status === 'terminee' ? 'green' : f.status === 'en_attente' ? 'amber' : 'blue';
+          var title = ((f.forme || '') + ' ' + (f.societe || 'Sans nom')).trim();
+          var sub = phaseLabel + (showClient && f.user_name ? ' · ' + f.user_name : '');
+          return '<div class="sub-list-item" style="cursor:pointer;" onclick="window.open(\'/creation.html?id=' + f.id + '\', \'_blank\')">'
+            + '<div class="left"><div class="t">' + escapeHtml(title) + '</div>'
+            + '<div class="s">' + escapeHtml(sub) + '</div></div>'
+            + '<div class="right"><span class="chip ' + statusCls + '">' + statusLabel + '</span></div></div>';
+        }
+
+        // Stocke les listes pour la pagination
+        window._drawerData = {
+          clientFormalites: d.formalites || [],
+          avocatActive: (d.avocat_formalites || []).filter(function(f){ return f.status !== 'terminee'; }),
+          avocatDone: (d.avocat_formalites || []).filter(function(f){ return f.status === 'terminee'; }),
+          renderRow: renderFormaliteRow
+        };
+        window._drawerPage = { client: 0, avActive: 0, avDone: 0 };
+
+        // Formalités où l'utilisateur est CLIENT (paginé 5 par page)
+        if (d.formalites && d.formalites.length) {
+          html += '<div class="drawer-section">'
+            + '<div class="drawer-section-title">Formalités' + (d.avocat_formalites && d.avocat_formalites.length ? ' (en tant que client)' : '') + ' <span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing:0;">' + d.formalites.length + '</span></div>'
+            + '<div id="drawer-client-formalites"></div>'
+            + '</div>';
+        }
+
+        // Dossiers où l'utilisateur est AVOCAT assigné
+        if (d.avocat_formalites && d.avocat_formalites.length) {
+          html += '<div class="drawer-section">'
+            + '<div class="drawer-section-title">Dossiers gérés en tant qu\'avocat <span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing:0;">' + d.avocat_formalites.length + '</span></div>';
+
+          if (window._drawerData.avocatActive.length > 0) {
+            html += '<div style="font-size:11.5px;font-weight:600;color:#7c3aed;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">' + window._drawerData.avocatActive.length + ' actif' + (window._drawerData.avocatActive.length > 1 ? 's' : '') + '</div>'
+              + '<div id="drawer-avocat-active" style="margin-bottom:10px;"></div>';
+          }
+          if (window._drawerData.avocatDone.length > 0) {
+            html += '<div style="font-size:11.5px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">' + window._drawerData.avocatDone.length + ' terminé' + (window._drawerData.avocatDone.length > 1 ? 's' : '') + '</div>'
+              + '<div id="drawer-avocat-done"></div>';
+          }
+          html += '</div>';
+        }
+
+        if (d.payments && d.payments.length) {
+          html += '<div class="drawer-section">'
+            + '<div class="drawer-section-title">Paiements (' + d.payments.length + ')</div>'
+            + '<div id="drawer-payments"></div>'
+            + '</div>';
+        }
+
+        if (d.consultations && d.consultations.length) {
+          html += '<div class="drawer-section">'
+            + '<div class="drawer-section-title">Consultations (' + d.consultations.length + ')</div>'
+            + '<div id="drawer-consultations"></div>'
+            + '</div>';
+        }
+
+        // Stocke pour pagination
+        window._drawerData.sessions = d.sessions || [];
+        window._drawerData.payments = d.payments || [];
+        window._drawerData.consultations = d.consultations || [];
+        window._drawerPage.sessions = 0;
+        window._drawerPage.payments = 0;
+        window._drawerPage.consultations = 0;
+
+        document.getElementById('drawer-body').innerHTML = html;
+        document.getElementById('drawer').classList.add('open');
+        document.getElementById('drawer-backdrop').classList.add('open');
+        // Initial render pagination
+        renderDrawerFormalitesPage('client');
+        renderDrawerFormalitesPage('avActive');
+        renderDrawerFormalitesPage('avDone');
+        renderDrawerGenericPage('sessions');
+        renderDrawerGenericPage('payments');
+        renderDrawerGenericPage('consultations');
+      });
+    }
+
+    window.renderDrawerFormalitesPage = function(kind) {
+      var data = window._drawerData; if (!data) return;
+      var page = window._drawerPage[kind] || 0;
+      var pageSize = 5;
+      var srcMap = { client: data.clientFormalites, avActive: data.avocatActive, avDone: data.avocatDone };
+      var elMap = { client: 'drawer-client-formalites', avActive: 'drawer-avocat-active', avDone: 'drawer-avocat-done' };
+      var src = srcMap[kind] || [];
+      var el = document.getElementById(elMap[kind]);
+      if (!el) return;
+      var totalPages = Math.max(1, Math.ceil(src.length / pageSize));
+      if (page >= totalPages) page = totalPages - 1;
+      if (page < 0) page = 0;
+      window._drawerPage[kind] = page;
+      var start = page * pageSize;
+      var slice = src.slice(start, start + pageSize);
+      var showClient = (kind !== 'client');
+      var html = '<div class="sub-list">';
+      slice.forEach(function(f){ html += data.renderRow(f, showClient); });
+      html += '</div>';
+      if (src.length > pageSize) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding:6px 4px;">'
+          + '<button onclick="drawerPagePrev(\'' + kind + '\')" ' + (page === 0 ? 'disabled' : '') + ' style="padding:6px 12px;background:#fff;border:1px solid #e5e5e7;border-radius:8px;cursor:' + (page === 0 ? 'not-allowed' : 'pointer') + ';font-family:inherit;font-size:12.5px;color:' + (page === 0 ? '#ccc' : '#111') + ';display:inline-flex;align-items:center;gap:5px;">'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg>Précédent</button>'
+          + '<span style="font-size:12px;color:#888;">Page ' + (page + 1) + ' / ' + totalPages + '</span>'
+          + '<button onclick="drawerPageNext(\'' + kind + '\')" ' + (page === totalPages - 1 ? 'disabled' : '') + ' style="padding:6px 12px;background:#fff;border:1px solid #e5e5e7;border-radius:8px;cursor:' + (page === totalPages - 1 ? 'not-allowed' : 'pointer') + ';font-family:inherit;font-size:12.5px;color:' + (page === totalPages - 1 ? '#ccc' : '#111') + ';display:inline-flex;align-items:center;gap:5px;">Suivant'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg></button>'
+          + '</div>';
+      }
+      el.innerHTML = html;
+    };
+    window.drawerPagePrev = function(kind) {
+      window._drawerPage[kind] = Math.max(0, (window._drawerPage[kind] || 0) - 1);
+      if (['client','avActive','avDone'].indexOf(kind) !== -1) window.renderDrawerFormalitesPage(kind);
+      else window.renderDrawerGenericPage(kind);
+    };
+    window.drawerPageNext = function(kind) {
+      window._drawerPage[kind] = (window._drawerPage[kind] || 0) + 1;
+      if (['client','avActive','avDone'].indexOf(kind) !== -1) window.renderDrawerFormalitesPage(kind);
+      else window.renderDrawerGenericPage(kind);
+    };
+
+    window.renderDrawerGenericPage = function(kind) {
+      var data = window._drawerData; if (!data) return;
+      var pageSize = 5;
+      var page = window._drawerPage[kind] || 0;
+      var src = data[kind] || [];
+      var elMap = { sessions: 'drawer-sessions', payments: 'drawer-payments', consultations: 'drawer-consultations' };
+      var el = document.getElementById(elMap[kind]);
+      if (!el) return;
+      var totalPages = Math.max(1, Math.ceil(src.length / pageSize));
+      if (page >= totalPages) page = totalPages - 1;
+      if (page < 0) page = 0;
+      window._drawerPage[kind] = page;
+      var start = page * pageSize;
+      var slice = src.slice(start, start + pageSize);
+      var inner = '';
+      if (kind === 'sessions') {
+        inner = '<div class="sub-list">';
+        slice.forEach(function(s){
+          var ua = parseUA(s.user_agent);
+          var dur = formatDuration(s.duration_seconds);
+          var isLive = !s.ended_at;
+          inner += '<div class="ses-item">'
+            + '<div class="dev-ic">' + deviceIcon(ua.device) + '</div>'
+            + '<div class="ses-body">'
+            +   '<div class="ses-t">' + escapeHtml(ua.browser) + ' · ' + escapeHtml(ua.os) + '</div>'
+            +   '<div class="ses-s"><span>' + formatDateTime(s.started_at) + '</span><span>·</span><span>' + escapeHtml(s.ip || '—') + '</span></div>'
+            + '</div>'
+            + '<div class="ses-dur ' + (isLive ? 'live' : '') + '">' + (isLive ? 'Active' : dur) + '</div>'
+            + '</div>';
+        });
+        inner += '</div>';
+      } else if (kind === 'payments') {
+        inner = '<div class="sub-list">';
+        slice.forEach(function(p){
+          var statusLabel = p.status === 'paid' ? 'Payé' : p.status === 'pending' ? 'En attente' : p.status === 'failed' ? 'Échoué' : p.status === 'refunded' ? 'Remboursé' : p.status;
+          var statusCls = p.status === 'paid' ? 'green' : p.status === 'pending' ? 'amber' : p.status === 'refunded' ? 'gray' : 'red';
+          inner += '<div class="sub-list-item">'
+            + '<div class="left"><div class="t">' + escapeHtml(p.description || '—') + '</div>'
+            + '<div class="s">' + formatDateTime(p.paid_at || p.created_at) + '</div></div>'
+            + '<div class="right" style="display:flex;align-items:center;gap:10px;">'
+            +   '<span class="chip ' + statusCls + '">' + statusLabel + '</span>'
+            +   '<span style="font-weight:600;">' + formatMoney(p.amount_cents, p.currency) + '</span>'
+            + '</div></div>';
+        });
+        inner += '</div>';
+      } else if (kind === 'consultations') {
+        inner = '<div class="sub-list">';
+        slice.forEach(function(c){
+          var cLabel = c.status === 'done' ? 'Terminée' : c.status === 'scheduled' ? 'Planifiée' : c.status === 'cancelled' ? 'Annulée' : c.status === 'pending' ? 'En attente' : (c.status || '');
+          var cCls = c.status === 'done' ? 'green' : c.status === 'scheduled' ? 'blue' : c.status === 'cancelled' ? 'red' : 'gray';
+          inner += '<div class="sub-list-item">'
+            + '<div class="left"><div class="t">' + escapeHtml(c.topic || 'Consultation') + '</div>'
+            + '<div class="s">Avec ' + escapeHtml(c.avocat_name || '—') + ' · ' + formatDateTime(c.scheduled_at) + '</div></div>'
+            + '<div class="right"><span class="chip ' + cCls + '">' + cLabel + '</span></div></div>';
+        });
+        inner += '</div>';
+      }
+      if (src.length > pageSize) {
+        inner += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding:6px 4px;">'
+          + '<button onclick="drawerPagePrev(\'' + kind + '\')" ' + (page === 0 ? 'disabled' : '') + ' style="padding:6px 12px;background:#fff;border:1px solid #e5e5e7;border-radius:8px;cursor:' + (page === 0 ? 'not-allowed' : 'pointer') + ';font-family:inherit;font-size:12.5px;color:' + (page === 0 ? '#ccc' : '#111') + ';display:inline-flex;align-items:center;gap:5px;">'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg>Précédent</button>'
+          + '<span style="font-size:12px;color:#888;">Page ' + (page + 1) + ' / ' + totalPages + '</span>'
+          + '<button onclick="drawerPageNext(\'' + kind + '\')" ' + (page === totalPages - 1 ? 'disabled' : '') + ' style="padding:6px 12px;background:#fff;border:1px solid #e5e5e7;border-radius:8px;cursor:' + (page === totalPages - 1 ? 'not-allowed' : 'pointer') + ';font-family:inherit;font-size:12.5px;color:' + (page === totalPages - 1 ? '#ccc' : '#111') + ';display:inline-flex;align-items:center;gap:5px;">Suivant'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg></button>'
+          + '</div>';
+      }
+      el.innerHTML = inner;
+    };
+
+    function closeDrawer() {
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('drawer-backdrop').classList.remove('open');
+      drawerStack = [];
+      window._currentDrawer = null;
+      updateDrawerBack();
+    }
+
+    // ---- Drawer navigation stack ----
+    var drawerStack = [];
+    function updateDrawerBack() {
+      var btn = document.getElementById('drawer-back');
+      if (btn) {
+        if (drawerStack.length > 0) btn.removeAttribute('hidden');
+        else btn.setAttribute('hidden', '');
+      }
+    }
+    window.drawerBack = function() {
+      var prev = drawerStack.pop();
+      updateDrawerBack();
+      if (!prev) return;
+      if (prev.type === 'user') openUserDrawer(prev.id, true);
+      else if (prev.type === 'payment') openPaymentDrawer(prev.id, true);
+    };
+    function pushDrawer(type, id) {
+      drawerStack.push({ type: type, id: id });
+      updateDrawerBack();
+    }
+
+    window.openPaymentDrawer = function(paymentId, fromBack) {
+      var current = window._currentDrawer;
+      if (!fromBack && current && (current.type !== 'payment' || current.id !== paymentId)) {
+        pushDrawer(current.type, current.id);
+      }
+      window._currentDrawer = { type: 'payment', id: paymentId };
+      updateDrawerBack();
+      var p = state.payments.find(function(x){ return x.id === paymentId; });
+      if (!p) return;
+      var u = state.users.find(function(x){ return x.id === p.user_id; });
+      var userPayments = state.payments.filter(function(x){ return x.user_id === p.user_id && x.status === 'paid'; });
+      var totalPaid = userPayments.reduce(function(a,x){ return a + (x.amount_cents || 0); }, 0);
+      var nbPayments = userPayments.length;
+
+      document.getElementById('drawer-title').textContent = 'Détail paiement';
+
+      var statusCls = p.status === 'paid' ? 'green' : p.status === 'pending' ? 'amber' : p.status === 'refunded' ? 'gray' : 'red';
+      var statusLabel = p.status === 'paid' ? 'Payé' : p.status === 'pending' ? 'En attente' : p.status === 'refunded' ? 'Remboursé' : p.status === 'failed' ? 'Échoué' : p.status;
+      var canRefund = p.status === 'paid';
+
+      var iconCal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+      var iconClock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+      var iconHouse = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>';
+      var iconHash = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>';
+      var iconRef = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>';
+
+      var html = '';
+
+      // Offer label (selon l'offre liée à la formalité)
+      var offerLabels = { starter: 'Starter', business: 'Business', premium: 'Premium' };
+      var offerCls = { starter: 'gray', business: 'blue', premium: 'violet' };
+      var offerBadge = p.offer
+        ? '<span class="offer-badge ' + (offerCls[p.offer] || 'gray') + '">' + escapeHtml(offerLabels[p.offer] || p.offer) + '</span>'
+        : '';
+
+      var cleanDescription = (p.description || 'Paiement').replace(/\s*[—–-]\s*/g, ' ');
+
+      // --- HERO ---
+      html += '<div class="drawer-hero">'
+        + '<div class="meta" style="flex:1;">'
+        +   '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">'
+        +     '<div class="name">' + escapeHtml(cleanDescription) + '</div>'
+        +     offerBadge
+        +   '</div>'
+        +   '<div class="email">' + escapeHtml(p.user_name || '—') + ' · ' + escapeHtml(p.user_email || '') + '</div>'
+        +   '<div class="chips" style="margin-top:8px;"><span class="chip ' + statusCls + '">' + statusLabel + '</span></div>'
+        + '</div>'
+        + '</div>';
+
+      // --- TILES (client info) ---
+      html += '<div class="drawer-stats">'
+        + '<div class="d-tile"><div class="lab">Montant</div><div class="val">' + formatMoney(p.amount_cents, p.currency) + '</div><div class="sub">' + (p.currency || 'EUR') + '</div></div>'
+        + '<div class="d-tile"><div class="lab">Total payé client</div><div class="val">' + formatMoney(totalPaid, 'EUR') + '</div><div class="sub">' + nbPayments + ' paiement' + (nbPayments > 1 ? 's' : '') + '</div></div>'
+        + '</div>';
+
+      // --- DETAILS ---
+      html += '<div class="drawer-section">'
+        + '<div class="drawer-section-title">Détails</div>'
+        + '<div class="drawer-meta">'
+        +   '<div class="row"><span class="k">' + iconHash + 'Référence</span><span class="v">#' + p.id + '</span></div>'
+        +   '<div class="row"><span class="k">' + iconHouse + 'Société</span><span class="v">' + escapeHtml(p.societe || '—') + '</span></div>'
+        +   '<div class="row"><span class="k">' + iconClock + 'Date paiement</span><span class="v">' + formatDateTime(p.paid_at || p.created_at) + '</span></div>'
+        +   (p.payment_method ? '<div class="row"><span class="k">' + iconRef + 'Moyen</span><span class="v">' + escapeHtml(p.payment_method) + '</span></div>' : '')
+        + '</div>'
+        + '</div>';
+
+      // --- CLIENT ---
+      if (u) {
+        html += '<div class="drawer-section">'
+          + '<div class="drawer-section-title">Client</div>'
+          + '<div class="drawer-meta">'
+          +   '<div class="row"><span class="k">' + iconCal + 'Inscrit le</span><span class="v">' + formatDateTime(u.created_at) + '</span></div>'
+          +   '<div class="row"><span class="k">' + iconClock + 'Dernière connexion</span><span class="v">' + formatDateTime(u.last_login_at) + '</span></div>'
+          + '</div>'
+          + '<button onclick="openUserDrawer(' + u.id + ')" style="margin-top:10px;width:100%;padding:10px 14px;background:#fff;border:1px solid #e5e5e7;border-radius:10px;font-size:13px;font-weight:500;color:#111;cursor:pointer;font-family:inherit;transition:all 0.15s;">Voir la fiche client →</button>'
+          + '</div>';
+      }
+
+      // --- REFUND ACTION ---
+      if (canRefund) {
+        html += '<div class="drawer-section">'
+          + '<button onclick="refundPayment(' + p.id + ')" style="width:100%;padding:13px 18px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;font-size:14px;font-weight:600;color:#b91c1c;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s;">'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>'
+          +   'Procéder au remboursement'
+          + '</button>'
+          + '<div style="font-size:12px;color:#888;text-align:center;margin-top:8px;">Le client sera remboursé du montant total</div>'
+          + '</div>';
+      }
+
+      document.getElementById('drawer-body').innerHTML = html;
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('drawer-backdrop').classList.add('open');
+    };
+
+    window.refundPayment = function(paymentId) {
+      if (!confirm('Confirmer le remboursement intégral de ce paiement ?')) return;
+      fetch('/api/admin/payments/' + paymentId + '/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (!d.ok) { alert(d.error || 'Erreur lors du remboursement'); return; }
+        var p = state.payments.find(function(x){ return x.id === paymentId; });
+        if (p) p.status = 'refunded';
+        closeDrawer();
+        renderPayments();
+        renderOverview();
+      });
+    };
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeDrawer();
+    });
+  </script>
+</body>
+</html>

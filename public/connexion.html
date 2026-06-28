@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Cal Sans';
+      src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+
+    @font-face {
+      font-family: 'Matter';
+      src: url('/fonts/Matter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-display: block;
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Matter', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #111;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: #fff;
+    }
+
+    .logo img {
+      height: 28px;
+    }
+
+    .back-link {
+      font-size: 14px;
+      color: #999;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: #111;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 0 24px;
+    }
+
+    .login-card h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .login-card .subtitle {
+      font-size: 15px;
+      color: #999;
+      margin-bottom: 32px;
+    }
+
+    .login-card .subtitle a {
+      color: #111;
+      font-weight: 500;
+      border-bottom: 1px solid #e5e5e5;
+      transition: border-color 0.2s;
+    }
+
+    .login-card .subtitle a:hover {
+      border-color: #111;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      font-family: 'Matter', 'Inter', sans-serif;
+      font-size: 15px;
+      color: #111;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input::placeholder {
+      color: #999;
+    }
+
+    .form-group input:focus {
+      border-color: #111;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+    }
+
+    .form-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .form-options label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .form-options label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #111;
+      cursor: pointer;
+    }
+
+    .form-options a {
+      font-size: 13px;
+      color: #999;
+      transition: color 0.2s;
+    }
+
+    .form-options a:hover {
+      color: #111;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      border-radius: 100px;
+      font-family: 'Matter', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+      background: #111;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      
+      margin-bottom: 20px;
+    }
+
+    .btn-login:hover {
+      background: #000;
+      
+      transform: translateY(-1px);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e0e0e0;
+    }
+
+    .divider span {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-google {
+      width: 100%;
+      padding: 14px;
+      border-radius: 100px;
+      font-family: 'Matter', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+      background: #fff;
+      color: #111;
+      border: 1px solid #e5e5e5;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-google:hover {
+      border-color: #111;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
+    }
+
+    .btn-google svg {
+      width: 18px;
+      height: 18px;
+    }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  </head>
+<body>
+
+  <header>
+    <a href="/" class="logo">
+      <img src="/images/logo.png" alt="Formalist" height="28">
+    </a>
+    <a href="/" class="back-link">Retour</a>
+  </header>
+
+  <main>
+    <div class="login-card">
+      <h1>Connexion</h1>
+      <p class="subtitle">Pas encore de compte ? <a href="/inscription.html">Cr&eacute;er un compte</a></p>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" placeholder="vous@exemple.com" value="test@formalist.fr">
+        </div>
+
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="password" placeholder="Votre mot de passe" value="test123">
+        </div>
+
+        <div id="error" style="display:none; color:#ef4444; font-size:13px; margin-bottom:16px;"></div>
+
+        <div class="form-options">
+          <label><input type="checkbox" checked> Se souvenir de moi</label>
+          <a href="#">Mot de passe oubli&eacute; ?</a>
+        </div>
+
+        <button class="btn-login" type="submit">Se connecter</button>
+      </form>
+
+      <script>
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+          e.preventDefault();
+          var email = document.getElementById('email').value;
+          var password = document.getElementById('password').value;
+          var errEl = document.getElementById('error');
+          errEl.style.display = 'none';
+          var btn = document.querySelector('.btn-login');
+          btn.disabled = true;
+          btn.textContent = 'Connexion...';
+
+          fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+          })
+          .then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+          .then(function(result) {
+            if (result.status !== 200) {
+              errEl.textContent = result.data.error || 'Email ou mot de passe incorrect.';
+              errEl.style.display = 'block';
+              btn.disabled = false;
+              btn.textContent = 'Se connecter';
+              return;
+            }
+            // Store user info for UI display
+            sessionStorage.setItem('user', JSON.stringify(result.data.user));
+            // Redirect by role
+            var role = result.data.user.role;
+            if (role === 'admin') window.location.href = '/admin.html';
+            else if (role === 'avocat') window.location.href = '/avocat.html';
+            else window.location.href = '/dashboard.html';
+          })
+          .catch(function() {
+            errEl.textContent = 'Erreur de connexion au serveur.';
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Se connecter';
+          });
+        });
+      </script>
+
+      <div class="divider"><span>acc&egrave;s rapide</span></div>
+
+      <div style="display:flex;gap:8px;">
+        <button class="btn-google" style="flex:1;font-size:13px;padding:10px;" onclick="quickLogin('test@formalist.fr','test123')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Client
+        </button>
+        <button class="btn-google" style="flex:1;font-size:13px;padding:10px;" onclick="quickLogin('avocat@formalist.fr','avocat123')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Avocat
+        </button>
+        <button class="btn-google" style="flex:1;font-size:13px;padding:10px;" onclick="quickLogin('admin@formalist.fr','admin123')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Admin
+        </button>
+      </div>
+      <script>
+        function quickLogin(email, password) {
+          document.getElementById('email').value = email;
+          document.getElementById('password').value = password;
+          document.getElementById('login-form').dispatchEvent(new Event('submit'));
+        }
+      </script>
+    </div>
+  </main>
+
+</body>
+</html>

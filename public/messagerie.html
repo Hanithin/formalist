@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messagerie - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>    .sidebar {
+      width: 270px;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0 0;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
+    .sidebar-logo a { display: flex; align-items: flex-end; gap: 6px; color: #111; text-decoration: none; }
+    .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; color: #111; line-height: 1; }
+    .sidebar-logo img { height: 26px; }
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer; margin-bottom: 2px;
+    }
+    .sidebar-nav a:hover, .sidebar-nav .sidebar-dropdown:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
+    .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
+    .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
+    .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
+    .sidebar-dropdown:hover .chevron { opacity: 0.6; }
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .sidebar-subnav.open { max-height: 320px; }
+    .sidebar-subnav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 12px 8px 44px; font-size: 13.5px; font-weight: 400; color: #666;
+      border-radius: 8px; transition: all 0.15s ease;
+    }
+    .sidebar-subnav a svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.72; stroke-width: 1.7; }
+    .sidebar-subnav a:hover { color: #111; background: #f6f6f6; }
+    .sidebar-subnav a:hover svg { opacity: 0.92; }
+    .sidebar-subnav a.active { color: #111; font-weight: 500; background: #f3f3f3; }
+    .sidebar-subnav a.active svg { opacity: 1; }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+    .sidebar-bottom {
+      padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #111;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .user-email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .btn-logout, .btn-settings {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .btn-logout:hover, .btn-settings:hover { color: #111; background: #f3f3f4; }
+    .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
+
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    @font-face {
+      font-family: 'Cal Sans';
+      src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Matter';
+      src: url('/fonts/Matter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-display: block;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Matter', 'Inter', -apple-system, sans-serif;
+      color: #111;
+      background: #f5f5f5;
+      display: flex;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* SIDEBAR */
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    /* MAIN AREA */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      margin-left: 270px;
+    }
+    @media (max-width: 768px) {
+      .main { margin-left: 0; }
+    }
+
+    /* MESSAGERIE LAYOUT */
+    .msg-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* CONVERSATION LIST */
+    .conv-list {
+      width: 320px;
+      border-right: 1px solid #e5e5e5;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .conv-list-header {
+      padding: 30px 24px 14px;
+      flex-shrink: 0;
+    }
+    .conv-list-header h2 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .conv-list-header p {
+      font-size: 13.5px;
+      color: #888;
+    }
+    .conv-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #999;
+      padding: 16px 24px 8px;
+    }
+    .conv-items {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .conv-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 24px;
+      cursor: pointer;
+      transition: background 0.12s;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .conv-item:hover { background: #f5f5f5; }
+    .conv-item.active { background: #f5f5f5; }
+    .conv-avatar {
+      width: 40px; height: 40px; border-radius: 50%; background: #111; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600; flex-shrink: 0;
+    }
+    .conv-avatar.support { background: #7c3aed; }
+    .conv-info { flex: 1; min-width: 0; }
+    .conv-name {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .conv-preview {
+      font-size: 12px;
+      color: #999;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .conv-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .conv-time {
+      font-size: 11px;
+      color: #999;
+    }
+    .conv-badge {
+      min-width: 20px;
+      height: 20px;
+      border-radius: 10px;
+      background: #f3f4f6;
+      color: #555;
+      font-size: 11.5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 7px;
+    }
+
+    /* CHAT VIEW */
+    .chat-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      overflow: hidden;
+    }
+    .chat-view-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 14px;
+      padding: 40px 32px;
+    }
+    .welcome-pane { max-width: 640px; text-align: center; }
+    .welcome-ic {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: #f5f3ff; color: #7c3aed;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px;
+    }
+    .welcome-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 24px; font-weight: 600; color: #111; margin-bottom: 8px;
+    }
+    .welcome-desc {
+      font-size: 14px; line-height: 1.55; color: #666;
+      max-width: 520px; margin: 0 auto 28px;
+    }
+    .welcome-cards {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 700px) { .welcome-cards { grid-template-columns: 1fr; } }
+    .welcome-card {
+      background: #fff; border: 1px solid #ececef; border-radius: 14px;
+      padding: 16px; display: flex; align-items: flex-start; gap: 12px;
+      text-align: left;
+    }
+    .welcome-card .wc-ic {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .welcome-card .wc-ic svg { width: 18px; height: 18px; }
+    .welcome-card .wc-ic.violet { background: #f5f3ff; color: #7c3aed; }
+    .welcome-card .wc-ic.blue { background: #eff6ff; color: #2563eb; }
+    .welcome-card .wc-ic.amber { background: #fef3c7; color: #b45309; }
+    .welcome-card .wc-ic.green { background: #ecfdf5; color: #047857; }
+    .welcome-card .wc-text { flex: 1; min-width: 0; }
+    .welcome-card .wc-t { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
+    .welcome-card .wc-s { font-size: 12.5px; color: #888; line-height: 1.4; }
+    .welcome-hint {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12.5px; color: #888;
+      padding: 8px 14px; background: #fafafa; border: 1px solid #f0f0f2;
+      border-radius: 999px;
+    }
+    .chat-view-info {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .chat-view-info .av-big {
+      width: 50px; height: 50px; border-radius: 14px;
+      background: #111; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .chat-view-info.support .av-big { background: #7c3aed; }
+    .chat-view-info .info-text { flex: 1; min-width: 0; }
+    .chat-view-info .info-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 22px; font-weight: 600; color: #111; line-height: 1.2;
+      display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    }
+    .chat-view-info .info-forme {
+      font-size: 11.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: #555; background: #f3f4f6;
+      padding: 4px 10px; border-radius: 6px;
+    }
+    .chat-view-info .info-ref { font-size: 12px; color: #aaa; font-weight: 500; font-family: 'SF Mono', monospace; }
+    .chat-view-info .info-meta {
+      font-size: 13px; color: #888; margin-top: 5px;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .chat-view-info .info-meta .item { display: inline-flex; align-items: center; gap: 6px; }
+    .chat-view-info .info-meta svg { width: 13px; height: 13px; opacity: 0.7; }
+    .chat-view-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid #e5e5e5;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .chat-view-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .chat-back-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 14px; background: #fff; border: 1px solid #e5e5e7;
+      border-radius: 10px; font-family: inherit; font-size: 13.5px;
+      font-weight: 500; color: #111; text-decoration: none;
+      cursor: pointer; transition: all .15s;
+    }
+    .chat-back-btn:hover { background: #fafafa; border-color: #d4d4d8; }
+    .chat-back-btn svg { width: 14px; height: 14px; }
+    .chat-view-header h3 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .chat-view-header p {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+    .empty-chat {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      padding: 32px 28px; max-width: 540px; margin: auto;
+    }
+    .empty-chat-ic {
+      width: 64px; height: 64px; border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+    }
+    .empty-chat-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 20px; font-weight: 600; color: #111; margin-bottom: 8px;
+    }
+    .empty-chat-desc {
+      font-size: 14px; line-height: 1.55; color: #666;
+      max-width: 460px; margin-bottom: 22px;
+    }
+    .empty-chat-desc strong { color: #111; font-weight: 600; }
+    .empty-chat-subjects-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #888; margin-bottom: 10px;
+    }
+    .empty-chat-subjects {
+      display: flex; flex-direction: column; gap: 7px; width: 100%; max-width: 380px;
+    }
+    .quick-subject {
+      padding: 11px 14px; background: #fff; border: 1px solid #ececef;
+      border-radius: 10px; font-family: inherit; font-size: 13.5px;
+      color: #111; cursor: pointer; transition: all .15s; text-align: left;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .quick-subject:hover { background: #f6f6f6; border-color: #d4d4d8; transform: translateY(-1px); }
+    .quick-subject .qs-ic {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 9px; background: #f3f4f6;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #555;
+    }
+    .quick-subject .qs-ic svg { width: 16px; height: 16px; display: block; }
+    .quick-subject .qs-t { flex: 1; }
+    .empty-chat-tips {
+      display: flex; flex-direction: column; gap: 12px;
+      max-width: 420px; width: 100%; margin-top: 6px;
+    }
+    .tip-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 16px; background: #fafafa; border: 1px solid #f0f0f2;
+      border-radius: 12px; text-align: left;
+    }
+    .tip-item .tip-ic {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 9px; background: #fff; border: 1px solid #ececef;
+      display: flex; align-items: center; justify-content: center;
+      color: #555;
+    }
+    .tip-item .tip-ic svg { width: 16px; height: 16px; }
+    .tip-item .tip-t { font-size: 13.5px; font-weight: 600; color: #111; }
+    .tip-item .tip-s { font-size: 12.5px; color: #888; margin-top: 2px; }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    /* Bandeau info en haut de la conversation support */
+    .chat-info-banner {
+      align-self: center;
+      max-width: 90%;
+      background: #f5f3ff;
+      color: #5b21b6;
+      border: 1px solid #ddd6fe;
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      margin: 4px 0 10px;
+    }
+    .chat-info-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+    .chat-info-banner strong { display: block; font-weight: 700; margin-bottom: 2px; color: #4c1d95; }
+    .chat-msg {
+      max-width: 60%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .chat-msg.sent {
+      background: #111;
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-msg.received {
+      background: #f5f5f5;
+      color: #111;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    /* Variantes selon le type de message (kind) — la bulle prend la couleur du tag */
+    .chat-msg.kind-correction_request { background: #fef3c7; color: #5b3210; border: 1px solid #fde68a; }
+    .chat-msg.kind-correction_request.sent { background: #fde68a; color: #5b3210; border-color: #fcd34d; }
+    .chat-msg.kind-rejection { background: #fee2e2; color: #5b1010; border: 1px solid #fecaca; }
+    .chat-msg.kind-rejection.sent { background: #fecaca; color: #5b1010; border-color: #fca5a5; }
+    .chat-msg.kind-validation { background: #dcfce7; color: #14532d; border: 1px solid #bbf7d0; }
+    .chat-msg.kind-validation.sent { background: #bbf7d0; color: #14532d; border-color: #86efac; }
+    .chat-msg.kind-validation_pending { background: #dbeafe; color: #1e3a8a; border: 1px solid #bfdbfe; }
+    .chat-msg.kind-validation_pending.sent { background: #bfdbfe; color: #1e3a8a; border-color: #93c5fd; }
+    .chat-msg.kind-document_request { background: #ede9fe; color: #4c1d95; border: 1px solid #ddd6fe; }
+    .chat-msg.kind-document_request.sent { background: #ddd6fe; color: #4c1d95; border-color: #c4b5fd; }
+    .chat-msg.kind-status_note { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .chat-msg[class*="kind-"] .chat-msg-sender { color: inherit; opacity: 0.65; }
+    .chat-msg[class*="kind-"] .chat-msg-time { opacity: 0.6; }
+    /* CTA d'action sur les messages typés (Voir le dossier, Joindre un document...) */
+    .chat-msg-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 8px;
+      padding: 6px 11px;
+      background: rgba(0,0,0,0.06);
+      border: 1px solid currentColor;
+      border-radius: 100px;
+      font-size: 11.5px; font-weight: 600;
+      color: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .chat-msg-cta:hover { background: rgba(0,0,0,0.14); }
+    .chat-msg-cta svg { width: 12px; height: 12px; }
+    .chat-msg-sender { font-size: 11px; color: #999; margin-bottom: 2px; }
+    .chat-msg.sent .chat-msg-sender { color: rgba(255,255,255,0.6); }
+    .chat-msg-time { font-size: 10px; opacity: 0.6; margin-top: 3px; }
+    .chat-msg.sent .chat-msg-time { text-align: right; }
+    /* Wrapper d'un message + son badge contextuel et le bouton reply */
+    .chat-msg-wrap { display: flex; flex-direction: column; max-width: 65%; position: relative; }
+    .chat-msg-wrap.sent { align-self: flex-end; align-items: flex-end; }
+    .chat-msg-wrap.received { align-self: flex-start; align-items: flex-start; }
+    .chat-msg-wrap .chat-msg { max-width: 100%; }
+    /* Badge contextuel intégré juste au-dessus de la bulle, collé visuellement */
+    .chat-msg-kind {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px 4px 9px;
+      border-radius: 100px 100px 100px 4px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+      margin-bottom: 4px;
+    }
+    .chat-msg-wrap.sent .chat-msg-kind { border-radius: 100px 100px 4px 100px; }
+    .chat-msg-kind svg { width: 11px; height: 11px; flex-shrink: 0; }
+    /* Bouton reply qui apparaît au survol */
+    .chat-msg-reply-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #fff; border: 1px solid #e5e5e7; color: #555;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+      padding: 0;
+    }
+    .chat-msg-reply-btn:hover { background: #111; color: #fff; border-color: #111; }
+    .chat-msg-reply-btn svg { width: 14px; height: 14px; }
+    .chat-msg-wrap.sent .chat-msg-reply-btn { left: -36px; }
+    .chat-msg-wrap.received .chat-msg-reply-btn { right: -36px; }
+    .chat-msg-wrap:hover .chat-msg-reply-btn { opacity: 1; }
+    /* Quote affiché DANS un message qui répond à un autre */
+    .chat-msg-quote {
+      border-left: 3px solid currentColor;
+      padding: 4px 8px;
+      margin-bottom: 6px;
+      opacity: 0.7;
+      font-size: 12px;
+      max-height: 50px; overflow: hidden;
+      border-radius: 0 6px 6px 0;
+      background: rgba(255,255,255,0.08);
+    }
+    .chat-msg.received .chat-msg-quote { background: rgba(0,0,0,0.04); }
+    .chat-msg-quote-sender { font-weight: 600; font-size: 10.5px; margin-bottom: 2px; }
+    /* Barre "Répondre à" au-dessus du composer */
+    .chat-reply-context {
+      display: none;
+      padding: 8px 16px;
+      background: #f5f5f7;
+      border-top: 1px solid #ececef;
+      border-left: 3px solid #111;
+      align-items: center; gap: 10px;
+      font-size: 12.5px;
+    }
+    .chat-reply-context.active { display: flex; }
+    .chat-reply-context .rc-body { flex: 1; min-width: 0; }
+    .chat-reply-context .rc-label { font-weight: 600; color: #111; font-size: 11.5px; }
+    .chat-reply-context .rc-preview {
+      color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .chat-reply-context .rc-close {
+      background: none; border: none; cursor: pointer; color: #888;
+      padding: 4px; border-radius: 6px; flex-shrink: 0;
+    }
+    .chat-reply-context .rc-close:hover { background: #ececef; color: #111; }
+    .chat-reply-context .rc-close svg { width: 14px; height: 14px; }
+    .chat-msg-file {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; background: #e8f0fe; border-radius: 10px;
+      font-size: 12px; color: #2563eb; cursor: pointer; text-decoration: none;
+      max-width: 60%; word-break: break-all;
+    }
+    .chat-msg-file:hover { background: #d4e4fc; }
+    .chat-msg-file svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .chat-input-area {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .chat-input-area input[type=text] {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 24px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #f5f5f5;
+      outline: none;
+    }
+    .chat-input-area input[type=text]:focus { border-color: #e5e5e5; background: #fff; }
+    .chat-input-area input[type=file] { display: none; }
+    .chat-btn-attach {
+      width: 34px; height: 34px; border-radius: 50%; border: none; background: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: #999; transition: color 0.15s;
+    }
+    .chat-btn-attach:hover { color: #111; }
+    .chat-btn-attach svg { width: 18px; height: 18px; }
+    .chat-btn-send {
+      width: 34px; height: 34px; border-radius: 50%; border: none; background: #e5e5e5;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: #999; transition: all 0.2s ease;
+    }
+    .chat-btn-send.active { background: #111; color: #fff; }
+    .chat-btn-send svg { width: 16px; height: 16px; }
+  </style>
+
+  <!-- BEGIN sidebar refresh (auto-generated) -->
+  <style>
+    /* Logo */
+    .sidebar-logo a { display: inline-flex !important; align-items: baseline !important; gap: 3px !important; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif !important;
+      font-size: 30px !important; font-weight: 700 !important;
+      letter-spacing: 0 !important; line-height: 1 !important;
+      color: #111 !important;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    /* Société active */
+    .sidebar-context {
+      margin: 0 12px 12px; padding: 10px 12px;
+      background: #fafafa; border: 1px solid #eee; border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .sidebar-context:hover { background: #f3f3f4; border-color: #e2e2e4; }
+    .sidebar-context .ctx-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
+    .sidebar-context .ctx-body { flex: 1; min-width: 0; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-context.single { cursor: default; }
+    .sidebar-context.single:hover { background: #fafafa; border-color: #eee; }
+    .sidebar-context.single .ctx-chevron { display: none; }
+    /* CTA primaire "Nouvelle formalité" */
+    .sidebar-cta {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active { transform: scale(0.99); }
+    .sidebar-cta svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    /* Badges dans la nav */
+    .nav-badge {
+      margin-left: auto;
+      background: #f3f4f6; color: #555;
+      font-size: 11.5px; font-weight: 500;
+      padding: 2px 9px; border-radius: 10px;
+      text-align: center; line-height: 1.5;
+    }
+    .nav-badge.muted { background: #f0f0f2; color: #666; }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+
+
+    /* Modal Nouvelle formalité */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    @media (max-width: 600px) { .nd-grid { grid-template-columns: 1fr; } }
+  </style>
+  <!-- END sidebar refresh -->
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+  <!-- SIDEBAR -->
+          <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-context" id="sidebar-context" style="display:none;">
+      <div class="ctx-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0M9 17h0M15 17h0"/></svg>
+      </div>
+      <div class="ctx-body">
+        <div class="ctx-label">Soci&eacute;t&eacute; active</div>
+        <div class="ctx-name" id="ctx-name"></div>
+      </div>
+      <svg class="ctx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <button class="sidebar-cta" onclick="openNewActionModal()">
+      Cr&eacute;er une formalit&eacute;
+    </button>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+
+      <a href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
+      <a class="active" href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){sessionStorage.removeItem('user');window.location.href='/connexion.html';})" title="D&eacute;connexion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="msg-container">
+      <!-- Conversation list -->
+      <div class="conv-list">
+        <div class="conv-list-header">
+          <h2>Messagerie</h2>
+          <p>Vos conversations</p>
+        </div>
+        <div class="conv-items" id="convItems">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Chat view -->
+      <div class="chat-view" id="chatView">
+        <div class="chat-view-empty" id="chatEmpty">
+          <div class="welcome-pane">
+            <div class="welcome-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <h2 class="welcome-title">Votre messagerie centralisée</h2>
+            <p class="welcome-desc">Retrouvez ici toutes vos discussions au même endroit : échanges avec les avocats assignés à vos formalités et support Formalist pour toute autre question.</p>
+
+            <div class="welcome-cards">
+              <div class="welcome-card">
+                <div class="wc-ic violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                <div class="wc-text">
+                  <div class="wc-t">Discussions avocat</div>
+                  <div class="wc-s">Une conversation par formalité. Posez vos questions, partagez vos justificatifs, suivez l'avancement.</div>
+                </div>
+              </div>
+              <div class="welcome-card">
+                <div class="wc-ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                <div class="wc-text">
+                  <div class="wc-t">Support Formalist</div>
+                  <div class="wc-s">Facturation, problème technique, suggestion : notre équipe vous répond sous quelques heures (lun-ven 9h-19h).</div>
+                </div>
+              </div>
+              <div class="welcome-card">
+                <div class="wc-ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></div>
+                <div class="wc-text">
+                  <div class="wc-t">Documents partagés</div>
+                  <div class="wc-s">Joignez attestation de capital, pièces d'identité, justificatifs… directement dans la conversation.</div>
+                </div>
+              </div>
+              <div class="welcome-card">
+                <div class="wc-ic green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                <div class="wc-text">
+                  <div class="wc-t">Historique conservé</div>
+                  <div class="wc-s">Toutes vos conversations sont archivées et restent accessibles tant que vos formalités sont actives.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="welcome-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+              Sélectionnez une conversation à gauche pour commencer
+            </div>
+          </div>
+        </div>
+        <div id="chatActive" style="display:none;flex:1;flex-direction:column">
+          <div class="chat-view-header" id="chatViewHeader">
+            <div class="chat-view-info" id="chatViewInfo"></div>
+            <div id="chatViewActions" style="display:none;"></div>
+          </div>
+          <div class="chat-messages" id="chatMessages"></div>
+          <div class="chat-reply-context" id="chatReplyContext">
+            <div class="rc-body">
+              <div class="rc-label" id="rcLabel">Répondre à</div>
+              <div class="rc-preview" id="rcPreview"></div>
+            </div>
+            <button type="button" class="rc-close" onclick="clearReplyTarget()" title="Annuler la réponse">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="chat-input-area">
+            <input type="file" id="chatFileInput" accept=".pdf,.jpg,.jpeg,.png,.docx">
+            <button class="chat-btn-attach" onclick="document.getElementById('chatFileInput').click()" title="Joindre un fichier">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <input type="text" id="chatTextInput" placeholder="Votre message..." onkeydown="if(event.key==='Enter')sendMessage()">
+            <button class="chat-btn-send" id="chatSendBtn" onclick="sendMessage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function toggleDropdown(el) { el.classList.toggle('open'); var s = el.nextElementSibling; if (s) s.classList.toggle('open'); }
+  (function() {
+    var _currentUser = null;
+    var conversations = []; // { type:'avocat'|'support', id, title, subtitle, lastMsg, lastTime, unread, formaliteId }
+    var activeConv = null;
+    var currentSSE = null;
+    var _messagesById = {};   // cache pour les quotes (reply_to_id → message d'origine)
+    var _replyTarget = null;  // message en cours de réponse (UI composer)
+
+    // Définit le message-cible de la réponse en cours et affiche la barre "Répondre à"
+    function setReplyTarget(m) {
+      _replyTarget = m;
+      var bar = document.getElementById('chatReplyContext');
+      var preview = document.getElementById('rcPreview');
+      var label = document.getElementById('rcLabel');
+      if (bar && preview && label) {
+        label.textContent = 'Répondre à ' + (m.sender_name || 'ce message');
+        var text = (m.content || '').slice(0, 80);
+        preview.textContent = text + (m.content && m.content.length > 80 ? '…' : '');
+        bar.classList.add('active');
+      }
+      var input = document.getElementById('chatTextInput');
+      if (input) input.focus();
+    }
+    window.setReplyTarget = setReplyTarget;
+    function clearReplyTarget() {
+      _replyTarget = null;
+      var bar = document.getElementById('chatReplyContext');
+      if (bar) bar.classList.remove('active');
+    }
+    window.clearReplyTarget = clearReplyTarget;
+    // Ferme l'EventSource avant la navigation pour éviter que le navigateur garde la
+    // connexion HTTP ouverte (peut causer un spinner "loading infinie" sur la page suivante).
+    window.addEventListener('beforeunload', function() {
+      if (currentSSE) { try { currentSSE.close(); } catch(_) {} currentSSE = null; }
+    });
+    window.addEventListener('pagehide', function() {
+      if (currentSSE) { try { currentSSE.close(); } catch(_) {} currentSSE = null; }
+    });
+
+    // --- Auth ---
+    fetch('/api/auth/me').then(function(r) {
+      if (r.status !== 200) { window.location.href = '/connexion.html'; return null; }
+      return r.json();
+    }).then(function(data) {
+      if (!data) return;
+      _currentUser = data.user;
+      document.querySelector('.user-name').textContent = data.user.name;
+      document.querySelector('.user-email').textContent = data.user.email;
+      var initials = data.user.name.split(' ').map(function(n) { return n[0]; }).join('').substring(0,2).toUpperCase();
+      document.querySelector('.avatar').textContent = initials;
+      loadConversations();
+    }).catch(function() { window.location.href = '/connexion.html'; });
+
+    // --- Load conversations ---
+    function loadConversations() {
+      conversations = [];
+      var done = 0;
+      var needed = 2;
+
+      // 1. Formalites with avocat OR with unread/active messages \u2014 rendu imm\u00e9diat
+      fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
+        var formalites = data.formalites || [];
+        formalites.forEach(function(f) {
+          // On cr\u00e9e une conv pour toute formalit\u00e9 ayant un avocat OU des messages non lus
+          // (ainsi le deep-link depuis dashboard fonctionne m\u00eame sans avocat assign\u00e9)
+          if (f.assigned_avocat_id || (f.unread_messages && f.unread_messages > 0)) {
+            conversations.push({
+              type: 'avocat',
+              id: 'avocat-' + f.id,
+              formaliteId: f.id,
+              title: f.societe || ('Formalit\u00e9 #' + f.id),
+              subtitle: f.avocat_name || 'Avocat assign\u00e9',
+              forme: f.forme || '',
+              capital: f.capital || 0,
+              offer: f.offer || '',
+              creatorName: f.user_name || f.creator_name || '',
+              avocatName: f.avocat_name || '',
+              reference: f.reference || '',
+              status: f.status || 'en_cours',
+              phase: f.phase || 1,
+              lastMsg: '',
+              lastTime: f.updated_at || '',
+              unread: f.unread_messages || 0
+            });
+          }
+        });
+        done++;
+        if (done >= needed) renderConversations();
+        // Best-effort : fetch les last messages en arri\u00e8re-plan et re-render
+        var pending = conversations.filter(function(c) { return c.type === 'avocat'; });
+        var msgDone = 0;
+        pending.forEach(function(conv) {
+          fetch('/api/messages?formalite_id=' + conv.formaliteId).then(function(r) { return r.json(); }).then(function(d) {
+            var msgs = d.messages || [];
+            if (msgs.length > 0) {
+              var last = msgs[msgs.length - 1];
+              conv.lastMsg = last.content || '';
+              conv.lastTime = last.created_at || conv.lastTime;
+              if (!conv.subtitle || conv.subtitle === 'Avocat assign\u00e9') {
+                var avocatMsg = msgs.find(function(m) { return m.sender_role === 'avocat'; });
+                if (avocatMsg) conv.subtitle = avocatMsg.sender_name;
+              }
+            }
+            msgDone++;
+            if (msgDone >= pending.length) renderConversations();
+          }).catch(function() { msgDone++; if (msgDone >= pending.length) renderConversations(); });
+        });
+      }).catch(function() { done++; if (done >= needed) renderConversations(); });
+
+      // 2. Support conversation
+      fetch('/api/support').then(function(r) { return r.json(); }).then(function(data) {
+        var msgs = data.messages || [];
+        var lastMsg = '';
+        var lastTime = '';
+        if (msgs.length > 0) {
+          var last = msgs[msgs.length - 1];
+          lastMsg = last.content || '';
+          lastTime = last.created_at || '';
+        }
+        conversations.push({
+          type: 'support',
+          id: 'support',
+          formaliteId: null,
+          title: 'Support Formalist',
+          subtitle: 'Assistance et aide',
+          lastMsg: lastMsg,
+          lastTime: lastTime,
+          unread: 0
+        });
+        // Get unread count
+        fetch('/api/support/unread').then(function(r) { return r.json(); }).then(function(d) {
+          var sup = conversations.find(function(c) { return c.type === 'support'; });
+          if (sup) sup.unread = d.count || 0;
+          done++;
+          if (done >= needed) renderConversations();
+        }).catch(function() { done++; if (done >= needed) renderConversations(); });
+      }).catch(function() { done++; if (done >= needed) renderConversations(); });
+    }
+
+    // --- Render conversation list ---
+    function renderConversations() {
+      var container = document.getElementById('convItems');
+      var html = '';
+
+      // Avocat conversations
+      var avocatConvs = conversations.filter(function(c) { return c.type === 'avocat'; });
+      if (avocatConvs.length > 0) {
+        html += '<div class="conv-section-title">Avocat</div>';
+        avocatConvs.forEach(function(c) {
+          html += renderConvItem(c);
+        });
+      }
+
+      // Support
+      var supportConvs = conversations.filter(function(c) { return c.type === 'support'; });
+      html += '<div class="conv-section-title">Support</div>';
+      supportConvs.forEach(function(c) {
+        html += renderConvItem(c);
+      });
+
+      container.innerHTML = html;
+
+      // Add click handlers
+      container.querySelectorAll('.conv-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+          var convId = this.dataset.convId;
+          selectConversation(convId);
+        });
+      });
+
+      // Deep-link : ?formalite=X ouvre directement la conv de cette formalité
+      applyDeepLink();
+    }
+
+    function applyDeepLink() {
+      if (window._convDeepLinkApplied) return;
+      var params = new URLSearchParams(window.location.search);
+      var fId = params.get('formalite');
+      if (!fId) return;
+      var target = conversations.find(function(c){ return c.type === 'avocat' && String(c.formaliteId) === String(fId); });
+      if (!target) return;
+      window._convDeepLinkApplied = true;
+      // Timestamp ISO ciblé (?t=) : on tentera de scroller au message le plus proche
+      var targetTs = params.get('t');
+      // Sélectionne après un micro-délai pour laisser le DOM se peindre
+      setTimeout(function(){
+        selectConversation(target.id);
+        history.replaceState({}, '', '/messagerie.html');
+        if (targetTs) {
+          // Laisse le chargement des messages se terminer puis cible le plus proche
+          setTimeout(function(){ scrollToMessageByTime(targetTs); }, 350);
+        }
+      }, 80);
+    }
+
+    // Trouve la bulle dont l'horodatage est le plus proche du timestamp cible
+    // et la met en surbrillance brièvement. Utilisé pour les deep-links depuis
+    // le dashboard ("Voir dans la messagerie" sur une note avocat).
+    function scrollToMessageByTime(isoTarget) {
+      var target = new Date(isoTarget).getTime();
+      if (isNaN(target)) return;
+      var bestNode = null;
+      var bestDelta = Infinity;
+      // Itère sur les messages connus (cache local)
+      Object.keys(_messagesById || {}).forEach(function(id) {
+        var m = _messagesById[id];
+        if (!m || !m.created_at) return;
+        var t = new Date(m.created_at.replace(' ', 'T') + 'Z').getTime();
+        if (isNaN(t)) return;
+        var d = Math.abs(t - target);
+        if (d < bestDelta) {
+          bestDelta = d;
+          bestNode = document.querySelector('.chat-msg-wrap[data-message-id="' + id + '"]');
+        }
+      });
+      if (!bestNode) return;
+      bestNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Halo temporaire pour signaler le message
+      bestNode.style.transition = 'box-shadow 0.3s, background 0.3s';
+      bestNode.style.boxShadow = '0 0 0 3px #fde68a';
+      bestNode.style.borderRadius = '12px';
+      setTimeout(function() {
+        bestNode.style.boxShadow = '';
+      }, 2000);
+    }
+
+    function renderConvItem(c) {
+      var isActive = activeConv && activeConv.id === c.id;
+      var title = c.title || 'Conversation';
+      var lastMsg = c.lastMsg || '';
+      var initials = (title.split(' ').map(function(n) { return (n && n[0]) || ''; }).join('') || 'CV').substring(0,2).toUpperCase();
+      var preview = lastMsg.length > 40 ? lastMsg.substring(0, 40) + '...' : (lastMsg || 'Aucun message');
+      var time = formatShortDate(c.lastTime);
+      var avatarClass = c.type === 'support' ? 'conv-avatar support' : 'conv-avatar';
+
+      var html = '<div class="conv-item' + (isActive ? ' active' : '') + '" data-conv-id="' + c.id + '">';
+      html += '<div class="' + avatarClass + '">' + escapeHtml(initials) + '</div>';
+      html += '<div class="conv-info">';
+      html += '<div class="conv-name">' + escapeHtml(title) + '</div>';
+      html += '<div class="conv-preview">' + escapeHtml(preview) + '</div>';
+      html += '</div>';
+      html += '<div class="conv-meta">';
+      if (time) html += '<div class="conv-time">' + time + '</div>';
+      if (c.unread > 0) html += '<div class="conv-badge">' + c.unread + '</div>';
+      html += '</div>';
+      html += '</div>';
+      return html;
+    }
+
+    // --- Select conversation ---
+    function selectConversation(convId) {
+      var conv = conversations.find(function(c) { return c.id === convId; });
+      if (!conv) return;
+      activeConv = conv;
+
+      // Update active state in list
+      document.querySelectorAll('.conv-item').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.convId === convId);
+      });
+
+      // Show chat view
+      document.getElementById('chatEmpty').style.display = 'none';
+      var chatActive = document.getElementById('chatActive');
+      chatActive.style.display = 'flex';
+
+      // Set header
+      var info = document.getElementById('chatViewInfo');
+      var initials = (conv.title || '?').split(' ').map(function(n){return (n[0]||'').toUpperCase();}).join('').slice(0,2);
+      var iconUser = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/></svg>';
+      var iconShield = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+      var iconPack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>';
+      // Mapping de l'offre client : starter/business/premium → label affichable
+      var offerLabels = { starter: 'Starter', business: 'Business', premium: 'Premium' };
+      var offerStr = conv.offer ? (offerLabels[conv.offer] || conv.offer.charAt(0).toUpperCase() + conv.offer.slice(1)) : '';
+      // Évite le doublon "Me. Me." quand avocatName contient déjà le préfixe
+      var avocatDisplay = '';
+      if (conv.avocatName) {
+        var clean = String(conv.avocatName).replace(/^(M[eE]\.?\s+)+/, '').trim();
+        avocatDisplay = 'Me. ' + clean;
+      }
+      if (conv.type === 'avocat') {
+        info.className = 'chat-view-info avocat';
+        info.innerHTML = '<div class="av-big">' + initials + '</div>'
+          + '<div class="info-text">'
+          +   '<div class="info-title">'
+          +     (conv.forme ? '<span class="info-forme">' + conv.forme + '</span>' : '')
+          +     '<span>' + (conv.title || '') + '</span>'
+          +     (conv.reference ? '<span class="info-ref">' + conv.reference + '</span>' : '')
+          +   '</div>'
+          +   '<div class="info-meta">'
+          +     (avocatDisplay ? '<span class="item">' + iconShield + avocatDisplay + '</span>' : '')
+          +     (conv.creatorName ? '<span class="item">' + iconUser + 'Client : ' + conv.creatorName + '</span>' : '')
+          +     (offerStr ? '<span class="item">' + iconPack + 'Offre ' + offerStr + '</span>' : '')
+          +   '</div>'
+          + '</div>';
+
+        // Bouton retour : vers formalité si en cours, vers documents si terminée
+        var actionsEl = document.getElementById('chatViewActions');
+        if (actionsEl) {
+          actionsEl.style.display = 'flex';
+          actionsEl.className = 'chat-view-actions';
+          var isDone = conv.status === 'terminee';
+          var iconHouse = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>';
+          var iconFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>';
+          if (isDone) {
+            actionsEl.innerHTML = '<a class="chat-back-btn" href="/documents.html">' + iconFolder + 'Voir les documents</a>';
+          } else {
+            actionsEl.innerHTML = '<a class="chat-back-btn" href="/creation.html?id=' + conv.formaliteId + '">' + iconHouse + 'Retour au dossier</a>';
+          }
+        }
+      } else {
+        var actionsElS = document.getElementById('chatViewActions');
+        if (actionsElS) actionsElS.style.display = 'none';
+        info.className = 'chat-view-info support';
+        info.innerHTML = '<div class="av-big">SF</div>'
+          + '<div class="info-text">'
+          +   '<div class="info-title"><span>' + (conv.title || 'Support Formalist') + '</span></div>'
+          +   '<div class="info-meta"><span>' + (conv.subtitle || '') + '</span></div>'
+          + '</div>';
+      }
+
+      // Track current conv type for empty state
+      window._currentConvType = conv.type;
+      window._currentConvTitle = conv.title;
+
+      // Close previous SSE
+      if (currentSSE) { currentSSE.close(); currentSSE = null; }
+
+      if (conv.type === 'avocat') {
+        loadAvocatMessages(conv.formaliteId);
+      } else {
+        loadSupportMessages();
+      }
+
+      // Reset unread
+      conv.unread = 0;
+      renderConversations();
+      // Re-select active
+      document.querySelectorAll('.conv-item').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.convId === convId);
+      });
+    }
+
+    // --- Avocat messages ---
+    function loadAvocatMessages(formaliteId) {
+      fetch('/api/messages?formalite_id=' + formaliteId).then(function(r) { return r.json(); }).then(function(data) {
+        renderMessages(data.messages || []);
+        fetch('/api/messages/read?formalite_id=' + formaliteId, { method: 'PUT' });
+      });
+
+      // SSE
+      currentSSE = new EventSource('/api/messages/stream?formalite_id=' + formaliteId);
+      currentSSE.onmessage = function(e) {
+        try {
+          var msg = JSON.parse(e.data);
+          appendMessage(msg);
+          fetch('/api/messages/read?formalite_id=' + formaliteId, { method: 'PUT' });
+          updateConvPreview(activeConv.id, msg.content, msg.created_at);
+        } catch(err) {}
+      };
+    }
+
+    // --- Support messages ---
+    function loadSupportMessages() {
+      fetch('/api/support').then(function(r) { return r.json(); }).then(function(data) {
+        renderMessages(data.messages || []);
+      });
+
+      // SSE
+      currentSSE = new EventSource('/api/support/stream');
+      currentSSE.onmessage = function(e) {
+        try {
+          var msg = JSON.parse(e.data);
+          appendMessage(msg);
+          updateConvPreview('support', msg.content, msg.created_at);
+        } catch(err) {}
+      };
+    }
+
+    // --- Render messages ---
+    function renderMessages(messages) {
+      var container = document.getElementById('chatMessages');
+      container.innerHTML = '';
+      // Bandeau d'intro pour la conversation support : rassure l'utilisateur sur le délai
+      if (activeConv && activeConv.type === 'support') {
+        var banner = document.createElement('div');
+        banner.className = 'chat-info-banner';
+        banner.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+          + '<div><strong>Support Formalist</strong>Vous êtes en contact avec notre équipe support. Posez votre question ici, nous vous répondrons rapidement (généralement sous 1 h ouvré).</div>';
+        container.appendChild(banner);
+      }
+      if (messages.length === 0) {
+        var empty = document.createElement('div');
+        empty.innerHTML = renderEmptyChatState();
+        while (empty.firstChild) container.appendChild(empty.firstChild);
+      }
+      messages.forEach(function(m) { appendMessage(m, true); });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function renderEmptyChatState() {
+      var type = window._currentConvType;
+      var title = window._currentConvTitle || '';
+      if (type === 'support') {
+        var ICONS = {
+          card:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg>',
+          file:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+          shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+          bug:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+          spark:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+        };
+        var subjects = [
+          { ic: ICONS.card,   t: 'Question sur ma facturation',        q: "Bonjour, j'ai une question concernant ma facturation : " },
+          { ic: ICONS.file,   t: 'Problème avec un document',          q: "Bonjour, je rencontre un problème avec un document : " },
+          { ic: ICONS.shield, t: 'Aide juridique générale',            q: "Bonjour, j'ai besoin d'aide sur une question juridique : " },
+          { ic: ICONS.bug,    t: 'Bug ou problème technique',          q: "Bonjour, je rencontre un bug : " },
+          { ic: ICONS.spark,  t: 'Suggestion ou autre demande',        q: "Bonjour, j'aimerais vous suggérer : " }
+        ];
+        var html = '<div class="empty-chat">'
+          + '<div class="empty-chat-ic" style="background:#eff6ff;color:#2563eb;">'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+          + '</div>'
+          + '<div class="empty-chat-title">Support Formalist</div>'
+          + '<div class="empty-chat-desc">Notre équipe vous répond généralement sous quelques heures (lun–ven 9h–19h). Posez-nous toute question sur vos formalités, facturation, documents, fonctionnalités…</div>'
+          + '<div class="empty-chat-subjects-title">Sujets fréquents</div>'
+          + '<div class="empty-chat-subjects">';
+        subjects.forEach(function(s){
+          html += '<button class="quick-subject" onclick="fillMessage(\'' + s.q.replace(/'/g, "\\\\'") + '\')">'
+                + '<span class="qs-ic">' + s.ic + '</span>'
+                + '<span class="qs-t">' + s.t + '</span>'
+                + '</button>';
+        });
+        html += '</div></div>';
+        return html;
+      }
+      // Default : avocat conversation
+      return '<div class="empty-chat">'
+        + '<div class="empty-chat-ic" style="background:#f5f3ff;color:#7c3aed;">'
+        +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'
+        + '</div>'
+        + '<div class="empty-chat-title">Discutez avec votre avocat</div>'
+        + '<div class="empty-chat-desc">Échangez directement avec l\'avocat assigné à <strong>' + (title || 'votre dossier') + '</strong>. Posez vos questions, demandez des précisions, partagez des documents. L\'avocat reçoit une notification à chaque message.</div>'
+        + '<div class="empty-chat-tips">'
+        +   '<div class="tip-item"><span class="tip-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8z"/></svg></span><div><div class="tip-t">Posez vos questions</div><div class="tip-s">Capital, statuts, déclarations…</div></div></div>'
+        +   '<div class="tip-item"><span class="tip-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></span><div><div class="tip-t">Partagez vos documents</div><div class="tip-s">Attestation, pièces d\'identité, justificatifs</div></div></div>'
+        +   '<div class="tip-item"><span class="tip-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><div><div class="tip-t">Réponse rapide</div><div class="tip-s">Sous 24h ouvrées en moyenne</div></div></div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    window.fillMessage = function(text) {
+      var input = document.getElementById('chatTextInput');
+      if (input) { input.value = text; input.focus(); }
+    };
+
+    function appendMessage(m, noscroll) {
+      var container = document.getElementById('chatMessages');
+      // Remove placeholder
+      var placeholder = container.querySelector('div[style*="text-align:center"]');
+      if (placeholder) placeholder.remove();
+
+      var isMine = _currentUser && m.sender_id === _currentUser.id;
+
+      // File message (support)
+      if (m.file_path && m.content && !m.content.startsWith('\ud83d\udcce')) {
+        var a = document.createElement('a');
+        a.className = 'chat-msg-file';
+        a.href = '/api/file?path=' + encodeURIComponent(m.file_path);
+        a.target = '_blank';
+        a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' + escapeHtml(m.content || m.file_path);
+        container.appendChild(a);
+      } else {
+        // Wrapper qui contient badge contextuel + bulle + bouton reply (au survol)
+        var wrap = document.createElement('div');
+        wrap.className = 'chat-msg-wrap ' + (isMine ? 'sent' : 'received');
+        wrap.dataset.messageId = m.id || '';
+
+        // Badge contextuel : la "tag" du message (type: correction, rejet, etc.)
+        if (m.kind && m.kind !== 'text') {
+          var kindMeta = {
+            correction_request: { label: 'Demande de corrections', icon: '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>', bg: '#fef3c7', color: '#92400e' },
+            rejection: { label: 'Dossier rejeté', icon: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>', bg: '#fee2e2', color: '#991b1b' },
+            validation: { label: 'Dossier validé', icon: '<polyline points="20 6 9 17 4 12"/>', bg: '#dcfce7', color: '#15803d' },
+            validation_pending: { label: 'En attente de validation', icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', bg: '#dbeafe', color: '#1d4ed8' },
+            document_request: { label: 'Demande de pièce', icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>', bg: '#ede9fe', color: '#5b21b6' },
+            status_note: { label: 'Mise à jour du dossier', icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>', bg: '#f3f4f6', color: '#374151' },
+          };
+          var meta = kindMeta[m.kind] || kindMeta.status_note;
+          var badge = document.createElement('div');
+          badge.className = 'chat-msg-kind';
+          badge.style.cssText = 'background:' + meta.bg + ';color:' + meta.color + ';';
+          badge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + meta.icon + '</svg>' + meta.label;
+          wrap.appendChild(badge);
+        }
+
+        // Bulle principale — coloration spécifique pour les messages typés (correction, rejet…)
+        var div = document.createElement('div');
+        var typedClass = (m.kind && m.kind !== 'text') ? ' kind-' + m.kind : '';
+        div.className = 'chat-msg ' + (isMine ? 'sent' : 'received') + typedClass;
+        var time = formatTime(m.created_at);
+        var html = '';
+        if (!isMine) html += '<div class="chat-msg-sender">' + escapeHtml(m.sender_name || '') + '</div>';
+        // Quote si ce message est une réponse à un autre
+        if (m.reply_to_id) {
+          var quoted = _messagesById[m.reply_to_id];
+          if (quoted) {
+            var qContent = (quoted.content || '').slice(0, 90);
+            html += '<div class="chat-msg-quote"><div class="chat-msg-quote-sender">' + escapeHtml(quoted.sender_name || 'Utilisateur') + '</div>' + escapeHtml(qContent) + (quoted.content && quoted.content.length > 90 ? '…' : '') + '</div>';
+          }
+        }
+        html += '<div>' + escapeHtml(m.content || '') + '</div>';
+        // CTA contextuel (visible côté destinataire) — voir le dossier ou joindre un document
+        if (m.kind && m.kind !== 'text' && !isMine) {
+          var fid = m.formalite_id || (activeConv && activeConv.formaliteId);
+          if (m.kind === 'correction_request' || m.kind === 'rejection' || m.kind === 'validation_pending' || m.kind === 'validation') {
+            if (fid) {
+              var ctaLabel = (m.kind === 'rejection') ? 'Consulter le dossier' : (m.kind === 'validation' ? 'Voir le dossier' : 'Corriger le dossier');
+              html += '<a class="chat-msg-cta" href="/creation.html?id=' + encodeURIComponent(fid) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>' + ctaLabel + '</a>';
+            }
+          } else if (m.kind === 'document_request') {
+            html += '<button type="button" class="chat-msg-cta" data-action="upload-doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Joindre le document</button>';
+          }
+        }
+        html += '<div class="chat-msg-time">' + time + '</div>';
+        div.innerHTML = html;
+        // Branche le bouton "Joindre le document" sur l'input file existant
+        var uploadCta = div.querySelector('[data-action="upload-doc"]');
+        if (uploadCta) {
+          uploadCta.addEventListener('click', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            var fi = document.getElementById('chatFileInput');
+            if (fi) fi.click();
+          });
+        }
+        wrap.appendChild(div);
+
+        // Bouton "Répondre" au survol
+        var replyBtn = document.createElement('button');
+        replyBtn.type = 'button';
+        replyBtn.className = 'chat-msg-reply-btn';
+        replyBtn.title = 'Répondre';
+        replyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>';
+        replyBtn.addEventListener('click', function() { setReplyTarget(m); });
+        wrap.appendChild(replyBtn);
+
+        container.appendChild(wrap);
+        // Garde une référence pour pouvoir afficher les quotes
+        if (m.id) _messagesById[m.id] = m;
+      }
+      if (!noscroll) container.scrollTop = container.scrollHeight;
+    }
+
+    // --- Send message ---
+    window.sendMessage = function() {
+      if (!activeConv) return;
+      var input = document.getElementById('chatTextInput');
+      var text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      document.getElementById('chatSendBtn').classList.remove('active');
+      var replyId = _replyTarget && _replyTarget.id ? _replyTarget.id : null;
+      clearReplyTarget();
+
+      if (activeConv.type === 'avocat') {
+        var payload = { formalite_id: activeConv.formaliteId, content: text };
+        if (replyId) payload.reply_to_id = replyId;
+        fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        fetch('/api/support', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text })
+        });
+      }
+    };
+
+    // --- File upload ---
+    document.getElementById('chatFileInput').addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file || !activeConv) return;
+
+      if (activeConv.type === 'avocat') {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('doc_name', file.name);
+        fd.append('status', 'uploaded');
+        fetch('/api/formalites/' + activeConv.formaliteId + '/documents', { method: 'POST', body: fd }).then(function(r) { return r.json(); }).then(function(data) {
+          if (data.ok) {
+            fetch('/api/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ formalite_id: activeConv.formaliteId, content: '\ud83d\udcce ' + file.name })
+            });
+          }
+        });
+      } else {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('content', file.name);
+        fetch('/api/support', { method: 'POST', body: fd });
+      }
+      this.value = '';
+    });
+
+    // --- Send button active state ---
+    var chatInput = document.getElementById('chatTextInput');
+    var chatSendBtn = document.getElementById('chatSendBtn');
+    chatInput.addEventListener('input', function() {
+      chatSendBtn.classList.toggle('active', chatInput.value.trim().length > 0);
+    });
+
+    // --- Update conversation preview ---
+    function updateConvPreview(convId, content, time) {
+      var conv = conversations.find(function(c) { return c.id === convId; });
+      if (conv) {
+        conv.lastMsg = content || '';
+        conv.lastTime = time || '';
+      }
+      // Re-render list but keep active
+      var currentActiveId = activeConv ? activeConv.id : null;
+      renderConversations();
+      if (currentActiveId) {
+        document.querySelectorAll('.conv-item').forEach(function(el) {
+          el.classList.toggle('active', el.dataset.convId === currentActiveId);
+        });
+      }
+    }
+
+    // --- Unread polling ---
+    function pollUnread() {
+      fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
+        (data.formalites || []).forEach(function(f) {
+          if (f.assigned_avocat_id) {
+            var conv = conversations.find(function(c) { return c.id === 'avocat-' + f.id; });
+            if (conv && (!activeConv || activeConv.id !== conv.id)) {
+              conv.unread = f.unread_messages || 0;
+            }
+          }
+        });
+        renderConversations();
+        if (activeConv) {
+          document.querySelectorAll('.conv-item').forEach(function(el) {
+            el.classList.toggle('active', el.dataset.convId === activeConv.id);
+          });
+        }
+      });
+      fetch('/api/support/unread').then(function(r) { return r.json(); }).then(function(d) {
+        var sup = conversations.find(function(c) { return c.type === 'support'; });
+        if (sup && (!activeConv || activeConv.id !== 'support')) {
+          sup.unread = d.count || 0;
+        }
+      });
+    }
+    setInterval(pollUnread, 30000);
+
+    // --- Helpers ---
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function formatTime(isoStr) {
+      if (!isoStr) return '';
+      var d = new Date(isoStr);
+      return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+
+    function formatShortDate(isoStr) {
+      if (!isoStr) return '';
+      var d = new Date(isoStr);
+      var now = new Date();
+      var diff = now - d;
+      if (diff < 86400000 && d.getDate() === now.getDate()) {
+        return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+      }
+      if (diff < 172800000) return 'Hier';
+      return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2);
+    }
+  })();
+  </script>
+
+  <!-- BEGIN sidebar refresh JS (auto-generated) -->
+  <script>
+    (function() {
+      function openNewActionModal() {
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+      }
+      function closeNewActionModal(e) {
+        if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+      }
+      window.openNewActionModal = openNewActionModal;
+      window.closeNewActionModal = closeNewActionModal;
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNewActionModal(); });
+
+      // Société active + badges
+      fetch('/api/formalites').then(function(r){ return r.json(); }).then(function(data){
+        var list = (data && data.formalites) || data || [];
+        if (!Array.isArray(list)) return;
+        var societes = list.filter(function(f){ return f && f.denomination && (f.type === 'creation' || f.type === 'modification' || !f.type); });
+        var ctx = document.getElementById('sidebar-context');
+        var nameEl = document.getElementById('ctx-name');
+        if (societes.length === 0) {
+          if (ctx) ctx.style.display = 'none';
+        } else if (societes.length === 1) {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.add('single');
+        } else {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.remove('single');
+        }
+        var enCours = list.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var badge = document.getElementById('badge-formalites');
+        if (badge && enCours > 0) { badge.textContent = String(enCours) + ' en cours'; badge.style.display = 'inline-block'; }
+      }).catch(function(){});
+      // Affiche immédiatement les valeurs cachées pour éviter le jitter
+      (function(){
+        try {
+          var cachedForm = parseInt(sessionStorage.getItem('badge_formalites') || '0');
+          var cachedMsg = parseInt(sessionStorage.getItem('badge_messagerie') || '0');
+          if (cachedForm > 0) {
+            var bF = document.getElementById('badge-formalites');
+            if (bF) { bF.textContent = String(cachedForm) + ' en cours'; bF.style.display = 'inline-block'; }
+          }
+          if (cachedMsg > 0) {
+            var bM = document.getElementById('badge-messagerie');
+            if (bM) { bM.textContent = String(cachedMsg) + ' non lu' + (cachedMsg > 1 ? 's' : ''); bM.style.display = 'inline-block'; }
+          }
+        } catch(_) {}
+      })();
+      Promise.all([
+        fetch('/api/formalites').then(function(r){ return r.json(); }).catch(function(){ return { formalites: [] }; }),
+        fetch('/api/support/unread').then(function(r){ return r.json(); }).catch(function(){ return { unread: 0 }; })
+      ]).then(function(results){
+        var fs = (results[0] && results[0].formalites) || [];
+        var enCours = fs.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var bForm = document.getElementById('badge-formalites');
+        if (bForm) {
+          if (enCours > 0) { bForm.textContent = String(enCours) + ' en cours'; bForm.style.display = 'inline-block'; }
+          else { bForm.style.display = 'none'; }
+        }
+        var unreadForm = fs.reduce(function(a, f){ return a + (f.unread_messages || 0); }, 0);
+        var unreadSupport = (results[1] && results[1].unread) || 0;
+        var total = unreadForm + unreadSupport;
+        var badge = document.getElementById('badge-messagerie');
+        if (badge) {
+          if (total > 0) { badge.textContent = String(total) + ' non lu' + (total > 1 ? 's' : ''); badge.style.display = 'inline-block'; }
+          else { badge.style.display = 'none'; }
+        }
+        try {
+          sessionStorage.setItem('badge_formalites', String(enCours));
+          sessionStorage.setItem('badge_messagerie', String(total));
+        } catch(_) {}
+      });
+    })();
+  </script>
+  <!-- END sidebar refresh JS -->
+<script src="/js/common.js"></script>
+</body>
+</html>

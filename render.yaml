@@ -1,0 +1,28 @@
+# Blueprint Render — app.formalist.fr
+# Render -> New -> Blueprint -> sélectionne ce dépôt.
+services:
+  - type: web
+    name: formalist-app
+    runtime: docker
+    region: frankfurt          # EU (RGPD) — proche France
+    plan: starter              # un disque persistant exige un plan payant (>= Starter)
+    healthCheckPath: /connexion.html
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://app.formalist.fr
+      # Renseigner ces secrets dans le dashboard Render (Environment) :
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: SEED_AVOCAT_PASSWORD
+        sync: false
+      - key: SEED_USER_PASSWORD
+        sync: false
+    disk:
+      name: formalist-data
+      mountPath: /app/persist   # data/ et uploads/ y sont reliés (voir Dockerfile)
+      sizeGB: 1

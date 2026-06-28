@@ -1,0 +1,97 @@
+/* =========================================================
+   Thème : sidebar sombre + contenu clair/gris
+   Chargé en dernier dans le <head> pour surcharger les
+   styles inline (même spécificité -> l'ordre source gagne).
+   ========================================================= */
+
+/* ---------- Sidebar (conteneur) ---------- */
+.sidebar {
+  background: #18181b;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Logo ---------- */
+/* !important pour battre les styles inline `color:#111 !important`
+   présents sur certaines pages (creation, modification...). */
+.sidebar-logo a,
+.sidebar-logo .logo-text { color: #fff !important; }
+
+/* ---------- Bloc contexte (société active) ---------- */
+.sidebar-context {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.sidebar-context:hover,
+.sidebar-context.single:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.sidebar-context .ctx-icon { background: #fff; color: #18181b; }
+.sidebar-context .ctx-label { color: rgba(255, 255, 255, 0.5); }
+.sidebar-context .ctx-name { color: #fff; }
+.sidebar-context .ctx-chevron { color: rgba(255, 255, 255, 0.6); }
+
+/* ---------- CTA primaire ---------- */
+.sidebar-cta { background: #fff; color: #18181b; box-shadow: none; }
+.sidebar-cta:hover { background: #ececec; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+
+/* ---------- Navigation ---------- */
+.sidebar-nav a,
+.sidebar-nav .sidebar-dropdown { color: rgba(255, 255, 255, 0.65); }
+.sidebar-nav a:hover,
+.sidebar-nav .sidebar-dropdown:hover { color: #fff; background: rgba(255, 255, 255, 0.07); }
+.sidebar-nav a.active { color: #fff; background: rgba(255, 255, 255, 0.12); }
+.sidebar-section { color: rgba(255, 255, 255, 0.4); }
+
+.sidebar-subnav a { color: rgba(255, 255, 255, 0.55); }
+.sidebar-subnav a:hover { color: #fff; background: rgba(255, 255, 255, 0.07); }
+.sidebar-subnav a.active { color: #fff; background: rgba(255, 255, 255, 0.12); }
+
+.sidebar-divider { background: rgba(255, 255, 255, 0.08); }
+
+/* ---------- Badges ---------- */
+.nav-badge { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); }
+.nav-badge.muted { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6); }
+.sidebar-nav a.active .nav-badge { background: rgba(255, 255, 255, 0.9); color: #18181b; }
+
+/* ---------- Pied (utilisateur) ---------- */
+.sidebar-bottom { background: transparent; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.avatar { background: #fff; color: #18181b; }
+.user-name { color: #fff; }
+.user-email { color: rgba(255, 255, 255, 0.5); }
+.btn-logout,
+.btn-settings { color: rgba(255, 255, 255, 0.55); }
+.btn-logout:hover,
+.btn-settings:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+
+/* =========================================================
+   Contenu clair : hero d'accueil du dashboard (État 0)
+   (le reste du contenu est déjà clair)
+   ========================================================= */
+.welcome-hero {
+  background: #fff;
+  color: #111;
+  border: 1px solid #ececec;
+}
+.welcome-hero::after { display: none; }
+.welcome-hero h2 { color: #111; }
+.welcome-hero p { color: #666; }
+.welcome-group-label { color: #999; }
+
+.welcome-path {
+  background: #fafafa;
+  border: 1px solid #ececec;
+  color: #111;
+}
+.welcome-path:hover { background: #f3f3f4; border-color: #ddd; }
+.welcome-path-icon { background: #f0f0f2; color: #111; }
+.welcome-path-title { color: #111; }
+.welcome-path-desc { color: #888; }
+.welcome-path-meta { color: #555; }
+
+.welcome-badge {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #047857;
+}
+.welcome-badge strong { color: #065f46; }

@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formalist &mdash; La r&eacute;volution des formalit&eacute;s juridiques</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family:'Cal Sans'; src:url('/fonts/CalSans-SemiBold.otf') format('opentype'); font-weight:600; font-display:swap }
+    *,*::before,*::after { margin:0; padding:0; box-sizing:border-box }
+    html { scroll-behavior:smooth }
+    body { font-family:'Inter',-apple-system,sans-serif; background:#f5f5f5; color:#111; -webkit-font-smoothing:antialiased; overflow-x:hidden }
+    a { text-decoration:none; color:inherit }
+
+    /* ANIMATIONS */
+    @keyframes fade-up { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes scale-up { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+    @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+    @keyframes dot-pulse { 0%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)} 70%{box-shadow:0 0 0 8px rgba(34,197,94,0)} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0)} }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+    @keyframes glow-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,0)} 50%{box-shadow:0 0 24px 4px rgba(124,58,237,0.08)} }
+    @keyframes subtle-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+    @keyframes count-up { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .reveal { opacity:0; transform:translateY(30px); transition:all 0.7s cubic-bezier(0.16,1,0.3,1) }
+    .reveal.visible { opacity:1; transform:translateY(0) }
+    .reveal-d1{transition-delay:.1s} .reveal-d2{transition-delay:.2s} .reveal-d3{transition-delay:.3s}
+    .text-gradient { background:linear-gradient(135deg,#7c3aed 0%,#2563eb 50%,#7c3aed 100%); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:shimmer 6s linear infinite }
+    .section-tag svg { color:#7c3aed }
+    .hero-pill svg { color:#7c3aed }
+
+    /* NAV */
+    .nav-wrap { position:fixed; top:0; left:0; right:0; z-index:1000; display:flex; justify-content:center; padding:12px 40px 0; transition:all 0.3s }
+    .nav-wrap.scrolled { padding-top:8px }
+    .nav { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:transparent; transition:all 0.3s; max-width:1200px; width:100%; border-radius:16px }
+    .nav-wrap.scrolled .nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid #e8e8e8; box-shadow:0 2px 16px rgba(0,0,0,0.06) }
+    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.3px; display:flex; align-items:center }
+    .nav-logo img { height:28px }
+    .nav-center { display:flex; align-items:center; gap:32px }
+    .nav-center a, .nav-center .nav-dropdown-trigger { font-size:14px; font-weight:500; color:#666; transition:color 0.2s; cursor:pointer; text-decoration:none }
+    .nav-center a:hover, .nav-center .nav-dropdown-trigger:hover { color:#111 }
+    .nav-dropdown { position:relative }
+    .nav-dropdown-trigger { display:inline-flex; align-items:center; gap:4px; background:none; border:none; font-family:inherit }
+    .nav-dropdown-trigger svg { width:12px; height:12px; transition:transform 0.2s }
+    .nav-dropdown:hover .nav-dropdown-trigger svg { transform:rotate(180deg) }
+    .nav-mega { position:fixed; top:68px; left:50%; transform:translateX(-50%); background:#fff; border:1px solid #e8e8e8; border-radius:16px; box-shadow:0 16px 48px rgba(0,0,0,0.08); padding:0; width:1080px; opacity:0; pointer-events:none; transition:all 0.2s; z-index:100; overflow:hidden }
+    .nav-dropdown.open .nav-mega { opacity:1; pointer-events:auto }
+    .nav-mega-grid { display:grid; grid-template-columns:1.4fr 1fr 240px; gap:0 }
+    .nav-mega-col { padding:28px 32px }
+    .nav-mega-col:first-child { border-right:1px solid #f0f0f0 }
+    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#bbb; margin-bottom:16px }
+    .nav-mega-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:12px; transition:all 0.15s; cursor:pointer; text-decoration:none; color:inherit }
+    .nav-mega-item:hover { background:#f8f7ff }
+    .nav-mega-icon { width:40px; height:40px; border-radius:12px; background:#f5f5f5; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s }
+    .nav-mega-item:hover .nav-mega-icon { background:#f0ecff; border-color:#e0d4fc }
+    .nav-mega-item:hover .nav-mega-icon svg { color:#7c3aed }
+    .nav-mega-icon svg { width:18px; height:18px; color:#666; transition:color 0.15s }
+    .nav-mega-item strong { font-size:14px; font-weight:600; color:#111; display:block; margin-bottom:2px }
+    .nav-mega-item span { font-size:12.5px; color:#888; line-height:1.4 }
+    .nav-mega-col-2 { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px }
+    .nav-mega-col-tools { display:flex; flex-direction:column; gap:4px }
+    .nav-mega-col:last-child { padding:0 }
+    .nav-mega-cta { background:linear-gradient(135deg,#7c3aed 0%,#a78bfa 60%,#c4b5fd 100%); padding:28px 24px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; height:100%; position:relative; overflow:hidden }
+    .nav-mega-cta::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; background:rgba(255,255,255,0.08); border-radius:50% }
+    .nav-mega-cta::after { content:''; position:absolute; bottom:-30px; left:-30px; width:100px; height:100px; background:rgba(255,255,255,0.06); border-radius:50% }
+    .nav-mega-cta-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.2); backdrop-filter:blur(4px); padding:5px 12px; border-radius:100px; font-size:11px; font-weight:600; width:fit-content; position:relative; z-index:1 }
+    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
+    .nav-mega-cta-link { display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; margin-top:16px; opacity:0.9; position:relative; z-index:1; text-decoration:none; transition:opacity 0.15s }
+    .nav-mega-cta-link:hover { opacity:1 }
+    .nav-right { display:flex; align-items:center; gap:8px }
+    .nav-right .btn { padding:10px 22px; font-size:14px; border-radius:12px }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; font-family:inherit; font-size:16px; font-weight:600; padding:14px 28px; border-radius:100px; cursor:pointer; transition:all 0.2s; border:none }
+    .btn-dark { background:#1a1a1a; color:#fff; position:relative; overflow:hidden }
+    .btn-dark::after { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent); transition:left 0.5s }
+    .btn-dark:hover::after { left:100% }
+    .btn-dark:hover { background:#000; transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,0.12) }
+    .btn-dark svg { width:16px; height:16px }
+    .btn-outline { background:#fff; color:#555; border:1.5px solid #e0e0e0 }
+    .btn-outline:hover { border-color:#bbb; transform:translateY(-1px); color:#111 }
+    .btn-lg { padding:14px 32px; font-size:15px }
+    .btn-xl { padding:16px 40px; font-size:16px; width:100% }
+    .btn-google { background:#111; color:#fff; width:100%; justify-content:center }
+    .btn-google:hover { background:#000 }
+    .btn-email { background:#fff; color:#111; border:1.5px solid #e0e0e0; width:100%; justify-content:center }
+    .btn-email:hover { border-color:#bbb; background:#fafafa }
+
+    /* HERO */
+    .hero-wrap { padding:84px 50px 16px }
+    .hero { max-width:1200px; margin:0 auto; background:#fff; border-radius:24px; border:1px solid #e8e8e8; overflow:hidden; animation:scale-up 0.8s ease both; display:flex; flex-direction:column; align-items:center; text-align:center; padding:72px 56px 56px }
+
+    .hero-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 20px; border-radius:100px; border:1px solid #e0e0e0; font-size:14px; font-weight:500; color:#555; margin-bottom:40px; cursor:default; animation:fade-up 0.5s ease both; background:#fafafa }
+    .hero-pill svg { width:14px; height:14px; color:#7c3aed }
+
+    .hero h1 { font-family:'Cal Sans','Inter',sans-serif; font-size:72px; font-weight:600; line-height:1.05; letter-spacing:-1.5px; margin-bottom:28px; animation:fade-up 0.6s ease 0.1s both; max-width:900px }
+    @keyframes typing { 0%{width:0} 100%{width:100%} }
+    @keyframes highlight-bg { 0%{width:0} 100%{width:calc(100% + 12px)} }
+    @keyframes cursor-move { 0%{left:0} 100%{left:100%} }
+    @keyframes cursor-blink-twice { 0%{opacity:1} 25%{opacity:0} 50%{opacity:1} 75%{opacity:0} 100%{opacity:1} }
+    .hero h1 .highlight { position:relative; display:inline-block }
+    @keyframes clip-typing { 0%{clip-path:inset(0 100% 0 0)} 100%{clip-path:inset(0 0 0 0)} }
+    .hero h1 .highlight-inner { display:inline-block; white-space:nowrap; vertical-align:bottom; clip-path:inset(0 100% 0 0) }
+    .hero h1 .highlight::before { content:''; position:absolute; bottom:2px; left:-6px; top:6px; width:var(--w,0%); background:rgba(234,179,8,0.15); border-radius:8px; z-index:-1 }
+    .hero h1 .highlight-cursor { position:absolute; top:6px; bottom:2px; width:2px; left:0; background:#ca8a04; border-radius:100px }
+    .hero h1 .highlight.done .highlight-cursor { animation:cursor-blink-twice 1.2s ease forwards }
+    .hero h1 .highlight-badge { position:absolute; top:-22px; right:-40px; background:#ca8a04; color:#fff; font-size:11px; font-weight:700; padding:4px 12px; border-radius:100px; letter-spacing:0.3px; white-space:nowrap; opacity:0; animation:fade-up 0.3s ease 1.4s forwards }
+    .hero h1 .highlight-badge::after { display:none }
+
+    .hero .sub { font-size:18px; line-height:1.65; color:#666; margin-bottom:40px; max-width:600px; animation:fade-up 0.6s ease 0.2s both }
+
+    .hero-btns { display:flex; gap:14px; justify-content:center; animation:fade-up 0.6s ease 0.3s both }
+    .hero-btns .btn { padding:16px 36px; font-size:16px }
+    .hero-btns .btn svg { width:18px; height:18px }
+    .hero-note { font-size:13px; color:#999; margin-top:18px; animation:fade-up 0.6s ease 0.4s both }
+
+    /* APP MOCKUP */
+    .mock-container { display:flex; gap:16px; transform:translateX(20px) }
+    .mock-booking { background:#fff; border-radius:16px; border:1px solid #e8e8e8; box-shadow:0 8px 40px rgba(0,0,0,0.06); padding:28px; width:340px; flex-shrink:0 }
+    .mock-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#f5f3ff,#ede9fe); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#7c3aed; margin-bottom:8px }
+    .mock-author { font-size:13px; color:#999; margin-bottom:4px }
+    .mock-title { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.3px; margin-bottom:10px }
+    .mock-desc { font-size:13px; color:#888; line-height:1.5; margin-bottom:20px }
+    .mock-durations { display:flex; align-items:center; gap:0; margin-bottom:18px; background:#f5f5f5; border-radius:100px; padding:3px }
+    .mock-dur { padding:6px 14px; border-radius:100px; font-size:13px; font-weight:500; color:#999; cursor:pointer; transition:all 0.2s }
+    .mock-dur.active { background:#fff; color:#111; font-weight:600; box-shadow:0 1px 4px rgba(0,0,0,0.08) }
+    .mock-info { display:flex; align-items:center; gap:8px; font-size:13px; color:#666; margin-bottom:10px }
+    .mock-info svg { width:16px; height:16px; color:#999; flex-shrink:0 }
+
+    .mock-calendar { background:#fff; border-radius:16px; border:1px solid #e8e8e8; box-shadow:0 8px 40px rgba(0,0,0,0.06); padding:24px; width:300px; flex-shrink:0 }
+    .mock-cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px }
+    .mock-cal-month { font-size:16px; font-weight:600 }
+    .mock-cal-month span { color:#2563eb }
+    .mock-cal-days { display:grid; grid-template-columns:repeat(5,1fr); gap:0; text-align:center }
+    .mock-cal-day-label { font-size:11px; font-weight:600; color:#999; text-transform:uppercase; padding:8px 0; letter-spacing:0.5px }
+    .mock-cal-day { width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:14px; color:#444; border-radius:50%; margin:2px auto; cursor:pointer; transition:all 0.15s; font-weight:500 }
+    .mock-cal-day:hover { background:#f5f5f5 }
+    .mock-cal-day.today { background:#f5f3ff; color:#7c3aed; font-weight:600; position:relative }
+    .mock-cal-day.today::after { content:''; position:absolute; bottom:4px; width:4px; height:4px; border-radius:50%; background:#7c3aed }
+    .mock-cal-day.selected { background:#7c3aed; color:#fff; font-weight:600 }
+    .mock-cal-day.range { background:#f5f3ff; color:#7c3aed }
+
+
+    /* LOGOS BAR */
+    .logos-bar { max-width:1200px; margin:0 auto; padding:24px 40px; display:flex; align-items:center; gap:0; animation:fade-up 0.7s ease 0.5s both }
+    .logos-text { font-size:14px; line-height:1.5; color:#999; max-width:200px; flex-shrink:0; position:relative; z-index:2; padding-right:32px }
+    .logos-scroll { flex:1; overflow:hidden; position:relative; mask-image:linear-gradient(to right,transparent 0%,black 80px,black 85%,transparent 100%); -webkit-mask-image:linear-gradient(to right,transparent 0%,black 80px,black 85%,transparent 100%) }
+    .logos-track { display:flex; align-items:center; gap:48px; width:max-content; animation:ticker 20s linear infinite }
+    .logo-text-item { font-size:20px; font-weight:700; color:#1a1a1a; letter-spacing:-0.3px; white-space:nowrap; flex-shrink:0 }
+
+
+    /* SECTIONS */
+    .section { max-width:1200px; margin:0 auto; padding:56px 40px }
+    .section-head { text-align:center; margin-bottom:56px }
+    .section-tag { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:#666; margin-bottom:24px; padding:7px 18px; border-radius:100px; border:1px solid #e0e0e0; background:#fff }
+    .section-tag svg { width:16px; height:16px }
+    .section-h { font-family:'Cal Sans','Inter',sans-serif; font-size:52px; font-weight:600; letter-spacing:-0.5px; line-height:1.12; margin-bottom:20px; max-width:800px; margin-left:auto; margin-right:auto }
+    .section-p { font-size:17px; line-height:1.65; color:#999; max-width:600px; margin:0 auto }
+
+    /* FEATURES */
+    .feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:48px }
+    .feat-card { background:#fff; border-radius:20px; padding:40px 36px; border:1px solid #e8e8e8; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); overflow:hidden; position:relative }
+    .feat-card:hover { border-color:#d0d0d0; transform:translateY(-4px); box-shadow:0 20px 60px rgba(0,0,0,0.06) }
+    .feat-card.full { grid-column:span 2 }
+    .feat-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; margin-bottom:24px; transition:transform 0.3s }
+    .feat-card:hover .feat-icon { transform:scale(1.08) }
+    .feat-icon svg { width:24px; height:24px }
+    .feat-icon.green { background:#ecfdf5; color:#059669 }
+    .feat-icon.blue { background:#eff6ff; color:#2563eb }
+    .feat-icon.violet { background:#f5f3ff; color:#7c3aed }
+    .feat-icon.amber { background:#fef9c3; color:#ca8a04 }
+    .feat-icon.dark { background:#111; color:#fff }
+    .feat-card h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:22px; font-weight:600; letter-spacing:-0.5px; margin-bottom:10px }
+    .feat-card p { font-size:15px; line-height:1.65; color:#666; max-width:440px }
+    .feat-visual { margin-top:28px; background:#fafafa; border-radius:14px; border:1px solid #f0f0f0; padding:20px 24px; position:relative; overflow:hidden }
+    .feat-bar-wrap { display:flex; align-items:center; gap:20px }
+    .feat-bar { height:8px; background:#f0f0f0; border-radius:100px; flex:1 }
+    .feat-bar-fill { height:8px; border-radius:100px; background:linear-gradient(90deg,#7c3aed,#a78bfa); width:0%; transition:width 1.5s cubic-bezier(0.16,1,0.3,1) }
+    .feat-card.visible .feat-bar-fill { width:78% }
+    .feat-timer { font-family:'Cal Sans',sans-serif; font-size:32px; font-weight:600; color:#7c3aed; letter-spacing:-1.5px }
+    .feat-bar-label { font-size:12px; color:#999; margin-top:8px }
+    .feat-bar-label strong { color:#7c3aed }
+    .feat-checks { margin-top:20px; list-style:none; display:flex; flex-direction:column; gap:10px }
+    .feat-checks li { display:flex; align-items:center; gap:10px; padding:0; font-size:14px; color:#444 }
+    .feat-checks li svg { width:18px; height:18px; color:#2563eb; flex-shrink:0 }
+    .feat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px }
+    .feat-mini { background:#fff; border-radius:20px; padding:36px 28px; border:1px solid #e8e8e8; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); position:relative; overflow:hidden }
+    .feat-mini:hover { border-color:#d0d0d0; transform:translateY(-4px); box-shadow:0 20px 60px rgba(0,0,0,0.06) }
+    .feat-mini:hover .feat-icon { transform:scale(1.08) }
+    .feat-mini h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.3px; margin-bottom:8px }
+    .feat-mini p { font-size:14px; line-height:1.6; color:#666 }
+    .feat-mini .feat-icon { margin-bottom:20px }
+
+    /* STEPS */
+    .steps-head-btns { display:flex; gap:12px; justify-content:center; margin-top:28px }
+    .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:48px }
+    .step-card { background:#fff; border-radius:20px; border:1px solid #e8e8e8; padding:36px 28px; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); display:flex; flex-direction:column }
+    .step-card:hover { border-color:#d0d0d0; transform:translateY(-4px); box-shadow:0 20px 60px rgba(0,0,0,0.06) }
+    .step-badge { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,#f5f3ff,#ede9fe); font-family:'Cal Sans','Inter',sans-serif; font-size:15px; font-weight:600; color:#7c3aed; margin-bottom:24px }
+    .step-card h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.2px; margin-bottom:10px }
+    .step-card p { font-size:14px; line-height:1.65; color:#666; margin-bottom:24px }
+    .step-visual { margin-top:auto; background:#fafafa; border-radius:14px; border:1px solid #f0f0f0; padding:24px; min-height:180px; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative }
+    /* Step 1 visual - form typing */
+    .step-form { width:100%; display:flex; flex-direction:column; gap:10px }
+    .step-field { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:12px 16px; font-size:13px; color:#999; opacity:0; transform:translateY(12px) }
+    .step-field-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0 }
+    .step-card.visible .step-field { animation:step-field-in 0.5s cubic-bezier(0.16,1,0.3,1) forwards }
+    .step-card.visible .step-field:nth-child(1) { animation-delay:0.3s }
+    .step-card.visible .step-field:nth-child(2) { animation-delay:0.5s }
+    .step-card.visible .step-field:nth-child(3) { animation-delay:0.7s }
+    .step-card.visible .step-field:nth-child(4) { animation-delay:0.9s }
+    @keyframes step-field-in { to { opacity:1; transform:translateY(0) } }
+    .step-field-cursor { display:inline-block; width:1px; height:14px; background:#7c3aed; margin-left:2px; animation:blink 1s step-end infinite }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .step-field.active { border-color:#7c3aed; background:#faf5ff }
+    .step-field.active .step-field-dot { animation:dot-pulse 2s infinite }
+
+    /* Step 2 visual - doc generation */
+    .step-doc { width:100%; text-align:center }
+    .step-doc-page { width:100px; height:130px; background:#fff; border:1px solid #e8e8e8; border-radius:10px; margin:0 auto 16px; position:relative; box-shadow:0 4px 20px rgba(0,0,0,0.04); opacity:0 }
+    .step-card.visible .step-doc-page { animation:doc-drop 0.6s cubic-bezier(0.16,1,0.3,1) 0.3s forwards }
+    @keyframes doc-drop { from{opacity:0;transform:translateY(-20px) scale(0.9)} to{opacity:1;transform:translateY(0) scale(1)} }
+    .step-doc-page::after { content:''; position:absolute; top:8px; right:8px; width:20px; height:20px; background:linear-gradient(135deg,#f5f3ff,#7c3aed); border-radius:6px; display:flex; align-items:center; justify-content:center }
+    .step-doc-lines { display:flex; flex-direction:column; gap:5px; padding:16px 14px }
+    .step-doc-line { height:3px; background:#f0f0f0; border-radius:100px; width:0% }
+    .step-card.visible .step-doc-line:nth-child(1) { animation:line-grow 0.8s ease 0.6s forwards; --tw:80% }
+    .step-card.visible .step-doc-line:nth-child(2) { animation:line-grow 0.8s ease 0.75s forwards; --tw:55% }
+    .step-card.visible .step-doc-line:nth-child(3) { animation:line-grow 0.8s ease 0.9s forwards; --tw:70% }
+    .step-card.visible .step-doc-line:nth-child(4) { animation:line-grow 0.8s ease 1.05s forwards; --tw:45% }
+    .step-card.visible .step-doc-line:nth-child(5) { animation:line-grow 0.8s ease 1.2s forwards; --tw:65% }
+    @keyframes line-grow { to { width:var(--tw) } }
+    .step-doc-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:100px; background:#f5f3ff; color:#7c3aed; font-size:12px; font-weight:600; opacity:0 }
+    .step-card.visible .step-doc-badge { animation:scale-up 0.4s ease 1.4s forwards }
+
+    /* Step 3 visual - signature */
+    .step-sign { width:100%; display:flex; flex-direction:column; align-items:center; gap:14px }
+    .step-sign-circle { width:64px; height:64px; border-radius:50%; border:3px solid #e8e8e8; display:flex; align-items:center; justify-content:center; position:relative }
+    .step-sign-circle svg { width:28px; height:28px; color:#7c3aed; opacity:0 }
+    .step-card.visible .step-sign-circle { animation:sign-ring 0.8s ease 0.3s forwards }
+    .step-card.visible .step-sign-circle svg { animation:sign-check 0.4s ease 0.9s forwards }
+    @keyframes sign-ring { to { border-color:#7c3aed; background:#f5f3ff } }
+    @keyframes sign-check { to { opacity:1; transform:scale(1) } from { opacity:0; transform:scale(0.3) } }
+    .step-sign-text { font-size:14px; font-weight:600; color:#7c3aed; opacity:0 }
+    .step-card.visible .step-sign-text { animation:fade-up 0.5s ease 1s forwards }
+    .step-sign-avatars { display:flex; gap:-4px; align-items:center; opacity:0 }
+    .step-card.visible .step-sign-avatars { animation:fade-up 0.5s ease 1.2s forwards }
+    .step-sign-av { width:32px; height:32px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#999; border:2px solid #fff; margin-left:-6px }
+    .step-sign-av:first-child { margin-left:0 }
+    .step-sign-label { font-size:11px; color:#999; margin-left:6px }
+
+    /* TRUST */
+    .trust { max-width:1200px; margin:0 auto; background:#111; color:#fff; border-radius:24px; padding:48px 44px; display:flex; align-items:center; gap:40px; position:relative; overflow:hidden }
+    .trust::after { content:''; position:absolute; top:-100px; right:-100px; width:500px; height:500px; background:radial-gradient(circle,rgba(124,58,237,0.1) 0%,transparent 60%); pointer-events:none }
+    .trust-left { flex:1; z-index:1 }
+    .trust-badge { display:inline-flex; padding:6px 14px; border-radius:100px; background:rgba(255,255,255,0.1); font-size:12px; font-weight:600; color:#22c55e; margin-bottom:18px; align-items:center; gap:8px }
+    .trust-badge-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; animation:dot-pulse 2s infinite }
+    .trust-left h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; line-height:1.15; margin-bottom:12px }
+    .trust-left > p { font-size:14px; line-height:1.65; color:rgba(255,255,255,0.5); max-width:400px; margin-bottom:24px }
+    .trust-items { display:flex; flex-direction:column; gap:0 }
+    .trust-item { display:flex; align-items:center; gap:10px; font-size:14px; color:rgba(255,255,255,0.7); padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.06); opacity:0; transform:translateX(-10px) }
+    .trust-item:last-child { border-bottom:none }
+    .trust-item svg { width:18px; height:18px; color:#22c55e; flex-shrink:0 }
+    .trust.visible .trust-item:nth-child(1) { animation:trust-in 0.5s ease 0.2s forwards }
+    .trust.visible .trust-item:nth-child(2) { animation:trust-in 0.5s ease 0.35s forwards }
+    .trust.visible .trust-item:nth-child(3) { animation:trust-in 0.5s ease 0.5s forwards }
+    .trust.visible .trust-item:nth-child(4) { animation:trust-in 0.5s ease 0.65s forwards }
+    .trust.visible .trust-item:nth-child(5) { animation:trust-in 0.5s ease 0.8s forwards }
+    @keyframes trust-in { to { opacity:1; transform:translateX(0) } }
+    .trust-right { flex-shrink:0; display:flex; flex-direction:column; gap:10px; z-index:1; width:280px }
+    .trust-mini { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px; display:flex; align-items:center; gap:12px; opacity:0; transform:translateY(16px) }
+    .trust.visible .trust-mini:nth-child(1) { animation:trust-card-in 0.6s cubic-bezier(0.16,1,0.3,1) 0.3s forwards }
+    .trust.visible .trust-mini:nth-child(2) { animation:trust-card-in 0.6s cubic-bezier(0.16,1,0.3,1) 0.5s forwards }
+    .trust.visible .trust-mini:nth-child(3) { animation:trust-card-in 0.6s cubic-bezier(0.16,1,0.3,1) 0.7s forwards }
+    @keyframes trust-card-in { to { opacity:1; transform:translateY(0) } }
+    .trust-mini:hover { background:rgba(255,255,255,0.08); transform:translateY(-2px) !important; transition:all 0.3s }
+    .trust-mini-icon { width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; flex-shrink:0 }
+    .trust-mini-icon svg { width:18px; height:18px; color:rgba(255,255,255,0.5) }
+    .trust-mini-title { font-size:14px; font-weight:600 }
+    .trust-mini-desc { font-size:12px; color:rgba(255,255,255,0.35) }
+    .trust-mini-num { font-family:'Cal Sans',sans-serif; font-size:20px; font-weight:600; color:#22c55e; letter-spacing:-0.5px }
+
+    /* TESTIMONIALS */
+    .testi-section { text-align:center; padding:56px 0; overflow:hidden; position:relative }
+    .testi-pill { display:inline-flex; align-items:center; gap:8px; padding:7px 18px; border-radius:100px; border:1px solid #e0e0e0; font-size:13px; font-weight:500; color:#666; margin-bottom:28px; background:#fff }
+    .testi-pill svg { width:16px; height:16px; color:#999 }
+    .testi-section h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:44px; font-weight:600; letter-spacing:-0.5px; line-height:1.08; margin-bottom:16px; max-width:700px; margin-left:auto; margin-right:auto }
+    .testi-section .testi-sub { font-size:16px; line-height:1.6; color:#999; max-width:520px; margin:0 auto 56px }
+    .testi-slider-wrap { position:relative; overflow:hidden; margin:0 auto; max-width:1320px; padding:0 40px }
+    .testi-scroll { overflow:hidden; position:relative; mask-image:linear-gradient(to right,rgba(0,0,0,0.05) 0%,black 10%,black 90%,rgba(0,0,0,0.05) 100%); -webkit-mask-image:linear-gradient(to right,rgba(0,0,0,0.05) 0%,black 10%,black 90%,rgba(0,0,0,0.05) 100%) }
+    @keyframes testi-step {
+      0%,20% { transform:translateX(-160px) }
+      25%,45% { transform:translateX(-640px) }
+      50%,70% { transform:translateX(-1120px) }
+      75%,95% { transform:translateX(-1600px) }
+      100% { transform:translateX(-2080px) }
+    }
+    .testi-slider { display:flex; align-items:stretch; gap:24px; width:max-content; animation:testi-step 20s cubic-bezier(0.4,0,0.2,1) infinite; padding:0 12px }
+    .testi-card-wrap { position:relative; flex-shrink:0; width:456px; min-width:456px; padding:14px }
+    .testi-card-border { position:absolute; top:0; left:0; right:0; bottom:0; border:2px solid #e8e8e8; border-radius:20px; pointer-events:none }
+    .testi-card-border::before { content:'+'; position:absolute; top:-12px; left:-12px; font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+    .testi-card-border::after { content:'+'; position:absolute; top:-12px; right:-12px; font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+    .testi-card-bl, .testi-card-br { position:absolute; bottom:-12px; font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+    .testi-card-bl { left:-12px }
+    .testi-card-br { right:-12px }
+    .testi-card { background:#fff; border-radius:16px; border:1px solid #ccc; box-shadow:0 4px 24px rgba(0,0,0,0.06); padding:32px 28px; height:100%; display:flex; flex-direction:column; justify-content:space-between; text-align:left; transition:all 0.3s }
+    .testi-card-wrap .testi-quote, .testi-card-wrap .testi-author { transition:opacity 0.3s }
+    .testi-card-wrap.faded .testi-quote, .testi-card-wrap.faded .testi-author { opacity:0.3 }
+    .testi-card-wrap.faded .testi-card { box-shadow:none }
+    .testi-card .testi-quote { font-family:'Cal Sans','Inter',sans-serif; font-size:24px; line-height:1.25; color:#111; font-weight:600; letter-spacing:-0.3px; margin-bottom:28px; flex:1 }
+    .testi-card .testi-author { display:flex; align-items:center; gap:12px }
+    .testi-card .testi-initials { width:40px; height:40px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#999; flex-shrink:0 }
+    .testi-card .testi-name { font-size:14px; font-weight:600; color:#111 }
+    .testi-card .testi-role { font-size:13px; color:#999 }
+
+    /* PRICING */
+    .price-tabs { display:flex; justify-content:center; gap:6px; margin-bottom:48px; background:#f0f0f0; border-radius:100px; padding:4px; max-width:fit-content; margin-left:auto; margin-right:auto }
+    .price-tab { padding:10px 22px; border-radius:100px; font-size:14px; font-weight:500; color:#666; cursor:pointer; transition:all 0.2s; border:none; background:none; font-family:inherit }
+    .price-tab.active { background:#fff; color:#7c3aed; font-weight:600; box-shadow:0 1px 4px rgba(124,58,237,0.1) }
+    .price-tab:hover:not(.active) { color:#111 }
+    .price-panel { display:none }
+    .price-panel.active { display:block }
+    .pricing { display:grid; grid-template-columns:repeat(3,1fr); gap:16px }
+    .pricing.cols-2 { grid-template-columns:repeat(2,1fr); max-width:740px; margin:0 auto }
+    .price-card { background:#fff; border-radius:16px; padding:32px 24px; border:1px solid #e8e8e8; transition:all 0.3s; position:relative }
+    .price-card:hover { border-color:#d0d0d0; transform:translateY(-3px); box-shadow:0 16px 48px rgba(0,0,0,0.06) }
+    .price-card.pop { border-color:#7c3aed; border-width:2px }
+    .pop-badge { position:absolute; top:-11px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#7c3aed,#2563eb); color:#fff; font-size:11px; font-weight:700; padding:4px 16px; border-radius:100px }
+    .price-name { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.3px; margin-bottom:6px }
+    .price-val { font-family:'Cal Sans','Inter',sans-serif; font-size:40px; font-weight:600; letter-spacing:-0.5px; margin-bottom:4px }
+    .price-val span { font-size:14px; font-weight:400; letter-spacing:0; color:#999 }
+    .price-desc { font-size:13px; color:#999; margin-bottom:24px; line-height:1.5 }
+    .price-list { list-style:none; margin-bottom:24px }
+    .price-list li { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px; color:#555 }
+    .price-list li svg { width:15px; height:15px; color:#7c3aed; flex-shrink:0 }
+    .price-card .btn { width:100% }
+
+    /* CTA */
+    .cta-wrap { max-width:1200px; margin:0 auto; padding:16px 0 16px }
+    .cta-box { background:#fff; border:1px solid #e8e8e8; border-radius:24px; padding:48px 40px; text-align:center; position:relative; overflow:hidden }
+    .cta-grid { position:absolute; top:0; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(7,1fr); grid-template-rows:repeat(4,1fr); gap:10px; padding:16px; pointer-events:none; mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 20%,rgba(0,0,0,0.15) 50%,rgba(0,0,0,0.4) 75%,rgba(0,0,0,0.5) 100%); -webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 20%,rgba(0,0,0,0.15) 50%,rgba(0,0,0,0.4) 75%,rgba(0,0,0,0.5) 100%) }
+    .cta-grid-cell { background:rgba(0,0,0,0.02); border:1px solid rgba(0,0,0,0.05); border-radius:14px }
+    .cta-content { position:relative; z-index:2 }
+    .cta-content h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:48px; font-weight:600; letter-spacing:-0.5px; line-height:1.08; margin-bottom:28px }
+    .cta-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap }
+
+    /* FOOTER */
+    .foot { padding:56px 40px 32px; background:transparent }
+    .foot-inner { max-width:1200px; margin:0 auto }
+    .foot-top { display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr 1fr; gap:40px; margin-bottom:56px }
+    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:14px }
+    .foot-brand-p { font-size:13px; color:#999; line-height:1.7; max-width:280px; margin-bottom:24px }
+    .foot-mission { font-size:12px; color:#bbb; line-height:1.6; max-width:280px; margin-bottom:20px }
+    .foot-status { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:100px; border:1px solid #e8e8e8; font-size:12px; font-weight:500; color:#666; background:#fff }
+    .foot-status-dot { width:6px; height:6px; border-radius:50%; background:#22c55e }
+    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; color:#111; margin-bottom:16px }
+    .foot-col a { display:block; font-size:13px; color:#888; padding:5px 0; transition:color 0.2s }
+    .foot-col a:hover { color:#111 }
+    .foot-bottom { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding-top:24px; border-top:1px solid #e8e8e8 }
+    .foot-copy { font-size:12px; color:#bbb }
+    .foot-bottom-links { display:flex; gap:20px }
+    .foot-bottom-links a { font-size:12px; color:#bbb; transition:color 0.2s }
+    .foot-bottom-links a:hover { color:#111 }
+    .foot-socials { display:flex; gap:10px }
+    .foot-socials a { width:32px; height:32px; border-radius:50%; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; color:#999; transition:all 0.2s }
+    .foot-socials a:hover { color:#111; border-color:#ccc }
+    .foot-socials svg { width:14px; height:14px }
+
+    /* GRID OVERLAY */
+    .grid-overlay { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:0; max-width:1320px; margin:0 auto; padding:0 40px }
+    .grid-overlay::before { content:''; position:absolute; top:0; bottom:0; left:40px; right:40px; border-left:2px solid #e8e8e8; border-right:2px solid #e8e8e8 }
+    body > *:not(.grid-overlay):not(.nav-wrap) { position:relative; z-index:1 }
+
+    /* DIVIDERS */
+    .divider { position:relative; z-index:2 }
+    .divider-line { height:2px; background:#e8e8e8 }
+    .divider-plus-wrap { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); max-width:1320px; margin:0 auto; padding:0 40px; pointer-events:none }
+    .divider-plus-inner { position:relative }
+    .divider-plus-inner::before { content:'+'; position:absolute; top:50%; left:-12px; transform:translateY(-50%); font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+    .divider-plus-inner::after { content:'+'; position:absolute; top:50%; right:-12px; transform:translateY(-50%); font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+
+    /* RESPONSIVE */
+    @media(max-width:1024px) {
+      .hero { padding:56px 40px }
+      .hero h1 { font-size:56px }
+      .trust { flex-direction:column; gap:40px; padding:48px 32px; margin:0 20px }
+      .trust-right { flex-direction:row; flex-wrap:wrap }
+      .trust-mini { flex:1; min-width:220px; width:auto }
+    }
+    @media(max-width:768px) {
+      .nav-wrap { padding:8px 16px 0 }
+      .nav { padding:0 16px }
+      .nav-center { display:none }
+      .hero-wrap { padding:74px 16px 0 }
+      .hero { padding:40px 24px }
+      .hero h1 { font-size:36px; letter-spacing:-1px }
+      .hero h1 .highlight-badge { top:-14px; right:-44px; font-size:9px; padding:3px 8px }
+      .hero .sub { font-size:16px }
+      .hero-btns { flex-direction:column; width:100% }
+      .hero-btns .btn { width:100% }
+      .proof-bar { flex-direction:column; gap:20px }
+      .logos-bar { flex-direction:column; gap:16px; text-align:center }
+      .logos-text { max-width:100%; padding-right:0 }
+      .logos-scroll { mask-image:linear-gradient(to right,transparent,black 40px,black 85%,transparent); -webkit-mask-image:linear-gradient(to right,transparent,black 40px,black 85%,transparent) }
+      .feat-grid,.feat-row,.steps,.pricing { grid-template-columns:1fr }
+      .steps-head-btns { flex-direction:column; align-items:center }
+      .feat-card.full { grid-column:span 1 }
+      .stats { grid-template-columns:repeat(2,1fr); padding:0 16px }
+      .section { padding:72px 16px }
+      .section-h { font-size:32px; letter-spacing:-1px }
+      .trust { padding:36px 20px; border-radius:20px; margin:0 16px }
+      .trust-left h2 { font-size:28px }
+      .trust-right { flex-direction:column }
+      .trust-mini { width:100% }
+      .cta-wrap { padding:0 16px 60px }
+      .cta-box { padding:60px 20px }
+      .cta-content h2 { font-size:30px }
+      .cta-grid { grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(5,1fr) }
+      .foot { padding:40px 16px 20px }
+      .foot-top { grid-template-columns:1fr 1fr; gap:24px }
+      .foot-bottom { flex-direction:column; gap:12px }
+      .foot-top > div:first-child { grid-column:span 2 }
+    }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  </head>
+<body>
+
+  <div class="grid-overlay"></div>
+
+  <!-- NAV -->
+  <div class="nav-wrap" id="navbar">
+    <nav class="nav">
+      <a href="/" class="nav-logo">formalist</a>
+      <div class="nav-center">
+        <div class="nav-dropdown">
+          <span class="nav-dropdown-trigger">Fonctionnalit&eacute;s <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>
+          <div class="nav-mega">
+            <div class="nav-mega-grid">
+              <div class="nav-mega-col">
+                <h5>Par type</h5>
+                <div class="nav-mega-col-2">
+                  <a href="#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg></div><div><strong>Cr&eacute;ation d'entreprise</strong><span>SASU, SAS, SARL, SCI, EURL</span></div></a>
+                  <a href="#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><strong>Modification de soci&eacute;t&eacute;</strong><span>Si&egrave;ge, objet social, dirigeant</span></div></a>
+                  <a href="#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><strong>Contrats</strong><span>NDA, CGV, CGU, prestation</span></div></a>
+                  <a href="#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div><strong>Fermeture de soci&eacute;t&eacute;</strong><span>Dissolution et liquidation</span></div></a>
+                </div>
+              </div>
+              <div class="nav-mega-col">
+                <h5>Outils</h5>
+                <div class="nav-mega-col-tools">
+                  <a href="#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong>Validation avocat</strong><span>V&eacute;rification de chaque clause</span></div></a>
+                  <a href="#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></div><div><strong>Signature eIDAS</strong><span>Valeur l&eacute;gale europ&eacute;enne</span></div></a>
+                  <a href="#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div><strong>Chat avocat</strong><span>R&eacute;ponse sous 24h</span></div></a>
+                </div>
+              </div>
+              <div class="nav-mega-col">
+                <div class="nav-mega-cta">
+                  <div class="nav-mega-cta-badge">Nouveau</div>
+                  <div class="nav-mega-cta-title">Cr&eacute;ez votre entreprise en 5&nbsp;minutes</div>
+                  <a href="/connexion.html" class="nav-mega-cta-link">Commencer &rarr;</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <a href="#pricing">Tarification</a>
+        <a href="#temoignages">T&eacute;moignages</a>
+        <a href="/blog.html">Blog</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+      <div class="nav-right">
+        <a href="/connexion.html" class="btn btn-dark">Commencer <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero-wrap">
+    <div class="hero">
+        <div class="hero-pill"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Plateforme de formalit&eacute;s juridiques nouvelle g&eacute;n&eacute;ration</div>
+
+        <h1>La <span class="highlight"><span class="highlight-inner">r&eacute;volution</span><span class="highlight-cursor"></span><span class="highlight-badge">formalist</span></span><br>de vos formalit&eacute;s juridiques</h1>
+
+        <p class="sub">Cr&eacute;ez votre entreprise, g&eacute;n&eacute;rez vos contrats et signez vos documents depuis une seule plateforme valid&eacute;e par un cabinet d'avocats.</p>
+
+        <div class="hero-btns">
+          <a href="/connexion.html" class="btn btn-dark btn-lg">Cr&eacute;er mon entreprise <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></a>
+          <a href="#features" class="btn btn-outline btn-lg">Voir les fonctionnalit&eacute;s</a>
+        </div>
+        <p class="hero-note">Sans engagement &middot; Documents en 5 minutes &middot; Valid&eacute; par des avocats</p>
+    </div>
+  </div>
+
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- LOGOS BAR -->
+  <div class="logos-bar">
+    <div class="logos-text">Ils ont choisi Formalist pour lancer leur activit&eacute;</div>
+    <div class="logos-scroll">
+      <div class="logos-track">
+        <span class="logo-text-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10" stroke="#1a1a1a" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="#1a1a1a" stroke-width="2"/></svg>PlanetScale</span>
+        <span class="logo-text-item" style="font-size:24px;font-weight:800">coinbase</span>
+        <span class="logo-text-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1a1a1a" style="vertical-align:middle;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="4"/><rect x="7" y="7" width="10" height="10" rx="2" fill="#f5f5f5"/></svg>storyblok</span>
+        <span class="logo-text-item">AngelList</span>
+        <span class="logo-text-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M4 12l8-8 8 8-8 8z" stroke="#1a1a1a" stroke-width="2"/></svg>Raycast</span>
+        <span class="logo-text-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1a1a1a" style="vertical-align:middle;margin-right:2px"><path d="M12 2L2 19.5h20L12 2z"/></svg>Vercel</span>
+        <!-- duplicate for seamless loop -->
+        <span class="logo-text-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10" stroke="#1a1a1a" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="#1a1a1a" stroke-width="2"/></svg>PlanetScale</span>
+        <span class="logo-text-item" style="font-size:24px;font-weight:800">coinbase</span>
+        <span class="logo-text-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1a1a1a" style="vertical-align:middle;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="4"/><rect x="7" y="7" width="10" height="10" rx="2" fill="#f5f5f5"/></svg>storyblok</span>
+        <span class="logo-text-item">AngelList</span>
+        <span class="logo-text-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M4 12l8-8 8 8-8 8z" stroke="#1a1a1a" stroke-width="2"/></svg>Raycast</span>
+        <span class="logo-text-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1a1a1a" style="vertical-align:middle;margin-right:2px"><path d="M12 2L2 19.5h20L12 2z"/></svg>Vercel</span>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-head reveal">
+      <div class="section-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Fonctionnalit&eacute;s</div>
+      <h2 class="section-h">Tout ce qu'il faut pour des formalit&eacute;s <span class="text-gradient">irr&eacute;prochables</span></h2>
+      <p class="section-p">Chaque fonctionnalit&eacute; a &eacute;t&eacute; pens&eacute;e pour &eacute;liminer la complexit&eacute; juridique. Vous r&eacute;pondez, on s'occupe du reste.</p>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-card reveal reveal-d1">
+        <div class="feat-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <h3>Formalit&eacute;s compl&egrave;tes en 5 minutes</h3>
+        <p>Du formulaire &agrave; la signature, tout est boucl&eacute; en 5&nbsp;minutes. Vos documents sont g&eacute;n&eacute;r&eacute;s en 30&nbsp;secondes, le reste c'est la validation et la signature.</p>
+        <div class="feat-visual">
+          <div class="feat-bar-wrap">
+            <div style="flex:1"><div class="feat-bar"><div class="feat-bar-fill"></div></div><div class="feat-bar-label">Documents g&eacute;n&eacute;r&eacute;s en <strong>30 sec</strong></div></div>
+            <div class="feat-timer">0:30</div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-card reveal reveal-d2">
+        <div class="feat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3>Chaque clause v&eacute;rifi&eacute;e par un avocat</h3>
+        <p>Aucun document ne sort sans validation juridique. Notre cabinet partenaire v&eacute;rifie chaque clause, chaque virgule. Z&eacute;ro risque.</p>
+        <ul class="feat-checks">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Cabinet d'avocats en droit des affaires</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>100% conforme au droit fran&ccedil;ais en vigueur</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Mises &agrave; jour l&eacute;gales automatiques incluses</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Support juridique illimit&eacute; par messagerie</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feat-row">
+      <div class="feat-mini reveal reveal-d2">
+        <div class="feat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <h3>Signature eIDAS</h3>
+        <p>Signature &eacute;lectronique &agrave; valeur l&eacute;gale europ&eacute;enne. Conforme eIDAS, accept&eacute;e partout.</p>
+      </div>
+      <div class="feat-mini reveal reveal-d3">
+        <div class="feat-icon dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+        <h3>Chat avec un avocat</h3>
+        <p>&Eacute;changez en direct avec un avocat sp&eacute;cialis&eacute;. R&eacute;ponse garantie sous 24h.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- STEPS -->
+  <section class="section">
+    <div class="section-head reveal">
+      <div class="section-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> Comment &ccedil;a marche</div>
+      <h2 class="section-h">De z&eacute;ro &agrave; immatricul&eacute; en <span class="text-gradient">3&nbsp;&eacute;tapes</span></h2>
+      <p class="section-p">Pas besoin d'&ecirc;tre juriste. Notre plateforme vous guide de A &agrave; Z, du formulaire &agrave; la signature.</p>
+      <div class="steps-head-btns">
+        <a href="/connexion.html" class="btn btn-dark">Commencer <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></a>
+        <a href="#pricing" class="btn btn-outline">Voir les tarifs <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step-card reveal reveal-d1">
+        <div class="step-badge">01</div>
+        <h3>R&eacute;pondez &agrave; 5 questions</h3>
+        <p>Z&eacute;ro jargon juridique. Notre formulaire intelligent traduit vos r&eacute;ponses en clauses conformes. Vous n'avez rien &agrave; savoir, juste &agrave; r&eacute;pondre.</p>
+        <div class="step-visual">
+          <div class="step-form">
+            <div class="step-field active"><div class="step-field-dot" style="background:#7c3aed"></div>Ma Startup SAS<span class="step-field-cursor"></span></div>
+            <div class="step-field"><div class="step-field-dot" style="background:#2563eb"></div>Forme juridique (SASU, SAS...)</div>
+            <div class="step-field"><div class="step-field-dot" style="background:#ca8a04"></div>Capital social &amp; r&eacute;partition</div>
+            <div class="step-field"><div class="step-field-dot" style="background:#7c3aed"></div>Adresse du si&egrave;ge social</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-card reveal reveal-d2">
+        <div class="step-badge">02</div>
+        <h3>Un avocat valide vos documents</h3>
+        <p>Statuts, contrats, PV d'assembl&eacute;e &mdash; tout est g&eacute;n&eacute;r&eacute; en quelques secondes puis v&eacute;rifi&eacute; clause par clause par notre cabinet d'avocats partenaire.</p>
+        <div class="step-visual">
+          <div class="step-doc">
+            <div class="step-doc-page">
+              <div class="step-doc-lines">
+                <div class="step-doc-line"></div>
+                <div class="step-doc-line"></div>
+                <div class="step-doc-line"></div>
+                <div class="step-doc-line"></div>
+                <div class="step-doc-line"></div>
+              </div>
+            </div>
+            <div class="step-doc-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Valid&eacute; par un avocat</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-card reveal reveal-d3">
+        <div class="step-badge">03</div>
+        <h3>Signez et lancez-vous</h3>
+        <p>Signature &eacute;lectronique eIDAS en un clic. T&eacute;l&eacute;chargez vos documents finalis&eacute;s et d&eacute;marrez votre activit&eacute; imm&eacute;diatement. Pas demain, maintenant.</p>
+        <div class="step-visual">
+          <div class="step-sign">
+            <div class="step-sign-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="step-sign-text">Document sign&eacute; avec succ&egrave;s !</div>
+            <div class="step-sign-avatars">
+              <div class="step-sign-av">JD</div>
+              <div class="step-sign-av" style="background:#f5f3ff;color:#7c3aed">AV</div>
+              <span class="step-sign-label">2 signatures collect&eacute;es</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- TRUST -->
+  <div style="padding:16px 0">
+  <div class="trust reveal">
+    <div class="trust-left">
+      <div class="trust-badge"><span class="trust-badge-dot"></span> S&eacute;curit&eacute; juridique maximale</div>
+      <h2>Le seul g&eacute;n&eacute;rateur de documents valid&eacute; par un cabinet d'avocats.</h2>
+      <p>LegalStart, Captain Contrat, les mod&egrave;les gratuits&hellip; Aucun ne fait v&eacute;rifier chaque document par un avocat. Chez Formalist, c'est syst&eacute;matique. Z&eacute;ro approximation.</p>
+      <div class="trust-items">
+        <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Cabinet d'avocats en droit des affaires</div>
+        <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Clauses adapt&eacute;es &agrave; votre situation exacte</div>
+        <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Mises &agrave; jour l&eacute;gales automatiques &agrave; vie</div>
+        <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Messagerie directe avec votre avocat d&eacute;di&eacute;</div>
+        <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Signature eIDAS &agrave; valeur l&eacute;gale europ&eacute;enne</div>
+      </div>
+    </div>
+    <div class="trust-right">
+      <div class="trust-mini"><div class="trust-mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><div class="trust-mini-num">99,8%</div><div class="trust-mini-desc">Taux de conformit&eacute; juridique</div></div></div>
+      <div class="trust-mini"><div class="trust-mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="trust-mini-num">15 000+</div><div class="trust-mini-desc">Documents g&eacute;n&eacute;r&eacute;s et valid&eacute;s par un avocat</div></div></div>
+      <div class="trust-mini"><div class="trust-mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div class="trust-mini-num">&lt; 5 min</div><div class="trust-mini-desc">Temps moyen pour g&eacute;n&eacute;rer vos documents</div></div></div>
+    </div>
+  </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- TESTIMONIALS -->
+  <section class="testi-section reveal" id="temoignages">
+    <div class="testi-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> T&eacute;moignages</div>
+    <h2>Ne vous fiez pas seulement<br>&agrave; notre parole</h2>
+    <p class="testi-sub">Nos utilisateurs sont nos meilleurs ambassadeurs. D&eacute;couvrez pourquoi nous sommes le meilleur choix pour vos formalit&eacute;s juridiques.</p>
+    <div class="testi-slider-wrap">
+      <div class="testi-scroll" style="padding:24px 0">
+        <div class="testi-slider">
+          <div class="testi-card-wrap">
+            <div class="testi-card-border"><span class="testi-card-bl">+</span><span class="testi-card-br">+</span></div>
+            <div class="testi-card">
+              <div class="testi-quote">&ldquo;Plus rapide qu'un avocat, plus fiable qu'un g&eacute;n&eacute;rateur en ligne. Formalist a tout chang&eacute; pour ma cr&eacute;ation d'entreprise.&rdquo;</div>
+              <div class="testi-author"><div class="testi-initials">AL</div><div><div class="testi-name">Antoine Laurent</div><div class="testi-role">Fondateur, Navi</div></div></div>
+            </div>
+          </div>
+          <div class="testi-card-wrap">
+            <div class="testi-card-border"><span class="testi-card-bl">+</span><span class="testi-card-br">+</span></div>
+            <div class="testi-card">
+              <div class="testi-quote">&ldquo;Plus &eacute;l&eacute;gant que LegalStart, plus accessible qu'un cabinet. Formalist fonctionne et c'est juste parfait.&rdquo;</div>
+              <div class="testi-author"><div class="testi-initials">SC</div><div><div class="testi-name">Sophie Carpentier</div><div class="testi-role">Compositrice</div></div></div>
+            </div>
+          </div>
+          <div class="testi-card-wrap">
+            <div class="testi-card-border"><span class="testi-card-bl">+</span><span class="testi-card-br">+</span></div>
+            <div class="testi-card">
+              <div class="testi-quote">&ldquo;Je pense que Formalist a une vraie chance de cr&eacute;er une nouvelle cat&eacute;gorie en &eacute;tant &agrave; la fois excellent et accessible.&rdquo;</div>
+              <div class="testi-author"><div class="testi-initials">ML</div><div><div class="testi-name">Marc Lefevre</div><div class="testi-role">G&eacute;rant, SARL Bati+</div></div></div>
+            </div>
+          </div>
+          <div class="testi-card-wrap">
+            <div class="testi-card-border"><span class="testi-card-bl">+</span><span class="testi-card-br">+</span></div>
+            <div class="testi-card">
+              <div class="testi-quote">&ldquo;J'ai cr&eacute;&eacute; ma SASU en 4 minutes. Statuts pr&ecirc;ts, sign&eacute;s dans la foul&eacute;e. Du jamais vu.&rdquo;</div>
+              <div class="testi-author"><div class="testi-initials">JD</div><div><div class="testi-name">Julien Durand</div><div class="testi-role">Fondateur, TechVision</div></div></div>
+            </div>
+          </div>
+          <!-- duplicate for seamless loop -->
+          <div class="testi-card-wrap">
+            <div class="testi-card-border"><span class="testi-card-bl">+</span><span class="testi-card-br">+</span></div>
+            <div class="testi-card">
+              <div class="testi-quote">&ldquo;Plus rapide qu'un avocat, plus fiable qu'un g&eacute;n&eacute;rateur en ligne. Formalist a tout chang&eacute; pour ma cr&eacute;ation d'entreprise.&rdquo;</div>
+              <div class="testi-author"><div class="testi-initials">AL</div><div><div class="testi-name">Antoine Laurent</div><div class="testi-role">Fondateur, Navi</div></div></div>
+            </div>
+          </div>
+          <div class="testi-card-wrap">
+            <div class="testi-card-border"><span class="testi-card-bl">+</span><span class="testi-card-br">+</span></div>
+            <div class="testi-card">
+              <div class="testi-quote">&ldquo;Plus &eacute;l&eacute;gant que LegalStart, plus accessible qu'un cabinet. Formalist fonctionne et c'est juste parfait.&rdquo;</div>
+              <div class="testi-author"><div class="testi-initials">SC</div><div><div class="testi-name">Sophie Carpentier</div><div class="testi-role">Compositrice</div></div></div>
+            </div>
+          </div>
+          <div class="testi-card-wrap">
+            <div class="testi-card-border"><span class="testi-card-bl">+</span><span class="testi-card-br">+</span></div>
+            <div class="testi-card">
+              <div class="testi-quote">&ldquo;Je pense que Formalist a une vraie chance de cr&eacute;er une nouvelle cat&eacute;gorie en &eacute;tant &agrave; la fois excellent et accessible.&rdquo;</div>
+              <div class="testi-author"><div class="testi-initials">ML</div><div><div class="testi-name">Marc Lefevre</div><div class="testi-role">G&eacute;rant, SARL Bati+</div></div></div>
+            </div>
+          </div>
+          <div class="testi-card-wrap">
+            <div class="testi-card-border"><span class="testi-card-bl">+</span><span class="testi-card-br">+</span></div>
+            <div class="testi-card">
+              <div class="testi-quote">&ldquo;J'ai cr&eacute;&eacute; ma SASU en 4 minutes. Statuts pr&ecirc;ts, sign&eacute;s dans la foul&eacute;e. Du jamais vu.&rdquo;</div>
+              <div class="testi-author"><div class="testi-initials">JD</div><div><div class="testi-name">Julien Durand</div><div class="testi-role">Fondateur, TechVision</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- PRICING -->
+  <section class="section" id="pricing"><div class="section-head reveal"><div class="section-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Tarifs</div><h2 class="section-h">Jusqu'&agrave; <span class="text-gradient">10x moins cher</span> qu'un cabinet d'avocats</h2><p class="section-p">Des tarifs fixes et transparents. Pas de frais cach&eacute;s, pas d'abonnement obligatoire, pas de mauvaise surprise.</p></div>
+
+    <div class="price-tabs reveal">
+      <button class="price-tab active" data-tab="entreprises">Entreprises</button>
+      <button class="price-tab" data-tab="contrats">Contrats</button>
+      <button class="price-tab" data-tab="artistes">Artistes</button>
+      <button class="price-tab" data-tab="consultations">Consultations</button>
+    </div>
+
+    <!-- ENTREPRISES -->
+    <div class="price-panel active" id="tab-entreprises">
+      <div class="pricing">
+        <div class="price-card reveal reveal-d1"><div class="price-name">Cr&eacute;ation de soci&eacute;t&eacute;</div><div class="price-val">199&euro;</div><div class="price-desc">SASU, SAS, SARL, SCI, EURL&hellip; Statuts sur-mesure, valid&eacute;s par un avocat. Pr&ecirc;t en 5&nbsp;minutes.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Statuts sur-mesure</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Valid&eacute; par un avocat</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Signature &eacute;lectronique</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Suivi du dossier en temps r&eacute;el</li></ul><a href="/connexion.html" class="btn btn-dark">Commencer</a></div>
+        <div class="price-card pop reveal reveal-d2"><div class="pop-badge">Populaire</div><div class="price-name">Modification de soci&eacute;t&eacute;</div><div class="price-val">149&euro;</div><div class="price-desc">Changement de si&egrave;ge, d'objet social, de dirigeant&hellip; Formalit&eacute;s au greffe incluses.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>PV d'assembl&eacute;e g&eacute;n&eacute;r&eacute;</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Statuts mis &agrave; jour</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Formalit&eacute;s au greffe incluses</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Messagerie avocat</li></ul><a href="/connexion.html" class="btn btn-dark">Commencer</a></div>
+        <div class="price-card reveal reveal-d3"><div class="price-name">Fermeture de soci&eacute;t&eacute;</div><div class="price-val">249&euro;</div><div class="price-desc">Dissolution, liquidation, radiation &mdash; tout est g&eacute;r&eacute; de A &agrave; Z par notre plateforme.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>PV de dissolution</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Comptes de liquidation</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Publication l&eacute;gale incluse</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Radiation au greffe</li></ul><a href="/connexion.html" class="btn btn-outline">Commencer</a></div>
+      </div>
+    </div>
+
+    <!-- CONTRATS -->
+    <div class="price-panel" id="tab-contrats">
+      <div class="pricing cols-2">
+        <div class="price-card reveal reveal-d1"><div class="price-name">Contrat standard</div><div class="price-val">79&euro;</div><div class="price-desc">NDA, CGV, CGU, prestation&hellip; Personnalis&eacute; et conforme en quelques clics.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Mod&egrave;le personnalis&eacute;</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Conforme au droit fran&ccedil;ais</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Signature &eacute;lectronique</li></ul><a href="/connexion.html" class="btn btn-dark">Commencer</a></div>
+        <div class="price-card reveal reveal-d2"><div class="price-name">Contrat sur-mesure</div><div class="price-val">199&euro;</div><div class="price-desc">R&eacute;dig&eacute;, relu et valid&eacute; par un avocat sp&eacute;cialis&eacute;. R&eacute;visions illimit&eacute;es.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>R&eacute;daction personnalis&eacute;e</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Valid&eacute; par un avocat</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>R&eacute;visions illimit&eacute;es</li></ul><a href="/connexion.html" class="btn btn-outline">Commencer</a></div>
+      </div>
+    </div>
+
+    <!-- ARTISTES -->
+    <div class="price-panel" id="tab-artistes">
+      <div class="pricing cols-2">
+        <div class="price-card reveal reveal-d2"><div class="price-name">Pack Artiste</div><div class="price-val">149&euro; <span>/ an</span></div><div class="price-desc">D&eacute;clarations illimit&eacute;es, contrats d'&eacute;dition et cession de droits. Tout en un.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>D&eacute;clarations illimit&eacute;es</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Contrats d'&eacute;dition</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Support prioritaire</li></ul><a href="/connexion.html" class="btn btn-outline">S'abonner</a></div>
+      </div>
+    </div>
+
+    <!-- CONSULTATIONS -->
+    <div class="price-panel" id="tab-consultations">
+      <div class="pricing cols-2">
+        <div class="price-card reveal reveal-d1"><div class="price-name">Consultation ponctuelle</div><div class="price-val">59&euro; <span>/ 30 min</span></div><div class="price-desc">Posez vos questions &agrave; un avocat sp&eacute;cialis&eacute;. Compte-rendu &eacute;crit inclus.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Visio ou t&eacute;l&eacute;phone</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Avocat sp&eacute;cialis&eacute;</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Compte-rendu &eacute;crit</li></ul><a href="/connexion.html" class="btn btn-dark">R&eacute;server</a></div>
+        <div class="price-card reveal reveal-d2"><div class="price-name">Accompagnement mensuel</div><div class="price-val">299&euro; <span>/ mois</span></div><div class="price-desc">Votre avocat d&eacute;di&eacute; disponible au quotidien. R&eacute;ponse garantie sous 24h.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Consultations illimit&eacute;es</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Avocat d&eacute;di&eacute;</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>R&eacute;ponse sous 24h</li></ul><a href="/connexion.html" class="btn btn-outline">S'abonner</a></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- CTA -->
+  <div class="cta-wrap reveal">
+    <div class="cta-box">
+      <div class="cta-grid">
+        <div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div>
+        <div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div>
+        <div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div>
+        <div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div><div class="cta-grid-cell"></div>
+      </div>
+      <div class="cta-content">
+        <h2>Lancez votre entreprise aujourd'hui.<br><span class="text-gradient">Pas demain.</span></h2>
+        <p style="font-size:16px;color:#666;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6">Rejoignez les milliers d'entrepreneurs qui ont choisi Formalist pour cr&eacute;er leur soci&eacute;t&eacute; en toute s&eacute;r&eacute;nit&eacute;.</p>
+        <div class="cta-btns">
+          <a href="/connexion.html" class="btn btn-dark">Commencer maintenant <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></a>
+          <a href="#pricing" class="btn btn-outline">Voir les tarifs <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- FOOTER -->
+  <footer class="foot">
+    <div class="foot-inner">
+      <div class="foot-top">
+        <div>
+          <div class="foot-brand">formalist</div>
+          <p class="foot-brand-p">La plateforme qui automatise vos formalit&eacute;s juridiques avec la rigueur d'un cabinet d'avocats.</p>
+          <p class="foot-mission">Notre mission : rendre le droit accessible, rapide et sans erreur pour chaque entrepreneur en France.</p>
+          <div class="foot-socials" style="margin-top:4px">
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+          </div>
+        </div>
+        <div class="foot-col">
+          <h4>Services</h4>
+          <a href="#">Cr&eacute;ation d'entreprise</a>
+          <a href="#">Modification de soci&eacute;t&eacute;</a>
+          <a href="#">Fermeture de soci&eacute;t&eacute;</a>
+          <a href="#">Contrats</a>
+          <a href="#">Signature &eacute;lectronique</a>
+          <a href="#">Consultation avocat</a>
+        </div>
+        <div class="foot-col">
+          <h4>Ressources</h4>
+          <a href="#">Guide juridique</a>
+          <a href="#">Blog</a>
+          <a href="/aide.html">FAQ</a>
+          <a href="#">Partenaires</a>
+          <a href="#">Documentation</a>
+          <a href="#">Tarifs</a>
+        </div>
+        <div class="foot-col">
+          <h4>Entreprise</h4>
+          <a href="#">&Agrave; propos</a>
+          <a href="#">Emplois</a>
+          <a href="/contact.html">Contact</a>
+          <a href="#">Presse</a>
+        </div>
+        <div class="foot-col">
+          <h4>L&eacute;gal</h4>
+          <a href="#">Mentions l&eacute;gales</a>
+          <a href="#">Confidentialit&eacute;</a>
+          <a href="#">CGU</a>
+          <a href="#">CGV</a>
+          <a href="#">S&eacute;curit&eacute;</a>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <div class="foot-copy">&copy; 2026 Formalist. Tous droits r&eacute;serv&eacute;s.</div>
+        <div class="foot-socials">
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    window.addEventListener('scroll',function(){document.getElementById('navbar').classList.toggle('scrolled',scrollY>20)});
+    // Mega menu hover with delay
+    (function(){
+      var dd=document.querySelector('.nav-dropdown');
+      var mega=document.querySelector('.nav-mega');
+      if(!dd||!mega)return;
+      var timer=null;
+      function show(){clearTimeout(timer);dd.classList.add('open')}
+      function hide(){timer=setTimeout(function(){dd.classList.remove('open')},200)}
+      dd.addEventListener('mouseenter',show);
+      dd.addEventListener('mouseleave',hide);
+      mega.addEventListener('mouseenter',show);
+      mega.addEventListener('mouseleave',hide);
+    })();
+    var obs=new IntersectionObserver(function(e){e.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el)});
+    var fobs=new IntersectionObserver(function(e){e.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');fobs.unobserve(e.target)}})},{threshold:0.3});
+    document.querySelectorAll('.feat-card,.step-card').forEach(function(el){fobs.observe(el)});
+    document.querySelectorAll('a[href^="#"]').forEach(function(l){l.addEventListener('click',function(e){var h=this.getAttribute('href');if(h==='#')return;e.preventDefault();var t=document.querySelector(h);if(t)t.scrollIntoView({behavior:'smooth'})})});
+    // Price tabs
+    document.querySelectorAll('.price-tab').forEach(function(tab){tab.addEventListener('click',function(){document.querySelectorAll('.price-tab').forEach(function(t){t.classList.remove('active')});document.querySelectorAll('.price-panel').forEach(function(p){p.classList.remove('active')});this.classList.add('active');document.getElementById('tab-'+this.dataset.tab).classList.add('active')})});
+    // Highlight center testimonial card
+    (function(){
+      var wrap=document.querySelector('.testi-slider-wrap');
+      if(!wrap)return;
+      function updateCards(){
+        var rect=wrap.getBoundingClientRect();
+        var cx=rect.left+rect.width/2;
+        var cards=wrap.querySelectorAll('.testi-card-wrap');
+        cards.forEach(function(c){
+          var cr=c.getBoundingClientRect();
+          var ccx=cr.left+cr.width/2;
+          var dist=Math.abs(ccx-cx);
+          if(dist<240){c.classList.remove('faded')}else{c.classList.add('faded')}
+        });
+        requestAnimationFrame(updateCards);
+      }
+      updateCards();
+    })();
+    // Typewriter effect with random speed
+    (function(){
+      var hl=document.querySelector('.hero h1 .highlight');
+      if(!hl)return;
+      var inner=hl.querySelector('.highlight-inner');
+      var cursor=hl.querySelector('.highlight-cursor');
+      var bg=hl;
+      var letters=11;
+      var step=0;
+      setTimeout(function type(){
+        step++;
+        var pct=step/letters;
+        inner.style.clipPath='inset(0 '+(100-pct*100)+'% 0 0)';
+        cursor.style.left=(pct*100)+'%';
+        bg.style.setProperty('--w',(pct*100+1.5)+'%');
+        if(step<letters){
+          var delay=40+Math.random()*100;
+          setTimeout(type,delay);
+        }else{
+          hl.classList.add('done');
+        }
+      },600);
+    })();
+  </script>
+</body>
+</html>

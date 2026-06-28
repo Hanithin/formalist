@@ -1,0 +1,3345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>    .sidebar {
+      width: 270px;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0 0;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
+
+    /* Context block (société active) */
+    .sidebar-context {
+      margin: 0 12px 12px; padding: 10px 12px;
+      background: #fafafa; border: 1px solid #eee; border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .sidebar-context:hover { background: #f3f3f4; border-color: #e2e2e4; }
+    .sidebar-context .ctx-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
+    .sidebar-context .ctx-body { flex: 1; min-width: 0; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-context.single { cursor: default; }
+    .sidebar-context.single:hover { background: #fafafa; border-color: #eee; }
+    .sidebar-context.single .ctx-chevron { display: none; }
+
+    /* CTA primaire "Nouvelle formalité" */
+    .sidebar-cta {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active { transform: scale(0.99); }
+    .sidebar-cta svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    /* Badges dans la nav */
+    .nav-badge {
+      margin-left: auto;
+      background: #f3f4f6; color: #555;
+      font-size: 11.5px; font-weight: 500;
+      padding: 2px 9px; border-radius: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .nav-badge.muted { background: #f0f0f2; color: #666; }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+
+
+    /* Modal Nouvelle formalité */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header {
+      padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+      border-bottom: 1px solid #f0f0f2;
+    }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close {
+      background: none; border: none; cursor: pointer; color: #999;
+      padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid {
+      padding: 18px; display: grid; gap: 10px;
+      grid-template-columns: 1fr 1fr;
+    }
+    .nd-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border: 1px solid #eee; border-radius: 12px;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.15s, background 0.15s, transform 0.05s;
+    }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+
+    @media (max-width: 600px) {
+      .nd-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ============================
+       ÉTAT 0 — Aucune formalité
+       ============================ */
+    .welcome-hero {
+      background: linear-gradient(135deg, #111 0%, #2a2a2c 100%);
+      color: #fff; padding: 48px 40px; border-radius: 20px;
+      margin: 32px 0 24px; position: relative; overflow: hidden;
+    }
+    .welcome-hero::after {
+      content: ''; position: absolute; top: -40%; right: -10%;
+      width: 480px; height: 480px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .welcome-top {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 24px; margin-bottom: 10px;
+      position: relative; z-index: 2;
+    }
+    .welcome-hero h2 {
+      font-size: 28px; font-weight: 600;
+      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: -0.3px;
+      flex: 1; min-width: 0;
+    }
+    .welcome-hero p { font-size: 15px; color: rgba(255,255,255,0.7); margin-bottom: 28px; max-width: 540px; line-height: 1.5; position: relative; z-index: 2; }
+    .welcome-badge {
+      display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
+      padding: 8px 14px; background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 20px; color: #6ee7b7;
+      font-size: 12.5px; font-weight: 500;
+      backdrop-filter: blur(8px);
+    }
+    @media (max-width: 700px) {
+      .welcome-top { flex-direction: column; align-items: flex-start; }
+    }
+    .welcome-badge strong { color: #fff; font-weight: 600; }
+    .welcome-badge svg { width: 14px; height: 14px; stroke-width: 2.2; }
+    .welcome-group-label {
+      font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin: 22px 0 12px; position: relative; z-index: 2;
+    }
+    .welcome-group-label:first-of-type { margin-top: 0; }
+    .welcome-paths {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+      position: relative; z-index: 2;
+    }
+    .welcome-path {
+      display: block; padding: 22px; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+      text-decoration: none; color: #fff; transition: all 0.18s ease;
+      cursor: pointer;
+    }
+    .welcome-path:hover {
+      background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25);
+      transform: translateY(-2px);
+    }
+    .welcome-path-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+    }
+    .welcome-path-icon svg { width: 20px; height: 20px; stroke-width: 1.6; }
+    .welcome-path-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .welcome-path-desc { font-size: 12.5px; color: rgba(255,255,255,0.55); margin-bottom: 12px; }
+    .welcome-path-meta {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11.5px; color: rgba(255,255,255,0.8); font-weight: 500;
+    }
+    .welcome-path-meta svg { width: 12px; height: 12px; }
+    .welcome-trust {
+      display: flex; align-items: center; justify-content: center; gap: 24px;
+      padding: 18px 24px; background: #fff; border: 1px solid #eee;
+      border-radius: 14px; font-size: 13px; color: #666;
+      flex-wrap: wrap;
+    }
+    .welcome-trust-item { display: flex; align-items: center; gap: 6px; }
+    .welcome-trust-item strong { color: #111; font-weight: 600; }
+    .welcome-trust-item svg { width: 16px; height: 16px; color: #f59e0b; }
+    .welcome-trust-sep { width: 4px; height: 4px; background: #ddd; border-radius: 50%; }
+
+    @media (max-width: 800px) {
+      .welcome-paths { grid-template-columns: 1fr; }
+      .welcome-hero { padding: 32px 24px; }
+    }
+
+    /* ============================
+       ÉTAT 1 — Une seule formalité (focus)
+       ============================ */
+    .single-hero {
+      background: #fff; border: 1px solid #eee; border-radius: 20px;
+      padding: 36px 40px; margin-bottom: 20px; position: relative;
+      display: flex; align-items: center; gap: 36px;
+    }
+    .single-hero-progress {
+      flex-shrink: 0; width: 132px; height: 132px; position: relative;
+    }
+    .single-hero-progress svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .single-hero-progress circle.bg { fill: none; stroke: #f0f0f2; stroke-width: 8; }
+    .single-hero-progress circle.fg {
+      fill: none; stroke: #111; stroke-width: 8; stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .single-hero-progress .pct {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .single-hero-progress .pct-value { font-size: 26px; font-weight: 700; color: #111; line-height: 1; font-family: 'Cal Sans', 'Inter', sans-serif; }
+    .single-hero-progress .pct-label { font-size: 10px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .single-hero-body { flex: 1; min-width: 0; }
+    .single-hero-eyebrow {
+      display: inline-block; padding: 4px 10px; background: #eef2ff; color: #4338ca;
+      font-size: 11px; font-weight: 600; border-radius: 20px; margin-bottom: 10px;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .single-hero-title {
+      font-size: 24px; font-weight: 600; margin-bottom: 8px; color: #111;
+      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: -0.2px;
+    }
+    .single-hero-desc { font-size: 14.5px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+    .single-hero-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .single-hero-btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px;
+      background: #111; color: #fff; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: background 0.15s, transform 0.05s; font-family: inherit;
+    }
+    .single-hero-btn:hover { background: #2a2a2c; }
+    .single-hero-btn:active { transform: scale(0.99); }
+    .single-hero-btn svg { width: 14px; height: 14px; }
+    .single-hero-btn.ghost { background: transparent; color: #666; border: 1px solid #e5e5e7; }
+    .single-hero-btn.ghost:hover { background: #f5f5f7; color: #111; }
+
+    /* État 1 — Société terminée : célébration + roadmap */
+    .single-celebrate {
+      background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+      color: #fff;
+    }
+    .single-celebrate .single-hero-title { color: #fff; }
+    .single-celebrate .single-hero-desc { color: rgba(255,255,255,0.85); }
+    .single-celebrate .single-hero-eyebrow { background: rgba(255,255,255,0.15); color: #fff; }
+    .single-celebrate .single-hero-progress circle.bg { stroke: rgba(255,255,255,0.15); }
+    .single-celebrate .single-hero-progress circle.fg { stroke: #fff; }
+    .single-celebrate .single-hero-progress .pct-value { color: #fff; }
+    .single-celebrate .single-hero-progress .pct-label { color: rgba(255,255,255,0.7); }
+    .single-celebrate .single-hero-btn { background: #fff; color: #065f46; }
+    .single-celebrate .single-hero-btn:hover { background: #f0fdf4; }
+
+    .roadmap {
+      background: #fff; border: 1px solid #eee; border-radius: 16px;
+      padding: 28px; margin-bottom: 20px;
+    }
+    .roadmap-title {
+      font-size: 17px; font-weight: 600; color: #111; margin-bottom: 4px;
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+    }
+    .roadmap-subtitle { font-size: 13.5px; color: #888; margin-bottom: 20px; }
+    .roadmap-steps { display: flex; flex-direction: column; gap: 10px; }
+    .roadmap-step {
+      display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+      border: 1px solid #eee; border-radius: 12px; text-decoration: none;
+      color: inherit; transition: border-color 0.15s, background 0.15s;
+    }
+    .roadmap-step:hover { border-color: #111; background: #fafafa; }
+    .roadmap-step-check {
+      width: 22px; height: 22px; border: 2px solid #ddd; border-radius: 50%;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+    .roadmap-step.done .roadmap-step-check {
+      background: #10b981; border-color: #10b981;
+    }
+    .roadmap-step.done .roadmap-step-check svg { display: block; }
+    .roadmap-step-check svg { display: none; width: 12px; height: 12px; color: #fff; }
+    .roadmap-step-body { flex: 1; min-width: 0; }
+    .roadmap-step-title { font-size: 14px; font-weight: 600; color: #111; }
+    .roadmap-step-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    .roadmap-step-cta {
+      font-size: 12.5px; color: #4338ca; font-weight: 600;
+      padding: 6px 12px; border: 1px solid #c7d2fe; background: #eef2ff;
+      border-radius: 8px; text-decoration: none; transition: all 0.15s;
+    }
+    .roadmap-step-cta:hover { background: #e0e7ff; border-color: #6366f1; }
+    .roadmap-step.done .roadmap-step-title { color: #888; text-decoration: line-through; text-decoration-thickness: 1px; }
+
+    /* ============================
+       ÉTAT 2+ — KPI strip + top action
+       ============================ */
+    .top-action {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-radius: 16px; padding: 20px 24px;
+      display: flex; align-items: center; gap: 18px; margin-bottom: 16px;
+      border: 1px solid #fcd34d;
+    }
+    .top-action-icon {
+      width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center;
+    }
+    .top-action-icon svg { width: 22px; height: 22px; color: #111; }
+    .top-action-body { flex: 1; min-width: 0; }
+    .top-action-title { font-size: 15px; font-weight: 600; color: #111; }
+    .top-action-desc { font-size: 13px; color: #78350f; margin-top: 2px; }
+    .top-action-btn {
+      flex-shrink: 0; padding: 10px 18px; background: #111; color: #fff;
+      border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    .top-action-btn:hover { background: #2a2a2c; }
+    .top-action-btn svg { width: 14px; height: 14px; }
+    .top-action-nav {
+      display: flex; align-items: center; gap: 6px;
+      margin-right: 10px; flex-shrink: 0;
+    }
+    .ta-arrow {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(0,0,0,0.06); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #111; transition: background 0.15s;
+    }
+    .ta-arrow:hover { background: rgba(0,0,0,0.12); }
+    .ta-arrow svg { width: 14px; height: 14px; }
+    .ta-counter {
+      font-size: 12px; font-weight: 600; color: #78350f;
+      min-width: 32px; text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-strip {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px; margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: #fff; border: 1px solid #eee; border-radius: 14px;
+      padding: 16px 18px; transition: border-color 0.15s, transform 0.05s, background 0.15s;
+    }
+    .kpi-card.kpi-action { cursor: pointer; }
+    .kpi-card.kpi-action:hover { border-color: #111; }
+    .kpi-card.kpi-action:active { transform: scale(0.99); }
+    .kpi-card.active { border-color: #111; background: #fafafa; }
+    .kpi-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .kpi-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .kpi-icon svg { width: 16px; height: 16px; }
+    .kpi-icon.green { background: #ecfdf5; color: #059669; }
+    .kpi-icon.amber { background: #fef3c7; color: #b45309; }
+    .kpi-icon.blue { background: #eff6ff; color: #2563eb; }
+    .kpi-icon.violet { background: #f5f3ff; color: #7c3aed; }
+    .kpi-icon.red { background: #fee2e2; color: #dc2626; }
+    .kpi-trend {
+      font-size: 10.5px; font-weight: 600; color: #999;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .kpi-value {
+      font-size: 28px; font-weight: 700; color: #111; line-height: 1;
+      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: -0.5px;
+    }
+    .kpi-card.active .kpi-value { color: #111; }
+    .kpi-label { font-size: 12.5px; color: #888; margin-top: 6px; }
+
+    @media (max-width: 600px) {
+      .kpi-strip { grid-template-columns: 1fr; }
+    }
+
+    /* ============================
+       Interventions de l'avocat (côté user)
+       ============================ */
+    .interventions-card {
+      background: #fff; border: 1px solid #e5e5e7; border-radius: 16px;
+      margin: 16px 0; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    }
+    .iv-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      background: #fafafa;
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .iv-header:hover { background: #f3f3f4; }
+    .iv-header-icon {
+      width: 28px !important; height: 28px !important;
+      border-radius: 8px !important;
+      background: #e5e5e7 !important;
+      color: #444 !important;
+    }
+    .iv-header-icon svg { width: 14px !important; height: 14px !important; }
+    .iv-title { font-size: 13.5px !important; color: #111 !important; }
+    .iv-subtitle { font-size: 12px !important; color: #777 !important; margin-top: 1px !important; }
+    .iv-chevron {
+      width: 16px; height: 16px; color: #999; flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .interventions-card.expanded .iv-chevron { transform: rotate(180deg); }
+    .iv-body { display: none; }
+    .interventions-card.expanded .iv-body { display: block; border-top: 1px solid #f0f0f2; }
+    .interventions-card { margin: 0 0 12px !important; box-shadow: none !important; border-color: #ececef !important; }
+    .iv-header-icon {
+      width: 40px; height: 40px; border-radius: 11px;
+      background: #4338ca; color: #fff;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .iv-header-icon svg { width: 20px; height: 20px; }
+    .iv-header-text { flex: 1; min-width: 0; }
+    .iv-title { font-size: 15.5px; font-weight: 600; color: #111; }
+    .iv-subtitle { font-size: 13px; color: #4338ca; margin-top: 3px; }
+
+    .iv-section { padding: 16px 24px; border-bottom: 1px solid #f5f5f7; }
+    .iv-section:last-child { border-bottom: none; }
+    .iv-section-alert { background: #fffafa; }
+    .iv-section-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.6px; color: #999; margin-bottom: 10px;
+    }
+
+    .iv-doc-reject {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 12px 14px; background: #fff; border: 1px solid #fca5a5;
+      border-radius: 10px; margin-bottom: 8px;
+    }
+    .iv-doc-reject:last-child { margin-bottom: 0; }
+    .iv-doc-info { flex: 1; min-width: 0; }
+    .iv-doc-name { font-size: 14px; font-weight: 600; color: #111; }
+    .iv-doc-reason { font-size: 12.5px; color: #991b1b; margin-top: 2px; }
+    .iv-btn-reupload {
+      flex-shrink: 0; padding: 8px 14px;
+      background: #dc2626; color: #fff; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
+    }
+    .iv-btn-reupload:hover { background: #b91c1c; }
+
+    .iv-edit-row {
+      padding: 10px 12px; background: #fafafa; border-radius: 8px;
+      margin-bottom: 6px; font-size: 13.5px;
+    }
+    .iv-edit-row:last-child { margin-bottom: 0; }
+    .iv-edit-field { font-weight: 600; color: #4338ca; margin-bottom: 4px; }
+    .iv-edit-diff { display: flex; align-items: center; font-size: 13px; }
+    .iv-before { color: #dc2626; text-decoration: line-through; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .iv-after { color: #059669; font-weight: 500; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .iv-edit-comment { margin-top: 4px; font-size: 12px; color: #78350f; background: #fffbeb; padding: 4px 8px; border-radius: 4px; }
+    .iv-more { font-size: 12.5px; color: #666; padding: 6px; text-align: center; }
+
+    .sidebar-logo a { display: inline-flex; align-items: baseline; gap: 3px; color: #111; text-decoration: none; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 30px; font-weight: 700;
+      letter-spacing: 0; line-height: 1;
+      color: #111;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+    .sidebar-logo img { height: 26px; }
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer; margin-bottom: 2px;
+    }
+    .sidebar-nav a:hover, .sidebar-nav .sidebar-dropdown:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
+    .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
+    .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
+    .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
+    .sidebar-dropdown:hover .chevron { opacity: 0.6; }
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .sidebar-subnav.open { max-height: 320px; }
+    .sidebar-subnav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 12px 8px 44px; font-size: 13.5px; font-weight: 400; color: #666;
+      border-radius: 8px; transition: all 0.15s ease;
+    }
+    .sidebar-subnav a svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.72; stroke-width: 1.7; }
+    .sidebar-subnav a:hover { color: #111; background: #f6f6f6; }
+    .sidebar-subnav a:hover svg { opacity: 0.92; }
+    .sidebar-subnav a.active { color: #111; font-weight: 500; background: #f3f3f3; }
+    .sidebar-subnav a.active svg { opacity: 1; }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+    .sidebar-bottom {
+      padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #111;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .user-email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .btn-logout, .btn-settings {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .btn-logout:hover, .btn-settings:hover { color: #111; background: #f3f3f4; }
+    .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
+
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    @font-face {
+      font-family: 'Cal Sans';
+      src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Matter';
+      src: url('/fonts/Matter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-display: block;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Matter', 'Inter', -apple-system, sans-serif;
+      color: #111;
+      background: #f5f5f5;
+      display: flex;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* SIDEBAR */
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      margin-left: 270px;
+    }
+    .topbar {
+      padding: 32px 48px 24px;
+      background: transparent;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .topbar-left { min-width: 0; flex: 1; }
+    .topbar h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: #111;
+      line-height: 1.2;
+    }
+    .topbar-sub {
+      font-size: 14px;
+      color: #888;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      padding-top: 4px;
+    }
+    .topbar-date { font-size: 14.5px; color: #888; white-space: nowrap; }
+    .topbar-notif {
+      position: relative;
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      border: 1px solid #e5e5e7;
+      background: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #666;
+      transition: all 0.15s;
+    }
+    .topbar-notif:hover { border-color: #111; color: #111; background: #fafafa; }
+    .topbar-notif svg { width: 18px; height: 18px; }
+    .topbar-notif .notif-dot {
+      position: absolute; top: -4px; right: -4px;
+      min-width: 18px; height: 18px;
+      border-radius: 9px; padding: 0 5px;
+      background: #ef4444; color: #fff;
+      font-size: 10.5px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #f9f9fa;
+    }
+    @media (max-width: 768px) {
+      .topbar { flex-direction: column; padding: 24px 20px 16px; }
+      .topbar-actions { padding-top: 0; }
+    }
+
+    /* HERO BANNER */
+    .hero-banner {
+      margin: 0 48px 32px;
+      padding: 28px 32px;
+      border-radius: 20px;
+      background: #FDD835;
+      color: #111;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .hero-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #111;
+    }
+    .hero-icon svg { width: 22px; height: 22px; stroke-width: 2; }
+    .hero-content { flex: 1; }
+    .hero-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .hero-desc {
+      font-size: 13px;
+      color: rgba(0,0,0,0.55);
+      line-height: 1.4;
+    }
+    .hero-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 22px;
+      background: #111;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .hero-btn:hover { background: #333; }
+    .hero-btn svg { width: 16px; height: 16px; }
+    @media (max-width: 768px) {
+      .hero-banner { margin: 0 20px 24px; padding: 20px; flex-direction: column; align-items: flex-start; gap: 16px; }
+    }
+
+    .content { padding: 0 48px 48px; flex: 1; }
+
+    /* QUICK ACTIONS ROW */
+    .quick-actions-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .quick-action-card {
+      flex: 1;
+      padding: 20px 24px;
+      border-radius: 16px;
+      border: 1px solid #e5e5e5;
+      background: #fff;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .quick-action-card:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
+    }
+    .quick-action-card .qa-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .quick-action-card .qa-icon svg { width: 20px; height: 20px; }
+    .quick-action-card .qa-icon.green { background: #ecfdf5; color: #059669; }
+    .quick-action-card .qa-icon.blue { background: #eff6ff; color: #2563eb; }
+    .quick-action-card .qa-icon.violet { background: #f5f3ff; color: #7c3aed; }
+    .quick-action-card .qa-title { font-size: 14px; font-weight: 600; }
+    .quick-action-card .qa-desc { font-size: 12px; color: #999; margin-top: 2px; }
+
+    /* SECTION TITLE */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    /* DOSSIER FILTERS — tab style with counts */
+    .dossiers-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .dossiers-filters { display: flex; align-items: center; flex-wrap: wrap; }
+    .dossiers-search-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 360px;
+    }
+    .dossiers-search-wrap svg {
+      position: absolute;
+      left: 12px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; color: #999;
+      pointer-events: none;
+    }
+    .dossiers-search {
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      border: 1px solid #e5e5e7;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-family: inherit;
+      background: #fff;
+      color: #111;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .dossiers-search:focus { border-color: #111; }
+    .dossiers-search::placeholder { color: #aaa; }
+    .dossiers-filter-btn {
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: #999;
+      transition: all 0.15s;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .dossiers-filter-btn:hover { color: #111; }
+    .dossiers-filter-btn.active {
+      color: #111;
+      font-weight: 600;
+      border-bottom-color: #111;
+    }
+    .dossiers-filter-btn .filter-count, .filter-count {
+      font-variant-ligatures: none;
+      font-feature-settings: "calt" off, "liga" off;
+      font-weight: 400;
+      color: #bbb;
+      margin-left: 2px;
+    }
+    .dossiers-filter-btn.active .filter-count {
+      color: #666;
+    }
+
+    /* DOSSIER CARDS */
+    .dossiers-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .dossier-row {
+      display: grid;
+      grid-template-columns: 44px 1fr 110px 110px 20px;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+    }
+    .dossier-row .status-badge { justify-self: start; }
+    .dossier-row .dossier-row-date { justify-self: end; }
+    .dossier-row:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border-color: #ddd;
+    }
+    .dossier-row-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .dossier-row-icon svg { width: 20px; height: 20px; }
+    .dossier-row-icon.green { background: #ecfdf5; color: #059669; }
+    .dossier-row-icon.blue { background: #eff6ff; color: #2563eb; }
+    .dossier-row-icon.violet { background: #f5f3ff; color: #7c3aed; }
+    .dossier-row-icon.default { background: #f5f5f5; color: #888; }
+    .dossier-row-info { min-width: 0; flex: 1; }
+    .dossier-row-title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dossier-row-meta {
+      font-size: 13px;
+      color: #999;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .dossier-row-meta > span:not(.status-badge):not(.type-badge) { line-height: 1; }
+    .dossier-row-arrow {
+      width: 20px;
+      height: 20px;
+      color: #ccc;
+      flex-shrink: 0;
+    }
+    .dossier-row:hover .dossier-row-arrow { color: #111; }
+    .dossier-row-date {
+      font-size: 13px;
+      color: #999;
+      white-space: nowrap;
+    }
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 3px 8px;
+      border-radius: 100px;
+      flex-shrink: 0;
+      vertical-align: middle;
+      margin-right: 6px;
+      line-height: 1.4;
+      width: fit-content;
+    }
+    /* Toutes les créations de société partagent le même style sobre */
+    .type-badge.sasu,
+    .type-badge.sas,
+    .type-badge.sarl,
+    .type-badge.sci,
+    .type-badge.eurl,
+    .type-badge.default { background: #f3f4f6; color: #555; }
+    /* Contrat distinct */
+    .type-badge.contrat { background: #eff6ff; color: #2563eb; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .status-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .status-badge.done { background: #f0fdf4; color: #16a34a; }
+    .status-badge.pending { background: #fffbeb; color: #d97706; }
+    .status-badge.progress { background: #eff6ff; color: #2563eb; }
+    .status-badge.action {
+      background: #fef3c7; color: #b45309;
+      font-weight: 600;
+    }
+    .status-badge.action::before { background: #f59e0b; animation: pulse-dot 1.6s infinite; }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .dossiers-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      margin-bottom: 48px;
+    }
+    .dossiers-page-info {
+      font-size: 13px;
+      color: #999;
+    }
+    .dossiers-page-btns {
+      display: flex;
+      gap: 4px;
+    }
+    .dossiers-page-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid #e5e5e5;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      transition: all 0.15s;
+    }
+    .dossiers-page-btn:hover:not(:disabled) { background: #f5f5f5; color: #111; }
+    .dossiers-page-btn:disabled { opacity: 0.3; cursor: default; }
+    .dossiers-page-btn.active { background: #111; color: #fff; border-color: #111; }
+    .dossiers-page-btn svg { width: 16px; height: 16px; }
+    .dossier-row-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: #111;
+      color: #fff;
+      flex-shrink: 0;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .dossier-row:hover .dossier-row-btn { background: #333; }
+    .dossier-row-btn.done {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+    .dossier-row:hover .dossier-row-btn.done { background: #dcfce7; }
+    .dossier-row-btn.pending {
+      background: #fffbeb;
+      color: #d97706;
+      font-weight: 400;
+    }
+    .dossier-row:hover .dossier-row-btn.pending { background: #fef3c7; }
+    .dossiers-empty-search {
+      padding: 40px 20px;
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      background: #fff;
+      border-radius: 16px;
+      border: 2px dashed #e5e5e5;
+    }
+    .empty-state-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .empty-state-icon svg { width: 24px; height: 24px; color: #999; }
+    .empty-state-icon.green { background: #ecfdf5; }
+    .empty-state-icon.green svg { color: #059669; }
+    .empty-state-icon.blue { background: #eff6ff; }
+    .empty-state-icon.blue svg { color: #2563eb; }
+    .empty-state-icon.violet { background: #f5f3ff; }
+    .empty-state-icon.violet svg { color: #7c3aed; }
+    .empty-state-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .empty-state-desc { font-size: 13px; color: #999; margin-bottom: 16px; }
+    .empty-state-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #111;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .empty-state-btn:hover { background: #333; }
+    .empty-state-btn svg { width: 16px; height: 16px; }
+
+
+    .notif-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #ef4444; color: #fff; font-size: 11px; font-weight: 600;
+      min-width: 20px; height: 20px; border-radius: 10px; padding: 0 6px;
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    /* Wrapper de dossier-row (avec éventuel badge avocat) */
+    .dossier-card {
+      display: flex; flex-direction: column;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .dossier-card:hover { border-color: #d0d0d2; }
+    .dossier-card .dossier-row { background: transparent; border: none; border-radius: 0; }
+    .dossier-card .dossier-row:hover { background: transparent; box-shadow: none; }
+    .lawyer-badge {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px 8px 74px;
+      background: #fafafa; color: #555;
+      border: none; border-top: 1px solid #f0f0f2;
+      font-size: 12.5px; font-weight: 500; font-family: inherit;
+      cursor: pointer; width: 100%; text-align: left;
+      transition: background 0.15s;
+    }
+    .lawyer-badge:hover { background: #f3f3f4; color: #111; }
+    .lawyer-badge .lb-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #4338ca; flex-shrink: 0;
+    }
+    .lawyer-badge .lb-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lawyer-badge .lb-chevron {
+      width: 14px; height: 14px; flex-shrink: 0;
+      transition: transform 0.2s; color: #999;
+    }
+    .lawyer-badge.open .lb-chevron { transform: rotate(180deg); }
+    .lawyer-detail {
+      display: none;
+      padding: 8px 16px 14px 74px;
+      background: #fafafa;
+      border-top: 1px dashed #e5e5e7;
+    }
+    .lawyer-detail.open { display: block; }
+    .ld-row { padding: 10px 0; }
+    .ld-row + .ld-row { border-top: 1px solid #ececef; }
+    /* Notes cliquables — jump vers la conversation messagerie */
+    a.ld-row-link {
+      display: block; position: relative;
+      text-decoration: none; color: inherit;
+      padding: 10px 36px 10px 0;
+      transition: background 0.15s;
+      border-radius: 6px;
+    }
+    a.ld-row-link:hover { background: #fafafa; }
+    a.ld-row-link .ld-row-arrow {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      color: #bbb; transition: color 0.15s, transform 0.15s;
+    }
+    a.ld-row-link:hover .ld-row-arrow { color: #111; transform: translateY(-50%) translateX(2px); }
+    .ld-field {
+      font-size: 11px; font-weight: 600; color: #888;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+    .ld-diff { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .ld-pill {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 6px;
+      font-size: 12.5px; max-width: 280px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ld-before {
+      background: #f5f5f7; color: #888;
+      text-decoration: line-through;
+    }
+    .ld-before.empty { font-style: italic; text-decoration: none; color: #b0b0b4; }
+    .ld-after {
+      background: #ecfdf5; color: #047857; font-weight: 600;
+    }
+    .ld-arrow { width: 14px; height: 14px; color: #bbb; flex-shrink: 0; }
+    .ld-reject-reason { color: #991b1b; font-size: 12px; margin-top: 4px; }
+    .ld-reupload {
+      margin-top: 6px; padding: 5px 11px;
+      background: #111; color: #fff;
+      border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 600; font-family: inherit;
+      cursor: pointer;
+    }
+    .ld-reupload:hover { background: #2a2a2c; }
+    .ld-ack-row {
+      display: flex; justify-content: flex-end;
+      margin-top: 8px; padding-top: 8px;
+      border-top: 1px solid #ececef;
+    }
+    .ld-ack-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 11px;
+      background: #fff; color: #555;
+      border: 1px solid #d4d4d8; border-radius: 7px;
+      font-size: 12px; font-weight: 500; font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .ld-ack-btn:hover { background: #f5f5f7; color: #111; border-color: #aaa; }
+    .ld-ack-btn svg { width: 13px; height: 13px; }
+
+    /* MOBILE */
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 200;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: transparent;
+      border: 1px solid #e5e5e5;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .sidebar-toggle svg { width: 20px; height: 20px; }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 99;
+    }
+
+    @media (max-width: 900px) {
+      .quick-actions-row { flex-direction: column; }
+    }
+    @media (max-width: 768px) {
+      .sidebar.mobile-open { transform: translateX(0); }
+      .sidebar-toggle { display: flex; }
+      .sidebar-overlay.visible { display: block; }
+      .main { margin-left: 0; }
+      .topbar { padding-left: 64px; }
+      .content { padding: 0 20px 20px; }
+      .quick-actions-row { flex-direction: column; }
+      .dossiers-toolbar { overflow-x: auto; }
+      .dossier-row {
+        grid-template-columns: 44px 1fr 20px;
+        padding: 16px;
+        gap: 12px;
+      }
+      .dossier-row .status-badge,
+      .dossier-row .dossier-row-date { display: none; }
+    }
+
+    /* ========= NOUVEAU DASHBOARD : KPI + SHORTCUTS + TIMELINE ========= */
+    .db-kpi-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin: 28px 0 20px;
+    }
+    .db-kpi {
+      background: #fff;
+      border: 1px solid #ececec;
+      border-radius: 16px;
+      padding: 20px 22px;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    }
+    .db-kpi:hover { border-color: #d4d4d4; box-shadow: 0 6px 18px rgba(0,0,0,0.04); transform: translateY(-1px); }
+    .db-kpi-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .db-kpi-label {
+      font-size: 12px; font-weight: 500; color: #666;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .db-kpi-icon {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px; background: #f5f5f5; color: #555;
+    }
+    .db-kpi[data-tone="action"] .db-kpi-icon { background: #fef3c7; color: #b45309; }
+    .db-kpi[data-tone="pending"] .db-kpi-icon { background: #e0e7ff; color: #4338ca; }
+    .db-kpi[data-tone="capital"] .db-kpi-icon { background: #d1fae5; color: #047857; }
+    .db-kpi[data-tone="total"] .db-kpi-icon { background: #f5f5f5; color: #555; }
+    .db-kpi-value {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 32px; font-weight: 600; color: #111;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .db-kpi-sub { font-size: 12.5px; color: #888; }
+    @media (max-width: 980px) { .db-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .db-kpi-grid { grid-template-columns: 1fr; } }
+
+    /* Raccourcis */
+    .db-shortcuts {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 32px;
+    }
+    .db-shortcut {
+      background: #fff;
+      border: 1.5px solid #ececec;
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .db-shortcut:hover { border-color: #111; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.05); }
+    .db-shortcut-primary { background: #111; color: #fff; border-color: #111; }
+    .db-shortcut-primary:hover { background: #222; border-color: #222; }
+    .db-shortcut-icon {
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px; flex-shrink: 0;
+      background: #f5f5f5; color: #111;
+    }
+    .db-shortcut-primary .db-shortcut-icon { background: rgba(255,255,255,0.1); color: #fff; }
+    .db-shortcut-body { flex: 1; min-width: 0; }
+    .db-shortcut-title { font-weight: 600; font-size: 14.5px; }
+    .db-shortcut-desc { font-size: 12.5px; opacity: 0.7; margin-top: 2px; }
+    .db-shortcut-arrow { opacity: 0.5; transition: transform 0.15s, opacity 0.15s; flex-shrink: 0; }
+    .db-shortcut:hover .db-shortcut-arrow { opacity: 1; transform: translateX(3px); }
+    @media (max-width: 760px) { .db-shortcuts { grid-template-columns: 1fr; } }
+
+    /* Section header (Activité récente) */
+    .db-section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin: 8px 0 12px;
+    }
+    .db-section-head h2 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 18px; font-weight: 600; color: #111;
+      margin: 0;
+    }
+    .db-section-link {
+      font-size: 13px; color: #666; text-decoration: none;
+      transition: color 0.15s;
+    }
+    .db-section-link:hover { color: #111; }
+
+    /* Timeline en 2 colonnes (cartes individuelles plutôt qu'une liste pleine largeur) */
+    .db-timeline {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .db-timeline-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 18px;
+      background: #fff;
+      border: 1px solid #ececec;
+      border-radius: 12px;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    }
+    .db-timeline-item:hover {
+      border-color: #d4d4d4;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+      transform: translateY(-1px);
+    }
+    @media (max-width: 760px) { .db-timeline { grid-template-columns: 1fr; } }
+    .db-timeline-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .db-timeline-dot-progress { background: #6366f1; }
+    .db-timeline-dot-pending { background: #f59e0b; }
+    .db-timeline-dot-done { background: #22c55e; }
+    .db-timeline-body { flex: 1; min-width: 0; }
+    .db-timeline-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .db-timeline-title { font-weight: 600; font-size: 14px; color: #111; }
+    .db-timeline-badge {
+      font-size: 10.5px; font-weight: 500; color: #666;
+      background: #f5f5f5; padding: 3px 8px; border-radius: 6px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .db-timeline-meta {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 12px; color: #888;
+      margin-top: 4px;
+    }
+    .db-timeline-status-progress { color: #6366f1; font-weight: 500; }
+    .db-timeline-status-pending { color: #d97706; font-weight: 500; }
+    .db-timeline-status-done { color: #16a34a; font-weight: 500; }
+    .db-timeline-arrow { color: #999; flex-shrink: 0; transition: transform 0.15s, color 0.15s; }
+    .db-timeline-item:hover .db-timeline-arrow { color: #111; transform: translateX(3px); }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+  <script src="/js/common.js"></script>
+  <script>
+    var _currentUser = null;
+    fetch('/api/auth/me').then(function(r) {
+      if (r.status !== 200) { window.location.href = '/connexion.html'; return null; }
+      return r.json();
+    }).then(function(data) {
+      if (!data) return;
+      _currentUser = data.user;
+      document.querySelector('.user-name').textContent = data.user.name;
+      document.querySelector('.user-email').textContent = data.user.email;
+      var initials = data.user.name.split(' ').map(function(n) { return n[0]; }).join('').substring(0,2).toUpperCase();
+      document.querySelector('.avatar').textContent = initials;
+      // Update greeting with user name
+      var gHour = new Date().getHours();
+      var gName = data.user.name.split(' ')[0];
+      var gGreet = (gHour >= 18 || gHour < 5) ? 'Bonsoir' : 'Bonjour';
+      var gPhrases;
+      if (gHour >= 5 && gHour < 12) {
+        gPhrases = ['Pr\u00eat \u00e0 avancer sur vos dossiers ?','Une belle journ\u00e9e pour entreprendre.','Quoi de pr\u00e9vu ce matin ?','On d\u00e9marre la journ\u00e9e en beaut\u00e9.'];
+      } else if (gHour >= 12 && gHour < 18) {
+        gPhrases = ['Comment avancent vos projets ?','Besoin de finaliser un dossier ?','On continue sur notre lanc\u00e9e.','Un bon apr\u00e8s-midi pour avancer.'];
+      } else {
+        gPhrases = ['Encore un peu de travail ce soir ?','On termine la journ\u00e9e en beaut\u00e9.','Vos dossiers vous attendent.','Une derni\u00e8re v\u00e9rification avant la fin de journ\u00e9e ?'];
+      }
+      var gSub = gPhrases[Math.floor(Math.random() * gPhrases.length)];
+      var gEl = document.getElementById('greeting-text');
+      var gSubEl = document.getElementById('greeting-sub');
+      // Phrase complète en une ligne : "Bonjour, Jean — on continue sur notre lancée."
+      if (gEl) gEl.textContent = gGreet + ' ' + gName + ', ' + gSub.charAt(0).toLowerCase() + gSub.slice(1);
+      if (gSubEl) { gSubEl.textContent = ''; gSubEl.style.display = 'none'; }
+      if (data.notifications > 0) {
+        var bell = document.getElementById('notif-bell');
+        var count = document.getElementById('notif-count');
+        if (bell) bell.style.display = 'flex';
+        if (count) count.textContent = data.notifications > 99 ? '99+' : data.notifications;
+      }
+      loadAllDossiers();
+    }).catch(function() { window.location.href = '/connexion.html'; });
+  </script>
+
+  <!-- MOBILE TOGGLE -->
+  <button class="sidebar-toggle" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+          <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-context" id="sidebar-context" style="display:none;">
+      <div class="ctx-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0M9 17h0M15 17h0"/></svg>
+      </div>
+      <div class="ctx-body">
+        <div class="ctx-label">Soci&eacute;t&eacute; active</div>
+        <div class="ctx-name" id="ctx-name"></div>
+      </div>
+      <svg class="ctx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <button class="sidebar-cta" onclick="openNewActionModal()">
+      Cr&eacute;er une formalit&eacute;
+    </button>
+
+    <nav class="sidebar-nav">
+      <a class="active" href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+
+      <a href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){sessionStorage.removeItem('user');window.location.href='/connexion.html';})" title="D&eacute;connexion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 id="greeting-text">Bonjour Jean</h1>
+        <div class="topbar-sub" id="greeting-sub"></div>
+      </div>
+      <div class="topbar-actions">
+        <button id="notif-bell" class="topbar-notif" onclick="openNotifs()" title="Notifications" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="notif-dot" id="notif-count">0</span>
+        </button>
+        <span class="topbar-date" id="current-date"></span>
+      </div>
+    </div>
+
+    <div class="hero-banner" id="hero-banner" style="display:none;"></div>
+
+    <div class="content">
+      <!-- État 0 : aucune formalité (welcome / onboarding) -->
+      <div id="state-empty" style="display:none;"></div>
+
+      <!-- État 1 : une seule formalité (focus) -->
+      <div id="state-single" style="display:none;"></div>
+
+      <!-- État 2+ : plusieurs formalités (triage) -->
+      <div id="state-multi" style="display:none;"></div>
+
+      <!-- DOSSIERS (réutilisé en state 2+) -->
+      <div id="dossiers-toolbar"></div>
+      <div id="dossiers-container"></div>
+      <div id="dossiers-pagination"></div>
+    </div>
+  </div>
+
+  <script>
+    // Sidebar dropdown toggle
+    function toggleDropdown(el) {
+      el.classList.toggle('open');
+      var subnav = el.nextElementSibling;
+      if (subnav) subnav.classList.toggle('open');
+    }
+
+    // Mobile sidebar toggle
+    function toggleSidebar() {
+      var sidebar = document.getElementById('sidebar');
+      var overlay = document.getElementById('sidebarOverlay');
+      sidebar.classList.toggle('mobile-open');
+      overlay.classList.toggle('visible');
+    }
+
+    // Notification bell -> ouvre le chat panel
+    function openNotifs() {
+      if (typeof window.toggleChatPanel === 'function') {
+        window.toggleChatPanel();
+      } else {
+        var fab = document.getElementById('chatFab');
+        if (fab) fab.click();
+      }
+    }
+
+    // Modal "Nouvelle formalité"
+    function openNewActionModal() {
+      var m = document.getElementById('ndModal');
+      if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+    }
+    function closeNewActionModal(e) {
+      if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+      var m = document.getElementById('ndModal');
+      if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeNewActionModal();
+    });
+
+    // Sidebar context: nom de la société active + badges
+    (function loadSidebarContext() {
+      fetch('/api/formalites').then(function(r){ return r.json(); }).then(function(data){
+        var list = (data && data.formalites) || data || [];
+        if (!Array.isArray(list)) return;
+        var societes = list.filter(function(f){
+          return f && f.denomination && (f.type === 'creation' || f.type === 'modification' || !f.type);
+        });
+        var ctx = document.getElementById('sidebar-context');
+        var nameEl = document.getElementById('ctx-name');
+        if (societes.length === 0) {
+          if (ctx) ctx.style.display = 'none';
+        } else if (societes.length === 1) {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.add('single');
+        } else {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.remove('single');
+        }
+        var enCours = list.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var badge = document.getElementById('badge-formalites');
+        if (badge && enCours > 0) { badge.textContent = String(enCours) + ' en cours'; badge.style.display = 'inline-block'; }
+      }).catch(function(){});
+      // Badge messagerie : total des messages non lus (formalités + support)
+      // Affiche immédiatement les valeurs cachées pour éviter le jitter
+      (function(){
+        try {
+          var cachedForm = parseInt(sessionStorage.getItem('badge_formalites') || '0');
+          var cachedMsg = parseInt(sessionStorage.getItem('badge_messagerie') || '0');
+          if (cachedForm > 0) {
+            var bF = document.getElementById('badge-formalites');
+            if (bF) { bF.textContent = String(cachedForm) + ' en cours'; bF.style.display = 'inline-block'; }
+          }
+          if (cachedMsg > 0) {
+            var bM = document.getElementById('badge-messagerie');
+            if (bM) { bM.textContent = String(cachedMsg) + ' non lu' + (cachedMsg > 1 ? 's' : ''); bM.style.display = 'inline-block'; }
+          }
+        } catch(_) {}
+      })();
+      Promise.all([
+        fetch('/api/formalites').then(function(r){ return r.json(); }).catch(function(){ return { formalites: [] }; }),
+        fetch('/api/support/unread').then(function(r){ return r.json(); }).catch(function(){ return { unread: 0 }; })
+      ]).then(function(results){
+        var fs = (results[0] && results[0].formalites) || [];
+        var enCours = fs.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var bForm = document.getElementById('badge-formalites');
+        if (bForm) {
+          if (enCours > 0) { bForm.textContent = String(enCours) + ' en cours'; bForm.style.display = 'inline-block'; }
+          else { bForm.style.display = 'none'; }
+        }
+        var unreadForm = fs.reduce(function(a, f){ return a + (f.unread_messages || 0); }, 0);
+        var unreadSupport = (results[1] && results[1].unread) || 0;
+        var total = unreadForm + unreadSupport;
+        var badge = document.getElementById('badge-messagerie');
+        if (badge) {
+          if (total > 0) { badge.textContent = String(total) + ' non lu' + (total > 1 ? 's' : ''); badge.style.display = 'inline-block'; }
+          else { badge.style.display = 'none'; }
+        }
+        try {
+          sessionStorage.setItem('badge_formalites', String(enCours));
+          sessionStorage.setItem('badge_messagerie', String(total));
+        } catch(_) {}
+      });
+    })();
+
+    // Current date + greeting
+    var d = new Date();
+    var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    (function() {
+      var s = d.toLocaleDateString('fr-FR', options);
+      // Capitalise première lettre
+      document.getElementById('current-date').textContent = s.charAt(0).toUpperCase() + s.slice(1);
+    })();
+
+    (function() {
+      var hour = d.getHours();
+      var firstName = 'Jean';
+      try {
+        var u = JSON.parse(sessionStorage.getItem('user') || '{}');
+        if (u.name) firstName = u.name.split(' ')[0];
+      } catch(e) {}
+
+      var greet, subtitle;
+      if (hour >= 5 && hour < 12) {
+        greet = 'Bonjour';
+        var mornings = [
+          'Pr\u00eat \u00e0 avancer sur vos dossiers ?',
+          'Une belle journ\u00e9e pour entreprendre.',
+          'Quoi de pr\u00e9vu ce matin ?',
+          'On d\u00e9marre la journ\u00e9e en beaut\u00e9.'
+        ];
+        subtitle = mornings[Math.floor(Math.random() * mornings.length)];
+      } else if (hour >= 12 && hour < 18) {
+        greet = 'Bonjour';
+        var afternoons = [
+          'Comment avancent vos projets ?',
+          'Besoin de finaliser un dossier ?',
+          'On continue sur notre lanc\u00e9e.',
+          'Un bon apr\u00e8s-midi pour avancer.'
+        ];
+        subtitle = afternoons[Math.floor(Math.random() * afternoons.length)];
+      } else {
+        greet = 'Bonsoir';
+        var evenings = [
+          'Encore un peu de travail ce soir ?',
+          'On termine la journ\u00e9e en beaut\u00e9.',
+          'Vos dossiers vous attendent.',
+          'Une derni\u00e8re v\u00e9rification avant la fin de journ\u00e9e ?'
+        ];
+        subtitle = evenings[Math.floor(Math.random() * evenings.length)];
+      }
+
+      var el = document.getElementById('greeting-text');
+      var subEl = document.getElementById('greeting-sub');
+      if (el) el.textContent = greet + ' ' + firstName + ', ' + subtitle.charAt(0).toLowerCase() + subtitle.slice(1);
+      if (subEl) { subEl.textContent = ''; subEl.style.display = 'none'; }
+    })();
+
+    function formatDate(isoStr) {
+      if (!isoStr) return '';
+      var date = new Date(isoStr);
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function formatSmartDate(isoStr) {
+      if (!isoStr) return '';
+      var date = new Date(isoStr);
+      var now = new Date();
+      var diffMs = now - date;
+      var diffH = Math.floor(diffMs / 3600000);
+      var isToday = date.toDateString() === now.toDateString();
+      var yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+      var isYesterday = date.toDateString() === yesterday.toDateString();
+      if (isToday) {
+        if (diffH < 1) return 'Il y a quelques minutes';
+        return 'Il y a ' + diffH + ' h';
+      }
+      if (isYesterday) return 'Hier';
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function formatRelativeDate(isoStr) {
+      if (!isoStr) return '';
+      var date = new Date(isoStr);
+      var now = new Date();
+      var diffMs = now - date;
+      var diffMin = Math.floor(diffMs / 60000);
+      var diffH = Math.floor(diffMs / 3600000);
+      var diffD = Math.floor(diffMs / 86400000);
+      if (diffMin < 1) return "\u00c0 l'instant";
+      if (diffMin < 60) return 'Il y a ' + diffMin + ' min';
+      if (diffH < 24) return 'Il y a ' + diffH + ' h';
+      if (diffD < 7) return 'Il y a ' + diffD + ' j';
+      if (diffD < 30) return 'Il y a ' + diffD + ' jours';
+      return formatDate(isoStr);
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Merge all data sources
+    var allDossiers = [];
+    var loadedSources = 0;
+    var totalSources = 2;
+
+    function checkAllLoaded() {
+      loadedSources++;
+      if (loadedSources >= totalSources) {
+        renderDashboardByState();
+        renderSidebarStats();
+      }
+    }
+
+    // Router : choisit le bon rendu selon le nombre de sociétés
+    function renderDashboardByState() {
+      var emptyEl = document.getElementById('state-empty');
+      var singleEl = document.getElementById('state-single');
+      var multiEl = document.getElementById('state-multi');
+      var heroBanner = document.getElementById('hero-banner');
+      var toolbarEl = document.getElementById('dossiers-toolbar');
+      var containerEl = document.getElementById('dossiers-container');
+      var paginationEl = document.getElementById('dossiers-pagination');
+
+      // On distingue les "sociétés" (formalité de type création) des contrats
+      var societes = allDossiers.filter(function(d){ return d.type === 'formalite'; });
+      var count = societes.length;
+
+      // Reset visibility
+      if (emptyEl) emptyEl.style.display = 'none';
+      if (singleEl) singleEl.style.display = 'none';
+      if (multiEl) multiEl.style.display = 'none';
+      if (heroBanner) heroBanner.style.display = 'none';
+      if (toolbarEl) toolbarEl.style.display = 'none';
+      if (containerEl) containerEl.style.display = 'none';
+      if (paginationEl) paginationEl.style.display = 'none';
+      var topbarEl = document.querySelector('.topbar');
+      if (topbarEl) topbarEl.style.display = '';
+
+      if (allDossiers.length === 0) {
+        currentView = 'empty';
+        renderEmptyState();
+      } else if (count === 1) {
+        currentView = 'single';
+        renderSingleState(societes[0]);
+        loadLawyerInterventions(societes[0]);
+      } else {
+        currentView = 'multi';
+        renderMultiState();
+        // Charge agrégé pour les sociétés en cours (max 5 pour limiter)
+        societes.slice(0, 5).forEach(loadLawyerInterventions);
+      }
+    }
+
+    // -------- Interventions de l'avocat (côté client) --------
+    function getLawyerAcked(dossierId) {
+      try {
+        var raw = localStorage.getItem('formalist:lawyer-ack:' + dossierId);
+        return raw ? JSON.parse(raw) : [];
+      } catch(e) { return []; }
+    }
+    function setLawyerAcked(dossierId, ids) {
+      try { localStorage.setItem('formalist:lawyer-ack:' + dossierId, JSON.stringify(ids)); } catch(e) {}
+    }
+
+    window.ackLawyer = function(dossierId) {
+      var target = null;
+      for (var i = 0; i < allDossiers.length; i++) {
+        if (String(allDossiers[i].id) === String(dossierId) && allDossiers[i].type === 'formalite') {
+          target = allDossiers[i]; break;
+        }
+      }
+      if (!target || !target.lawyer) return;
+      var acked = getLawyerAcked(dossierId);
+      target.lawyer.edits.forEach(function(e){ if (e.id != null) acked.push('edit:' + e.id); });
+      target.lawyer.rejected.forEach(function(d){ if (d.id != null) acked.push('doc:' + d.id); });
+      target.lawyer.notes.forEach(function(n){ if (n.id != null) acked.push('note:' + n.id); });
+      setLawyerAcked(dossierId, acked);
+      target.lawyer = null;
+      renderDashboard();
+    };
+
+    function loadLawyerInterventions(dossier) {
+      if (!dossier || !dossier.id) return;
+      Promise.all([
+        fetch('/api/formalites/' + dossier.id + '/audit').then(function(r){ return r.json(); }).catch(function(){ return { entries: [] }; }),
+        fetch('/api/formalites/' + dossier.id).then(function(r){ return r.json(); }).catch(function(){ return { documents: [] }; })
+      ]).then(function(res) {
+        var auditEntries = (res[0] && res[0].entries) || [];
+        var docs = (res[1] && res[1].documents) || [];
+        var rejectedDocs = docs.filter(function(d){ return d.rejection_reason; });
+
+        // Inclure les actions admin (admin peut agir en tant qu'avocat sur les dossiers)
+        var avocatEdits = auditEntries.filter(function(e){
+          return (e.actor_role === 'avocat' || e.actor_role === 'admin') && e.action === 'field_update';
+        });
+        var avocatNotes = auditEntries.filter(function(e){
+          return (e.actor_role === 'avocat' || e.actor_role === 'admin') && e.action !== 'field_update' && e.action !== 'doc_uploaded';
+        });
+
+        // Filtre les interventions déjà acquittées (localStorage)
+        var acked = getLawyerAcked(dossier.id);
+        avocatEdits = avocatEdits.filter(function(e){ return e.id == null || acked.indexOf('edit:' + e.id) < 0; });
+        rejectedDocs = rejectedDocs.filter(function(d){ return d.id == null || acked.indexOf('doc:' + d.id) < 0; });
+        avocatNotes = avocatNotes.filter(function(n){ return n.id == null || acked.indexOf('note:' + n.id) < 0; });
+
+        if (rejectedDocs.length === 0 && avocatEdits.length === 0 && avocatNotes.length === 0) return;
+
+        // Stocker l'info sur l'objet dossier pour l'afficher inline dans la liste
+        var target = null;
+        for (var i = 0; i < allDossiers.length; i++) {
+          if (String(allDossiers[i].id) === String(dossier.id) && allDossiers[i].type === 'formalite') {
+            target = allDossiers[i]; break;
+          }
+        }
+        if (target) {
+          target.lawyer = { rejected: rejectedDocs, edits: avocatEdits, notes: avocatNotes };
+        }
+
+        if (currentView === 'single') {
+          // En single state (1 seul dossier), une card unique en haut reste plus claire
+          renderInterventionsCard(dossier, rejectedDocs, avocatEdits, avocatNotes);
+        } else {
+          // En multi : re-render la liste pour afficher le badge sur la bonne ligne
+          renderDashboard();
+        }
+      });
+    }
+
+    function renderInterventionsCard(dossier, rejected, edits, notes) {
+      // Si une carte existe déjà pour ce dossier, on évite les doublons
+      var existing = document.querySelector('.interventions-card[data-dossier="' + dossier.id + '"]');
+      if (existing) existing.remove();
+
+      // Auto-expand si action requise (documents à renvoyer)
+      var expandedCls = rejected.length > 0 ? ' expanded' : '';
+      var html = '<div class="interventions-card' + expandedCls + '" data-dossier="' + dossier.id + '">';
+
+      // Header (cliquable pour expand/collapse)
+      html += '<div class="iv-header" onclick="this.parentNode.classList.toggle(\'expanded\')">'
+        + '<div class="iv-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>'
+        + '<div class="iv-header-text">'
+        +   '<div class="iv-title">Votre avocat a travaillé sur ' + escapeHtmlText(dossier.title) + '</div>'
+        +   '<div class="iv-subtitle">'
+        +     (rejected.length > 0 ? rejected.length + ' document' + (rejected.length > 1 ? 's' : '') + ' à renvoyer · ' : '')
+        +     (edits.length > 0 ? edits.length + ' information' + (edits.length > 1 ? 's' : '') + ' modifiée' + (edits.length > 1 ? 's' : '') : '')
+        +     (notes.length > 0 ? (edits.length > 0 ? ' · ' : '') + notes.length + ' autre' + (notes.length > 1 ? 's' : '') + ' action' + (notes.length > 1 ? 's' : '') : '')
+        +   '</div>'
+        + '</div>'
+        + '<svg class="iv-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
+        + '</div>';
+
+      html += '<div class="iv-body">';
+
+      // Documents à renvoyer (priorité)
+      if (rejected.length > 0) {
+        html += '<div class="iv-section iv-section-alert">';
+        html += '<div class="iv-section-title">📄 Documents à renvoyer</div>';
+        rejected.forEach(function(d) {
+          html += '<div class="iv-doc-reject">'
+            + '<div class="iv-doc-info">'
+            +   '<div class="iv-doc-name">' + escapeHtmlText(d.name) + '</div>'
+            +   '<div class="iv-doc-reason">' + escapeHtmlText(d.rejection_reason) + '</div>'
+            + '</div>'
+            + '<button class="iv-btn-reupload" onclick="reuploadDoc(' + dossier.id + ', ' + d.id + ', \'' + escapeHtmlText(d.name).replace(/'/g, "\\'") + '\')">Téléverser à nouveau</button>'
+            + '</div>';
+        });
+        html += '</div>';
+      }
+
+      // Modifications du formulaire
+      if (edits.length > 0) {
+        html += '<div class="iv-section">';
+        html += '<div class="iv-section-title">✏️ Informations ajustées</div>';
+        edits.slice(0, 5).forEach(function(e) {
+          var fieldLabel = humanizeField(e.target_field);
+          html += '<div class="iv-edit-row">'
+            + '<div class="iv-edit-field">' + escapeHtmlText(fieldLabel) + '</div>'
+            + '<div class="iv-edit-diff">'
+            +   '<span class="iv-before">' + escapeHtmlText(e.before_value || '∅') + '</span>'
+            +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="margin:0 8px;color:#bbb;flex-shrink:0;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'
+            +   '<span class="iv-after">' + escapeHtmlText(e.after_value || '∅') + '</span>'
+            + '</div>'
+            + (e.comment ? '<div class="iv-edit-comment">' + escapeHtmlText(e.comment) + '</div>' : '')
+            + '</div>';
+        });
+        if (edits.length > 5) {
+          html += '<div class="iv-more">+ ' + (edits.length - 5) + ' autre' + (edits.length - 5 > 1 ? 's' : '') + ' modification' + (edits.length - 5 > 1 ? 's' : '') + '</div>';
+        }
+        html += '</div>';
+      }
+
+      html += '</div>'; // /iv-body
+      html += '</div>'; // /interventions-card
+
+      // Insertion en haut du content
+      var content = document.querySelector('.content');
+      if (content) content.insertBefore(htmlToNode(html), content.firstChild);
+    }
+
+    function htmlToNode(html) {
+      var div = document.createElement('div');
+      div.innerHTML = html.trim();
+      return div.firstChild;
+    }
+
+    function escapeHtmlText(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+    }
+
+    function humanizeField(key) {
+      if (!key) return '';
+      var labels = {
+        denomination: 'Dénomination',
+        capital: 'Capital social',
+        capital_libere: 'Capital libéré',
+        duree: 'Durée',
+        objet_social: 'Objet social',
+        adresse: 'Adresse siège',
+        code_postal: 'Code postal',
+        ville: 'Ville',
+        code_ape: 'Code APE',
+        dirigeant_prenom: 'Prénom dirigeant',
+        dirigeant_nom: 'Nom dirigeant',
+        dirigeant_email: 'Email dirigeant',
+        date_effet: "Date d'effet",
+        nouveau_capital: 'Nouveau capital',
+        nouveau_nom: 'Nouveau nom'
+      };
+      var lowered = String(key).toLowerCase();
+      if (labels[lowered]) return labels[lowered];
+      return lowered.replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+    }
+
+    function renderLawyerDetail(d) {
+      if (!d.lawyer) return '';
+      var html = '';
+      d.lawyer.rejected.forEach(function(doc) {
+        var safeName = escapeHtmlText(doc.name).replace(/'/g, "\\'");
+        html += '<div class="ld-row">'
+          + '<div class="ld-field">Document à renvoyer</div>'
+          + '<div style="font-size:13px;font-weight:500;color:#111;">' + escapeHtmlText(doc.name) + '</div>'
+          + (doc.rejection_reason ? '<div class="ld-reject-reason">Motif : ' + escapeHtmlText(doc.rejection_reason) + '</div>' : '')
+          + '<button class="ld-reupload" onclick="event.stopPropagation();reuploadDoc(' + d.id + ',' + doc.id + ',\'' + safeName + '\')">Téléverser à nouveau</button>'
+          + '</div>';
+      });
+      var arrowSvg = '<svg class="ld-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+      d.lawyer.edits.slice(0, 8).forEach(function(e) {
+        var fieldLabel = humanizeField(e.target_field);
+        var beforeEmpty = !e.before_value || e.before_value === '';
+        var afterEmpty = !e.after_value || e.after_value === '';
+        var beforePill = beforeEmpty
+          ? '<span class="ld-pill ld-before empty">non renseigné</span>'
+          : '<span class="ld-pill ld-before">' + escapeHtmlText(e.before_value) + '</span>';
+        var afterPill = afterEmpty
+          ? '<span class="ld-pill ld-before empty">supprimé</span>'
+          : '<span class="ld-pill ld-after">' + escapeHtmlText(e.after_value) + '</span>';
+        html += '<div class="ld-row">'
+          + '<div class="ld-field">' + escapeHtmlText(fieldLabel) + '</div>'
+          + '<div class="ld-diff">' + beforePill + arrowSvg + afterPill + '</div>'
+          + (e.comment ? '<div class="ld-reject-reason">' + escapeHtmlText(e.comment) + '</div>' : '')
+          + '</div>';
+      });
+      if (d.lawyer.edits.length > 8) {
+        html += '<div class="ld-row" style="text-align:center;color:#888;font-size:12px;">+ ' + (d.lawyer.edits.length - 8) + ' autre' + (d.lawyer.edits.length - 8 > 1 ? 's' : '') + '</div>';
+      }
+      // Notes / actions de l'avocat (status_change, demandes…). Pour chaque, on
+      // affiche un libellé contextuel basé sur l'action + le commentaire saisi.
+      var ACTION_META = {
+        status_change: { label: 'Mise à jour du statut', bg: '#dbeafe', color: '#1d4ed8' },
+        doc_rejected:  { label: 'Document refusé',       bg: '#fee2e2', color: '#991b1b' }
+      };
+      var STATUS_META = {
+        corrections_demandees: { label: 'Demande de corrections', bg: '#fef3c7', color: '#92400e' },
+        rejete:                { label: 'Dossier rejeté',         bg: '#fee2e2', color: '#991b1b' },
+        valide:                { label: 'Dossier validé',         bg: '#dcfce7', color: '#15803d' },
+        en_attente_validation: { label: 'En attente de validation', bg: '#dbeafe', color: '#1d4ed8' }
+      };
+      (d.lawyer.notes || []).slice(0, 8).forEach(function(n) {
+        // Cas particulier des status_change : utilise le statut cible (after_value)
+        var meta;
+        if (n.action === 'status_change' && STATUS_META[n.after_value]) {
+          meta = STATUS_META[n.after_value];
+        } else {
+          meta = ACTION_META[n.action] || { label: humanizeField(n.action || 'Note'), bg: '#f3f4f6', color: '#374151' };
+        }
+        var pill = '<span class="ld-pill" style="background:' + meta.bg + ';color:' + meta.color + ';">' + escapeHtmlText(meta.label) + '</span>';
+        var body = n.comment ? escapeHtmlText(n.comment) : (n.target_field ? escapeHtmlText(n.target_field) : '—');
+        // Lien vers la conversation messagerie + scroll auto sur l'horodatage de la note
+        // (le serveur crée un message typé en même temps que l'audit ; on retombe au
+        // plus proche en passant le timestamp ISO via ?t=)
+        var deepLink = '/messagerie.html?formalite=' + d.id + (n.created_at ? '&t=' + encodeURIComponent(n.created_at) : '');
+        html += '<a class="ld-row ld-row-link" href="' + deepLink + '" onclick="event.stopPropagation();" title="Voir dans la messagerie">'
+          + '<div class="ld-field">' + pill + '</div>'
+          + '<div style="font-size:13px;color:#333;white-space:pre-wrap;word-break:break-word;">' + body + '</div>'
+          + '<svg class="ld-row-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'
+          + '</a>';
+      });
+      if (d.lawyer.notes && d.lawyer.notes.length > 8) {
+        html += '<div class="ld-row" style="text-align:center;color:#888;font-size:12px;">+ ' + (d.lawyer.notes.length - 8) + ' autre' + (d.lawyer.notes.length - 8 > 1 ? 's' : '') + ' note' + (d.lawyer.notes.length - 8 > 1 ? 's' : '') + '</div>';
+      }
+      html += '<div class="ld-ack-row">'
+        + '<button class="ld-ack-btn" onclick="event.stopPropagation();ackLawyer(' + d.id + ');">'
+        +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        +   'Marquer comme vu'
+        + '</button>'
+        + '</div>';
+      return html;
+    }
+
+    window.toggleLawyerDetail = function(btn) {
+      btn.classList.toggle('open');
+      var detail = btn.nextElementSibling;
+      if (detail && detail.classList) detail.classList.toggle('open');
+    };
+
+    function reuploadDoc(formaliteId, docId, docName) {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.jpg,.jpeg,.png,.docx';
+      input.onchange = function() {
+        if (!input.files.length) return;
+        var fd = new FormData();
+        fd.append('file', input.files[0]);
+        fd.append('doc_name', docName);
+        fd.append('status', 'uploaded');
+        fd.append('replaces_doc_id', docId);
+        fetch('/api/formalites/' + formaliteId + '/documents', { method: 'POST', body: fd })
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (d.ok) {
+              // Retire la carte d'interventions et recharge
+              var card = document.querySelector('.interventions-card[data-dossier="' + formaliteId + '"]');
+              if (card) card.remove();
+              location.reload();
+            }
+          });
+      };
+      input.click();
+    }
+
+    // -------- ÉTAT 0 — Aucune formalité --------
+    function renderEmptyState() {
+      // Récupère le greeting personnalisé du topbar puis masque celui-ci
+      var topbarEl = document.querySelector('.topbar');
+      var topbarH1 = topbarEl ? topbarEl.querySelector('h1') : null;
+      var topbarText = topbarH1 ? topbarH1.textContent.trim() : '';
+      if (topbarEl) topbarEl.style.display = 'none';
+      var greet = topbarText ? escapeHtml(topbarText) + ' 👋' : 'Bienvenue 👋';
+
+      var paths = [
+        {
+          href: '/creation.html?new=1&type=creation',
+          group: 'creer',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0"/></svg>',
+          title: 'Créer ma société',
+          desc: 'SAS, SARL, SCI, SASU, EURL',
+          time: '12 min',
+          price: 'à partir de 129€'
+        },
+        {
+          href: '/auto-entrepreneur.html?new=1',
+          group: 'creer',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg>',
+          title: 'Devenir auto-entrepreneur',
+          desc: 'Création rapide et gratuite',
+          time: '7 min',
+          price: 'gratuit'
+        },
+        {
+          href: '/modification.html',
+          group: 'gerer',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+          title: 'Modifier ma société',
+          desc: 'Transfert, gérant, capital…',
+          time: '8 min',
+          price: 'à partir de 79€'
+        },
+        {
+          href: '#',
+          group: 'gerer',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+          title: 'Fermer ma société',
+          desc: 'Dissolution, liquidation',
+          time: '15 min',
+          price: 'à partir de 149€'
+        },
+        {
+          href: '/contrats.html?new=1',
+          group: 'services',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>',
+          title: 'Rédiger un contrat',
+          desc: 'Modèles sur mesure',
+          time: '10 min',
+          price: 'sur mesure'
+        },
+        {
+          href: '/avocat.html',
+          group: 'services',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+          title: 'Consulter un avocat',
+          desc: 'Conseil juridique 30 min',
+          time: '30 min',
+          price: 'à partir de 49€'
+        }
+      ];
+
+      function renderGroup(groupKey, label) {
+        var items = paths.filter(function(p){ return p.group === groupKey; });
+        var inner = '<div class="welcome-group-label">' + label + '</div><div class="welcome-paths">';
+        items.forEach(function(p) {
+          inner += '<a href="' + p.href + '" class="welcome-path">'
+            + '<div class="welcome-path-icon">' + p.icon + '</div>'
+            + '<div class="welcome-path-title">' + p.title + '</div>'
+            + '<div class="welcome-path-desc">' + p.desc + '</div>'
+            + '<div class="welcome-path-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ' + p.time + ' &middot; ' + p.price + '</div>'
+            + '</a>';
+        });
+        inner += '</div>';
+        return inner;
+      }
+
+      var html = ''
+        + '<div class="welcome-hero">'
+        +   '<div class="welcome-top">'
+        +     '<h2>' + greet + '</h2>'
+        +     '<div class="welcome-badge">'
+        +       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>'
+        +       '<span>100% sécurisé · <strong>Validé par nos avocats</strong></span>'
+        +     '</div>'
+        +   '</div>'
+        +   '<p>Créez, modifiez ou fermez votre société en quelques minutes.</p>'
+        +   renderGroup('creer', 'Démarrer une activité')
+        +   renderGroup('gerer', 'Gérer une société existante')
+        +   renderGroup('services', 'Services juridiques')
+        + '</div>';
+
+      var emptyEl = document.getElementById('state-empty');
+      emptyEl.innerHTML = html;
+      emptyEl.style.display = 'block';
+    }
+
+    // -------- ÉTAT 1 — Une seule société (focus) --------
+    function renderSingleState(d) {
+      var isDone = d.status === 'done';
+      var circumference = 2 * Math.PI * 56;
+      var offset = circumference - (d.progress / 100) * circumference;
+      var html = '';
+
+      if (isDone) {
+        html += '<div class="single-hero single-celebrate">'
+          + '<div class="single-hero-progress">'
+          +   '<svg viewBox="0 0 132 132">'
+          +     '<circle class="bg" cx="66" cy="66" r="56"/>'
+          +     '<circle class="fg" cx="66" cy="66" r="56" stroke-dasharray="' + circumference + '" stroke-dashoffset="0"/>'
+          +   '</svg>'
+          +   '<div class="pct"><div class="pct-value">✓</div><div class="pct-label">Terminé</div></div>'
+          + '</div>'
+          + '<div class="single-hero-body">'
+          +   '<span class="single-hero-eyebrow">Félicitations 🎉</span>'
+          +   '<div class="single-hero-title">' + escapeHtml(d.title) + ' est immatriculée</div>'
+          +   '<div class="single-hero-desc">Votre société est officielle. Découvrez les prochaines étapes pour la faire grandir.</div>'
+          +   '<div class="single-hero-actions">'
+          +     '<a href="' + d.link + '" class="single-hero-btn">Voir mon dossier</a>'
+          +   '</div>'
+          + '</div>'
+          + '</div>';
+
+        // Roadmap post-création
+        html += '<div class="roadmap">'
+          + '<div class="roadmap-title">Et maintenant ?</div>'
+          + '<div class="roadmap-subtitle">Les prochaines étapes pour démarrer votre activité</div>'
+          + '<div class="roadmap-steps">'
+          +   '<div class="roadmap-step">'
+          +     '<div class="roadmap-step-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+          +     '<div class="roadmap-step-body"><div class="roadmap-step-title">Ouvrir un compte pro</div><div class="roadmap-step-desc">Nécessaire pour séparer vos finances</div></div>'
+          +     '<a href="https://qonto.com/fr" target="_blank" rel="noopener" class="roadmap-step-cta">Démarrer</a>'
+          +   '</div>'
+          +   '<div class="roadmap-step">'
+          +     '<div class="roadmap-step-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+          +     '<div class="roadmap-step-body"><div class="roadmap-step-title">Rédiger un pacte d\'associés</div><div class="roadmap-step-desc">Recommandé pour sécuriser la répartition</div></div>'
+          +     '<a href="/contrats.html?new=1" class="roadmap-step-cta">Démarrer</a>'
+          +   '</div>'
+          +   '<div class="roadmap-step">'
+          +     '<div class="roadmap-step-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+          +     '<div class="roadmap-step-body"><div class="roadmap-step-title">Prévoir votre 1er dépôt de comptes</div><div class="roadmap-step-desc">À anticiper dans 9 mois</div></div>'
+          +     '<button type="button" class="roadmap-step-cta" onclick="if(typeof showToast===\'function\')showToast(\'Rappel programmé\');this.textContent=\'Programmé ✓\';this.disabled=true;">Plus tard</button>'
+          +   '</div>'
+          + '</div>'
+          + '</div>';
+      } else {
+        var stepInfo = d.phaseName ? 'Étape ' + d.phase + '/' + d.totalPhases + ' · ' + escapeHtml(d.phaseName) : '';
+        var nextAction = d.nextAction || 'Reprendre';
+        html += '<div class="single-hero">'
+          + '<div class="single-hero-progress">'
+          +   '<svg viewBox="0 0 132 132">'
+          +     '<circle class="bg" cx="66" cy="66" r="56"/>'
+          +     '<circle class="fg" cx="66" cy="66" r="56" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '"/>'
+          +   '</svg>'
+          +   '<div class="pct"><div class="pct-value">' + d.progress + '%</div><div class="pct-label">Avancement</div></div>'
+          + '</div>'
+          + '<div class="single-hero-body">'
+          +   '<span class="single-hero-eyebrow">' + escapeHtml(d.typeBadgeLabel) + '</span>'
+          +   '<div class="single-hero-title">' + escapeHtml(d.title) + '</div>'
+          +   '<div class="single-hero-desc">' + stepInfo + (stepInfo ? ' — ' : '') + escapeHtml(nextAction) + '</div>'
+          +   '<div class="single-hero-actions">'
+          +     '<a href="' + d.link + '" class="single-hero-btn">Continuer <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>'
+          +     '<button class="single-hero-btn ghost" onclick="openNewActionModal()">+ Nouvelle formalité</button>'
+          +   '</div>'
+          + '</div>'
+          + '</div>';
+      }
+
+      // Activity feed (contrats associés s'il y en a)
+      var others = allDossiers.filter(function(x){ return x.type !== 'formalite'; });
+      if (others.length > 0) {
+        html += '<div class="roadmap">'
+          + '<div class="roadmap-title">Vos autres dossiers</div>'
+          + '<div class="roadmap-subtitle">' + others.length + ' élément' + (others.length > 1 ? 's' : '') + ' en plus de votre société</div>'
+          + '<div class="roadmap-steps">';
+        others.slice(0, 5).forEach(function(o) {
+          var doneCls = o.status === 'done' ? ' done' : '';
+          html += '<a href="' + o.link + '" class="roadmap-step' + doneCls + '">'
+            + '<div class="roadmap-step-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+            + '<div class="roadmap-step-body"><div class="roadmap-step-title">' + escapeHtml(o.title) + '</div><div class="roadmap-step-desc">' + escapeHtml(o.typeBadgeLabel) + ' · ' + o.statusLabel + '</div></div>'
+            + '<span class="roadmap-step-cta">Ouvrir</span>'
+            + '</a>';
+        });
+        html += '</div></div>';
+      }
+
+      var singleEl = document.getElementById('state-single');
+      singleEl.innerHTML = html;
+      singleEl.style.display = 'block';
+    }
+
+    // -------- ÉTAT 2+ — Plusieurs sociétés --------
+    function buildActionFromIndex(idx) {
+      var list = window._actionList || [];
+      if (!list[idx]) return null;
+      var d = list[idx];
+      var formeUpper = (d.typeBadge || '').toUpperCase();
+      var titleStr;
+      if (formeUpper && ['SAS', 'SASU', 'SARL', 'EURL', 'SCI'].indexOf(formeUpper) !== -1) {
+        titleStr = 'Reprendre la création de votre ' + formeUpper + ' ' + escapeHtml(d.title);
+      } else {
+        titleStr = 'Reprendre votre dossier ' + escapeHtml(d.title);
+      }
+      return {
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        title: titleStr,
+        desc: d.nextAction ? 'Prochaine étape : ' + d.nextAction : 'Étape ' + d.phase + ' sur ' + d.totalPhases,
+        link: d.link,
+        btn: 'Continuer'
+      };
+    }
+    function refreshTopAction() {
+      var list = window._actionList || [];
+      if (!list.length) return;
+      var a = buildActionFromIndex(window._actionIdx);
+      if (!a) return;
+      var el = document.getElementById('top-action');
+      if (!el) return;
+      var t = el.querySelector('.top-action-title');     if (t) t.innerHTML = a.title;
+      var ds = el.querySelector('.top-action-desc');     if (ds) ds.innerHTML = a.desc;
+      var cta = document.getElementById('ta-cta');       if (cta) cta.setAttribute('href', a.link);
+      var pos = document.getElementById('ta-pos');       if (pos) pos.textContent = (window._actionIdx + 1);
+    }
+    window.prevAction = function() {
+      if (!window._actionList) return;
+      window._actionIdx = (window._actionIdx - 1 + window._actionList.length) % window._actionList.length;
+      refreshTopAction();
+    };
+    window.nextAction = function() {
+      if (!window._actionList) return;
+      window._actionIdx = (window._actionIdx + 1) % window._actionList.length;
+      refreshTopAction();
+    };
+
+    function renderMultiState() {
+      var societes = allDossiers.filter(function(d){ return d.type === 'formalite'; });
+      var inProgress = societes.filter(function(d){ return d.status === 'progress' || d.status === 'action'; });
+      var pending = societes.filter(function(d){ return d.status === 'pending'; });
+      var done = societes.filter(function(d){ return d.status === 'done'; });
+      var unreadTotal = allDossiers.reduce(function(s,d){ return s + (d.unread || 0); }, 0);
+
+      var html = '';
+
+      // Top action : la priorité absolue
+      var topAction = null;
+      if (unreadTotal > 0) {
+        var withUnread = allDossiers.find(function(d){ return d.unread > 0; });
+        topAction = {
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+          title: unreadTotal + ' nouveau' + (unreadTotal > 1 ? 'x' : '') + ' message' + (unreadTotal > 1 ? 's' : ''),
+          desc: 'Sur ' + escapeHtml(withUnread.title),
+          link: '/messagerie.html?formalite=' + withUnread.id,
+          btn: 'Consulter'
+        };
+      } else if (pending.length > 0) {
+        topAction = {
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+          title: pending.length + ' dossier' + (pending.length > 1 ? 's' : '') + ' en attente',
+          desc: escapeHtml(pending[0].title) + (pending.length > 1 ? ' et ' + (pending.length - 1) + ' autre' + (pending.length > 2 ? 's' : '') : ''),
+          link: pending[0].link,
+          btn: 'Vérifier'
+        };
+      } else {
+        // Liste de toutes les formalités à action user (la plus récente en premier)
+        var inProgressUser = inProgress.filter(function(d){ return d.needsUserAction; });
+        if (inProgressUser.length > 0) {
+          inProgressUser.sort(function(a,b){ return new Date(b.updatedAt||0) - new Date(a.updatedAt||0); });
+          window._actionList = inProgressUser;
+          if (typeof window._actionIdx !== 'number' || window._actionIdx >= inProgressUser.length) {
+            window._actionIdx = 0;
+          }
+          topAction = buildActionFromIndex(window._actionIdx);
+        }
+      }
+
+      if (topAction) {
+        var hasMultiple = window._actionList && window._actionList.length > 1;
+        html += '<div class="top-action" id="top-action">'
+          + '<div class="top-action-icon">' + topAction.icon + '</div>'
+          + '<div class="top-action-body">'
+          +   '<div class="top-action-title">' + topAction.title + '</div>'
+          +   '<div class="top-action-desc">' + topAction.desc + '</div>'
+          + '</div>'
+          + (hasMultiple ? '<div class="top-action-nav">'
+              + '<button class="ta-arrow" onclick="prevAction()" aria-label="Précédent" id="ta-prev">'
+              +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
+              + '</button>'
+              + '<span class="ta-counter"><span id="ta-pos">' + (window._actionIdx + 1) + '</span> / ' + window._actionList.length + '</span>'
+              + '<button class="ta-arrow" onclick="nextAction()" aria-label="Suivant" id="ta-next">'
+              +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+              + '</button>'
+              + '</div>' : '')
+          + '<a href="' + topAction.link + '" class="top-action-btn" id="ta-cta">' + topAction.btn + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>'
+          + '</div>';
+      }
+
+      // === DASHBOARD : KPIs + Activité récente + Raccourcis ===
+      // (la liste détaillée des formalités est sur /formalites.html, pas de doublon ici)
+      var nbActions = inProgress.filter(function(d){ return d.needsUserAction; }).length || inProgress.length;
+      var nbPending = pending.length;
+      var nbTotal = societes.length;
+
+      html += '<div class="db-kpi-grid">'
+        + '  <div class="db-kpi" data-tone="action">'
+        +   '<div class="db-kpi-head"><span class="db-kpi-label">Actions à faire</span>'
+        +     '<span class="db-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>'
+        +   '</div>'
+        +   '<div class="db-kpi-value">' + nbActions + '</div>'
+        +   '<div class="db-kpi-sub">' + (nbActions === 0 ? 'Tout est à jour' : 'À traiter pour avancer') + '</div>'
+        + '</div>'
+        + '<div class="db-kpi" data-tone="pending">'
+        +   '<div class="db-kpi-head"><span class="db-kpi-label">En attente</span>'
+        +     '<span class="db-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>'
+        +   '</div>'
+        +   '<div class="db-kpi-value">' + nbPending + '</div>'
+        +   '<div class="db-kpi-sub">' + (nbPending === 0 ? 'Aucun dossier en attente' : 'Validation avocat / banque') + '</div>'
+        + '</div>'
+        + '<div class="db-kpi" data-tone="messages">'
+        +   '<div class="db-kpi-head"><span class="db-kpi-label">Messages non lus</span>'
+        +     '<span class="db-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>'
+        +   '</div>'
+        +   '<div class="db-kpi-value">' + unreadTotal + '</div>'
+        +   '<div class="db-kpi-sub">' + (unreadTotal === 0 ? 'Aucun nouveau message' : 'De l\'avocat ou de l\'équipe') + '</div>'
+        + '</div>'
+        + '<div class="db-kpi" data-tone="total">'
+        +   '<div class="db-kpi-head"><span class="db-kpi-label">Total dossiers</span>'
+        +     '<span class="db-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></span>'
+        +   '</div>'
+        +   '<div class="db-kpi-value">' + nbTotal + '</div>'
+        +   '<div class="db-kpi-sub">' + done.length + ' terminé' + (done.length > 1 ? 's' : '') + '</div>'
+        + '</div>'
+        + '</div>';
+
+      // Raccourcis
+      html += '<div class="db-shortcuts">'
+        +   '<a href="/creation.html" class="db-shortcut db-shortcut-primary">'
+        +     '<div class="db-shortcut-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>'
+        +     '<div class="db-shortcut-body"><div class="db-shortcut-title">Créer une formalité</div><div class="db-shortcut-desc">SAS, SARL, SASU, EURL, SCI…</div></div>'
+        +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="db-shortcut-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
+        +   '</a>'
+        +   '<a href="/consultations.html" class="db-shortcut">'
+        +     '<div class="db-shortcut-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div>'
+        +     '<div class="db-shortcut-body"><div class="db-shortcut-title">Consulter un avocat</div><div class="db-shortcut-desc">Pose ta question à un expert</div></div>'
+        +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="db-shortcut-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
+        +   '</a>'
+        +   '<a href="/formalites.html" class="db-shortcut">'
+        +     '<div class="db-shortcut-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>'
+        +     '<div class="db-shortcut-body"><div class="db-shortcut-title">Toutes mes formalités</div><div class="db-shortcut-desc">' + nbTotal + ' dossier' + (nbTotal > 1 ? 's' : '') + ' au total</div></div>'
+        +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="db-shortcut-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
+        +   '</a>'
+        + '</div>';
+
+      // Activité récente (timeline)
+      var recent = societes.slice().sort(function(a,b) {
+        var ta = a.updatedAt ? new Date(String(a.updatedAt).replace(' ', 'T')).getTime() : 0;
+        var tb = b.updatedAt ? new Date(String(b.updatedAt).replace(' ', 'T')).getTime() : 0;
+        return tb - ta;
+      }).slice(0, 5);
+      if (recent.length > 0) {
+        html += '<div class="db-section-head">'
+          + '<h2>Activité récente</h2>'
+          + '<a href="/formalites.html" class="db-section-link">Voir tout →</a>'
+          + '</div>'
+          + '<div class="db-timeline">';
+        recent.forEach(function(d) {
+          var statusClass = d.status === 'done' ? 'done' : d.status === 'pending' ? 'pending' : 'progress';
+          html += '<a href="' + d.link + '" class="db-timeline-item">'
+            + '  <div class="db-timeline-dot db-timeline-dot-' + statusClass + '"></div>'
+            + '  <div class="db-timeline-body">'
+            +     '<div class="db-timeline-row">'
+            +       '<span class="db-timeline-title">' + escapeHtml(d.title) + '</span>'
+            +       '<span class="db-timeline-badge">' + escapeHtml(d.typeBadgeLabel) + '</span>'
+            +     '</div>'
+            +     '<div class="db-timeline-meta">'
+            +       '<span class="db-timeline-status db-timeline-status-' + statusClass + '">' + d.statusLabel + '</span>'
+            +       '<span class="db-timeline-date">' + formatRelativeDate(d.updatedAt) + '</span>'
+            +     '</div>'
+            + '  </div>'
+            + '  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" class="db-timeline-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
+            + '</a>';
+        });
+        html += '</div>';
+      }
+
+      var multiEl = document.getElementById('state-multi');
+      multiEl.innerHTML = html;
+      multiEl.style.display = 'block';
+
+      // Masque la liste détaillée (disponible sur /formalites.html — pas de doublon)
+      var toolbarEl = document.getElementById('dossiers-toolbar');
+      var containerEl = document.getElementById('dossiers-container');
+      var paginationEl = document.getElementById('dossiers-pagination');
+      if (toolbarEl) toolbarEl.style.display = 'none';
+      if (containerEl) containerEl.style.display = 'none';
+      if (paginationEl) paginationEl.style.display = 'none';
+    }
+
+    function animateKpiCounters() {
+      var els = document.querySelectorAll('.kpi-value[data-target]');
+      els.forEach(function(el) {
+        var target = parseInt(el.getAttribute('data-target'), 10) || 0;
+        var suffix = el.getAttribute('data-suffix') || '';
+        var duration = 900;
+        var start = performance.now();
+        function tick(now) {
+          var t = Math.min(1, (now - start) / duration);
+          var eased = 1 - Math.pow(1 - t, 3);
+          el.textContent = Math.round(eased * target) + suffix;
+          if (t < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+    }
+
+    function renderHeroBanner() {
+      var banner = document.getElementById('hero-banner');
+      var firstName = _currentUser ? _currentUser.name.split(' ')[0] : '';
+
+      // Priority 1: unread messages
+      var withUnread = allDossiers.filter(function(d) { return d.unread > 0; });
+      if (withUnread.length > 0) {
+        var totalUnread = withUnread.reduce(function(s, d) { return s + d.unread; }, 0);
+        var msgLabel = totalUnread === 1 ? 'nouveau message' : 'nouveaux messages';
+        banner.innerHTML = '<div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>'
+          + '<div class="hero-content"><div class="hero-title">Vous avez ' + totalUnread + ' ' + msgLabel + '</div>'
+          + '<div class="hero-desc">De votre avocat sur ' + (withUnread.length === 1 ? 'le dossier ' + escapeHtml(withUnread[0].title) : withUnread.length + ' dossiers') + '</div></div>'
+          + '<a href="' + (withUnread.length === 1 ? '/messagerie.html?formalite=' + withUnread[0].id : '/messagerie.html') + '" class="hero-btn">Consulter <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>';
+        banner.style.display = 'flex';
+        return;
+      }
+
+      // Priority 2: most recent in-progress dossier
+      var inProgress = allDossiers.filter(function(d) { return d.status === 'progress' || d.status === 'action'; });
+      inProgress.sort(function(a, b) { return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); });
+      if (inProgress.length > 0) {
+        var d = inProgress[0];
+        var action = d.nextAction || 'Reprendre';
+        var stepInfo = d.phaseName ? '\u00c9tape en cours : ' + d.phaseName + ' (' + d.phase + '/' + d.totalPhases + ')' : '';
+        banner.innerHTML = '<div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
+          + '<div class="hero-content"><div class="hero-title">Reprendre la cr\u00e9ation de ' + escapeHtml(d.title) + '</div>'
+          + '<div class="hero-desc">' + stepInfo + (stepInfo && action ? ' \u2014 ' : '') + action + '</div></div>'
+          + '<a href="' + d.link + '" class="hero-btn">Continuer <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>';
+        banner.style.display = 'flex';
+        return;
+      }
+
+      // Priority 3: pending dossiers
+      var pending = allDossiers.filter(function(d) { return d.status === 'pending'; });
+      if (pending.length > 0) {
+        var label = pending.length === 1 ? 'Un dossier attend votre validation' : pending.length + ' dossiers attendent votre validation';
+        banner.innerHTML = '<div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>'
+          + '<div class="hero-content"><div class="hero-title">' + label + '</div>'
+          + '<div class="hero-desc">' + escapeHtml(pending[0].title) + (pending.length > 1 ? ' et ' + (pending.length - 1) + ' autre' + (pending.length > 2 ? 's' : '') : '') + '</div></div>'
+          + '<a href="' + pending[0].link + '" class="hero-btn">V\u00e9rifier <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>';
+        banner.style.display = 'flex';
+        return;
+      }
+
+      // Priority 4: no dossiers at all — onboarding
+      if (allDossiers.length === 0) {
+        banner.innerHTML = '<div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>'
+          + '<div class="hero-content"><div class="hero-title">Bienvenue' + (firstName ? ', ' + firstName : '') + ' !</div>'
+          + '<div class="hero-desc">Cr\u00e9ez votre premi\u00e8re soci\u00e9t\u00e9 en quelques minutes. Statuts, PV, annonce l\u00e9gale\u2026 tout est automatis\u00e9.</div></div>'
+          + '<a href="/creation.html?new=1&type=creation" class="hero-btn">D\u00e9marrer</a>';
+        banner.style.display = 'flex';
+        return;
+      }
+
+      // Priority 5: all done — congratulations
+      var allDone = allDossiers.every(function(d) { return d.status === 'done'; });
+      if (allDone && allDossiers.length > 0) {
+        banner.style.background = 'linear-gradient(135deg, #065f46 0%, #064e3b 100%)';
+        banner.innerHTML = '<div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>'
+          + '<div class="hero-content"><div class="hero-title">Tous vos dossiers sont finalis\u00e9s</div>'
+          + '<div class="hero-desc">' + allDossiers.length + ' formalit\u00e9' + (allDossiers.length > 1 ? 's' : '') + ' termin\u00e9e' + (allDossiers.length > 1 ? 's' : '') + '. Besoin d\u2019une nouvelle cr\u00e9ation ?</div></div>'
+          + '<a href="/creation.html?new=1&type=creation" class="hero-btn">Nouvelle soci\u00e9t\u00e9</a>';
+        banner.style.display = 'flex';
+        return;
+      }
+
+      banner.style.display = 'none';
+    }
+
+    function loadAllDossiers() {
+      allDossiers = [];
+      loadedSources = 0;
+
+      // Load formalites
+      fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
+        var formalites = data.formalites || [];
+        formalites.forEach(function(f) {
+          var formeLower = (f.forme || '').toLowerCase();
+          var totalSteps = (f.offer && f.offer !== 'starter') ? 6 : 5;
+          var progress = Math.round((f.phase / totalSteps) * 100);
+          var phaseNames = ['Informations', 'D\u00e9p\u00f4t du capital', 'Documents', 'Signature', 'Immatriculation'];
+          if (f.offer && f.offer !== 'starter') phaseNames = ['Informations', 'D\u00e9p\u00f4t du capital', 'Documents', 'Signature', 'R\u00e9vision avocat', 'Immatriculation'];
+          var currentPhaseName = phaseNames[Math.min((f.phase || 1) - 1, phaseNames.length - 1)];
+
+          // Calcule l'action r\u00e9ellement \u00e0 faire en regardant phase + sub-phase + data_json
+          var fData = {};
+          try { fData = JSON.parse(f.data_json || '{}'); } catch (e) {}
+          var banqueChoisie = fData.NOM_BANQUE && fData.NOM_BANQUE !== '-' ? fData.NOM_BANQUE
+            : fData.BANQUE_SHINE ? 'Shine'
+            : fData.BANQUE_QONTO ? 'Qonto'
+            : fData.BANQUE_REVOLUT ? 'Revolut'
+            : null;
+          var forme = fData.FORME_JURIDIQUE || f.forme;
+          var infosComplete = !!(fData.NOM_SOCIETE && forme && fData.CAPITAL && (fData.PRESIDENT_NOM || fData.GERANT_NOM));
+          var sp = f.business_sub_phase || '';
+
+          var nextAction = '';
+          var needsUserAction = false;
+          var pendingSig = f.pending_signatures || 0;
+          var totalSig = f.total_signatures || 0;
+          var rejectedDocs = f.rejected_docs || 0;
+          var hasAvocat = !!f.assigned_avocat_id;
+          // sub_phase n'est fiable QUE si un avocat est assign\u00e9 OU au moins une signature existe
+          var effectiveSp = (hasAvocat || totalSig > 0) ? sp : '';
+
+          // PRIORIT\u00c9 1 : Documents rejet\u00e9s par l'avocat \u2192 user doit renvoyer
+          if (rejectedDocs > 0 && f.status !== 'terminee') {
+            nextAction = rejectedDocs > 1
+              ? rejectedDocs + ' documents ont \u00e9t\u00e9 rejet\u00e9s \u2014 t\u00e9l\u00e9versez-en de nouveaux avant validation'
+              : 'Un document a \u00e9t\u00e9 rejet\u00e9 \u2014 t\u00e9l\u00e9versez un nouveau justificatif avant validation';
+            needsUserAction = true;
+          }
+          // PRIORIT\u00c9 2 : Signatures en attente \u2192 user doit signer
+          else if (pendingSig > 0 && totalSig > 0) {
+            nextAction = pendingSig > 1
+              ? pendingSig + ' associ\u00e9s doivent encore signer les statuts \u00e9lectroniquement'
+              : 'L\u2019associ\u00e9 doit signer \u00e9lectroniquement les statuts avant transmission';
+            needsUserAction = true;
+          }
+          // PRIORIT\u00c9 3 : \u00c9tats finaux c\u00f4t\u00e9 avocat
+          else if (f.status === 'terminee' || effectiveSp === '5e') {
+            nextAction = 'Votre soci\u00e9t\u00e9 est immatricul\u00e9e \u2014 le Kbis est disponible';
+          } else if (effectiveSp === '5c' || effectiveSp === '5d') {
+            nextAction = 'Vos documents sont valid\u00e9s \u2014 pr\u00e9paration du d\u00e9p\u00f4t au greffe';
+          } else if ((f.phase || 1) >= 6) {
+            nextAction = 'Dossier d\u00e9pos\u00e9 au greffe \u2014 r\u00e9ception du Kbis sous 24 \u00e0 72 h';
+          } else if (effectiveSp === '5a' || effectiveSp === '5b') {
+            nextAction = hasAvocat
+              ? 'Un avocat v\u00e9rifie l\u2019ensemble de vos documents avant le d\u00e9p\u00f4t au greffe'
+              : 'Un avocat va \u00eatre assign\u00e9 \u00e0 votre dossier dans les prochaines heures';
+          }
+          // PRIORIT\u00c9 4 : Actions user selon phase
+          else if (!infosComplete) {
+            nextAction = 'Renseignez le nom, la forme juridique, le capital et le dirigeant';
+            needsUserAction = true;
+          } else if (!banqueChoisie) {
+            nextAction = 'Choisissez une banque pro pour d\u00e9poser votre capital social';
+            needsUserAction = true;
+          } else if ((f.phase || 1) < 3) {
+            var capitalRaw = fData.CAPITAL || f.capital;
+            var capitalNum = parseFloat(String(capitalRaw).replace(/[^\d.,]/g, '').replace(',', '.'));
+            var capitalStr = !isNaN(capitalNum) && capitalNum > 0
+              ? Number(capitalNum).toLocaleString('fr-FR') + ' \u20ac'
+              : null;
+            nextAction = capitalStr
+              ? 'D\u00e9posez votre capital de ' + capitalStr + ' sur votre compte ' + banqueChoisie + ' et envoyez-nous l\u2019attestation'
+              : 'D\u00e9posez votre capital sur votre compte ' + banqueChoisie + ' et envoyez-nous l\u2019attestation';
+            needsUserAction = true;
+          } else if (f.phase === 3) {
+            nextAction = 'T\u00e9l\u00e9versez pi\u00e8ce d\u2019identit\u00e9 et justificatif de domicile pour chaque associ\u00e9';
+            needsUserAction = true;
+          } else if (f.phase === 4) {
+            nextAction = totalSig > 0
+              ? 'Les associ\u00e9s doivent signer \u00e9lectroniquement les statuts g\u00e9n\u00e9r\u00e9s'
+              : 'Lancez la signature \u00e9lectronique des statuts aupr\u00e8s des associ\u00e9s';
+            needsUserAction = true;
+          } else {
+            nextAction = 'Votre dossier est en cours de traitement par notre \u00e9quipe';
+          }
+
+          var statusClass, statusLabel;
+          if (f.status === 'terminee') {
+            statusClass = 'done'; statusLabel = 'Termin\u00e9e';
+          } else if (f.status === 'en_attente') {
+            statusClass = 'pending'; statusLabel = 'En attente';
+          } else if (needsUserAction) {
+            statusClass = 'action'; statusLabel = 'Action requise';
+          } else {
+            statusClass = 'progress'; statusLabel = 'En cours';
+          }
+          allDossiers.push({
+            id: f.id,
+            type: 'formalite',
+            typeBadge: formeLower || 'default',
+            typeBadgeLabel: (function() {
+              var t = (f.type || 'Cr\u00e9ation').trim();
+              if (t.toLowerCase() === 'creation') t = 'Cr\u00e9ation';
+              // Retire la forme (SAS/SASU/SARL/EURL/SCI) du type \u2014 elle figure d\u00e9j\u00e0 dans le titre
+              t = t.replace(/\s*(SAS|SASU|SARL|EURL|SCI)\s*$/i, '').trim();
+              return t || 'Cr\u00e9ation';
+            })(),
+            title: f.societe || 'Sans nom',
+            status: statusClass,
+            statusLabel: statusLabel,
+            progress: progress,
+            updatedAt: f.updated_at,
+            link: '/creation.html?id=' + f.id,
+            unread: f.unread_messages || 0,
+            phaseName: currentPhaseName,
+            nextAction: nextAction,
+            needsUserAction: needsUserAction,
+            phase: f.phase || 1,
+            totalPhases: phaseNames.length
+          });
+        });
+        checkAllLoaded();
+      }).catch(function() { checkAllLoaded(); });
+
+      // Load contrats (graceful 404)
+      fetch('/api/contrats').then(function(r) {
+        if (r.status === 404) return { contrats: [] };
+        return r.json();
+      }).then(function(data) {
+        var contrats = data.contrats || [];
+        contrats.forEach(function(c) {
+          var statusClass = c.status === 'signe' || c.status === 'terminee' ? 'done' : c.status === 'en_attente' ? 'pending' : 'progress';
+          var statusLabel = statusClass === 'done' ? 'Sign\u00e9' : statusClass === 'pending' ? 'En attente' : 'En cours';
+          allDossiers.push({
+            id: c.id,
+            type: 'contrat',
+            typeBadge: 'contrat',
+            typeBadgeLabel: c.type || 'Contrat',
+            title: c.title || c.name || 'Contrat #' + c.id,
+            status: statusClass,
+            statusLabel: statusLabel,
+            progress: c.progress || (statusClass === 'done' ? 100 : statusClass === 'pending' ? 20 : 50),
+            updatedAt: c.updated_at,
+            link: '/contrats.html?id=' + c.id,
+            unread: 0
+          });
+        });
+        checkAllLoaded();
+      }).catch(function() { checkAllLoaded(); });
+
+    }
+
+    function renderSidebarStats() {
+      // Stats are now shown as counts in filter tabs
+    }
+
+    // Dossiers state
+    var dossierSearchQuery = '';
+    var dossierStatusFilter = 'all';
+    var dossierPage = 1;
+    var DOSSIERS_PER_PAGE = 10;
+    var currentView = 'multi'; // 'empty' | 'single' | 'multi'
+
+    function getFilteredDossiers() {
+      var filtered = allDossiers.slice();
+
+      // Status filter
+      if (dossierStatusFilter !== 'all') {
+        filtered = filtered.filter(function(d) {
+          // "progress" (En cours) englobe aussi "action" (Action requise)
+          if (dossierStatusFilter === 'progress') return d.status === 'progress' || d.status === 'action';
+          return d.status === dossierStatusFilter;
+        });
+      }
+
+      // Search filter
+      if (dossierSearchQuery) {
+        var q = dossierSearchQuery.toLowerCase();
+        filtered = filtered.filter(function(d) {
+          return (d.title || '').toLowerCase().indexOf(q) >= 0
+            || (d.typeBadgeLabel || '').toLowerCase().indexOf(q) >= 0;
+        });
+      }
+
+      // Sort by last updated
+      filtered.sort(function(a, b) {
+        return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+      });
+
+      return filtered;
+    }
+
+    function renderDossiersToolbar(totalAll) {
+      var toolbar = document.getElementById('dossiers-toolbar');
+      if (totalAll === 0) { toolbar.innerHTML = ''; return; }
+
+      // Count per status
+      var countAll = allDossiers.length;
+      var countProgress = allDossiers.filter(function(d) { return d.status === 'progress' || d.status === 'action'; }).length;
+      var countPending = allDossiers.filter(function(d) { return d.status === 'pending'; }).length;
+      var countDone = allDossiers.filter(function(d) { return d.status === 'done'; }).length;
+
+      var filters = [
+        { key: 'all', label: 'Tous', count: countAll },
+        { key: 'progress', label: 'En cours', count: countProgress },
+        { key: 'pending', label: 'En attente', count: countPending },
+        { key: 'done', label: 'Termin\u00e9s', count: countDone }
+      ];
+
+      // Si la toolbar existe d\u00e9j\u00e0, update sans r\u00e9\u00e9crire l'input (sinon perte du focus)
+      var existingWrap = toolbar.querySelector('.dossiers-toolbar');
+      if (existingWrap) {
+        var btns = existingWrap.querySelectorAll('.dossiers-filter-btn');
+        filters.forEach(function(f, i) {
+          var b = btns[i];
+          if (!b) return;
+          b.classList.toggle('active', dossierStatusFilter === f.key);
+          var cnt = b.querySelector('.filter-count');
+          if (cnt) cnt.textContent = f.count;
+        });
+        return;
+      }
+
+      var searchVal = (dossierSearchQuery || '').replace(/"/g, '&quot;');
+      var html = '<div class="dossiers-toolbar">'
+        + '<div class="dossiers-search-wrap">'
+        +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+        +   '<input type="text" class="dossiers-search" id="dossiers-search-input" placeholder="Rechercher un dossier\u2026" value="' + searchVal + '" oninput="onDossierSearch(this.value)" autocomplete="off">'
+        + '</div>'
+        + '<div class="dossiers-filters">';
+      filters.forEach(function(f) {
+        html += '<button class="dossiers-filter-btn' + (dossierStatusFilter === f.key ? ' active' : '') + '" onclick="onDossierFilter(\'' + f.key + '\')">' + f.label + ' <span class="filter-count">' + f.count + '</span></button>';
+      });
+      html += '</div></div>';
+      toolbar.innerHTML = html;
+    }
+
+    function renderDossiersPagination(total) {
+      var container = document.getElementById('dossiers-pagination');
+      if (total <= DOSSIERS_PER_PAGE) { container.innerHTML = ''; return; }
+
+      var totalPages = Math.ceil(total / DOSSIERS_PER_PAGE);
+      var start = (dossierPage - 1) * DOSSIERS_PER_PAGE + 1;
+      var end = Math.min(dossierPage * DOSSIERS_PER_PAGE, total);
+
+      var html = '<div class="dossiers-pagination">'
+        + '<div class="dossiers-page-info">' + start + ' \u2013 ' + end + ' sur ' + total + '</div>'
+        + '<div class="dossiers-page-btns">'
+        + '<button class="dossiers-page-btn" onclick="onDossierPage(' + (dossierPage - 1) + ')"' + (dossierPage <= 1 ? ' disabled' : '') + '>'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>';
+
+      for (var i = 1; i <= totalPages; i++) {
+        if (totalPages > 7 && i > 3 && i < totalPages - 1 && Math.abs(i - dossierPage) > 1) {
+          if (i === 4 || i === totalPages - 2) html += '<button class="dossiers-page-btn" disabled>\u2026</button>';
+          continue;
+        }
+        html += '<button class="dossiers-page-btn' + (i === dossierPage ? ' active' : '') + '" onclick="onDossierPage(' + i + ')">' + i + '</button>';
+      }
+
+      html += '<button class="dossiers-page-btn" onclick="onDossierPage(' + (dossierPage + 1) + ')"' + (dossierPage >= totalPages ? ' disabled' : '') + '>'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>'
+        + '</div></div>';
+
+      container.innerHTML = html;
+    }
+
+    window.onDossierSearch = function(q) {
+      dossierSearchQuery = q;
+      dossierPage = 1;
+      renderDashboard();
+    };
+    window.onDossierFilter = function(status) {
+      dossierStatusFilter = status;
+      dossierPage = 1;
+      renderDashboard();
+    };
+    window.onDossierPage = function(p) {
+      var filtered = getFilteredDossiers();
+      var totalPages = Math.ceil(filtered.length / DOSSIERS_PER_PAGE);
+      if (p < 1 || p > totalPages) return;
+      dossierPage = p;
+      renderDashboard();
+    };
+
+    function renderDashboard() {
+      var container = document.getElementById('dossiers-container');
+      var totalAll = allDossiers.length;
+
+      // Toolbar (search + filters tabs intégrés)
+      renderDossiersToolbar(totalAll);
+
+      if (totalAll === 0) {
+        container.innerHTML = '<div class="empty-state">'
+          + '<div class="empty-state-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
+          + '<div class="empty-state-title">Aucun dossier en cours</div>'
+          + '<div class="empty-state-desc">Cr\u00e9ez votre premi\u00e8re soci\u00e9t\u00e9 pour commencer</div>'
+          + '<a href="/creation.html?new=1&type=creation" class="empty-state-btn" style="text-decoration:none;color:#fff;">'
+          + ''
+          + 'Nouvelle soci\u00e9t\u00e9</a></div>';
+        document.getElementById('dossiers-pagination').innerHTML = '';
+        return;
+      }
+
+      var filtered = getFilteredDossiers();
+
+      if (filtered.length === 0) {
+        var emptyMsg = dossierSearchQuery
+          ? 'Aucun r\u00e9sultat pour \u00ab ' + escapeHtml(dossierSearchQuery) + ' \u00bb'
+          : 'Aucun dossier dans cette cat\u00e9gorie';
+        container.innerHTML = '<div class="dossiers-list"><div class="dossiers-empty-search">' + emptyMsg + '</div></div>';
+        document.getElementById('dossiers-pagination').innerHTML = '';
+        return;
+      }
+
+      // Pagination
+      var totalPages = Math.ceil(filtered.length / DOSSIERS_PER_PAGE);
+      if (dossierPage > totalPages) dossierPage = totalPages;
+      var start = (dossierPage - 1) * DOSSIERS_PER_PAGE;
+      var pageItems = filtered.slice(start, start + DOSSIERS_PER_PAGE);
+
+      var html = '<div class="dossiers-list">';
+      pageItems.forEach(function(d) {
+        var unreadBadge = '';
+        if (d.unread > 0) {
+          unreadBadge = '<span class="notif-badge" style="margin-left:6px;font-size:10px;min-width:18px;height:18px;">' + d.unread + '</span>';
+        }
+        var contextHtml = '';
+        if (d.status !== 'done') {
+          if (d.nextAction) {
+            contextHtml = ' \u00b7 ' + escapeHtml(d.nextAction);
+          } else if (d.phaseName) {
+            contextHtml = ' \u00b7 ' + escapeHtml(d.phaseName);
+          }
+        }
+        // Icon color based on type
+        var iconColor = 'default';
+        var iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        if (d.type === 'formalite') {
+          iconColor = 'green';
+          iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+        } else if (d.type === 'contrat') {
+          iconColor = 'blue';
+          iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+        }
+        var formeUpper = (d.typeBadge || '').toUpperCase();
+        var titleWithForme = escapeHtml(d.title);
+        if (formeUpper && ['SAS','SASU','SARL','EURL','SCI'].indexOf(formeUpper) !== -1) {
+          titleWithForme = formeUpper + ' ' + escapeHtml(d.title);
+        }
+        var rowHtml = '<a href="' + d.link + '" class="dossier-row">'
+          + '<div class="dossier-row-icon ' + iconColor + '">' + iconSvg + '</div>'
+          + '<div class="dossier-row-info">'
+          + '<div class="dossier-row-title">' + titleWithForme + unreadBadge + '</div>'
+          + '<div class="dossier-row-meta"><span class="status-badge ' + d.status + '">' + d.statusLabel + '</span>' + contextHtml + '</div>'
+          + '</div>'
+          + '<span class="type-badge ' + d.typeBadge + '">' + escapeHtml(d.typeBadgeLabel) + '</span>'
+          + '<span class="dossier-row-date">' + formatSmartDate(d.updatedAt) + '</span>'
+          + '<svg class="dossier-row-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+          + '</a>';
+
+        var lawyerHtml = '';
+        if (d.lawyer) {
+          var parts = [];
+          if (d.lawyer.rejected.length) parts.push(d.lawyer.rejected.length + ' doc' + (d.lawyer.rejected.length > 1 ? 's' : '') + ' à renvoyer');
+          if (d.lawyer.edits.length) parts.push(d.lawyer.edits.length + ' info' + (d.lawyer.edits.length > 1 ? 's' : '') + ' modifiée' + (d.lawyer.edits.length > 1 ? 's' : ''));
+          if (d.lawyer.notes.length) parts.push(d.lawyer.notes.length + ' note' + (d.lawyer.notes.length > 1 ? 's' : ''));
+          lawyerHtml = '<button class="lawyer-badge" onclick="event.preventDefault();event.stopPropagation();toggleLawyerDetail(this);">'
+            + '<span class="lb-dot"></span>'
+            + '<span class="lb-text">' + parts.join(' · ') + ' par l\'avocat</span>'
+            + '<svg class="lb-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
+            + '</button>'
+            + '<div class="lawyer-detail">' + renderLawyerDetail(d) + '</div>';
+        }
+
+        html += '<div class="dossier-card">' + rowHtml + lawyerHtml + '</div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+
+      renderDossiersPagination(filtered.length);
+    }
+
+  </script>
+
+  <!-- CHAT WIDGET -->
+  <style>
+    .chat-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:#111;border:none;cursor:pointer;z-index:9990;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:transform .15s,box-shadow .15s}
+    .chat-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,0,0,.25)}
+    .chat-fab svg{width:26px;height:26px;color:#fff}
+    .chat-fab-badge{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;display:none}
+    .chat-panel{position:fixed;bottom:90px;right:24px;width:360px;height:520px;background:#fff;border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,.18);z-index:9991;display:flex;flex-direction:column;overflow:hidden;opacity:0;transform:translateY(20px);pointer-events:none;transition:opacity .25s,transform .25s}
+    .chat-panel.open{opacity:1;transform:translateY(0);pointer-events:auto}
+    .chat-header{padding:16px 18px 0;flex-shrink:0}
+    .chat-header-title{font-family:'Cal Sans','Inter',sans-serif;font-size:16px;font-weight:600;margin-bottom:12px}
+    .chat-tabs{display:flex;gap:0;border-bottom:1px solid #e5e5e5}
+    .chat-tab{flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+    .chat-tab.active{color:#111;border-bottom-color:#111}
+    .chat-select{padding:10px 18px;flex-shrink:0}
+    .chat-select select{width:100%;padding:8px 12px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f9;outline:none}
+    .chat-select select:focus{border-color:#111}
+    .chat-info{padding:12px 18px;font-size:13px;color:#888;text-align:center;background:#fefce8;margin:0 12px;border-radius:8px}
+    .chat-messages{flex:1;overflow-y:auto;padding:12px 18px;display:flex;flex-direction:column;gap:6px}
+    .chat-msg{max-width:220px;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.4;word-break:break-word}
+    .chat-msg.sent{background:#111;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+    .chat-msg.received{background:#f5f5f5;color:#111;align-self:flex-start;border-bottom-left-radius:4px}
+    .chat-msg-sender{font-size:11px;color:#888;margin-bottom:2px}
+    .chat-msg-time{font-size:10px;opacity:.6;margin-top:3px}
+    .chat-msg.sent .chat-msg-time{text-align:right}
+    .chat-msg-file{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#e8f0fe;border-radius:10px;font-size:12px;color:#2563eb;cursor:pointer;text-decoration:none;max-width:220px;word-break:break-all}
+    .chat-msg-file:hover{background:#d4e4fc}
+    .chat-msg-file svg{width:16px;height:16px;flex-shrink:0}
+    .chat-input-area{padding:12px;border-top:1px solid #e5e5e5;display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .chat-input-area input[type=text]{flex:1;padding:10px 16px;border:1px solid #e5e5e5;border-radius:24px;font-size:13px;font-family:inherit;background:#f5f5f5;outline:none}
+    .chat-input-area input[type=text]:focus{border-color:#ccc;background:#fff}
+    .chat-input-area input[type=file]{display:none}
+    .chat-btn-attach{width:34px;height:34px;border-radius:50%;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#888;transition:color .15s}
+    .chat-btn-attach:hover{color:#111}
+    .chat-btn-attach svg{width:18px;height:18px}
+    .chat-btn-send{width:34px;height:34px;border-radius:50%;border:none;background:#e5e5e5;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#888;transition:all .15s}
+    .chat-btn-send.active{background:#111;color:#fff}
+    .chat-btn-send svg{width:16px;height:16px}
+  </style>
+
+  <!-- Chat FAB -->
+  <button class="chat-fab" id="chatFab" onclick="toggleChatPanel()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span class="chat-fab-badge" id="chatBadge">0</span>
+  </button>
+
+  <!-- Chat Panel -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <div class="chat-header-title">Messages</div>
+      <div class="chat-tabs">
+        <button class="chat-tab active" data-tab="avocat" onclick="switchChatTab('avocat')">Mon avocat</button>
+        <button class="chat-tab" data-tab="support" onclick="switchChatTab('support')">Support</button>
+      </div>
+    </div>
+
+    <!-- Avocat tab content -->
+    <div id="chatTabAvocat" style="flex:1;flex-direction:column;min-height:0;display:flex;">
+      <div class="chat-select" id="chatFormaliteSelect"></div>
+      <div id="chatAvocatInfo"></div>
+      <div class="chat-messages" id="chatAvocatMessages"></div>
+      <div class="chat-input-area" id="chatAvocatInput">
+        <input type="file" id="chatAvocatFile" accept=".pdf,.jpg,.jpeg,.png,.docx">
+        <button class="chat-btn-attach" onclick="document.getElementById('chatAvocatFile').click()" title="Joindre un fichier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input type="text" id="chatAvocatText" placeholder="Votre message..." onkeydown="if(event.key==='Enter')sendAvocatMessage()">
+        <button class="chat-btn-send" id="chatAvocatSendBtn" onclick="sendAvocatMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Support tab content -->
+    <div id="chatTabSupport" style="display:none;flex:1;flex-direction:column;min-height:0;">
+      <div class="chat-messages" id="chatSupportMessages"></div>
+      <div class="chat-input-area">
+        <input type="file" id="chatSupportFile" accept=".pdf,.jpg,.jpeg,.png,.docx">
+        <button class="chat-btn-attach" onclick="document.getElementById('chatSupportFile').click()" title="Joindre un fichier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input type="text" id="chatSupportText" placeholder="Votre message..." onkeydown="if(event.key==='Enter')sendSupportMessage()">
+        <button class="chat-btn-send" id="chatSupportSendBtn" onclick="sendSupportMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var chatOpen = false;
+    var currentTab = 'avocat';
+    var selectedFormaliteId = null;
+    var formalitesList = [];
+    var avocatSSE = null;
+    var supportSSE = null;
+    var totalUnread = 0;
+    // Ferme les EventSource avant la navigation
+    window.addEventListener('beforeunload', function() {
+      if (avocatSSE) { try { avocatSSE.close(); } catch(_) {} avocatSSE = null; }
+      if (supportSSE) { try { supportSSE.close(); } catch(_) {} supportSSE = null; }
+    });
+    window.addEventListener('pagehide', function() {
+      if (avocatSSE) { try { avocatSSE.close(); } catch(_) {} avocatSSE = null; }
+      if (supportSSE) { try { supportSSE.close(); } catch(_) {} supportSSE = null; }
+    });
+
+    window.toggleChatPanel = function() {
+      chatOpen = !chatOpen;
+      document.getElementById('chatPanel').classList.toggle('open', chatOpen);
+      if (chatOpen) {
+        if (currentTab === 'avocat') loadAvocatChat();
+        else loadSupportChat();
+      }
+    };
+
+    window.switchChatTab = function(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.chat-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
+      var avocatTab = document.getElementById('chatTabAvocat');
+      var supportTab = document.getElementById('chatTabSupport');
+      if (tab === 'avocat') {
+        avocatTab.style.display = 'flex';
+        supportTab.style.display = 'none';
+        loadAvocatChat();
+      } else {
+        avocatTab.style.display = 'none';
+        supportTab.style.display = 'flex';
+        loadSupportChat();
+      }
+    };
+
+    var hasAvocat = false;
+
+    function loadFormalitesForChat() {
+      fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
+        formalitesList = (data.formalites || []).filter(function(f) { return f.status !== 'terminee'; });
+        var avocatFormalites = formalitesList.filter(function(f) { return f.assigned_avocat_id; });
+        hasAvocat = avocatFormalites.length > 0;
+        updateTabsVisibility();
+
+        var sel = document.getElementById('chatFormaliteSelect');
+        if (avocatFormalites.length === 0) {
+          sel.innerHTML = '';
+          document.getElementById('chatAvocatMessages').innerHTML = '';
+          if (!hasAvocat && currentTab === 'avocat') {
+            switchChatTab('support');
+          }
+          return;
+        }
+        var html = '<select id="chatFormaliteDropdown" onchange="window._onFormaliteChange(this.value)">';
+        avocatFormalites.forEach(function(f) {
+          html += '<option value="' + f.id + '">' + escapeHtml(f.societe || 'Formalit\u00e9 #' + f.id) + ' (' + (f.forme || '') + ')</option>';
+        });
+        html += '</select>';
+        sel.innerHTML = html;
+        selectedFormaliteId = avocatFormalites[0].id;
+        loadAvocatChat();
+      });
+    }
+
+    function updateTabsVisibility() {
+      var avocatTab = document.querySelector('.chat-tab[data-tab="avocat"]');
+      if (hasAvocat) {
+        avocatTab.style.display = '';
+      } else {
+        avocatTab.style.display = 'none';
+      }
+    }
+
+    window._onFormaliteChange = function(val) {
+      selectedFormaliteId = parseInt(val);
+      loadAvocatChat();
+    };
+
+    function loadAvocatChat() {
+      if (!selectedFormaliteId) { loadFormalitesForChat(); return; }
+      if (formalitesList.length === 0) { loadFormalitesForChat(); return; }
+      fetch('/api/messages?formalite_id=' + selectedFormaliteId).then(function(r) { return r.json(); }).then(function(data) {
+        renderAvocatMessages(data.messages || []);
+        fetch('/api/messages/read?formalite_id=' + selectedFormaliteId, { method: 'PUT' });
+      });
+      if (avocatSSE) avocatSSE.close();
+      avocatSSE = new EventSource('/api/messages/stream?formalite_id=' + selectedFormaliteId);
+      avocatSSE.onmessage = function(e) {
+        try {
+          var msg = JSON.parse(e.data);
+          appendAvocatMessage(msg);
+          fetch('/api/messages/read?formalite_id=' + selectedFormaliteId, { method: 'PUT' });
+        } catch(err) {}
+      };
+    }
+
+    function renderAvocatMessages(messages) {
+      var container = document.getElementById('chatAvocatMessages');
+      container.innerHTML = '';
+      messages.forEach(function(m) { appendAvocatMessage(m, true); });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function appendAvocatMessage(m, noscroll) {
+      var container = document.getElementById('chatAvocatMessages');
+      var isMine = _currentUser && m.sender_id === _currentUser.id;
+      var div = document.createElement('div');
+      div.className = 'chat-msg ' + (isMine ? 'sent' : 'received');
+      var time = formatTime(m.created_at);
+      var html = '';
+      if (!isMine) html += '<div class="chat-msg-sender">' + escapeHtml(m.sender_name || '') + '</div>';
+      html += '<div>' + escapeHtml(m.content || '') + '</div>';
+      html += '<div class="chat-msg-time">' + time + '</div>';
+      div.innerHTML = html;
+      container.appendChild(div);
+      if (!noscroll) container.scrollTop = container.scrollHeight;
+    }
+
+    window.sendAvocatMessage = function() {
+      var input = document.getElementById('chatAvocatText');
+      var text = input.value.trim();
+      if (!text || !selectedFormaliteId) return;
+      input.value = '';
+      fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formalite_id: selectedFormaliteId, content: text })
+      });
+    };
+
+    document.getElementById('chatAvocatFile').addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file || !selectedFormaliteId) return;
+      var fd = new FormData();
+      fd.append('file', file);
+      fd.append('doc_name', file.name);
+      fd.append('status', 'uploaded');
+      fetch('/api/formalites/' + selectedFormaliteId + '/documents', { method: 'POST', body: fd }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.ok) {
+          fetch('/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ formalite_id: selectedFormaliteId, content: '\ud83d\udcce ' + file.name })
+          });
+        }
+      });
+      this.value = '';
+    });
+
+    function loadSupportChat() {
+      fetch('/api/support').then(function(r) { return r.json(); }).then(function(data) {
+        renderSupportMessages(data.messages || []);
+      });
+      if (supportSSE) supportSSE.close();
+      supportSSE = new EventSource('/api/support/stream');
+      supportSSE.onmessage = function(e) {
+        try {
+          var msg = JSON.parse(e.data);
+          appendSupportMessage(msg);
+        } catch(err) {}
+      };
+    }
+
+    function renderSupportMessages(messages) {
+      var container = document.getElementById('chatSupportMessages');
+      container.innerHTML = '';
+      if (messages.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#888;font-size:13px">Envoyez un message pour contacter le support Formalist</div>';
+      }
+      messages.forEach(function(m) { appendSupportMessage(m, true); });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function appendSupportMessage(m, noscroll) {
+      var container = document.getElementById('chatSupportMessages');
+      var placeholder = container.querySelector('div[style*="text-align:center"]');
+      if (placeholder) placeholder.remove();
+      var isMine = _currentUser && m.sender_id === _currentUser.id;
+      var div = document.createElement('div');
+      if (m.file_path && !m.content.startsWith('\ud83d\udcce')) {
+        var a = document.createElement('a');
+        a.className = 'chat-msg-file';
+        a.href = '/api/file?path=' + encodeURIComponent(m.file_path);
+        a.target = '_blank';
+        a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' + escapeHtml(m.content || m.file_path);
+        container.appendChild(a);
+      } else {
+        div.className = 'chat-msg ' + (isMine ? 'sent' : 'received');
+        var time = formatTime(m.created_at);
+        var html = '';
+        if (!isMine) html += '<div class="chat-msg-sender">' + escapeHtml(m.sender_name || 'Support') + '</div>';
+        html += '<div>' + escapeHtml(m.content || '') + '</div>';
+        html += '<div class="chat-msg-time">' + time + '</div>';
+        div.innerHTML = html;
+        container.appendChild(div);
+      }
+      if (!noscroll) container.scrollTop = container.scrollHeight;
+    }
+
+    window.sendSupportMessage = function() {
+      var input = document.getElementById('chatSupportText');
+      var text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      fetch('/api/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text })
+      });
+    };
+
+    document.getElementById('chatSupportFile').addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      var fd = new FormData();
+      fd.append('file', file);
+      fd.append('content', file.name);
+      fetch('/api/support', { method: 'POST', body: fd });
+      this.value = '';
+    });
+
+    function setupSendBtn(inputId, btnId) {
+      var input = document.getElementById(inputId);
+      var btn = document.getElementById(btnId);
+      if (!input || !btn) return;
+      input.addEventListener('input', function() {
+        btn.classList.toggle('active', input.value.trim().length > 0);
+      });
+    }
+    setupSendBtn('chatAvocatText', 'chatAvocatSendBtn');
+    setupSendBtn('chatSupportText', 'chatSupportSendBtn');
+
+    function updateUnreadBadge() {
+      var total = 0;
+      var done = 0;
+      var needed = 1;
+      fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
+        (data.formalites || []).forEach(function(f) { total += (f.unread_messages || 0); });
+        done++;
+        if (done >= needed) showBadge(total);
+      });
+      fetch('/api/support/unread').then(function(r) { return r.json(); }).then(function(data) {
+        total += (data.count || 0);
+        needed++;
+        done++;
+        if (done >= needed) showBadge(total);
+      });
+    }
+
+    function showBadge(count) {
+      var badge = document.getElementById('chatBadge');
+      if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    setInterval(updateUnreadBadge, 30000);
+    setTimeout(updateUnreadBadge, 2000);
+    setTimeout(loadFormalitesForChat, 1000);
+
+    function formatTime(isoStr) {
+      if (!isoStr) return '';
+      var d = new Date(isoStr);
+      return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+    @font-face {
+      font-family: 'Cal Sans';
+      src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Matter';
+      src: url('/fonts/Matter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-display: block;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { height: 100%; overflow-y: scroll; scrollbar-gutter: stable; }
+    body {
+      font-family: 'Matter', 'Inter', -apple-system, sans-serif;
+      color: #111;
+      background: #f5f5f5;
+      min-height: 100%;
+      display: flex;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 270px;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0 0;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
+    .sidebar-logo a { display: inline-flex; align-items: baseline; gap: 3px; color: #111; text-decoration: none; }
+    .sidebar-logo .logo-mark { width: 26px; height: 22px; flex-shrink: 0; margin-bottom: 3px; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 30px; font-weight: 700;
+      letter-spacing: 0; line-height: 1; color: #111;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+    .sidebar-logo img { height: 26px; }
+
+    /* CTA primaire "Nouvelle formalité" */
+    .sidebar-cta, .sidebar-cta-link {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit; text-decoration: none; cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta:hover, .sidebar-cta-link:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active, .sidebar-cta-link:active { transform: scale(0.99); }
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer; margin-bottom: 2px;
+    }
+    .sidebar-nav a:hover, .sidebar-nav .sidebar-dropdown:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
+    .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
+    .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
+    .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
+    .sidebar-dropdown:hover .chevron { opacity: 0.6; }
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .sidebar-subnav.open { max-height: 320px; }
+    .sidebar-subnav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 12px 8px 44px; font-size: 13.5px; font-weight: 400; color: #666;
+      border-radius: 8px; transition: all 0.15s ease;
+    }
+    .sidebar-subnav a svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.72; stroke-width: 1.7; }
+    .sidebar-subnav a:hover { color: #111; background: #f6f6f6; }
+    .sidebar-subnav a:hover svg { opacity: 0.92; }
+    .sidebar-subnav a.active { color: #111; font-weight: 500; background: #f3f3f3; }
+    .sidebar-subnav a.active svg { opacity: 1; }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+    .nav-badge {
+      margin-left: auto;
+      background: #f3f4f6; color: #555;
+      font-size: 11.5px; font-weight: 500;
+      padding: 2px 9px; border-radius: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+    .sidebar-bottom {
+      padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #111;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .user-email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .btn-logout, .btn-settings {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .btn-logout:hover, .btn-settings:hover { color: #111; background: #f3f3f4; }
+    .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
+
+    /* MAIN */
+    .main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; margin-left: 270px; }
+    .topbar {
+      padding: 24px 48px; background: transparent;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .topbar a { color: #999; font-size: 14px; transition: color 0.2s ease; }
+    .topbar a:hover { color: #111; }
+    .topbar svg { width: 16px; height: 16px; color: #e5e5e5; flex-shrink: 0; }
+    .topbar span { font-size: 14px; color: #111; font-weight: 500; }

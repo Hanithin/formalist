@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mes documents - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>    .sidebar {
+      width: 270px;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0 0;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
+    .sidebar-logo a { display: flex; align-items: flex-end; gap: 6px; color: #111; text-decoration: none; }
+    .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; color: #111; line-height: 1; }
+    .sidebar-logo img { height: 26px; }
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer; margin-bottom: 2px;
+    }
+    .sidebar-nav a:hover, .sidebar-nav .sidebar-dropdown:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
+    .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
+    .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
+    .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
+    .sidebar-dropdown:hover .chevron { opacity: 0.6; }
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .sidebar-subnav.open { max-height: 320px; }
+    .sidebar-subnav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 12px 8px 44px; font-size: 13.5px; font-weight: 400; color: #666;
+      border-radius: 8px; transition: all 0.15s ease;
+    }
+    .sidebar-subnav a svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.72; stroke-width: 1.7; }
+    .sidebar-subnav a:hover { color: #111; background: #f6f6f6; }
+    .sidebar-subnav a:hover svg { opacity: 0.92; }
+    .sidebar-subnav a.active { color: #111; font-weight: 500; background: #f3f3f3; }
+    .sidebar-subnav a.active svg { opacity: 1; }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+    .sidebar-bottom {
+      padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #111;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .user-email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .btn-logout, .btn-settings {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .btn-logout:hover, .btn-settings:hover { color: #111; background: #f3f3f4; }
+    .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
+
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    @font-face {
+      font-family: 'Cal Sans';
+      src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Matter';
+      src: url('/fonts/Matter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-display: block;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Matter', 'Inter', -apple-system, sans-serif;
+      color: #111;
+      background: #f5f5f5;
+      display: flex;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* SIDEBAR */
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      margin-left: 270px;
+      min-height: 100vh;
+    }
+    .topbar {
+      padding: 30px 48px 4px;
+      background: transparent;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .topbar h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+    .page-sub {
+      padding: 0 48px;
+      margin: 0;
+      font-size: 14px;
+      color: #888;
+      max-width: 760px;
+    }
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f5;
+      color: #666;
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 28px;
+      height: 28px;
+      border-radius: 16px;
+      padding: 0 10px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #111;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #000; }
+    .btn-primary svg { width: 18px; height: 18px; }
+
+    .content { padding: 16px 48px 48px; flex: 1; }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .filter-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      background: transparent;
+      border: 1px solid #e5e5e5;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .filter-pill:hover { border-color: #e5e5e5; color: #111; }
+    .filter-pill.active {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+    .search-wrapper {
+      margin-left: auto;
+      position: relative;
+    }
+    .search-wrapper input {
+      width: 300px;
+      padding: 11px 16px 11px 44px;
+      border: 1px solid #e5e5e7;
+      border-radius: 100px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #fff;
+      color: #111;
+      outline: none;
+      transition: all 0.15s;
+    }
+    .search-wrapper input:hover { border-color: #d4d4d6; }
+    .search-wrapper input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,0.06); }
+    .search-wrapper input::placeholder { color: #aaa; }
+    .search-wrapper svg {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: #999;
+      pointer-events: none;
+    }
+    .filter-sort {
+      padding: 11px 36px 11px 16px;
+      border: 1px solid #e5e5e7; border-radius: 100px;
+      background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 14px center;
+      font-size: 14px; font-family: inherit; color: #111;
+      cursor: pointer; appearance: none; -webkit-appearance: none;
+      transition: all 0.15s;
+    }
+    .filter-sort:hover { border-color: #d4d4d6; }
+    .filter-sort:focus { outline: none; border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,0.06); }
+
+    /* DOCUMENTS TABLE */
+    .docs-table {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e5e5e5;
+      overflow: hidden;
+    }
+    .docs-table-header {
+      display: grid;
+      grid-template-columns: 1fr 180px 120px 110px 100px 100px;
+      padding: 14px 24px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #999;
+      
+      background: #f5f5f5;
+    }
+    .doc-row {
+      display: grid;
+      grid-template-columns: 1fr 180px 120px 110px 100px 100px;
+      padding: 16px 24px;
+      align-items: center;
+      border-bottom: 1px solid #f5f5f5;
+      transition: background 0.1s;
+    }
+    .doc-row:last-child { border-bottom: none; }
+    .doc-row:hover { background: #f5f5f5; }
+    .doc-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .doc-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .doc-icon.pdf { background: #fef2f2; color: #dc2626; }
+    .doc-icon.docx { background: #eff6ff; color: #2563eb; }
+    .doc-icon.jpg, .doc-icon.png { background: #f0fdf4; color: #111; }
+    .doc-icon.other { background: #f5f5f5; color: #666; }
+    .doc-name-text {
+      min-width: 0;
+    }
+    .doc-name-text strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .doc-source {
+      font-size: 13px;
+      color: #999;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .type-badge.entreprise { background: #eff6ff; color: #2563eb; }
+    .type-badge.contrat { background: #fff7ed; color: #ea580c; }
+    .type-badge.upload { background: #f5f5f5; color: #666; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+    .status-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .status-badge.signe { background: #f0fdf4; color: #111; }
+    .status-badge.en_cours { background: #fefce8; color: #ca8a04; }
+    .status-badge.genere { background: #eff6ff; color: #2563eb; }
+    .status-badge.brouillon { background: #f5f5f5; color: #999; }
+    .doc-date {
+      font-size: 13px;
+      color: #999;
+    }
+    .doc-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .doc-action-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid #e5e5e5;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      color: #666;
+    }
+    .doc-action-btn:hover { border-color: #e5e5e5; color: #111; background: #f5f5f5; }
+    .doc-action-btn svg { width: 16px; height: 16px; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 64px 20px;
+      background: #fff;
+      border-radius: 16px;
+      border: 2px dashed #e5e5e5;
+    }
+    .empty-state-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .empty-state-icon svg { width: 32px; height: 32px; color: #999; }
+    .empty-state-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .empty-state-desc { font-size: 14px; color: #999; margin-bottom: 24px; }
+    .empty-state-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #111;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 24px;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .empty-state-btn:hover { background: #000; }
+    .empty-state-btn svg { width: 18px; height: 18px; }
+
+    /* SOCIETE CARDS GRID */
+    .societes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .societe-card {
+      background: #fff; border: 1px solid #eee;
+      border-radius: 16px; padding: 20px;
+      cursor: pointer; transition: all 0.18s;
+      display: flex; flex-direction: column; gap: 14px;
+      text-align: left;
+    }
+    .societe-card:hover {
+      border-color: #c7c7ca;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+    }
+    .societe-card-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .societe-card-status {
+      font-size: 10.5px; font-weight: 600;
+      padding: 3px 8px; border-radius: 5px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .societe-card-status.done { background: #ecfdf5; color: #047857; }
+    .societe-card-status.progress { background: #eff6ff; color: #2563eb; }
+    .societe-card-name {
+      font-size: 16px; font-weight: 700; color: #111;
+      line-height: 1.2;
+    }
+    .societe-card-meta { font-size: 12.5px; color: #888; margin-top: 3px; }
+    .societe-card-progress {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .societe-card-progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: #666;
+    }
+    .societe-card-progress-bar {
+      height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden;
+    }
+    .societe-card-progress-fill {
+      height: 100%; background: #059669;
+      border-radius: 3px; transition: width 0.4s;
+    }
+    .societe-card-docs {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .doc-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 6px;
+      font-size: 11px; font-weight: 500;
+    }
+    .doc-tag.ready { background: #ecfdf5; color: #047857; }
+    .doc-tag.pending { background: #f3f4f6; color: #999; }
+    .doc-tag svg { width: 10px; height: 10px; }
+
+    /* SECTION TITRE */
+    .docs-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 0 0 14px;
+    }
+    .docs-section-header h2 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 17px; font-weight: 600; color: #111;
+    }
+    .docs-section-header .count { font-size: 13px; color: #888; }
+
+    /* DRAWER (détail société) */
+    .drawer-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(17,17,17,0.45);
+      backdrop-filter: blur(2px);
+      z-index: 200; display: none;
+    }
+    .drawer-backdrop.open { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .doc-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 560px; max-width: 95vw;
+      background: #fff;
+      box-shadow: -8px 0 32px rgba(0,0,0,0.1);
+      z-index: 201; transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column;
+    }
+    .doc-drawer.open { transform: translateX(0); }
+    .doc-drawer-header {
+      padding: 20px 24px; border-bottom: 1px solid #f0f0f2;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    }
+    .doc-drawer-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 18px; font-weight: 600; line-height: 1.2;
+    }
+    .doc-drawer-sub { font-size: 13px; color: #888; margin-top: 4px; }
+    .doc-drawer-close {
+      background: none; border: none; cursor: pointer; color: #888;
+      padding: 6px; border-radius: 8px; flex-shrink: 0;
+    }
+    .doc-drawer-close:hover { background: #f5f5f7; color: #111; }
+    .doc-drawer-close svg { width: 18px; height: 18px; }
+    .doc-drawer-cta { padding: 0 24px 16px; border-bottom: 1px solid #f0f0f2; }
+    .drawer-cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 16px; background: #111; color: #fff;
+      border-radius: 100px; text-decoration: none;
+      font-size: 13.5px; font-weight: 500;
+      transition: background 0.15s, transform 0.05s;
+    }
+    .drawer-cta-btn:hover { background: #2a2a2c; }
+    .drawer-cta-btn:active { transform: scale(0.98); }
+    .drawer-cta-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .doc-drawer-body { padding: 16px 24px 24px; overflow-y: auto; flex: 1; }
+    .doc-drawer-section { margin-top: 18px; }
+    .doc-drawer-section:first-child { margin-top: 0; }
+    .doc-drawer-section-title {
+      font-size: 11px; font-weight: 600; color: #888;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .doc-drawer-list { display: flex; flex-direction: column; gap: 6px; }
+    .doc-drawer-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid #ececef; border-radius: 11px;
+      text-decoration: none; color: inherit;
+      transition: all 0.15s;
+    }
+    .doc-drawer-item:hover { border-color: #ccc; background: #fafafa; }
+    .doc-drawer-item.missing { opacity: 0.65; cursor: default; }
+    .doc-drawer-item.missing:hover { border-color: #ececef; background: transparent; }
+    .doc-drawer-item-icon {
+      width: 36px; height: 36px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 10px; font-weight: 700;
+    }
+    .doc-drawer-item-icon.pdf { background: #fef2f2; color: #dc2626; }
+    .doc-drawer-item-icon.docx { background: #eff6ff; color: #2563eb; }
+    .doc-drawer-item-icon.image { background: #f5f3ff; color: #7c3aed; }
+    .doc-drawer-item-icon.missing-ic { background: #f3f4f6; color: #aaa; font-weight: 400; }
+    .doc-drawer-item-body { flex: 1; min-width: 0; }
+    .doc-drawer-item-name {
+      font-size: 14px; font-weight: 500; color: #111;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .doc-drawer-item.missing .doc-drawer-item-name { color: #777; }
+    .doc-drawer-item-sub { font-size: 12px; color: #999; margin-top: 1px; }
+    .doc-drawer-item-actions {
+      display: flex; align-items: center; gap: 4px;
+      flex-shrink: 0;
+    }
+    .doc-action-btn {
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid #ececef; border-radius: 9px;
+      background: #fff; color: #555;
+      cursor: pointer; transition: all 0.15s;
+      text-decoration: none;
+    }
+    .doc-action-btn:hover { border-color: #111; color: #111; background: #fafafa; }
+    .doc-action-btn svg { width: 16px; height: 16px; }
+    .doc-action-btn.primary { background: #111; color: #fff; border-color: #111; }
+    .doc-action-btn.primary:hover { background: #2a2a2c; }
+    .doc-drawer-item-pending {
+      font-size: 11.5px; color: #888;
+      padding: 3px 9px; background: #f3f4f6;
+      border-radius: 5px; flex-shrink: 0;
+    }
+
+    /* DOCS GROUPED BY SOCIETE (legacy, conservé pour orphans) */
+    .docs-society {
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .docs-society-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px;
+      background: #fafafa;
+      border-bottom: 1px solid #f0f0f2;
+    }
+    .docs-society-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: #ecfdf5; color: #059669;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .docs-society-icon svg { width: 18px; height: 18px; }
+    .docs-society-name { font-size: 15px; font-weight: 600; color: #111; }
+    .docs-society-sub { font-size: 12.5px; color: #999; margin-top: 2px; }
+    .docs-section { padding: 8px 0; }
+    .docs-section + .docs-section { border-top: 1px solid #f5f5f7; }
+    .docs-section-title {
+      font-size: 11px; font-weight: 600; color: #999;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 8px 20px 4px;
+    }
+    .doc-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 20px;
+      transition: background 0.15s;
+      text-decoration: none; color: inherit;
+    }
+    .doc-card:hover { background: #f9f9fa; }
+    .doc-card.missing { opacity: 0.6; cursor: default; }
+    .doc-card.missing:hover { background: transparent; }
+    .doc-card-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #fef2f2; color: #dc2626;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+    .doc-card-icon.pdf { background: #fef2f2; color: #dc2626; }
+    .doc-card-icon.docx { background: #eff6ff; color: #2563eb; }
+    .doc-card-icon.image { background: #f5f3ff; color: #7c3aed; }
+    .doc-card-icon.missing-icon {
+      background: #f5f5f7; color: #999; font-weight: 400;
+    }
+    .doc-card-info { flex: 1; min-width: 0; }
+    .doc-card-name {
+      font-size: 13.5px; font-weight: 500; color: #111;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .doc-card.missing .doc-card-name { color: #888; }
+    .doc-card-meta { font-size: 11.5px; color: #999; margin-top: 1px; }
+    .doc-card-actions {
+      display: flex; align-items: center; gap: 4px;
+      flex-shrink: 0;
+    }
+    .doc-card-actions button {
+      width: 30px; height: 30px;
+      border: none; background: transparent;
+      border-radius: 7px; cursor: pointer;
+      color: #888;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .doc-card-actions button:hover { background: #ececef; color: #111; }
+    .doc-card-actions svg { width: 15px; height: 15px; }
+    .doc-card-pending {
+      font-size: 11px; color: #888;
+      padding: 3px 8px; background: #f5f5f7;
+      border-radius: 5px; font-style: italic;
+    }
+
+    /* UPLOAD MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 520px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      transform: translateY(20px);
+      transition: transform 0.25s;
+    }
+    .modal-overlay.open .modal {
+      transform: translateY(0);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .modal-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid #e5e5e5;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      color: #666;
+    }
+    .modal-close:hover { background: #f5f5f5; color: #111; }
+    .modal-close svg { width: 18px; height: 18px; }
+    .dropzone {
+      border: 2px dashed #ddd;
+      border-radius: 16px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 20px;
+      background: #f5f5f5;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #111;
+      background: #f5f5f5;
+    }
+    .dropzone-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+    }
+    .dropzone-icon svg { width: 24px; height: 24px; color: #999; }
+    .dropzone-text { font-size: 14px; color: #999; margin-bottom: 4px; }
+    .dropzone-text strong { color: #111; }
+    .dropzone-hint { font-size: 12px; color: #999; }
+    .dropzone-filename {
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      margin-top: 10px;
+      display: none;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      background: transparent;
+      outline: none;
+      transition: border-color 0.15s;
+      color: #111;
+    }
+    .form-input:focus, .form-select:focus { border-color: #e5e5e5; }
+    .form-input::placeholder { color: #999; }
+    .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .btn-cancel {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      background: transparent;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    .btn-cancel:hover { border-color: #e5e5e5; color: #111; }
+    .btn-upload {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      background: #111;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .btn-upload:hover { background: #000; }
+    .btn-upload:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-upload svg { width: 16px; height: 16px; }
+
+    /* MOBILE */
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 200;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: transparent;
+      border: 1px solid #e5e5e5;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .sidebar-toggle svg { width: 20px; height: 20px; }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 99;
+    }
+
+    @media (max-width: 1100px) {
+      .docs-table-header,
+      .doc-row {
+        grid-template-columns: 1fr 140px 100px 100px 80px 90px;
+      }
+    }
+    @media (max-width: 900px) {
+      .docs-table-header { display: none; }
+      .doc-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 16px 20px;
+      }
+      .doc-name-cell { width: 100%; }
+      .search-wrapper { margin-left: 0; width: 100%; }
+      .search-wrapper input { width: 100%; }
+    }
+    @media (max-width: 768px) {
+      .sidebar.mobile-open { transform: translateX(0); }
+      .sidebar-toggle { display: flex; }
+      .sidebar-overlay.visible { display: block; }
+      .main { margin-left: 0; }
+      .topbar { padding-left: 64px; }
+      .content { padding: 20px; }
+      .filter-bar { gap: 8px; }
+      .modal { margin: 16px; max-width: calc(100% - 32px); }
+    }
+  </style>
+
+  <!-- BEGIN sidebar refresh (auto-generated) -->
+  <style>
+    /* Logo */
+    .sidebar-logo a { display: inline-flex !important; align-items: baseline !important; gap: 3px !important; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif !important;
+      font-size: 30px !important; font-weight: 700 !important;
+      letter-spacing: 0 !important; line-height: 1 !important;
+      color: #111 !important;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    /* Société active */
+    .sidebar-context {
+      margin: 0 12px 12px; padding: 10px 12px;
+      background: #fafafa; border: 1px solid #eee; border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .sidebar-context:hover { background: #f3f3f4; border-color: #e2e2e4; }
+    .sidebar-context .ctx-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
+    .sidebar-context .ctx-body { flex: 1; min-width: 0; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-context.single { cursor: default; }
+    .sidebar-context.single:hover { background: #fafafa; border-color: #eee; }
+    .sidebar-context.single .ctx-chevron { display: none; }
+    /* CTA primaire "Nouvelle formalité" */
+    .sidebar-cta {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active { transform: scale(0.99); }
+    .sidebar-cta svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    /* Badges dans la nav */
+    .nav-badge {
+      margin-left: auto;
+      background: #f3f4f6; color: #555;
+      font-size: 11.5px; font-weight: 500;
+      padding: 2px 9px; border-radius: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .nav-badge.muted { background: #f0f0f2; color: #666; }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+
+
+    /* Modal Nouvelle formalité */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    @media (max-width: 600px) { .nd-grid { grid-template-columns: 1fr; } }
+  </style>
+  <!-- END sidebar refresh -->
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+  <script src="/js/common.js"></script>
+  <script>
+    var _currentUser = null;
+    fetch('/api/auth/me').then(function(r) {
+      if (r.status !== 200) { window.location.href = '/connexion.html'; return null; }
+      return r.json();
+    }).then(function(data) {
+      if (!data) return;
+      _currentUser = data.user;
+      document.querySelector('.user-name').textContent = data.user.name;
+      document.querySelector('.user-email').textContent = data.user.email;
+      var initials = data.user.name.split(' ').map(function(n) { return n[0]; }).join('').substring(0,2).toUpperCase();
+      document.querySelector('.avatar').textContent = initials;
+      loadDocuments();
+    }).catch(function() { window.location.href = '/connexion.html'; });
+  </script>
+
+  <!-- MOBILE TOGGLE -->
+  <button class="sidebar-toggle" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- SIDEBAR -->
+          <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-context" id="sidebar-context" style="display:none;">
+      <div class="ctx-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0M9 17h0M15 17h0"/></svg>
+      </div>
+      <div class="ctx-body">
+        <div class="ctx-label">Soci&eacute;t&eacute; active</div>
+        <div class="ctx-name" id="ctx-name"></div>
+      </div>
+      <svg class="ctx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <button class="sidebar-cta" onclick="openNewActionModal()">
+      Cr&eacute;er une formalit&eacute;
+    </button>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+
+      <a href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a class="active" href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){sessionStorage.removeItem('user');window.location.href='/connexion.html';})" title="D&eacute;connexion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Mes documents</h1>
+      </div>
+    </div>
+    <p class="page-sub">Retrouvez et téléchargez à tout moment les documents officiels de vos sociétés : statuts, Kbis, annonces légales, factures.</p>
+
+    <div class="content">
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <button class="filter-pill active" data-filter="all" onclick="setFilter('all', this)">Tous</button>
+        <button class="filter-pill" data-filter="entreprise" onclick="setFilter('entreprise', this)">Entreprises</button>
+        <button class="filter-pill" data-filter="contrat" onclick="setFilter('contrat', this)">Contrats</button>
+        <select class="filter-sort" id="sortSelect" onchange="filterDocuments()">
+          <option value="recent">Plus récent en premier</option>
+          <option value="oldest">Plus ancien en premier</option>
+          <option value="complete">Plus complets en premier</option>
+          <option value="incomplete">Plus incomplets en premier</option>
+          <option value="name">Nom (A → Z)</option>
+        </select>
+        <div class="search-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Rechercher une société, un document…" oninput="filterDocuments()">
+        </div>
+      </div>
+
+      <!-- DOCUMENTS CONTAINER -->
+      <div id="documentsContainer">
+        <div style="text-align:center;padding:48px;color:#888;font-size:14px;">Chargement...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAWER -->
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDocDrawer()"></div>
+  <aside class="doc-drawer" id="docDrawer">
+    <div class="doc-drawer-header">
+      <div style="min-width:0;">
+        <div class="doc-drawer-title" id="drawerTitle">Société</div>
+        <div class="doc-drawer-sub" id="drawerSub">Forme · capital</div>
+      </div>
+      <button class="doc-drawer-close" onclick="closeDocDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="doc-drawer-cta">
+      <a class="drawer-cta-btn" id="drawerCTA" href="#">
+        Accéder à la formalité
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+      </a>
+    </div>
+    <div class="doc-drawer-body" id="drawerBody"></div>
+  </aside>
+
+  <!-- UPLOAD MODAL -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">T&eacute;l&eacute;verser un document</div>
+        <button class="modal-close" onclick="closeUploadModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" accept=".pdf,.docx,.jpg,.jpeg,.png" style="display:none">
+        <div class="dropzone-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="dropzone-text">Glissez un fichier ici ou <strong>parcourir</strong></div>
+        <div class="dropzone-hint">PDF, DOCX, JPG, PNG (max 10 Mo)</div>
+        <div class="dropzone-filename" id="dropzoneFilename"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nom du document</label>
+        <input type="text" class="form-input" id="uploadName" placeholder="Ex: Statuts SASU TechVision">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Cat&eacute;gorie</label>
+        <select class="form-select" id="uploadCategory">
+          <option value="entreprise">Entreprise</option>
+          <option value="contrat">Contrat</option>
+          <option value="upload">Autre</option>
+        </select>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeUploadModal()">Annuler</button>
+        <button class="btn-upload" id="btnUpload" onclick="uploadDocument()" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          T&eacute;l&eacute;verser
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ----- Sidebar -----
+    function toggleDropdown(el) {
+      el.classList.toggle('open');
+      var subnav = el.nextElementSibling;
+      if (subnav) subnav.classList.toggle('open');
+    }
+    function toggleSidebar() {
+      var sidebar = document.getElementById('sidebar');
+      var overlay = document.getElementById('sidebarOverlay');
+      sidebar.classList.toggle('mobile-open');
+      overlay.classList.toggle('visible');
+    }
+
+    // ----- State -----
+    var allDocuments = [];
+    var currentFilter = 'all';
+    var selectedFile = null;
+
+    // ----- Helpers -----
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function formatRelativeDate(isoStr) {
+      if (!isoStr) return '';
+      var date = new Date(isoStr);
+      var now = new Date();
+      var diffMs = now - date;
+      var diffMin = Math.floor(diffMs / 60000);
+      var diffH = Math.floor(diffMs / 3600000);
+      var diffD = Math.floor(diffMs / 86400000);
+      if (diffMin < 1) return "\u00c0 l'instant";
+      if (diffMin < 60) return 'Il y a ' + diffMin + ' min';
+      if (diffH < 24) return 'Il y a ' + diffH + 'h';
+      if (diffD === 1) return 'Hier';
+      if (diffD < 7) return 'Il y a ' + diffD + ' jours';
+      if (diffD < 30) return 'Il y a ' + Math.floor(diffD / 7) + ' sem.';
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function getFileExtension(filename) {
+      if (!filename) return 'other';
+      var ext = filename.split('.').pop().toLowerCase();
+      if (ext === 'pdf') return 'pdf';
+      if (ext === 'docx' || ext === 'doc') return 'docx';
+      if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
+      if (ext === 'png') return 'png';
+      return 'other';
+    }
+
+    function getFileIconLabel(ext) {
+      if (ext === 'pdf') return 'PDF';
+      if (ext === 'docx') return 'DOC';
+      if (ext === 'jpg') return 'JPG';
+      if (ext === 'png') return 'PNG';
+      return 'FILE';
+    }
+
+    function getStatusLabel(status) {
+      if (!status) return { label: 'Brouillon', cls: 'brouillon' };
+      var s = status.toLowerCase().replace(/[^a-z_]/g, '');
+      if (s === 'signe' || s === 'signed') return { label: 'Sign\u00e9', cls: 'signe' };
+      if (s === 'en_cours' || s === 'pending' || s === 'en_attente') return { label: 'En cours', cls: 'en_cours' };
+      if (s === 'genere' || s === 'generated' || s === 'completed' || s === 'terminee') return { label: 'G\u00e9n\u00e9r\u00e9', cls: 'genere' };
+      return { label: 'Brouillon', cls: 'brouillon' };
+    }
+
+    function getCategoryLabel(cat) {
+      if (!cat) return { label: 'Upload', cls: 'upload' };
+      var c = cat.toLowerCase();
+      if (c === 'entreprise' || c === 'formalite') return { label: 'Entreprise', cls: 'entreprise' };
+      if (c === 'contrat') return { label: 'Contrat', cls: 'contrat' };
+      return { label: 'Upload', cls: 'upload' };
+    }
+
+    // ----- Load Documents -----
+    var allSocietes = []; // [{id, societe, forme, type, ...}]
+    function loadDocuments() {
+      allDocuments = [];
+      allSocietes = [];
+      var loaded = 0;
+      var total = 2;
+
+      function checkDone() {
+        loaded++;
+        if (loaded >= total) {
+          allDocuments.sort(function(a, b) {
+            return new Date(b.date || 0) - new Date(a.date || 0);
+          });
+          var dc = document.getElementById('docCount'); if (dc) dc.textContent = allDocuments.length;
+          filterDocuments();
+        }
+      }
+
+      // Load user_documents (vault)
+      fetch('/api/documents').then(function(r) {
+        if (r.status === 404) return { documents: [] };
+        return r.json();
+      }).then(function(data) {
+        var docs = data.documents || [];
+        docs.forEach(function(d) {
+          allDocuments.push({
+            id: 'ud-' + d.id,
+            name: d.name || 'Document',
+            sourceType: d.source_type || 'upload',
+            sourceId: d.source_id || null,
+            category: d.category || null,
+            status: d.status || 'actif',
+            date: d.created_at,
+            filePath: d.file_path || null,
+            filename: d.file_path || d.name || ''
+          });
+        });
+        checkDone();
+      }).catch(function() { checkDone(); });
+
+      // Load formalites (soci\u00e9t\u00e9s + leurs documents internes)
+      fetch('/api/formalites').then(function(r) {
+        if (r.status === 404) return { formalites: [] };
+        return r.json();
+      }).then(function(data) {
+        var formalites = data.formalites || [];
+        formalites.forEach(function(f) {
+          if (f.type && (String(f.type).toLowerCase().indexOf('cr\u00e9ation') === 0 || f.type === 'creation')) {
+            // On stocke d'abord toutes les formalit\u00e9s de cr\u00e9ation ; on filtrera ensuite celles avec au moins 1 document officiel
+            allSocietes.push({
+              id: f.id,
+              name: f.societe || 'Sans nom',
+              forme: f.forme || '',
+              type: f.type,
+              status: f.status,
+              capital: f.capital || null,
+              updatedAt: f.updated_at,
+              createdAt: f.created_at
+            });
+          }
+          var fDocs = f.documents || [];
+          fDocs.forEach(function(d) {
+            allDocuments.push({
+              id: 'f-' + d.id,
+              name: d.doc_name || d.name || 'Document',
+              sourceType: 'entreprise',
+              sourceId: f.id,
+              category: 'autres',
+              status: d.status || 'genere',
+              date: d.created_at || d.updated_at || f.updated_at,
+              filePath: d.file_path || null,
+              filename: d.file_path || d.doc_name || ''
+            });
+          });
+        });
+        checkDone();
+      }).catch(function() { checkDone(); });
+    }
+
+    // Cat\u00e9gories attendues pour une soci\u00e9t\u00e9 (placeholder si manquant)
+    var EXPECTED_CATEGORIES = [
+      { key: 'statuts',        label: 'Statuts',         section: 'societe' },
+      { key: 'pv',             label: 'PV de constitution', section: 'societe' },
+      { key: 'annonce_legale', label: 'Annonce l\u00e9gale',  section: 'officiels' },
+      { key: 'kbis',           label: 'Kbis',            section: 'officiels' },
+      { key: 'rbe',            label: 'RBE',             section: 'officiels' },
+      { key: 'facture',        label: 'Facture',         section: 'facturation' }
+    ];
+    var SECTION_TITLES = {
+      societe: 'Statuts & PV',
+      officiels: 'Documents officiels',
+      facturation: 'Facturation',
+      autres: 'Autres documents'
+    };
+
+    // ----- Filter -----
+    function setFilter(filter, el) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-pill').forEach(function(p) { p.classList.remove('active'); });
+      el.classList.add('active');
+      filterDocuments();
+    }
+
+    function filterDocuments() {
+      var query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+      var filtered = allDocuments.filter(function(doc) {
+        if (currentFilter !== 'all' && doc.sourceType !== currentFilter) return false;
+        if (query) { if ((doc.name || '').toLowerCase().indexOf(query) === -1) return false; }
+        return true;
+      });
+
+      // Tri des sociétés
+      var sortMode = (document.getElementById('sortSelect') || {}).value || 'recent';
+      // Calcule un index "docs présents par société" pour le tri complet/incomplet
+      var docCountBySoc = {};
+      allDocuments.forEach(function(d) {
+        if (d.sourceType === 'entreprise' && d.sourceId != null && d.category) {
+          docCountBySoc[d.sourceId] = (docCountBySoc[d.sourceId] || 0) + 1;
+        }
+      });
+      // Récupère updated_at depuis allSocietes (déjà tagué) — fallback created_at
+      allSocietes.sort(function(a, b) {
+        if (sortMode === 'name') return (a.name || '').localeCompare(b.name || '');
+        if (sortMode === 'complete') return (docCountBySoc[b.id] || 0) - (docCountBySoc[a.id] || 0);
+        if (sortMode === 'incomplete') return (docCountBySoc[a.id] || 0) - (docCountBySoc[b.id] || 0);
+        // recent / oldest : basé sur updatedAt
+        var ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        var tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return sortMode === 'oldest' ? ta - tb : tb - ta;
+      });
+
+      renderDocuments(filtered, query);
+    }
+
+    // ----- Render : grille de cards soci\u00e9t\u00e9 -----
+    function renderDocuments(docs, query) {
+      var container = document.getElementById('documentsContainer');
+      var isFiltered = currentFilter !== 'all' || (query || '').trim() !== '';
+
+      // Une soci\u00e9t\u00e9 n'appara\u00eet dans Mes documents QUE si elle a au moins 1 doc officiel (valid\u00e9 par l'avocat)
+      function hasOfficialDocs(socId) {
+        return allDocuments.some(function(d) {
+          return d.sourceType === 'entreprise' && String(d.sourceId) === String(socId) && d.category;
+        });
+      }
+      var socFiltered = allSocietes.filter(function(soc) {
+        if (!hasOfficialDocs(soc.id)) return false;
+        if (!query) return true;
+        if (soc.name.toLowerCase().indexOf(query) !== -1) return true;
+        if ((soc.forme || '').toLowerCase().indexOf(query) !== -1) return true;
+        return false;
+      });
+
+      if (socFiltered.length === 0 && allDocuments.length === 0 && !isFiltered) {
+        container.innerHTML = '<div class="empty-state">'
+          + '<div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>'
+          + '<div class="empty-state-title">Aucun document pour le moment</div>'
+          + '<div class="empty-state-desc">Vos documents officiels (Kbis, statuts, annonce l\u00e9gale\u2026) seront disponibles ici une fois votre dossier valid\u00e9 par notre avocat.</div>'
+          + '</div>';
+        return;
+      }
+
+      var html = '';
+
+      // 1. Section "Mes soci\u00e9t\u00e9s" \u2014 grid de cards
+      if (currentFilter === 'all' || currentFilter === 'entreprise') {
+        if (socFiltered.length > 0) {
+          html += '<div class="docs-section-header"><h2>Mes soci\u00e9t\u00e9s</h2>'
+            + '<span class="count">' + socFiltered.length + ' soci\u00e9t\u00e9' + (socFiltered.length > 1 ? 's' : '') + '</span></div>';
+          html += '<div class="societes-grid">';
+          socFiltered.forEach(function(soc) {
+            var socDocs = docs.filter(function(d){ return d.sourceType === 'entreprise' && String(d.sourceId) === String(soc.id); });
+            html += renderSocieteCard(soc, socDocs);
+          });
+          html += '</div>';
+        }
+      }
+
+      // 2. Section "Autres" pour contrats / uploads
+      var orphans = docs.filter(function(d){
+        if (currentFilter === 'all') return d.sourceType !== 'entreprise';
+        if (currentFilter === 'entreprise') return false;
+        return d.sourceType === currentFilter;
+      });
+      if (orphans.length > 0) {
+        var label = currentFilter === 'contrat' ? 'Mes contrats'
+                  : currentFilter === 'upload' ? 'Mes documents t\u00e9l\u00e9vers\u00e9s'
+                  : 'Autres documents';
+        html += '<div class="docs-section-header"><h2>' + label + '</h2>'
+          + '<span class="count">' + orphans.length + ' document' + (orphans.length > 1 ? 's' : '') + '</span></div>';
+        html += '<div class="docs-society"><div class="docs-section">';
+        orphans.forEach(function(d) { html += renderDocCard(d); });
+        html += '</div></div>';
+      }
+
+      if (!html) {
+        html = '<div class="empty-state">'
+          + '<div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>'
+          + '<div class="empty-state-title">Aucun r\u00e9sultat</div>'
+          + '<div class="empty-state-desc">Aucun document ne correspond \u00e0 votre recherche</div>'
+          + '</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ----- Render carte d'une société (vue grid) -----
+    function renderSocieteCard(soc, socDocs) {
+      var iconHouse = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+      var iconCheck = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>';
+      var iconClock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+      // Compteurs : nombre de docs attendus vs présents
+      var foundCats = {};
+      socDocs.forEach(function(d) { if (d.category) foundCats[d.category] = true; });
+      var totalExpected = EXPECTED_CATEGORIES.length;
+      var presentCount = EXPECTED_CATEGORIES.filter(function(e){ return foundCats[e.key]; }).length;
+      var pct = totalExpected > 0 ? Math.round((presentCount / totalExpected) * 100) : 0;
+      var isComplete = presentCount >= totalExpected;
+
+      // Tags des docs principaux
+      var tagsHtml = EXPECTED_CATEGORIES.slice(0, 5).map(function(e) {
+        var ready = !!foundCats[e.key];
+        return '<span class="doc-tag ' + (ready ? 'ready' : 'pending') + '">'
+          + (ready ? iconCheck : iconClock) + ' ' + escapeHtml(e.label) + '</span>';
+      }).join('');
+
+      var statusCls = isComplete ? 'done' : 'progress';
+      var statusLabel = isComplete ? 'Complet' : presentCount + ' / ' + totalExpected;
+
+      var formeUpper = (soc.forme || '').toUpperCase();
+      var fullName = (formeUpper ? formeUpper + ' ' : '') + soc.name;
+      return '<button class="societe-card" onclick="openSocieteDrawer(' + soc.id + ')" type="button">'
+        + '<div class="societe-card-head">'
+        +   '<div class="societe-card-name">' + escapeHtml(fullName) + '</div>'
+        +   '<span class="societe-card-status ' + statusCls + '">' + statusLabel + '</span>'
+        + '</div>'
+        + '<div class="societe-card-progress">'
+        +   '<div class="societe-card-progress-label">'
+        +     '<span>' + (presentCount === 0 ? 'Aucun document pour le moment' : presentCount + ' sur ' + totalExpected + ' documents') + '</span>'
+        +     '<span>' + pct + ' %</span>'
+        +   '</div>'
+        +   '<div class="societe-card-progress-bar"><div class="societe-card-progress-fill" style="width:' + pct + '%"></div></div>'
+        + '</div>'
+        + '<div class="societe-card-docs">' + tagsHtml + '</div>'
+        + '</button>';
+    }
+
+    // ----- Drawer : détail des documents d'une société -----
+    var _currentDrawerSoc = null;
+    window.openSocieteDrawer = function(socId) {
+      var soc = allSocietes.find(function(s){ return String(s.id) === String(socId); });
+      if (!soc) return;
+      _currentDrawerSoc = soc;
+      var socDocs = allDocuments.filter(function(d){ return d.sourceType === 'entreprise' && String(d.sourceId) === String(socId); });
+
+      document.getElementById('drawerTitle').textContent = soc.name;
+      document.getElementById('drawerSub').textContent = (soc.forme || soc.type || '') + (soc.capital ? ' · capital ' + soc.capital + ' €' : '');
+
+      var bySection = { societe: [], officiels: [], facturation: [], autres: [] };
+      var foundCats = {};
+      socDocs.forEach(function(d) {
+        var expected = EXPECTED_CATEGORIES.find(function(e){ return e.key === d.category; });
+        if (expected) { bySection[expected.section].push(d); foundCats[d.category] = true; }
+        else bySection.autres.push(d);
+      });
+      EXPECTED_CATEGORIES.forEach(function(e) {
+        if (!foundCats[e.key]) bySection[e.section].push({ _placeholder: true, name: e.label, category: e.key });
+      });
+
+      var body = '';
+      ['societe','officiels','facturation','autres'].forEach(function(sk) {
+        var items = bySection[sk];
+        if (items.length === 0) return;
+        body += '<div class="doc-drawer-section">'
+          + '<div class="doc-drawer-section-title">' + SECTION_TITLES[sk] + '</div>'
+          + '<div class="doc-drawer-list">';
+        items.forEach(function(d) { body += renderDrawerItem(d); });
+        body += '</div></div>';
+      });
+      document.getElementById('drawerBody').innerHTML = body;
+      // Met à jour le lien "Accéder à la formalité" vers le dossier de cette société
+      var cta = document.getElementById('drawerCTA');
+      if (cta) {
+        // Tente plusieurs sources d'id de formalité (selon la structure des données)
+        var fId = soc.formalite_id || soc.formaliteId || soc.id;
+        // Si l'utilisateur a un rôle avocat/admin, ouvre la vue avocat ; sinon /creation.html
+        var roles = (window._currentUser && window._currentUser.roles) || [];
+        var isAvocatOrAdmin = roles.indexOf('avocat') !== -1 || roles.indexOf('admin') !== -1;
+        cta.href = isAvocatOrAdmin ? ('/avocat.html#dossier-' + fId) : ('/creation.html?id=' + fId);
+      }
+      document.getElementById('docDrawer').classList.add('open');
+      document.getElementById('drawerBackdrop').classList.add('open');
+    };
+
+    window.closeDocDrawer = function() {
+      document.getElementById('docDrawer').classList.remove('open');
+      document.getElementById('drawerBackdrop').classList.remove('open');
+    };
+
+    function renderDrawerItem(d) {
+      if (d._placeholder) {
+        return '<div class="doc-drawer-item missing">'
+          + '<div class="doc-drawer-item-icon missing-ic">—</div>'
+          + '<div class="doc-drawer-item-body">'
+          +   '<div class="doc-drawer-item-name">' + escapeHtml(d.name) + '</div>'
+          +   '<div class="doc-drawer-item-sub">À venir</div>'
+          + '</div>'
+          + '<span class="doc-drawer-item-pending">en attente</span>'
+          + '</div>';
+      }
+      var ext = getFileExtension(d.filename || d.name);
+      var iconClass = ext === 'pdf' ? 'pdf' : ext === 'docx' ? 'docx' : (ext === 'png' || ext === 'jpg' || ext === 'jpeg') ? 'image' : 'pdf';
+      var iconLabel = (ext || 'doc').toUpperCase().slice(0,4);
+      var hrefView = d.filePath ? '/api/file?path=' + encodeURIComponent(d.filePath) : '#';
+
+      // Construit le nom: "FORME NOM_SOCIETE - NOM_DOC.ext"
+      var prettyName = (d.name || 'document');
+      if (_currentDrawerSoc) {
+        var forme = (_currentDrawerSoc.forme || '').toUpperCase();
+        var socName = (_currentDrawerSoc.name || '').toUpperCase();
+        var baseName = (d.name || 'document').replace(/\.[^.]+$/, ''); // sans extension
+        var extDot = (d.name || '').match(/\.[^.]+$/);
+        var extStr = extDot ? extDot[0] : (ext ? '.' + ext : '');
+        prettyName = (forme ? forme + ' ' : '') + socName + ' - ' + baseName + extStr;
+      }
+      var hrefDl = d.filePath
+        ? '/api/file?path=' + encodeURIComponent(d.filePath) + '&download=' + encodeURIComponent(prettyName)
+        : '#';
+
+      var iconEye = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      var iconDl  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      return '<div class="doc-drawer-item">'
+        + '<div class="doc-drawer-item-icon ' + iconClass + '">' + iconLabel + '</div>'
+        + '<div class="doc-drawer-item-body">'
+        +   '<div class="doc-drawer-item-name">' + escapeHtml(d.name) + '</div>'
+        +   '<div class="doc-drawer-item-sub">' + (d.date ? formatRelativeDate(d.date) : 'Disponible') + '</div>'
+        + '</div>'
+        + '<div class="doc-drawer-item-actions">'
+        +   '<a class="doc-action-btn" href="' + hrefView + '" target="_blank" rel="noopener" title="Visualiser">' + iconEye + '</a>'
+        +   '<a class="doc-action-btn primary" href="' + hrefDl + '" title="Télécharger ' + escapeHtml(prettyName) + '">' + iconDl + '</a>'
+        + '</div>'
+        + '</div>';
+    }
+
+    // Escape pour fermer le drawer
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeDocDrawer();
+    });
+
+    function renderSocietySections(soc, socDocs) {
+      // Regroupe les docs par section
+      var bySection = { societe: [], officiels: [], facturation: [], autres: [] };
+      var foundCats = {};
+      socDocs.forEach(function(d) {
+        var expected = EXPECTED_CATEGORIES.find(function(e){ return e.key === d.category; });
+        if (expected) {
+          bySection[expected.section].push(d);
+          foundCats[d.category] = true;
+        } else {
+          bySection.autres.push(d);
+        }
+      });
+
+      // Ajoute les placeholders pour les cat\u00e9gories attendues mais absentes
+      EXPECTED_CATEGORIES.forEach(function(e) {
+        if (!foundCats[e.key]) {
+          bySection[e.section].push({ _placeholder: true, name: e.label, category: e.key });
+        }
+      });
+
+      var html = '';
+      ['societe', 'officiels', 'facturation', 'autres'].forEach(function(sectionKey) {
+        var items = bySection[sectionKey];
+        if (items.length === 0) return;
+        html += '<div class="docs-section">';
+        html += '<div class="docs-section-title">' + SECTION_TITLES[sectionKey] + '</div>';
+        items.forEach(function(d) { html += renderDocCard(d); });
+        html += '</div>';
+      });
+      return html;
+    }
+
+    function renderDocCard(d) {
+      if (d._placeholder) {
+        return '<div class="doc-card missing">'
+          + '<div class="doc-card-icon missing-icon">\u2014</div>'
+          + '<div class="doc-card-info">'
+          +   '<div class="doc-card-name">' + escapeHtml(d.name) + '</div>'
+          + '</div>'
+          + '<span class="doc-card-pending">en attente</span>'
+          + '</div>';
+      }
+      var ext = getFileExtension(d.filename || d.name);
+      var iconClass = ext === 'pdf' ? 'pdf' : ext === 'docx' ? 'docx' : (ext === 'png' || ext === 'jpg' || ext === 'jpeg') ? 'image' : 'pdf';
+      var iconLabel = (ext || 'doc').toUpperCase().slice(0, 4);
+      var safePath = escapeHtml(d.filePath || '');
+      return '<a class="doc-card" href="' + (d.filePath ? '/api/file?path=' + encodeURIComponent(d.filePath) : '#') + '" target="_blank">'
+        + '<div class="doc-card-icon ' + iconClass + '">' + iconLabel + '</div>'
+        + '<div class="doc-card-info">'
+        +   '<div class="doc-card-name">' + escapeHtml(d.name) + '</div>'
+        +   '<div class="doc-card-meta">' + formatRelativeDate(d.date) + '</div>'
+        + '</div>'
+        + '<div class="doc-card-actions" onclick="event.stopPropagation();">'
+        +   '<button type="button" title="T\u00e9l\u00e9charger" onclick="event.preventDefault();event.stopPropagation();downloadDoc(\'' + safePath + '\')">'
+        +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+        +   '</button>'
+        + '</div>'
+        + '</a>';
+    }
+
+    // ----- Actions -----
+    function downloadDoc(path) {
+      if (!path) return;
+      var url = path.startsWith('http') ? path : '/api/file?path=' + encodeURIComponent(path);
+      window.open(url, '_blank');
+    }
+
+    function viewDoc(path) {
+      if (!path) return;
+      var url = path.startsWith('http') ? path : '/api/file?path=' + encodeURIComponent(path);
+      window.open(url, '_blank');
+    }
+
+    // ----- Upload Modal -----
+    function openUploadModal() {
+      document.getElementById('uploadModal').classList.add('open');
+      resetUploadForm();
+    }
+
+    function closeUploadModal() {
+      document.getElementById('uploadModal').classList.remove('open');
+      resetUploadForm();
+    }
+
+    function resetUploadForm() {
+      selectedFile = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('uploadName').value = '';
+      document.getElementById('uploadCategory').value = 'entreprise';
+      document.getElementById('dropzoneFilename').style.display = 'none';
+      document.getElementById('dropzoneFilename').textContent = '';
+      document.getElementById('btnUpload').disabled = true;
+      var dz = document.getElementById('dropzone');
+      dz.classList.remove('dragover');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('uploadModal').addEventListener('click', function(e) {
+      if (e.target === this) closeUploadModal();
+    });
+
+    // File input change
+    document.getElementById('fileInput').addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        handleFileSelected(this.files[0]);
+      }
+    });
+
+    // Drag & drop
+    var dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      this.classList.remove('dragover');
+    });
+    dropzone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelected(e.dataTransfer.files[0]);
+      }
+    });
+
+    function handleFileSelected(file) {
+      var allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
+      var extAllowed = ['pdf', 'docx', 'jpg', 'jpeg', 'png'];
+      var ext = file.name.split('.').pop().toLowerCase();
+
+      if (extAllowed.indexOf(ext) === -1) {
+        alert('Format non support\u00e9. Veuillez choisir un fichier PDF, DOCX, JPG ou PNG.');
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Le fichier est trop volumineux (max 10 Mo).');
+        return;
+      }
+
+      selectedFile = file;
+      document.getElementById('dropzoneFilename').textContent = file.name;
+      document.getElementById('dropzoneFilename').style.display = 'block';
+      document.getElementById('btnUpload').disabled = false;
+
+      // Auto-fill name if empty
+      if (!document.getElementById('uploadName').value.trim()) {
+        var nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        document.getElementById('uploadName').value = nameWithoutExt;
+      }
+    }
+
+    function uploadDocument() {
+      if (!selectedFile) return;
+
+      var btn = document.getElementById('btnUpload');
+      btn.disabled = true;
+      btn.innerHTML = 'Envoi en cours...';
+
+      var fd = new FormData();
+      fd.append('file', selectedFile);
+      fd.append('doc_name', document.getElementById('uploadName').value.trim() || selectedFile.name);
+      fd.append('category', document.getElementById('uploadCategory').value);
+
+      fetch('/api/upload', {
+        method: 'POST',
+        body: fd
+      }).then(function(r) {
+        return r.json();
+      }).then(function(data) {
+        closeUploadModal();
+        // Add the uploaded doc to the list
+        allDocuments.unshift({
+          id: data.id || Date.now(),
+          name: document.getElementById('uploadName').value.trim() || selectedFile.name,
+          source: '',
+          category: document.getElementById('uploadCategory').value,
+          status: 'brouillon',
+          date: new Date().toISOString(),
+          filePath: data.file_path || data.path || data.url || null,
+          filename: selectedFile.name
+        });
+        document.getElementById('docCount').textContent = allDocuments.length;
+        filterDocuments();
+      }).catch(function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> T\u00e9l\u00e9verser';
+        alert('Erreur lors du t\u00e9l\u00e9versement. Veuillez r\u00e9essayer.');
+      });
+    }
+
+    // ----- Keyboard shortcut: Escape to close modal -----
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeUploadModal();
+      }
+    });
+  </script>
+
+  <!-- BEGIN sidebar refresh JS (auto-generated) -->
+  <script>
+    (function() {
+      function openNewActionModal() {
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+      }
+      function closeNewActionModal(e) {
+        if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+      }
+      window.openNewActionModal = openNewActionModal;
+      window.closeNewActionModal = closeNewActionModal;
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNewActionModal(); });
+
+      // Société active + badges
+      fetch('/api/formalites').then(function(r){ return r.json(); }).then(function(data){
+        var list = (data && data.formalites) || data || [];
+        if (!Array.isArray(list)) return;
+        var societes = list.filter(function(f){ return f && f.denomination && (f.type === 'creation' || f.type === 'modification' || !f.type); });
+        var ctx = document.getElementById('sidebar-context');
+        var nameEl = document.getElementById('ctx-name');
+        if (societes.length === 0) {
+          if (ctx) ctx.style.display = 'none';
+        } else if (societes.length === 1) {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.add('single');
+        } else {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.remove('single');
+        }
+        var enCours = list.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var badge = document.getElementById('badge-formalites');
+        if (badge && enCours > 0) { badge.textContent = String(enCours) + ' en cours'; badge.style.display = 'inline-block'; }
+      }).catch(function(){});
+      // Affiche immédiatement les valeurs cachées pour éviter le jitter
+      (function(){
+        try {
+          var cachedForm = parseInt(sessionStorage.getItem('badge_formalites') || '0');
+          var cachedMsg = parseInt(sessionStorage.getItem('badge_messagerie') || '0');
+          if (cachedForm > 0) {
+            var bF = document.getElementById('badge-formalites');
+            if (bF) { bF.textContent = String(cachedForm) + ' en cours'; bF.style.display = 'inline-block'; }
+          }
+          if (cachedMsg > 0) {
+            var bM = document.getElementById('badge-messagerie');
+            if (bM) { bM.textContent = String(cachedMsg) + ' non lu' + (cachedMsg > 1 ? 's' : ''); bM.style.display = 'inline-block'; }
+          }
+        } catch(_) {}
+      })();
+      Promise.all([
+        fetch('/api/formalites').then(function(r){ return r.json(); }).catch(function(){ return { formalites: [] }; }),
+        fetch('/api/support/unread').then(function(r){ return r.json(); }).catch(function(){ return { unread: 0 }; })
+      ]).then(function(results){
+        var fs = (results[0] && results[0].formalites) || [];
+        var enCours = fs.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var bForm = document.getElementById('badge-formalites');
+        if (bForm) {
+          if (enCours > 0) { bForm.textContent = String(enCours) + ' en cours'; bForm.style.display = 'inline-block'; }
+          else { bForm.style.display = 'none'; }
+        }
+        var unreadForm = fs.reduce(function(a, f){ return a + (f.unread_messages || 0); }, 0);
+        var unreadSupport = (results[1] && results[1].unread) || 0;
+        var total = unreadForm + unreadSupport;
+        var badge = document.getElementById('badge-messagerie');
+        if (badge) {
+          if (total > 0) { badge.textContent = String(total) + ' non lu' + (total > 1 ? 's' : ''); badge.style.display = 'inline-block'; }
+          else { badge.style.display = 'none'; }
+        }
+        try {
+          sessionStorage.setItem('badge_formalites', String(enCours));
+          sessionStorage.setItem('badge_messagerie', String(total));
+        } catch(_) {}
+      });
+    })();
+  </script>
+  <!-- END sidebar refresh JS -->
+</body>
+</html>

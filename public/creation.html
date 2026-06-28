@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cr&eacute;er une soci&eacute;t&eacute; - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/creation.css">
+  <link rel="stylesheet" href="/css/chat.css">
+
+  <!-- BEGIN sidebar refresh (auto-generated) -->
+  <style>
+    /* Logo */
+    .sidebar-logo a { display: inline-flex !important; align-items: baseline !important; gap: 3px !important; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif !important;
+      font-size: 30px !important; font-weight: 700 !important;
+      letter-spacing: 0 !important; line-height: 1 !important;
+      color: #111 !important;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    /* Société active */
+    .sidebar-context {
+      margin: 0 12px 12px; padding: 10px 12px;
+      background: #fafafa; border: 1px solid #eee; border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .sidebar-context:hover { background: #f3f3f4; border-color: #e2e2e4; }
+    .sidebar-context .ctx-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
+    .sidebar-context .ctx-body { flex: 1; min-width: 0; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-context.single { cursor: default; }
+    .sidebar-context.single:hover { background: #fafafa; border-color: #eee; }
+    .sidebar-context.single .ctx-chevron { display: none; }
+    /* CTA primaire "Nouvelle formalité" */
+    .sidebar-cta {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active { transform: scale(0.99); }
+    .sidebar-cta svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    /* Badges dans la nav */
+    .nav-badge {
+      margin-left: auto;
+      background: #f3f4f6; color: #555;
+      font-size: 11.5px; font-weight: 500;
+      padding: 2px 9px; border-radius: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .nav-badge.muted { background: #f0f0f2; color: #666; }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+
+
+    /* Modal Nouvelle formalité */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    @media (max-width: 600px) { .nd-grid { grid-template-columns: 1fr; } }
+  </style>
+  <!-- END sidebar refresh -->
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <!-- PDF.js (Mozilla) pour un viewer custom sans panneau latéral — servi localement -->
+  <script src="/vendor/pdfjs/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+    }
+  </script>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+          <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-context" id="sidebar-context" style="display:none;">
+      <div class="ctx-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0M9 17h0M15 17h0"/></svg>
+      </div>
+      <div class="ctx-body">
+        <div class="ctx-label">Soci&eacute;t&eacute; active</div>
+        <div class="ctx-name" id="ctx-name"></div>
+      </div>
+      <svg class="ctx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <button class="sidebar-cta" onclick="openNewActionModal()">
+      Cr&eacute;er une formalit&eacute;
+    </button>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+
+      <a href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){sessionStorage.removeItem('user');window.location.href='/connexion.html';})" title="D&eacute;connexion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <a href="/dashboard.html">Dashboard</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>Cr&eacute;er une soci&eacute;t&eacute;</span>
+    </div>
+
+    <div class="content">
+
+      <!-- INTRO -->
+      <div class="intro" id="intro">
+        <div class="intro-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+        </div>
+        <h1>Cr&eacute;ation de votre soci&eacute;t&eacute;</h1>
+        <p class="intro-lead">Vous &ecirc;tes sur le point de d&eacute;marrer la cr&eacute;ation de votre soci&eacute;t&eacute;. Ce parcours a &eacute;t&eacute; con&ccedil;u pour vous guider &eacute;tape par &eacute;tape, simplement et sans erreur.</p>
+        <p class="intro-sub">En quelques minutes, vous allez renseigner les informations n&eacute;cessaires &agrave; la g&eacute;n&eacute;ration de l'ensemble des documents juridiques requis pour votre soci&eacute;t&eacute;.</p>
+
+        <div class="intro-checks">
+          <div class="intro-check">
+            <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span>Vos statuts et actes juridiques seront g&eacute;n&eacute;r&eacute;s automatiquement</span>
+          </div>
+          <div class="intro-check">
+            <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span>Votre annonce l&eacute;gale sera pr&eacute;par&eacute;e</span>
+          </div>
+          <div class="intro-check">
+            <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span>Votre dossier sera v&eacute;rifi&eacute; par un avocat avant toute d&eacute;marche aupr&egrave;s du greffe</span>
+          </div>
+        </div>
+
+        <p class="intro-note">Vous pourrez ensuite consulter, t&eacute;l&eacute;charger vos documents et suivre l'avancement de votre dossier directement depuis votre espace Formalist.</p>
+
+        <button class="btn-start" onclick="startForm()">Commencer la cr&eacute;ation</button>
+      </div>
+
+      <!-- FORM -->
+      <div class="form-section" id="form-section">
+        <!-- Banner mode révision (avocat éditant un dossier client) -->
+        <div id="review-banner" style="display:none;background:#f5f3ff;border:1px solid #e9d5ff;border-radius:14px;padding:16px 20px;margin-bottom:18px;align-items:center;gap:14px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:'Cal Sans',sans-serif;font-size:15.5px;font-weight:600;color:#5b21b6;">Mode révision avocat</div>
+            <div style="font-size:13px;color:#6d28d9;margin-top:2px;">Vous modifiez le dossier de <strong id="review-banner-client">votre client</strong>. À la fin, cliquez sur <strong>Mettre à jour</strong> pour régénérer les documents.</div>
+          </div>
+        </div>
+        <div class="stepper" id="stepper">
+          <div class="step active" data-step="1">
+            <div class="step-circle">1</div>
+            <div class="step-label">Soci&eacute;t&eacute;</div>
+          </div>
+          <div class="step-segment" data-seg="1"></div>
+          <div class="step" data-step="2">
+            <div class="step-circle">2</div>
+            <div class="step-label" id="stepper-label-associes">Associ&eacute;s</div>
+          </div>
+          <div class="step-segment" data-seg="2"></div>
+          <div class="step" data-step="3">
+            <div class="step-circle">3</div>
+            <div class="step-label">Dirigeants</div>
+          </div>
+          <div class="step-segment" data-seg="3"></div>
+          <div class="step" data-step="4">
+            <div class="step-circle">4</div>
+            <div class="step-label">Capital</div>
+          </div>
+          <div class="step-segment" data-seg="4"></div>
+          <div class="step" data-step="5">
+            <div class="step-circle">5</div>
+            <div class="step-label">Documents</div>
+          </div>
+          <div class="step-segment" data-seg="5"></div>
+          <div class="step" data-step="6">
+            <div class="step-circle">6</div>
+            <div class="step-label">Offres</div>
+          </div>
+          <div class="step-segment" data-seg="6"></div>
+          <div class="step" data-step="7">
+            <div class="step-circle">7</div>
+            <div class="step-label">Mes documents</div>
+          </div>
+        </div>
+
+        <!-- STEP 1 : Société -->
+        <div class="form-card step-content active" data-step="1">
+          <h2>Informations de la soci&eacute;t&eacute;</h2>
+          <p class="form-desc">Renseignez les informations g&eacute;n&eacute;rales de votre future soci&eacute;t&eacute;.</p>
+          <div class="form-grid">
+            <div class="field">
+              <label>Forme juridique <span class="required">*</span>
+                <span class="tooltip-wrap">
+                  <span class="tooltip-icon">?</span>
+                  <span class="tooltip-bubble"><strong>SAS</strong> : souple, id&eacute;ale pour les startups et lev&eacute;es de fonds.<br><strong>SARL</strong> : encadr&eacute;e, adapt&eacute;e aux projets familiaux.<br><strong>SCI</strong> : gestion immobili&egrave;re.<br><strong>EURL/SASU</strong> : associ&eacute; unique.</span>
+                </span>
+              </label>
+              <select id="forme-juridique" onchange="updateAssocieLabel(); updateDirigeantLabels(); refreshDirigeantSelects()">
+                <option value="" disabled selected>Choisir...</option>
+                <option>SAS</option>
+                <option>SARL</option>
+                <option>SCI</option>
+                <option>EURL</option>
+                <option>SASU</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Nom de la soci&eacute;t&eacute; <span class="required">*</span></label>
+              <input type="text" placeholder="Nom de la soci&eacute;t&eacute;">
+            </div>
+            <div class="field full">
+              <label>Adresse de la soci&eacute;t&eacute;</label>
+              <input type="text" placeholder="Adresse compl&egrave;te" class="addr-auto">
+            </div>
+            <div class="field">
+              <label>Ville <span class="required">*</span></label>
+              <input type="text" placeholder="Ville">
+            </div>
+            <div class="field">
+              <label>Code postal <span class="required">*</span></label>
+              <input type="text" placeholder="Code postal">
+            </div>
+            <div class="field">
+              <label>Mode de domiciliation</label>
+              <select id="mode-domiciliation">
+                <option value="" disabled selected>Choisir...</option>
+                <option>Bail commercial ou professionnel</option>
+                <option>Soci&eacute;t&eacute; de domiciliation</option>
+                <option>Domicile personnel du dirigeant</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Capital social <span class="required">*</span>
+                <span class="tooltip-wrap">
+                  <span class="tooltip-icon">?</span>
+                  <span class="tooltip-bubble">Le capital minimum est de <strong>1&euro;</strong>. Il repr&eacute;sente les apports des associ&eacute;s et d&eacute;termine la r&eacute;partition des parts. Un capital plus &eacute;lev&eacute; renforce la cr&eacute;dibilit&eacute; aupr&egrave;s des banques et partenaires.</span>
+                </span>
+              </label>
+              <div class="suffix">
+                <input type="number" id="capital-social" value="1" min="1">
+                <span>&euro;</span>
+              </div>
+            </div>
+            <div class="field" id="banque-field">
+              <label>Banque</label>
+              <select id="banque-select" onchange="toggleBanqueAutre()">
+                <option value="" disabled selected>Choisir...</option>
+                <option>Qonto</option>
+                <option>Shine</option>
+                <option>Revolut Business</option>
+                <option>Autre</option>
+              </select>
+            </div>
+            <div class="field" id="banque-autre-nom-wrap" style="display:none;">
+              <label>Nom de la banque</label>
+              <input type="text" id="banque-autre-nom" placeholder="Ex : Cr&eacute;dit Agricole">
+            </div>
+            <div class="field" id="banque-autre-adresse-wrap" style="display:none;">
+              <label>Adresse de la banque</label>
+              <input type="text" id="banque-autre-adresse" class="addr-auto" placeholder="Rechercher l'adresse...">
+            </div>
+            <div class="field" id="banque-autre-villecp-wrap" style="display:none;">
+              <label>Ville / CP</label>
+              <div style="display:flex;gap:10px;">
+                <input type="text" id="banque-autre-ville" placeholder="Ville" readonly style="flex:2;">
+                <input type="text" id="banque-autre-cp" placeholder="CP" readonly style="flex:1;">
+              </div>
+            </div>
+            <div class="field">
+              <label>Date de d&eacute;but d'activit&eacute;</label>
+              <input type="date" id="date-debut-activite" value="2026-02-24">
+            </div>
+            <div class="field">
+              <label>Date de cl&ocirc;ture de la premi&egrave;re ann&eacute;e
+                <span class="tooltip-wrap">
+                  <span class="tooltip-icon">?</span>
+                  <span class="tooltip-bubble">Le premier exercice peut durer <strong>moins ou plus de 12 mois</strong> (jusqu'&agrave; 24 mois max). Cela vous permet d'ajuster votre premi&egrave;re cl&ocirc;ture comptable selon vos besoins fiscaux.</span>
+                </span>
+              </label>
+              <input type="date" value="2026-12-31">
+            </div>
+            <div class="field">
+              <label>Dur&eacute;e de vie (ann&eacute;es)
+                <span class="tooltip-wrap">
+                  <span class="tooltip-icon">?</span>
+                  <span class="tooltip-bubble">La dur&eacute;e maximale est de <strong>99 ans</strong>. Elle est renouvelable par d&eacute;cision des associ&eacute;s avant son expiration.</span>
+                </span>
+              </label>
+              <input type="number" value="99">
+            </div>
+            <div class="field">
+              <label>Option fiscale
+                <span class="tooltip-wrap">
+                  <span class="tooltip-icon">?</span>
+                  <span class="tooltip-bubble"><strong>IS</strong> (Imp&ocirc;t sur les Soci&eacute;t&eacute;s) : la soci&eacute;t&eacute; est impos&eacute;e sur ses b&eacute;n&eacute;fices. Le plus courant.<br><strong>IR</strong> (Imp&ocirc;t sur le Revenu) : les b&eacute;n&eacute;fices sont impos&eacute;s directement chez les associ&eacute;s. Option temporaire (5 ans max).</span>
+                </span>
+              </label>
+              <select>
+                <option value="" disabled selected>Choisir...</option>
+                <option>IS</option>
+                <option>IR</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>R&eacute;gime TVA
+                <span class="tooltip-wrap">
+                  <span class="tooltip-icon">?</span>
+                  <span class="tooltip-bubble"><strong>Franchise en base</strong> : pas de TVA factur&eacute;e ni d&eacute;duite. Id&eacute;al si CA &lt; 36 800&euro; (services) ou 91 900&euro; (vente).<br><strong>R&eacute;el simplifi&eacute;</strong> : d&eacute;claration annuelle + 2 acomptes. Pour CA mod&eacute;r&eacute;.<br><strong>R&eacute;el normal</strong> : d&eacute;claration mensuelle. Pour CA &eacute;lev&eacute; ou TVA d&eacute;ductible importante.<br><strong>Je ne sais pas</strong> : votre avocat vous conseillera.</span>
+                </span>
+              </label>
+              <select>
+                <option value="" disabled selected>Choisir...</option>
+                <option>Je ne sais pas</option>
+                <option>Franchise en base de TVA</option>
+                <option>R&eacute;gime r&eacute;el simplifi&eacute;</option>
+                <option>R&eacute;gime r&eacute;el normal</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label>Objet social / Activit&eacute; de l'entreprise</label>
+              <div class="ai-activite-wrap">
+                <div class="ai-hint">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                  D&eacute;crivez votre activit&eacute; en quelques mots et l'IA r&eacute;digera l'objet social complet
+                </div>
+                <div class="ai-prompt-row">
+                  <input type="text" id="ai-activite-input" placeholder="Ex : vente de v&ecirc;tements en ligne, consulting IT, restaurant japonais...">
+                  <button class="ai-generate-btn" id="ai-generate-btn" onclick="generateObjetSocial()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    G&eacute;n&eacute;rer
+                  </button>
+                </div>
+                <textarea id="activite-textarea" placeholder="L'objet social appara&icirc;tra ici apr&egrave;s g&eacute;n&eacute;ration, ou r&eacute;digez-le vous-m&ecirc;me..." style="min-height:260px;"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <div></div>
+            <button class="btn-next" onclick="nextStep()">
+              Continuer
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2 : Associés -->
+        <div class="form-card step-content" data-step="2">
+          <h2 id="step-title-associes">Associ&eacute;s</h2>
+          <p class="form-desc" id="step-desc-associes">Ajoutez les associ&eacute;s de votre soci&eacute;t&eacute;. Minimum 2 pour une SAS, SARL ou SCI.</p>
+
+          <div class="associe-tabs" id="associe-tabs">
+            <button class="associe-tab active" data-tab="1" onclick="switchTab(1)">
+              <span>Actionnaire 1</span>
+              <span class="tab-dot"></span>
+            </button>
+            <button class="btn-add-tab" id="btn-add-associe" onclick="addAssocie()">
+              <span>Ajouter un actionnaire</span>
+            </button>
+          </div>
+
+          <div id="associe-panels">
+            <div class="associe-panel active" data-panel="1">
+              <div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">
+                <div class="field">
+                  <label>Civilit&eacute;</label>
+                  <select style="width: 120px;"><option value="" disabled selected>Choisir...</option><option>Monsieur</option><option>Madame</option></select>
+                </div>
+                <div class="field">
+                  <label>Pr&eacute;nom <span class="required">*</span></label>
+                  <input type="text" placeholder="Pr&eacute;nom" data-field="prenom" oninput="updateTabName(this)">
+                </div>
+                <div class="field">
+                  <label>Nom <span class="required">*</span></label>
+                  <input type="text" placeholder="Nom" data-field="nom" oninput="updateTabName(this)">
+                </div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="field">
+                  <label>Type d'associ&eacute;</label>
+                  <select><option value="" disabled selected>Choisir...</option><option>Personne physique</option><option>Personne morale</option></select>
+                </div>
+                <div class="field">
+                  <label>Email <span class="required">*</span></label>
+                  <input type="email" placeholder="email@exemple.com" data-field="email">
+                </div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="field full">
+                  <label>Adresse</label>
+                  <input type="text" placeholder="Adresse de l'associ&eacute;" class="addr-auto">
+                </div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="field">
+                  <label>Date de naissance <span class="required">*</span></label>
+                  <input type="date">
+                </div>
+                <div class="field">
+                  <label>Ville de naissance</label>
+                  <input type="text" placeholder="Ville de naissance" class="city-birth-auto">
+                </div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="field">
+                  <label>Code postal de naissance</label>
+                  <input type="text" placeholder="Code postal" class="cp-birth">
+                </div>
+                <div class="field">
+                  <label>Pays de naissance</label>
+                  <input type="text" value="France" class="pays-birth">
+                </div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="field">
+                  <label>Nom et pr&eacute;nom du p&egrave;re</label>
+                  <input type="text" placeholder="Nom et pr&eacute;nom du p&egrave;re">
+                </div>
+                <div class="field">
+                  <label>Nom et pr&eacute;nom de la m&egrave;re</label>
+                  <input type="text" placeholder="Nom et pr&eacute;nom de la m&egrave;re">
+                </div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="field">
+                  <label>Nationalit&eacute;</label>
+                  <input type="text" value="Fran&ccedil;aise">
+                </div>
+                <div class="field">
+                  <label>Situation matrimoniale</label>
+                  <select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C&eacute;libataire</option><option>Mari&eacute;(e)</option><option>Pacs&eacute;(e)</option><option>Divorc&eacute;(e)</option><option>Veuf(ve)</option></select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-back" onclick="prevStep()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Retour
+            </button>
+            <button class="btn-next" onclick="nextStep()">
+              Continuer
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3 : Dirigeants -->
+        <div class="form-card step-content" data-step="3">
+          <h2>Dirigeants</h2>
+          <p class="form-desc">D&eacute;signez le ou les dirigeants de la soci&eacute;t&eacute;.</p>
+
+          <!-- Onglets dirigeants -->
+          <div class="associe-tabs" id="dirigeant-tabs">
+            <button class="associe-tab active" data-tab="1" onclick="switchDirigeantTab(1)">
+              <span>Pr&eacute;sident 1</span>
+              <span class="tab-dot"></span>
+            </button>
+            <button class="btn-add-tab" id="btn-add-dirigeant" onclick="addDirigeant()">
+              <span>Ajouter un dirigeant</span>
+            </button>
+          </div>
+
+          <div id="dirigeant-panels">
+            <div class="associe-panel active" data-panel="1">
+              <div class="dirigeant-section-header">
+                <div class="dirigeant-badge" id="badge-dirigeant-1">Pr&eacute;sident</div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="field">
+                  <label>Dirigeant <span class="required">*</span></label>
+                  <select class="dirigeant-panel-select" id="select-dirigeant-1" onchange="onDirigeantChange(this, 'dirigeant-form-1')">
+                    <option value="">S&eacute;lectionner...</option>
+                    <option value="autre">Autre personne</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="dirigeant-form-1" class="dirigeant-extra" style="display:none;">
+                <div class="dirigeant-type-switch">
+                  <button class="type-btn active" onclick="switchDirigeantType(this, 'physique', 'dirigeant-form-1')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Personne physique
+                  </button>
+                  <button class="type-btn" onclick="switchDirigeantType(this, 'morale', 'dirigeant-form-1')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+                    Personne morale
+                  </button>
+                </div>
+
+                <div class="dirigeant-type-panel active" data-type="physique">
+                  <div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">
+                    <div class="field"><label>Civilit&eacute;</label><select style="width:120px;"><option value="" disabled selected>Choisir...</option><option>Monsieur</option><option>Madame</option></select></div>
+                    <div class="field"><label>Pr&eacute;nom <span class="required">*</span></label><input type="text" placeholder="Pr&eacute;nom" data-field="dir-prenom" oninput="updateDirigeantTabName(this)"></div>
+                    <div class="field"><label>Nom <span class="required">*</span></label><input type="text" placeholder="Nom" data-field="dir-nom" oninput="updateDirigeantTabName(this)"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field full"><label>Adresse</label><input type="text" placeholder="Adresse du dirigeant" class="addr-auto"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Date de naissance <span class="required">*</span></label><input type="date"></div>
+                    <div class="field"><label>Ville de naissance</label><input type="text" placeholder="Ville de naissance" class="city-birth-auto"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Code postal de naissance</label><input type="text" placeholder="Code postal" class="cp-birth"></div>
+                    <div class="field"><label>Pays de naissance</label><input type="text" value="France" class="pays-birth"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Nom et pr&eacute;nom du p&egrave;re</label><input type="text" placeholder="Nom et pr&eacute;nom du p&egrave;re"></div>
+                    <div class="field"><label>Nom et pr&eacute;nom de la m&egrave;re</label><input type="text" placeholder="Nom et pr&eacute;nom de la m&egrave;re"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Nationalit&eacute;</label><input type="text" value="Fran&ccedil;aise"></div>
+                    <div class="field"><label>Situation matrimoniale</label><select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C&eacute;libataire</option><option>Mari&eacute;(e)</option><option>Pacs&eacute;(e)</option><option>Divorc&eacute;(e)</option><option>Veuf(ve)</option></select></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field full"><label>Email <span style="font-weight:400;color:#999;">(pour signature)</span></label><input type="email" placeholder="Email du dirigeant" data-field="dir-email"></div>
+                  </div>
+                </div>
+
+                <div class="dirigeant-type-panel" data-type="morale">
+                  <div class="form-subsection">Informations de la soci&eacute;t&eacute;</div>
+                  <div class="form-grid">
+                    <div class="field"><label>Nom de la soci&eacute;t&eacute; <span class="required">*</span></label><input type="text" placeholder="Nom de la soci&eacute;t&eacute;"></div>
+                    <div class="field"><label>Adresse de la soci&eacute;t&eacute;</label><input type="text" placeholder="Adresse" class="addr-auto"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Capital social</label><input type="text" placeholder="Capital social"></div>
+                    <div class="field"><label>Num&eacute;ro RCS <span class="required">*</span></label><input type="text" placeholder="Num&eacute;ro RCS"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Ville d'immatriculation <span class="required">*</span></label><input type="text" placeholder="Ville d'immatriculation"></div>
+                    <div class="field"><label>Type d'entreprise</label><input type="text" placeholder="Type d'entreprise (SAS, SARL...)"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Num&eacute;ro SIREN <span class="required">*</span></label><input type="text" placeholder="Num&eacute;ro SIREN"></div>
+                    <div class="field"></div>
+                  </div>
+
+                  <div class="form-subsection" style="margin-top:24px;">Repr&eacute;sentant l&eacute;gal (g&eacute;rant/pr&eacute;sident)</div>
+                  <div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">
+                    <div class="field"><label>Civilit&eacute;</label><select style="width:120px;"><option value="" disabled selected>Choisir...</option><option>Monsieur</option><option>Madame</option></select></div>
+                    <div class="field"><label>Pr&eacute;nom <span class="required">*</span></label><input type="text" placeholder="Pr&eacute;nom"></div>
+                    <div class="field"><label>Nom <span class="required">*</span></label><input type="text" placeholder="Nom"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field full"><label>Adresse</label><input type="text" placeholder="Adresse du repr&eacute;sentant" class="addr-auto"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Date de naissance <span class="required">*</span></label><input type="date"></div>
+                    <div class="field"><label>Ville de naissance</label><input type="text" placeholder="Ville de naissance" class="city-birth-auto"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Code postal de naissance</label><input type="text" placeholder="Code postal" class="cp-birth"></div>
+                    <div class="field"><label>Pays de naissance</label><input type="text" value="France" class="pays-birth"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Nom et pr&eacute;nom du p&egrave;re</label><input type="text" placeholder="Nom et pr&eacute;nom du p&egrave;re"></div>
+                    <div class="field"><label>Nom et pr&eacute;nom de la m&egrave;re</label><input type="text" placeholder="Nom et pr&eacute;nom de la m&egrave;re"></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:16px;">
+                    <div class="field"><label>Nationalit&eacute;</label><input type="text" value="Fran&ccedil;aise"></div>
+                    <div class="field"><label>Situation matrimoniale</label><select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C&eacute;libataire</option><option>Mari&eacute;(e)</option><option>Pacs&eacute;(e)</option><option>Divorc&eacute;(e)</option><option>Veuf(ve)</option></select></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-grid" style="margin-top: 20px;">
+                <div class="field">
+                  <label>R&eacute;mun&eacute;ration</label>
+                  <select>
+                    <option value="" disabled selected>Choisir...</option>
+                    <option>D&eacute;termin&eacute;e ult&eacute;rieurement</option>
+                    <option>Fixe</option>
+                    <option>Variable</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>R&eacute;gime social</label>
+                  <select>
+                    <option value="" disabled selected>Choisir...</option>
+                    <option>Assimil&eacute; salari&eacute;</option>
+                    <option>Travailleur non salari&eacute;</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-back" onclick="prevStep()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Retour
+            </button>
+            <button class="btn-next" onclick="nextStep()">
+              Continuer
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 4 : Capital -->
+        <div class="form-card step-content" data-step="4">
+          <h2>R&eacute;partition du capital</h2>
+          <p class="form-desc" id="capital-step-desc">R&eacute;partissez le capital social entre les associ&eacute;s. 100% du capital doit &ecirc;tre distribu&eacute;.</p>
+
+          <!-- Progress bar -->
+          <div class="capital-progress-bar">
+            <div class="capital-progress-header">
+              <span class="capital-progress-label" id="capital-progress-label">0 &euro; distribu&eacute;s sur 1 &euro;</span>
+              <span class="capital-progress-pct" id="capital-progress-pct">0%</span>
+            </div>
+            <div class="capital-progress-track">
+              <div class="capital-progress-fill warn" id="capital-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div class="capital-progress-sub">
+              <span id="capital-parts-distributed">0 parts distribu&eacute;es</span>
+              <span id="capital-parts-total">sur 100 parts</span>
+            </div>
+          </div>
+
+          <!-- Actions row -->
+          <div class="capital-actions-row">
+            <button class="btn-equal" onclick="distributeEqually()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+              R&eacute;partir &eacute;galement
+            </button>
+          </div>
+
+          <!-- Donut Chart -->
+          <div class="capital-chart-section" id="capital-chart-section">
+            <div class="donut-wrap">
+              <div class="donut-chart" id="donut-chart"></div>
+              <div class="donut-center">
+                <div class="donut-center-pct" id="donut-center-pct">0%</div>
+                <div class="donut-center-label">distribu&eacute;</div>
+              </div>
+            </div>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+
+          <!-- Associe cards -->
+          <div class="capital-cards-container" id="capital-cards"></div>
+
+          <!-- Summary -->
+          <div class="form-grid" style="margin-bottom: 20px;">
+            <div class="field">
+              <label id="capital-total-parts-label">Nombre total de parts <span class="required">*</span></label>
+              <input type="number" id="capital-total-parts" value="100" min="1" oninput="updateCapitalDistribution()">
+            </div>
+          </div>
+
+          <div class="capital-summary" id="capital-summary">
+            <div class="capital-summary-item">
+              <span class="capital-summary-label">Capital total</span>
+              <span class="capital-summary-value" id="summary-capital">1 &euro;</span>
+            </div>
+            <div class="capital-summary-item">
+              <span class="capital-summary-label" id="summary-parts-label">Nombre de parts</span>
+              <span class="capital-summary-value" id="summary-parts">100</span>
+            </div>
+            <div class="capital-summary-item">
+              <span class="capital-summary-label">Valeur nominale</span>
+              <span class="capital-summary-value" id="summary-nominal">0,01 &euro;</span>
+            </div>
+            <div class="capital-summary-item">
+              <span class="capital-summary-label" id="summary-associes-label">Associ&eacute;s</span>
+              <span class="capital-summary-value" id="summary-associes">1</span>
+            </div>
+            <div class="capital-summary-item">
+              <span class="capital-summary-label">Total vers&eacute; &agrave; la cr&eacute;ation</span>
+              <span class="capital-summary-value" id="summary-total-verse">0 &euro;</span>
+            </div>
+            <div class="capital-summary-item">
+              <span class="capital-summary-label">Reste &agrave; lib&eacute;rer</span>
+              <span class="capital-summary-value" id="summary-reste-liberer">0 &euro;</span>
+            </div>
+          </div>
+
+          <div class="capital-error" id="capital-error">La r&eacute;partition doit &ecirc;tre exactement &eacute;gale &agrave; 100% du capital.</div>
+
+          <div class="form-actions">
+            <button class="btn-back" onclick="prevStep()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Retour
+            </button>
+            <button class="btn-next" id="btn-next-step4" onclick="validateAndNextStep4()" disabled>
+              Continuer
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 5 : Documents -->
+        <div class="form-card step-content" data-step="5">
+          <h2>Pi&egrave;ces justificatives</h2>
+          <p class="form-desc">T&eacute;l&eacute;versez les documents n&eacute;cessaires &agrave; la constitution de votre dossier. Formats accept&eacute;s : PDF, JPG, PNG (max 10 Mo).</p>
+
+          <!-- Progress -->
+          <div class="doc-progress" id="doc-progress">
+            <div class="doc-progress-text"><strong id="doc-progress-done">0</strong> sur <strong id="doc-progress-total">4</strong> documents ajout&eacute;s</div>
+            <div class="doc-progress-track">
+              <div class="doc-progress-fill" id="doc-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div class="doc-progress-count" id="doc-progress-pct">0%</div>
+          </div>
+
+          <div class="doc-upload-list" id="doc-upload-list">
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-back" onclick="prevStep()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Retour
+            </button>
+            <button class="btn-next" onclick="nextStep()">
+              Continuer
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 6 : Offres -->
+        <div class="form-card step-content" data-step="6">
+          <h2>Choisissez votre offre</h2>
+          <p class="form-desc">S&eacute;lectionnez l'offre qui correspond &agrave; vos besoins.</p>
+
+          <div class="pricing-grid" id="pricing-grid">
+
+            <!-- Starter -->
+            <div class="pricing-card" data-offer="starter" onclick="selectOffer(this)">
+              <div class="pricing-name">Starter</div>
+              <div class="pricing-price">245&euro;<sup>HT</sup></div>
+              <div class="pricing-desc">D&eacute;marrez votre entreprise en quelques clics.</div>
+              <button class="pricing-select-btn" type="button">S&eacute;lectionner</button>
+              <ul class="pricing-features">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Cr&eacute;ation 100% en ligne</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Statuts g&eacute;n&eacute;r&eacute;s instantan&eacute;ment</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Objet social assist&eacute; par l'IA</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Annonce l&eacute;gale g&eacute;n&eacute;r&eacute;e et disponible en moins de 15 minutes</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Acc&egrave;s &agrave; votre espace s&eacute;curis&eacute;</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>D&eacute;p&ocirc;t de votre formalit&eacute; vous-m&ecirc;me</li>
+              </ul>
+            </div>
+
+            <!-- Business (recommandé) -->
+            <div class="pricing-card recommended" data-offer="business" onclick="selectOffer(this)">
+              <span class="pricing-badge">Recommand&eacute;</span>
+              <div class="pricing-name">Business</div>
+              <div class="pricing-price">499&euro;<sup>HT</sup></div>
+              <div class="pricing-desc">Cr&eacute;ez votre soci&eacute;t&eacute; en toute s&eacute;curit&eacute;, valid&eacute;e par un avocat.</div>
+              <button class="pricing-select-btn" type="button">S&eacute;lectionner</button>
+              <div class="pricing-includes">Tout ce qui est inclus dans le forfait Starter</div>
+              <ul class="pricing-features">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Relecture et validation par un avocat</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Garantie anti-rejet de la formalit&eacute;</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Suivi du dossier en temps r&eacute;el</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Immatriculation sur le Guichet Unique</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Kbis disponible en ligne</li>
+              </ul>
+            </div>
+
+            <!-- Premium -->
+            <div class="pricing-card" data-offer="premium" onclick="selectOffer(this)">
+              <div class="pricing-name">Premium</div>
+              <div class="pricing-price">649&euro;<sup>HT</sup></div>
+              <div class="pricing-desc">Votre formalit&eacute; trait&eacute;e en urgence par un avocat !</div>
+              <button class="pricing-select-btn" type="button">S&eacute;lectionner</button>
+              <div class="pricing-includes">Tout ce qui est inclus dans le forfait Business</div>
+              <ul class="pricing-features">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Traitement prioritaire sous 24h</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Rendez-vous t&eacute;l&eacute;phonique ou visio inclus</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Accompagnement par un avocat</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Conseils juridiques et fiscaux</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Mise en relation avec nos partenaires (comptabilit&eacute;)</li>
+              </ul>
+            </div>
+
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-back" onclick="prevStep()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Pr&eacute;c&eacute;dent
+            </button>
+            <button class="btn-next" id="btn-submit-offer" onclick="startPayment()" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              Proc&eacute;der au paiement
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 7 : Espace documents (lifecycle) -->
+        <div class="form-card step-content" data-step="7">
+
+          <!-- Recap banner -->
+          <div class="recap-banner" id="recap-banner">
+            <div class="recap-banner-row">
+              <div class="recap-banner-item">
+                <span class="recap-banner-label">Soci&eacute;t&eacute;</span>
+                <span class="recap-banner-value" id="recap-societe">-</span>
+              </div>
+              <div class="recap-banner-item">
+                <span class="recap-banner-label">Forme</span>
+                <span class="recap-banner-value" id="recap-forme">-</span>
+              </div>
+              <div class="recap-banner-item">
+                <span class="recap-banner-label">Capital</span>
+                <span class="recap-banner-value" id="recap-capital">-</span>
+              </div>
+              <div class="recap-banner-item">
+                <span class="recap-banner-label">Offre</span>
+                <span class="recap-banner-value" id="recap-offre">-</span> <span id="btn-upgrade-offer" style="display:none;" onclick="showUpgradeModal()">Changer</span>
+              </div>
+              <div class="recap-banner-item">
+                <span class="recap-banner-label">Statut</span>
+                <span id="recap-status-pill"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lifecycle stepper -->
+          <div class="lifecycle-stepper" id="lifecycle-stepper"></div>
+
+          <!-- Lifecycle phase content -->
+          <div id="lifecycle-content"></div>
+
+          <!-- Generated docs -->
+          <div class="gen-docs-list" id="gen-docs-list"></div>
+
+          <div class="form-actions" style="justify-content: center; gap: 12px;">
+            <button class="btn-next" onclick="regenerateDocs()" style="background: #fff; color: #111; border: 2px solid #e0e0e0;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Reg&eacute;n&eacute;rer les documents
+            </button>
+            <button class="btn-next" onclick="window.location.href='/dashboard.html';" style="background: #111;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+              Retour au dashboard
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Payment overlay -->
+  <div class="payment-overlay" id="payment-overlay">
+    <div class="payment-modal" id="payment-modal">
+      <div class="payment-modal-icon loading" id="payment-icon">
+        <div class="spinner"></div>
+      </div>
+      <h3 id="payment-title">Paiement en cours...</h3>
+      <div class="payment-amount" id="payment-amount"></div>
+      <div class="payment-offer-name" id="payment-offer-label"></div>
+      <p id="payment-msg">Veuillez patienter pendant le traitement de votre paiement.</p>
+    </div>
+  </div>
+
+  <!-- Upgrade Overlay -->
+  <div class="upgrade-overlay" id="upgrade-overlay" onclick="closeUpgradeModal(event)">
+    <div class="upgrade-modal" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h3 style="margin:0;font-family:'Cal Sans','Inter',sans-serif;font-size:20px;">Changer d'offre</h3>
+        <button onclick="closeUpgradeModal()" style="background:none;border:none;cursor:pointer;padding:4px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <p style="font-size:14px;color:#666;margin-bottom:20px;">S&eacute;lectionnez une offre sup&eacute;rieure pour b&eacute;n&eacute;ficier de l'accompagnement avocat.</p>
+      <div id="upgrade-cards"></div>
+      <button class="btn-next" id="btn-confirm-upgrade" disabled onclick="processUpgrade()" style="width:100%;margin-top:16px;justify-content:center;">
+        Payer le compl&eacute;ment
+      </button>
+    </div>
+  </div>
+
+  <!-- PDF Preview Modal -->
+  <div class="pdf-preview-overlay" id="pdf-preview-overlay" onclick="closePdfPreview(event)">
+    <div class="pdf-preview-container" onclick="event.stopPropagation()">
+      <div class="pdf-preview-header">
+        <div class="pdf-preview-title" id="pdf-preview-title">Document</div>
+        <div class="pdf-preview-header-actions">
+          <button class="pdf-preview-btn primary" id="pdf-preview-download-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            T&eacute;l&eacute;charger PDF
+          </button>
+          <button class="pdf-preview-close" onclick="closePdfPreview()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="pdf-preview-body" id="pdf-preview-body">
+        <div class="pdf-preview-loading" id="pdf-preview-loading">
+          <div class="spinner"></div>
+          <span>G&eacute;n&eacute;ration du PDF...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signature Modal -->
+  <div class="signature-overlay" id="signature-overlay" onclick="closeSignatureModal(event)">
+    <div class="signature-modal" onclick="event.stopPropagation()">
+      <div class="sig-header">
+        <h3>Signature &eacute;lectronique</h3>
+        <button class="sig-close" onclick="closeSignatureModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="sig-body">
+        <div class="sig-tabs">
+          <button class="sig-tab active" onclick="switchSigTab('draw')">Dessiner</button>
+          <button class="sig-tab" onclick="switchSigTab('type')">Taper</button>
+        </div>
+        <div class="sig-canvas-wrap" id="sig-canvas-wrap">
+          <canvas id="sig-canvas"></canvas>
+        </div>
+        <div class="sig-typed-wrap" id="sig-typed-wrap">
+          <input type="text" class="sig-typed-input" id="sig-typed-input" placeholder="Tapez votre nom complet" oninput="updateTypedSignature()">
+          <div class="sig-typed-preview" id="sig-typed-preview"></div>
+        </div>
+        <div class="sig-paraphe-row" style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#1d1d1f;">Paraphes / Initiales</label>
+          <input type="text" id="sig-paraphe-input" maxlength="8" placeholder="ex: J.D." style="width:180px;padding:8px 12px;border:1.5px solid #d2d2d7;border-radius:10px;font-size:14px;outline:none;">
+        </div>
+        <div class="sig-actions">
+          <button class="lc-cta secondary" onclick="clearSignature()">Effacer</button>
+          <button class="lc-cta" onclick="applySignature()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Appliquer ma signature
+          </button>
+        </div>
+        <div class="sig-legal">
+          En cliquant sur &laquo; Appliquer ma signature &raquo;, vous consentez &agrave; signer
+          &eacute;lectroniquement ces documents conform&eacute;ment au r&egrave;glement eIDAS (UE 910/2014).
+          Cette signature a la m&ecirc;me valeur juridique qu'une signature manuscrite.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CHAT WIDGET -->
+
+  <!-- Chat FAB -->
+  <button class="chat-fab" id="chatFab" onclick="toggleChatPanel()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span class="chat-fab-badge" id="chatBadge">0</span>
+  </button>
+
+  <!-- Chat Panel -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <div class="chat-header-title">Messages</div>
+      <div class="chat-tabs">
+        <button class="chat-tab active" data-tab="avocat" onclick="switchChatTab('avocat')">Mon avocat</button>
+        <button class="chat-tab" data-tab="support" onclick="switchChatTab('support')">Support</button>
+      </div>
+    </div>
+
+    <!-- Avocat tab content -->
+    <div id="chatTabAvocat">
+      <div class="chat-select" id="chatFormaliteSelect"></div>
+      <div id="chatAvocatInfo"></div>
+      <div class="chat-messages" id="chatAvocatMessages"></div>
+      <div class="chat-input-area" id="chatAvocatInput">
+        <input type="file" id="chatAvocatFile" accept=".pdf,.jpg,.jpeg,.png,.docx">
+        <button class="chat-btn-attach" onclick="document.getElementById('chatAvocatFile').click()" title="Joindre un fichier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input type="text" id="chatAvocatText" placeholder="Votre message..." onkeydown="if(event.key==='Enter')sendAvocatMessage()">
+        <button class="chat-btn-send" id="chatAvocatSendBtn" onclick="sendAvocatMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Support tab content -->
+    <div id="chatTabSupport" style="display:none;flex:1;flex-direction:column">
+      <div class="chat-messages" id="chatSupportMessages"></div>
+      <div class="chat-input-area">
+        <input type="file" id="chatSupportFile" accept=".pdf,.jpg,.jpeg,.png,.docx">
+        <button class="chat-btn-attach" onclick="document.getElementById('chatSupportFile').click()" title="Joindre un fichier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input type="text" id="chatSupportText" placeholder="Votre message..." onkeydown="if(event.key==='Enter')sendSupportMessage()">
+        <button class="chat-btn-send" id="chatSupportSendBtn" onclick="sendSupportMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- JS Modules -->
+  <script src="/js/common.js"></script>
+  <script src="/js/rcs.js"></script>
+  <script src="/js/creation/custom-controls.js"></script>
+  <script src="/js/creation/form-data.js"></script>
+  <script src="/js/creation/associes.js"></script>
+  <script src="/js/creation/dirigeants.js"></script>
+  <script src="/js/creation/capital.js"></script>
+  <script src="/js/creation/documents.js"></script>
+  <script src="/js/creation/conjoint.js"></script>
+  <script src="/js/creation/lifecycle.js"></script>
+  <script src="/js/creation/chat.js"></script>
+  <script src="/js/creation/app.js"></script>
+  <script src="/js/creation/dev-fill.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhbemAxywbRwH0Tj2crK1LBvQRsBGlGRU&libraries=places&callback=onGoogleMapsLoaded" async defer></script>
+
+  <!-- BEGIN sidebar refresh JS (auto-generated) -->
+  <script>
+    (function() {
+      function openNewActionModal() {
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+      }
+      function closeNewActionModal(e) {
+        if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+      }
+      window.openNewActionModal = openNewActionModal;
+      window.closeNewActionModal = closeNewActionModal;
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNewActionModal(); });
+
+      // Société active + badges
+      fetch('/api/formalites').then(function(r){ return r.json(); }).then(function(data){
+        var list = (data && data.formalites) || data || [];
+        if (!Array.isArray(list)) return;
+        var societes = list.filter(function(f){ return f && f.denomination && (f.type === 'creation' || f.type === 'modification' || !f.type); });
+        var ctx = document.getElementById('sidebar-context');
+        var nameEl = document.getElementById('ctx-name');
+        if (societes.length === 0) {
+          if (ctx) ctx.style.display = 'none';
+        } else if (societes.length === 1) {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.add('single');
+        } else {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.remove('single');
+        }
+        var enCours = list.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var badge = document.getElementById('badge-formalites');
+        if (badge && enCours > 0) { badge.textContent = String(enCours) + ' en cours'; badge.style.display = 'inline-block'; }
+      }).catch(function(){});
+      // Affiche immédiatement les valeurs cachées pour éviter le jitter
+      (function(){
+        try {
+          var cachedForm = parseInt(sessionStorage.getItem('badge_formalites') || '0');
+          var cachedMsg = parseInt(sessionStorage.getItem('badge_messagerie') || '0');
+          if (cachedForm > 0) {
+            var bF = document.getElementById('badge-formalites');
+            if (bF) { bF.textContent = String(cachedForm) + ' en cours'; bF.style.display = 'inline-block'; }
+          }
+          if (cachedMsg > 0) {
+            var bM = document.getElementById('badge-messagerie');
+            if (bM) { bM.textContent = String(cachedMsg) + ' non lu' + (cachedMsg > 1 ? 's' : ''); bM.style.display = 'inline-block'; }
+          }
+        } catch(_) {}
+      })();
+      Promise.all([
+        fetch('/api/formalites').then(function(r){ return r.json(); }).catch(function(){ return { formalites: [] }; }),
+        fetch('/api/support/unread').then(function(r){ return r.json(); }).catch(function(){ return { unread: 0 }; })
+      ]).then(function(results){
+        var fs = (results[0] && results[0].formalites) || [];
+        var enCours = fs.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var bForm = document.getElementById('badge-formalites');
+        if (bForm) {
+          if (enCours > 0) { bForm.textContent = String(enCours) + ' en cours'; bForm.style.display = 'inline-block'; }
+          else { bForm.style.display = 'none'; }
+        }
+        var unreadForm = fs.reduce(function(a, f){ return a + (f.unread_messages || 0); }, 0);
+        var unreadSupport = (results[1] && results[1].unread) || 0;
+        var total = unreadForm + unreadSupport;
+        var badge = document.getElementById('badge-messagerie');
+        if (badge) {
+          if (total > 0) { badge.textContent = String(total) + ' non lu' + (total > 1 ? 's' : ''); badge.style.display = 'inline-block'; }
+          else { badge.style.display = 'none'; }
+        }
+        try {
+          sessionStorage.setItem('badge_formalites', String(enCours));
+          sessionStorage.setItem('badge_messagerie', String(total));
+        } catch(_) {}
+      });
+    })();
+  </script>
+  <!-- END sidebar refresh JS -->
+
+  <!-- MODAL: Contacter votre avocat -->
+  <div id="contact-avocat-overlay" style="display:none;position:fixed;inset:0;background:rgba(17,17,17,0.5);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:24px;" onclick="if(event.target===this)closeContactAvocatModal()">
+    <div style="background:#fff;border-radius:18px;width:540px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.2);overflow:hidden;">
+      <div style="padding:20px 24px;border-bottom:1px solid #ececef;display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="font-family:'Cal Sans',sans-serif;font-size:18px;font-weight:600;color:#111;">Contacter votre avocat</h3>
+        <button onclick="closeContactAvocatModal()" style="background:none;border:none;cursor:pointer;color:#999;padding:6px;border-radius:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div style="padding:20px 24px;overflow-y:auto;flex:1;">
+        <div id="contact-avocat-info" style="background:#fafafa;border:1px solid #f0f0f2;border-radius:10px;padding:12px 14px;font-size:13px;color:#555;margin-bottom:16px;display:none;"></div>
+        <div id="contact-avocat-modifs" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:16px;display:none;">
+          <div style="font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Modifications détectées</div>
+          <ul id="contact-avocat-modifs-list" style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.6;"></ul>
+        </div>
+        <label style="font-size:13px;font-weight:600;color:#555;display:block;margin-bottom:8px;">Votre message à l'avocat</label>
+        <textarea id="contact-avocat-message" placeholder="Décrivez ce que vous avez modifié ou ce que vous souhaitez préciser..." style="width:100%;padding:12px 14px;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:14px;line-height:1.5;min-height:140px;resize:vertical;transition:border-color .15s;"></textarea>
+
+        <!-- Pièces jointes -->
+        <div style="margin-top:14px;">
+          <input type="file" id="contact-avocat-files" multiple style="display:none;" onchange="handleContactAvocatFiles(this)">
+          <button type="button" onclick="document.getElementById('contact-avocat-files').click()" style="display:inline-flex;align-items:center;gap:8px;padding:9px 14px;background:#fff;border:1px solid #e5e5e7;border-radius:10px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:500;color:#555;transition:all .15s;" onmouseover="this.style.borderColor='#111';this.style.color='#111'" onmouseout="this.style.borderColor='#e5e5e7';this.style.color='#555'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            Ajouter une pièce jointe
+          </button>
+          <div id="contact-avocat-files-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+
+        <div style="font-size:12px;color:#888;margin-top:12px;">L'avocat recevra une notification et vous répondra directement dans la messagerie.</div>
+      </div>
+      <div style="padding:14px 24px;border-top:1px solid #ececef;display:flex;justify-content:flex-end;gap:10px;">
+        <button onclick="closeContactAvocatModal()" style="padding:10px 18px;background:#fff;border:1px solid #e5e5e7;border-radius:10px;font-family:inherit;font-size:13.5px;font-weight:500;color:#555;cursor:pointer;">Annuler</button>
+        <button onclick="sendContactAvocatMessage()" id="contact-avocat-send-btn" style="padding:10px 18px;background:#111;border:none;border-radius:10px;font-family:inherit;font-size:13.5px;font-weight:600;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Animation spinner pour upload
+    if (!document.getElementById('spinKf')) {
+      var sty = document.createElement('style');
+      sty.id = 'spinKf';
+      sty.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+      document.head.appendChild(sty);
+    }
+    // Tracking des modifications côté client
+    var _initialFormState = null;
+    var _trackedFields = ['SOCIETE','FORME','CAPITAL','OBJET_SOCIAL','SIEGE_SOCIAL','VILLE_SIEGE','CP_SIEGE','ADRESSE_SIEGE','DUREE'];
+
+    function snapshotForm() {
+      var data = (window._serverLoadedData || window.data || {});
+      var snap = {};
+      _trackedFields.forEach(function(k){ if (k in data) snap[k] = data[k]; });
+      try { snap._associes = JSON.stringify(data.ASSOCIES || []); } catch(_) {}
+      return snap;
+    }
+    function detectModifications() {
+      if (!_initialFormState) return [];
+      var current = snapshotForm();
+      var diffs = [];
+      var labels = {
+        SOCIETE: 'Nom de la société', FORME: 'Forme juridique', CAPITAL: 'Capital',
+        OBJET_SOCIAL: 'Objet social', SIEGE_SOCIAL: 'Adresse du siège',
+        VILLE_SIEGE: 'Ville du siège', CP_SIEGE: 'Code postal du siège',
+        ADRESSE_SIEGE: 'Adresse du siège', DUREE: 'Durée de la société',
+        _associes: 'Liste des associés'
+      };
+      Object.keys(_initialFormState).forEach(function(k){
+        var before = _initialFormState[k];
+        var after = current[k];
+        if (before !== after && (before || after)) {
+          diffs.push({ field: labels[k] || k, before: before, after: after });
+        }
+      });
+      return diffs;
+    }
+
+    // Capture initial state when data loaded
+    setTimeout(function(){
+      if (window._currentFormaliteId) _initialFormState = snapshotForm();
+    }, 1500);
+
+    var _contactAvocatFiles = []; // [{ filename, originalName }]
+
+    window.handleContactAvocatFiles = function(input) {
+      var files = Array.from(input.files);
+      files.forEach(function(f){
+        var fd = new FormData();
+        fd.append('file', f);
+        // Affiche d'abord un placeholder "uploading"
+        var idx = _contactAvocatFiles.length;
+        _contactAvocatFiles.push({ filename: '', originalName: f.name, uploading: true });
+        renderContactAvocatFiles();
+        fetch('/api/upload', { method: 'POST', body: fd })
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (d.ok && d.filename) {
+              _contactAvocatFiles[idx] = { filename: d.filename, originalName: d.originalName || f.name };
+            } else {
+              _contactAvocatFiles.splice(idx, 1);
+              alert(d.error || 'Erreur upload ' + f.name);
+            }
+            renderContactAvocatFiles();
+          })
+          .catch(function(){
+            _contactAvocatFiles.splice(idx, 1);
+            renderContactAvocatFiles();
+            alert('Erreur réseau pour ' + f.name);
+          });
+      });
+      input.value = '';
+    };
+
+    function renderContactAvocatFiles() {
+      var el = document.getElementById('contact-avocat-files-list');
+      if (!el) return;
+      if (_contactAvocatFiles.length === 0) { el.innerHTML = ''; return; }
+      el.innerHTML = _contactAvocatFiles.map(function(f, i){
+        var spinner = f.uploading ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="14" height="14" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-dasharray="40 20"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f5f3ff;border:1px solid #e9d5ff;border-radius:8px;font-size:13px;">'
+          + '<span style="color:#7c3aed;display:inline-flex;">' + spinner + '</span>'
+          + '<span style="flex:1;min-width:0;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + f.originalName + (f.uploading ? ' <em style="color:#888;font-size:11.5px;font-style:normal;">(envoi…)</em>' : '') + '</span>'
+          + (f.uploading ? '' : '<button onclick="removeContactAvocatFile(' + i + ')" style="background:none;border:none;cursor:pointer;color:#b91c1c;padding:2px;display:inline-flex;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>')
+          + '</div>';
+      }).join('');
+    }
+
+    window.removeContactAvocatFile = function(i) {
+      _contactAvocatFiles.splice(i, 1);
+      renderContactAvocatFiles();
+    };
+
+    window.openContactAvocatModal = function() {
+      var modal = document.getElementById('contact-avocat-overlay');
+      modal.style.display = 'flex';
+      _contactAvocatFiles = []; // reset
+      renderContactAvocatFiles();
+      var msgInput = document.getElementById('contact-avocat-message');
+      var modifsBox = document.getElementById('contact-avocat-modifs');
+      var modifsList = document.getElementById('contact-avocat-modifs-list');
+
+      // 1) Diffs in-memory (session courante : avant/après vs _initialFormState)
+      var sessionDiffs = detectModifications().map(function(d){
+        return { field: d.field, before: d.before, after: d.after };
+      });
+
+      // 2) Diffs historiques côté serveur (modifications faites par le user sur ce
+      //    dossier, ex: après une demande de corrections lors d'une session passée).
+      function listHistoricalUserDiffs(cb) {
+        if (!window._currentFormaliteId) return cb([]);
+        fetch('/api/formalites/' + window._currentFormaliteId + '/audit')
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            var labels = {
+              NOM_SOCIETE: 'Nom de la société', FORME_JURIDIQUE: 'Forme juridique',
+              CAPITAL: 'Capital', OBJET_SOCIAL: 'Objet social', SIEGE_SOCIAL: 'Adresse du siège',
+              ADRESSE_SIEGE: 'Adresse du siège', VILLE_SOCIETE: 'Ville du siège',
+              CODE_POSTAL: 'Code postal du siège', DUREE: 'Durée de la société'
+            };
+            var entries = (data.entries || []).filter(function(e){
+              return e.action === 'field_update' && e.actor_role === 'user';
+            });
+            // Dédupe par champ : garde la version la plus récente (le serveur renvoie par date desc)
+            var seen = {};
+            var diffs = [];
+            entries.forEach(function(e){
+              var f = e.target_field;
+              if (!f || seen[f]) return;
+              seen[f] = true;
+              var human = labels[f] || f.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+              diffs.push({ field: human, before: e.before_value, after: e.after_value });
+            });
+            cb(diffs);
+          })
+          .catch(function(){ cb([]); });
+      }
+
+      listHistoricalUserDiffs(function(historicalDiffs){
+        // Merge sans doublon (le diff in-memory prime — il reflète l'état courant)
+        var byField = {};
+        historicalDiffs.forEach(function(d){ byField[d.field] = d; });
+        sessionDiffs.forEach(function(d){ byField[d.field] = d; });
+        var allDiffs = Object.keys(byField).map(function(k){ return byField[k]; });
+
+        if (allDiffs.length > 0) {
+          modifsBox.style.display = 'block';
+          modifsList.innerHTML = allDiffs.map(function(d){
+            var b = d.before == null || d.before === '' || d.before === '__missing__' ? '—' : String(d.before).substring(0,80);
+            var a = d.after == null || d.after === '' ? '—' : String(d.after).substring(0,80);
+            return '<li><strong>' + d.field + '</strong> : "' + b + '" → "' + a + '"</li>';
+          }).join('');
+          // Pré-remplit le message avec la liste — le user n'a plus qu'à ajouter son commentaire
+          var readonly = document.body.classList.contains('user-readonly');
+          var intro = readonly
+            ? 'Bonjour,\n\nJ\'ai consulté mon dossier et apporté les modifications suivantes :\n'
+            : 'Bonjour,\n\nJ\'ai modifié les informations suivantes dans mon dossier :\n';
+          var template = intro;
+          allDiffs.forEach(function(d){
+            var b = d.before == null || d.before === '' || d.before === '__missing__' ? '—' : String(d.before).substring(0,80);
+            var a = d.after == null || d.after === '' ? '—' : String(d.after).substring(0,80);
+            template += '- ' + d.field + ' : "' + b + '" → "' + a + '"\n';
+          });
+          template += '\nPouvez-vous valider ces modifications ? Merci.';
+          msgInput.value = template;
+        } else {
+          modifsBox.style.display = 'none';
+          if (document.body.classList.contains('user-readonly')) {
+            msgInput.value = 'Bonjour,\n\nJ\'ai consulté mon dossier et je souhaiterais signaler l\'élément suivant :\n\n';
+          } else {
+            msgInput.value = 'Bonjour,\n\n';
+          }
+        }
+        var infoBox = document.getElementById('contact-avocat-info');
+        var societe = (window._serverLoadedData && (window._serverLoadedData.SOCIETE || window._serverLoadedData.societe)) || '';
+        if (societe) {
+          infoBox.style.display = 'block';
+          infoBox.innerHTML = '<strong>Dossier concerné :</strong> ' + societe;
+        } else {
+          infoBox.style.display = 'none';
+        }
+        setTimeout(function(){ msgInput.focus(); }, 100);
+      });
+    };
+
+    window.closeContactAvocatModal = function() {
+      document.getElementById('contact-avocat-overlay').style.display = 'none';
+    };
+
+    window.sendContactAvocatMessage = function() {
+      var msg = document.getElementById('contact-avocat-message').value.trim();
+      if (!msg && _contactAvocatFiles.length === 0) { alert('Saisissez un message ou ajoutez une pièce jointe'); return; }
+      // Empêche d'envoyer si un upload est en cours
+      if (_contactAvocatFiles.some(function(f){ return f.uploading; })) {
+        alert('Patientez, des fichiers sont en cours d\'envoi...');
+        return;
+      }
+      var btn = document.getElementById('contact-avocat-send-btn');
+      btn.disabled = true; btn.textContent = 'Envoi…';
+
+      // Envoie le message principal d'abord
+      var sendMessage = function(content) {
+        return fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formalite_id: window._currentFormaliteId, content: content })
+        }).then(function(r){ return r.json(); });
+      };
+
+      var sendFileMsg = function(file) {
+        // Envoie un message contenant le lien du fichier
+        var fileMsg = '📎 ' + file.originalName + '\n/api/file?path=' + file.filename;
+        return fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formalite_id: window._currentFormaliteId, content: fileMsg, file_path: file.filename })
+        }).then(function(r){ return r.json(); });
+      };
+
+      var chain = msg ? sendMessage(msg) : Promise.resolve({ ok: true });
+      // Puis envoie un message par fichier
+      _contactAvocatFiles.forEach(function(f){
+        chain = chain.then(function(){ return sendFileMsg(f); });
+      });
+
+      chain.then(function(d){
+        window.closeContactAvocatModal();
+        window.location.href = '/messagerie.html?formalite=' + window._currentFormaliteId;
+      }).catch(function(){
+        alert('Erreur lors de l\'envoi');
+        btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Envoyer';
+      });
+    };
+  </script>
+
+  <!-- Modal: Proposer une modification (dossier verrouillé) -->
+  <div class="propose-mod-overlay" id="propose-mod-overlay" onclick="if(event.target===this)closeProposeMod()">
+    <div class="propose-mod-modal">
+      <h3>Proposer une modification</h3>
+      <p class="propose-mod-desc">
+        Votre dossier est verrouill&eacute; car le paiement est valid&eacute;.
+        D&eacute;crivez la modification que vous souhaitez apporter : votre avocat
+        recevra la demande, la v&eacute;rifiera et r&eacute;g&eacute;n&eacute;rera
+        les documents apr&egrave;s validation.
+      </p>
+      <textarea id="propose-mod-text" placeholder="Exemple : Modifier l'adresse du si&egrave;ge social en 25 rue de la Paix, 75002 Paris."></textarea>
+      <div class="propose-mod-actions">
+        <button type="button" class="btn-cancel" onclick="closeProposeMod()">Annuler</button>
+        <button type="button" class="btn-submit" onclick="submitProposeMod()">Envoyer la demande</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

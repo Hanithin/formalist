@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cr&eacute;er un compte - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Cal Sans';
+      src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+
+    @font-face {
+      font-family: 'Matter';
+      src: url('/fonts/Matter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-display: block;
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Matter', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #111;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: #fff;
+    }
+
+    .logo img {
+      height: 28px;
+    }
+
+    .back-link {
+      font-size: 14px;
+      color: #999;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: #111;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 0 24px;
+    }
+
+    .login-card h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .login-card .subtitle {
+      font-size: 15px;
+      color: #999;
+      margin-bottom: 32px;
+    }
+
+    .login-card .subtitle a {
+      color: #111;
+      font-weight: 500;
+      border-bottom: 1px solid #e5e5e5;
+      transition: border-color 0.2s;
+    }
+
+    .login-card .subtitle a:hover {
+      border-color: #111;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      font-family: 'Matter', 'Inter', sans-serif;
+      font-size: 15px;
+      color: #111;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input::placeholder {
+      color: #999;
+    }
+
+    .form-group input:focus {
+      border-color: #111;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+    }
+
+    .form-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .form-options label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .form-options label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #111;
+      cursor: pointer;
+    }
+
+    .form-options a {
+      font-size: 13px;
+      color: #999;
+      transition: color 0.2s;
+    }
+
+    .form-options a:hover {
+      color: #111;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      border-radius: 100px;
+      font-family: 'Matter', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+      background: #111;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      
+      margin-bottom: 20px;
+    }
+
+    .btn-login:hover {
+      background: #000;
+      
+      transform: translateY(-1px);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e0e0e0;
+    }
+
+    .divider span {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-google {
+      width: 100%;
+      padding: 14px;
+      border-radius: 100px;
+      font-family: 'Matter', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+      background: #fff;
+      color: #111;
+      border: 1px solid #e5e5e5;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-google:hover {
+      border-color: #111;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
+    }
+
+    .btn-google svg {
+      width: 18px;
+      height: 18px;
+    }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  </head>
+
+  <header>
+    <a href="/" class="logo">
+      <img src="/images/logo.png" alt="Formalist" height="28">
+    </a>
+    <a href="/connexion.html" class="back-link">Retour</a>
+  </header>
+
+  <main>
+    <div class="login-card">
+      <h1>Cr&eacute;er un compte</h1>
+      <p class="subtitle">D&eacute;j&agrave; inscrit ? <a href="/connexion.html">Se connecter</a></p>
+
+      <form id="register-form">
+        <div class="form-group">
+          <label>Nom complet</label>
+          <input type="text" id="name" placeholder="Jean Dupont" autocomplete="name">
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" placeholder="vous@exemple.com" autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="password" placeholder="6 caract&egrave;res minimum" autocomplete="new-password">
+        </div>
+
+        <div id="error" style="display:none; color:#ef4444; font-size:13px; margin-bottom:16px;"></div>
+
+        <button class="btn-login" type="submit">Cr&eacute;er mon compte</button>
+      </form>
+
+      <script>
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+          e.preventDefault();
+          var name = document.getElementById('name').value.trim();
+          var email = document.getElementById('email').value.trim();
+          var password = document.getElementById('password').value;
+          var errEl = document.getElementById('error');
+          errEl.style.display = 'none';
+          var btn = document.querySelector('.btn-login');
+          btn.disabled = true;
+          btn.textContent = 'Création...';
+
+          fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, email: email, password: password })
+          })
+          .then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+          .then(function(result) {
+            if (result.status !== 201) {
+              errEl.textContent = result.data.error || 'Impossible de créer le compte.';
+              errEl.style.display = 'block';
+              btn.disabled = false;
+              btn.textContent = 'Créer mon compte';
+              return;
+            }
+            sessionStorage.setItem('user', JSON.stringify(result.data.user));
+            window.location.href = '/dashboard.html';
+          })
+          .catch(function() {
+            errEl.textContent = 'Erreur de connexion au serveur.';
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Créer mon compte';
+          });
+        });
+      </script>
+    </div>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog &mdash; Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family:'Cal Sans'; src:url('/fonts/CalSans-SemiBold.otf') format('opentype'); font-weight:600; font-display:swap }
+    *,*::before,*::after { margin:0; padding:0; box-sizing:border-box }
+    html { scroll-behavior:smooth }
+    body { font-family:'Inter',-apple-system,sans-serif; background:#f5f5f5; color:#111; -webkit-font-smoothing:antialiased; overflow-x:hidden }
+    a { text-decoration:none; color:inherit }
+
+    /* ANIMATIONS */
+    @keyframes fade-up { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes scale-up { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+    .reveal { opacity:0; transform:translateY(30px); transition:all 0.7s cubic-bezier(0.16,1,0.3,1) }
+    .reveal.visible { opacity:1; transform:translateY(0) }
+    .reveal-d1{transition-delay:.1s} .reveal-d2{transition-delay:.2s} .reveal-d3{transition-delay:.3s} .reveal-d4{transition-delay:.4s}
+
+    /* NAV */
+    .nav-wrap { position:fixed; top:0; left:0; right:0; z-index:1000; display:flex; justify-content:center; padding:12px 40px 0; transition:all 0.3s }
+    .nav-wrap.scrolled { padding-top:8px }
+    .nav { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:transparent; transition:all 0.3s; max-width:1200px; width:100%; border-radius:16px }
+    .nav-wrap.scrolled .nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid #e8e8e8; box-shadow:0 2px 16px rgba(0,0,0,0.06) }
+    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.3px }
+    .nav-center { display:flex; align-items:center; gap:32px }
+    .nav-center a, .nav-center .nav-dropdown-trigger { font-size:14px; font-weight:500; color:#666; transition:color 0.2s; cursor:pointer; text-decoration:none }
+    .nav-center a:hover, .nav-center .nav-dropdown-trigger:hover { color:#111 }
+    .nav-center a.active { color:#111; font-weight:600 }
+    .nav-dropdown { position:relative }
+    .nav-dropdown-trigger { display:inline-flex; align-items:center; gap:4px; background:none; border:none; font-family:inherit }
+    .nav-dropdown-trigger svg { width:12px; height:12px; transition:transform 0.2s }
+    .nav-dropdown:hover .nav-dropdown-trigger svg { transform:rotate(180deg) }
+    .nav-mega { position:fixed; top:68px; left:50%; transform:translateX(-50%); background:#fff; border:1px solid #e8e8e8; border-radius:16px; box-shadow:0 16px 48px rgba(0,0,0,0.08); padding:0; width:1080px; opacity:0; pointer-events:none; transition:all 0.2s; z-index:100; overflow:hidden }
+    .nav-dropdown.open .nav-mega { opacity:1; pointer-events:auto }
+    .nav-mega-grid { display:grid; grid-template-columns:1.4fr 1fr 240px; gap:0 }
+    .nav-mega-col { padding:28px 32px }
+    .nav-mega-col:first-child { border-right:1px solid #f0f0f0 }
+    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#bbb; margin-bottom:16px }
+    .nav-mega-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:12px; transition:all 0.15s; cursor:pointer; text-decoration:none; color:inherit }
+    .nav-mega-item:hover { background:#f8f7ff }
+    .nav-mega-icon { width:40px; height:40px; border-radius:12px; background:#f5f5f5; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s }
+    .nav-mega-item:hover .nav-mega-icon { background:#f0ecff; border-color:#e0d4fc }
+    .nav-mega-item:hover .nav-mega-icon svg { color:#7c3aed }
+    .nav-mega-icon svg { width:18px; height:18px; color:#666; transition:color 0.15s }
+    .nav-mega-item strong { font-size:14px; font-weight:600; color:#111; display:block; margin-bottom:2px }
+    .nav-mega-item span { font-size:12.5px; color:#888; line-height:1.4 }
+    .nav-mega-col-2 { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px }
+    .nav-mega-col-tools { display:flex; flex-direction:column; gap:4px }
+    .nav-mega-col:last-child { padding:0 }
+    .nav-mega-cta { background:linear-gradient(135deg,#7c3aed 0%,#a78bfa 60%,#c4b5fd 100%); padding:28px 24px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; height:100%; position:relative; overflow:hidden }
+    .nav-mega-cta::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; background:rgba(255,255,255,0.08); border-radius:50% }
+    .nav-mega-cta::after { content:''; position:absolute; bottom:-30px; left:-30px; width:100px; height:100px; background:rgba(255,255,255,0.06); border-radius:50% }
+    .nav-mega-cta-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.2); backdrop-filter:blur(4px); padding:5px 12px; border-radius:100px; font-size:11px; font-weight:600; width:fit-content; position:relative; z-index:1 }
+    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
+    .nav-mega-cta-link { display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; margin-top:16px; opacity:0.9; position:relative; z-index:1; text-decoration:none; transition:opacity 0.15s }
+    .nav-mega-cta-link:hover { opacity:1 }
+    .nav-right { display:flex; align-items:center; gap:8px }
+    .nav-right .btn { padding:10px 22px; font-size:14px; border-radius:12px }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; font-family:inherit; font-size:16px; font-weight:600; padding:14px 28px; border-radius:100px; cursor:pointer; transition:all 0.2s; border:none }
+    .btn-dark { background:#1a1a1a; color:#fff; position:relative; overflow:hidden }
+    .btn-dark::after { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent); transition:left 0.5s }
+    .btn-dark:hover::after { left:100% }
+    .btn-dark:hover { background:#000; transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,0.12) }
+    .btn-dark svg { width:16px; height:16px }
+
+    /* BLOG HERO */
+    .blog-hero { max-width:1200px; margin:0 auto; padding:120px 40px 48px; text-align:center }
+    .blog-hero h1 { font-family:'Cal Sans','Inter',sans-serif; font-size:56px; font-weight:600; line-height:1.1; letter-spacing:-1.5px; margin-bottom:16px; animation:fade-up 0.6s ease both }
+    .blog-hero p { font-size:18px; color:#666; max-width:560px; margin:0 auto; line-height:1.6; animation:fade-up 0.6s ease 0.1s both }
+
+    /* BLOG FILTERS */
+    .blog-filters { max-width:1200px; margin:0 auto; padding:0 40px 40px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; animation:fade-up 0.6s ease 0.2s both }
+    .blog-filter { padding:8px 20px; border-radius:100px; border:1px solid #e0e0e0; font-size:13px; font-weight:500; color:#666; cursor:pointer; transition:all 0.2s; background:#fff }
+    .blog-filter:hover { border-color:#bbb; color:#111 }
+    .blog-filter.active { background:#111; color:#fff; border-color:#111 }
+
+    /* BLOG GRID */
+    .blog-grid { max-width:1200px; margin:0 auto; padding:0 40px 80px; display:grid; grid-template-columns:repeat(3,1fr); gap:28px }
+
+    /* BLOG CARD */
+    .blog-card { background:#fff; border:1px solid #e8e8e8; border-radius:20px; overflow:hidden; transition:all 0.3s; cursor:pointer; text-decoration:none; color:inherit; display:flex; flex-direction:column }
+    .blog-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.08); border-color:#ddd }
+
+    /* CARD ILLUSTRATION - CSS generated abstract art */
+    .blog-card-img { height:220px; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center }
+
+    /* Color themes for illustrations */
+    .blog-card-img.theme-orange { background:linear-gradient(160deg,#fff8f0 0%,#fef3e2 100%) }
+    .blog-card-img.theme-blue { background:linear-gradient(160deg,#f0f4ff 0%,#e8efff 100%) }
+    .blog-card-img.theme-pink { background:linear-gradient(160deg,#fff0f3 0%,#fce8ed 100%) }
+    .blog-card-img.theme-violet { background:linear-gradient(160deg,#f5f0ff 0%,#ede5ff 100%) }
+    .blog-card-img.theme-green { background:linear-gradient(160deg,#f0faf4 0%,#e5f5ec 100%) }
+    .blog-card-img.theme-cyan { background:linear-gradient(160deg,#f0faff 0%,#e0f4ff 100%) }
+
+    /* Abstract shapes */
+    .illus { position:relative; width:200px; height:160px }
+    .illus-circle { position:absolute; border-radius:50% }
+    .illus-icon { position:absolute; width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,0.06) }
+    .illus-icon svg { width:22px; height:22px }
+    .illus-icon-sm { position:absolute; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.05) }
+    .illus-icon-sm svg { width:16px; height:16px }
+    .illus-dot { position:absolute; border-radius:50%; border:2px solid }
+
+    /* Orange theme shapes */
+    .theme-orange .illus-circle { background:rgba(251,191,36,0.12) }
+    .theme-orange .illus-icon { background:#fff; color:#d97706 }
+    .theme-orange .illus-icon-sm { background:#fff; color:#b45309 }
+    .theme-orange .illus-dot { border-color:rgba(251,191,36,0.3) }
+
+    /* Blue theme shapes */
+    .theme-blue .illus-circle { background:rgba(96,165,250,0.12) }
+    .theme-blue .illus-icon { background:#fff; color:#2563eb }
+    .theme-blue .illus-icon-sm { background:#fff; color:#3b82f6 }
+    .theme-blue .illus-dot { border-color:rgba(96,165,250,0.3) }
+
+    /* Pink theme shapes */
+    .theme-pink .illus-circle { background:rgba(244,114,182,0.1) }
+    .theme-pink .illus-icon { background:#fff; color:#e11d48 }
+    .theme-pink .illus-icon-sm { background:#fff; color:#f43f5e }
+    .theme-pink .illus-dot { border-color:rgba(244,114,182,0.3) }
+
+    /* Violet theme shapes */
+    .theme-violet .illus-circle { background:rgba(167,139,250,0.12) }
+    .theme-violet .illus-icon { background:#fff; color:#7c3aed }
+    .theme-violet .illus-icon-sm { background:#fff; color:#8b5cf6 }
+    .theme-violet .illus-dot { border-color:rgba(167,139,250,0.3) }
+
+    /* Green theme shapes */
+    .theme-green .illus-circle { background:rgba(52,211,153,0.12) }
+    .theme-green .illus-icon { background:#fff; color:#059669 }
+    .theme-green .illus-icon-sm { background:#fff; color:#10b981 }
+    .theme-green .illus-dot { border-color:rgba(52,211,153,0.3) }
+
+    /* Cyan theme shapes */
+    .theme-cyan .illus-circle { background:rgba(34,211,238,0.12) }
+    .theme-cyan .illus-icon { background:#fff; color:#0891b2 }
+    .theme-cyan .illus-icon-sm { background:#fff; color:#06b6d4 }
+    .theme-cyan .illus-dot { border-color:rgba(34,211,238,0.3) }
+
+    /* Card body */
+    .blog-card-body { padding:24px 28px 28px; flex:1; display:flex; flex-direction:column }
+    .blog-card-tag { display:inline-block; padding:5px 14px; border-radius:100px; font-size:12px; font-weight:600; margin-bottom:16px; width:fit-content }
+    .tag-fiscal { background:#fef3c7; color:#b45309 }
+    .tag-compta { background:#e0e7ff; color:#4338ca }
+    .tag-juridique { background:#fce7f3; color:#be185d }
+    .tag-creation { background:#f3e8ff; color:#7c3aed }
+    .tag-guide { background:#d1fae5; color:#047857 }
+    .tag-tech { background:#e0f2fe; color:#0369a1 }
+    .blog-card-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; line-height:1.3; letter-spacing:-0.3px; margin-bottom:12px; color:#111 }
+    .blog-card-excerpt { font-size:14px; color:#777; line-height:1.6; flex:1; margin-bottom:16px }
+    .blog-card-meta { font-size:12.5px; color:#bbb; display:flex; align-items:center; gap:4px }
+    .blog-card-meta span { display:inline-flex; align-items:center }
+    .blog-card-meta .dot { width:3px; height:3px; border-radius:50%; background:#ccc; margin:0 6px }
+
+    /* FEATURED CARD (first article, full width) */
+    .blog-featured { max-width:1200px; margin:0 auto; padding:0 40px 40px }
+    .blog-featured-card { display:grid; grid-template-columns:1.2fr 1fr; background:#fff; border:1px solid #e8e8e8; border-radius:24px; overflow:hidden; transition:all 0.3s; cursor:pointer; text-decoration:none; color:inherit; animation:scale-up 0.7s ease both }
+    .blog-featured-card:hover { transform:translateY(-4px); box-shadow:0 16px 48px rgba(0,0,0,0.08); border-color:#ddd }
+    .blog-featured-img { height:100%; min-height:340px; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center }
+    .blog-featured-img .illus { width:280px; height:220px }
+    .blog-featured-body { padding:48px 44px; display:flex; flex-direction:column; justify-content:center }
+    .blog-featured-body .blog-card-tag { font-size:13px; padding:6px 16px }
+    .blog-featured-body .blog-card-title { font-size:28px; letter-spacing:-0.5px; line-height:1.25; margin-bottom:16px }
+    .blog-featured-body .blog-card-excerpt { font-size:15px; line-height:1.7; margin-bottom:20px }
+    .blog-featured-body .read-more { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#7c3aed; transition:gap 0.2s }
+    .blog-featured-body .read-more:hover { gap:10px }
+    .blog-featured-body .read-more svg { width:16px; height:16px }
+
+    /* NEWSLETTER */
+    .blog-newsletter { max-width:1200px; margin:0 auto; padding:0 40px 80px }
+    .blog-newsletter-inner { background:#fff; border:1px solid #e8e8e8; border-radius:24px; padding:56px; text-align:center }
+    .blog-newsletter-inner h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:12px }
+    .blog-newsletter-inner p { font-size:15px; color:#777; margin-bottom:28px; max-width:440px; margin-left:auto; margin-right:auto; line-height:1.6 }
+    .blog-newsletter-form { display:flex; gap:10px; max-width:420px; margin:0 auto }
+    .blog-newsletter-form input { flex:1; padding:12px 20px; border:1.5px solid #e0e0e0; border-radius:12px; font-family:inherit; font-size:14px; outline:none; transition:border-color 0.2s }
+    .blog-newsletter-form input:focus { border-color:#7c3aed }
+    .blog-newsletter-form button { padding:12px 28px; background:#7c3aed; color:#fff; border:none; border-radius:12px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; white-space:nowrap }
+    .blog-newsletter-form button:hover { background:#6d28d9; transform:translateY(-1px) }
+
+    /* GRID OVERLAY */
+    .grid-overlay { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:0; max-width:1320px; margin:0 auto; padding:0 40px }
+    .grid-overlay::before { content:''; position:absolute; top:0; bottom:0; left:40px; right:40px; border-left:2px solid #e8e8e8; border-right:2px solid #e8e8e8 }
+    body > *:not(.grid-overlay):not(.nav-wrap) { position:relative; z-index:1 }
+
+    /* DIVIDERS */
+    .divider { position:relative; z-index:2 }
+    .divider-line { height:2px; background:#e8e8e8 }
+    .divider-plus-wrap { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); max-width:1320px; margin:0 auto; padding:0 40px; pointer-events:none }
+    .divider-plus-inner { position:relative }
+    .divider-plus-inner::before { content:'+'; position:absolute; top:50%; left:-12px; transform:translateY(-50%); font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+    .divider-plus-inner::after { content:'+'; position:absolute; top:50%; right:-12px; transform:translateY(-50%); font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+
+    /* FOOTER */
+    .foot { padding:56px 40px 32px; background:transparent }
+    .foot-inner { max-width:1200px; margin:0 auto }
+    .foot-top { display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr 1fr; gap:40px; margin-bottom:56px }
+    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:14px }
+    .foot-brand-p { font-size:13px; color:#999; line-height:1.7; max-width:280px; margin-bottom:24px }
+    .foot-mission { font-size:12px; color:#bbb; line-height:1.6; max-width:280px; margin-bottom:20px }
+    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; color:#111; margin-bottom:16px }
+    .foot-col a { display:block; font-size:13px; color:#888; padding:5px 0; transition:color 0.2s }
+    .foot-col a:hover { color:#111 }
+    .foot-bottom { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding-top:24px; border-top:1px solid #e8e8e8 }
+    .foot-copy { font-size:12px; color:#bbb }
+    .foot-socials { display:flex; gap:10px }
+    .foot-socials a { width:32px; height:32px; border-radius:50%; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; color:#999; transition:all 0.2s }
+    .foot-socials a:hover { color:#111; border-color:#ccc }
+    .foot-socials svg { width:14px; height:14px }
+
+    /* RESPONSIVE */
+    @media(max-width:1024px) {
+      .blog-featured-card { grid-template-columns:1fr }
+      .blog-featured-img { min-height:260px }
+      .blog-grid { grid-template-columns:repeat(2,1fr) }
+    }
+    @media(max-width:768px) {
+      .nav-wrap { padding:8px 16px 0 }
+      .nav { padding:0 16px }
+      .nav-center { display:none }
+      .blog-hero { padding:100px 16px 32px }
+      .blog-hero h1 { font-size:36px }
+      .blog-hero p { font-size:16px }
+      .blog-filters { padding:0 16px 28px }
+      .blog-featured { padding:0 16px 28px }
+      .blog-featured-body { padding:28px 24px }
+      .blog-featured-body .blog-card-title { font-size:22px }
+      .blog-grid { grid-template-columns:1fr; padding:0 16px 60px }
+      .blog-newsletter { padding:0 16px 60px }
+      .blog-newsletter-inner { padding:36px 20px }
+      .blog-newsletter-inner h2 { font-size:24px }
+      .blog-newsletter-form { flex-direction:column }
+      .foot { padding:40px 16px 20px }
+      .foot-top { grid-template-columns:1fr 1fr; gap:24px }
+      .foot-bottom { flex-direction:column; gap:12px }
+      .foot-top > div:first-child { grid-column:span 2 }
+    }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  </head>
+<body>
+
+  <div class="grid-overlay"></div>
+
+  <!-- NAV -->
+  <div class="nav-wrap" id="navbar">
+    <nav class="nav">
+      <a href="/" class="nav-logo">formalist</a>
+      <div class="nav-center">
+        <div class="nav-dropdown">
+          <span class="nav-dropdown-trigger">Fonctionnalit&eacute;s <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>
+          <div class="nav-mega">
+            <div class="nav-mega-grid">
+              <div class="nav-mega-col">
+                <h5>Par type</h5>
+                <div class="nav-mega-col-2">
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg></div><div><strong>Cr&eacute;ation d'entreprise</strong><span>SASU, SAS, SARL, SCI, EURL</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><strong>Modification de soci&eacute;t&eacute;</strong><span>Si&egrave;ge, objet social, dirigeant</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><strong>Contrats</strong><span>NDA, CGV, CGU, prestation</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div><strong>Fermeture de soci&eacute;t&eacute;</strong><span>Dissolution et liquidation</span></div></a>
+                </div>
+              </div>
+              <div class="nav-mega-col">
+                <h5>Outils</h5>
+                <div class="nav-mega-col-tools">
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong>Validation avocat</strong><span>V&eacute;rification de chaque clause</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></div><div><strong>Signature eIDAS</strong><span>Valeur l&eacute;gale europ&eacute;enne</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div><strong>Chat avocat</strong><span>R&eacute;ponse sous 24h</span></div></a>
+                </div>
+              </div>
+              <div class="nav-mega-col">
+                <div class="nav-mega-cta">
+                  <div class="nav-mega-cta-badge">Nouveau</div>
+                  <div class="nav-mega-cta-title">Cr&eacute;ez votre entreprise en 5&nbsp;minutes</div>
+                  <a href="/connexion.html" class="nav-mega-cta-link">Commencer &rarr;</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <a href="/#pricing">Tarification</a>
+        <a href="/#temoignages">T&eacute;moignages</a>
+        <a href="/blog.html" class="active">Blog</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+      <div class="nav-right">
+        <a href="/connexion.html" class="btn btn-dark">Commencer <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- BLOG HERO -->
+  <div class="blog-hero">
+    <h1>Le blog Formalist</h1>
+    <p>Guides pratiques, actualit&eacute;s juridiques et conseils pour entrepreneurs. Tout pour piloter vos formalit&eacute;s en toute s&eacute;r&eacute;nit&eacute;.</p>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="blog-filters">
+    <div class="blog-filter active">Tous</div>
+    <div class="blog-filter">Fiscalit&eacute;</div>
+    <div class="blog-filter">Juridique</div>
+    <div class="blog-filter">Cr&eacute;ation</div>
+    <div class="blog-filter">Comptabilit&eacute;</div>
+    <div class="blog-filter">Guides</div>
+  </div>
+
+  <!-- FEATURED ARTICLE -->
+  <div class="blog-featured">
+    <a href="/blog/reforme-formalites-2026.html" class="blog-featured-card">
+      <div class="blog-featured-img theme-violet">
+        <div class="illus">
+          <div class="illus-circle" style="width:140px;height:140px;top:20px;left:30px"></div>
+          <div class="illus-circle" style="width:80px;height:80px;top:60px;right:10px;opacity:0.6"></div>
+          <div class="illus-icon" style="top:30px;left:60px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="top:20px;right:30px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="bottom:20px;left:80px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="illus-dot" style="width:20px;height:20px;bottom:40px;right:30px"></div>
+          <div class="illus-dot" style="width:12px;height:12px;top:10px;left:20px;opacity:0.5"></div>
+        </div>
+      </div>
+      <div class="blog-featured-body">
+        <div class="blog-card-tag tag-juridique">Juridique</div>
+        <div class="blog-card-title">R&eacute;forme des formalit&eacute;s d'entreprise 2026 : ce qui change pour les entrepreneurs</div>
+        <div class="blog-card-excerpt">Nouvelles obligations, d&eacute;lais raccourcis, d&eacute;mat&eacute;rialisation compl&egrave;te : d&eacute;cryptage complet de la r&eacute;forme qui transforme la cr&eacute;ation et la gestion d'entreprise en France d&egrave;s cette ann&eacute;e.</div>
+        <div class="read-more">Lire l'article <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        <div class="blog-card-meta" style="margin-top:16px">
+          <span>12 mars 2026</span>
+          <span class="dot"></span>
+          <span>12 min de lecture</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- BLOG GRID -->
+  <div class="blog-grid" style="padding-top:48px">
+
+    <!-- Card 1 : Fiscal / Orange -->
+    <a href="/blog/article.html" class="blog-card reveal">
+      <div class="blog-card-img theme-orange">
+        <div class="illus">
+          <div class="illus-circle" style="width:120px;height:120px;top:10px;left:20px"></div>
+          <div class="illus-circle" style="width:60px;height:60px;top:50px;right:20px;opacity:0.5"></div>
+          <div class="illus-icon" style="top:20px;left:50px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="bottom:20px;right:30px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div class="illus-dot" style="width:16px;height:16px;top:15px;right:40px"></div>
+        </div>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-tag tag-fiscal">Fiscalit&eacute;</div>
+        <div class="blog-card-title">R&eacute;forme TVA 2026 : les nouveaux seuils de franchise qui changent tout</div>
+        <div class="blog-card-excerpt">Seuil unique de 25 000 &euro; en franchise de base, suppression des seuils major&eacute;s : d&eacute;cryptage complet de la r&eacute;forme TVA applicable au 1er...</div>
+        <div class="blog-card-meta">
+          <span>10 mars 2026</span>
+          <span class="dot"></span>
+          <span>8 min de lecture</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Card 2 : Compta / Blue -->
+    <a href="/blog/logiciel-comptabilite-2026.html" class="blog-card reveal reveal-d1">
+      <div class="blog-card-img theme-blue">
+        <div class="illus">
+          <div class="illus-circle" style="width:110px;height:110px;top:20px;left:40px"></div>
+          <div class="illus-circle" style="width:70px;height:70px;top:10px;right:10px;opacity:0.4"></div>
+          <div class="illus-icon" style="top:30px;left:60px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="top:10px;right:30px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div class="illus-dot" style="width:14px;height:14px;bottom:30px;left:30px"></div>
+          <div class="illus-dot" style="width:10px;height:10px;bottom:20px;right:20px;opacity:0.5"></div>
+        </div>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-tag tag-compta">Comptabilit&eacute;</div>
+        <div class="blog-card-title">Comment choisir son logiciel de comptabilit&eacute; en 2026 : le guide complet</div>
+        <div class="blog-card-excerpt">Crit&egrave;res essentiels, comparatif des solutions et erreurs &agrave; &eacute;viter pour choisir le logiciel comptable adapt&eacute; &agrave; votre PME fran&ccedil;aise.</div>
+        <div class="blog-card-meta">
+          <span>25 f&eacute;vrier 2026</span>
+          <span class="dot"></span>
+          <span>9 min de lecture</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Card 3 : Juridique / Pink -->
+    <a href="/blog/sanctions-facturation-2026.html" class="blog-card reveal reveal-d2">
+      <div class="blog-card-img theme-pink">
+        <div class="illus">
+          <div class="illus-circle" style="width:100px;height:100px;top:30px;right:30px"></div>
+          <div class="illus-circle" style="width:70px;height:70px;top:10px;left:20px;opacity:0.5"></div>
+          <div class="illus-icon" style="top:15px;right:40px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="bottom:25px;left:50px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <div class="illus-dot" style="width:18px;height:18px;top:20px;left:50px"></div>
+          <div class="illus-dot" style="width:12px;height:12px;bottom:35px;right:25px;opacity:0.4"></div>
+        </div>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-tag tag-juridique">Juridique</div>
+        <div class="blog-card-title">Sanctions pour non-conformit&eacute; de facturation : risques et montants en 2026</div>
+        <div class="blog-card-excerpt">Amendes, redressements fiscaux, p&eacute;nalit&eacute;s p&eacute;nales : tout ce que risque votre entreprise en cas de factures non conformes.</div>
+        <div class="blog-card-meta">
+          <span>20 f&eacute;vrier 2026</span>
+          <span class="dot"></span>
+          <span>7 min de lecture</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Card 4 : Cr&eacute;ation / Violet -->
+    <a href="/blog/sasu-ou-sarl-2026.html" class="blog-card reveal">
+      <div class="blog-card-img theme-violet">
+        <div class="illus">
+          <div class="illus-circle" style="width:130px;height:130px;top:10px;left:30px"></div>
+          <div class="illus-icon" style="top:25px;left:55px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="bottom:15px;right:25px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+          </div>
+          <div class="illus-dot" style="width:14px;height:14px;top:20px;right:35px"></div>
+          <div class="illus-circle" style="width:50px;height:50px;bottom:10px;left:10px;opacity:0.4"></div>
+        </div>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-tag tag-creation">Cr&eacute;ation</div>
+        <div class="blog-card-title">SASU ou SARL en 2026 : quel statut choisir pour votre projet ?</div>
+        <div class="blog-card-excerpt">R&eacute;gime social, fiscalit&eacute;, responsabilit&eacute; : comparatif d&eacute;taill&eacute; des deux statuts les plus populaires pour cr&eacute;er votre entreprise.</div>
+        <div class="blog-card-meta">
+          <span>15 f&eacute;vrier 2026</span>
+          <span class="dot"></span>
+          <span>10 min de lecture</span>
+        </div>
+      </div>
+    </a>
+
+
+    <!-- Card 6 : Tech / Cyan -->
+    <a href="/blog/signature-electronique-eidas.html" class="blog-card reveal reveal-d2">
+      <div class="blog-card-img theme-cyan">
+        <div class="illus">
+          <div class="illus-circle" style="width:100px;height:100px;top:25px;left:50px"></div>
+          <div class="illus-circle" style="width:70px;height:70px;top:10px;right:10px;opacity:0.4"></div>
+          <div class="illus-icon" style="top:30px;left:60px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="top:10px;right:35px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="illus-dot" style="width:14px;height:14px;bottom:25px;left:40px"></div>
+          <div class="illus-dot" style="width:10px;height:10px;bottom:40px;right:30px;opacity:0.5"></div>
+        </div>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-tag tag-tech">Signature</div>
+        <div class="blog-card-title">Signature &eacute;lectronique eIDAS : valeur juridique et bonnes pratiques</div>
+        <div class="blog-card-excerpt">Niveaux de signature, conformit&eacute; europ&eacute;enne et cas d'usage concrets pour s&eacute;curiser vos documents d'entreprise.</div>
+        <div class="blog-card-meta">
+          <span>1er f&eacute;vrier 2026</span>
+          <span class="dot"></span>
+          <span>5 min de lecture</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Card 7 : Fiscal / Orange -->
+    <a href="/blog/impot-societes-2026.html" class="blog-card reveal">
+      <div class="blog-card-img theme-orange">
+        <div class="illus">
+          <div class="illus-circle" style="width:100px;height:100px;top:25px;left:45px"></div>
+          <div class="illus-circle" style="width:55px;height:55px;bottom:25px;right:25px;opacity:0.5"></div>
+          <div class="illus-icon" style="top:30px;left:55px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="top:15px;right:30px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
+          <div class="illus-dot" style="width:12px;height:12px;bottom:35px;left:30px"></div>
+        </div>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-tag tag-fiscal">Fiscalit&eacute;</div>
+        <div class="blog-card-title">Imp&ocirc;t sur les soci&eacute;t&eacute;s 2026 : taux, abattements et optimisation</div>
+        <div class="blog-card-excerpt">Barème actualis&eacute;, r&eacute;ductions possibles et strat&eacute;gies l&eacute;gales pour r&eacute;duire votre charge fiscale cette ann&eacute;e.</div>
+        <div class="blog-card-meta">
+          <span>25 janvier 2026</span>
+          <span class="dot"></span>
+          <span>7 min de lecture</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Card 8 : Cr&eacute;ation / Blue -->
+    <a href="/blog/capital-social-creation.html" class="blog-card reveal reveal-d1">
+      <div class="blog-card-img theme-blue">
+        <div class="illus">
+          <div class="illus-circle" style="width:120px;height:120px;top:15px;left:35px"></div>
+          <div class="illus-icon" style="top:25px;left:55px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="bottom:20px;right:30px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="illus-dot" style="width:14px;height:14px;top:10px;right:25px"></div>
+          <div class="illus-dot" style="width:10px;height:10px;bottom:30px;left:25px;opacity:0.4"></div>
+        </div>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-tag tag-creation">Cr&eacute;ation</div>
+        <div class="blog-card-title">Capital social : combien d&eacute;poser pour cr&eacute;er votre soci&eacute;t&eacute; ?</div>
+        <div class="blog-card-excerpt">Montant minimum, strat&eacute;gies de d&eacute;p&ocirc;t et impact sur votre cr&eacute;dibilit&eacute; bancaire. Le guide pour bien d&eacute;marrer.</div>
+        <div class="blog-card-meta">
+          <span>18 janvier 2026</span>
+          <span class="dot"></span>
+          <span>6 min de lecture</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Card 9 : Juridique / Pink -->
+    <a href="/blog/cgv-obligatoires-modele.html" class="blog-card reveal reveal-d2">
+      <div class="blog-card-img theme-pink">
+        <div class="illus">
+          <div class="illus-circle" style="width:110px;height:110px;top:20px;left:40px"></div>
+          <div class="illus-icon" style="top:25px;left:55px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+          </div>
+          <div class="illus-icon-sm" style="top:10px;right:25px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <div class="illus-dot" style="width:16px;height:16px;bottom:25px;right:30px"></div>
+          <div class="illus-circle" style="width:50px;height:50px;bottom:15px;left:15px;opacity:0.3"></div>
+        </div>
+      </div>
+      <div class="blog-card-body">
+        <div class="blog-card-tag tag-juridique">Juridique</div>
+        <div class="blog-card-title">CGV obligatoires : mod&egrave;le gratuit et erreurs qui co&ucirc;tent cher</div>
+        <div class="blog-card-excerpt">Mentions l&eacute;gales requises, clauses abusives &agrave; &eacute;viter et mod&egrave;le de CGV conforme pour votre activit&eacute; en ligne.</div>
+        <div class="blog-card-meta">
+          <span>10 janvier 2026</span>
+          <span class="dot"></span>
+          <span>8 min de lecture</span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- NEWSLETTER -->
+  <div class="blog-newsletter reveal">
+    <div class="blog-newsletter-inner">
+      <h2>Restez inform&eacute;</h2>
+      <p>Recevez nos meilleurs articles et les derni&egrave;res actualit&eacute;s juridiques directement dans votre boîte mail.</p>
+      <div class="blog-newsletter-form">
+        <input type="email" placeholder="votre@email.com">
+        <button type="button">S'abonner</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- FOOTER -->
+  <footer class="foot">
+    <div class="foot-inner">
+      <div class="foot-top">
+        <div>
+          <div class="foot-brand">formalist</div>
+          <p class="foot-brand-p">La plateforme qui automatise vos formalit&eacute;s juridiques avec la rigueur d'un cabinet d'avocats.</p>
+          <p class="foot-mission">Notre mission : rendre le droit accessible, rapide et sans erreur pour chaque entrepreneur en France.</p>
+          <div class="foot-socials" style="margin-top:4px">
+            <a href="https://www.linkedin.com/company/formalist" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+            <a href="https://twitter.com/formalist_fr" target="_blank" rel="noopener" aria-label="X / Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+            <a href="https://www.instagram.com/formalist.fr" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+          </div>
+        </div>
+        <div class="foot-col">
+          <h4>Services</h4>
+          <a href="/creation.html">Cr&eacute;ation d'entreprise</a>
+          <a href="/modification.html">Modification de soci&eacute;t&eacute;</a>
+          <a href="/modification.html?type=fermeture">Fermeture de soci&eacute;t&eacute;</a>
+          <a href="/contrats.html">Contrats</a>
+          <a href="/contrats.html">Signature &eacute;lectronique</a>
+          <a href="/consultations.html">Consultation avocat</a>
+        </div>
+        <div class="foot-col">
+          <h4>Ressources</h4>
+          <a href="/blog.html">Guide juridique</a>
+          <a href="/blog.html">Blog</a>
+          <a href="/aide.html">FAQ</a>
+          <a href="mailto:contact@formalist.fr">Contact</a>
+          <a href="/aide.html">Documentation</a>
+          <a href="/blog.html">Tarifs</a>
+        </div>
+        <div class="foot-col">
+          <h4>Entreprise</h4>
+          <a href="/blog.html">&Agrave; propos</a>
+          <a href="mailto:jobs@formalist.fr">Emplois</a>
+          <a href="mailto:contact@formalist.fr">Contact</a>
+          <a href="mailto:presse@formalist.fr">Presse</a>
+        </div>
+        <div class="foot-col">
+          <h4>L&eacute;gal</h4>
+          <a href="/blog.html">Mentions l&eacute;gales</a>
+          <a href="/blog.html">Confidentialit&eacute;</a>
+          <a href="/blog.html">CGU</a>
+          <a href="/blog.html">CGV</a>
+          <a href="/blog.html">S&eacute;curit&eacute;</a>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <div class="foot-copy">&copy; 2026 Formalist. Tous droits r&eacute;serv&eacute;s.</div>
+        <div class="foot-socials">
+          <a href="https://www.linkedin.com/company/formalist" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+          <a href="https://twitter.com/formalist_fr" target="_blank" rel="noopener" aria-label="X / Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+          <a href="https://www.instagram.com/formalist.fr" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Nav scroll effect
+    window.addEventListener('scroll',function(){document.getElementById('navbar').classList.toggle('scrolled',scrollY>20)});
+    // Mega menu hover with delay
+    (function(){
+      var dd=document.querySelector('.nav-dropdown');
+      var mega=document.querySelector('.nav-mega');
+      if(!dd||!mega)return;
+      var timer=null;
+      function show(){clearTimeout(timer);dd.classList.add('open')}
+      function hide(){timer=setTimeout(function(){dd.classList.remove('open')},200)}
+      dd.addEventListener('mouseenter',show);
+      dd.addEventListener('mouseleave',hide);
+      mega.addEventListener('mouseenter',show);
+      mega.addEventListener('mouseleave',hide);
+    })();
+    // Reveal on scroll
+    var obs=new IntersectionObserver(function(e){e.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el)});
+    // Filter tabs
+    document.querySelectorAll('.blog-filter').forEach(function(f){
+      f.addEventListener('click',function(){
+        document.querySelectorAll('.blog-filter').forEach(function(t){t.classList.remove('active')});
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

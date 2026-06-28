@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mes formalités - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>    .sidebar {
+      width: 270px;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0 0;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
+    .sidebar-logo a { display: flex; align-items: flex-end; gap: 6px; color: #111; text-decoration: none; }
+    .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; color: #111; line-height: 1; }
+    .sidebar-logo img { height: 26px; }
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer; margin-bottom: 2px;
+    }
+    .sidebar-nav a:hover, .sidebar-nav .sidebar-dropdown:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
+    .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
+    .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
+    .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
+    .sidebar-dropdown:hover .chevron { opacity: 0.6; }
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .sidebar-subnav.open { max-height: 320px; }
+    .sidebar-subnav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 12px 8px 44px; font-size: 13.5px; font-weight: 400; color: #666;
+      border-radius: 8px; transition: all 0.15s ease;
+    }
+    .sidebar-subnav a svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.72; stroke-width: 1.7; }
+    .sidebar-subnav a:hover { color: #111; background: #f6f6f6; }
+    .sidebar-subnav a:hover svg { opacity: 0.92; }
+    .sidebar-subnav a.active { color: #111; font-weight: 500; background: #f3f3f3; }
+    .sidebar-subnav a.active svg { opacity: 1; }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+    .sidebar-bottom {
+      padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #111;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .user-email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .btn-logout, .btn-settings {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .btn-logout:hover, .btn-settings:hover { color: #111; background: #f3f3f4; }
+    .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
+
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    @font-face { font-family: 'Cal Sans'; src: url('/fonts/CalSans-SemiBold.otf') format('opentype'); font-weight: 600; font-display: block; }
+    @font-face { font-family: 'Matter'; src: url('/fonts/Matter-Regular.ttf') format('truetype'); font-weight: 400; font-display: block; }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: 'Matter', 'Inter', -apple-system, sans-serif; color: #111; background: #f5f5f5; display: flex; }
+    a { text-decoration: none; color: inherit; }
+
+    /* SIDEBAR */
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    /* MAIN */
+    .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; margin-left: 270px; }
+    .topbar { padding: 30px 48px 24px; background: transparent; display: flex; align-items: baseline; justify-content: space-between; }
+    .topbar h1 { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; line-height: 1; }
+    .topbar-date { font-size: 13px; color: #999; }
+    .content { padding: 16px 48px 48px; flex: 1; }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat-card {
+      background: #fff; border-radius: 16px;
+      padding: 24px 26px;
+      border: 1px solid #eee;
+      position: relative; overflow: hidden;
+      transition: all 0.2s;
+    }
+    .stat-card:hover { border-color: #d0d0d2; }
+    .stat-card-icon {
+      position: absolute; top: 20px; right: 22px;
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .stat-card-icon svg { width: 22px; height: 22px; }
+    .stat-card-icon.blue  { background: #eff6ff; color: #2563eb; }
+    .stat-card-icon.green { background: #ecfdf5; color: #059669; }
+    .stat-card-icon.gray  { background: #f3f4f6; color: #6b7280; }
+    .stat-card.empty { opacity: 0.6; background: #fafafa; }
+    .stat-card.empty .stat-value { color: #bbb !important; }
+    .stat-card.empty .stat-card-icon { background: #f3f4f6 !important; color: #aaa !important; }
+    .stat-sub {
+      font-size: 14px; color: #888; margin-top: 8px;
+    }
+    .stat-label { font-size: 14px; color: #999; margin-bottom: 8px; font-weight: 500; }
+    .stat-value { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 40px; font-weight: 700; letter-spacing: 0; line-height: 1; }
+
+    /* FILTERS */
+    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+    .filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-spacer { flex: 1; min-width: 16px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 100px; border: 1px solid #e5e5e5; background: transparent; font-size: 13.5px; font-family: inherit; color: #666; cursor: pointer; transition: all 0.2s ease; }
+    .pill:hover { border-color: #ccc; color: #111; }
+    .pill.active { background: #111; color: #fff; border-color: #111; }
+    .pill-count {
+      font-size: 11.5px; font-weight: 500; opacity: 0.7;
+    }
+    .pill.active .pill-count { color: #fff; opacity: 0.75; }
+    /* Custom dropdown */
+    .custom-select { position: relative; display: inline-block; }
+    .custom-select-trigger {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 16px 11px 18px;
+      border: 1px solid #e5e5e7; border-radius: 100px;
+      background: #fff; color: #111;
+      font-size: 14px; font-family: inherit; font-weight: 500;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .custom-select-trigger:hover { border-color: #d4d4d6; }
+    .custom-select-trigger svg { width: 14px; height: 14px; color: #888; transition: transform 0.2s; }
+    .custom-select.open .custom-select-trigger { border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,0.06); }
+    .custom-select.open .custom-select-trigger svg { transform: rotate(180deg); color: #111; }
+    .custom-select-menu {
+      display: none; position: absolute;
+      top: calc(100% + 6px); right: 0;
+      background: #fff; border: 1px solid #eee;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+      padding: 6px; min-width: 180px; z-index: 200;
+      animation: dropdownIn 0.15s ease;
+    }
+    .custom-select.open .custom-select-menu { display: block; }
+    @keyframes dropdownIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .custom-select-option {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 9px 12px;
+      background: none; border: none; cursor: pointer;
+      border-radius: 8px; font-size: 13.5px; font-family: inherit;
+      text-align: left; color: #333;
+      transition: all 0.12s;
+    }
+    .custom-select-option:hover { background: #f5f5f7; color: #111; }
+    .custom-select-option.active { background: #f3f3f4; color: #111; font-weight: 600; }
+    .custom-select-option .check { width: 14px; height: 14px; color: #111; opacity: 0; flex-shrink: 0; }
+    .custom-select-option.active .check { opacity: 1; }
+    .search-wrapper { position: relative; }
+    .search-wrapper svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: #999; pointer-events: none; }
+    .search-input {
+      padding: 11px 16px 11px 44px;
+      border: 1px solid #e5e5e7; border-radius: 100px;
+      font-size: 14px; font-family: inherit;
+      width: 280px; background: #fff; color: #111;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-input::placeholder { color: #aaa; }
+    .search-input:hover { border-color: #d4d4d6; }
+    .search-input:focus { outline: none; border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,0.06); }
+
+    /* DOSSIER CARDS */
+    .dossiers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; margin-bottom: 48px; }
+    .dossier-card { background: #fff; border-radius: 16px; padding: 24px; border: 1px solid #e5e5e5; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; text-decoration: none; color: inherit; display: block; }
+    .dossier-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.06); transform: translateY(-2px); }
+    .dossier-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .type-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 100px; }
+    .type-badge.sasu, .type-badge.sas, .type-badge.sarl, .type-badge.contrat, .type-badge.sci, .type-badge.eurl { background: #f5f5f5; color: #111; }
+    .type-badge.default { background: #f5f5f5; color: #666; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 12px; border-radius: 100px; }
+    .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .status-badge.done { background: #f0fdf4; color: #22c55e; }
+    .status-badge.pending { background: #fffbeb; color: #f59e0b; }
+    .status-badge.progress { background: #f5f5f5; color: #666; }
+    .dossier-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 4px; }
+    .dossier-meta { font-size: 13px; color: #999; margin-bottom: 16px; }
+    .dossier-progress { margin-bottom: 12px; }
+    .dossier-progress-bar { width: 100%; height: 4px; background: #f5f5f5; border-radius: 100px; overflow: hidden; }
+    .dossier-progress-fill { height: 100%; border-radius: 100px; transition: width 0.2s ease; background: #111; }
+    .dossier-footer { display: flex; align-items: center; justify-content: space-between; }
+    .dossier-date { font-size: 12px; color: #999; }
+    .dossier-action { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; color: #111; }
+    .dossier-action svg { width: 14px; height: 14px; }
+    .dossier-card:hover .dossier-action { text-decoration: underline; }
+    .notif-badge { display: inline-flex; align-items: center; justify-content: center; background: #ef4444; color: #fff; font-size: 11px; font-weight: 600; min-width: 20px; height: 20px; border-radius: 10px; padding: 0 6px; margin-left: 8px; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 48px 20px; background: #fff; border-radius: 16px; border: 2px dashed #e5e5e5; }
+    .empty-state-icon { width: 56px; height: 56px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .empty-state-icon svg { width: 24px; height: 24px; color: #999; }
+    .empty-state-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .empty-state-desc { font-size: 13px; color: #999; }
+
+    /* MOBILE */
+    .sidebar-toggle { display: none; position: fixed; top: 16px; left: 16px; z-index: 200; width: 40px; height: 40px; border-radius: 10px; background: transparent; border: 1px solid #e5e5e5; cursor: pointer; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .sidebar-toggle svg { width: 20px; height: 20px; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
+    @media (max-width: 768px) {
+      .sidebar.mobile-open { transform: translateX(0); }
+      .sidebar-toggle { display: flex; }
+      .sidebar-overlay.visible { display: block; }
+      .main { margin-left: 0; }
+      .topbar { padding-left: 64px; }
+      .content { padding: 20px; }
+      .stats { grid-template-columns: 1fr; }
+      .dossiers-grid { grid-template-columns: 1fr; }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .search-wrapper { margin-left: 0; }
+      .search-input { width: 100%; }
+      .filter-separator { display: none; }
+    }
+  </style>
+
+  <!-- BEGIN sidebar refresh (auto-generated) -->
+  <style>
+    /* Logo */
+    .sidebar-logo a { display: inline-flex !important; align-items: baseline !important; gap: 3px !important; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif !important;
+      font-size: 30px !important; font-weight: 700 !important;
+      letter-spacing: 0 !important; line-height: 1 !important;
+      color: #111 !important;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    /* Société active */
+    .sidebar-context {
+      margin: 0 12px 12px; padding: 10px 12px;
+      background: #fafafa; border: 1px solid #eee; border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .sidebar-context:hover { background: #f3f3f4; border-color: #e2e2e4; }
+    .sidebar-context .ctx-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
+    .sidebar-context .ctx-body { flex: 1; min-width: 0; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-context.single { cursor: default; }
+    .sidebar-context.single:hover { background: #fafafa; border-color: #eee; }
+    .sidebar-context.single .ctx-chevron { display: none; }
+    /* CTA primaire "Nouvelle formalité" */
+    .sidebar-cta {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active { transform: scale(0.99); }
+    .sidebar-cta svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    /* Badges dans la nav */
+    .nav-badge {
+      margin-left: auto;
+      background: #f3f4f6; color: #555;
+      font-size: 11.5px; font-weight: 500;
+      padding: 2px 9px; border-radius: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .nav-badge.muted { background: #f0f0f2; color: #666; }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+
+
+    /* Modal Nouvelle formalité */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    @media (max-width: 600px) { .nd-grid { grid-template-columns: 1fr; } }
+  </style>
+  <!-- END sidebar refresh -->
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+  <script src="/js/common.js"></script>
+  <script>
+    var _currentUser = null;
+    fetch('/api/auth/me').then(function(r) {
+      if (r.status !== 200) { window.location.href = '/connexion.html'; return null; }
+      return r.json();
+    }).then(function(data) {
+      if (!data) return;
+      _currentUser = data.user;
+      document.querySelector('.user-name').textContent = data.user.name;
+      document.querySelector('.user-email').textContent = data.user.email;
+      var initials = data.user.name.split(' ').map(function(n) { return n[0]; }).join('').substring(0,2).toUpperCase();
+      document.querySelector('.avatar').textContent = initials;
+      loadAllDossiers();
+    }).catch(function() { window.location.href = '/connexion.html'; });
+  </script>
+
+  <button class="sidebar-toggle" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- SIDEBAR -->
+          <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-context" id="sidebar-context" style="display:none;">
+      <div class="ctx-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0M9 17h0M15 17h0"/></svg>
+      </div>
+      <div class="ctx-body">
+        <div class="ctx-label">Soci&eacute;t&eacute; active</div>
+        <div class="ctx-name" id="ctx-name"></div>
+      </div>
+      <svg class="ctx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <button class="sidebar-cta" onclick="openNewActionModal()">
+      Cr&eacute;er une formalit&eacute;
+    </button>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a class="active" href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+
+      <a href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){sessionStorage.removeItem('user');window.location.href='/connexion.html';})" title="D&eacute;connexion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <h1>Mes formalit&eacute;s</h1>
+      <span class="topbar-date" id="current-date"></span>
+    </div>
+    <div class="content">
+      <div class="stats" id="stats-row">
+        <div class="stat-card" id="card-encours">
+          <div class="stat-card-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-label">En cours</div>
+          <div class="stat-value" id="stat-encours">0</div>
+          <div class="stat-sub" id="sub-encours">&nbsp;</div>
+        </div>
+        <div class="stat-card" id="card-done">
+          <div class="stat-card-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="stat-label">Termin&eacute;es</div>
+          <div class="stat-value" id="stat-done">0</div>
+          <div class="stat-sub" id="sub-done">&nbsp;</div>
+        </div>
+        <div class="stat-card" id="card-total">
+          <div class="stat-card-icon gray">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-sub" id="sub-total">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-group" id="status-filters">
+          <button class="pill active" data-status="all" onclick="setStatusFilter('all')">Tous <span class="pill-count" id="pc-all">0</span></button>
+          <button class="pill" data-status="progress" onclick="setStatusFilter('progress')">En cours <span class="pill-count" id="pc-progress">0</span></button>
+          <button class="pill" data-status="pending" onclick="setStatusFilter('pending')">En attente <span class="pill-count" id="pc-pending">0</span></button>
+          <button class="pill" data-status="done" onclick="setStatusFilter('done')">Termin&eacute;es <span class="pill-count" id="pc-done">0</span></button>
+        </div>
+        <div class="filter-spacer"></div>
+        <div class="custom-select" id="type-select">
+          <button type="button" class="custom-select-trigger" onclick="toggleTypeSelect(event)">
+            <span id="type-select-label">Tous types</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="custom-select-menu" role="listbox">
+            <button type="button" class="custom-select-option active" data-value="all" onclick="pickType('all', 'Tous types')">
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Tous types
+            </button>
+            <button type="button" class="custom-select-option" data-value="formalite" onclick="pickType('formalite', 'Entreprises')">
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Entreprises
+            </button>
+            <button type="button" class="custom-select-option" data-value="contrat" onclick="pickType('contrat', 'Contrats')">
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Contrats
+            </button>
+          </div>
+        </div>
+        <div class="search-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" placeholder="Rechercher..." oninput="applyFilters()">
+        </div>
+      </div>
+
+      <div id="dossiers-container">
+        <div class="empty-state"><div class="empty-state-title">Chargement...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleDropdown(el) { el.classList.toggle('open'); var s = el.nextElementSibling; if (s) s.classList.toggle('open'); }
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); document.getElementById('sidebarOverlay').classList.toggle('visible'); }
+
+    var d = new Date();
+    (function(){ var s = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); document.getElementById('current-date').textContent = s.charAt(0).toUpperCase() + s.slice(1); })();
+
+    function formatRelativeDate(isoStr) {
+      if (!isoStr) return '';
+      var date = new Date(isoStr); var now = new Date(); var diffMs = now - date;
+      var diffMin = Math.floor(diffMs / 60000); var diffH = Math.floor(diffMs / 3600000); var diffD = Math.floor(diffMs / 86400000);
+      if (diffMin < 1) return "\u00c0 l'instant";
+      if (diffMin < 60) return 'Il y a ' + diffMin + ' min';
+      if (diffH < 24) return 'Il y a ' + diffH + 'h';
+      if (diffD < 7) return 'Il y a ' + diffD + 'j';
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    function escapeHtml(str) { var div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+
+    var allDossiers = [];
+    var currentTypeFilter = 'all';
+    var currentStatusFilter = 'all';
+    var loadedSources = 0;
+
+    function checkAllLoaded() {
+      loadedSources++;
+      if (loadedSources >= 2) applyFilters();
+    }
+
+    function loadAllDossiers() {
+      allDossiers = []; loadedSources = 0;
+
+      // Mapping phase lifecycle \u2192 libell\u00e9 statut personnalis\u00e9
+      function phaseStatusLabel(phase, banque) {
+        var p = parseInt(phase) || 1;
+        if (p === 1) return banque ? '\u00c0 d\u00e9poser chez ' + banque : 'En attente du d\u00e9p\u00f4t du capital';
+        if (p === 2) return 'En attente d\u2019attestation';
+        if (p === 3) return 'En attente de signature';
+        if (p === 4) return 'En r\u00e9vision par l\u2019avocat';
+        if (p === 5) return 'En cours d\u2019immatriculation';
+        if (p >= 6) return 'Termin\u00e9e';
+        return 'En cours';
+      }
+      // Indexe les soci\u00e9t\u00e9s serveur pour d\u00e9dupliquer les drafts localStorage
+      var serverTitles = {};
+      fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
+        (data.formalites || []).forEach(function(f) {
+          var totalSteps = (f.offer && f.offer !== 'starter') ? 6 : 5;
+          var progress = Math.round((f.phase / totalSteps) * 100);
+          var sc = f.status === 'terminee' ? 'done' : f.status === 'en_attente' ? 'pending' : 'progress';
+          var sl;
+          if (f.status === 'terminee') sl = 'Termin\u00e9e';
+          else sl = phaseStatusLabel(f.phase, f.banque);
+          allDossiers.push({ id: f.id, type: 'formalite', typeBadge: (f.forme||'').toLowerCase()||'default', typeBadgeLabel: f.type||f.forme||'Formalit\u00e9', title: f.societe||'Sans nom', status: sc, statusLabel: sl, progress: progress, updatedAt: f.updated_at, link: '/creation.html?id='+f.id, unread: f.unread_messages||0 });
+          var key = ((f.societe||'')+'|'+(f.forme||'')).toLowerCase();
+          serverTitles[key] = true;
+        });
+        // Ajoute les drafts localStorage (formalit\u00e9s en cours de saisie, pas encore pay\u00e9es)
+        try {
+          var raw = localStorage.getItem('formalist_formalites');
+          if (raw) {
+            var drafts = JSON.parse(raw) || [];
+            drafts.forEach(function(d) {
+              var key = ((d.societe||'')+'|'+(d.forme||'')).toLowerCase();
+              // Si la m\u00eame formalit\u00e9 existe c\u00f4t\u00e9 serveur, on garde la version serveur (skip)
+              if (serverTitles[key]) return;
+              var progress = Math.round(((d.step||1) / (d.totalSteps||7)) * 100);
+              var draftLabel;
+              var step = d.step || 1;
+              if (step >= 7) draftLabel = 'Paiement \u00e0 finaliser';
+              else if (step === 6) draftLabel = 'Choix de l\u2019offre';
+              else if (step === 5) draftLabel = 'Pi\u00e8ces justificatives';
+              else if (step === 4) draftLabel = 'R\u00e9partition du capital';
+              else if (step === 3) draftLabel = 'Saisie des dirigeants';
+              else if (step === 2) draftLabel = 'Saisie des associ\u00e9s';
+              else draftLabel = 'En cours de saisie';
+              allDossiers.push({
+                id: 'draft_' + d.id,
+                type: 'formalite',
+                typeBadge: (d.forme||'').toLowerCase()||'default',
+                typeBadgeLabel: d.type || d.forme || 'Formalit\u00e9',
+                title: d.societe || 'Sans nom',
+                status: 'progress',
+                statusLabel: draftLabel,
+                progress: progress,
+                updatedAt: d.updatedAt || new Date().toISOString(),
+                link: '/creation.html',
+                unread: 0,
+                isDraft: true
+              });
+            });
+          }
+        } catch (_) {}
+        checkAllLoaded();
+      }).catch(function() { checkAllLoaded(); });
+
+      fetch('/api/contrats').then(function(r) { if (r.status===404) return {contrats:[]}; return r.json(); }).then(function(data) {
+        (data.contrats || []).forEach(function(c) {
+          var sc = c.status==='signe'||c.status==='terminee' ? 'done' : c.status==='en_attente' ? 'pending' : 'progress';
+          var sl = sc==='done' ? 'Sign\u00e9' : sc==='pending' ? 'En attente' : 'En cours';
+          allDossiers.push({ id: c.id, type: 'contrat', typeBadge: 'contrat', typeBadgeLabel: c.type||'Contrat', title: c.title||c.name||'Contrat #'+c.id, status: sc, statusLabel: sl, progress: c.progress||(sc==='done'?100:sc==='pending'?20:50), updatedAt: c.updated_at, link: '/contrats.html?id='+c.id, unread: 0 });
+        });
+        checkAllLoaded();
+      }).catch(function() { checkAllLoaded(); });
+
+    }
+
+    window.setTypeFilter = function(type) {
+      currentTypeFilter = type;
+      applyFilters();
+    };
+    window.toggleTypeSelect = function(e) {
+      e.stopPropagation();
+      var s = document.getElementById('type-select');
+      s.classList.toggle('open');
+    };
+    window.pickType = function(value, label) {
+      var s = document.getElementById('type-select');
+      var lbl = document.getElementById('type-select-label');
+      if (lbl) lbl.textContent = label;
+      s.querySelectorAll('.custom-select-option').forEach(function(o){
+        o.classList.toggle('active', o.dataset.value === value);
+      });
+      s.classList.remove('open');
+      setTypeFilter(value);
+    };
+    // Close dropdown on outside click / Escape
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.custom-select')) {
+        document.querySelectorAll('.custom-select.open').forEach(function(el){ el.classList.remove('open'); });
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.custom-select.open').forEach(function(el){ el.classList.remove('open'); });
+      }
+    });
+    window.setStatusFilter = function(status) {
+      currentStatusFilter = status;
+      document.querySelectorAll('#status-filters .pill').forEach(function(p) { p.classList.toggle('active', p.dataset.status === status); });
+      applyFilters();
+    };
+
+    function applyFilters() {
+      var search = (document.querySelector('.search-input').value || '').toLowerCase();
+      // Liste pré-filtrée par TYPE + search (mais sans le filtre statut, pour pouvoir compter par statut)
+      var preFiltered = allDossiers.filter(function(d) {
+        if (currentTypeFilter !== 'all' && d.type !== currentTypeFilter) return false;
+        if (search && d.title.toLowerCase().indexOf(search) === -1 && d.typeBadgeLabel.toLowerCase().indexOf(search) === -1) return false;
+        return true;
+      });
+
+      // Compteurs des pills statut
+      var counts = {
+        all: preFiltered.length,
+        progress: preFiltered.filter(function(d){ return d.status === 'progress'; }).length,
+        pending: preFiltered.filter(function(d){ return d.status === 'pending'; }).length,
+        done: preFiltered.filter(function(d){ return d.status === 'done'; }).length
+      };
+      Object.keys(counts).forEach(function(k){
+        var el = document.getElementById('pc-' + k);
+        if (el) el.textContent = counts[k];
+      });
+
+      // Filtre statut final
+      var filtered = preFiltered.filter(function(d) {
+        if (currentStatusFilter !== 'all' && d.status !== currentStatusFilter) return false;
+        return true;
+      });
+
+      var enCours = filtered.filter(function(d) { return d.status !== 'done'; }).length;
+      var done = filtered.filter(function(d) { return d.status === 'done'; }).length;
+      document.getElementById('stat-encours').textContent = enCours;
+      document.getElementById('stat-done').textContent = done;
+      document.getElementById('stat-total').textContent = filtered.length;
+
+      // Stats : on garde la card mais on grise quand la valeur est 0
+      function styleStat(cardId, valueId, subId, val, subActive, subEmpty) {
+        var card = document.getElementById(cardId);
+        var v = document.getElementById(valueId);
+        var s = document.getElementById(subId);
+        if (!card || !v) return;
+        if (val > 0) {
+          card.classList.remove('empty');
+          v.textContent = val;
+          if (s) s.textContent = subActive;
+        } else {
+          card.classList.add('empty');
+          v.textContent = '—';
+          if (s) s.textContent = subEmpty;
+        }
+      }
+      var totalAll = allDossiers.length;
+      var hasFilter = currentTypeFilter !== 'all' || currentStatusFilter !== 'all' || (search && search.length > 0);
+
+      // Sub-line "En cours" : si filtre actif → "X dossiers en cours", sinon "X % de vos formalités"
+      var subEnCours, subDone, subTotal;
+      if (hasFilter) {
+        subEnCours = enCours + (enCours > 1 ? ' dossiers en cours' : ' dossier en cours');
+        subDone    = done + (done > 1 ? ' dossiers terminés' : ' dossier terminé');
+        subTotal   = filtered.length + ' sur ' + totalAll + (totalAll > 1 ? ' formalités' : ' formalité');
+      } else {
+        var enCoursPct = (enCours > 0 && totalAll > 0) ? Math.round((enCours / totalAll) * 100) : 0;
+        var donePct    = (done > 0 && totalAll > 0) ? Math.round((done / totalAll) * 100) : 0;
+        subEnCours = enCoursPct + ' % de vos formalités';
+        subDone    = donePct + ' % finalisées';
+        subTotal   = (totalAll === 1 ? '1 formalité' : totalAll + ' formalités au total');
+      }
+
+      styleStat('card-encours', 'stat-encours', 'sub-encours', enCours, subEnCours, 'Pas de dossier en cours');
+      styleStat('card-done',    'stat-done',    'sub-done',    done,    subDone,    'Aucun dossier finalisé');
+      styleStat('card-total',   'stat-total',   'sub-total',   filtered.length, subTotal, 'Lancez une nouvelle démarche');
+
+      var container = document.getElementById('dossiers-container');
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="empty-state-title">Aucune formalit\u00e9 trouv\u00e9e</div><div class="empty-state-desc">Modifiez vos filtres ou lancez une nouvelle d\u00e9marche</div></div>';
+        return;
+      }
+
+      // Tri par date de mise à jour décroissante. Le parseur de Date peut renvoyer NaN
+      // sur le format SQLite "2026-05-31 16:00:00" (espace au lieu de T) → on normalise.
+      function _ts(v) {
+        if (!v) return 0;
+        var s = String(v);
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(s)) s = s.replace(' ', 'T') + 'Z';
+        var t = Date.parse(s);
+        return isNaN(t) ? 0 : t;
+      }
+      filtered.sort(function(a,b) { return _ts(b.updatedAt) - _ts(a.updatedAt); });
+
+      var html = '<div class="dossiers-grid">';
+      filtered.forEach(function(d) {
+        var unreadBadge = d.unread > 0 ? '<span class="notif-badge">' + d.unread + '</span>' : '';
+        html += '<a href="' + d.link + '" class="dossier-card">'
+          + '<div class="dossier-card-header"><span class="type-badge ' + d.typeBadge + '">' + escapeHtml(d.typeBadgeLabel) + '</span><span class="status-badge ' + d.status + '">' + d.statusLabel + '</span></div>'
+          + '<div class="dossier-title">' + escapeHtml(d.title) + unreadBadge + '</div>'
+          + '<div class="dossier-meta">' + formatRelativeDate(d.updatedAt) + '</div>'
+          + '<div class="dossier-progress"><div class="dossier-progress-bar"><div class="dossier-progress-fill" style="width:' + d.progress + '%"></div></div></div>'
+          + '<div class="dossier-footer"><div class="dossier-date">' + d.progress + '% compl\u00e9t\u00e9</div><div class="dossier-action">Reprendre <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></div></a>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  </script>
+
+  <!-- BEGIN sidebar refresh JS (auto-generated) -->
+  <script>
+    (function() {
+      function openNewActionModal() {
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+      }
+      function closeNewActionModal(e) {
+        if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+      }
+      window.openNewActionModal = openNewActionModal;
+      window.closeNewActionModal = closeNewActionModal;
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNewActionModal(); });
+
+      // Société active + badges
+      fetch('/api/formalites').then(function(r){ return r.json(); }).then(function(data){
+        var list = (data && data.formalites) || data || [];
+        if (!Array.isArray(list)) return;
+        var societes = list.filter(function(f){ return f && f.denomination && (f.type === 'creation' || f.type === 'modification' || !f.type); });
+        var ctx = document.getElementById('sidebar-context');
+        var nameEl = document.getElementById('ctx-name');
+        if (societes.length === 0) {
+          if (ctx) ctx.style.display = 'none';
+        } else if (societes.length === 1) {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.add('single');
+        } else {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.remove('single');
+        }
+        var enCours = list.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var badge = document.getElementById('badge-formalites');
+        if (badge && enCours > 0) { badge.textContent = String(enCours) + ' en cours'; badge.style.display = 'inline-block'; }
+      }).catch(function(){});
+      // Affiche immédiatement les valeurs cachées pour éviter le jitter
+      (function(){
+        try {
+          var cachedForm = parseInt(sessionStorage.getItem('badge_formalites') || '0');
+          var cachedMsg = parseInt(sessionStorage.getItem('badge_messagerie') || '0');
+          if (cachedForm > 0) {
+            var bF = document.getElementById('badge-formalites');
+            if (bF) { bF.textContent = String(cachedForm) + ' en cours'; bF.style.display = 'inline-block'; }
+          }
+          if (cachedMsg > 0) {
+            var bM = document.getElementById('badge-messagerie');
+            if (bM) { bM.textContent = String(cachedMsg) + ' non lu' + (cachedMsg > 1 ? 's' : ''); bM.style.display = 'inline-block'; }
+          }
+        } catch(_) {}
+      })();
+      Promise.all([
+        fetch('/api/formalites').then(function(r){ return r.json(); }).catch(function(){ return { formalites: [] }; }),
+        fetch('/api/support/unread').then(function(r){ return r.json(); }).catch(function(){ return { unread: 0 }; })
+      ]).then(function(results){
+        var fs = (results[0] && results[0].formalites) || [];
+        var enCours = fs.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var bForm = document.getElementById('badge-formalites');
+        if (bForm) {
+          if (enCours > 0) { bForm.textContent = String(enCours) + ' en cours'; bForm.style.display = 'inline-block'; }
+          else { bForm.style.display = 'none'; }
+        }
+        var unreadForm = fs.reduce(function(a, f){ return a + (f.unread_messages || 0); }, 0);
+        var unreadSupport = (results[1] && results[1].unread) || 0;
+        var total = unreadForm + unreadSupport;
+        var badge = document.getElementById('badge-messagerie');
+        if (badge) {
+          if (total > 0) { badge.textContent = String(total) + ' non lu' + (total > 1 ? 's' : ''); badge.style.display = 'inline-block'; }
+          else { badge.style.display = 'none'; }
+        }
+        try {
+          sessionStorage.setItem('badge_formalites', String(enCours));
+          sessionStorage.setItem('badge_messagerie', String(total));
+        } catch(_) {}
+      });
+    })();
+  </script>
+  <!-- END sidebar refresh JS -->
+</body>
+</html>

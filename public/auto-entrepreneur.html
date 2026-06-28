@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-entrepreneur - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>    .sidebar {
+      width: 270px;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0 0;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
+    .sidebar-logo a { display: flex; align-items: flex-end; gap: 6px; color: #111; text-decoration: none; }
+    .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; color: #111; line-height: 1; }
+    .sidebar-logo img { height: 26px; }
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer; margin-bottom: 2px;
+    }
+    .sidebar-nav a:hover, .sidebar-nav .sidebar-dropdown:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
+    .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
+    .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
+    .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
+    .sidebar-dropdown:hover .chevron { opacity: 0.6; }
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .sidebar-subnav.open { max-height: 320px; }
+    .sidebar-subnav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 12px 8px 44px; font-size: 13.5px; font-weight: 400; color: #666;
+      border-radius: 8px; transition: all 0.15s ease;
+    }
+    .sidebar-subnav a svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.72; stroke-width: 1.7; }
+    .sidebar-subnav a:hover { color: #111; background: #f6f6f6; }
+    .sidebar-subnav a:hover svg { opacity: 0.92; }
+    .sidebar-subnav a.active { color: #111; font-weight: 500; background: #f3f3f3; }
+    .sidebar-subnav a.active svg { opacity: 1; }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+    .sidebar-bottom {
+      padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #111;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .user-email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .btn-logout, .btn-settings {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .btn-logout:hover, .btn-settings:hover { color: #111; background: #f3f3f4; }
+    .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
+
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    @font-face {
+      font-family: 'Cal Sans';
+      src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Matter';
+      src: url('/fonts/Matter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-display: block;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { height: 100%; }
+    body {
+      font-family: 'Matter', 'Inter', -apple-system, sans-serif;
+      color: #111;
+      background: #f5f5f5;
+      min-height: 100%;
+      display: flex;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* SIDEBAR */
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    /* MAIN */
+    .main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; margin-left: 270px; }
+    .topbar {
+      padding: 24px 48px; background: transparent;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .topbar a { color: #999; font-size: 14px; transition: color 0.2s ease; }
+    .topbar a:hover { color: #111; }
+    .topbar svg { width: 16px; height: 16px; color: #e5e5e5; flex-shrink: 0; }
+    .topbar span { font-size: 14px; color: #111; font-weight: 500; }
+
+    .content { flex: 1; padding: 48px; max-width: 900px; margin: 0 auto; width: 100%; }
+
+    /* INTRO */
+    .intro {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e5e5e5;
+      padding: 48px;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .intro-icon {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: #f5f5f5;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .intro-icon svg { width: 28px; height: 28px; color: #111; }
+    .intro h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 12px;
+    }
+    .intro-lead {
+      font-size: 15px; color: #666; line-height: 1.7; max-width: 580px; margin: 0 auto 24px;
+    }
+    .intro-checks {
+      display: flex; flex-direction: column; gap: 12px;
+      align-items: flex-start; max-width: 480px; margin: 0 auto 28px;
+      text-align: left;
+    }
+    .intro-check {
+      display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: #666; line-height: 1.5;
+    }
+    .intro-check .check {
+      width: 22px; height: 22px; border-radius: 50%; background: #f0fdf4;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+    }
+    .intro-check .check svg { width: 13px; height: 13px; color: #22c55e; }
+    .intro-note {
+      font-size: 13px; color: #999; line-height: 1.6; max-width: 520px; margin: 0 auto 32px;
+    }
+    .btn-start {
+      font-family: 'Matter', 'Inter', sans-serif;
+      background: #111; color: #fff;
+      padding: 14px 40px; border-radius: 100px;
+      font-size: 15px; font-weight: 400; letter-spacing: 0.2px;
+      border: none; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-start:hover {
+      background: #000;
+      transform: translateY(-1px);
+    }
+
+    /* FORM SECTION */
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    /* STEPPER */
+    .stepper {
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 36px; position: relative; gap: 0;
+    }
+    .step {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      position: relative; z-index: 1;
+    }
+    .step-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+      background: #f5f5f5; border: 2px solid #e5e5e5; color: #999;
+      transition: all 0.2s ease;
+    }
+    .step.active .step-circle { background: #111; border-color: #111; color: #fff; transform: scale(1.05); }
+    .step.done .step-circle { background: #111; border-color: #111; color: #fff; }
+    .step-label { font-size: 11px; color: #999; transition: color 0.2s ease; letter-spacing: 0.2px; }
+    .step.active .step-label { color: #111; font-weight: 600; }
+    .step.done .step-label { color: #111; font-weight: 500; }
+    .step-segment {
+      flex: 1; height: 2px; max-width: 48px; min-width: 20px;
+      background: #e5e5e5; border-radius: 1px;
+      margin: 0 4px; align-self: flex-start; margin-top: 18px;
+      transition: background 0.2s ease;
+      position: relative; overflow: hidden;
+    }
+    .step-segment.done { background: #111; }
+    .step-segment.active { background: linear-gradient(90deg, #111 50%, #e5e5e5 50%); }
+
+    .step.done .step-circle svg { width: 16px; height: 16px; }
+
+    /* STEP TRANSITIONS */
+    .step-content {
+      display: none;
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    .step-content.active {
+      display: block;
+      animation: slideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .step-content.exit-left {
+      display: block;
+      animation: slideOutLeft 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .step-content.exit-right {
+      display: block;
+      animation: slideOutRight 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .step-content.enter-from-left {
+      display: block;
+      animation: slideInFromLeft 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes slideIn {
+      0% { opacity: 0; transform: translateX(30px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideOutLeft {
+      0% { opacity: 1; transform: translateX(0); }
+      100% { opacity: 0; transform: translateX(-30px); }
+    }
+    @keyframes slideInFromLeft {
+      0% { opacity: 0; transform: translateX(-30px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideOutRight {
+      0% { opacity: 1; transform: translateX(0); }
+      100% { opacity: 0; transform: translateX(30px); }
+    }
+
+    /* FORM CARD */
+    .form-card {
+      background: #fff; border-radius: 16px; border: 1px solid #e5e5e5;
+      padding: 40px;
+    }
+    .form-card h2 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 20px; font-weight: 600; margin-bottom: 4px;
+    }
+    .form-card .form-desc {
+      font-size: 14px; color: #666; margin-bottom: 32px;
+    }
+
+    .form-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px 24px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .field label {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 13px; font-weight: 500; color: #666; margin-bottom: 8px;
+    }
+    .field label .required { color: #ef4444; }
+
+    /* TOOLTIPS */
+    .tooltip-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-left: 4px;
+    }
+    .tooltip-icon {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #f5f5f5; color: #999;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; cursor: help;
+      transition: all 0.2s; flex-shrink: 0;
+      border: 1px solid #e0e0e0;
+    }
+    .tooltip-icon:hover { background: #111; color: #fff; border-color: #111; }
+    .tooltip-bubble {
+      display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: #111; color: #fff; font-size: 12px; font-weight: 400;
+      line-height: 1.5; padding: 10px 14px; border-radius: 8px;
+      width: 260px; z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .tooltip-bubble::after {
+      content: ''; position: absolute; top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent; border-top-color: #111;
+    }
+    .tooltip-wrap:hover .tooltip-bubble { display: block; }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%; padding: 12px 16px;
+      border: 1px solid #e5e5e5; border-radius: 8px;
+      font-family: 'Matter', 'Inter', sans-serif; font-size: 14px; color: #111;
+      background: transparent; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 40px;
+    }
+    .field textarea { resize: vertical; min-height: 100px; }
+    .field input::placeholder,
+    .field textarea::placeholder { color: #999; }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: #111;
+      box-shadow: 0 0 0 3px rgba(17,17,17,0.06);
+    }
+
+    .field-error input,
+    .field-error select,
+    .field-error textarea {
+      border-color: #ef4444;
+    }
+    .field .error-msg {
+      display: none;
+      font-size: 12px; color: #ef4444; margin-top: 6px;
+    }
+    .field-error .error-msg { display: block; }
+
+    /* RADIO GROUP */
+    .radio-group {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .radio-group.horizontal {
+      flex-direction: row; gap: 16px;
+    }
+    .radio-option {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 18px; border: 1.5px solid #e5e5e5; border-radius: 10px;
+      cursor: pointer; transition: all 0.2s ease; background: transparent;
+    }
+    .radio-option:hover { border-color: #999; }
+    .radio-option.selected { border-color: #111; background: #fafafa; }
+    .radio-option input[type="radio"] { display: none; }
+    .radio-dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #e5e5e5; flex-shrink: 0; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .radio-option.selected .radio-dot { border-color: #111; }
+    .radio-option.selected .radio-dot::after {
+      content: ''; width: 10px; height: 10px; border-radius: 50%;
+      background: #111;
+    }
+    .radio-info { flex: 1; }
+    .radio-title { font-size: 14px; font-weight: 500; color: #111; margin-bottom: 2px; }
+    .radio-desc { font-size: 12px; color: #999; line-height: 1.5; }
+
+    /* CHECKBOX */
+    .checkbox-option {
+      display: flex; align-items: flex-start; gap: 12px;
+      cursor: pointer; font-size: 14px; color: #666; line-height: 1.6;
+    }
+    .checkbox-option input[type="checkbox"] { display: none; }
+    .check-box {
+      width: 20px; height: 20px; border-radius: 6px;
+      border: 2px solid #e5e5e5; flex-shrink: 0; margin-top: 2px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .checkbox-option.checked .check-box {
+      border-color: #111; background: #111;
+    }
+    .checkbox-option.checked .check-box svg { display: block; }
+    .check-box svg { display: none; width: 12px; height: 12px; color: #fff; }
+
+    /* FILE UPLOAD */
+    .upload-zone {
+      border: 2px dashed #e5e5e5; border-radius: 12px;
+      padding: 32px 24px; text-align: center;
+      transition: all 0.2s ease; cursor: pointer;
+      position: relative; background: #fafafa;
+    }
+    .upload-zone:hover { border-color: #999; background: #f5f5f5; }
+    .upload-zone.dragover { border-color: #111; background: #f0f0f0; }
+    .upload-zone.has-file { border-color: #22c55e; border-style: solid; background: #f0fdf4; }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+    .upload-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: transparent; border: 1px solid #e5e5e5;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .upload-icon svg { width: 22px; height: 22px; color: #999; }
+    .upload-zone.has-file .upload-icon { background: #dcfce7; border-color: #bbf7d0; }
+    .upload-zone.has-file .upload-icon svg { color: #22c55e; }
+    .upload-text { font-size: 14px; color: #666; margin-bottom: 4px; }
+    .upload-text strong { color: #111; font-weight: 500; }
+    .upload-hint { font-size: 12px; color: #999; }
+    .upload-filename {
+      display: none; font-size: 13px; font-weight: 500; color: #22c55e; margin-top: 8px;
+    }
+    .upload-zone.has-file .upload-filename { display: block; }
+    .upload-zone.has-file .upload-text { color: #22c55e; }
+    .upload-remove {
+      display: none; position: absolute; top: 12px; right: 12px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: transparent; border: 1px solid #e5e5e5;
+      align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; z-index: 2;
+    }
+    .upload-remove:hover { background: #fef2f2; border-color: #fecaca; }
+    .upload-remove svg { width: 14px; height: 14px; color: #ef4444; }
+    .upload-zone.has-file .upload-remove { display: flex; }
+
+    /* DECLARATION */
+    .declaration-box {
+      background: #f5f5f5; border: 1px solid #e5e5e5; border-radius: 12px;
+      padding: 24px; margin-bottom: 24px;
+      font-size: 14px; color: #444; line-height: 1.7;
+      font-style: italic;
+    }
+
+    /* RECAP */
+    .recap-section {
+      margin-bottom: 24px;
+    }
+    .recap-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;
+    }
+    .recap-section-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 16px; font-weight: 600; color: #111;
+    }
+    .recap-edit {
+      font-family: 'Matter', 'Inter', sans-serif;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 100px;
+      border: 1px solid #e5e5e5; background: transparent;
+      font-size: 12px; color: #666; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .recap-edit:hover { border-color: #111; color: #111; }
+    .recap-edit svg { width: 12px; height: 12px; }
+    .recap-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px;
+    }
+    .recap-item {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .recap-item.full { grid-column: 1 / -1; }
+    .recap-label { font-size: 12px; color: #999; }
+    .recap-value { font-size: 14px; font-weight: 500; color: #111; }
+
+    .recap-files {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .recap-file {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; background: #f5f5f5; border-radius: 8px;
+      font-size: 13px; color: #111;
+    }
+    .recap-file svg { width: 16px; height: 16px; color: #22c55e; flex-shrink: 0; }
+    .recap-file .no-file { color: #ef4444; }
+    .recap-file .no-file svg { color: #ef4444; }
+
+    /* FORM BUTTONS */
+    .form-actions {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 32px; padding-top: 24px; border-top: 1px solid #f5f5f5;
+    }
+    .btn-back {
+      font-family: 'Matter', 'Inter', sans-serif;
+      background: none; border: none; color: #999; font-size: 14px;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: color 0.2s;
+    }
+    .btn-back:hover { color: #111; }
+    .btn-back svg { width: 16px; height: 16px; }
+    .btn-next {
+      font-family: 'Matter', 'Inter', sans-serif;
+      background: #111; color: #fff;
+      padding: 12px 32px; border-radius: 100px;
+      font-size: 14px; font-weight: 400; letter-spacing: 0.2px;
+      border: none; cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-next:hover {
+      background: #000;
+      transform: translateY(-1px);
+    }
+    .btn-next svg { width: 16px; height: 16px; }
+    .btn-next:disabled {
+      background: #e5e5e5; cursor: not-allowed; transform: none;
+    }
+    .btn-next:disabled:hover { background: #e5e5e5; transform: none; }
+
+    .btn-submit {
+      font-family: 'Matter', 'Inter', sans-serif;
+      background: #111; color: #fff;
+      padding: 14px 40px; border-radius: 100px;
+      font-size: 15px; font-weight: 400; letter-spacing: 0.2px;
+      border: none; cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex; align-items: center; gap: 8px;
+      margin-left: auto;
+    }
+    .btn-submit:hover { background: #000; transform: translateY(-1px); }
+    .btn-submit:disabled { background: #e5e5e5; cursor: not-allowed; transform: none; }
+    .btn-submit svg { width: 18px; height: 18px; }
+
+    /* CONDITIONAL FIELDS */
+    .conditional-fields {
+      display: none;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .conditional-fields.visible { display: block; }
+
+    /* SUCCESS OVERLAY */
+    .success-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+      align-items: center; justify-content: center;
+    }
+    .success-overlay.active { display: flex; }
+    .success-content {
+      text-align: center; max-width: 460px; padding: 48px;
+    }
+    .success-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: #f0fdf4; border: 2px solid #bbf7d0;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .success-icon svg { width: 32px; height: 32px; color: #22c55e; }
+    .success-content h2 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 24px; font-weight: 600; margin-bottom: 12px;
+    }
+    .success-content p { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 32px; }
+    .success-content .btn-next { margin: 0 auto; }
+
+    /* FORM SUBSECTION */
+    .form-subsection {
+      font-size: 14px; font-weight: 600; color: #111;
+      margin-bottom: 16px; padding-bottom: 8px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .form-subsection.mt { margin-top: 24px; }
+
+    /* SUBMIT NOTE */
+    .submit-note {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 16px 20px; background: #f5f5f5; border-radius: 10px;
+      margin-top: 24px; font-size: 13px; color: #666; line-height: 1.6;
+    }
+    .submit-note svg { width: 18px; height: 18px; flex-shrink: 0; color: #999; margin-top: 1px; }
+
+    @media (max-width: 1100px) {
+      .main { margin-left: 0; }
+    }
+  </style>
+
+  <!-- BEGIN sidebar refresh (auto-generated) -->
+  <style>
+    /* Logo */
+    .sidebar-logo a { display: inline-flex !important; align-items: baseline !important; gap: 3px !important; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif !important;
+      font-size: 30px !important; font-weight: 700 !important;
+      letter-spacing: 0 !important; line-height: 1 !important;
+      color: #111 !important;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    /* Société active */
+    .sidebar-context {
+      margin: 0 12px 12px; padding: 10px 12px;
+      background: #fafafa; border: 1px solid #eee; border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .sidebar-context:hover { background: #f3f3f4; border-color: #e2e2e4; }
+    .sidebar-context .ctx-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
+    .sidebar-context .ctx-body { flex: 1; min-width: 0; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-context.single { cursor: default; }
+    .sidebar-context.single:hover { background: #fafafa; border-color: #eee; }
+    .sidebar-context.single .ctx-chevron { display: none; }
+    /* CTA primaire "Nouvelle formalité" */
+    .sidebar-cta {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active { transform: scale(0.99); }
+    .sidebar-cta svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    /* Badges dans la nav */
+    .nav-badge {
+      margin-left: auto;
+      background: #f3f4f6; color: #555;
+      font-size: 11.5px; font-weight: 500;
+      padding: 2px 9px; border-radius: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .nav-badge.muted { background: #f0f0f2; color: #666; }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+
+
+    /* Modal Nouvelle formalité */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    @media (max-width: 600px) { .nd-grid { grid-template-columns: 1fr; } }
+  </style>
+  <!-- END sidebar refresh -->
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+
+          <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-context" id="sidebar-context" style="display:none;">
+      <div class="ctx-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0M9 17h0M15 17h0"/></svg>
+      </div>
+      <div class="ctx-body">
+        <div class="ctx-label">Soci&eacute;t&eacute; active</div>
+        <div class="ctx-name" id="ctx-name"></div>
+      </div>
+      <svg class="ctx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <button class="sidebar-cta" onclick="openNewActionModal()">
+      Cr&eacute;er une formalit&eacute;
+    </button>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+
+      <a href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){sessionStorage.removeItem('user');window.location.href='/connexion.html';})" title="D&eacute;connexion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <a href="/dashboard.html">Dashboard</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>Auto-entrepreneur</span>
+    </div>
+
+    <div class="content">
+
+      <!-- INTRO SCREEN -->
+      <div id="intro-screen">
+        <div class="intro">
+          <div class="intro-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <h1>Cr&eacute;ation de votre auto-entreprise</h1>
+          <p class="intro-lead">Lancez votre activit&eacute; en micro-entreprise en quelques minutes. Remplissez le formulaire et nous nous occupons de toutes les d&eacute;marches administratives aupr&egrave;s de l'URSSAF et du guichet unique.</p>
+          <div class="intro-checks">
+            <div class="intro-check">
+              <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span>D&eacute;claration compl&egrave;te en 7 &eacute;tapes simples</span>
+            </div>
+            <div class="intro-check">
+              <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span>V&eacute;rification par notre cabinet d'avocats partenaire</span>
+            </div>
+            <div class="intro-check">
+              <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span>Obtention de votre num&eacute;ro SIRET sous 1 &agrave; 4 semaines</span>
+            </div>
+            <div class="intro-check">
+              <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span>Accompagnement personnalis&eacute; tout au long du processus</span>
+            </div>
+          </div>
+          <p class="intro-note">Munissez-vous de votre pi&egrave;ce d'identit&eacute; et d'un justificatif de domicile. Le formulaire peut &ecirc;tre sauvegard&eacute; et repris &agrave; tout moment.</p>
+          <button class="btn-start" onclick="startWizard()">Commencer</button>
+        </div>
+      </div>
+
+      <!-- WIZARD FORM -->
+      <div id="wizard" class="form-section">
+
+        <!-- STEPPER -->
+        <div class="stepper" id="stepper">
+          <div class="step active" data-step="1">
+            <div class="step-circle">1</div>
+            <div class="step-label">Identit&eacute;</div>
+          </div>
+          <div class="step-segment"></div>
+          <div class="step" data-step="2">
+            <div class="step-circle">2</div>
+            <div class="step-label">Adresse</div>
+          </div>
+          <div class="step-segment"></div>
+          <div class="step" data-step="3">
+            <div class="step-circle">3</div>
+            <div class="step-label">Activit&eacute;</div>
+          </div>
+          <div class="step-segment"></div>
+          <div class="step" data-step="4">
+            <div class="step-circle">4</div>
+            <div class="step-label">Fiscalit&eacute;</div>
+          </div>
+          <div class="step-segment"></div>
+          <div class="step" data-step="5">
+            <div class="step-circle">5</div>
+            <div class="step-label">Documents</div>
+          </div>
+          <div class="step-segment"></div>
+          <div class="step" data-step="6">
+            <div class="step-circle">6</div>
+            <div class="step-label">D&eacute;claration</div>
+          </div>
+          <div class="step-segment"></div>
+          <div class="step" data-step="7">
+            <div class="step-circle">7</div>
+            <div class="step-label">R&eacute;capitulatif</div>
+          </div>
+        </div>
+
+        <!-- STEP 1: IDENTITE -->
+        <div class="step-content active" data-step="1">
+          <div class="form-card">
+            <h2>Identit&eacute;</h2>
+            <p class="form-desc">Renseignez vos informations personnelles telles qu'elles figurent sur votre pi&egrave;ce d'identit&eacute;.</p>
+            <div class="form-grid">
+              <div class="field">
+                <label>Civilit&eacute; <span class="required">*</span></label>
+                <select id="civilite" required>
+                  <option value="">S&eacute;lectionnez</option>
+                  <option value="M.">M.</option>
+                  <option value="Mme">Mme</option>
+                </select>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>N&deg; S&eacute;curit&eacute; sociale <span class="required">*</span></label>
+                <input type="text" id="secu" placeholder="1 XX XX XX XXX XXX XX" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Nom de naissance <span class="required">*</span></label>
+                <input type="text" id="nom_naissance" placeholder="Votre nom de naissance" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Nom d'usage</label>
+                <input type="text" id="nom_usage" placeholder="Si diff&eacute;rent du nom de naissance">
+              </div>
+              <div class="field">
+                <label>Pr&eacute;nom(s) <span class="required">*</span></label>
+                <input type="text" id="prenoms" placeholder="Tous vos pr&eacute;noms" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Date de naissance <span class="required">*</span></label>
+                <input type="date" id="date_naissance" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Ville de naissance <span class="required">*</span></label>
+                <input type="text" id="ville_naissance" placeholder="Ville de naissance" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Pays de naissance <span class="required">*</span></label>
+                <input type="text" id="pays_naissance" value="France" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Nationalit&eacute; <span class="required">*</span></label>
+                <input type="text" id="nationalite" value="Fran&ccedil;aise" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <div></div>
+              <button class="btn-next" onclick="nextStep()">Continuer<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: ADRESSE & SITUATION -->
+        <div class="step-content" data-step="2">
+          <div class="form-card">
+            <h2>Adresse &amp; Situation</h2>
+            <p class="form-desc">Votre adresse personnelle et votre situation familiale.</p>
+            <div class="form-grid">
+              <div class="field full">
+                <label>Num&eacute;ro et voie <span class="required">*</span></label>
+                <input type="text" id="adresse_voie" placeholder="12 rue de la Paix" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field full">
+                <label>Compl&eacute;ment d'adresse</label>
+                <input type="text" id="adresse_complement" placeholder="B&acirc;timent, &eacute;tage, appartement...">
+              </div>
+              <div class="field">
+                <label>Code postal <span class="required">*</span></label>
+                <input type="text" id="code_postal" placeholder="75001" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Ville <span class="required">*</span></label>
+                <input type="text" id="ville" placeholder="Paris" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Situation matrimoniale <span class="required">*</span></label>
+                <select id="situation_matrimoniale" required>
+                  <option value="">S&eacute;lectionnez</option>
+                  <option value="Celibataire">C&eacute;libataire</option>
+                  <option value="Marie">Mari&eacute;(e)</option>
+                  <option value="Pacse">Pacs&eacute;(e)</option>
+                  <option value="Divorce">Divorc&eacute;(e)</option>
+                  <option value="Veuf">Veuf(ve)</option>
+                </select>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Option EIRL <span class="required">*</span>
+                  <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-bubble">L'EIRL permet de prot&eacute;ger votre patrimoine personnel en cr&eacute;ant un patrimoine professionnel d&eacute;di&eacute; &agrave; votre activit&eacute;.</span></span>
+                </label>
+                <div class="radio-group horizontal" id="eirl-group">
+                  <label class="radio-option" onclick="selectRadio(this, 'eirl', 'Oui')">
+                    <input type="radio" name="eirl" value="Oui">
+                    <div class="radio-dot"></div>
+                    <div class="radio-info"><div class="radio-title">Oui</div></div>
+                  </label>
+                  <label class="radio-option" onclick="selectRadio(this, 'eirl', 'Non')">
+                    <input type="radio" name="eirl" value="Non">
+                    <div class="radio-dot"></div>
+                    <div class="radio-info"><div class="radio-title">Non</div></div>
+                  </label>
+                </div>
+              </div>
+              <div class="field full">
+                <label>Adresse de l'entreprise <span class="required">*</span></label>
+                <div class="radio-group" id="adresse-entreprise-group">
+                  <label class="radio-option selected" onclick="selectRadio(this, 'adresse_entreprise', 'identique'); toggleEntrepriseAddress(false);">
+                    <input type="radio" name="adresse_entreprise" value="identique" checked>
+                    <div class="radio-dot"></div>
+                    <div class="radio-info"><div class="radio-title">Identique &agrave; l'adresse personnelle</div></div>
+                  </label>
+                  <label class="radio-option" onclick="selectRadio(this, 'adresse_entreprise', 'differente'); toggleEntrepriseAddress(true);">
+                    <input type="radio" name="adresse_entreprise" value="differente">
+                    <div class="radio-dot"></div>
+                    <div class="radio-info"><div class="radio-title">Adresse diff&eacute;rente</div></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="conditional-fields" id="entreprise-address-fields">
+              <div class="form-subsection mt">Adresse de l'entreprise</div>
+              <div class="form-grid">
+                <div class="field full">
+                  <label>Num&eacute;ro et voie <span class="required">*</span></label>
+                  <input type="text" id="ent_adresse_voie" placeholder="Adresse de l'entreprise">
+                </div>
+                <div class="field full">
+                  <label>Compl&eacute;ment d'adresse</label>
+                  <input type="text" id="ent_adresse_complement" placeholder="Compl&eacute;ment">
+                </div>
+                <div class="field">
+                  <label>Code postal <span class="required">*</span></label>
+                  <input type="text" id="ent_code_postal" placeholder="75001">
+                </div>
+                <div class="field">
+                  <label>Ville <span class="required">*</span></label>
+                  <input type="text" id="ent_ville" placeholder="Paris">
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-back" onclick="prevStep()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Retour</button>
+              <button class="btn-next" onclick="nextStep()">Continuer<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: ACTIVITE -->
+        <div class="step-content" data-step="3">
+          <div class="form-card">
+            <h2>Activit&eacute;</h2>
+            <p class="form-desc">D&eacute;crivez l'activit&eacute; que vous souhaitez exercer en tant qu'auto-entrepreneur.</p>
+            <div class="form-grid">
+              <div class="field">
+                <label>Nature de l'activit&eacute; <span class="required">*</span></label>
+                <select id="nature_activite" required>
+                  <option value="">S&eacute;lectionnez</option>
+                  <option value="Commerciale">Commerciale</option>
+                  <option value="Artisanale">Artisanale</option>
+                  <option value="Liberale">Lib&eacute;rale</option>
+                </select>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Code APE souhait&eacute;
+                  <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-bubble">Le code APE (Activit&eacute; Principale Exerc&eacute;e) est attribu&eacute; par l'INSEE. Il identifie le secteur d'activit&eacute; principal de votre entreprise. Si vous ne le connaissez pas, laissez ce champ vide.</span></span>
+                </label>
+                <input type="text" id="code_ape" placeholder="Ex: 6201Z (optionnel)">
+              </div>
+              <div class="field full">
+                <label>Description d&eacute;taill&eacute;e de l'activit&eacute; <span class="required">*</span></label>
+                <textarea id="description_activite" placeholder="D&eacute;crivez pr&eacute;cis&eacute;ment votre activit&eacute;, les produits ou services que vous proposerez..." required></textarea>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Date de d&eacute;but d'activit&eacute; <span class="required">*</span></label>
+                <input type="date" id="date_debut" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Lieu d'exercice <span class="required">*</span></label>
+                <select id="lieu_exercice" required>
+                  <option value="">S&eacute;lectionnez</option>
+                  <option value="Domicile">&Agrave; domicile</option>
+                  <option value="Local commercial">Local commercial</option>
+                  <option value="Itinerant">Itin&eacute;rant</option>
+                  <option value="En ligne">En ligne</option>
+                </select>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-back" onclick="prevStep()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Retour</button>
+              <button class="btn-next" onclick="nextStep()">Continuer<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: OPTIONS FISCALES & SOCIALES -->
+        <div class="step-content" data-step="4">
+          <div class="form-card">
+            <h2>Options fiscales &amp; sociales</h2>
+            <p class="form-desc">Choisissez votre r&eacute;gime fiscal et vos options sociales.</p>
+
+            <div class="field" style="margin-bottom: 28px;">
+              <label>R&eacute;gime fiscal <span class="required">*</span></label>
+              <div class="radio-group" id="regime-fiscal-group">
+                <label class="radio-option" onclick="selectRadio(this, 'regime_fiscal', 'Micro-BIC')">
+                  <input type="radio" name="regime_fiscal" value="Micro-BIC">
+                  <div class="radio-dot"></div>
+                  <div class="radio-info">
+                    <div class="radio-title">Micro-BIC</div>
+                    <div class="radio-desc">Pour les activit&eacute;s commerciales et artisanales. Abattement forfaitaire de 50% (vente) ou 34% (services) sur le chiffre d'affaires.</div>
+                  </div>
+                </label>
+                <label class="radio-option" onclick="selectRadio(this, 'regime_fiscal', 'Micro-BNC')">
+                  <input type="radio" name="regime_fiscal" value="Micro-BNC">
+                  <div class="radio-dot"></div>
+                  <div class="radio-info">
+                    <div class="radio-title">Micro-BNC</div>
+                    <div class="radio-desc">Pour les activit&eacute;s lib&eacute;rales. Abattement forfaitaire de 34% sur le chiffre d'affaires pour le calcul de l'imp&ocirc;t.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="field" style="margin-bottom: 28px;">
+              <label>Versement lib&eacute;ratoire de l'imp&ocirc;t sur le revenu <span class="required">*</span>
+                <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-bubble">Le versement lib&eacute;ratoire permet de payer l'imp&ocirc;t sur le revenu en m&ecirc;me temps que les cotisations sociales, avec un taux fixe appliqu&eacute; sur le CA. Condition : revenu fiscal de r&eacute;f&eacute;rence N-2 inf&eacute;rieur &agrave; un certain seuil.</span></span>
+              </label>
+              <div class="radio-group" id="versement-group">
+                <label class="radio-option" onclick="selectRadio(this, 'versement_liberatoire', 'Oui')">
+                  <input type="radio" name="versement_liberatoire" value="Oui">
+                  <div class="radio-dot"></div>
+                  <div class="radio-info">
+                    <div class="radio-title">Oui, j'opte pour le versement lib&eacute;ratoire</div>
+                    <div class="radio-desc">Vous payez l'imp&ocirc;t sur le revenu chaque mois ou trimestre avec vos cotisations (1% &agrave; 2,2% du CA selon l'activit&eacute;).</div>
+                  </div>
+                </label>
+                <label class="radio-option" onclick="selectRadio(this, 'versement_liberatoire', 'Non')">
+                  <input type="radio" name="versement_liberatoire" value="Non">
+                  <div class="radio-dot"></div>
+                  <div class="radio-info">
+                    <div class="radio-title">Non, imposition classique</div>
+                    <div class="radio-desc">Votre chiffre d'affaires (apr&egrave;s abattement) est ajout&eacute; &agrave; vos autres revenus pour le calcul de l'imp&ocirc;t annuel.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>ACRE (Aide &agrave; la Cr&eacute;ation ou Reprise d'Entreprise) <span class="required">*</span>
+                <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-bubble">L'ACRE permet une exon&eacute;ration partielle de cotisations sociales pendant la premi&egrave;re ann&eacute;e d'activit&eacute;. Vous devez &ecirc;tre demandeur d'emploi, b&eacute;n&eacute;ficiaire du RSA, avoir entre 18 et 25 ans, etc.</span></span>
+              </label>
+              <div class="radio-group" id="acre-group">
+                <label class="radio-option" onclick="selectRadio(this, 'acre', 'Oui')">
+                  <input type="radio" name="acre" value="Oui">
+                  <div class="radio-dot"></div>
+                  <div class="radio-info">
+                    <div class="radio-title">Oui, je demande l'ACRE</div>
+                    <div class="radio-desc">Exon&eacute;ration de 50% des cotisations sociales la premi&egrave;re ann&eacute;e. Un justificatif d'&eacute;ligibilit&eacute; pourra vous &ecirc;tre demand&eacute;.</div>
+                  </div>
+                </label>
+                <label class="radio-option" onclick="selectRadio(this, 'acre', 'Non')">
+                  <input type="radio" name="acre" value="Non">
+                  <div class="radio-dot"></div>
+                  <div class="radio-info">
+                    <div class="radio-title">Non</div>
+                    <div class="radio-desc">Cotisations sociales au taux normal d&egrave;s le d&eacute;but de l'activit&eacute;.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-back" onclick="prevStep()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Retour</button>
+              <button class="btn-next" onclick="nextStep()">Continuer<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 5: DOCUMENTS -->
+        <div class="step-content" data-step="5">
+          <div class="form-card">
+            <h2>Documents</h2>
+            <p class="form-desc">T&eacute;l&eacute;versez les pi&egrave;ces justificatives n&eacute;cessaires &agrave; votre d&eacute;claration.</p>
+
+            <div class="form-grid">
+              <div class="field">
+                <label>Pi&egrave;ce d'identit&eacute; (recto) <span class="required">*</span></label>
+                <div class="upload-zone" id="zone-id-recto" ondragover="handleDragOver(event, this)" ondragleave="handleDragLeave(event, this)" ondrop="handleDrop(event, this, 'file-id-recto')">
+                  <input type="file" id="file-id-recto" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this)">
+                  <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+                  <div class="upload-text"><strong>Cliquez</strong> ou glissez-d&eacute;posez</div>
+                  <div class="upload-hint">PDF, JPG, PNG (max 5 Mo)</div>
+                  <div class="upload-filename" id="name-id-recto"></div>
+                  <button class="upload-remove" onclick="removeFile(event, 'file-id-recto', 'zone-id-recto', 'name-id-recto')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+              </div>
+              <div class="field">
+                <label>Pi&egrave;ce d'identit&eacute; (verso) <span class="required">*</span></label>
+                <div class="upload-zone" id="zone-id-verso" ondragover="handleDragOver(event, this)" ondragleave="handleDragLeave(event, this)" ondrop="handleDrop(event, this, 'file-id-verso')">
+                  <input type="file" id="file-id-verso" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this)">
+                  <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+                  <div class="upload-text"><strong>Cliquez</strong> ou glissez-d&eacute;posez</div>
+                  <div class="upload-hint">PDF, JPG, PNG (max 5 Mo)</div>
+                  <div class="upload-filename" id="name-id-verso"></div>
+                  <button class="upload-remove" onclick="removeFile(event, 'file-id-verso', 'zone-id-verso', 'name-id-verso')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+              </div>
+              <div class="field full">
+                <label>Justificatif de domicile <span class="required">*</span></label>
+                <div class="upload-zone" id="zone-domicile" ondragover="handleDragOver(event, this)" ondragleave="handleDragLeave(event, this)" ondrop="handleDrop(event, this, 'file-domicile')">
+                  <input type="file" id="file-domicile" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this)">
+                  <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+                  <div class="upload-text"><strong>Cliquez</strong> ou glissez-d&eacute;posez</div>
+                  <div class="upload-hint">PDF, JPG, PNG (max 5 Mo)</div>
+                  <div class="upload-filename" id="name-domicile"></div>
+                  <button class="upload-remove" onclick="removeFile(event, 'file-domicile', 'zone-domicile', 'name-domicile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-back" onclick="prevStep()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Retour</button>
+              <button class="btn-next" onclick="nextStep()">Continuer<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 6: DECLARATION & FILIATION -->
+        <div class="step-content" data-step="6">
+          <div class="form-card">
+            <h2>D&eacute;claration &amp; Filiation</h2>
+            <p class="form-desc">D&eacute;claration sur l'honneur et informations de filiation.</p>
+
+            <div class="declaration-box" id="declaration-text">
+              Je soussign&eacute;(e) <strong id="decl-nom">___</strong>, n&eacute;(e) le <strong id="decl-date">___</strong> &agrave; <strong id="decl-ville">___</strong>, d&eacute;clare sur l'honneur n'avoir fait l'objet d'aucune condamnation p&eacute;nale ni de sanction civile ou administrative de nature &agrave; m'interdire d'exercer une activit&eacute; commerciale, artisanale ou lib&eacute;rale.
+            </div>
+
+            <div class="field" style="margin-bottom: 28px;">
+              <label class="checkbox-option" id="declaration-checkbox" onclick="toggleCheckbox(this)">
+                <input type="checkbox" id="declaration_certifie">
+                <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <span>Je certifie l'exactitude de cette d&eacute;claration <span class="required">*</span></span>
+              </label>
+            </div>
+
+            <div class="form-subsection mt">Filiation</div>
+            <div class="form-grid">
+              <div class="field">
+                <label>Nom et pr&eacute;nom du p&egrave;re <span class="required">*</span></label>
+                <input type="text" id="filiation_pere" placeholder="Nom Pr&eacute;nom" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+              <div class="field">
+                <label>Nom de naissance et pr&eacute;nom de la m&egrave;re <span class="required">*</span></label>
+                <input type="text" id="filiation_mere" placeholder="Nom de naissance Pr&eacute;nom" required>
+                <div class="error-msg">Ce champ est requis</div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-back" onclick="prevStep()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Retour</button>
+              <button class="btn-next" onclick="nextStep()">Continuer<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 7: RECAPITULATIF -->
+        <div class="step-content" data-step="7">
+          <div class="form-card">
+            <h2>R&eacute;capitulatif</h2>
+            <p class="form-desc">V&eacute;rifiez l'ensemble de vos informations avant de soumettre votre d&eacute;claration.</p>
+
+            <div id="recap-content"></div>
+
+            <div class="submit-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Vos documents seront v&eacute;rifi&eacute;s par notre cabinet d'avocats partenaire. Vous recevrez une confirmation par email une fois votre dossier valid&eacute;.</span>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-back" onclick="prevStep()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Retour</button>
+              <button class="btn-submit" id="btn-submit" onclick="submitForm()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                Soumettre ma d&eacute;claration
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /wizard -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+
+  <!-- SUCCESS OVERLAY -->
+  <div class="success-overlay" id="success-overlay">
+    <div class="success-content">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2>D&eacute;claration envoy&eacute;e</h2>
+      <p>Votre d&eacute;claration de cr&eacute;ation d'auto-entreprise a bien &eacute;t&eacute; soumise. Notre &eacute;quipe va v&eacute;rifier vos documents et vous tiendra inform&eacute;(e) de l'avancement par email et via votre espace Formalist.</p>
+      <a href="/dashboard.html" class="btn-next" style="display: inline-flex; text-decoration: none;">Retour au tableau de bord<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+    </div>
+  </div>
+
+  <script>
+    // ========== AUTH CHECK ==========
+    (function() {
+      fetch('/api/auth/me', { credentials: 'include' })
+        .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(data) {
+          var u = data.user || data;
+          var fn = u.firstName || u.prenom || '';
+          var ln = u.lastName || u.nom || '';
+          var email = u.email || '';
+          if (fn || ln) {
+            var initials = ((fn[0] || '') + (ln[0] || '')).toUpperCase();
+            var av = document.getElementById('sidebar-avatar'); if (av) av.textContent = initials;
+            var nm = document.getElementById('sidebar-name'); if (nm) nm.textContent = fn + ' ' + ln;
+          }
+          if (email) {
+            var em = document.getElementById('sidebar-email'); if (em) em.textContent = email;
+          }
+        })
+        .catch(function() {
+          window.location.href = '/connexion.html';
+        });
+    })();
+
+    // ========== SIDEBAR ==========
+    function toggleDropdown(el) {
+      el.classList.toggle('open');
+      var sub = el.nextElementSibling;
+      if (sub && sub.classList.contains('sidebar-subnav')) {
+        sub.classList.toggle('open');
+      }
+    }
+
+    // ========== WIZARD STATE ==========
+    var currentStep = 1;
+    var totalSteps = 7;
+    var radioValues = {
+      eirl: '',
+      adresse_entreprise: 'identique',
+      regime_fiscal: '',
+      versement_liberatoire: '',
+      acre: ''
+    };
+    var checkboxValues = {
+      declaration_certifie: false
+    };
+    var uploadedFiles = {};
+
+    // ========== INTRO -> WIZARD ==========
+    function startWizard() {
+      document.getElementById('intro-screen').style.display = 'none';
+      document.getElementById('wizard').classList.add('active');
+    }
+
+    // ========== RADIO HANDLING ==========
+    function selectRadio(el, name, value) {
+      radioValues[name] = value;
+      var group = el.closest('.radio-group');
+      var options = group.querySelectorAll('.radio-option');
+      options.forEach(function(opt) { opt.classList.remove('selected'); });
+      el.classList.add('selected');
+      el.querySelector('input[type="radio"]').checked = true;
+    }
+
+    // ========== CHECKBOX HANDLING ==========
+    function toggleCheckbox(el) {
+      var cb = el.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      el.classList.toggle('checked', cb.checked);
+      checkboxValues.declaration_certifie = cb.checked;
+    }
+
+    // ========== CONDITIONAL ADDRESS ==========
+    function toggleEntrepriseAddress(show) {
+      var fields = document.getElementById('entreprise-address-fields');
+      if (show) {
+        fields.classList.add('visible');
+      } else {
+        fields.classList.remove('visible');
+      }
+    }
+
+    // ========== FILE UPLOAD ==========
+    function handleDragOver(e, zone) {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.classList.add('dragover');
+    }
+
+    function handleDragLeave(e, zone) {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.classList.remove('dragover');
+    }
+
+    function handleDrop(e, zone, inputId) {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.classList.remove('dragover');
+      var files = e.dataTransfer.files;
+      if (files.length > 0) {
+        var input = document.getElementById(inputId);
+        var dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+        handleFileSelect(input);
+      }
+    }
+
+    function handleFileSelect(input) {
+      if (input.files && input.files[0]) {
+        var file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Le fichier ne doit pas depasser 5 Mo.');
+          input.value = '';
+          return;
+        }
+        var zone = input.closest('.upload-zone');
+        var nameEl = zone.querySelector('.upload-filename');
+        zone.classList.add('has-file');
+        nameEl.textContent = file.name;
+        uploadedFiles[input.id] = file;
+      }
+    }
+
+    function removeFile(e, inputId, zoneId, nameId) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById(inputId).value = '';
+      document.getElementById(zoneId).classList.remove('has-file');
+      document.getElementById(nameId).textContent = '';
+      delete uploadedFiles[inputId];
+    }
+
+    // ========== VALIDATION ==========
+    function validateStep(step) {
+      var valid = true;
+      var content = document.querySelector('.step-content[data-step="' + step + '"]');
+
+      // Clear previous errors
+      content.querySelectorAll('.field-error').forEach(function(f) { f.classList.remove('field-error'); });
+
+      if (step === 1) {
+        var fields = ['civilite', 'nom_naissance', 'prenoms', 'date_naissance', 'ville_naissance', 'pays_naissance', 'nationalite', 'secu'];
+        fields.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el && !el.value.trim()) {
+            el.closest('.field').classList.add('field-error');
+            valid = false;
+          }
+        });
+      }
+
+      if (step === 2) {
+        var fields = ['adresse_voie', 'code_postal', 'ville', 'situation_matrimoniale'];
+        fields.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el && !el.value.trim()) {
+            el.closest('.field').classList.add('field-error');
+            valid = false;
+          }
+        });
+        if (!radioValues.eirl) valid = false;
+        if (radioValues.adresse_entreprise === 'differente') {
+          ['ent_adresse_voie', 'ent_code_postal', 'ent_ville'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el && !el.value.trim()) {
+              el.closest('.field').classList.add('field-error');
+              valid = false;
+            }
+          });
+        }
+      }
+
+      if (step === 3) {
+        var fields = ['nature_activite', 'description_activite', 'date_debut', 'lieu_exercice'];
+        fields.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el && !el.value.trim()) {
+            el.closest('.field').classList.add('field-error');
+            valid = false;
+          }
+        });
+      }
+
+      if (step === 4) {
+        if (!radioValues.regime_fiscal) valid = false;
+        if (!radioValues.versement_liberatoire) valid = false;
+        if (!radioValues.acre) valid = false;
+      }
+
+      if (step === 5) {
+        // Documents are recommended but we allow proceeding
+      }
+
+      if (step === 6) {
+        if (!checkboxValues.declaration_certifie) {
+          valid = false;
+          alert('Veuillez certifier la declaration sur l\'honneur.');
+        }
+        ['filiation_pere', 'filiation_mere'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el && !el.value.trim()) {
+            el.closest('.field').classList.add('field-error');
+            valid = false;
+          }
+        });
+      }
+
+      return valid;
+    }
+
+    // ========== STEP NAVIGATION ==========
+    function goToStep(target) {
+      var direction = target > currentStep ? 'forward' : 'backward';
+      var currentContent = document.querySelector('.step-content[data-step="' + currentStep + '"]');
+      var targetContent = document.querySelector('.step-content[data-step="' + target + '"]');
+
+      // Animate out
+      currentContent.classList.remove('active', 'enter-from-left');
+      currentContent.classList.add(direction === 'forward' ? 'exit-left' : 'exit-right');
+
+      setTimeout(function() {
+        currentContent.classList.remove('exit-left', 'exit-right');
+        currentContent.style.display = 'none';
+
+        // Animate in
+        targetContent.style.display = '';
+        targetContent.classList.remove('exit-left', 'exit-right');
+        targetContent.classList.add(direction === 'forward' ? 'active' : 'enter-from-left');
+
+        currentStep = target;
+        updateStepper();
+
+        // Populate recap and declaration if needed
+        if (currentStep === 6) populateDeclaration();
+        if (currentStep === 7) generateRecap();
+      }, 300);
+    }
+
+    function nextStep() {
+      if (!validateStep(currentStep)) return;
+      if (currentStep < totalSteps) {
+        goToStep(currentStep + 1);
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        goToStep(currentStep - 1);
+      }
+    }
+
+    function updateStepper() {
+      var steps = document.querySelectorAll('#stepper .step');
+      var segments = document.querySelectorAll('#stepper .step-segment');
+
+      steps.forEach(function(s, i) {
+        var num = i + 1;
+        s.classList.remove('active', 'done');
+        var circle = s.querySelector('.step-circle');
+        if (num < currentStep) {
+          s.classList.add('done');
+          circle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        } else if (num === currentStep) {
+          s.classList.add('active');
+          circle.textContent = num;
+        } else {
+          circle.textContent = num;
+        }
+      });
+
+      segments.forEach(function(seg, i) {
+        seg.classList.remove('done', 'active');
+        if (i < currentStep - 1) {
+          seg.classList.add('done');
+        } else if (i === currentStep - 1) {
+          seg.classList.add('active');
+        }
+      });
+    }
+
+    // ========== POPULATE DECLARATION ==========
+    function populateDeclaration() {
+      var nom = (document.getElementById('nom_naissance').value || '___');
+      var prenom = (document.getElementById('prenoms').value || '___');
+      var date = document.getElementById('date_naissance').value;
+      var ville = (document.getElementById('ville_naissance').value || '___');
+
+      var dateFormatted = '___';
+      if (date) {
+        var parts = date.split('-');
+        dateFormatted = parts[2] + '/' + parts[1] + '/' + parts[0];
+      }
+
+      document.getElementById('decl-nom').textContent = prenom + ' ' + nom;
+      document.getElementById('decl-date').textContent = dateFormatted;
+      document.getElementById('decl-ville').textContent = ville;
+    }
+
+    // ========== GENERATE RECAP ==========
+    function generateRecap() {
+      var val = function(id) { return document.getElementById(id) ? (document.getElementById(id).value || '-') : '-'; };
+      var formatDate = function(d) {
+        if (!d || d === '-') return '-';
+        var p = d.split('-');
+        return p[2] + '/' + p[1] + '/' + p[0];
+      };
+
+      var situationMap = { Celibataire: 'Celibataire', Marie: 'Marie(e)', Pacse: 'Pacse(e)', Divorce: 'Divorce(e)', Veuf: 'Veuf(ve)' };
+      var sitVal = val('situation_matrimoniale');
+      var sitLabel = situationMap[sitVal] || sitVal;
+
+      var adresseEnt = '';
+      if (radioValues.adresse_entreprise === 'differente') {
+        adresseEnt = val('ent_adresse_voie') + (val('ent_adresse_complement') !== '-' ? ', ' + val('ent_adresse_complement') : '') + ', ' + val('ent_code_postal') + ' ' + val('ent_ville');
+      } else {
+        adresseEnt = 'Identique a l\'adresse personnelle';
+      }
+
+      var fileIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      var noFileIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
+      function fileStatus(inputId) {
+        var input = document.getElementById(inputId);
+        if (input && input.files && input.files[0]) {
+          return '<div class="recap-file">' + fileIcon + ' ' + input.files[0].name + '</div>';
+        }
+        return '<div class="recap-file"><span class="no-file">' + noFileIcon + ' Non televerse</span></div>';
+      }
+
+      var html = '';
+
+      // Section 1: Identite
+      html += '<div class="recap-section">';
+      html += '<div class="recap-section-header"><div class="recap-section-title">Identite</div><button class="recap-edit" onclick="goToStep(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier</button></div>';
+      html += '<div class="recap-grid">';
+      html += '<div class="recap-item"><div class="recap-label">Civilite</div><div class="recap-value">' + val('civilite') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Nom de naissance</div><div class="recap-value">' + val('nom_naissance') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Nom d\'usage</div><div class="recap-value">' + (val('nom_usage') || '-') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Prenom(s)</div><div class="recap-value">' + val('prenoms') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Date de naissance</div><div class="recap-value">' + formatDate(val('date_naissance')) + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Ville de naissance</div><div class="recap-value">' + val('ville_naissance') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Pays de naissance</div><div class="recap-value">' + val('pays_naissance') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Nationalite</div><div class="recap-value">' + val('nationalite') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">N. Securite sociale</div><div class="recap-value">' + val('secu') + '</div></div>';
+      html += '</div></div>';
+
+      // Section 2: Adresse
+      html += '<div class="recap-section">';
+      html += '<div class="recap-section-header"><div class="recap-section-title">Adresse & Situation</div><button class="recap-edit" onclick="goToStep(2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier</button></div>';
+      html += '<div class="recap-grid">';
+      html += '<div class="recap-item full"><div class="recap-label">Adresse personnelle</div><div class="recap-value">' + val('adresse_voie') + (val('adresse_complement') !== '-' ? ', ' + val('adresse_complement') : '') + ', ' + val('code_postal') + ' ' + val('ville') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Situation matrimoniale</div><div class="recap-value">' + sitLabel + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Option EIRL</div><div class="recap-value">' + (radioValues.eirl || '-') + '</div></div>';
+      html += '<div class="recap-item full"><div class="recap-label">Adresse de l\'entreprise</div><div class="recap-value">' + adresseEnt + '</div></div>';
+      html += '</div></div>';
+
+      // Section 3: Activite
+      html += '<div class="recap-section">';
+      html += '<div class="recap-section-header"><div class="recap-section-title">Activite</div><button class="recap-edit" onclick="goToStep(3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier</button></div>';
+      html += '<div class="recap-grid">';
+      html += '<div class="recap-item"><div class="recap-label">Nature</div><div class="recap-value">' + val('nature_activite') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Code APE</div><div class="recap-value">' + (val('code_ape') || '-') + '</div></div>';
+      html += '<div class="recap-item full"><div class="recap-label">Description</div><div class="recap-value">' + val('description_activite') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Date de debut</div><div class="recap-value">' + formatDate(val('date_debut')) + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Lieu d\'exercice</div><div class="recap-value">' + val('lieu_exercice') + '</div></div>';
+      html += '</div></div>';
+
+      // Section 4: Fiscalite
+      html += '<div class="recap-section">';
+      html += '<div class="recap-section-header"><div class="recap-section-title">Options fiscales & sociales</div><button class="recap-edit" onclick="goToStep(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier</button></div>';
+      html += '<div class="recap-grid">';
+      html += '<div class="recap-item"><div class="recap-label">Regime fiscal</div><div class="recap-value">' + (radioValues.regime_fiscal || '-') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Versement liberatoire</div><div class="recap-value">' + (radioValues.versement_liberatoire || '-') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">ACRE</div><div class="recap-value">' + (radioValues.acre || '-') + '</div></div>';
+      html += '</div></div>';
+
+      // Section 5: Documents
+      html += '<div class="recap-section">';
+      html += '<div class="recap-section-header"><div class="recap-section-title">Documents</div><button class="recap-edit" onclick="goToStep(5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier</button></div>';
+      html += '<div class="recap-files">';
+      html += fileStatus('file-id-recto');
+      html += fileStatus('file-id-verso');
+      html += fileStatus('file-domicile');
+      html += '</div></div>';
+
+      // Section 6: Declaration & Filiation
+      html += '<div class="recap-section">';
+      html += '<div class="recap-section-header"><div class="recap-section-title">Declaration & Filiation</div><button class="recap-edit" onclick="goToStep(6)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier</button></div>';
+      html += '<div class="recap-grid">';
+      html += '<div class="recap-item full"><div class="recap-label">Declaration sur l\'honneur</div><div class="recap-value">' + (checkboxValues.declaration_certifie ? 'Certifiee' : 'Non certifiee') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Pere</div><div class="recap-value">' + val('filiation_pere') + '</div></div>';
+      html += '<div class="recap-item"><div class="recap-label">Mere</div><div class="recap-value">' + val('filiation_mere') + '</div></div>';
+      html += '</div></div>';
+
+      document.getElementById('recap-content').innerHTML = html;
+    }
+
+    // ========== FORM SUBMIT ==========
+    function submitForm() {
+      var btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Envoi en cours...';
+
+      var formData = new FormData();
+      formData.append('type', 'auto_entrepreneur');
+
+      var data = {
+        type: 'auto_entrepreneur',
+        identite: {
+          civilite: document.getElementById('civilite').value,
+          nom_naissance: document.getElementById('nom_naissance').value,
+          nom_usage: document.getElementById('nom_usage').value,
+          prenoms: document.getElementById('prenoms').value,
+          date_naissance: document.getElementById('date_naissance').value,
+          ville_naissance: document.getElementById('ville_naissance').value,
+          pays_naissance: document.getElementById('pays_naissance').value,
+          nationalite: document.getElementById('nationalite').value,
+          securite_sociale: document.getElementById('secu').value
+        },
+        adresse: {
+          voie: document.getElementById('adresse_voie').value,
+          complement: document.getElementById('adresse_complement').value,
+          code_postal: document.getElementById('code_postal').value,
+          ville: document.getElementById('ville').value,
+          situation_matrimoniale: document.getElementById('situation_matrimoniale').value,
+          eirl: radioValues.eirl,
+          adresse_entreprise: radioValues.adresse_entreprise
+        },
+        activite: {
+          nature: document.getElementById('nature_activite').value,
+          description: document.getElementById('description_activite').value,
+          code_ape: document.getElementById('code_ape').value,
+          date_debut: document.getElementById('date_debut').value,
+          lieu_exercice: document.getElementById('lieu_exercice').value
+        },
+        fiscal: {
+          regime: radioValues.regime_fiscal,
+          versement_liberatoire: radioValues.versement_liberatoire,
+          acre: radioValues.acre
+        },
+        declaration: {
+          certifie: checkboxValues.declaration_certifie,
+          filiation_pere: document.getElementById('filiation_pere').value,
+          filiation_mere: document.getElementById('filiation_mere').value
+        }
+      };
+
+      if (radioValues.adresse_entreprise === 'differente') {
+        data.adresse.entreprise = {
+          voie: document.getElementById('ent_adresse_voie').value,
+          complement: document.getElementById('ent_adresse_complement').value,
+          code_postal: document.getElementById('ent_code_postal').value,
+          ville: document.getElementById('ent_ville').value
+        };
+      }
+
+      formData.append('data', JSON.stringify(data));
+
+      // Append files
+      var idRecto = document.getElementById('file-id-recto');
+      var idVerso = document.getElementById('file-id-verso');
+      var domicile = document.getElementById('file-domicile');
+      if (idRecto.files[0]) formData.append('id_recto', idRecto.files[0]);
+      if (idVerso.files[0]) formData.append('id_verso', idVerso.files[0]);
+      if (domicile.files[0]) formData.append('justificatif_domicile', domicile.files[0]);
+
+      fetch('/api/formalites', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      })
+        .then(function(r) {
+          if (!r.ok) throw new Error('Erreur serveur');
+          return r.json();
+        })
+        .then(function() {
+          document.getElementById('success-overlay').classList.add('active');
+        })
+        .catch(function(err) {
+          alert('Une erreur est survenue lors de l\'envoi. Veuillez reessayer.');
+          btn.disabled = false;
+          btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>Soumettre ma declaration';
+        });
+    }
+
+    // Spin animation
+    var styleSheet = document.createElement('style');
+    styleSheet.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+    document.head.appendChild(styleSheet);
+  </script>
+
+  <!-- BEGIN sidebar refresh JS (auto-generated) -->
+  <script>
+    (function() {
+      function openNewActionModal() {
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+      }
+      function closeNewActionModal(e) {
+        if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+      }
+      window.openNewActionModal = openNewActionModal;
+      window.closeNewActionModal = closeNewActionModal;
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNewActionModal(); });
+
+      // Société active + badges
+      fetch('/api/formalites').then(function(r){ return r.json(); }).then(function(data){
+        var list = (data && data.formalites) || data || [];
+        if (!Array.isArray(list)) return;
+        var societes = list.filter(function(f){ return f && f.denomination && (f.type === 'creation' || f.type === 'modification' || !f.type); });
+        var ctx = document.getElementById('sidebar-context');
+        var nameEl = document.getElementById('ctx-name');
+        if (societes.length === 0) {
+          if (ctx) ctx.style.display = 'none';
+        } else if (societes.length === 1) {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.add('single');
+        } else {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.remove('single');
+        }
+        var enCours = list.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var badge = document.getElementById('badge-formalites');
+        if (badge && enCours > 0) { badge.textContent = String(enCours) + ' en cours'; badge.style.display = 'inline-block'; }
+      }).catch(function(){});
+      // Affiche immédiatement les valeurs cachées pour éviter le jitter
+      (function(){
+        try {
+          var cachedForm = parseInt(sessionStorage.getItem('badge_formalites') || '0');
+          var cachedMsg = parseInt(sessionStorage.getItem('badge_messagerie') || '0');
+          if (cachedForm > 0) {
+            var bF = document.getElementById('badge-formalites');
+            if (bF) { bF.textContent = String(cachedForm) + ' en cours'; bF.style.display = 'inline-block'; }
+          }
+          if (cachedMsg > 0) {
+            var bM = document.getElementById('badge-messagerie');
+            if (bM) { bM.textContent = String(cachedMsg) + ' non lu' + (cachedMsg > 1 ? 's' : ''); bM.style.display = 'inline-block'; }
+          }
+        } catch(_) {}
+      })();
+      Promise.all([
+        fetch('/api/formalites').then(function(r){ return r.json(); }).catch(function(){ return { formalites: [] }; }),
+        fetch('/api/support/unread').then(function(r){ return r.json(); }).catch(function(){ return { unread: 0 }; })
+      ]).then(function(results){
+        var fs = (results[0] && results[0].formalites) || [];
+        var enCours = fs.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var bForm = document.getElementById('badge-formalites');
+        if (bForm) {
+          if (enCours > 0) { bForm.textContent = String(enCours) + ' en cours'; bForm.style.display = 'inline-block'; }
+          else { bForm.style.display = 'none'; }
+        }
+        var unreadForm = fs.reduce(function(a, f){ return a + (f.unread_messages || 0); }, 0);
+        var unreadSupport = (results[1] && results[1].unread) || 0;
+        var total = unreadForm + unreadSupport;
+        var badge = document.getElementById('badge-messagerie');
+        if (badge) {
+          if (total > 0) { badge.textContent = String(total) + ' non lu' + (total > 1 ? 's' : ''); badge.style.display = 'inline-block'; }
+          else { badge.style.display = 'none'; }
+        }
+        try {
+          sessionStorage.setItem('badge_formalites', String(enCours));
+          sessionStorage.setItem('badge_messagerie', String(total));
+        } catch(_) {}
+      });
+    })();
+  </script>
+  <!-- END sidebar refresh JS -->
+<script src="/js/common.js"></script>
+</body>
+</html>

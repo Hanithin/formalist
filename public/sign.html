@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formalist — Signature électronique</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f7; min-height: 100vh; display: flex; flex-direction: column; align-items: center; color: #1d1d1f; }
+    .header { width: 100%; padding: 20px 32px; background: #fff; border-bottom: 1px solid #e5e5e7; display: flex; align-items: center; gap: 12px; }
+    .header-logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .header-sep { color: #d2d2d7; }
+    .header-sub { font-size: 14px; color: #86868b; }
+    .main { max-width: 520px; width: 100%; padding: 40px 20px; }
+    .card { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .card h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .card .sub { font-size: 14px; color: #86868b; margin-bottom: 24px; }
+    .card .signer-info { background: #f5f5f7; border-radius: 10px; padding: 14px 16px; margin-bottom: 24px; font-size: 14px; }
+    .card .signer-info strong { color: #1d1d1f; }
+    .field-group { margin-bottom: 20px; }
+    .field-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #1d1d1f; }
+    .field-group input[type="text"] { width: 100%; padding: 10px 14px; border: 1.5px solid #d2d2d7; border-radius: 10px; font-size: 15px; outline: none; transition: border-color 0.2s; }
+    .field-group input[type="text"]:focus { border-color: #0071e3; }
+    .sig-tabs { display: flex; background: #f5f5f7; border-radius: 10px; padding: 3px; margin-bottom: 16px; }
+    .sig-tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 600; border: none; background: transparent; border-radius: 8px; cursor: pointer; color: #86868b; transition: all 0.2s; }
+    .sig-tab.active { background: #fff; color: #1d1d1f; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .sig-canvas-wrap { border: 1.5px solid #e0e0e0; border-radius: 12px; overflow: hidden; background: #fafafa; margin-bottom: 16px; }
+    #sig-canvas { width: 100%; height: 180px; cursor: crosshair; display: block; }
+    .sig-typed-wrap { display: none; margin-bottom: 16px; }
+    .sig-typed-wrap.active { display: block; }
+    .sig-canvas-wrap.hidden { display: none; }
+    .sig-typed-input { width: 100%; padding: 10px 14px; border: 1.5px solid #d2d2d7; border-radius: 10px; font-size: 15px; outline: none; }
+    .sig-typed-input:focus { border-color: #0071e3; }
+    .sig-typed-preview { min-height: 60px; display: flex; align-items: center; justify-content: center; font-family: 'Brush Script MT', 'Dancing Script', cursive; font-size: 36px; color: #1d1d1f; padding: 12px; }
+    .btn-sign { width: 100%; padding: 14px; background: #1d1d1f; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-sign:hover { opacity: 0.85; }
+    .btn-sign:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-clear { background: none; border: 1px solid #d2d2d7; border-radius: 10px; padding: 8px 16px; font-size: 13px; cursor: pointer; color: #86868b; margin-bottom: 16px; }
+    .legal { font-size: 11px; color: #86868b; margin-top: 16px; line-height: 1.5; }
+    .success-state { text-align: center; padding: 20px 0; }
+    .success-state .icon { width: 64px; height: 64px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .success-state .icon svg { width: 32px; height: 32px; stroke: #34c759; }
+    .success-state h2 { color: #1d1d1f; margin-bottom: 8px; }
+    .success-state p { color: #86868b; font-size: 14px; }
+    .already-signed { text-align: center; padding: 20px 0; }
+    .already-signed .icon { width: 64px; height: 64px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .already-signed .icon svg { width: 32px; height: 32px; stroke: #34c759; }
+    .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  </head>
+<body>
+  <div class="header">
+    <div class="header-logo">Formalist</div>
+    <span class="header-sep">|</span>
+    <span class="header-sub">Signature électronique</span>
+  </div>
+
+  <div class="main">
+    <div class="card" id="sign-card">
+      <!-- Content injected by JS -->
+    </div>
+  </div>
+
+  <script>
+    var SIGN_DATA = __SIGN_DATA__;
+    var _sigMode = 'draw';
+    var _sigDrawing = false;
+    var _sigCtx = null;
+
+    function init() {
+      var card = document.getElementById('sign-card');
+
+      if (SIGN_DATA.status === 'signed') {
+        card.innerHTML = '<div class="already-signed">'
+          + '<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+          + '<h2>Document déjà signé</h2>'
+          + '<p>Vous avez déjà signé ce document. Merci !</p>'
+          + '</div>';
+        return;
+      }
+
+      card.innerHTML = '<h2>' + escapeHtml(SIGN_DATA.societe) + '</h2>'
+        + '<div class="sub">' + escapeHtml(SIGN_DATA.forme) + '</div>'
+        + '<div class="signer-info">Vous signez en tant que <strong>' + escapeHtml(SIGN_DATA.associeName) + '</strong></div>'
+        + '<div class="field-group">'
+        + '  <label>Paraphes / Initiales (obligatoire)</label>'
+        + '  <input type="text" id="paraphe-input" maxlength="8" placeholder="ex: J.D.">'
+        + '</div>'
+        + '<div class="sig-tabs">'
+        + '  <button class="sig-tab active" onclick="switchTab(\'draw\')">Dessiner</button>'
+        + '  <button class="sig-tab" onclick="switchTab(\'type\')">Taper</button>'
+        + '</div>'
+        + '<div class="sig-canvas-wrap" id="sig-canvas-wrap"><canvas id="sig-canvas"></canvas></div>'
+        + '<div class="sig-typed-wrap" id="sig-typed-wrap">'
+        + '  <input type="text" class="sig-typed-input" id="sig-typed-input" placeholder="Tapez votre nom complet" oninput="updateTypedSig()">'
+        + '  <div class="sig-typed-preview" id="sig-typed-preview"></div>'
+        + '</div>'
+        + '<button class="btn-clear" onclick="clearSig()">Effacer</button>'
+        + '<button class="btn-sign" id="btn-submit" onclick="submitSignature()">'
+        + '  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>'
+        + '  Signer et valider'
+        + '</button>'
+        + '<div class="legal">En cliquant sur "Signer et valider", vous consentez à signer électroniquement ces documents conformément au règlement eIDAS (UE 910/2014).</div>';
+
+      initCanvas();
+    }
+
+    function escapeHtml(str) {
+      var d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function initCanvas() {
+      var canvas = document.getElementById('sig-canvas');
+      if (!canvas) return;
+      var dpr = window.devicePixelRatio || 1;
+      var rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      _sigCtx = canvas.getContext('2d');
+      _sigCtx.scale(dpr, dpr);
+      _sigCtx.strokeStyle = '#1d1d1f';
+      _sigCtx.lineWidth = 2;
+      _sigCtx.lineCap = 'round';
+      _sigCtx.lineJoin = 'round';
+
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', function() { _sigDrawing = false; });
+      canvas.addEventListener('mouseleave', function() { _sigDrawing = false; });
+      canvas.addEventListener('touchstart', function(e) { e.preventDefault(); startDraw(e.touches[0]); }, { passive: false });
+      canvas.addEventListener('touchmove', function(e) { e.preventDefault(); draw(e.touches[0]); }, { passive: false });
+      canvas.addEventListener('touchend', function() { _sigDrawing = false; });
+    }
+
+    function startDraw(e) {
+      _sigDrawing = true;
+      var canvas = document.getElementById('sig-canvas');
+      var rect = canvas.getBoundingClientRect();
+      _sigCtx.beginPath();
+      _sigCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    function draw(e) {
+      if (!_sigDrawing) return;
+      var canvas = document.getElementById('sig-canvas');
+      var rect = canvas.getBoundingClientRect();
+      _sigCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      _sigCtx.stroke();
+    }
+
+    function switchTab(mode) {
+      _sigMode = mode;
+      var tabs = document.querySelectorAll('.sig-tab');
+      tabs[0].className = 'sig-tab' + (mode === 'draw' ? ' active' : '');
+      tabs[1].className = 'sig-tab' + (mode === 'type' ? ' active' : '');
+      document.getElementById('sig-canvas-wrap').className = 'sig-canvas-wrap' + (mode === 'type' ? ' hidden' : '');
+      document.getElementById('sig-typed-wrap').className = 'sig-typed-wrap' + (mode === 'type' ? ' active' : '');
+    }
+
+    function updateTypedSig() {
+      var val = document.getElementById('sig-typed-input').value;
+      document.getElementById('sig-typed-preview').textContent = val;
+    }
+
+    function clearSig() {
+      if (_sigMode === 'draw') {
+        var canvas = document.getElementById('sig-canvas');
+        var dpr = window.devicePixelRatio || 1;
+        _sigCtx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+      } else {
+        document.getElementById('sig-typed-input').value = '';
+        document.getElementById('sig-typed-preview').textContent = '';
+      }
+    }
+
+    function getSignatureBase64() {
+      if (_sigMode === 'draw') {
+        var canvas = document.getElementById('sig-canvas');
+        var ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        var px = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        var hasContent = false;
+        for (var i = 3; i < px.length; i += 4) {
+          if (px[i] > 0) { hasContent = true; break; }
+        }
+        if (!hasContent) return null;
+        return canvas.toDataURL('image/png');
+      } else {
+        var val = document.getElementById('sig-typed-input').value.trim();
+        if (!val) return null;
+        var c = document.createElement('canvas');
+        c.width = 400; c.height = 100;
+        var cx = c.getContext('2d');
+        cx.font = '36px "Brush Script MT", cursive';
+        cx.fillStyle = '#1d1d1f';
+        cx.textAlign = 'center';
+        cx.textBaseline = 'middle';
+        cx.fillText(val, 200, 50);
+        return c.toDataURL('image/png');
+      }
+    }
+
+    function submitSignature() {
+      var paraphe = document.getElementById('paraphe-input').value.trim();
+      if (!paraphe) { alert('Veuillez saisir vos initiales / paraphes.'); return; }
+      var sigData = getSignatureBase64();
+      if (!sigData) { alert('Veuillez dessiner ou taper votre signature.'); return; }
+
+      var btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Envoi en cours...';
+
+      fetch('/api/sign/' + SIGN_DATA.token, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signature_data: sigData, paraphe_data: paraphe })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) throw new Error(data.error);
+        var card = document.getElementById('sign-card');
+        card.innerHTML = '<div class="success-state">'
+          + '<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+          + '<h2>Signature enregistrée</h2>'
+          + '<p>Merci ' + escapeHtml(SIGN_DATA.associeName) + ', votre signature a bien été enregistrée.</p>'
+          + '</div>';
+      })
+      .catch(function(e) {
+        alert('Erreur: ' + e.message);
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg> Signer et valider';
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

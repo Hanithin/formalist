@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consultation juridique — Formalist</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    body { background: #fafafa; }
+    .topbar {
+      padding: 30px 48px 4px;
+      background: transparent;
+      display: flex; align-items: baseline; justify-content: space-between;
+    }
+    .topbar h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 28px; font-weight: 600;
+      letter-spacing: 0; line-height: 1;
+    }
+    .page-sub {
+      padding: 0 48px;
+      font-size: 14px;
+      color: #888;
+      margin: 0 0 28px;
+      max-width: 760px;
+    }
+    .content-wrap { padding: 0 48px 60px; }
+
+    /* Hero card — sobre */
+    .hero-card {
+      background: #fff; border: 1px solid #ececef;
+      color: #111; border-radius: 16px; padding: 26px 30px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 24px; margin-bottom: 24px;
+    }
+    .hero-card .h-text h2 { font-family: 'Cal Sans', sans-serif; font-size: 21px; font-weight: 600; color: #111; }
+    .hero-card .h-text p { font-size: 13.5px; color: #888; margin-top: 6px; max-width: 520px; line-height: 1.5; }
+    .hero-card .h-cta {
+      padding: 12px 22px; background: #111; color: #fff;
+      border: none; border-radius: 10px; font-family: inherit; font-size: 14px;
+      font-weight: 600; cursor: pointer; flex-shrink: 0;
+      transition: background .15s, transform .15s;
+    }
+    .hero-card .h-cta:hover { background: #2a2a2c; transform: translateY(-1px); }
+
+    /* Next consultation banner — sobre */
+    .next-banner {
+      background: #fff; border: 1px solid #ececef; border-radius: 16px;
+      padding: 22px 26px; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 20px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .next-banner:hover { border-color: #d4d4d8; box-shadow: 0 4px 14px rgba(0,0,0,0.04); }
+    .next-banner .nb-ic {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: #f3f4f6; color: #555;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .next-banner .nb-ic svg { width: 22px; height: 22px; }
+    .next-banner .nb-body { flex: 1; min-width: 0; }
+    .next-banner .nb-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      color: #888; margin-bottom: 7px;
+    }
+    .next-banner .nb-tag.live { color: #047857; }
+    .next-banner .nb-tag .pulse {
+      width: 6px; height: 6px; border-radius: 50%; background: #10b981;
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .next-banner .nb-title { font-family: 'Cal Sans', sans-serif; font-size: 18px; font-weight: 600; color: #111; line-height: 1.25; }
+    .next-banner .nb-meta { font-size: 13.5px; color: #888; margin-top: 4px; }
+    .next-banner .nb-actions { display: flex; gap: 10px; flex-shrink: 0; align-items: center; }
+    .next-banner .nb-join {
+      padding: 10px 18px; background: #111; color: #fff;
+      border: none; border-radius: 10px; font-family: inherit; font-size: 13.5px;
+      font-weight: 600; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 7px;
+      transition: background .15s;
+    }
+    .next-banner .nb-join:hover { background: #2a2a2c; }
+    .next-banner .nb-link-wait {
+      font-size: 12.5px; color: #888;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .next-banner .nb-link-wait::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;
+      animation: pulse 1.6s infinite;
+    }
+
+    /* Filters */
+    .cons-tabs {
+      display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .cons-tab {
+      padding: 8px 16px; font-size: 13px; border-radius: 100px;
+      border: 1px solid #e5e5e5; background: #fff; color: #666;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .cons-tab:hover { border-color: #999; }
+    .cons-tab.active { background: #111; color: #fff; border-color: #111; }
+    .cons-tab .count {
+      font-size: 11.5px; font-weight: 600; opacity: 0.7;
+      padding: 1px 6px; background: rgba(0,0,0,0.08); border-radius: 100px;
+    }
+    .cons-tab.active .count { background: rgba(255,255,255,0.18); opacity: 1; }
+
+    /* My consultations list */
+    .my-cons-section { margin-bottom: 36px; }
+    .section-title { font-family: 'Cal Sans', sans-serif; font-size: 18px; font-weight: 600; color: #111; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+    .section-title .ct { font-size: 12px; color: #888; font-family: 'Matter', sans-serif; font-weight: 500; }
+    .my-cons-list { display: flex; flex-direction: column; gap: 10px; }
+    .my-cons-item {
+      background: #fff; border: 1px solid #ececef; border-radius: 14px;
+      padding: 16px 20px; display: flex; align-items: center; gap: 16px;
+      transition: all .15s; cursor: pointer;
+    }
+    .my-cons-item:hover { border-color: #c4b5fd; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+    .my-cons-item .ic {
+      width: 44px; height: 44px; border-radius: 11px;
+      background: #f3f4f6; color: #555;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .my-cons-item .ic svg { width: 20px; height: 20px; }
+    .my-cons-item.done .ic { background: #ecfdf5; color: #047857; }
+    .my-cons-item.cancelled .ic { background: #f3f4f6; color: #6b7280; opacity: 0.8; }
+    .my-cons-item.cancelled .t { text-decoration: line-through; color: #888; }
+    .my-cons-item .body { flex: 1; min-width: 0; }
+    .my-cons-item .t-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .my-cons-item .t { font-weight: 600; color: #111; font-size: 15.5px; }
+    .my-cons-item .domain-chip {
+      background: #f3f4f6; color: #555;
+      padding: 3px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .my-cons-item .s { font-size: 13px; color: #888; margin-top: 6px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .my-cons-item .s svg { width: 13px; height: 13px; opacity: 0.7; }
+    .my-cons-item .s .with-ic { display: inline-flex; align-items: center; gap: 5px; }
+    .my-cons-item .right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .my-cons-item .badge {
+      padding: 5px 11px; border-radius: 7px; font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .my-cons-item .badge.scheduled { background: #fef3c7; color: #b45309; }
+    .my-cons-item .badge.confirmed { background: #ecfdf5; color: #047857; }
+    .my-cons-item .badge.done { background: #f3f4f6; color: #555; }
+    .my-cons-item .badge.cancelled { background: #fef2f2; color: #b91c1c; }
+    .my-cons-item .join-btn {
+      padding: 8px 14px; background: #111; color: #fff;
+      border: none; border-radius: 8px; font-family: inherit;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      text-decoration: none; flex-shrink: 0;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .my-cons-item .join-btn:hover { background: #2a2a2c; }
+    .my-cons-item .chev { color: #ccc; margin-left: 4px; flex-shrink: 0; }
+
+    /* Drawer for details */
+    .cons-drawer-bg {
+      position: fixed; inset: 0; background: rgba(17,17,17,0.4); backdrop-filter: blur(2px);
+      z-index: 400; display: none;
+    }
+    .cons-drawer-bg.open { display: block; }
+    .cons-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 520px; max-width: 95vw;
+      background: #fff; z-index: 401; transform: translateX(100%);
+      transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column; box-shadow: -8px 0 32px rgba(0,0,0,0.1);
+    }
+    .cons-drawer.open { transform: translateX(0); }
+    .cd-head { padding: 16px 22px; border-bottom: 1px solid #f0f0f2; display: flex; align-items: center; justify-content: space-between; }
+    .cd-head h2 { font-family: 'Cal Sans', sans-serif; font-size: 17px; font-weight: 600; color: #888; }
+    .cd-close { background: none; border: none; cursor: pointer; color: #888; padding: 6px; border-radius: 8px; }
+    .cd-close:hover { background: #f5f5f7; color: #111; }
+    .cd-body { padding: 22px; overflow-y: auto; flex: 1; }
+    .cd-hero { margin-bottom: 22px; }
+    .cd-hero .domain-chip { display: inline-block; background: #f5f3ff; color: #7c3aed; padding: 4px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 10px; }
+    .cd-hero h1 { font-family: 'Cal Sans', sans-serif; font-size: 24px; font-weight: 700; color: #111; line-height: 1.2; }
+    .cd-hero .with { font-size: 14px; color: #888; margin-top: 6px; }
+    .cd-section { margin-bottom: 22px; }
+    .cd-section-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 10px; }
+    .cd-meta-card { background: #fafafa; border: 1px solid #f0f0f2; border-radius: 12px; padding: 4px 16px; }
+    .cd-meta-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #f0f0f2; font-size: 13.5px; }
+    .cd-meta-row:last-child { border-bottom: none; }
+    .cd-meta-row .k { color: #888; display: inline-flex; align-items: center; gap: 8px; }
+    .cd-meta-row .k svg { width: 14px; height: 14px; opacity: 0.6; }
+    .cd-meta-row .v { color: #111; font-weight: 500; text-align: right; }
+    .cd-desc { background: #fafafa; border: 1px solid #f0f0f2; border-radius: 12px; padding: 16px; font-size: 14px; line-height: 1.5; color: #333; white-space: pre-wrap; }
+    .cd-docs { display: flex; flex-direction: column; gap: 8px; }
+    .cd-doc { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #fafafa; border: 1px solid #f0f0f2; border-radius: 10px; text-decoration: none; color: inherit; transition: all .15s; }
+    .cd-doc:hover { border-color: #c4b5fd; background: #f5f3ff; }
+    .cd-doc .doc-ic { width: 36px; height: 36px; border-radius: 9px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .cd-doc .doc-nm { flex: 1; font-size: 13.5px; color: #111; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+    .cd-actions { display: flex; gap: 8px; padding: 16px 22px; border-top: 1px solid #f0f0f2; }
+    .cd-btn { flex: 1; padding: 12px 16px; border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; justify-content: center; gap: 7px; text-decoration: none; }
+    .cd-btn-join { background: #7c3aed; color: #fff; border: 1px solid #7c3aed; }
+    .cd-btn-join:hover { background: #6d28d9; }
+    .cd-btn-cancel { background: #fff; color: #b91c1c; border: 1px solid #fecaca; }
+    .cd-btn-cancel:hover { background: #fef2f2; }
+
+    /* Modal wizard */
+    .wizard-overlay {
+      position: fixed; inset: 0; background: rgba(17,17,17,0.5);
+      backdrop-filter: blur(4px); z-index: 500; display: none;
+      align-items: flex-start; justify-content: center;
+      overflow-y: auto; padding: 40px 20px;
+    }
+    .wizard-overlay.open { display: flex; }
+    .wizard {
+      background: #fff; border-radius: 20px; width: 720px; max-width: 100%;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.2); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .wiz-head {
+      padding: 22px 28px; border-bottom: 1px solid #f0f0f2;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .wiz-head h2 { font-family: 'Cal Sans', sans-serif; font-size: 19px; font-weight: 600; color: #111; }
+    .wiz-close {
+      background: none; border: none; cursor: pointer; color: #999;
+      padding: 6px; border-radius: 8px;
+    }
+    .wiz-close:hover { background: #f5f5f7; color: #111; }
+    .wiz-close svg { width: 20px; height: 20px; }
+
+    .wiz-progress {
+      display: flex; align-items: center; gap: 8px;
+      padding: 18px 28px; border-bottom: 1px solid #f0f0f2;
+    }
+    .wiz-step {
+      flex: 1; height: 4px; border-radius: 2px;
+      background: #f0f0f2; transition: background .25s;
+    }
+    .wiz-step.active { background: #7c3aed; }
+    .wiz-step.done { background: #7c3aed; }
+
+    .wiz-body { padding: 28px; min-height: 320px; }
+    .wiz-step-title { font-family: 'Cal Sans', sans-serif; font-size: 20px; font-weight: 600; color: #111; margin-bottom: 6px; }
+    .wiz-step-sub { font-size: 14px; color: #888; margin-bottom: 22px; }
+
+    .domain-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .domain-card {
+      padding: 16px; border: 1px solid #ececef; border-radius: 12px;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 12px;
+    }
+    .domain-card:hover { border-color: #c4b5fd; background: #faf5ff; }
+    .domain-card.selected { border-color: #7c3aed; background: #f5f3ff; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .domain-card .ic {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: #f5f3ff; color: #7c3aed;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .domain-card.selected .ic { background: #7c3aed; color: #fff; }
+    .domain-card .ic svg { width: 18px; height: 18px; }
+    .domain-card .nm { font-weight: 600; color: #111; font-size: 14.5px; }
+
+    /* Avocat picker */
+    .avocat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+    .avocat-pill {
+      padding: 14px 16px; border: 1px solid #ececef; border-radius: 12px;
+      cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avocat-pill:hover { border-color: #c4b5fd; }
+    .avocat-pill.selected { border-color: #7c3aed; background: #f5f3ff; }
+    .avocat-pill .av {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #f5f3ff; color: #7c3aed;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+    }
+    .avocat-pill.selected .av { background: #7c3aed; color: #fff; }
+    .avocat-pill .nm { font-weight: 600; color: #111; font-size: 14.5px; }
+    .avocat-pill .em { font-size: 12.5px; color: #888; margin-top: 2px; }
+
+    /* Calendar */
+    .cal-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 700px) { .cal-wrap { grid-template-columns: 1fr; } }
+    .cal-days { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; padding-right: 4px; }
+    .cal-day {
+      padding: 11px 14px; border: 1px solid #ececef; border-radius: 10px;
+      cursor: pointer; transition: all .15s;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .cal-day:hover { border-color: #c4b5fd; }
+    .cal-day.selected { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+    .cal-day.disabled { opacity: 0.4; cursor: not-allowed; background: #fafafa; }
+    .cal-day .d-name { font-size: 13px; }
+    .cal-day .d-count { font-size: 11.5px; opacity: 0.7; }
+    .cal-day.selected .d-count { color: rgba(255,255,255,0.85); }
+    .cal-slots { display: flex; flex-wrap: wrap; gap: 6px; max-height: 320px; overflow-y: auto; align-content: flex-start; }
+    .cal-slot {
+      padding: 9px 14px; border: 1px solid #e5e5e7; border-radius: 8px;
+      cursor: pointer; font-size: 13.5px; transition: all .15s;
+      background: #fff;
+    }
+    .cal-slot:hover { border-color: #7c3aed; color: #7c3aed; }
+    .cal-slot.selected { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+    .cal-empty { color: #888; font-size: 13.5px; padding: 14px; text-align: center; }
+
+    /* Step 3 */
+    .form-label { font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 8px; }
+    .form-input, .form-textarea {
+      width: 100%; padding: 11px 14px; border: 1px solid #e5e5e7;
+      border-radius: 10px; font-family: inherit; font-size: 14px;
+      transition: border-color .15s;
+    }
+    .form-input:focus, .form-textarea:focus {
+      outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+    }
+    .form-textarea { min-height: 140px; resize: vertical; }
+    .upload-zone {
+      border: 2px dashed #d4d4d8; border-radius: 12px;
+      padding: 20px; text-align: center; cursor: pointer;
+      transition: all .15s;
+    }
+    .upload-zone:hover { border-color: #7c3aed; background: #faf5ff; }
+    .upload-zone svg { width: 28px; height: 28px; color: #888; margin: 0 auto 8px; display: block; }
+    .upload-zone .t { font-size: 14px; font-weight: 600; color: #555; }
+    .upload-zone .s { font-size: 12.5px; color: #888; margin-top: 3px; }
+    .uploaded-files { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .uploaded-file {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; background: #f5f3ff; border: 1px solid #e9d5ff;
+      border-radius: 8px; font-size: 13px;
+    }
+    .uploaded-file .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #111; }
+    .uploaded-file .rm { background: none; border: none; cursor: pointer; color: #b91c1c; padding: 2px; }
+
+    /* Step 4 recap */
+    .recap-card {
+      background: #fafafa; border: 1px solid #ececef;
+      border-radius: 14px; padding: 22px; margin-bottom: 18px;
+    }
+    .recap-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid #ececef;
+      font-size: 14px;
+    }
+    .recap-row:last-child { border-bottom: none; }
+    .recap-row .k { color: #888; }
+    .recap-row .v { color: #111; font-weight: 500; text-align: right; }
+    .recap-total {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 14px 22px; background: #111; color: #fff;
+      border-radius: 12px; margin-bottom: 18px;
+    }
+    .recap-total .lab { font-size: 14px; opacity: 0.7; }
+    .recap-total .val { font-family: 'Cal Sans', sans-serif; font-size: 22px; font-weight: 700; }
+
+    .wiz-foot {
+      padding: 18px 28px; border-top: 1px solid #f0f0f2;
+      display: flex; justify-content: space-between; gap: 10px;
+    }
+    .wiz-btn {
+      padding: 11px 20px; border-radius: 10px; font-family: inherit;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
+    .wiz-btn-prev { background: #fff; color: #555; border: 1px solid #e5e5e7; }
+    .wiz-btn-prev:hover { background: #f8f8f9; }
+    .wiz-btn-prev:disabled { opacity: 0.4; cursor: not-allowed; }
+    .wiz-btn-next { background: #7c3aed; color: #fff; border: 1px solid #7c3aed; }
+    .wiz-btn-next:hover { background: #6d28d9; }
+    .wiz-btn-next:disabled { opacity: 0.4; cursor: not-allowed; background: #7c3aed; }
+    .wiz-btn-pay { background: #10b981; color: #fff; border: 1px solid #10b981; }
+    .wiz-btn-pay:hover { background: #047857; }
+
+    .empty-state {
+      padding: 60px 20px; text-align: center; background: #fff;
+      border: 1px solid #ececef; border-radius: 16px;
+    }
+    .empty-state .ic {
+      width: 56px; height: 56px; margin: 0 auto 16px;
+      border-radius: 14px; background: #f3f4f6; color: #555;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .empty-state .t { font-family: 'Cal Sans', sans-serif; font-size: 18px; font-weight: 600; color: #555; }
+    .empty-state .s { font-size: 13.5px; color: #888; margin-top: 4px; }
+
+    /* Toast minimal pour les erreurs de validation du wizard */
+    .wiz-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #111;
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+      z-index: 10000;
+      max-width: 380px;
+      display: flex; align-items: center; gap: 10px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+    }
+    .wiz-toast.visible { opacity: 1; transform: translateY(0); }
+    .wiz-toast-error {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+    }
+    .wiz-toast-error svg { color: #f87171; flex-shrink: 0; }
+
+    /* Champ en erreur : flash rouge subtil */
+    .form-textarea.field-error,
+    .form-input.field-error {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+      animation: field-shake 0.35s ease;
+    }
+    @keyframes field-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <a href="/dashboard.html?new=1" class="sidebar-cta-link">Cr&eacute;er une formalit&eacute;</a>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalités
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+
+      <a class="active" href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Paramètres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){window.location.href='/connexion.html';})" title="Déconnexion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Consultation juridique</h1>
+    </div>
+    <p class="page-sub">Échangez en visio avec un avocat spécialisé.</p>
+    <div class="content-wrap">
+      <div id="next-banner-wrap"></div>
+
+      <div class="hero-card" id="hero-card">
+        <div class="h-text">
+          <h2>Réservez une consultation</h2>
+          <p>Choisissez la matière, l'avocat, le créneau qui vous arrange et décrivez votre besoin. L'avocat confirme et vous envoie le lien de visio.</p>
+        </div>
+        <button class="h-cta" onclick="openWizard()">+ Prendre rendez-vous</button>
+      </div>
+
+      <div class="my-cons-section">
+        <h2 class="section-title">Mes consultations <span class="ct" id="cons-total"></span></h2>
+        <div class="cons-tabs" id="cons-filter-tabs"></div>
+        <div id="my-cons-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WIZARD MODAL -->
+  <div class="wizard-overlay" id="wizard-overlay" onclick="if(event.target===this)closeWizard()">
+    <div class="wizard">
+      <div class="wiz-head">
+        <h2 id="wiz-title">Prendre rendez-vous</h2>
+        <button class="wiz-close" onclick="closeWizard()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="wiz-progress">
+        <div class="wiz-step active" data-step="1"></div>
+        <div class="wiz-step" data-step="2"></div>
+        <div class="wiz-step" data-step="3"></div>
+        <div class="wiz-step" data-step="4"></div>
+      </div>
+      <div class="wiz-body" id="wiz-body"></div>
+      <div class="wiz-foot">
+        <button class="wiz-btn wiz-btn-prev" id="wiz-prev" onclick="wizPrev()" disabled>← Retour</button>
+        <button class="wiz-btn wiz-btn-next" id="wiz-next" onclick="wizNext()">Continuer →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    var DOMAINS = [
+      { key: 'droit_societes', name: 'Droit des sociétés' },
+      { key: 'fiscalite', name: 'Fiscalité' },
+      { key: 'contrats', name: 'Contrats' },
+      { key: 'droit_travail', name: 'Droit du travail' },
+      { key: 'propriete_intellectuelle', name: 'Propriété intellectuelle' },
+      { key: 'immobilier', name: 'Immobilier' },
+      { key: 'litige', name: 'Litige' },
+      { key: 'autre', name: 'Autre' }
+    ];
+
+    var state = {
+      step: 1,
+      domain: null,
+      avocatId: null,
+      slotIso: null,
+      duration: 30,
+      description: '',
+      uploadedFiles: [],
+      avocats: [],
+      slots: { availability: [], blocked: [], busy: [] },
+      selectedDate: null
+    };
+
+    var PRICE_CENTS = 9900;
+
+    function escapeText(s) { return String(s || '').replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+    function fmtEur(c) { return (c/100).toFixed(0) + ' €'; }
+    function fmtDateLong(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      var days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+      var months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+      var hh = d.getHours().toString().padStart(2,'0'); var mm = d.getMinutes().toString().padStart(2,'0');
+      return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + ' à ' + hh + 'h' + mm;
+    }
+    function fmtRelDate(iso) {
+      if (!iso) return '—';
+      var d = new Date(iso);
+      var diff = d - new Date();
+      if (diff < 0) { var abs = Math.abs(diff); if (abs < 3600000) return 'il y a ' + Math.round(abs/60000) + ' min'; if (abs < 86400000) return 'il y a ' + Math.round(abs/3600000) + 'h'; return 'le ' + d.toLocaleDateString('fr-FR'); }
+      if (diff < 3600000) return 'dans ' + Math.round(diff/60000) + ' min';
+      if (diff < 86400000) return 'dans ' + Math.round(diff/3600000) + 'h';
+      return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+    }
+
+    // -------------- MY CONSULTATIONS LIST --------------
+    var _allCons = [];
+    var _consFilter = 'all';
+
+    function cleanAvocatName(n) {
+      if (!n) return '';
+      // Évite "Me. Me. Sophie" si le nom contient déjà "Me." ou "Maître"
+      var trimmed = n.trim();
+      if (/^Me\.?\s+/i.test(trimmed) || /^Maître\s+/i.test(trimmed)) return trimmed;
+      return 'Me. ' + trimmed;
+    }
+    function domainName(key) {
+      var d = DOMAINS.find(function(x){return x.key===key;});
+      return d ? d.name : 'Consultation';
+    }
+    function relCountdown(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      var diff = d - new Date();
+      if (diff < 0) return 'passée';
+      var days = Math.floor(diff / 86400000);
+      var hours = Math.floor((diff % 86400000) / 3600000);
+      var mins = Math.floor((diff % 3600000) / 60000);
+      if (days >= 1) return 'dans ' + days + ' jour' + (days > 1 ? 's' : '');
+      if (hours >= 1) return 'dans ' + hours + ' h';
+      if (mins > 0) return 'dans ' + mins + ' min';
+      return 'maintenant';
+    }
+    function isUpcoming(c) {
+      if (c.status !== 'scheduled') return false;
+      return new Date(c.scheduled_at) > new Date();
+    }
+
+    function loadMyConsultations() {
+      fetch('/api/consultations').then(function(r){return r.json();}).then(function(d){
+        _allCons = d.consultations || [];
+        renderMyConsultations();
+      });
+    }
+
+    function renderMyConsultations() {
+      var container = document.getElementById('my-cons-container');
+      var bannerWrap = document.getElementById('next-banner-wrap');
+      var heroCard = document.getElementById('hero-card');
+      var totalLabel = document.getElementById('cons-total');
+
+      totalLabel.textContent = _allCons.length > 0 ? '· ' + _allCons.length + ' total' : '';
+
+      // Categorize
+      var upcoming = _allCons.filter(isUpcoming).sort(function(a,b){ return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
+      var past = _allCons.filter(function(c){ return c.status === 'done' || (c.status === 'scheduled' && new Date(c.scheduled_at) < new Date()); });
+      var cancelled = _allCons.filter(function(c){ return c.status === 'cancelled'; });
+
+      // Next banner (la plus proche à venir, si lien fourni ou attente)
+      bannerWrap.innerHTML = '';
+      if (upcoming.length > 0) {
+        var n = upcoming[0];
+        var canJoin = !!n.meeting_link;
+        bannerWrap.innerHTML = '<div class="next-banner">'
+          + '<div class="nb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>'
+          + '<div class="nb-body">'
+          +   '<div class="nb-tag' + (canJoin ? ' live' : '') + '">' + (canJoin ? '<span class="pulse"></span>Prochain rendez-vous' : 'En attente de confirmation') + '</div>'
+          +   '<div class="nb-title">' + escapeText(domainName(n.domain)) + ' avec ' + escapeText(cleanAvocatName(n.avocat_name)) + '</div>'
+          +   '<div class="nb-meta">' + fmtDateLong(n.scheduled_at) + ' · ' + relCountdown(n.scheduled_at) + '</div>'
+          + '</div>'
+          + '<div class="nb-actions">'
+          +   (canJoin
+              ? '<a class="nb-join" href="' + n.meeting_link + '" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M15 10l4.5-4.5A2 2 0 0123 7v10a2 2 0 01-3.5 1.5L15 14"/><rect x="1" y="5" width="14" height="14" rx="2"/></svg>Rejoindre la visio</a>'
+              : '<div class="nb-link-wait">Lien envoyé après confirmation</div>')
+          + '</div>'
+          + '</div>';
+        heroCard.style.display = 'none';
+      } else {
+        heroCard.style.display = 'flex';
+      }
+
+      // Filter tabs
+      var tabs = document.getElementById('cons-filter-tabs');
+      tabs.innerHTML = ''
+        + '<button class="cons-tab' + (_consFilter==='all'?' active':'') + '" data-f="all" onclick="setConsFilter(\'all\')">Toutes <span class="count">' + _allCons.length + '</span></button>'
+        + '<button class="cons-tab' + (_consFilter==='upcoming'?' active':'') + '" data-f="upcoming" onclick="setConsFilter(\'upcoming\')">À venir <span class="count">' + upcoming.length + '</span></button>'
+        + '<button class="cons-tab' + (_consFilter==='past'?' active':'') + '" data-f="past" onclick="setConsFilter(\'past\')">Passées <span class="count">' + past.length + '</span></button>'
+        + (cancelled.length ? '<button class="cons-tab' + (_consFilter==='cancelled'?' active':'') + '" data-f="cancelled" onclick="setConsFilter(\'cancelled\')">Annulées <span class="count">' + cancelled.length + '</span></button>' : '');
+
+      // Apply filter
+      var list = _allCons.slice();
+      if (_consFilter === 'upcoming') list = upcoming;
+      else if (_consFilter === 'past') list = past;
+      else if (_consFilter === 'cancelled') list = cancelled;
+      else list.sort(function(a,b){ return new Date(b.scheduled_at) - new Date(a.scheduled_at); });
+
+      if (list.length === 0) {
+        if (_allCons.length === 0) {
+          container.innerHTML = '<div class="empty-state">'
+            + '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>'
+            + '<div class="t">Aucune consultation pour le moment</div>'
+            + '<div class="s">Cliquez sur "Prendre rendez-vous" pour réserver votre première consultation.</div>'
+            + '</div>';
+        } else {
+          container.innerHTML = '<div class="empty-state"><div class="t" style="font-size:15px;">Aucune consultation dans cette catégorie</div></div>';
+        }
+        return;
+      }
+
+      container.innerHTML = '<div class="my-cons-list">' + list.map(function(c){
+        var stCls = c.status === 'done' ? 'done' : c.status === 'cancelled' ? 'cancelled' : (c.meeting_link ? 'confirmed' : 'scheduled');
+        var stLab = c.status === 'done' ? 'Terminée' : c.status === 'cancelled' ? 'Annulée' : (c.meeting_link ? 'Confirmée' : 'En attente');
+        var icCls = c.status === 'done' ? 'done' : c.status === 'cancelled' ? 'cancelled' : '';
+        var canJoin = c.status === 'scheduled' && c.meeting_link;
+        var rel = c.status === 'scheduled' ? ' · ' + relCountdown(c.scheduled_at) : '';
+        return '<div class="my-cons-item ' + icCls + '" onclick="openDetailDrawer(' + c.id + ')">'
+          + '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>'
+          + '<div class="body">'
+          +   '<div class="t-row"><span class="t">' + escapeText(domainName(c.domain)) + '</span><span class="domain-chip">' + (c.duration_minutes || 30) + ' min</span></div>'
+          +   '<div class="s">'
+          +     '<span class="with-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/></svg>' + escapeText(cleanAvocatName(c.avocat_name)) + '</span>'
+          +     '<span class="with-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' + fmtDateLong(c.scheduled_at) + rel + '</span>'
+          +   '</div>'
+          + '</div>'
+          + '<div class="right">'
+          +   '<span class="badge ' + stCls + '">' + stLab + '</span>'
+          +   (canJoin ? '<a class="join-btn" href="' + c.meeting_link + '" target="_blank" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M15 10l4.5-4.5A2 2 0 0123 7v10a2 2 0 01-3.5 1.5L15 14"/><rect x="1" y="5" width="14" height="14" rx="2"/></svg>Rejoindre</a>' : '')
+          +   '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>'
+          + '</div>'
+          + '</div>';
+      }).join('') + '</div>';
+    }
+
+    function setConsFilter(f) { _consFilter = f; renderMyConsultations(); }
+    window.setConsFilter = setConsFilter;
+
+    // -------------- DETAIL DRAWER --------------
+    function openDetailDrawer(id) {
+      var c = _allCons.find(function(x){ return x.id === id; });
+      if (!c) return;
+      var iconCal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+      var iconClock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+      var iconUser = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/></svg>';
+      var iconEur = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 5.5A8 8 0 1019.5 18.5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="13" y2="14"/></svg>';
+
+      var docs = [];
+      try { docs = c.documents_json ? JSON.parse(c.documents_json) : []; } catch (_) {}
+
+      var stCls = c.status === 'done' ? 'done' : c.status === 'cancelled' ? 'cancelled' : (c.meeting_link ? 'confirmed' : 'scheduled');
+      var stLab = c.status === 'done' ? 'Terminée' : c.status === 'cancelled' ? 'Annulée' : (c.meeting_link ? 'Confirmée — Lien envoyé' : 'En attente de confirmation');
+
+      var html = '<div class="cd-hero">'
+        + '<div class="domain-chip">' + escapeText(domainName(c.domain)) + '</div>'
+        + '<h1>Consultation juridique</h1>'
+        + '<div class="with">Avec ' + escapeText(cleanAvocatName(c.avocat_name)) + '</div>'
+        + '<div style="margin-top:12px;"><span class="badge ' + stCls + '" style="padding:5px 11px;border-radius:7px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;' + (stCls==='scheduled'?'background:#fef3c7;color:#b45309;':stCls==='confirmed'?'background:#ecfdf5;color:#047857;':stCls==='done'?'background:#f3f4f6;color:#555;':'background:#fef2f2;color:#b91c1c;') + '">' + stLab + '</span></div>'
+        + '</div>';
+
+      html += '<div class="cd-section">'
+        + '<div class="cd-section-title">Informations</div>'
+        + '<div class="cd-meta-card">'
+        +   '<div class="cd-meta-row"><span class="k">' + iconCal + 'Date et heure</span><span class="v">' + fmtDateLong(c.scheduled_at) + '</span></div>'
+        +   '<div class="cd-meta-row"><span class="k">' + iconClock + 'Durée</span><span class="v">' + (c.duration_minutes || 30) + ' minutes</span></div>'
+        +   '<div class="cd-meta-row"><span class="k">' + iconUser + 'Avocat</span><span class="v">' + escapeText(cleanAvocatName(c.avocat_name)) + '</span></div>'
+        +   '<div class="cd-meta-row"><span class="k">' + iconEur + 'Prix</span><span class="v">' + fmtEur(c.price_cents || 9900) + '</span></div>'
+        + '</div>'
+        + '</div>';
+
+      if (c.description) {
+        html += '<div class="cd-section">'
+          + '<div class="cd-section-title">Votre demande</div>'
+          + '<div class="cd-desc">' + escapeText(c.description) + '</div>'
+          + '</div>';
+      }
+
+      if (docs.length > 0) {
+        html += '<div class="cd-section"><div class="cd-section-title">Documents partagés (' + docs.length + ')</div><div class="cd-docs">';
+        docs.forEach(function(p){
+          var fname = (p || '').split('/').pop();
+          html += '<a class="cd-doc" href="/api/file?path=' + encodeURIComponent(fname) + '" target="_blank">'
+            + '<div class="doc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
+            + '<div class="doc-nm">' + escapeText(fname) + '</div>'
+            + '</a>';
+        });
+        html += '</div></div>';
+      }
+
+      if (c.status === 'done' && c.notes) {
+        html += '<div class="cd-section">'
+          + '<div class="cd-section-title">Compte-rendu de l\'avocat</div>'
+          + '<div class="cd-desc">' + escapeText(c.notes) + '</div>'
+          + '</div>';
+      }
+
+      document.getElementById('cd-body').innerHTML = html;
+
+      // Actions
+      var actions = document.getElementById('cd-actions');
+      actions.innerHTML = '';
+      if (c.status === 'scheduled' && c.meeting_link) {
+        actions.innerHTML = '<a class="cd-btn cd-btn-join" href="' + c.meeting_link + '" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M15 10l4.5-4.5A2 2 0 0123 7v10a2 2 0 01-3.5 1.5L15 14"/><rect x="1" y="5" width="14" height="14" rx="2"/></svg>Rejoindre la visio</a>'
+          + '<button class="cd-btn cd-btn-cancel" onclick="cancelConsultation(' + c.id + ')">Annuler</button>';
+      } else if (c.status === 'scheduled') {
+        actions.innerHTML = '<button class="cd-btn cd-btn-cancel" style="flex:1;" onclick="cancelConsultation(' + c.id + ')">Annuler la consultation</button>';
+      } else {
+        actions.style.display = 'none';
+      }
+      if (c.status === 'scheduled') actions.style.display = 'flex';
+
+      document.getElementById('cd-drawer').classList.add('open');
+      document.getElementById('cd-bg').classList.add('open');
+    }
+    function closeDetailDrawer() {
+      document.getElementById('cd-drawer').classList.remove('open');
+      document.getElementById('cd-bg').classList.remove('open');
+    }
+    function cancelConsultation(id) {
+      if (!confirm('Annuler cette consultation ? Vous serez remboursé.')) return;
+      fetch('/api/avocat/consultations/' + id + '/cancel', { method: 'PUT' })
+        .then(function(r){return r.json();}).then(function(d){
+          if (!d.ok) { alert(d.error || 'Erreur'); return; }
+          closeDetailDrawer();
+          loadMyConsultations();
+        });
+    }
+    window.openDetailDrawer = openDetailDrawer;
+    window.closeDetailDrawer = closeDetailDrawer;
+    window.cancelConsultation = cancelConsultation;
+
+    // -------------- WIZARD --------------
+    function openWizard() {
+      state = { step: 1, domain: null, avocatId: null, slotIso: null, duration: 30, description: '', uploadedFiles: [], avocats: [], slots: { availability:[], blocked:[], busy:[] }, selectedDate: null };
+      document.getElementById('wizard-overlay').classList.add('open');
+      renderStep();
+    }
+    function closeWizard() {
+      document.getElementById('wizard-overlay').classList.remove('open');
+    }
+    function renderStep() {
+      document.querySelectorAll('.wiz-step').forEach(function(el){
+        var s = parseInt(el.dataset.step);
+        el.classList.remove('active','done');
+        if (s < state.step) el.classList.add('done');
+        else if (s === state.step) el.classList.add('active');
+      });
+      document.getElementById('wiz-prev').disabled = state.step === 1;
+      var nextBtn = document.getElementById('wiz-next');
+      nextBtn.textContent = state.step === 4 ? 'Payer 99 € et confirmer' : 'Continuer →';
+      nextBtn.className = state.step === 4 ? 'wiz-btn wiz-btn-pay' : 'wiz-btn wiz-btn-next';
+
+      var body = document.getElementById('wiz-body');
+      if (state.step === 1) body.innerHTML = stepDomain();
+      else if (state.step === 2) body.innerHTML = stepAvocatSlot();
+      else if (state.step === 3) body.innerHTML = stepDescription();
+      else if (state.step === 4) body.innerHTML = stepRecap();
+    }
+
+    function stepDomain() {
+      var icons = {
+        droit_societes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>',
+        fiscalite: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+        contrats: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        droit_travail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-3V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/></svg>',
+        propriete_intellectuelle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5a2.5 2.5 0 005 0V8a2.5 2.5 0 00-5 0z"/><path d="M11 17v4"/><path d="M7 21h8"/></svg>',
+        immobilier: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>',
+        litige: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        autre: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+      };
+      var html = '<div class="wiz-step-title">Choisissez votre matière</div>'
+        + '<div class="wiz-step-sub">Sélectionnez le domaine juridique de votre consultation.</div>'
+        + '<div class="domain-grid">';
+      DOMAINS.forEach(function(d){
+        var sel = state.domain === d.key ? ' selected' : '';
+        html += '<div class="domain-card' + sel + '" onclick="selectDomain(\'' + d.key + '\')">'
+          + '<div class="ic">' + (icons[d.key] || icons.autre) + '</div>'
+          + '<div class="nm">' + d.name + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+      return html;
+    }
+
+    function selectDomain(k) { state.domain = k; renderStep(); }
+    window.selectDomain = selectDomain;
+
+    function stepAvocatSlot() {
+      // Load avocats on first render
+      if (state.avocats.length === 0) {
+        fetch('/api/consultations/avocats').then(function(r){return r.json();}).then(function(d){
+          state.avocats = d.avocats || [];
+          renderStep();
+        });
+        return '<div style="text-align:center;padding:40px;color:#888;">Chargement…</div>';
+      }
+      var html = '<div class="wiz-step-title">Avocat et créneau</div>'
+        + '<div class="wiz-step-sub">Choisissez un avocat puis un créneau disponible.</div>';
+      html += '<div class="avocat-list">';
+      state.avocats.forEach(function(a){
+        var sel = state.avocatId === a.id ? ' selected' : '';
+        var init = (a.name || '?').split(' ').map(function(n){return (n[0]||'').toUpperCase();}).join('').slice(0,2);
+        html += '<div class="avocat-pill' + sel + '" onclick="selectAvocat(' + a.id + ')">'
+          + '<div class="av">' + init + '</div>'
+          + '<div><div class="nm">Me. ' + escapeText(a.name) + '</div><div class="em">' + escapeText(a.email) + '</div></div>'
+          + '</div>';
+      });
+      html += '</div>';
+      if (state.avocatId) {
+        html += '<div class="cal-wrap"><div class="cal-days" id="cal-days"></div><div class="cal-slots" id="cal-slots"></div></div>';
+      }
+      return html;
+    }
+
+    function selectAvocat(id) {
+      state.avocatId = id;
+      state.slotIso = null;
+      state.selectedDate = null;
+      renderStep();
+      // load slots for next 21 days
+      var from = new Date(); from.setHours(0,0,0,0);
+      var to = new Date(from.getTime() + 21 * 86400000);
+      var fromStr = from.toISOString().slice(0,10);
+      var toStr = to.toISOString().slice(0,10);
+      fetch('/api/consultations/avocats/' + id + '/slots?from=' + fromStr + '&to=' + toStr)
+        .then(function(r){return r.json();}).then(function(d){
+          state.slots = d;
+          renderCalDays();
+        });
+    }
+    window.selectAvocat = selectAvocat;
+
+    function renderCalDays() {
+      var daysEl = document.getElementById('cal-days');
+      if (!daysEl) return;
+      var html = '';
+      var DAYS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+      var MONTHS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+      var availByDow = {};
+      (state.slots.availability || []).forEach(function(s){
+        if (!availByDow[s.day_of_week]) availByDow[s.day_of_week] = [];
+        availByDow[s.day_of_week].push(s);
+      });
+      var anyDay = false;
+      for (var i = 0; i < 21; i++) {
+        var d = new Date(); d.setHours(0,0,0,0);
+        d.setDate(d.getDate() + i);
+        var dow = d.getDay();
+        var dayStr = d.toISOString().slice(0,10);
+        // skip if blocked
+        var blocked = (state.slots.blocked || []).some(function(b){ return b.start_date <= dayStr && b.end_date >= dayStr; });
+        var slotsForDay = computeSlotsForDay(d, availByDow[dow] || []);
+        if (blocked || slotsForDay.length === 0) continue;
+        anyDay = true;
+        var sel = state.selectedDate === dayStr ? ' selected' : '';
+        var label = (i === 0 ? "Aujourd'hui" : i === 1 ? 'Demain' : DAYS[dow] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]);
+        html += '<div class="cal-day' + sel + '" onclick="selectDay(\'' + dayStr + '\')">'
+          + '<div class="d-name">' + label + '</div>'
+          + '<div class="d-count">' + slotsForDay.length + ' créneau' + (slotsForDay.length > 1 ? 'x' : '') + '</div>'
+          + '</div>';
+      }
+      if (!anyDay) html = '<div class="cal-empty">Aucune disponibilité dans les 3 prochaines semaines.</div>';
+      daysEl.innerHTML = html;
+      if (state.selectedDate) renderCalSlots();
+      else document.getElementById('cal-slots').innerHTML = '<div class="cal-empty">Choisissez une date pour voir les horaires.</div>';
+    }
+
+    function computeSlotsForDay(date, availSlots) {
+      var result = [];
+      var dayStr = date.toISOString().slice(0,10);
+      var nowMs = Date.now();
+      availSlots.forEach(function(av){
+        var sParts = av.start_time.split(':');
+        var eParts = av.end_time.split(':');
+        var slotMin = av.slot_duration_minutes || 30;
+        var startMins = parseInt(sParts[0]) * 60 + parseInt(sParts[1]);
+        var endMins = parseInt(eParts[0]) * 60 + parseInt(eParts[1]);
+        for (var m = startMins; m + slotMin <= endMins; m += slotMin) {
+          var hh = Math.floor(m/60).toString().padStart(2,'0');
+          var mm = (m%60).toString().padStart(2,'0');
+          var dt = new Date(date);
+          dt.setHours(parseInt(hh), parseInt(mm), 0, 0);
+          if (dt.getTime() < nowMs + 60 * 60000) continue; // au moins 1h à l'avance
+          // check busy
+          var iso = dt.toISOString();
+          var slotEnd = new Date(dt.getTime() + slotMin*60000);
+          var conflict = (state.slots.busy || []).some(function(b){
+            var bStart = new Date(b.scheduled_at);
+            var bEnd = new Date(bStart.getTime() + (b.duration_minutes||30) * 60000);
+            return bStart < slotEnd && bEnd > dt;
+          });
+          if (conflict) continue;
+          result.push({ iso: iso, label: hh + 'h' + mm, duration: slotMin });
+        }
+      });
+      return result;
+    }
+
+    function selectDay(dayStr) {
+      state.selectedDate = dayStr;
+      renderCalDays();
+    }
+    window.selectDay = selectDay;
+
+    function renderCalSlots() {
+      var slotsEl = document.getElementById('cal-slots');
+      if (!slotsEl) return;
+      var d = new Date(state.selectedDate + 'T00:00:00');
+      var availByDow = {};
+      (state.slots.availability || []).forEach(function(s){
+        if (!availByDow[s.day_of_week]) availByDow[s.day_of_week] = [];
+        availByDow[s.day_of_week].push(s);
+      });
+      var slots = computeSlotsForDay(d, availByDow[d.getDay()] || []);
+      if (slots.length === 0) { slotsEl.innerHTML = '<div class="cal-empty">Plus de créneaux disponibles ce jour.</div>'; return; }
+      slotsEl.innerHTML = slots.map(function(s){
+        var sel = state.slotIso === s.iso ? ' selected' : '';
+        return '<div class="cal-slot' + sel + '" onclick="selectSlot(\'' + s.iso + '\', ' + s.duration + ')">' + s.label + '</div>';
+      }).join('');
+    }
+
+    function selectSlot(iso, dur) {
+      state.slotIso = iso;
+      state.duration = dur;
+      renderCalSlots();
+    }
+    window.selectSlot = selectSlot;
+
+    function stepDescription() {
+      var html = '<div class="wiz-step-title">Décrivez votre besoin</div>'
+        + '<div class="wiz-step-sub">Plus c\'est précis, plus l\'avocat pourra préparer la consultation.</div>'
+        + '<label class="form-label">Sujet de la consultation</label>'
+        + '<textarea class="form-textarea" id="desc-input" placeholder="Ex: Création d\'une SAS pour mon activité de consulting. J\'ai 2 associés et je m\'interroge sur le pacte d\'associés et la répartition des parts...">' + escapeText(state.description) + '</textarea>'
+        + '<div style="margin-top:18px;">'
+        + '<label class="form-label">Documents (facultatif)</label>'
+        + '<div class="upload-zone" onclick="document.getElementById(\'doc-input\').click()">'
+        +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>'
+        +   '<div class="t">Déposer des documents</div>'
+        +   '<div class="s">PDF, images, Word. Max 10 Mo par fichier.</div>'
+        + '</div>'
+        + '<input type="file" id="doc-input" style="display:none;" multiple onchange="onDocsSelected(this)">'
+        + '<div class="uploaded-files" id="uploaded-files"></div>'
+        + '</div>';
+      setTimeout(function(){ renderUploaded(); var d = document.getElementById('desc-input'); if (d) d.oninput = function(){ state.description = this.value; }; }, 0);
+      return html;
+    }
+
+    function renderUploaded() {
+      var el = document.getElementById('uploaded-files');
+      if (!el) return;
+      if (state.uploadedFiles.length === 0) { el.innerHTML = ''; return; }
+      el.innerHTML = state.uploadedFiles.map(function(f, i){
+        return '<div class="uploaded-file">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+          + '<span class="nm">' + escapeText(f.originalName || f.filename) + '</span>'
+          + '<button class="rm" onclick="removeDoc(' + i + ')">'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+          + '</button></div>';
+      }).join('');
+    }
+
+    function onDocsSelected(input) {
+      var files = Array.from(input.files);
+      files.forEach(function(f){
+        var fd = new FormData();
+        fd.append('file', f);
+        fetch('/api/upload', { method: 'POST', body: fd })
+          .then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+              state.uploadedFiles.push({ filename: d.filename, originalName: d.originalName || f.name });
+              renderUploaded();
+            } else {
+              alert(d.error || 'Erreur upload');
+            }
+          });
+      });
+      input.value = '';
+    }
+    function removeDoc(i) { state.uploadedFiles.splice(i, 1); renderUploaded(); }
+    window.onDocsSelected = onDocsSelected;
+    window.removeDoc = removeDoc;
+
+    function stepRecap() {
+      var dom = DOMAINS.find(function(d){ return d.key === state.domain; });
+      var av = state.avocats.find(function(a){ return a.id === state.avocatId; });
+      return '<div class="wiz-step-title">Récapitulatif</div>'
+        + '<div class="wiz-step-sub">Vérifiez les détails avant de confirmer le paiement.</div>'
+        + '<div class="recap-card">'
+        +   '<div class="recap-row"><span class="k">Matière</span><span class="v">' + (dom ? dom.name : '—') + '</span></div>'
+        +   '<div class="recap-row"><span class="k">Avocat</span><span class="v">Me. ' + escapeText(av ? av.name : '—') + '</span></div>'
+        +   '<div class="recap-row"><span class="k">Date et heure</span><span class="v">' + fmtDateLong(state.slotIso) + '</span></div>'
+        +   '<div class="recap-row"><span class="k">Durée</span><span class="v">' + state.duration + ' minutes</span></div>'
+        +   '<div class="recap-row"><span class="k">Documents joints</span><span class="v">' + (state.uploadedFiles.length > 0 ? state.uploadedFiles.length + ' fichier(s)' : 'Aucun') + '</span></div>'
+        + '</div>'
+        + '<div class="recap-total"><span class="lab">Total à payer</span><span class="val">' + fmtEur(PRICE_CENTS) + '</span></div>'
+        + '<div style="font-size:12.5px;color:#888;text-align:center;">Paiement sécurisé. Vous êtes intégralement remboursé en cas d\'absence de l\'avocat.</div>';
+    }
+
+    // Toast minimal, palette cohérente avec le reste de l'app
+    function showWizToast(msg, type) {
+      var existing = document.getElementById('wiz-toast');
+      if (existing) existing.remove();
+      var t = document.createElement('div');
+      t.id = 'wiz-toast';
+      t.className = 'wiz-toast' + (type === 'error' ? ' wiz-toast-error' : '');
+      t.innerHTML = (type === 'error'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+        : '')
+        + '<span>' + msg + '</span>';
+      document.body.appendChild(t);
+      requestAnimationFrame(function() { t.classList.add('visible'); });
+      setTimeout(function() {
+        t.classList.remove('visible');
+        setTimeout(function() { t.remove(); }, 200);
+      }, 3500);
+    }
+
+    function wizNext() {
+      if (state.step === 1 && !state.domain) { showWizToast('Choisissez une matière juridique pour continuer.', 'error'); return; }
+      if (state.step === 2 && !state.slotIso) { showWizToast('Choisissez un avocat et un créneau pour continuer.', 'error'); return; }
+      if (state.step === 3) {
+        state.description = (document.getElementById('desc-input') || {}).value || state.description;
+        if (state.description.trim().length < 10) {
+          showWizToast('Décrivez votre besoin en quelques mots (minimum 10 caractères).', 'error');
+          var d = document.getElementById('desc-input');
+          if (d) { d.classList.add('field-error'); d.focus(); setTimeout(function(){ d.classList.remove('field-error'); }, 2500); }
+          return;
+        }
+      }
+      if (state.step === 4) { confirmBooking(); return; }
+      state.step++;
+      renderStep();
+    }
+    function wizPrev() {
+      if (state.step > 1) { state.step--; renderStep(); }
+    }
+    window.wizNext = wizNext;
+    window.wizPrev = wizPrev;
+    window.openWizard = openWizard;
+    window.closeWizard = closeWizard;
+
+    function confirmBooking() {
+      var btn = document.getElementById('wiz-next');
+      btn.disabled = true; btn.textContent = 'Paiement en cours…';
+      fetch('/api/consultations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          avocat_id: state.avocatId,
+          scheduled_at: state.slotIso,
+          duration_minutes: state.duration,
+          domain: state.domain,
+          description: state.description,
+          documents_json: state.uploadedFiles.map(function(f){ return f.filename; })
+        })
+      }).then(function(r){return r.json();}).then(function(d){
+        btn.disabled = false; btn.textContent = 'Payer 99 € et confirmer';
+        if (!d.ok) { alert(d.error || 'Erreur lors de la réservation'); return; }
+        closeWizard();
+        loadMyConsultations();
+        alert('Consultation réservée. L\'avocat va recevoir votre demande et vous envoyer le lien de visio.');
+      });
+    }
+
+    // Init
+    loadMyConsultations();
+
+    // Badges sidebar (formalités en cours + messages non lus) — cachés en sessionStorage pour éviter le jitter
+    (function(){
+      try {
+        var cachedForm = parseInt(sessionStorage.getItem('badge_formalites') || '0');
+        var cachedMsg = parseInt(sessionStorage.getItem('badge_messagerie') || '0');
+        if (cachedForm > 0) {
+          var bF = document.getElementById('badge-formalites');
+          if (bF) { bF.textContent = String(cachedForm) + ' en cours'; bF.style.display = 'inline-block'; }
+        }
+        if (cachedMsg > 0) {
+          var bM = document.getElementById('badge-messagerie');
+          if (bM) { bM.textContent = String(cachedMsg) + ' non lu' + (cachedMsg > 1 ? 's' : ''); bM.style.display = 'inline-block'; }
+        }
+      } catch(_) {}
+    })();
+    Promise.all([
+      fetch('/api/formalites').then(function(r){ return r.json(); }).catch(function(){ return { formalites: [] }; }),
+      fetch('/api/support/unread').then(function(r){ return r.json(); }).catch(function(){ return { unread: 0 }; })
+    ]).then(function(results){
+      var fs = (results[0] && results[0].formalites) || [];
+      var enCours = fs.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+      var bForm = document.getElementById('badge-formalites');
+      if (bForm) {
+        if (enCours > 0) { bForm.textContent = String(enCours) + ' en cours'; bForm.style.display = 'inline-block'; }
+        else { bForm.style.display = 'none'; }
+      }
+      var unreadForm = fs.reduce(function(a, f){ return a + (f.unread_messages || 0); }, 0);
+      var unreadSupport = (results[1] && results[1].unread) || 0;
+      var total = unreadForm + unreadSupport;
+      var bMsg = document.getElementById('badge-messagerie');
+      if (bMsg) {
+        if (total > 0) { bMsg.textContent = String(total) + ' non lu' + (total > 1 ? 's' : ''); bMsg.style.display = 'inline-block'; }
+        else { bMsg.style.display = 'none'; }
+      }
+      try {
+        sessionStorage.setItem('badge_formalites', String(enCours));
+        sessionStorage.setItem('badge_messagerie', String(total));
+      } catch(_) {}
+    });
+  </script>
+
+  <!-- DETAIL DRAWER -->
+  <div class="cons-drawer-bg" id="cd-bg" onclick="closeDetailDrawer()"></div>
+  <aside class="cons-drawer" id="cd-drawer">
+    <div class="cd-head">
+      <h2>Détails de la consultation</h2>
+      <button class="cd-close" onclick="closeDetailDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="cd-body" id="cd-body"></div>
+    <div class="cd-actions" id="cd-actions"></div>
+  </aside>
+</body>
+</html>

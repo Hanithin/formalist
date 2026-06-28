@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact &mdash; Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family:'Cal Sans'; src:url('/fonts/CalSans-SemiBold.otf') format('opentype'); font-weight:600; font-display:swap }
+    *,*::before,*::after { margin:0; padding:0; box-sizing:border-box }
+    html { scroll-behavior:smooth }
+    body { font-family:'Inter',-apple-system,sans-serif; background:#f5f5f5; color:#111; -webkit-font-smoothing:antialiased; overflow-x:hidden }
+    a { text-decoration:none; color:inherit }
+
+    @keyframes fade-up { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes scale-up { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+    .text-gradient { background:linear-gradient(135deg,#7c3aed 0%,#2563eb 50%,#7c3aed 100%); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text }
+
+    /* NAV */
+    .nav-wrap { position:fixed; top:0; left:0; right:0; z-index:1000; display:flex; justify-content:center; padding:12px 40px 0; transition:all 0.3s }
+    .nav-wrap.scrolled { padding-top:8px }
+    .nav { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:transparent; transition:all 0.3s; max-width:1200px; width:100%; border-radius:16px }
+    .nav-wrap.scrolled .nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid #e8e8e8; box-shadow:0 2px 16px rgba(0,0,0,0.06) }
+    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.3px; display:flex; align-items:center }
+    .nav-logo img { height:28px }
+    .nav-center { display:flex; align-items:center; gap:32px }
+    .nav-center a, .nav-center .nav-dropdown-trigger { font-size:14px; font-weight:500; color:#666; transition:color 0.2s; cursor:pointer; text-decoration:none }
+    .nav-center a:hover, .nav-center .nav-dropdown-trigger:hover { color:#111 }
+    .nav-center a.active { color:#111; font-weight:600 }
+    .nav-dropdown { position:relative }
+    .nav-dropdown-trigger { display:inline-flex; align-items:center; gap:4px; background:none; border:none; font-family:inherit }
+    .nav-dropdown-trigger svg { width:12px; height:12px; transition:transform 0.2s }
+    .nav-dropdown:hover .nav-dropdown-trigger svg { transform:rotate(180deg) }
+    .nav-mega { position:fixed; top:68px; left:50%; transform:translateX(-50%); background:#fff; border:1px solid #e8e8e8; border-radius:16px; box-shadow:0 16px 48px rgba(0,0,0,0.08); padding:0; width:1080px; opacity:0; pointer-events:none; transition:all 0.2s; z-index:100; overflow:hidden }
+    .nav-dropdown.open .nav-mega { opacity:1; pointer-events:auto }
+    .nav-mega-grid { display:grid; grid-template-columns:1.4fr 1fr 240px; gap:0 }
+    .nav-mega-col { padding:28px 32px }
+    .nav-mega-col:first-child { border-right:1px solid #f0f0f0 }
+    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#bbb; margin-bottom:16px }
+    .nav-mega-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:12px; transition:all 0.15s; cursor:pointer; text-decoration:none; color:inherit }
+    .nav-mega-item:hover { background:#f8f7ff }
+    .nav-mega-icon { width:40px; height:40px; border-radius:12px; background:#f5f5f5; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s }
+    .nav-mega-item:hover .nav-mega-icon { background:#f0ecff; border-color:#e0d4fc }
+    .nav-mega-item:hover .nav-mega-icon svg { color:#7c3aed }
+    .nav-mega-icon svg { width:18px; height:18px; color:#666; transition:color 0.15s }
+    .nav-mega-item strong { font-size:14px; font-weight:600; color:#111; display:block; margin-bottom:2px }
+    .nav-mega-item span { font-size:12.5px; color:#888; line-height:1.4 }
+    .nav-mega-col-2 { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px }
+    .nav-mega-col-tools { display:flex; flex-direction:column; gap:4px }
+    .nav-mega-col:last-child { padding:0 }
+    .nav-mega-cta { background:linear-gradient(135deg,#7c3aed 0%,#a78bfa 60%,#c4b5fd 100%); padding:28px 24px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; height:100%; position:relative; overflow:hidden }
+    .nav-mega-cta::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; background:rgba(255,255,255,0.08); border-radius:50% }
+    .nav-mega-cta::after { content:''; position:absolute; bottom:-30px; left:-30px; width:100px; height:100px; background:rgba(255,255,255,0.06); border-radius:50% }
+    .nav-mega-cta-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.2); backdrop-filter:blur(4px); padding:5px 12px; border-radius:100px; font-size:11px; font-weight:600; width:fit-content; position:relative; z-index:1 }
+    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
+    .nav-mega-cta-link { display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; margin-top:16px; opacity:0.9; position:relative; z-index:1; text-decoration:none; transition:opacity 0.15s }
+    .nav-mega-cta-link:hover { opacity:1 }
+    .nav-right { display:flex; align-items:center; gap:8px }
+    .nav-right .btn { padding:10px 22px; font-size:14px; border-radius:12px }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; font-family:inherit; font-size:16px; font-weight:600; padding:14px 28px; border-radius:100px; cursor:pointer; transition:all 0.2s; border:none }
+    .btn-dark { background:#1a1a1a; color:#fff; position:relative; overflow:hidden }
+    .btn-dark::after { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent); transition:left 0.5s }
+    .btn-dark:hover::after { left:100% }
+    .btn-dark:hover { background:#000; transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,0.12) }
+
+    /* HERO */
+    .contact-hero { padding:120px 40px 56px; text-align:center; animation:fade-up 0.6s ease both }
+    .contact-hero h1 { font-family:'Cal Sans','Inter',sans-serif; font-size:56px; font-weight:600; line-height:1.08; letter-spacing:-1.5px; margin-bottom:16px }
+    .contact-hero p { font-size:18px; color:#666; line-height:1.65; max-width:560px; margin:0 auto }
+
+    /* MAIN */
+    .contact-main { max-width:640px; margin:0 auto; padding:0 40px 80px; animation:scale-up 0.6s ease 0.1s both }
+
+    /* FORM CARD */
+    .form-card { background:#fff; border:1px solid #e8e8e8; border-radius:24px; padding:44px }
+    .form-card h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:24px; font-weight:600; letter-spacing:-0.3px; margin-bottom:8px }
+    .form-card .form-sub { font-size:14px; color:#888; margin-bottom:32px; line-height:1.5 }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px }
+    .form-group { display:flex; flex-direction:column; gap:6px; margin-bottom:16px }
+    .form-group label { font-size:13px; font-weight:600; color:#333 }
+    .form-group input, .form-group textarea, .form-group select { width:100%; padding:12px 16px; border:1px solid #e5e5e5; border-radius:12px; font-size:14px; font-family:inherit; background:#fafafa; transition:all 0.2s; color:#111 }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline:none; border-color:#7c3aed; background:#fff; box-shadow:0 0 0 3px rgba(124,58,237,0.08) }
+    .form-group textarea { resize:vertical; min-height:140px }
+    .form-group select { cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center }
+    .form-error { font-size:12px; color:#ef4444; display:none; margin-top:2px }
+    .form-group.error input, .form-group.error textarea, .form-group.error select { border-color:#ef4444 }
+    .form-group.error .form-error { display:block }
+    .btn-submit { width:100%; padding:14px 28px; font-size:15px; font-weight:600; font-family:inherit; background:#1a1a1a; color:#fff; border:none; border-radius:12px; cursor:pointer; transition:all 0.2s; margin-top:8px; position:relative }
+    .btn-submit:hover { background:#000; transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,0.12) }
+    .btn-submit:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none }
+    .form-note { font-size:12px; color:#bbb; text-align:center; margin-top:16px; line-height:1.5 }
+    .form-success { display:none; text-align:center; padding:48px 20px }
+    .form-success .success-icon { width:64px; height:64px; border-radius:50%; background:#f0fdf4; border:1px solid #bbf7d0; display:flex; align-items:center; justify-content:center; margin:0 auto 20px }
+    .form-success .success-icon svg { width:28px; height:28px; color:#22c55e }
+    .form-success h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:22px; font-weight:600; margin-bottom:8px }
+    .form-success p { font-size:14px; color:#888; line-height:1.6; max-width:360px; margin:0 auto }
+
+    /* HONEYPOT */
+    .form-hp { position:absolute; left:-9999px; opacity:0; height:0; width:0; overflow:hidden }
+
+    /* FOOTER */
+    .foot { padding:56px 40px 32px; background:transparent }
+    .foot-inner { max-width:1200px; margin:0 auto }
+    .foot-top { display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr 1fr; gap:40px; margin-bottom:56px }
+    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:14px }
+    .foot-brand-p { font-size:13px; color:#999; line-height:1.7; max-width:280px; margin-bottom:24px }
+    .foot-mission { font-size:12px; color:#bbb; line-height:1.6; max-width:280px; margin-bottom:20px }
+    .foot-socials { display:flex; gap:10px }
+    .foot-socials a { width:32px; height:32px; border-radius:50%; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; color:#999; transition:all 0.2s }
+    .foot-socials a:hover { color:#111; border-color:#ccc }
+    .foot-socials svg { width:14px; height:14px }
+    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; color:#111; margin-bottom:16px }
+    .foot-col a { display:block; font-size:13px; color:#888; padding:5px 0; transition:color 0.2s }
+    .foot-col a:hover { color:#111 }
+    .foot-bottom { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding-top:24px; border-top:1px solid #e8e8e8 }
+    .foot-copy { font-size:12px; color:#bbb }
+
+    /* DIVIDERS */
+    .divider { position:relative; z-index:2 }
+    .divider-line { height:2px; background:#e8e8e8 }
+    .divider-plus-wrap { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); max-width:1320px; margin:0 auto; padding:0 40px; pointer-events:none }
+    .divider-plus-inner { position:relative }
+    .divider-plus-inner::before { content:'+'; position:absolute; top:50%; left:-12px; transform:translateY(-50%); font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+    .divider-plus-inner::after { content:'+'; position:absolute; top:50%; right:-12px; transform:translateY(-50%); font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+
+    /* GRID OVERLAY */
+    .grid-overlay { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:0; max-width:1320px; margin:0 auto; padding:0 40px }
+    .grid-overlay::before { content:''; position:absolute; top:0; bottom:0; left:40px; right:40px; border-left:2px solid #e8e8e8; border-right:2px solid #e8e8e8 }
+    body > *:not(.grid-overlay):not(.nav-wrap) { position:relative; z-index:1 }
+
+    /* RESPONSIVE */
+    @media(max-width:1024px) {
+      .nav-mega { width:calc(100vw - 80px) }
+    }
+    @media(max-width:768px) {
+      .nav-wrap { padding:8px 16px 0 }
+      .nav { padding:0 16px }
+      .nav-center { display:none }
+      .contact-hero { padding:100px 16px 40px }
+      .contact-hero h1 { font-size:36px; letter-spacing:-1px }
+      .contact-main { padding:0 16px 56px }
+      .form-card { padding:28px 24px }
+      .form-row { grid-template-columns:1fr }
+      .foot-top { grid-template-columns:1fr 1fr; gap:24px }
+    }
+  </style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  </head>
+<body>
+  <div class="grid-overlay"></div>
+
+  <!-- NAV -->
+  <div class="nav-wrap" id="navbar">
+    <nav class="nav">
+      <a href="/" class="nav-logo">formalist</a>
+      <div class="nav-center">
+        <div class="nav-dropdown">
+          <span class="nav-dropdown-trigger">Fonctionnalit&eacute;s <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>
+          <div class="nav-mega">
+            <div class="nav-mega-grid">
+              <div class="nav-mega-col">
+                <h5>Par type</h5>
+                <div class="nav-mega-col-2">
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg></div><div><strong>Cr&eacute;ation d'entreprise</strong><span>SASU, SAS, SARL, SCI, EURL</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><strong>Modification de soci&eacute;t&eacute;</strong><span>Si&egrave;ge, objet social, dirigeant</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><strong>Contrats</strong><span>NDA, CGV, CGU, prestation</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div><strong>Fermeture de soci&eacute;t&eacute;</strong><span>Dissolution et liquidation</span></div></a>
+                </div>
+              </div>
+              <div class="nav-mega-col">
+                <h5>Outils</h5>
+                <div class="nav-mega-col-tools">
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong>Validation avocat</strong><span>V&eacute;rification de chaque clause</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></div><div><strong>Signature eIDAS</strong><span>Valeur l&eacute;gale europ&eacute;enne</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div><strong>Chat avocat</strong><span>R&eacute;ponse sous 24h</span></div></a>
+                </div>
+              </div>
+              <div class="nav-mega-col">
+                <div class="nav-mega-cta">
+                  <div class="nav-mega-cta-badge">Nouveau</div>
+                  <div class="nav-mega-cta-title">Cr&eacute;ez votre entreprise en 5&nbsp;minutes</div>
+                  <a href="/connexion.html" class="nav-mega-cta-link">Commencer &rarr;</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <a href="/#pricing">Tarification</a>
+        <a href="/#temoignages">T&eacute;moignages</a>
+        <a href="/blog.html">Blog</a>
+        <a href="/contact.html" class="active">Contact</a>
+      </div>
+      <div class="nav-right">
+        <a href="/connexion.html" class="btn btn-dark">Commencer <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- HERO -->
+  <div class="contact-hero">
+    <h1>Nous <span class="text-gradient">contacter</span></h1>
+    <p>Une question sur nos services ? Besoin d'un accompagnement personnalis&eacute; ? Notre &eacute;quipe vous r&eacute;pond sous 24h ouvr&eacute;es.</p>
+  </div>
+
+  <!-- MAIN -->
+  <div class="contact-main">
+    <div class="form-card">
+      <div id="form-content">
+        <h2>Envoyez-nous un message</h2>
+        <p class="form-sub">Remplissez le formulaire ci-dessous et nous reviendrons vers vous rapidement.</p>
+        <form id="contact-form" novalidate>
+          <!-- Honeypot anti-bot -->
+          <div class="form-hp" aria-hidden="true">
+            <label for="website">Website</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" id="g-nom">
+              <label for="nom">Nom <span style="color:#ef4444">*</span></label>
+              <input type="text" id="nom" name="nom" placeholder="Votre nom" maxlength="80" required>
+              <span class="form-error">Veuillez entrer votre nom</span>
+            </div>
+            <div class="form-group" id="g-prenom">
+              <label for="prenom">Pr&eacute;nom <span style="color:#ef4444">*</span></label>
+              <input type="text" id="prenom" name="prenom" placeholder="Votre pr&eacute;nom" maxlength="80" required>
+              <span class="form-error">Veuillez entrer votre pr&eacute;nom</span>
+            </div>
+          </div>
+          <div class="form-group" id="g-email">
+            <label for="email">Email <span style="color:#ef4444">*</span></label>
+            <input type="email" id="email" name="email" placeholder="votre@email.com" maxlength="200" required>
+            <span class="form-error">Veuillez entrer un email valide</span>
+          </div>
+          <div class="form-group" id="g-sujet">
+            <label for="sujet">Sujet <span style="color:#ef4444">*</span></label>
+            <select id="sujet" name="sujet" required>
+              <option value="" disabled selected>S&eacute;lectionnez un sujet</option>
+              <option value="creation">Cr&eacute;ation d'entreprise</option>
+              <option value="contrat">Contrats</option>
+              <option value="facturation">Facturation</option>
+              <option value="technique">Probl&egrave;me technique</option>
+              <option value="partenariat">Partenariat</option>
+              <option value="autre">Autre</option>
+            </select>
+            <span class="form-error">Veuillez s&eacute;lectionner un sujet</span>
+          </div>
+          <div class="form-group" id="g-message">
+            <label for="message">Message <span style="color:#ef4444">*</span></label>
+            <textarea id="message" name="message" placeholder="D&eacute;crivez votre demande..." maxlength="5000" required></textarea>
+            <span class="form-error">Veuillez entrer votre message (min. 10 caract&egrave;res)</span>
+          </div>
+          <button type="submit" class="btn-submit" id="btn-submit">Envoyer le message</button>
+          <p class="form-note">En soumettant ce formulaire, vous acceptez que nous traitions vos donn&eacute;es pour r&eacute;pondre &agrave; votre demande.</p>
+        </form>
+      </div>
+      <div class="form-success" id="form-success">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h3>Message envoy&eacute; !</h3>
+        <p>Merci pour votre message. Notre &eacute;quipe vous r&eacute;pondra dans les plus brefs d&eacute;lais, g&eacute;n&eacute;ralement sous 24h ouvr&eacute;es.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- FOOTER -->
+  <footer class="foot">
+    <div class="foot-inner">
+      <div class="foot-top">
+        <div>
+          <div class="foot-brand">formalist</div>
+          <p class="foot-brand-p">La plateforme qui automatise vos formalit&eacute;s juridiques avec la rigueur d'un cabinet d'avocats.</p>
+          <p class="foot-mission">Notre mission : rendre le droit accessible, rapide et sans erreur pour chaque entrepreneur en France.</p>
+          <div class="foot-socials" style="margin-top:4px">
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+          </div>
+        </div>
+        <div class="foot-col">
+          <h4>Services</h4>
+          <a href="#">Cr&eacute;ation d'entreprise</a>
+          <a href="#">Modification de soci&eacute;t&eacute;</a>
+          <a href="#">Fermeture de soci&eacute;t&eacute;</a>
+          <a href="#">Contrats</a>
+        </div>
+        <div class="foot-col">
+          <h4>Ressources</h4>
+          <a href="/blog.html">Blog</a>
+          <a href="/aide.html">FAQ</a>
+          <a href="#">Tarifs</a>
+        </div>
+        <div class="foot-col">
+          <h4>Entreprise</h4>
+          <a href="#">&Agrave; propos</a>
+          <a href="/contact.html">Contact</a>
+        </div>
+        <div class="foot-col">
+          <h4>L&eacute;gal</h4>
+          <a href="#">Mentions l&eacute;gales</a>
+          <a href="#">Confidentialit&eacute;</a>
+          <a href="#">CGU</a>
+          <a href="#">CGV</a>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <div class="foot-copy">&copy; 2026 Formalist. Tous droits r&eacute;serv&eacute;s.</div>
+        <div class="foot-socials">
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll nav glass effect
+    window.addEventListener('scroll', function() { document.getElementById('navbar').classList.toggle('scrolled', scrollY > 20); });
+    // Mega menu hover with delay
+    (function(){
+      var dd = document.querySelector('.nav-dropdown');
+      var mega = document.querySelector('.nav-mega');
+      if (!dd || !mega) return;
+      var timer = null;
+      function show() { clearTimeout(timer); dd.classList.add('open'); }
+      function hide() { timer = setTimeout(function() { dd.classList.remove('open'); }, 200); }
+      dd.addEventListener('mouseenter', show);
+      dd.addEventListener('mouseleave', hide);
+      mega.addEventListener('mouseenter', show);
+      mega.addEventListener('mouseleave', hide);
+    })();
+  </script>
+  <script>
+    (function() {
+      var form = document.getElementById('contact-form');
+      var btn = document.getElementById('btn-submit');
+      var formLoadTime = Date.now();
+
+      // Sanitize input - strip HTML tags
+      function sanitize(str) {
+        return str.replace(/<[^>]*>/g, '').trim();
+      }
+
+      // Email regex validation
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+      }
+
+      // Clear error state on input
+      form.querySelectorAll('input, textarea, select').forEach(function(el) {
+        el.addEventListener('input', function() {
+          this.closest('.form-group').classList.remove('error');
+        });
+        el.addEventListener('change', function() {
+          this.closest('.form-group').classList.remove('error');
+        });
+      });
+
+      function setError(id) {
+        document.getElementById(id).classList.add('error');
+      }
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Honeypot check
+        if (document.getElementById('website').value) return;
+
+        // Time-based check: reject if submitted in under 2 seconds
+        if (Date.now() - formLoadTime < 2000) return;
+
+        // Clear previous errors
+        form.querySelectorAll('.form-group').forEach(function(g) { g.classList.remove('error'); });
+
+        var nom = sanitize(document.getElementById('nom').value);
+        var prenom = sanitize(document.getElementById('prenom').value);
+        var email = sanitize(document.getElementById('email').value);
+        var sujet = document.getElementById('sujet').value;
+        var message = sanitize(document.getElementById('message').value);
+
+        // Validation
+        var hasError = false;
+        if (!nom || nom.length < 2) { setError('g-nom'); hasError = true; }
+        if (!prenom || prenom.length < 2) { setError('g-prenom'); hasError = true; }
+        if (!email || !isValidEmail(email)) { setError('g-email'); hasError = true; }
+        if (!sujet) { setError('g-sujet'); hasError = true; }
+        if (!message || message.length < 10) { setError('g-message'); hasError = true; }
+
+        if (hasError) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Envoi en cours...';
+
+        fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nom: nom,
+            prenom: prenom,
+            email: email,
+            sujet: sujet,
+            message: message,
+            _t: Date.now() - formLoadTime
+          })
+        }).then(function(r) {
+          if (r.status === 429) throw new Error('rate');
+          if (!r.ok) throw new Error('server');
+          document.getElementById('form-content').querySelector('form').style.display = 'none';
+          document.getElementById('form-content').querySelector('h2').style.display = 'none';
+          document.getElementById('form-content').querySelector('.form-sub').style.display = 'none';
+          document.getElementById('form-success').style.display = 'block';
+        }).catch(function(err) {
+          btn.disabled = false;
+          btn.textContent = 'Envoyer le message';
+          if (err.message === 'rate') {
+            alert('Trop de messages envoy\u00e9s. Veuillez patienter quelques minutes.');
+          } else {
+            alert('Une erreur est survenue. Veuillez r\u00e9essayer.');
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

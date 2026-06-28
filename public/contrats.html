@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contrats - Formalist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>    .sidebar {
+      width: 270px;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0 0;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
+    .sidebar-logo a { display: flex; align-items: flex-end; gap: 6px; color: #111; text-decoration: none; }
+    .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; color: #111; line-height: 1; }
+    .sidebar-logo img { height: 26px; }
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer; margin-bottom: 2px;
+    }
+    .sidebar-nav a:hover, .sidebar-nav .sidebar-dropdown:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
+    .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
+    .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
+    .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
+    .sidebar-dropdown:hover .chevron { opacity: 0.6; }
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .sidebar-subnav.open { max-height: 320px; }
+    .sidebar-subnav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 12px 8px 44px; font-size: 13.5px; font-weight: 400; color: #666;
+      border-radius: 8px; transition: all 0.15s ease;
+    }
+    .sidebar-subnav a svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.72; stroke-width: 1.7; }
+    .sidebar-subnav a:hover { color: #111; background: #f6f6f6; }
+    .sidebar-subnav a:hover svg { opacity: 0.92; }
+    .sidebar-subnav a.active { color: #111; font-weight: 500; background: #f3f3f3; }
+    .sidebar-subnav a.active svg { opacity: 1; }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+    .sidebar-bottom {
+      padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #111;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .user-email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .btn-logout, .btn-settings {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .btn-logout:hover, .btn-settings:hover { color: #111; background: #f3f3f4; }
+    .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
+
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    @font-face {
+      font-family: 'Cal Sans';
+      src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Matter';
+      src: url('/fonts/Matter-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-display: block;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Matter', 'Inter', -apple-system, sans-serif;
+      color: #111;
+      background: #f5f5f5;
+      display: flex;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* SIDEBAR */
+    .sidebar-dropdown.open .chevron { transform: rotate(90deg); opacity: 0.7; }
+    .sidebar-subnav.open { max-height: 320px; }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      margin-left: 270px;
+    }
+    .topbar {
+      padding: 30px 48px 4px;
+      background: transparent;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .topbar h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+    .topbar-date { font-size: 13px; color: #999; }
+    .content { padding: 48px; flex: 1; }
+
+    /* STEPPER */
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 40px;
+      padding: 0 40px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      position: relative;
+    }
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #999;
+      background: transparent;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .step.active .step-number {
+      border-color: #111;
+      color: #fff;
+      background: #111;
+    }
+    .step.completed .step-number {
+      border-color: #111;
+      color: #fff;
+      background: #111;
+    }
+    .step-label {
+      font-size: 13px;
+      color: #999;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+    .step.active .step-label { color: #111; font-weight: 600; }
+    .step.completed .step-label { color: #111; }
+    .step-connector {
+      width: 60px;
+      height: 2px;
+      background: #eee;
+      margin: 0 16px;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .step-connector.completed { background: #111; }
+
+    /* CONTRACT TYPE CARDS */
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .type-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid #e5e5e5;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .type-card:hover {
+      border-color: #e5e5e5;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+    }
+    .type-card.selected {
+      border-color: #111;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    .type-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 22px;
+    }
+    .type-icon svg { width: 24px; height: 24px; }
+    .type-icon.orange { background: #fff7ed; color: #ea580c; }
+    .type-icon.blue { background: #eff6ff; color: #2563eb; }
+    .type-icon.green { background: #f0fdf4; color: #16a34a; }
+    .type-icon.purple { background: #faf5ff; color: #7c3aed; }
+    .type-icon.pink { background: #fdf2f8; color: #db2777; }
+    .type-icon.gray { background: #f5f5f5; color: #666; }
+    .type-icon.teal { background: #f0fdfa; color: #0d9488; }
+    .type-info { flex: 1; }
+    .type-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      letter-spacing: -0.2px;
+    }
+    .type-desc {
+      font-size: 13px;
+      color: #999;
+      line-height: 1.4;
+    }
+
+    /* FORM */
+    .form-container {
+      max-width: 740px;
+      margin: 0 auto;
+    }
+    .form-section {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e5e5e5;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .form-section-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .form-section-title .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+    }
+    .form-section-title .icon svg {
+      width: 18px;
+      height: 18px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .form-row:last-child { margin-bottom: 0; }
+    .form-row.full { grid-template-columns: 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+    }
+    .form-group label .required { color: #ef4444; margin-left: 2px; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 10px 14px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      color: #111;
+      background: transparent;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #111;
+      box-shadow: 0 0 0 3px rgba(17,17,17,0.06);
+    }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder { color: #999; }
+    .form-group textarea { resize: vertical; min-height: 100px; }
+    .form-group input.error,
+    .form-group select.error,
+    .form-group textarea.error { border-color: #ef4444; }
+    .form-error { font-size: 12px; color: #ef4444; display: none; }
+    .form-error.visible { display: block; }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 28px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #111;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #000; }
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: #111;
+      border: 1px solid #e5e5e5;
+    }
+    .btn-secondary:hover { border-color: #111; }
+    .btn-green {
+      background: #111;
+      color: #fff;
+    }
+    .btn-green:hover { background: #111; }
+    .btn-blue {
+      background: #111;
+      color: #fff;
+    }
+    .btn-blue:hover { background: #1d4ed8; }
+    .btn-outline {
+      background: transparent;
+      color: #111;
+      border: 1px solid #e5e5e5;
+    }
+    .btn-outline:hover { border-color: #111; }
+    .step-buttons {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 32px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* PREVIEW / SUMMARY */
+    .summary-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e5e5e5;
+      padding: 32px;
+      max-width: 740px;
+      margin: 0 auto;
+    }
+    .summary-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      
+    }
+    .summary-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 100px;
+      background: #f5f5f5;
+      color: #666;
+    }
+    .summary-type-badge svg {
+      width: 16px;
+      height: 16px;
+    }
+    .summary-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+    .summary-section {
+      margin-bottom: 24px;
+    }
+    .summary-section:last-child { margin-bottom: 0; }
+    .summary-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #999;
+      margin-bottom: 12px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 8px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-label { font-size: 14px; color: #999; }
+    .summary-value { font-size: 14px; font-weight: 500; text-align: right; max-width: 60%; }
+    .generate-area {
+      text-align: center;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e5e5;
+    }
+    .generate-area p {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 16px;
+    }
+
+    /* LOADING */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .loading-overlay.visible { display: flex; }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e5e5;
+      border-top-color: #111;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-size: 15px;
+      font-weight: 500;
+      color: #666;
+    }
+
+    /* GENERATED RESULT */
+    .result-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e5e5e5;
+      padding: 40px;
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .result-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .result-icon svg { width: 32px; height: 32px; color: #111; }
+    .result-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .result-desc {
+      font-size: 14px;
+      color: #999;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+    .result-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .upgrade-card {
+      background: #f5f5f5;
+      border: 1px solid #fde68a;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 600px;
+      margin: 20px auto 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .upgrade-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 20px;
+    }
+    .upgrade-text { flex: 1; }
+    .upgrade-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .upgrade-desc { font-size: 13px; color: #666; line-height: 1.4; }
+
+    /* SIGNATURE STEP */
+    .signature-container {
+      max-width: 740px;
+      margin: 0 auto;
+    }
+    .party-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e5e5e5;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      transition: all 0.2s;
+    }
+    .party-card:hover { border-color: #e5e5e5; }
+    .party-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .party-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: #666;
+    }
+    .party-name { font-size: 14px; font-weight: 600; }
+    .party-role { font-size: 12px; color: #999; margin-top: 2px; }
+    .party-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 100px;
+    }
+    .party-status.pending { background: #fefce8; color: #ca8a04; }
+    .party-status.signed { background: #f5f5f5; color: #111; }
+    .party-status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .signature-actions {
+      background: transparent;
+      border-radius: 16px;
+      border: 1px solid #e5e5e5;
+      padding: 28px;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .signature-actions p {
+      font-size: 14px;
+      color: #999;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .link-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .link-box input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      color: #666;
+      background: #f5f5f5;
+      outline: none;
+    }
+    .link-box button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 1px solid #e5e5e5;
+      background: transparent;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .link-box button:hover { border-color: #111; }
+
+    /* HIDDEN STEPS */
+    .wizard-step { display: none; }
+    .wizard-step.active { display: block; }
+
+    /* STEP TITLE */
+    .step-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    .step-subtitle {
+      font-size: 14px;
+      color: #999;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+  </style>
+
+  <!-- BEGIN sidebar refresh (auto-generated) -->
+  <style>
+    /* Logo */
+    .sidebar-logo a { display: inline-flex !important; align-items: baseline !important; gap: 3px !important; }
+    .sidebar-logo .logo-text {
+      font-family: 'Cal Sans', 'Inter', sans-serif !important;
+      font-size: 30px !important; font-weight: 700 !important;
+      letter-spacing: 0 !important; line-height: 1 !important;
+      color: #111 !important;
+    }
+    .sidebar-logo .logo-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #10b981;
+      margin-bottom: 4px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    /* Société active */
+    .sidebar-context {
+      margin: 0 12px 12px; padding: 10px 12px;
+      background: #fafafa; border: 1px solid #eee; border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .sidebar-context:hover { background: #f3f3f4; border-color: #e2e2e4; }
+    .sidebar-context .ctx-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
+    .sidebar-context .ctx-body { flex: 1; min-width: 0; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-context.single { cursor: default; }
+    .sidebar-context.single:hover { background: #fafafa; border-color: #eee; }
+    .sidebar-context.single .ctx-chevron { display: none; }
+    /* CTA primaire "Nouvelle formalité" */
+    .sidebar-cta {
+      margin: 4px 12px 20px; padding: 13px 18px;
+      background: #111; color: #fff; border: none;
+      border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .sidebar-cta:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active { transform: scale(0.99); }
+    .sidebar-cta svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    /* Badges dans la nav */
+    .nav-badge {
+      margin-left: auto;
+      background: #f3f4f6; color: #555;
+      font-size: 11.5px; font-weight: 500;
+      padding: 2px 9px; border-radius: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .nav-badge.muted { background: #f0f0f2; color: #666; }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+
+
+    /* Modal Nouvelle formalité */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    @media (max-width: 600px) { .nd-grid { grid-template-columns: 1fr; } }
+  </style>
+  <!-- END sidebar refresh -->
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+          <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-context" id="sidebar-context" style="display:none;">
+      <div class="ctx-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0M9 17h0M15 17h0"/></svg>
+      </div>
+      <div class="ctx-body">
+        <div class="ctx-label">Soci&eacute;t&eacute; active</div>
+        <div class="ctx-name" id="ctx-name"></div>
+      </div>
+      <svg class="ctx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <button class="sidebar-cta" onclick="openNewActionModal()">
+      Cr&eacute;er une formalit&eacute;
+    </button>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+
+      <a href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a class="active" href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){sessionStorage.removeItem('user');window.location.href='/connexion.html';})" title="D&eacute;connexion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <h1>Nouveau contrat</h1>
+      <span class="topbar-date" id="current-date"></span>
+    </div>
+
+    <div class="content">
+
+      <!-- STEPPER -->
+      <div class="stepper">
+        <div class="step active" data-step="1">
+          <div class="step-number">1</div>
+          <span class="step-label">Type</span>
+        </div>
+        <div class="step-connector" data-after="1"></div>
+        <div class="step" data-step="2">
+          <div class="step-number">2</div>
+          <span class="step-label">Informations</span>
+        </div>
+        <div class="step-connector" data-after="2"></div>
+        <div class="step" data-step="3">
+          <div class="step-number">3</div>
+          <span class="step-label">G&eacute;n&eacute;ration</span>
+        </div>
+        <div class="step-connector" data-after="3"></div>
+        <div class="step" data-step="4">
+          <div class="step-number">4</div>
+          <span class="step-label">Signature</span>
+        </div>
+      </div>
+
+      <!-- STEP 1: CONTRACT TYPE SELECTION -->
+      <div class="wizard-step active" id="step-1">
+        <div class="step-title">Quel type de contrat souhaitez-vous cr&eacute;er ?</div>
+        <div class="step-subtitle">S&eacute;lectionnez le type de contrat qui correspond &agrave; votre besoin</div>
+
+        <div class="type-grid">
+          <div class="type-card" data-type="bail_commercial" onclick="selectType(this)">
+            <div class="type-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+            <div class="type-info">
+              <div class="type-title">Bail commercial</div>
+              <div class="type-desc">Location de locaux commerciaux</div>
+            </div>
+          </div>
+          <div class="type-card" data-type="bail_professionnel" onclick="selectType(this)">
+            <div class="type-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></div>
+            <div class="type-info">
+              <div class="type-title">Bail professionnel</div>
+              <div class="type-desc">Location de locaux professionnels</div>
+            </div>
+          </div>
+          <div class="type-card" data-type="cdi" onclick="selectType(this)">
+            <div class="type-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+            <div class="type-info">
+              <div class="type-title">Contrat de travail (CDI)</div>
+              <div class="type-desc">Embauche &agrave; dur&eacute;e ind&eacute;termin&eacute;e</div>
+            </div>
+          </div>
+          <div class="type-card" data-type="cdd" onclick="selectType(this)">
+            <div class="type-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <div class="type-info">
+              <div class="type-title">Contrat de travail (CDD)</div>
+              <div class="type-desc">Embauche &agrave; dur&eacute;e d&eacute;termin&eacute;e</div>
+            </div>
+          </div>
+          <div class="type-card" data-type="prestation" onclick="selectType(this)">
+            <div class="type-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+            <div class="type-info">
+              <div class="type-title">Contrat de prestation</div>
+              <div class="type-desc">Services entre professionnels</div>
+            </div>
+          </div>
+          <div class="type-card" data-type="cession_droits" onclick="selectType(this)">
+            <div class="type-icon pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+            <div class="type-info">
+              <div class="type-title">Cession de droits d'auteur</div>
+              <div class="type-desc">Transfert de propri&eacute;t&eacute; intellectuelle</div>
+            </div>
+          </div>
+          <div class="type-card" data-type="cgv_cgu" onclick="selectType(this)">
+            <div class="type-icon gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+            <div class="type-info">
+              <div class="type-title">CGV / CGU</div>
+              <div class="type-desc">Conditions g&eacute;n&eacute;rales</div>
+            </div>
+          </div>
+          <div class="type-card" data-type="sous_traitance" onclick="selectType(this)">
+            <div class="type-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
+            <div class="type-info">
+              <div class="type-title">Contrat de sous-traitance</div>
+              <div class="type-desc">D&eacute;l&eacute;gation de services</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-buttons">
+          <div></div>
+          <button class="btn btn-primary" id="btn-next-1" disabled onclick="goToStep(2)">
+            Continuer
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: FORM -->
+      <div class="wizard-step" id="step-2">
+        <div class="step-title" id="form-title">Informations du contrat</div>
+        <div class="step-subtitle" id="form-subtitle">Renseignez les informations n&eacute;cessaires &agrave; la r&eacute;daction du contrat</div>
+
+        <div class="form-container" id="form-container">
+          <!-- Dynamic form will be injected here -->
+        </div>
+
+        <div class="step-buttons">
+          <button class="btn btn-secondary" onclick="goToStep(1)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
+          </button>
+          <button class="btn btn-primary" onclick="validateAndGoStep3()">
+            Continuer
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: PREVIEW & GENERATION -->
+      <div class="wizard-step" id="step-3">
+        <div class="step-title">R&eacute;capitulatif du contrat</div>
+        <div class="step-subtitle">V&eacute;rifiez les informations avant de g&eacute;n&eacute;rer votre document</div>
+
+        <div id="summary-content">
+          <!-- Dynamic summary will be injected here -->
+        </div>
+
+        <div id="generation-result" style="display:none;">
+          <!-- Shown after generation -->
+        </div>
+
+        <div class="step-buttons" id="step3-buttons">
+          <button class="btn btn-secondary" onclick="goToStep(2)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Modifier
+          </button>
+          <button class="btn btn-primary" id="btn-generate" onclick="generateContract()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            G&eacute;n&eacute;rer le document
+          </button>
+        </div>
+
+        <div class="step-buttons" id="step3-post-buttons" style="display:none;">
+          <div></div>
+          <button class="btn btn-primary" onclick="goToStep(4)">
+            Passer &agrave; la signature
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 4: SIGNATURE -->
+      <div class="wizard-step" id="step-4">
+        <div class="step-title">Signature du contrat</div>
+        <div class="step-subtitle">Envoyez le contrat aux parties pour signature &eacute;lectronique</div>
+
+        <div class="signature-container" id="signature-container">
+          <!-- Dynamic parties will be injected here -->
+        </div>
+
+        <div class="step-buttons">
+          <button class="btn btn-secondary" onclick="goToStep(3)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
+          </button>
+          <button class="btn btn-green" onclick="sendSignatureLinks()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Envoyer les liens de signature
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">G&eacute;n&eacute;ration de votre contrat en cours...</div>
+  </div>
+
+  <script>
+    // ===== STATE =====
+    var state = {
+      currentStep: 1,
+      selectedType: null,
+      formData: {},
+      contratId: null,
+      generated: false,
+      user: null
+    };
+
+    // ===== CONTRACT TYPES CONFIG =====
+    var contractTypes = {
+      bail_commercial: {
+        label: 'Bail commercial',
+        icon: '\u{1F3E2}',
+        sections: [
+          {
+            title: 'Bailleur', icon: '\u{1F464}',
+            fields: [
+              { row: [
+                { name: 'bailleur_nom', label: 'Nom', required: true, placeholder: 'Dupont' },
+                { name: 'bailleur_prenom', label: 'Pr\u00e9nom', required: true, placeholder: 'Jean' }
+              ]},
+              { row: [
+                { name: 'bailleur_adresse', label: 'Adresse', required: true, placeholder: '12 rue de la Paix, 75001 Paris', full: true }
+              ]},
+              { row: [
+                { name: 'bailleur_siret', label: 'SIRET', required: true, placeholder: '123 456 789 00012' }
+              ]}
+            ]
+          },
+          {
+            title: 'Preneur', icon: '\u{1F3E2}',
+            fields: [
+              { row: [
+                { name: 'preneur_societe', label: 'Nom soci\u00e9t\u00e9', required: true, placeholder: 'Ma Soci\u00e9t\u00e9 SAS' },
+                { name: 'preneur_representant', label: 'Repr\u00e9sentant', required: true, placeholder: 'Marie Martin' }
+              ]},
+              { row: [
+                { name: 'preneur_siret', label: 'SIRET', required: true, placeholder: '987 654 321 00034' },
+                { name: 'preneur_adresse', label: 'Adresse', required: true, placeholder: '5 avenue des Champs, 75008 Paris' }
+              ]}
+            ]
+          },
+          {
+            title: 'Local', icon: '\u{1F3E0}',
+            fields: [
+              { row: [
+                { name: 'local_adresse', label: 'Adresse du local', required: true, placeholder: '10 boulevard Haussmann, 75009 Paris', full: true }
+              ]},
+              { row: [
+                { name: 'local_surface', label: 'Surface (m\u00b2)', required: true, placeholder: '120', type: 'number' },
+                { name: 'local_destination', label: 'Destination (activit\u00e9)', required: true, placeholder: 'Commerce de d\u00e9tail' }
+              ]}
+            ]
+          },
+          {
+            title: 'Conditions', icon: '\u{1F4B0}',
+            fields: [
+              { row: [
+                { name: 'duree_bail', label: 'Dur\u00e9e du bail', required: true, placeholder: '9 ans', defaultValue: '9 ans' },
+                { name: 'loyer_mensuel', label: 'Loyer mensuel HT (\u20ac)', required: true, placeholder: '2500', type: 'number' }
+              ]},
+              { row: [
+                { name: 'charges_mensuelles', label: 'Charges mensuelles (\u20ac)', required: false, placeholder: '300', type: 'number' },
+                { name: 'depot_garantie', label: 'D\u00e9p\u00f4t de garantie (\u20ac)', required: false, placeholder: '5000', type: 'number' }
+              ]},
+              { row: [
+                { name: 'date_effet', label: "Date d'effet", required: true, type: 'date' }
+              ]}
+            ]
+          },
+          {
+            title: 'Clauses particuli\u00e8res', icon: '\u{1F4DD}',
+            fields: [
+              { row: [
+                { name: 'clauses', label: 'Clauses particuli\u00e8res', required: false, type: 'textarea', placeholder: 'Saisissez ici toute clause sp\u00e9cifique que vous souhaitez ajouter au contrat...', full: true }
+              ]}
+            ]
+          }
+        ],
+        parties: [
+          { role: 'Bailleur', nameField: 'bailleur_nom', prenomField: 'bailleur_prenom' },
+          { role: 'Preneur', nameField: 'preneur_societe' }
+        ]
+      },
+      bail_professionnel: {
+        label: 'Bail professionnel',
+        icon: '\u{1F3E2}',
+        sections: [
+          {
+            title: 'Bailleur', icon: '\u{1F464}',
+            fields: [
+              { row: [
+                { name: 'bailleur_nom', label: 'Nom', required: true, placeholder: 'Dupont' },
+                { name: 'bailleur_prenom', label: 'Pr\u00e9nom', required: true, placeholder: 'Jean' }
+              ]},
+              { row: [
+                { name: 'bailleur_adresse', label: 'Adresse', required: true, placeholder: '12 rue de la Paix, 75001 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Locataire', icon: '\u{1F3E2}',
+            fields: [
+              { row: [
+                { name: 'locataire_nom', label: 'Nom / Soci\u00e9t\u00e9', required: true, placeholder: 'Cabinet Martin' },
+                { name: 'locataire_profession', label: 'Profession lib\u00e9rale', required: true, placeholder: 'Avocat' }
+              ]},
+              { row: [
+                { name: 'locataire_adresse', label: 'Adresse actuelle', required: true, placeholder: '5 avenue des Champs, 75008 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Local & Conditions', icon: '\u{1F4B0}',
+            fields: [
+              { row: [
+                { name: 'local_adresse', label: 'Adresse du local', required: true, placeholder: '10 boulevard Haussmann, 75009 Paris', full: true }
+              ]},
+              { row: [
+                { name: 'local_surface', label: 'Surface (m\u00b2)', required: true, placeholder: '80', type: 'number' },
+                { name: 'loyer_mensuel', label: 'Loyer mensuel HT (\u20ac)', required: true, placeholder: '1800', type: 'number' }
+              ]},
+              { row: [
+                { name: 'duree_bail', label: 'Dur\u00e9e du bail', required: true, defaultValue: '6 ans', placeholder: '6 ans' },
+                { name: 'date_effet', label: "Date d'effet", required: true, type: 'date' }
+              ]}
+            ]
+          }
+        ],
+        parties: [
+          { role: 'Bailleur', nameField: 'bailleur_nom', prenomField: 'bailleur_prenom' },
+          { role: 'Locataire', nameField: 'locataire_nom' }
+        ]
+      },
+      cdi: {
+        label: 'Contrat de travail (CDI)',
+        icon: '\u{1F91D}',
+        sections: [
+          {
+            title: 'Employeur', icon: '\u{1F3E2}',
+            fields: [
+              { row: [
+                { name: 'employeur_societe', label: 'Nom de la soci\u00e9t\u00e9', required: true, placeholder: 'Ma Soci\u00e9t\u00e9 SAS' },
+                { name: 'employeur_siret', label: 'SIRET', required: true, placeholder: '123 456 789 00012' }
+              ]},
+              { row: [
+                { name: 'employeur_adresse', label: 'Adresse', required: true, placeholder: '12 rue de la Paix, 75001 Paris', full: true }
+              ]},
+              { row: [
+                { name: 'employeur_representant', label: 'Repr\u00e9sentant l\u00e9gal', required: true, placeholder: 'Jean Dupont' }
+              ]}
+            ]
+          },
+          {
+            title: 'Salari\u00e9', icon: '\u{1F464}',
+            fields: [
+              { row: [
+                { name: 'salarie_nom', label: 'Nom', required: true, placeholder: 'Martin' },
+                { name: 'salarie_prenom', label: 'Pr\u00e9nom', required: true, placeholder: 'Marie' }
+              ]},
+              { row: [
+                { name: 'salarie_adresse', label: 'Adresse', required: true, placeholder: '5 avenue des Champs, 75008 Paris', full: true }
+              ]},
+              { row: [
+                { name: 'salarie_nss', label: 'N\u00b0 S\u00e9curit\u00e9 Sociale', required: false, placeholder: '1 85 12 75 108 123 45' }
+              ]}
+            ]
+          },
+          {
+            title: 'Poste & R\u00e9mun\u00e9ration', icon: '\u{1F4B0}',
+            fields: [
+              { row: [
+                { name: 'poste', label: 'Intitul\u00e9 du poste', required: true, placeholder: 'D\u00e9veloppeur web' },
+                { name: 'qualification', label: 'Qualification / Coefficient', required: false, placeholder: 'Cadre - Position 2.1' }
+              ]},
+              { row: [
+                { name: 'remuneration', label: 'R\u00e9mun\u00e9ration brute annuelle (\u20ac)', required: true, placeholder: '42000', type: 'number' },
+                { name: 'temps_travail', label: 'Temps de travail', required: true, defaultValue: '35h / semaine', placeholder: '35h / semaine' }
+              ]},
+              { row: [
+                { name: 'lieu_travail', label: 'Lieu de travail', required: true, placeholder: 'Paris' },
+                { name: 'date_debut', label: 'Date de d\u00e9but', required: true, type: 'date' }
+              ]},
+              { row: [
+                { name: 'periode_essai', label: "P\u00e9riode d'essai", required: false, placeholder: '3 mois, renouvelable 3 mois' }
+              ]}
+            ]
+          }
+        ],
+        parties: [
+          { role: 'Employeur', nameField: 'employeur_societe' },
+          { role: 'Salari\u00e9(e)', nameField: 'salarie_nom', prenomField: 'salarie_prenom' }
+        ]
+      },
+      cdd: {
+        label: 'Contrat de travail (CDD)',
+        icon: '\u{1F4C5}',
+        sections: [
+          {
+            title: 'Employeur', icon: '\u{1F3E2}',
+            fields: [
+              { row: [
+                { name: 'employeur_societe', label: 'Nom de la soci\u00e9t\u00e9', required: true, placeholder: 'Ma Soci\u00e9t\u00e9 SAS' },
+                { name: 'employeur_siret', label: 'SIRET', required: true, placeholder: '123 456 789 00012' }
+              ]},
+              { row: [
+                { name: 'employeur_adresse', label: 'Adresse', required: true, placeholder: '12 rue de la Paix, 75001 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Salari\u00e9', icon: '\u{1F464}',
+            fields: [
+              { row: [
+                { name: 'salarie_nom', label: 'Nom', required: true, placeholder: 'Martin' },
+                { name: 'salarie_prenom', label: 'Pr\u00e9nom', required: true, placeholder: 'Marie' }
+              ]},
+              { row: [
+                { name: 'salarie_adresse', label: 'Adresse', required: true, placeholder: '5 avenue des Champs, 75008 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Poste & Dur\u00e9e', icon: '\u{1F4B0}',
+            fields: [
+              { row: [
+                { name: 'poste', label: 'Intitul\u00e9 du poste', required: true, placeholder: 'Assistant marketing' },
+                { name: 'motif_recours', label: 'Motif de recours', required: true, placeholder: 'Remplacement cong\u00e9 maternit\u00e9' }
+              ]},
+              { row: [
+                { name: 'remuneration', label: 'R\u00e9mun\u00e9ration brute mensuelle (\u20ac)', required: true, placeholder: '2500', type: 'number' },
+                { name: 'temps_travail', label: 'Temps de travail', required: true, defaultValue: '35h / semaine', placeholder: '35h / semaine' }
+              ]},
+              { row: [
+                { name: 'date_debut', label: 'Date de d\u00e9but', required: true, type: 'date' },
+                { name: 'date_fin', label: 'Date de fin', required: true, type: 'date' }
+              ]}
+            ]
+          }
+        ],
+        parties: [
+          { role: 'Employeur', nameField: 'employeur_societe' },
+          { role: 'Salari\u00e9(e)', nameField: 'salarie_nom', prenomField: 'salarie_prenom' }
+        ]
+      },
+      prestation: {
+        label: 'Contrat de prestation',
+        icon: '\u{1F4BC}',
+        sections: [
+          {
+            title: 'Prestataire', icon: '\u{1F464}',
+            fields: [
+              { row: [
+                { name: 'prestataire_societe', label: 'Nom / Soci\u00e9t\u00e9', required: true, placeholder: 'Agence Digitale SAS' },
+                { name: 'prestataire_siret', label: 'SIRET', required: true, placeholder: '123 456 789 00012' }
+              ]},
+              { row: [
+                { name: 'prestataire_adresse', label: 'Adresse', required: true, placeholder: '12 rue de la Paix, 75001 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Client', icon: '\u{1F3E2}',
+            fields: [
+              { row: [
+                { name: 'client_societe', label: 'Nom / Soci\u00e9t\u00e9', required: true, placeholder: 'Mon Entreprise SARL' },
+                { name: 'client_siret', label: 'SIRET', required: true, placeholder: '987 654 321 00034' }
+              ]},
+              { row: [
+                { name: 'client_adresse', label: 'Adresse', required: true, placeholder: '5 avenue des Champs, 75008 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Mission & Tarification', icon: '\u{1F4B0}',
+            fields: [
+              { row: [
+                { name: 'objet_mission', label: 'Objet de la mission', required: true, placeholder: 'D\u00e9veloppement site web e-commerce', full: true }
+              ]},
+              { row: [
+                { name: 'montant_ht', label: 'Montant HT (\u20ac)', required: true, placeholder: '15000', type: 'number' },
+                { name: 'duree_mission', label: 'Dur\u00e9e de la mission', required: true, placeholder: '3 mois' }
+              ]},
+              { row: [
+                { name: 'date_debut', label: 'Date de d\u00e9but', required: true, type: 'date' }
+              ]}
+            ]
+          }
+        ],
+        parties: [
+          { role: 'Prestataire', nameField: 'prestataire_societe' },
+          { role: 'Client', nameField: 'client_societe' }
+        ]
+      },
+      cession_droits: {
+        label: "Cession de droits d'auteur",
+        icon: '\u{1F3A8}',
+        sections: [
+          {
+            title: 'C\u00e9dant (auteur)', icon: '\u{1F464}',
+            fields: [
+              { row: [
+                { name: 'cedant_nom', label: 'Nom', required: true, placeholder: 'Durand' },
+                { name: 'cedant_prenom', label: 'Pr\u00e9nom', required: true, placeholder: 'Sophie' }
+              ]},
+              { row: [
+                { name: 'cedant_adresse', label: 'Adresse', required: true, placeholder: '12 rue de la Paix, 75001 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Cessionnaire', icon: '\u{1F3E2}',
+            fields: [
+              { row: [
+                { name: 'cessionnaire_societe', label: 'Nom / Soci\u00e9t\u00e9', required: true, placeholder: 'Studio Cr\u00e9atif SAS' },
+                { name: 'cessionnaire_siret', label: 'SIRET', required: true, placeholder: '123 456 789 00012' }
+              ]},
+              { row: [
+                { name: 'cessionnaire_adresse', label: 'Adresse', required: true, placeholder: '5 avenue des Champs, 75008 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Oeuvre & Conditions', icon: '\u{1F4DD}',
+            fields: [
+              { row: [
+                { name: 'description_oeuvre', label: "Description de l'oeuvre", required: true, placeholder: 'Logo et charte graphique', full: true }
+              ]},
+              { row: [
+                { name: 'droits_cedes', label: 'Droits c\u00e9d\u00e9s', required: true, placeholder: 'Reproduction, repr\u00e9sentation, adaptation' },
+                { name: 'montant_cession', label: 'Montant de la cession (\u20ac)', required: true, placeholder: '5000', type: 'number' }
+              ]},
+              { row: [
+                { name: 'duree_cession', label: 'Dur\u00e9e de la cession', required: true, placeholder: '10 ans' },
+                { name: 'territoire', label: 'Territoire', required: true, defaultValue: 'Monde entier', placeholder: 'Monde entier' }
+              ]}
+            ]
+          }
+        ],
+        parties: [
+          { role: 'C\u00e9dant', nameField: 'cedant_nom', prenomField: 'cedant_prenom' },
+          { role: 'Cessionnaire', nameField: 'cessionnaire_societe' }
+        ]
+      },
+      cgv_cgu: {
+        label: 'CGV / CGU',
+        icon: '\u{1F4DC}',
+        sections: [
+          {
+            title: 'Soci\u00e9t\u00e9', icon: '\u{1F3E2}',
+            fields: [
+              { row: [
+                { name: 'societe_nom', label: 'Nom de la soci\u00e9t\u00e9', required: true, placeholder: 'Ma Soci\u00e9t\u00e9 SAS' },
+                { name: 'societe_siret', label: 'SIRET', required: true, placeholder: '123 456 789 00012' }
+              ]},
+              { row: [
+                { name: 'societe_adresse', label: 'Adresse du si\u00e8ge', required: true, placeholder: '12 rue de la Paix, 75001 Paris', full: true }
+              ]},
+              { row: [
+                { name: 'societe_email', label: 'Email de contact', required: true, placeholder: 'contact@masociete.fr', type: 'email' },
+                { name: 'societe_site', label: 'Site web', required: false, placeholder: 'https://www.masociete.fr' }
+              ]}
+            ]
+          },
+          {
+            title: 'Type de conditions', icon: '\u{1F4DD}',
+            fields: [
+              { row: [
+                { name: 'type_conditions', label: 'Type', required: true, type: 'select', options: ['CGV (Conditions G\u00e9n\u00e9rales de Vente)', 'CGU (Conditions G\u00e9n\u00e9rales d\'Utilisation)', 'CGV + CGU'] }
+              ]},
+              { row: [
+                { name: 'activite', label: "Description de l'activit\u00e9", required: true, placeholder: 'Vente en ligne de v\u00eatements', full: true }
+              ]},
+              { row: [
+                { name: 'clauses_specifiques', label: 'Clauses sp\u00e9cifiques', required: false, type: 'textarea', placeholder: 'Pr\u00e9cisez toute clause particuli\u00e8re...', full: true }
+              ]}
+            ]
+          }
+        ],
+        parties: [
+          { role: '\u00c9diteur', nameField: 'societe_nom' }
+        ]
+      },
+      sous_traitance: {
+        label: 'Contrat de sous-traitance',
+        icon: '\u{1F517}',
+        sections: [
+          {
+            title: 'Donneur d\'ordre', icon: '\u{1F3E2}',
+            fields: [
+              { row: [
+                { name: 'donneur_societe', label: 'Nom / Soci\u00e9t\u00e9', required: true, placeholder: 'Entreprise Principale SAS' },
+                { name: 'donneur_siret', label: 'SIRET', required: true, placeholder: '123 456 789 00012' }
+              ]},
+              { row: [
+                { name: 'donneur_adresse', label: 'Adresse', required: true, placeholder: '12 rue de la Paix, 75001 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Sous-traitant', icon: '\u{1F464}',
+            fields: [
+              { row: [
+                { name: 'soustraitant_societe', label: 'Nom / Soci\u00e9t\u00e9', required: true, placeholder: 'Sous-Traitant SARL' },
+                { name: 'soustraitant_siret', label: 'SIRET', required: true, placeholder: '987 654 321 00034' }
+              ]},
+              { row: [
+                { name: 'soustraitant_adresse', label: 'Adresse', required: true, placeholder: '5 avenue des Champs, 75008 Paris', full: true }
+              ]}
+            ]
+          },
+          {
+            title: 'Mission & Conditions', icon: '\u{1F4B0}',
+            fields: [
+              { row: [
+                { name: 'objet_mission', label: 'Objet de la sous-traitance', required: true, placeholder: 'D\u00e9veloppement module logiciel', full: true }
+              ]},
+              { row: [
+                { name: 'montant_ht', label: 'Montant HT (\u20ac)', required: true, placeholder: '10000', type: 'number' },
+                { name: 'duree_mission', label: 'Dur\u00e9e', required: true, placeholder: '6 mois' }
+              ]},
+              { row: [
+                { name: 'date_debut', label: 'Date de d\u00e9but', required: true, type: 'date' }
+              ]}
+            ]
+          }
+        ],
+        parties: [
+          { role: 'Donneur d\'ordre', nameField: 'donneur_societe' },
+          { role: 'Sous-traitant', nameField: 'soustraitant_societe' }
+        ]
+      }
+    };
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuth();
+      setCurrentDate();
+      handleUrlParams();
+    });
+
+    function checkAuth() {
+      fetch('/api/auth/me', { credentials: 'include' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('Not authenticated');
+          return r.json();
+        })
+        .then(function(data) {
+          state.user = (data && data.user) || data;
+          var u = state.user || {};
+          var name = u.name || ((u.prenom || '') + ' ' + (u.nom || '')).trim();
+          var initials = '';
+          if (u.name) {
+            initials = u.name.split(' ').map(function(n){ return (n[0]||''); }).join('').slice(0,2).toUpperCase();
+          } else {
+            initials = (((u.prenom || '')[0] || '') + ((u.nom || '')[0] || '')).toUpperCase();
+          }
+          var avatarEl = document.getElementById('sidebar-avatar') || document.getElementById('user-avatar');
+          var nameEl = document.getElementById('sidebar-name') || document.getElementById('user-name');
+          var emailEl = document.getElementById('sidebar-email') || document.getElementById('user-email');
+          if (avatarEl) avatarEl.textContent = initials || '--';
+          if (nameEl) nameEl.textContent = name || 'Utilisateur';
+          if (emailEl) emailEl.textContent = u.email || '';
+
+          // Inject Espace avocat / Administration buttons (multi-roles aware)
+          var roles = (u.roles && u.roles.length) ? u.roles : (u.role ? [u.role] : []);
+          try { sessionStorage.setItem('user_roles', JSON.stringify(roles)); } catch (_) {}
+          injectRoleButtons(roles);
+        })
+        .catch(function() {
+          window.location.href = '/connexion.html';
+        });
+    }
+
+    function injectRoleButtons(roles) {
+      var nav = document.querySelector('.sidebar-nav');
+      if (!nav || !roles) return;
+      var divider = nav.querySelector('.sidebar-divider');
+      // Badge logo
+      var logo = document.querySelector('.sidebar-logo');
+      var hasAdmin = roles.indexOf('admin') !== -1;
+      var hasAvocat = roles.indexOf('avocat') !== -1;
+      // Avocat : cache le lien Consultation juridique
+      if (hasAvocat) {
+        var cl = nav.querySelector('a[href="/consultations.html"]');
+        if (cl) cl.style.display = 'none';
+      }
+      if (logo && !logo.querySelector('.logo-badge-admin') && !logo.querySelector('.logo-badge-avocat')) {
+        logo.style.display = 'flex';
+        logo.style.alignItems = 'center';
+        logo.style.gap = '10px';
+        if (hasAdmin) {
+          var b = document.createElement('span');
+          b.className = 'logo-badge-admin';
+          b.style.cssText = 'display:inline-flex;align-items:center;padding:3px 8px;background:#111;color:#fff;border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing:0.5px;line-height:1;text-transform:uppercase;';
+          b.textContent = 'Admin';
+          logo.appendChild(b);
+        } else if (hasAvocat) {
+          var b2 = document.createElement('span');
+          b2.className = 'logo-badge-avocat';
+          b2.style.cssText = 'display:inline-flex;align-items:center;padding:3px 8px;background:#f3e8ff;color:#7c3aed;border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing:0.5px;line-height:1;text-transform:uppercase;';
+          b2.textContent = 'Avocat';
+          logo.appendChild(b2);
+        }
+      }
+      if (hasAvocat && !nav.querySelector('.sidebar-avocat-section')) {
+        var dlink = nav.querySelector('a[href="/dashboard.html"]'); if (dlink) dlink.setAttribute('href', '/avocat.html');
+        var section = document.createElement('div');
+        section.className = 'sidebar-section sidebar-avocat-section';
+        section.textContent = 'Avocat';
+        var avCons = document.createElement('a');
+        avCons.href = '/avocat.html#consultations'; avCons.className = 'sidebar-avocat-link';
+        avCons.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.78;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Consultations';
+        var avDispo = document.createElement('a');
+        avDispo.href = '/avocat.html#disponibilites'; avDispo.className = 'sidebar-avocat-link';
+        avDispo.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.78;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Mes disponibilités';
+        if (divider) { nav.insertBefore(section, divider); nav.insertBefore(avCons, divider); nav.insertBefore(avDispo, divider); }
+        else { nav.appendChild(section); nav.appendChild(avCons); nav.appendChild(avDispo); }
+      }
+      if (hasAdmin && !nav.querySelector('.sidebar-admin-link')) {
+        var sectionAdm = document.createElement('div');
+        sectionAdm.className = 'sidebar-section sidebar-admin-section';
+        sectionAdm.textContent = 'Administration';
+        var aA = document.createElement('a');
+        aA.href = '/admin.html'; aA.className = 'sidebar-admin-link';
+        aA.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.78;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Administration';
+        if (divider) { nav.insertBefore(sectionAdm, divider); nav.insertBefore(aA, divider); }
+        else { nav.appendChild(sectionAdm); nav.appendChild(aA); }
+      }
+    }
+
+    // Pré-injection depuis cache (évite le jitter)
+    (function preInject(){
+      try {
+        var cached = sessionStorage.getItem('user_roles');
+        if (cached) {
+          var roles = JSON.parse(cached);
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function(){ injectRoleButtons(roles); });
+          } else {
+            injectRoleButtons(roles);
+          }
+        }
+      } catch (_) {}
+    })();
+
+    function logout() {
+      fetch('/api/auth/logout', { method: 'POST' })
+        .then(function() {
+          sessionStorage.removeItem('user');
+          window.location.href = '/connexion.html';
+        });
+    }
+
+    function setCurrentDate() {
+      var d = new Date();
+      var days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+      var months = ['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
+      document.getElementById('current-date').textContent = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+    }
+
+    function handleUrlParams() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('new') === '1') {
+        state = { currentStep: 1, selectedType: null, formData: {}, contratId: null, generated: false, user: state.user };
+        goToStep(1);
+      }
+      if (params.get('id')) {
+        loadExistingContrat(params.get('id'));
+      }
+    }
+
+    function loadExistingContrat(id) {
+      fetch('/api/contrats/' + id, { credentials: 'include' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('Not found');
+          return r.json();
+        })
+        .then(function(data) {
+          state.contratId = data.id;
+          state.selectedType = data.type;
+          state.formData = data.data || {};
+          state.generated = !!data.generated;
+
+          // Select the type card
+          var cards = document.querySelectorAll('.type-card');
+          cards.forEach(function(c) {
+            c.classList.remove('selected');
+            if (c.dataset.type === data.type) c.classList.add('selected');
+          });
+          document.getElementById('btn-next-1').disabled = false;
+
+          // If generated, go to step 3, otherwise step 2
+          if (state.generated) {
+            goToStep(3);
+          } else {
+            goToStep(2);
+          }
+        })
+        .catch(function() {
+          // Contrat not found, stay on step 1
+        });
+    }
+
+    // ===== SIDEBAR DROPDOWN =====
+    function toggleDropdown(el) {
+      el.classList.toggle('open');
+      var subnav = el.nextElementSibling;
+      if (subnav) subnav.classList.toggle('open');
+    }
+
+    // ===== TYPE SELECTION =====
+    var _svgIcons = {
+      '\u{1F464}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+      '\u{1F3E2}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+      '\u{1F3E0}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+      '\u{1F4B0}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+      '\u{1F4DD}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+      '\u{1F91D}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
+      '\u{1F4C5}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      '\u{1F4BC}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>',
+      '\u{1F3A8}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+      '\u{1F4DC}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+      '\u{1F517}': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>'
+    };
+    function sectionSvg(emoji) {
+      return _svgIcons[emoji] || '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>';
+    }
+
+    function selectType(card) {
+      document.querySelectorAll('.type-card').forEach(function(c) { c.classList.remove('selected'); });
+      card.classList.add('selected');
+      state.selectedType = card.dataset.type;
+      document.getElementById('btn-next-1').disabled = false;
+    }
+
+    // ===== STEPPER NAVIGATION =====
+    function goToStep(step) {
+      // Hide all steps
+      document.querySelectorAll('.wizard-step').forEach(function(s) { s.classList.remove('active'); });
+      document.getElementById('step-' + step).classList.add('active');
+
+      // Update stepper UI
+      document.querySelectorAll('.step').forEach(function(s) {
+        var sn = parseInt(s.dataset.step);
+        s.classList.remove('active', 'completed');
+        if (sn === step) s.classList.add('active');
+        else if (sn < step) s.classList.add('completed');
+      });
+
+      // Update connectors
+      document.querySelectorAll('.step-connector').forEach(function(c) {
+        var after = parseInt(c.dataset.after);
+        c.classList.toggle('completed', after < step);
+      });
+
+      // Update step number display (checkmark for completed)
+      document.querySelectorAll('.step').forEach(function(s) {
+        var num = s.querySelector('.step-number');
+        var sn = parseInt(s.dataset.step);
+        if (s.classList.contains('completed')) {
+          num.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        } else {
+          num.textContent = sn;
+        }
+      });
+
+      state.currentStep = step;
+
+      // Build form if going to step 2
+      if (step === 2) buildForm();
+      // Build summary if going to step 3
+      if (step === 3) buildSummary();
+      // Build signature if going to step 4
+      if (step === 4) buildSignature();
+
+      // Scroll to top of content
+      document.querySelector('.main').scrollTop = 0;
+    }
+
+    // ===== BUILD FORM =====
+    function buildForm() {
+      var type = contractTypes[state.selectedType];
+      if (!type) return;
+
+      document.getElementById('form-title').textContent = type.label;
+      document.getElementById('form-subtitle').textContent = 'Renseignez les informations n\u00e9cessaires \u00e0 la r\u00e9daction du contrat';
+
+      var container = document.getElementById('form-container');
+      container.innerHTML = '';
+
+      type.sections.forEach(function(section) {
+        var sectionEl = document.createElement('div');
+        sectionEl.className = 'form-section';
+
+        var titleHtml = '<div class="form-section-title"><span class="icon">' + sectionSvg(section.icon) + '</span>' + section.title + '</div>';
+        sectionEl.innerHTML = titleHtml;
+
+        section.fields.forEach(function(fieldGroup) {
+          var isFull = fieldGroup.row.length === 1 && fieldGroup.row[0].full;
+          var rowEl = document.createElement('div');
+          rowEl.className = 'form-row' + (isFull ? ' full' : '');
+
+          fieldGroup.row.forEach(function(field) {
+            var groupEl = document.createElement('div');
+            groupEl.className = 'form-group';
+
+            var labelHtml = '<label>' + field.label;
+            if (field.required) labelHtml += '<span class="required">*</span>';
+            labelHtml += '</label>';
+            groupEl.innerHTML = labelHtml;
+
+            var inputEl;
+            if (field.type === 'textarea') {
+              inputEl = document.createElement('textarea');
+              inputEl.rows = 4;
+            } else if (field.type === 'select') {
+              inputEl = document.createElement('select');
+              var defaultOpt = document.createElement('option');
+              defaultOpt.value = '';
+              defaultOpt.textContent = 'S\u00e9lectionner...';
+              inputEl.appendChild(defaultOpt);
+              (field.options || []).forEach(function(opt) {
+                var o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                inputEl.appendChild(o);
+              });
+            } else {
+              inputEl = document.createElement('input');
+              inputEl.type = field.type || 'text';
+            }
+
+            inputEl.name = field.name;
+            inputEl.id = 'field-' + field.name;
+            if (field.placeholder) inputEl.placeholder = field.placeholder;
+            if (field.required) inputEl.dataset.required = 'true';
+
+            // Pre-fill from state or default
+            var val = state.formData[field.name] || field.defaultValue || '';
+            if (inputEl.tagName === 'SELECT') {
+              inputEl.value = val;
+            } else {
+              inputEl.value = val;
+            }
+
+            groupEl.appendChild(inputEl);
+
+            var errorEl = document.createElement('div');
+            errorEl.className = 'form-error';
+            errorEl.id = 'error-' + field.name;
+            errorEl.textContent = 'Ce champ est requis';
+            groupEl.appendChild(errorEl);
+
+            rowEl.appendChild(groupEl);
+          });
+
+          sectionEl.appendChild(rowEl);
+        });
+
+        container.appendChild(sectionEl);
+      });
+    }
+
+    // ===== FORM VALIDATION =====
+    function validateAndGoStep3() {
+      var valid = true;
+      // Collect form data
+      var container = document.getElementById('form-container');
+      var inputs = container.querySelectorAll('input, select, textarea');
+
+      state.formData = {};
+      inputs.forEach(function(input) {
+        state.formData[input.name] = input.value;
+
+        // Validate required fields
+        if (input.dataset.required === 'true' && !input.value.trim()) {
+          input.classList.add('error');
+          var err = document.getElementById('error-' + input.name);
+          if (err) err.classList.add('visible');
+          valid = false;
+        } else {
+          input.classList.remove('error');
+          var err = document.getElementById('error-' + input.name);
+          if (err) err.classList.remove('visible');
+        }
+      });
+
+      if (valid) goToStep(3);
+    }
+
+    // ===== BUILD SUMMARY =====
+    function buildSummary() {
+      var type = contractTypes[state.selectedType];
+      if (!type) return;
+
+      var summaryContent = document.getElementById('summary-content');
+      var genResult = document.getElementById('generation-result');
+      var step3Buttons = document.getElementById('step3-buttons');
+      var step3PostButtons = document.getElementById('step3-post-buttons');
+
+      if (state.generated) {
+        summaryContent.style.display = 'none';
+        step3Buttons.style.display = 'none';
+        genResult.style.display = 'block';
+        step3PostButtons.style.display = 'flex';
+        showGeneratedResult();
+        return;
+      }
+
+      summaryContent.style.display = 'block';
+      step3Buttons.style.display = 'flex';
+      genResult.style.display = 'none';
+      step3PostButtons.style.display = 'none';
+
+      var html = '<div class="summary-card">';
+      html += '<div class="summary-header">';
+      html += '<div class="summary-type-badge">' + sectionSvg(type.icon) + ' ' + type.label + '</div>';
+      html += '</div>';
+
+      type.sections.forEach(function(section) {
+        html += '<div class="summary-section">';
+        html += '<div class="summary-section-title">' + section.title + '</div>';
+
+        section.fields.forEach(function(fieldGroup) {
+          fieldGroup.row.forEach(function(field) {
+            var val = state.formData[field.name] || '-';
+            html += '<div class="summary-row">';
+            html += '<span class="summary-label">' + field.label + '</span>';
+            html += '<span class="summary-value">' + escapeHtml(val) + '</span>';
+            html += '</div>';
+          });
+        });
+
+        html += '</div>';
+      });
+
+      html += '</div>';
+      summaryContent.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ===== GENERATE CONTRACT =====
+    function generateContract() {
+      var overlay = document.getElementById('loading-overlay');
+      overlay.classList.add('visible');
+
+      var payload = {
+        type: state.selectedType,
+        data: state.formData
+      };
+
+      if (state.contratId) payload.id = state.contratId;
+
+      fetch('/api/contrats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      })
+        .then(function(r) {
+          if (!r.ok) throw new Error('Erreur serveur');
+          return r.json();
+        })
+        .then(function(data) {
+          state.contratId = data.id;
+          state.generated = true;
+          overlay.classList.remove('visible');
+          showGeneratedResult();
+
+          // Update URL
+          var url = new URL(window.location);
+          url.searchParams.set('id', data.id);
+          url.searchParams.delete('new');
+          history.replaceState({}, '', url);
+        })
+        .catch(function(err) {
+          overlay.classList.remove('visible');
+          alert('Une erreur est survenue lors de la g\u00e9n\u00e9ration du contrat. Veuillez r\u00e9essayer.');
+        });
+    }
+
+    function showGeneratedResult() {
+      var type = contractTypes[state.selectedType];
+      var summaryContent = document.getElementById('summary-content');
+      var genResult = document.getElementById('generation-result');
+      var step3Buttons = document.getElementById('step3-buttons');
+      var step3PostButtons = document.getElementById('step3-post-buttons');
+
+      summaryContent.style.display = 'none';
+      step3Buttons.style.display = 'none';
+      genResult.style.display = 'block';
+      step3PostButtons.style.display = 'flex';
+
+      genResult.innerHTML = '' +
+        '<div class="result-card">' +
+          '<div class="result-icon">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+          '</div>' +
+          '<div class="result-title">Contrat g\u00e9n\u00e9r\u00e9 avec succ\u00e8s</div>' +
+          '<div class="result-desc">Votre ' + type.label + ' a \u00e9t\u00e9 g\u00e9n\u00e9r\u00e9 et est pr\u00eat \u00e0 \u00eatre t\u00e9l\u00e9charg\u00e9.</div>' +
+          '<div class="result-actions">' +
+            '<button class="btn btn-primary" onclick="downloadContract()">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+              'T\u00e9l\u00e9charger le PDF' +
+            '</button>' +
+            '<button class="btn btn-outline" onclick="downloadContract(\'docx\')">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+              'Format Word' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="upgrade-card">' +
+          '<div class="upgrade-icon">\u2696\uFE0F</div>' +
+          '<div class="upgrade-text">' +
+            '<div class="upgrade-title">Faire valider par un avocat</div>' +
+            '<div class="upgrade-desc">Un avocat sp\u00e9cialis\u00e9 v\u00e9rifie et valide votre contrat sous 48h. Modifications incluses.</div>' +
+          '</div>' +
+          '<button class="btn btn-blue" onclick="requestLawyerReview()" style="flex-shrink:0;">Demander une validation</button>' +
+        '</div>';
+    }
+
+    function downloadContract(format) {
+      if (!state.contratId) return;
+      var ext = format === 'docx' ? 'docx' : 'pdf';
+      window.open('/api/contrats/' + state.contratId + '/download?format=' + ext, '_blank');
+    }
+
+    function requestLawyerReview() {
+      if (!state.contratId) return;
+      fetch('/api/contrats/' + state.contratId + '/review', {
+        method: 'POST',
+        credentials: 'include'
+      })
+        .then(function(r) {
+          if (!r.ok) throw new Error('Erreur');
+          return r.json();
+        })
+        .then(function() {
+          alert('Votre demande de validation a \u00e9t\u00e9 envoy\u00e9e. Un avocat vous contactera sous 48h.');
+        })
+        .catch(function() {
+          alert('Erreur lors de l\'envoi de la demande. Veuillez r\u00e9essayer.');
+        });
+    }
+
+    // ===== BUILD SIGNATURE =====
+    function buildSignature() {
+      var type = contractTypes[state.selectedType];
+      if (!type) return;
+
+      var container = document.getElementById('signature-container');
+      var html = '';
+
+      type.parties.forEach(function(party, index) {
+        var name = state.formData[party.nameField] || 'Non renseign\u00e9';
+        if (party.prenomField) {
+          name = (state.formData[party.prenomField] || '') + ' ' + name;
+        }
+        var initials = name.trim().split(' ').map(function(w) { return w[0] || ''; }).join('').toUpperCase().substring(0, 2);
+
+        html += '<div class="party-card" id="party-' + index + '">';
+        html += '  <div class="party-info">';
+        html += '    <div class="party-avatar">' + initials + '</div>';
+        html += '    <div>';
+        html += '      <div class="party-name">' + escapeHtml(name.trim()) + '</div>';
+        html += '      <div class="party-role">' + party.role + '</div>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <div class="party-status pending">En attente</div>';
+        html += '</div>';
+      });
+
+      html += '<div class="signature-actions">';
+      html += '  <p>G\u00e9n\u00e9rez des liens de signature individuels pour chaque partie. Les signataires recevront un lien s\u00e9curis\u00e9 pour signer \u00e9lectroniquement le document.</p>';
+      html += '  <div id="signature-links"></div>';
+      html += '</div>';
+
+      container.innerHTML = html;
+    }
+
+    function sendSignatureLinks() {
+      if (!state.contratId) {
+        alert('Veuillez d\'abord g\u00e9n\u00e9rer le contrat.');
+        return;
+      }
+
+      var overlay = document.getElementById('loading-overlay');
+      var loadingText = document.getElementById('loading-text');
+      loadingText.textContent = 'G\u00e9n\u00e9ration des liens de signature...';
+      overlay.classList.add('visible');
+
+      fetch('/api/contrats/' + state.contratId + '/signatures', {
+        method: 'POST',
+        credentials: 'include'
+      })
+        .then(function(r) {
+          if (!r.ok) throw new Error('Erreur');
+          return r.json();
+        })
+        .then(function(data) {
+          overlay.classList.remove('visible');
+          loadingText.textContent = 'G\u00e9n\u00e9ration de votre contrat en cours...';
+
+          var linksContainer = document.getElementById('signature-links');
+          var linksHtml = '';
+
+          (data.links || []).forEach(function(link, i) {
+            linksHtml += '<div class="link-box" style="margin-top:12px;">';
+            linksHtml += '  <input type="text" value="' + link.url + '" readonly id="sig-link-' + i + '">';
+            linksHtml += '  <button onclick="copyLink(' + i + ')">Copier</button>';
+            linksHtml += '</div>';
+          });
+
+          if (!data.links || data.links.length === 0) {
+            linksHtml = '<p style="color:#888;font-size:13px;margin-top:12px;">Les liens de signature ont \u00e9t\u00e9 envoy\u00e9s par email aux parties.</p>';
+          }
+
+          linksContainer.innerHTML = linksHtml;
+
+          // Update party statuses
+          var type = contractTypes[state.selectedType];
+          type.parties.forEach(function(party, index) {
+            var statusEl = document.querySelector('#party-' + index + ' .party-status');
+            if (statusEl) {
+              statusEl.className = 'party-status pending';
+              statusEl.textContent = 'Lien envoy\u00e9';
+            }
+          });
+        })
+        .catch(function() {
+          overlay.classList.remove('visible');
+          loadingText.textContent = 'G\u00e9n\u00e9ration de votre contrat en cours...';
+          alert('Erreur lors de la g\u00e9n\u00e9ration des liens de signature.');
+        });
+    }
+
+    function copyLink(index) {
+      var input = document.getElementById('sig-link-' + index);
+      if (input) {
+        input.select();
+        document.execCommand('copy');
+        var btn = input.nextElementSibling;
+        btn.textContent = 'Copi\u00e9 !';
+        setTimeout(function() { btn.textContent = 'Copier'; }, 2000);
+      }
+    }
+  </script>
+
+  <!-- BEGIN sidebar refresh JS (auto-generated) -->
+  <script>
+    (function() {
+      function openNewActionModal() {
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+      }
+      function closeNewActionModal(e) {
+        if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+      }
+      window.openNewActionModal = openNewActionModal;
+      window.closeNewActionModal = closeNewActionModal;
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNewActionModal(); });
+
+      // Société active + badges
+      fetch('/api/formalites').then(function(r){ return r.json(); }).then(function(data){
+        var list = (data && data.formalites) || data || [];
+        if (!Array.isArray(list)) return;
+        var societes = list.filter(function(f){ return f && f.denomination && (f.type === 'creation' || f.type === 'modification' || !f.type); });
+        var ctx = document.getElementById('sidebar-context');
+        var nameEl = document.getElementById('ctx-name');
+        if (societes.length === 0) {
+          if (ctx) ctx.style.display = 'none';
+        } else if (societes.length === 1) {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.add('single');
+        } else {
+          if (ctx) ctx.style.display = '';
+          if (nameEl) nameEl.textContent = societes[0].denomination;
+          ctx.classList.remove('single');
+        }
+        var enCours = list.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var badge = document.getElementById('badge-formalites');
+        if (badge && enCours > 0) { badge.textContent = String(enCours) + ' en cours'; badge.style.display = 'inline-block'; }
+      }).catch(function(){});
+      // Affiche immédiatement les valeurs cachées pour éviter le jitter
+      (function(){
+        try {
+          var cachedForm = parseInt(sessionStorage.getItem('badge_formalites') || '0');
+          var cachedMsg = parseInt(sessionStorage.getItem('badge_messagerie') || '0');
+          if (cachedForm > 0) {
+            var bF = document.getElementById('badge-formalites');
+            if (bF) { bF.textContent = String(cachedForm) + ' en cours'; bF.style.display = 'inline-block'; }
+          }
+          if (cachedMsg > 0) {
+            var bM = document.getElementById('badge-messagerie');
+            if (bM) { bM.textContent = String(cachedMsg) + ' non lu' + (cachedMsg > 1 ? 's' : ''); bM.style.display = 'inline-block'; }
+          }
+        } catch(_) {}
+      })();
+      Promise.all([
+        fetch('/api/formalites').then(function(r){ return r.json(); }).catch(function(){ return { formalites: [] }; }),
+        fetch('/api/support/unread').then(function(r){ return r.json(); }).catch(function(){ return { unread: 0 }; })
+      ]).then(function(results){
+        var fs = (results[0] && results[0].formalites) || [];
+        var enCours = fs.filter(function(f){ return f && f.status !== 'terminee' && f.status !== 'archive'; }).length;
+        var bForm = document.getElementById('badge-formalites');
+        if (bForm) {
+          if (enCours > 0) { bForm.textContent = String(enCours) + ' en cours'; bForm.style.display = 'inline-block'; }
+          else { bForm.style.display = 'none'; }
+        }
+        var unreadForm = fs.reduce(function(a, f){ return a + (f.unread_messages || 0); }, 0);
+        var unreadSupport = (results[1] && results[1].unread) || 0;
+        var total = unreadForm + unreadSupport;
+        var badge = document.getElementById('badge-messagerie');
+        if (badge) {
+          if (total > 0) { badge.textContent = String(total) + ' non lu' + (total > 1 ? 's' : ''); badge.style.display = 'inline-block'; }
+          else { badge.style.display = 'none'; }
+        }
+        try {
+          sessionStorage.setItem('badge_formalites', String(enCours));
+          sessionStorage.setItem('badge_messagerie', String(total));
+        } catch(_) {}
+      });
+    })();
+  </script>
+  <!-- END sidebar refresh JS -->
+<script src="/js/common.js"></script>
+</body>
+</html>

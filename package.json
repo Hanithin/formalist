@@ -1,0 +1,15 @@
+{
+  "name": "formalist-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "docx-templates": "^4.15.0",
+    "docxtemplater": "^3.68.2",
+    "jszip": "^3.10.1",
+    "pizzip": "^3.2.0"
+  }
+}

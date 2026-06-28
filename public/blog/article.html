@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>R&eacute;forme TVA 2026 : les nouveaux seuils de franchise &mdash; Formalist Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family:'Cal Sans'; src:url('/fonts/CalSans-SemiBold.otf') format('opentype'); font-weight:600; font-display:swap }
+    *,*::before,*::after { margin:0; padding:0; box-sizing:border-box }
+    html { scroll-behavior:smooth }
+    body { font-family:'Inter',-apple-system,sans-serif; background:#f5f5f5; color:#111; -webkit-font-smoothing:antialiased; overflow-x:hidden }
+    a { text-decoration:none; color:inherit }
+
+    @keyframes fade-up { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+
+    /* NAV */
+    .nav-wrap { position:fixed; top:0; left:0; right:0; z-index:1000; display:flex; justify-content:center; padding:12px 40px 0; transition:all 0.3s }
+    .nav-wrap.scrolled { padding-top:8px }
+    .nav { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:transparent; transition:all 0.3s; max-width:1200px; width:100%; border-radius:16px }
+    .nav-wrap.scrolled .nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid #e8e8e8; box-shadow:0 2px 16px rgba(0,0,0,0.06) }
+    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.3px }
+    .nav-center { display:flex; align-items:center; gap:32px }
+    .nav-center a, .nav-center .nav-dropdown-trigger { font-size:14px; font-weight:500; color:#666; transition:color 0.2s; cursor:pointer; text-decoration:none }
+    .nav-center a:hover, .nav-center .nav-dropdown-trigger:hover { color:#111 }
+    .nav-center a.active { color:#111; font-weight:600 }
+    .nav-dropdown { position:relative }
+    .nav-dropdown-trigger { display:inline-flex; align-items:center; gap:4px; background:none; border:none; font-family:inherit }
+    .nav-dropdown-trigger svg { width:12px; height:12px; transition:transform 0.2s }
+    .nav-dropdown:hover .nav-dropdown-trigger svg { transform:rotate(180deg) }
+    .nav-mega { position:fixed; top:68px; left:50%; transform:translateX(-50%); background:#fff; border:1px solid #e8e8e8; border-radius:16px; box-shadow:0 16px 48px rgba(0,0,0,0.08); padding:0; width:1080px; opacity:0; pointer-events:none; transition:all 0.2s; z-index:100; overflow:hidden }
+    .nav-dropdown.open .nav-mega { opacity:1; pointer-events:auto }
+    .nav-mega-grid { display:grid; grid-template-columns:1.4fr 1fr 240px; gap:0 }
+    .nav-mega-col { padding:28px 32px }
+    .nav-mega-col:first-child { border-right:1px solid #f0f0f0 }
+    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#bbb; margin-bottom:16px }
+    .nav-mega-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:12px; transition:all 0.15s; cursor:pointer; text-decoration:none; color:inherit }
+    .nav-mega-item:hover { background:#f8f7ff }
+    .nav-mega-icon { width:40px; height:40px; border-radius:12px; background:#f5f5f5; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s }
+    .nav-mega-item:hover .nav-mega-icon { background:#f0ecff; border-color:#e0d4fc }
+    .nav-mega-item:hover .nav-mega-icon svg { color:#7c3aed }
+    .nav-mega-icon svg { width:18px; height:18px; color:#666; transition:color 0.15s }
+    .nav-mega-item strong { font-size:14px; font-weight:600; color:#111; display:block; margin-bottom:2px }
+    .nav-mega-item span { font-size:12.5px; color:#888; line-height:1.4 }
+    .nav-mega-col-2 { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px }
+    .nav-mega-col-tools { display:flex; flex-direction:column; gap:4px }
+    .nav-mega-col:last-child { padding:0 }
+    .nav-mega-cta { background:linear-gradient(135deg,#7c3aed 0%,#a78bfa 60%,#c4b5fd 100%); padding:28px 24px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; height:100%; position:relative; overflow:hidden }
+    .nav-mega-cta::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; background:rgba(255,255,255,0.08); border-radius:50% }
+    .nav-mega-cta::after { content:''; position:absolute; bottom:-30px; left:-30px; width:100px; height:100px; background:rgba(255,255,255,0.06); border-radius:50% }
+    .nav-mega-cta-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.2); backdrop-filter:blur(4px); padding:5px 12px; border-radius:100px; font-size:11px; font-weight:600; width:fit-content; position:relative; z-index:1 }
+    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
+    .nav-mega-cta-link { display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; margin-top:16px; opacity:0.9; position:relative; z-index:1; text-decoration:none; transition:opacity 0.15s }
+    .nav-mega-cta-link:hover { opacity:1 }
+    .nav-right { display:flex; align-items:center; gap:8px }
+    .nav-right .btn { padding:10px 22px; font-size:14px; border-radius:12px }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; font-family:inherit; font-size:16px; font-weight:600; padding:14px 28px; border-radius:100px; cursor:pointer; transition:all 0.2s; border:none }
+    .btn-dark { background:#1a1a1a; color:#fff; position:relative; overflow:hidden }
+    .btn-dark::after { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent); transition:left 0.5s }
+    .btn-dark:hover::after { left:100% }
+    .btn-dark:hover { background:#000; transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,0.12) }
+    .btn-dark svg { width:16px; height:16px }
+
+    /* ARTICLE LAYOUT */
+    .article-wrap { max-width:1200px; margin:0 auto; padding:110px 40px 80px; display:grid; grid-template-columns:1fr 320px; gap:60px; align-items:start }
+
+    /* ARTICLE HEADER */
+    .article-meta { display:flex; align-items:center; gap:8px; font-size:13px; color:#888; margin-bottom:24px; flex-wrap:wrap; animation:fade-up 0.5s ease both }
+    .article-meta a { color:#888; transition:color 0.2s }
+    .article-meta a:hover { color:#111 }
+    .article-meta-dot { width:3px; height:3px; border-radius:50%; background:#ccc }
+    .article-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#a78bfa); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700; flex-shrink:0 }
+    .article-meta-author { font-weight:600; color:#111 }
+    .article-meta-cat { padding:3px 10px; border-radius:100px; border:1px solid #e0e0e0; font-size:11px; font-weight:500 }
+
+    .article-title { font-family:'Cal Sans','Inter',sans-serif; font-size:44px; font-weight:600; line-height:1.15; letter-spacing:-1.2px; margin-bottom:28px; animation:fade-up 0.6s ease 0.05s both }
+    .article-intro { font-size:17px; color:#555; line-height:1.75; margin-bottom:40px; animation:fade-up 0.6s ease 0.1s both }
+
+    /* ARTICLE CONTENT */
+    .article-content { animation:fade-up 0.6s ease 0.15s both }
+    .article-content h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:26px; font-weight:600; letter-spacing:-0.5px; margin:48px 0 16px; line-height:1.25 }
+    .article-content h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; margin:36px 0 12px; line-height:1.3 }
+    .article-content p { font-size:16px; color:#333; line-height:1.8; margin-bottom:20px }
+    .article-content a { color:#7c3aed; font-weight:500; text-decoration:underline; text-underline-offset:2px; transition:color 0.2s }
+    .article-content a:hover { color:#6d28d9 }
+    .article-content ul, .article-content ol { margin:0 0 24px 24px; font-size:16px; color:#333; line-height:1.8 }
+    .article-content li { margin-bottom:8px }
+    .article-content li::marker { color:#bbb }
+    .article-content strong { font-weight:700; color:#111 }
+    .article-content blockquote { margin:28px 0; padding:20px 28px; border-left:3px solid #7c3aed; background:#faf8ff; border-radius:0 12px 12px 0; font-size:16px; color:#444; line-height:1.7; font-style:italic }
+    .article-content img, .article-content .article-img { width:100%; border-radius:16px; margin:28px 0; border:1px solid #e8e8e8 }
+
+    /* INLINE CODE */
+    .article-content code { font-family:'SF Mono','Fira Code',monospace; font-size:13.5px; background:#f0f0f0; padding:2px 7px; border-radius:6px; color:#e11d48; font-weight:500 }
+
+    /* CODE BLOCKS */
+    .article-content pre { margin:24px 0; border-radius:16px; overflow:hidden }
+    .article-content pre code { display:block; background:#1a1a2e; color:#e0e0e0; padding:28px 32px; font-size:13.5px; line-height:1.7; overflow-x:auto; border-radius:16px }
+    .article-content pre code .cm { color:#6b7280 }
+    .article-content pre code .kw { color:#c084fc }
+    .article-content pre code .st { color:#34d399 }
+    .article-content pre code .fn { color:#60a5fa }
+    .article-content pre code .nb { color:#fbbf24 }
+
+    /* ARTICLE IMAGE (illustration card like the screenshot) */
+    .article-hero-img { width:100%; border-radius:20px; overflow:hidden; margin-bottom:40px; position:relative; animation:fade-up 0.6s ease 0.12s both }
+    .article-hero-img .illus-card { height:320px; display:flex; align-items:center; justify-content:center; position:relative }
+    .article-hero-img .illus-card.theme-orange { background:linear-gradient(160deg,#fff8f0 0%,#fef3e2 60%,#fde8c8 100%); border:1px solid #f5e6cc }
+    .illus-card .illus-big { position:relative; display:flex; align-items:center; gap:24px }
+    .illus-card .illus-num { font-family:'Cal Sans','Inter',sans-serif; font-size:72px; font-weight:600; letter-spacing:-2px }
+    .illus-card .illus-arrow { font-size:36px; color:#999 }
+    .illus-card .illus-badge { display:inline-flex; padding:6px 16px; border-radius:100px; font-size:14px; font-weight:700; margin-top:12px }
+    .illus-card .illus-label { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; color:#555; margin-top:8px; text-align:center }
+
+    /* SIDEBAR */
+    .article-sidebar { position:sticky; top:100px; animation:fade-up 0.6s ease 0.2s both }
+    .sidebar-cta { background:#fff; border:1px solid #e8e8e8; border-radius:20px; padding:32px 28px; margin-bottom:28px }
+    .sidebar-cta-logo { width:44px; height:44px; border-radius:12px; background:#111; display:flex; align-items:center; justify-content:center; margin-bottom:20px; font-family:'Cal Sans'; font-size:16px; color:#fff; font-weight:600 }
+    .sidebar-cta h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.3px; line-height:1.3; margin-bottom:12px }
+    .sidebar-cta p { font-size:13px; color:#888; line-height:1.6; margin-bottom:24px }
+    .sidebar-cta .btn-cta { display:block; width:100%; padding:12px 20px; text-align:center; border-radius:12px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; border:none; margin-bottom:10px }
+    .sidebar-cta .btn-cta-primary { background:#7c3aed; color:#fff }
+    .sidebar-cta .btn-cta-primary:hover { background:#6d28d9; transform:translateY(-1px) }
+    .sidebar-cta .btn-cta-outline { background:#fff; color:#555; border:1.5px solid #e0e0e0 }
+    .sidebar-cta .btn-cta-outline:hover { border-color:#bbb; color:#111 }
+    .sidebar-cta .btn-cta svg { width:14px; height:14px; display:inline; vertical-align:middle; margin-left:4px }
+
+    /* SIDEBAR TOC */
+    .sidebar-toc { background:#fff; border:1px solid #e8e8e8; border-radius:20px; padding:28px }
+    .sidebar-toc h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; margin-bottom:16px; color:#111 }
+    .sidebar-toc a { display:block; font-size:13px; color:#888; padding:7px 0 7px 16px; border-left:2px solid #eee; transition:all 0.2s; line-height:1.4 }
+    .sidebar-toc a:hover { color:#7c3aed; border-color:#7c3aed }
+    .sidebar-toc a.active { color:#7c3aed; border-color:#7c3aed; font-weight:600 }
+
+    /* ARTICLE FOOTER (tags + share + related) */
+    .article-footer { margin-top:56px; padding-top:32px; border-top:1px solid #e8e8e8 }
+    .article-tags { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:32px }
+    .article-tag { padding:6px 16px; border-radius:100px; border:1px solid #e0e0e0; font-size:12px; font-weight:500; color:#666; transition:all 0.2s }
+    .article-tag:hover { border-color:#7c3aed; color:#7c3aed; background:#faf8ff }
+    .article-share { display:flex; align-items:center; gap:12px; margin-bottom:40px }
+    .article-share span { font-size:13px; color:#888; font-weight:500 }
+    .article-share a { width:36px; height:36px; border-radius:50%; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; color:#888; transition:all 0.2s }
+    .article-share a:hover { color:#111; border-color:#ccc; background:#fafafa }
+    .article-share svg { width:15px; height:15px }
+
+    /* RELATED ARTICLES */
+    .related { max-width:1200px; margin:0 auto; padding:0 40px 80px }
+    .related h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.5px; margin-bottom:32px }
+    .related-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px }
+    .related-card { background:#fff; border:1px solid #e8e8e8; border-radius:20px; overflow:hidden; transition:all 0.3s; cursor:pointer; text-decoration:none; color:inherit }
+    .related-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.08) }
+    .related-card-img { height:180px; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center }
+    .related-card-img.theme-blue { background:linear-gradient(160deg,#f0f4ff 0%,#e8efff 100%) }
+    .related-card-img.theme-pink { background:linear-gradient(160deg,#fff0f3 0%,#fce8ed 100%) }
+    .related-card-img.theme-green { background:linear-gradient(160deg,#f0faf4 0%,#e5f5ec 100%) }
+    .related-card-body { padding:24px 24px 28px }
+    .related-card-tag { display:inline-block; padding:4px 12px; border-radius:100px; font-size:11px; font-weight:600; margin-bottom:12px }
+    .tag-compta { background:#e0e7ff; color:#4338ca }
+    .tag-juridique { background:#fce7f3; color:#be185d }
+    .tag-guide { background:#d1fae5; color:#047857 }
+    .related-card-title { font-family:'Cal Sans','Inter',sans-serif; font-size:17px; font-weight:600; line-height:1.3; letter-spacing:-0.2px; margin-bottom:8px }
+    .related-card-meta { font-size:12px; color:#bbb }
+    .illus { position:relative; width:160px; height:120px }
+    .illus-circle { position:absolute; border-radius:50% }
+    .illus-icon { position:absolute; width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,0.06); background:#fff }
+    .illus-icon svg { width:20px; height:20px }
+    .illus-icon-sm { position:absolute; width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.05); background:#fff }
+    .illus-icon-sm svg { width:15px; height:15px }
+    .illus-dot { position:absolute; border-radius:50%; border:2px solid }
+    .theme-blue .illus-circle { background:rgba(96,165,250,0.12) }
+    .theme-blue .illus-icon, .theme-blue .illus-icon-sm { color:#2563eb }
+    .theme-blue .illus-dot { border-color:rgba(96,165,250,0.3) }
+    .theme-pink .illus-circle { background:rgba(244,114,182,0.1) }
+    .theme-pink .illus-icon, .theme-pink .illus-icon-sm { color:#e11d48 }
+    .theme-pink .illus-dot { border-color:rgba(244,114,182,0.3) }
+    .theme-green .illus-circle { background:rgba(52,211,153,0.12) }
+    .theme-green .illus-icon, .theme-green .illus-icon-sm { color:#059669 }
+    .theme-green .illus-dot { border-color:rgba(52,211,153,0.3) }
+
+    /* GRID OVERLAY */
+    .grid-overlay { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:0; max-width:1320px; margin:0 auto; padding:0 40px }
+    .grid-overlay::before { content:''; position:absolute; top:0; bottom:0; left:40px; right:40px; border-left:2px solid #e8e8e8; border-right:2px solid #e8e8e8 }
+    body > *:not(.grid-overlay):not(.nav-wrap) { position:relative; z-index:1 }
+
+    /* DIVIDERS */
+    .divider { position:relative; z-index:2 }
+    .divider-line { height:2px; background:#e8e8e8 }
+    .divider-plus-wrap { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); max-width:1320px; margin:0 auto; padding:0 40px; pointer-events:none }
+    .divider-plus-inner { position:relative }
+    .divider-plus-inner::before { content:'+'; position:absolute; top:50%; left:-12px; transform:translateY(-50%); font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+    .divider-plus-inner::after { content:'+'; position:absolute; top:50%; right:-12px; transform:translateY(-50%); font-size:20px; color:#ccc; font-weight:300; background:#f5f5f5; width:24px; height:24px; display:flex; align-items:center; justify-content:center; line-height:1 }
+
+    /* FOOTER */
+    .foot { padding:56px 40px 32px; background:transparent }
+    .foot-inner { max-width:1200px; margin:0 auto }
+    .foot-top { display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr 1fr; gap:40px; margin-bottom:56px }
+    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:14px }
+    .foot-brand-p { font-size:13px; color:#999; line-height:1.7; max-width:280px; margin-bottom:24px }
+    .foot-mission { font-size:12px; color:#bbb; line-height:1.6; max-width:280px; margin-bottom:20px }
+    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; color:#111; margin-bottom:16px }
+    .foot-col a { display:block; font-size:13px; color:#888; padding:5px 0; transition:color 0.2s }
+    .foot-col a:hover { color:#111 }
+    .foot-bottom { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding-top:24px; border-top:1px solid #e8e8e8 }
+    .foot-copy { font-size:12px; color:#bbb }
+    .foot-socials { display:flex; gap:10px }
+    .foot-socials a { width:32px; height:32px; border-radius:50%; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; color:#999; transition:all 0.2s }
+    .foot-socials a:hover { color:#111; border-color:#ccc }
+    .foot-socials svg { width:14px; height:14px }
+
+    /* RESPONSIVE */
+    @media(max-width:1024px) {
+      .article-wrap { grid-template-columns:1fr; gap:40px }
+      .article-sidebar { position:static; display:grid; grid-template-columns:1fr 1fr; gap:20px }
+      .related-grid { grid-template-columns:repeat(2,1fr) }
+    }
+    @media(max-width:768px) {
+      .nav-wrap { padding:8px 16px 0 }
+      .nav { padding:0 16px }
+      .nav-center { display:none }
+      .article-wrap { padding:90px 16px 60px }
+      .article-title { font-size:30px; letter-spacing:-0.8px }
+      .article-intro { font-size:15px }
+      .article-content h2 { font-size:22px }
+      .article-content h3 { font-size:18px }
+      .article-content p { font-size:15px }
+      .article-content pre code { font-size:12px; padding:20px }
+      .article-sidebar { grid-template-columns:1fr }
+      .article-hero-img .illus-card { height:220px }
+      .related { padding:0 16px 60px }
+      .related-grid { grid-template-columns:1fr }
+      .related h2 { font-size:22px }
+      .foot { padding:40px 16px 20px }
+      .foot-top { grid-template-columns:1fr 1fr; gap:24px }
+      .foot-bottom { flex-direction:column; gap:12px }
+      .foot-top > div:first-child { grid-column:span 2 }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-overlay"></div>
+
+  <!-- NAV -->
+  <div class="nav-wrap" id="navbar">
+    <nav class="nav">
+      <a href="/" class="nav-logo">formalist</a>
+      <div class="nav-center">
+        <div class="nav-dropdown">
+          <span class="nav-dropdown-trigger">Fonctionnalit&eacute;s <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>
+          <div class="nav-mega">
+            <div class="nav-mega-grid">
+              <div class="nav-mega-col">
+                <h5>Par type</h5>
+                <div class="nav-mega-col-2">
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg></div><div><strong>Cr&eacute;ation d'entreprise</strong><span>SASU, SAS, SARL, SCI, EURL</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><strong>Modification de soci&eacute;t&eacute;</strong><span>Si&egrave;ge, objet social, dirigeant</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><strong>Contrats</strong><span>NDA, CGV, CGU, prestation</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div><strong>Fermeture de soci&eacute;t&eacute;</strong><span>Dissolution et liquidation</span></div></a>
+                </div>
+              </div>
+              <div class="nav-mega-col">
+                <h5>Outils</h5>
+                <div class="nav-mega-col-tools">
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong>Validation avocat</strong><span>V&eacute;rification de chaque clause</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></div><div><strong>Signature eIDAS</strong><span>Valeur l&eacute;gale europ&eacute;enne</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div><strong>Chat avocat</strong><span>R&eacute;ponse sous 24h</span></div></a>
+                  <a href="/#features" class="nav-mega-item"><div class="nav-mega-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div><strong>D&eacute;claration SACEM</strong><span>Partenariat officiel</span></div></a>
+                </div>
+              </div>
+              <div class="nav-mega-col">
+                <div class="nav-mega-cta">
+                  <div class="nav-mega-cta-badge">Nouveau</div>
+                  <div class="nav-mega-cta-title">Cr&eacute;ez votre entreprise en 5&nbsp;minutes</div>
+                  <a href="/connexion.html" class="nav-mega-cta-link">Commencer &rarr;</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <a href="/#pricing">Tarification</a>
+        <a href="/#temoignages">T&eacute;moignages</a>
+        <a href="/blog.html" class="active">Blog</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+      <div class="nav-right">
+        <a href="/connexion.html" class="btn btn-dark">Commencer <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ARTICLE -->
+  <div class="article-wrap">
+    <main>
+      <!-- META -->
+      <div class="article-meta">
+        <span>Par</span>
+        <div class="article-avatar">M</div>
+        <span class="article-meta-author">Ma&icirc;tre Dupont</span>
+        <span class="article-meta-dot"></span>
+        <a href="/blog.html">Toutes les cat&eacute;gories</a>
+        <span class="article-meta-cat">Fiscalit&eacute;</span>
+        <span class="article-meta-dot"></span>
+        <span>10 mars 2026</span>
+      </div>
+
+      <!-- TITLE -->
+      <h1 class="article-title">R&eacute;forme TVA 2026 : les nouveaux seuils de franchise qui changent tout</h1>
+
+      <!-- INTRO -->
+      <p class="article-intro">Seuil unique de 25&nbsp;000&nbsp;&euro; en franchise de base, suppression des seuils major&eacute;s, harmonisation europ&eacute;enne : la r&eacute;forme TVA 2026 bouleverse les r&egrave;gles pour les micro-entrepreneurs et les PME. Nous avons d&eacute;crypt&eacute; chaque changement et ses implications concr&egrave;tes pour votre entreprise.</p>
+
+      <!-- HERO IMAGE -->
+      <div class="article-hero-img">
+        <div class="illus-card theme-orange" style="border-radius:20px;border:1px solid #f0e0c0">
+          <div style="text-align:center">
+            <div class="illus-big">
+              <span class="illus-num" style="color:#b45309">37&nbsp;500&euro;</span>
+              <span class="illus-arrow">&rarr;</span>
+              <span class="illus-num" style="color:#059669">25&nbsp;000&euro;</span>
+            </div>
+            <div style="margin-top:8px">
+              <span class="illus-badge" style="background:#059669;color:#fff">Seuil unique 2026</span>
+            </div>
+            <div class="illus-label" style="margin-top:12px">Franchise en base de TVA</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="article-content">
+        <h2 id="contexte">Contexte : pourquoi cette r&eacute;forme ?</h2>
+        <p>Depuis plusieurs ann&eacute;es, le syst&egrave;me de franchise en base de TVA fran&ccedil;ais &eacute;tait jug&eacute; trop complexe. Avec des seuils diff&eacute;rents selon l'activit&eacute; (vente de marchandises, prestations de services, professions lib&eacute;rales), les entrepreneurs peinaient &agrave; s'y retrouver.</p>
+        <p>La directive europ&eacute;enne <strong>2020/285</strong> a impos&eacute; aux &Eacute;tats membres une harmonisation des r&egrave;gles de franchise. La France a choisi d'aller plus loin en simplifiant radicalement le dispositif avec un <strong>seuil unique</strong>.</p>
+
+        <blockquote>La simplification n'est pas qu'administrative : elle change fondamentalement la strat&eacute;gie fiscale de milliers de micro-entreprises.</blockquote>
+
+        <h2 id="changements">Ce qui change concr&egrave;tement</h2>
+
+        <h3 id="seuil-unique">Un seuil unique de 25&nbsp;000&nbsp;&euro;</h3>
+        <p>Fini les distinctions entre activit&eacute;s. Quel que soit votre secteur &mdash; vente de marchandises, prestations de services ou activit&eacute;s mixtes &mdash; le seuil de franchise en base de TVA est d&eacute;sormais fix&eacute; &agrave; <strong>25&nbsp;000&nbsp;&euro; de chiffre d'affaires annuel</strong>.</p>
+        <p>Voici les anciens seuils compar&eacute;s au nouveau :</p>
+
+        <pre><code><span class="cm">// Anciens seuils (avant 2026)</span>
+<span class="kw">Vente de marchandises</span>    : <span class="nb">91 900 &euro;</span> (major&eacute; : 101 000 &euro;)
+<span class="kw">Prestations de services</span>  : <span class="nb">36 800 &euro;</span> (major&eacute; : 39 100 &euro;)
+
+<span class="cm">// Nouveau seuil unique (2026)</span>
+<span class="kw">Toutes activit&eacute;s</span>         : <span class="st">25 000 &euro;</span>
+<span class="kw">Seuil major&eacute;</span>             : <span class="st">Supprim&eacute;</span></code></pre>
+
+        <h3 id="impact-micro">Impact sur les micro-entrepreneurs</h3>
+        <p>Pour les micro-entrepreneurs dont le CA d&eacute;passe <code>25 000 &euro;</code>, l'assujettissement &agrave; la TVA devient imm&eacute;diat. Il n'y a plus de zone tampon avec les seuils major&eacute;s.</p>
+        <p>Concr&egrave;tement, cela signifie :</p>
+        <ul>
+          <li><strong>Facturation de la TVA</strong> d&egrave;s le d&eacute;passement du seuil</li>
+          <li><strong>D&eacute;claration et reversement</strong> de la TVA collect&eacute;e</li>
+          <li><strong>R&eacute;cup&eacute;ration de la TVA</strong> sur vos achats professionnels</li>
+          <li><strong>Mise &agrave; jour</strong> de vos factures et outils de facturation</li>
+        </ul>
+
+        <h2 id="preparation">Comment se pr&eacute;parer ?</h2>
+
+        <h3 id="etape-1">&Eacute;tape 1 : V&eacute;rifier votre CA pr&eacute;visionnel</h3>
+        <p>Avant toute chose, estimez votre chiffre d'affaires pour l'ann&eacute;e en cours. Si vous &ecirc;tes proche du seuil de 25&nbsp;000&nbsp;&euro;, anticipez d&egrave;s maintenant les d&eacute;marches d'immatriculation &agrave; la TVA.</p>
+
+        <h3 id="etape-2">&Eacute;tape 2 : Mettre &agrave; jour vos factures</h3>
+        <p>Vos factures devront obligatoirement mentionner :</p>
+
+        <pre><code><span class="cm">Mentions obligatoires sur facture avec TVA :</span>
+
+<span class="kw">1.</span> Num&eacute;ro de TVA intracommunautaire
+<span class="kw">2.</span> Taux de TVA appliqu&eacute; (20%, 10%, 5.5%)
+<span class="kw">3.</span> Montant HT et TTC distincts
+<span class="kw">4.</span> Montant de TVA collect&eacute;e
+<span class="kw">5.</span> Base d'imposition par taux</code></pre>
+
+        <h3 id="etape-3">&Eacute;tape 3 : Choisir votre r&eacute;gime de TVA</h3>
+        <p>Vous aurez le choix entre trois r&eacute;gimes :</p>
+        <ol>
+          <li><strong>R&eacute;gime r&eacute;el simplifi&eacute;</strong> : d&eacute;claration annuelle avec acomptes semestriels. Id&eacute;al pour les petites structures.</li>
+          <li><strong>R&eacute;gime r&eacute;el normal</strong> : d&eacute;claration mensuelle ou trimestrielle. Recommand&eacute; si vous avez beaucoup de TVA d&eacute;ductible.</li>
+          <li><strong>Mini-r&eacute;el</strong> : variante permettant de combiner IS au r&eacute;el simplifi&eacute; et TVA au r&eacute;el normal.</li>
+        </ol>
+
+        <h2 id="avantages">Les avantages cach&eacute;s de l'assujettissement</h2>
+        <p>Passer &agrave; la TVA n'est pas forc&eacute;ment une mauvaise nouvelle. Voici pourquoi :</p>
+        <ul>
+          <li><strong>R&eacute;cup&eacute;ration de la TVA</strong> sur vos investissements (mat&eacute;riel, logiciels, sous-traitance)</li>
+          <li><strong>Cr&eacute;dibilit&eacute; renforc&eacute;e</strong> aupr&egrave;s de vos clients B2B qui r&eacute;cup&egrave;rent eux-m&ecirc;mes la TVA</li>
+          <li><strong>Acc&egrave;s au march&eacute; europ&eacute;en</strong> facilit&eacute; avec le num&eacute;ro de TVA intracommunautaire</li>
+        </ul>
+        <p>Pour les entreprises travaillant en B2B, l'impact sur les prix est souvent neutre puisque vos clients d&eacute;duisent la TVA de leur c&ocirc;t&eacute;. En revanche, pour le B2C, il faudra <a href="#">adapter votre strat&eacute;gie tarifaire</a>.</p>
+
+        <h2 id="calendrier">Calendrier d'application</h2>
+        <p>La r&eacute;forme entre en vigueur de mani&egrave;re progressive :</p>
+        <ul>
+          <li><strong>1er janvier 2026</strong> : application du nouveau seuil unique</li>
+          <li><strong>1er mars 2026</strong> : date limite pour les d&eacute;clarations de changement de r&eacute;gime</li>
+          <li><strong>1er juillet 2026</strong> : activation du syst&egrave;me de franchise transfrontali&egrave;re europ&eacute;en</li>
+        </ul>
+
+        <blockquote>Avec Formalist, g&eacute;n&eacute;rez automatiquement vos documents de modification de r&eacute;gime TVA en moins de 30 secondes, valid&eacute;s par un avocat.</blockquote>
+
+        <h2 id="conclusion">En r&eacute;sum&eacute;</h2>
+        <p>La r&eacute;forme TVA 2026 simplifie les r&egrave;gles mais abaisse significativement le seuil de franchise. Si votre chiffre d'affaires d&eacute;passe 25&nbsp;000&nbsp;&euro;, pr&eacute;parez-vous d&egrave;s maintenant en mettant &agrave; jour vos factures, en choisissant votre r&eacute;gime et en informant vos clients.</p>
+        <p>N'attendez pas le dernier moment : les d&eacute;marches administratives prennent du temps, et les sanctions pour non-conformit&eacute; peuvent &ecirc;tre lourdes.</p>
+
+        <!-- ARTICLE FOOTER -->
+        <div class="article-footer">
+          <div class="article-tags">
+            <span class="article-tag">TVA</span>
+            <span class="article-tag">Fiscalit&eacute;</span>
+            <span class="article-tag">Micro-entreprise</span>
+            <span class="article-tag">R&eacute;forme 2026</span>
+            <span class="article-tag">Franchise en base</span>
+          </div>
+          <div class="article-share">
+            <span>Partager :</span>
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- SIDEBAR -->
+    <aside class="article-sidebar">
+      <div class="sidebar-cta">
+        <div class="sidebar-cta-logo">f</div>
+        <h3>Automatisez vos formalit&eacute;s juridiques d&egrave;s aujourd'hui</h3>
+        <p>Cr&eacute;ation d'entreprise, modifications, contrats : g&eacute;n&eacute;rez vos documents en quelques secondes, valid&eacute;s par des avocats.</p>
+        <a href="/connexion.html" class="btn-cta btn-cta-primary">Commencer maintenant <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></a>
+        <a href="/contact.html" class="btn-cta btn-cta-outline">Parlez &agrave; un expert <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </div>
+      <div class="sidebar-toc">
+        <h4>Sommaire</h4>
+        <a href="#contexte" class="active">Contexte : pourquoi cette r&eacute;forme ?</a>
+        <a href="#changements">Ce qui change concr&egrave;tement</a>
+        <a href="#seuil-unique">Un seuil unique de 25 000 &euro;</a>
+        <a href="#impact-micro">Impact sur les micro-entrepreneurs</a>
+        <a href="#preparation">Comment se pr&eacute;parer ?</a>
+        <a href="#avantages">Les avantages cach&eacute;s</a>
+        <a href="#calendrier">Calendrier d'application</a>
+        <a href="#conclusion">En r&eacute;sum&eacute;</a>
+      </div>
+    </aside>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- RELATED ARTICLES -->
+  <div class="related" style="padding-top:48px">
+    <h2>Articles similaires</h2>
+    <div class="related-grid">
+      <a href="#" class="related-card">
+        <div class="related-card-img theme-blue">
+          <div class="illus">
+            <div class="illus-circle" style="width:100px;height:100px;top:10px;left:20px"></div>
+            <div class="illus-icon" style="top:20px;left:40px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg></div>
+            <div class="illus-icon-sm" style="top:5px;right:25px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            <div class="illus-dot" style="width:14px;height:14px;bottom:20px;left:25px"></div>
+          </div>
+        </div>
+        <div class="related-card-body">
+          <div class="related-card-tag tag-compta">Comptabilit&eacute;</div>
+          <div class="related-card-title">Comment choisir son logiciel de comptabilit&eacute; en 2026</div>
+          <div class="related-card-meta">25 f&eacute;vrier 2026 &middot; 9 min</div>
+        </div>
+      </a>
+      <a href="#" class="related-card">
+        <div class="related-card-img theme-pink">
+          <div class="illus">
+            <div class="illus-circle" style="width:90px;height:90px;top:15px;right:20px"></div>
+            <div class="illus-icon" style="top:15px;right:30px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <div class="illus-icon-sm" style="bottom:20px;left:40px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div>
+            <div class="illus-dot" style="width:12px;height:12px;top:15px;left:30px"></div>
+          </div>
+        </div>
+        <div class="related-card-body">
+          <div class="related-card-tag tag-juridique">Juridique</div>
+          <div class="related-card-title">Sanctions pour non-conformit&eacute; de facturation en 2026</div>
+          <div class="related-card-meta">20 f&eacute;vrier 2026 &middot; 7 min</div>
+        </div>
+      </a>
+      <a href="#" class="related-card">
+        <div class="related-card-img theme-green">
+          <div class="illus">
+            <div class="illus-circle" style="width:110px;height:110px;top:10px;left:25px"></div>
+            <div class="illus-icon" style="top:20px;left:45px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>
+            <div class="illus-icon-sm" style="top:10px;right:25px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+            <div class="illus-dot" style="width:14px;height:14px;bottom:20px;right:30px"></div>
+          </div>
+        </div>
+        <div class="related-card-body">
+          <div class="related-card-tag tag-guide">Guide</div>
+          <div class="related-card-title">Imp&ocirc;t sur les soci&eacute;t&eacute;s 2026 : taux et optimisation</div>
+          <div class="related-card-meta">25 janvier 2026 &middot; 7 min</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-plus-wrap"><div class="divider-plus-inner"></div></div></div>
+
+  <!-- FOOTER -->
+  <footer class="foot">
+    <div class="foot-inner">
+      <div class="foot-top">
+        <div>
+          <div class="foot-brand">formalist</div>
+          <p class="foot-brand-p">La plateforme qui automatise vos formalit&eacute;s juridiques avec la rigueur d'un cabinet d'avocats.</p>
+          <p class="foot-mission">Notre mission : rendre le droit accessible, rapide et sans erreur pour chaque entrepreneur en France.</p>
+          <div class="foot-socials" style="margin-top:4px">
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+          </div>
+        </div>
+        <div class="foot-col">
+          <h4>Services</h4>
+          <a href="#">Cr&eacute;ation d'entreprise</a>
+          <a href="#">Modification de soci&eacute;t&eacute;</a>
+          <a href="#">Fermeture de soci&eacute;t&eacute;</a>
+          <a href="#">Contrats</a>
+          <a href="#">D&eacute;claration SACEM</a>
+          <a href="#">Signature &eacute;lectronique</a>
+          <a href="#">Consultation avocat</a>
+        </div>
+        <div class="foot-col">
+          <h4>Ressources</h4>
+          <a href="#">Guide juridique</a>
+          <a href="/blog.html">Blog</a>
+          <a href="/aide.html">FAQ</a>
+          <a href="#">Partenaires</a>
+          <a href="#">Documentation</a>
+          <a href="#">Tarifs</a>
+        </div>
+        <div class="foot-col">
+          <h4>Entreprise</h4>
+          <a href="#">&Agrave; propos</a>
+          <a href="#">Emplois</a>
+          <a href="#">Contact</a>
+          <a href="#">Presse</a>
+        </div>
+        <div class="foot-col">
+          <h4>L&eacute;gal</h4>
+          <a href="#">Mentions l&eacute;gales</a>
+          <a href="#">Confidentialit&eacute;</a>
+          <a href="#">CGU</a>
+          <a href="#">CGV</a>
+          <a href="#">S&eacute;curit&eacute;</a>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <div class="foot-copy">&copy; 2026 Formalist. Tous droits r&eacute;serv&eacute;s.</div>
+        <div class="foot-socials">
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Nav scroll
+    window.addEventListener('scroll',function(){document.getElementById('navbar').classList.toggle('scrolled',scrollY>20)});
+    // Mega menu hover
+    (function(){
+      var dd=document.querySelector('.nav-dropdown');
+      var mega=document.querySelector('.nav-mega');
+      if(!dd||!mega)return;
+      var timer=null;
+      function show(){clearTimeout(timer);dd.classList.add('open')}
+      function hide(){timer=setTimeout(function(){dd.classList.remove('open')},200)}
+      dd.addEventListener('mouseenter',show);
+      dd.addEventListener('mouseleave',hide);
+      mega.addEventListener('mouseenter',show);
+      mega.addEventListener('mouseleave',hide);
+    })();
+    // TOC active on scroll
+    (function(){
+      var links=document.querySelectorAll('.sidebar-toc a');
+      var sections=[];
+      links.forEach(function(l){
+        var id=l.getAttribute('href').replace('#','');
+        var el=document.getElementById(id);
+        if(el) sections.push({el:el,link:l});
+      });
+      function update(){
+        var scrollY=window.scrollY+160;
+        var active=sections[0];
+        sections.forEach(function(s){
+          if(s.el.offsetTop<=scrollY) active=s;
+        });
+        links.forEach(function(l){l.classList.remove('active')});
+        if(active) active.link.classList.add('active');
+      }
+      window.addEventListener('scroll',update);
+      update();
+    })();
+    // Smooth scroll for TOC
+    document.querySelectorAll('.sidebar-toc a').forEach(function(l){
+      l.addEventListener('click',function(e){
+        e.preventDefault();
+        var t=document.querySelector(this.getAttribute('href'));
+        if(t) window.scrollTo({top:t.offsetTop-120,behavior:'smooth'});
+      });
+    });
+  </script>
+</body>
+</html>
