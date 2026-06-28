@@ -90,14 +90,19 @@ window.switchTab = switchTab;
 function updateTabName(input) {
   var panel = input.closest('.associe-panel');
   var num = parseInt(panel.dataset.panel);
-  var prenomInput = panel.querySelector('input[data-field="prenom"]');
-  var nomInput = panel.querySelector('input[data-field="nom"]');
-  var prenom = prenomInput ? prenomInput.value : '';
-  var nom = nomInput ? nomInput.value : '';
+  var label = '';
+  if (panel.dataset.type === 'morale') {
+    var denomInput = panel.querySelector('input[data-field="denomination"]');
+    label = denomInput ? denomInput.value.trim() : '';
+  } else {
+    var prenomInput = panel.querySelector('.associe-type-block[data-type="physique"] input[data-field="prenom"]') || panel.querySelector('input[data-field="prenom"]');
+    var nomInput = panel.querySelector('.associe-type-block[data-type="physique"] input[data-field="nom"]') || panel.querySelector('input[data-field="nom"]');
+    label = ((prenomInput ? prenomInput.value : '') + ' ' + (nomInput ? nomInput.value : '')).trim();
+  }
   var tab = document.querySelector('#associe-tabs .associe-tab[data-tab="' + num + '"] span:first-child');
   var tabEl = document.querySelector('#associe-tabs .associe-tab[data-tab="' + num + '"]');
-  if (prenom || nom) {
-    tab.textContent = (prenom + ' ' + nom).trim();
+  if (label) {
+    tab.textContent = label;
     tabEl.classList.add('filled');
   } else {
     tab.textContent = getAssocieWord() + ' ' + num;
@@ -109,14 +114,17 @@ function updateTabName(input) {
 window.updateTabName = updateTabName;
 
 function panelHTML(num) {
-  return '<div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">'
+  return '<div class="form-grid" style="margin-bottom:16px;">'
+    + '<div class="field"><label>Type d\'actionnaire</label><select class="associe-type-select" onchange="switchAssocieType(this)"><option>Personne physique</option><option>Personne morale</option></select></div>'
+    + '<div class="field"></div></div>'
+    // ---- PHYSIQUE ----
+    + '<div class="associe-type-block" data-type="physique">'
+    + '<div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">'
     + '<div class="field"><label>Civilit\u00e9</label><select style="width:120px;"><option value="" disabled selected>Choisir...</option><option>Monsieur</option><option>Madame</option></select></div>'
     + '<div class="field"><label>Pr\u00e9nom <span class="required">*</span></label><input type="text" placeholder="Pr\u00e9nom" data-field="prenom" oninput="updateTabName(this)"></div>'
     + '<div class="field"><label>Nom <span class="required">*</span></label><input type="text" placeholder="Nom" data-field="nom" oninput="updateTabName(this)"></div></div>'
     + '<div class="form-grid" style="margin-top:16px;">'
-    + '<div class="field"><label>Type d\'associ\u00e9</label><select><option value="" disabled selected>Choisir...</option><option>Personne physique</option><option>Personne morale</option></select></div>'
-    + '<div class="field"><label>Email <span class="required">*</span></label><input type="email" placeholder="email@exemple.com" data-field="email"></div></div>'
-    + '<div class="form-grid" style="margin-top:16px;">'
+    + '<div class="field"><label>Email <span class="required">*</span></label><input type="email" placeholder="email@exemple.com" data-field="email"></div>'
     + '<div class="field full"><label>Adresse</label><input type="text" placeholder="Adresse de l\'associ\u00e9" class="addr-auto"></div></div>'
     + '<div class="form-grid" style="margin-top:16px;">'
     + '<div class="field"><label>Date de naissance <span class="required">*</span></label><input type="date"></div>'
@@ -129,9 +137,48 @@ function panelHTML(num) {
     + '<div class="field"><label>Nom et pr\u00e9nom de la m\u00e8re</label><input type="text" placeholder="Nom et pr\u00e9nom de la m\u00e8re"></div></div>'
     + '<div class="form-grid" style="margin-top:16px;">'
     + '<div class="field"><label>Nationalit\u00e9</label><input type="text" value="Fran\u00e7aise"></div>'
-    + '<div class="field"><label>Situation matrimoniale</label><select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C\u00e9libataire</option><option>Mari\u00e9(e)</option><option>Pacs\u00e9(e)</option><option>Divorc\u00e9(e)</option><option>Veuf(ve)</option></select></div></div>';
+    + '<div class="field"><label>Situation matrimoniale</label><select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C\u00e9libataire</option><option>Mari\u00e9(e)</option><option>Pacs\u00e9(e)</option><option>Divorc\u00e9(e)</option><option>Veuf(ve)</option></select></div></div>'
+    + '</div>'
+    // ---- MORALE ----
+    + '<div class="associe-type-block" data-type="morale" style="display:none;">'
+    + '<div class="form-subsection">Soci\u00e9t\u00e9 actionnaire</div>'
+    + '<div class="form-grid">'
+    + '<div class="field"><label>D\u00e9nomination <span class="required">*</span></label><input type="text" placeholder="Rechercher une soci\u00e9t\u00e9..." class="denom-auto" data-field="denomination" oninput="updateTabName(this)"></div>'
+    + '<div class="field"><label>Forme juridique</label><input type="text" placeholder="SAS, SARL, SCI..." data-field="formeM"></div></div>'
+    + '<div class="form-grid" style="margin-top:16px;">'
+    + '<div class="field"><label>Capital social</label><input type="text" placeholder="Capital social" data-field="capitalM"></div>'
+    + '<div class="field"><label>Num\u00e9ro RCS</label><input type="text" placeholder="Num\u00e9ro RCS" data-field="rcs"></div></div>'
+    + '<div class="form-grid" style="margin-top:16px;">'
+    + '<div class="field"><label>Ville d\'immatriculation</label><input type="text" placeholder="Ville du RCS" data-field="villeRcs"></div>'
+    + '<div class="field"><label>Num\u00e9ro SIRET</label><input type="text" placeholder="SIRET" data-field="siret"></div></div>'
+    + '<div class="form-grid" style="margin-top:16px;">'
+    + '<div class="field"><label>Si\u00e8ge social</label><input type="text" placeholder="Adresse du si\u00e8ge" class="addr-auto" data-field="siege"></div>'
+    + '<div class="field"><label>Email <span class="required">*</span></label><input type="email" placeholder="email@exemple.com" data-field="emailM"></div></div>'
+    + '<div class="form-subsection" style="margin-top:24px;">Repr\u00e9sentant l\u00e9gal</div>'
+    + '<div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">'
+    + '<div class="field"><label>Civilit\u00e9</label><select style="width:120px;" data-field="repCivilite"><option value="" disabled selected>Choisir...</option><option>Monsieur</option><option>Madame</option></select></div>'
+    + '<div class="field"><label>Pr\u00e9nom <span class="required">*</span></label><input type="text" placeholder="Pr\u00e9nom" data-field="repPrenom"></div>'
+    + '<div class="field"><label>Nom <span class="required">*</span></label><input type="text" placeholder="Nom" data-field="repNom"></div></div>'
+    + '<div class="form-grid" style="margin-top:16px;">'
+    + '<div class="field full"><label>Adresse</label><input type="text" placeholder="Adresse du repr\u00e9sentant" class="addr-auto" data-field="repAdresse"></div></div>'
+    + '</div>';
 }
 window.panelHTML = panelHTML;
+
+// Bascule physique/morale pour un panneau actionnaire (menu d\u00e9roulant).
+function switchAssocieType(sel) {
+  var panel = sel.closest('.associe-panel');
+  if (!panel) return;
+  var isMorale = sel.value === 'Personne morale';
+  panel.dataset.type = isMorale ? 'morale' : 'physique';
+  panel.querySelectorAll('.associe-type-block').forEach(function(b) {
+    b.style.display = (b.dataset.type === (isMorale ? 'morale' : 'physique')) ? '' : 'none';
+  });
+  if (typeof refreshAllCustomTriggers === 'function') refreshAllCustomTriggers();
+  var ref = panel.querySelector('.associe-type-block[data-type="' + (isMorale ? 'morale' : 'physique') + '"] [data-field]');
+  if (ref) updateTabName(ref);
+}
+window.switchAssocieType = switchAssocieType;
 
 function addAssocie() {
   if (isFormeUnipersonnelle()) return;
@@ -154,12 +201,13 @@ function addAssocie() {
   var panel = document.createElement('div');
   panel.className = 'associe-panel';
   panel.dataset.panel = associeCount;
+  panel.dataset.type = 'physique';
   panel.innerHTML = panelHTML(associeCount);
   document.getElementById('associe-panels').appendChild(panel);
 
-  // Init Google autocomplete on new inputs
-  var addrInput = panel.querySelector('.addr-auto');
-  if (addrInput) initAddressAutocomplete(addrInput);
+  // Init autocomplétions sur les nouveaux champs (adresses + société + ville)
+  panel.querySelectorAll('.addr-auto').forEach(function(a) { initAddressAutocomplete(a); });
+  panel.querySelectorAll('.denom-auto').forEach(function(d) { initCompanyAutocomplete(d); });
   var cityInput = panel.querySelector('.city-birth-auto');
   if (cityInput) initCityBirthAutocomplete(cityInput);
   // Init custom selects and datepickers on new panel
@@ -222,10 +270,42 @@ window.renumberTabs = renumberTabs;
 // Helper: extract info from an associe panel
 function extractAssocieData(panel) {
   if (!panel) return null;
-  var selects = panel.querySelectorAll('select');
+
+  // --- Personne morale : soci\u00e9t\u00e9 actionnaire + repr\u00e9sentant l\u00e9gal ---
+  if (panel.dataset.type === 'morale') {
+    var m = panel.querySelector('.associe-type-block[data-type="morale"]') || panel;
+    var gv = function(f) { var el = m.querySelector('[data-field="' + f + '"]'); return el ? el.value : ''; };
+    var rc = gv('repCivilite'), rp = gv('repPrenom'), rn = gv('repNom');
+    return {
+      estMorale: true,
+      denomination: gv('denomination'),
+      formeMorale: gv('formeM'),
+      capital: gv('capitalM'),
+      rcs: gv('rcs'),
+      villeRcs: gv('villeRcs'),
+      siret: gv('siret'),
+      // SIREN dérivé du SIRET (9 premiers chiffres) pour la génération de docs
+      siren: (gv('siret') || '').replace(/\D/g, '').slice(0, 9),
+      siege: gv('siege'),
+      email: gv('emailM'),
+      repCivilite: rc, repPrenom: rp, repNom: rn, repAdresse: gv('repAdresse'),
+      // Champs de compatibilit\u00e9 (la g\u00e9n\u00e9ration de docs lit ces cl\u00e9s)
+      civilite: rc, prenom: rp, nom: rn, adresse: gv('siege'),
+      dateNaissance: '', lieuNaissance: '', lieuNaissanceVille: '',
+      cpNaissance: '', paysNaissance: 'France', nationalite: 'Fran\u00e7aise',
+      situationMatrimoniale: 'C\u00e9libataire', pere: '', mere: '',
+      civNomPrenom: gv('denomination').trim(),
+      conjointCivilite: '', conjointNom: '', conjointPrenom: '', conjointNomNaissance: '',
+      dateMariage: '', villeMariage: '', contratMariage: ''
+    };
+  }
+
+  // --- Personne physique (cadr\u00e9 sur son bloc) ---
+  var phys = panel.querySelector('.associe-type-block[data-type="physique"]') || panel;
+  var selects = phys.querySelectorAll('select');
   var civ = selects[0] ? selects[0].value : '';
-  var prenomI = panel.querySelector('input[data-field="prenom"]');
-  var nomI = panel.querySelector('input[data-field="nom"]');
+  var prenomI = phys.querySelector('input[data-field="prenom"]');
+  var nomI = phys.querySelector('input[data-field="nom"]');
   var prenom = prenomI ? prenomI.value : '';
   var nom = nomI ? nomI.value : '';
   var adresse = '';
@@ -234,24 +314,24 @@ function extractAssocieData(panel) {
   var cpNaissance = '';
   var paysNaissance = '';
   var nationalite = '';
-  var sitMatSelect = panel.querySelector('select.sit-mat-select');
+  var sitMatSelect = phys.querySelector('select.sit-mat-select');
   var situationMatrimoniale = sitMatSelect ? sitMatSelect.value : '';
   var pere = '', mere = '';
 
-  var adresseInput = panel.querySelector('input[placeholder*="Adresse"]');
+  var adresseInput = phys.querySelector('input[placeholder*="Adresse"]');
   if (adresseInput) adresse = adresseInput.value;
-  var dateInput = panel.querySelector('input[type="date"]');
+  var dateInput = phys.querySelector('input[type="date"]');
   if (dateInput) dateNaissance = dateInput.value;
-  var villeNaissInput = panel.querySelector('input[placeholder="Ville de naissance"]');
+  var villeNaissInput = phys.querySelector('input[placeholder="Ville de naissance"]');
   if (villeNaissInput) lieuNaissance = villeNaissInput.value;
-  var cpNaissInput = panel.querySelector('input[placeholder="Code postal"]');
+  var cpNaissInput = phys.querySelector('input[placeholder="Code postal"]');
   if (cpNaissInput) cpNaissance = cpNaissInput.value;
-  var paysInput = panel.querySelector('input[value="France"]');
+  var paysInput = phys.querySelector('input[value="France"]');
   if (paysInput) paysNaissance = paysInput.value;
-  var natInput = panel.querySelector('input[value="Fran\u00e7aise"]');
+  var natInput = phys.querySelector('input[value="Fran\u00e7aise"]');
   if (natInput) nationalite = natInput.value;
-  var pereInput = panel.querySelector('input[placeholder*="p\u00e8re"]');
-  var mereInput = panel.querySelector('input[placeholder*="m\u00e8re"]');
+  var pereInput = phys.querySelector('input[placeholder*="p\u00e8re"]');
+  var mereInput = phys.querySelector('input[placeholder*="m\u00e8re"]');
   if (pereInput) pere = pereInput.value;
   if (mereInput) mere = mereInput.value;
 

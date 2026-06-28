@@ -590,6 +590,16 @@
     }
     .capital-error.visible { display: block; }
 
+    /* Schéma de structuration des participations */
+    .participation-section { margin: 28px 0 4px; }
+    .participation-title { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 12px; }
+    .participation-diagram {
+      width: 100%; overflow-x: auto;
+      background: #fafafa; border: 1px solid #eee; border-radius: 14px; padding: 18px;
+    }
+    .participation-diagram svg { display: block; width: 100%; height: auto; }
+    .participation-diagram .pd-empty { color: #aaa; font-size: 13px; text-align: center; padding: 12px 0; }
+
     /* DONUT CHART */
     .capital-chart-section {
       display: flex; gap: 32px; align-items: flex-start;

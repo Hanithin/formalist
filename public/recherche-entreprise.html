@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recherche entreprise - Formalist</title>
+
+  <style>
+    @font-face { font-family: 'Cal Sans'; src: url('/fonts/CalSans-SemiBold.otf') format('opentype'); font-weight: 600; font-display: block; }
+    @font-face { font-family: 'Matter'; src: url('/fonts/Matter-Regular.ttf') format('truetype'); font-weight: 400; font-display: block; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: 'Matter', 'Inter', -apple-system, sans-serif; color: #111; background: #f5f5f5; display: flex; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ===== SIDEBAR (layout) ===== */
+    .sidebar {
+      width: 270px; background: #fff; border-right: 1px solid #e5e5e5;
+      display: flex; flex-direction: column; padding: 28px 0 0;
+      flex-shrink: 0; height: 100vh; overflow-y: auto;
+      position: fixed; top: 0; left: 0; z-index: 100;
+    }
+    .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
+    .sidebar-logo a { display: flex; align-items: flex-end; gap: 6px; color: #111; text-decoration: none; }
+    .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; color: #111; line-height: 1; }
+    .sidebar-nav { flex: 1; padding: 0 12px; }
+    .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; font-size: 14.5px; font-weight: 450; color: #555;
+      transition: all 0.15s ease; border-radius: 10px; cursor: pointer; margin-bottom: 2px;
+    }
+    .sidebar-nav a:hover, .sidebar-nav .sidebar-dropdown:hover { color: #111; background: #f6f6f6; }
+    .sidebar-nav a.active { color: #111; font-weight: 550; background: #f3f3f3; }
+    .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
+    .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
+    .sidebar-nav a.active svg { opacity: 1; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
+    .sidebar-bottom {
+      padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: #111;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
+    .user-email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .btn-logout, .btn-settings {
+      width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+      color: #999; cursor: pointer; transition: all 0.15s;
+      background: none; border: none; font-family: inherit; border-radius: 8px; flex-shrink: 0;
+    }
+    .btn-logout:hover, .btn-settings:hover { color: #111; background: #f3f3f4; }
+    .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
+
+    /* Logo dot + badge */
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo a { display: inline-flex !important; align-items: baseline !important; gap: 3px !important; }
+    .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif !important; font-size: 30px !important; font-weight: 700 !important; letter-spacing: 0 !important; line-height: 1 !important; color: #111 !important; }
+    .sidebar-logo .logo-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981; margin-bottom: 4px; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18); }
+    .logo-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; }
+    .logo-badge.avocat { background: #f3e8ff; color: #7c3aed; }
+
+    /* Société active */
+    .sidebar-context { margin: 0 12px 12px; padding: 10px 12px; background: #fafafa; border: 1px solid #eee; border-radius: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .sidebar-context:hover { background: #f3f3f4; border-color: #e2e2e4; }
+    .sidebar-context .ctx-icon { width: 32px; height: 32px; border-radius: 8px; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
+    .sidebar-context .ctx-body { flex: 1; min-width: 0; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-context.single { cursor: default; }
+    .sidebar-context.single:hover { background: #fafafa; border-color: #eee; }
+    .sidebar-context.single .ctx-chevron { display: none; }
+
+    /* CTA primaire */
+    .sidebar-cta { margin: 4px 12px 20px; padding: 13px 18px; background: #111; color: #fff; border: none; border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.15s, transform 0.05s, box-shadow 0.15s; font-family: inherit; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+    .sidebar-cta:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active { transform: scale(0.99); }
+    .sidebar-cta svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+
+    /* Badges nav */
+    .nav-badge { margin-left: auto; background: #f3f4f6; color: #555; font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 10px; text-align: center; line-height: 1.5; }
+    .sidebar-nav a.active .nav-badge { background: #d4d4d8; color: #1f1f1f; }
+
+    /* ===== MAIN ===== */
+    .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; margin-left: 270px; min-height: 100vh; }
+    .topbar { padding: 28px 48px 4px; display: flex; align-items: baseline; justify-content: space-between; }
+    .topbar h1 { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; line-height: 1; }
+    .content { padding: 0 48px 48px; flex: 1; }
+
+    /* ===== PAGE : recherche ===== */
+    .wrap { max-width: 900px; }
+    .sub { font-size: 15px; color: #777; margin: 10px 0 28px; }
+    .search { display: flex; gap: 10px; margin-bottom: 8px; }
+    .search input { flex: 1; padding: 14px 18px; border: 1.5px solid #e2e2e4; border-radius: 12px; font-family: inherit; font-size: 15px; outline: none; background: #fff; }
+    .search input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+    .search button { padding: 0 24px; border: none; border-radius: 12px; background: #111; color: #fff; font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+    .search button:hover { background: #000; }
+    .hint { font-size: 12.5px; color: #999; margin-bottom: 24px; }
+    .results { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+    .company { background: #fff; border: 1px solid #ececec; border-radius: 14px; padding: 16px 18px; cursor: pointer; transition: border-color .15s, box-shadow .15s; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .company:hover { border-color: #111; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+    .company.active { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.15); }
+    .company .nom { font-weight: 600; font-size: 15px; }
+    .company .meta { font-size: 13px; color: #888; margin-top: 2px; }
+    .company .siren { font-size: 12px; color: #aaa; font-variant-numeric: tabular-nums; }
+    .panel { background: #fff; border: 1px solid #ececec; border-radius: 16px; padding: 24px; }
+    .panel h2 { font-family: 'Cal Sans', sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .panel .siren-line { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .group-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: #999; margin: 18px 0 10px; }
+    .doc { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border: 1px solid #f0f0f0; border-radius: 10px; margin-bottom: 8px; }
+    .doc-info { min-width: 0; }
+    .doc-label { font-size: 14px; font-weight: 500; }
+    .doc-meta { font-size: 12px; color: #999; margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .badge { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+    .badge.pub { background: #ecfdf5; color: #047857; }
+    .badge.conf { background: #fff7ed; color: #c2410c; }
+    .doc-actions { flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; }
+    .dl { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: 1.5px solid #e2e2e4; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; background: #fff; color: inherit; }
+    .dl:hover { border-color: #111; background: #fafafa; }
+    .dl svg { width: 15px; height: 15px; }
+    .dl.preview { color: #555; }
+    .dl.preview:hover { color: #111; }
+    .state { padding: 24px; text-align: center; color: #999; font-size: 14px; }
+    .empty { color: #aaa; font-size: 13px; padding: 8px 0; }
+
+    /* ===== Modal nouvelle formalité ===== */
+    .nd-modal-backdrop { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px); align-items: center; justify-content: center; padding: 24px; }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal { background: #fff; border-radius: 16px; max-width: 720px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.18); overflow: hidden; animation: ndSlideUp 0.18s ease; }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    @media (max-width: 600px) { .nd-grid { grid-template-columns: 1fr; } }
+  </style>
+
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html">
+        <span class="logo-text">formalist</span>
+        <span class="logo-dot" aria-hidden="true"></span>
+      </a>
+      <span class="logo-badge avocat">Avocat</span>
+    </div>
+
+    <div class="sidebar-context" id="sidebar-context" style="display:none;">
+      <div class="ctx-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h0M15 9h0M9 13h0M15 13h0M9 17h0M15 17h0"/></svg>
+      </div>
+      <div class="ctx-body">
+        <div class="ctx-label">Soci&eacute;t&eacute; active</div>
+        <div class="ctx-name" id="ctx-name"></div>
+      </div>
+      <svg class="ctx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <button class="sidebar-cta" onclick="openNewActionModal()">
+      Cr&eacute;er une formalit&eacute;
+    </button>
+
+    <nav class="sidebar-nav">
+      <a href="/avocat.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a class="active" href="/recherche-entreprise.html" data-page="recherche-entreprise">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Recherche entreprise
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-section">Avocat</div>
+      <a href="/avocat.html#consultations" data-page="av-consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Consultations
+        <span class="nav-badge" id="badge-consultations" style="display:none;">0</span>
+      </a>
+      <a href="/avocat.html#disponibilites" data-page="av-disponibilites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Mes disponibilités
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Jean Dupont</div>
+        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){sessionStorage.removeItem('user');window.location.href='/connexion.html';})" title="D&eacute;connexion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Recherche entreprise</h1>
+    </div>
+    <div class="content">
+      <div class="wrap">
+        <p class="sub">Statuts, actes et bilans d'une soci&eacute;t&eacute; fran&ccedil;aise, via le Registre national des entreprises (INPI).</p>
+
+        <form class="search" id="search-form" autocomplete="off">
+          <input type="text" id="q" placeholder="Nom de soci&eacute;t&eacute; ou SIREN&hellip;" aria-label="Recherche">
+          <button type="submit">Rechercher</button>
+        </form>
+        <p class="hint">Ex&nbsp;: &laquo;&nbsp;Nike France&nbsp;&raquo;, &laquo;&nbsp;Decathlon&nbsp;&raquo;&hellip;</p>
+
+        <div class="results" id="results"></div>
+        <div id="docs"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===== Modal nouvelle formalité ===== */
+    function openNewActionModal() {
+      var m = document.getElementById('ndModal');
+      if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+    }
+    function closeNewActionModal(e) {
+      if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+      var m = document.getElementById('ndModal');
+      if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+    }
+    window.openNewActionModal = openNewActionModal;
+    window.closeNewActionModal = closeNewActionModal;
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNewActionModal(); });
+
+    /* ===== Auth + sidebar utilisateur ===== */
+    fetch('/api/auth/me').then(function(r) {
+      if (r.status !== 200) { window.location.href = '/connexion.html'; return null; }
+      return r.json();
+    }).then(function(data) {
+      if (!data || !data.user) { window.location.href = '/connexion.html'; return; }
+      var _roles = (data.user.roles && data.user.roles.length) ? data.user.roles : [data.user.role];
+      if (_roles.indexOf('avocat') === -1) { window.location.href = '/connexion.html'; return; }
+      var initials = (data.user.name || '').split(' ').map(function(n){return n[0]||'';}).join('').substring(0,2).toUpperCase();
+      var n2 = document.getElementById('sidebar-name');   if (n2) n2.textContent = data.user.name;
+      var e2 = document.getElementById('sidebar-email');  if (e2) e2.textContent = data.user.email;
+      var a2 = document.getElementById('sidebar-avatar'); if (a2) a2.textContent = initials;
+
+      // Lien Administration si rôle admin
+      if (_roles.indexOf('admin') !== -1) {
+        var nav = document.querySelector('.sidebar-nav');
+        if (nav) {
+          var divider = nav.querySelector('.sidebar-divider');
+          var aA = document.createElement('a');
+          aA.href = '/admin.html';
+          aA.style.cssText = 'display:flex;align-items:center;gap:12px;margin:6px 0;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#b45309;font-weight:600;font-size:14.5px;text-decoration:none;';
+          aA.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Administration';
+          if (divider) nav.insertBefore(aA, divider); else nav.appendChild(aA);
+        }
+      }
+    }).catch(function(){});
+
+    /* ===== Société active (sidebar context) ===== */
+    fetch('/api/formalites').then(function(r){ return r.json(); }).then(function(data){
+      var list = (data && data.formalites) || data || [];
+      if (!Array.isArray(list)) return;
+      var societes = list.filter(function(f){ return f && f.denomination && (f.type === 'creation' || f.type === 'modification' || !f.type); });
+      var ctx = document.getElementById('sidebar-context');
+      var nameEl = document.getElementById('ctx-name');
+      if (!ctx) return;
+      if (societes.length === 0) { ctx.style.display = 'none'; return; }
+      ctx.style.display = '';
+      if (nameEl) nameEl.textContent = societes[0].denomination;
+      if (societes.length === 1) ctx.classList.add('single'); else ctx.classList.remove('single');
+    }).catch(function(){});
+
+    /* ===== Recherche entreprise ===== */
+    var resultsEl = document.getElementById('results');
+    var docsEl = document.getElementById('docs');
+
+    document.getElementById('search-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var q = document.getElementById('q').value.trim();
+      if (q.length < 2) return;
+      docsEl.innerHTML = '';
+      resultsEl.innerHTML = '<div class="state">Recherche&hellip;</div>';
+      fetch('https://recherche-entreprises.api.gouv.fr/search?q=' + encodeURIComponent(q) + '&per_page=8&page=1')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var list = (data && data.results) || [];
+          if (!list.length) { resultsEl.innerHTML = '<div class="state">Aucune soci&eacute;t&eacute; trouv&eacute;e.</div>'; return; }
+          resultsEl.innerHTML = '';
+          list.forEach(function(c) {
+            var div = document.createElement('div');
+            div.className = 'company';
+            var ville = (c.siege && c.siege.libelle_commune) ? c.siege.libelle_commune : '';
+            div.innerHTML = '<div><div class="nom"></div><div class="meta"></div></div><div class="siren"></div>';
+            div.querySelector('.nom').textContent = c.nom_complet || c.nom_raison_sociale || 'Sans nom';
+            div.querySelector('.meta').textContent = ville;
+            div.querySelector('.siren').textContent = 'SIREN ' + (c.siren || '');
+            div.addEventListener('click', function() {
+              document.querySelectorAll('.company').forEach(function(x) { x.classList.remove('active'); });
+              div.classList.add('active');
+              loadDocs(c.siren, c.nom_complet || c.nom_raison_sociale || '');
+            });
+            resultsEl.appendChild(div);
+          });
+        })
+        .catch(function() { resultsEl.innerHTML = '<div class="state">Recherche indisponible.</div>'; });
+    });
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+    function loadDocs(siren, nom) {
+      docsEl.innerHTML = '<div class="panel"><div class="state">Chargement des documents&hellip;</div></div>';
+      fetch('/api/company/' + siren + '/documents')
+        .then(function(r) { if (r.status === 403) throw new Error('forbidden'); return r.json(); })
+        .then(function(d) {
+          var actes = (d && d.actes) || [];
+          var bilans = (d && d.bilans) || [];
+          var html = '<div class="panel"><h2>' + esc(nom) + '</h2><div class="siren-line">SIREN ' + esc(siren) + '</div>';
+          html += '<div class="group-title">Actes &amp; statuts (' + actes.length + ')</div>';
+          html += actes.length ? actes.map(function(x) { return docRow(siren, x); }).join('') : '<div class="empty">Aucun acte disponible.</div>';
+          html += '<div class="group-title">Bilans / comptes annuels (' + bilans.length + ')</div>';
+          html += bilans.length ? bilans.map(function(x) { return docRow(siren, x); }).join('') : '<div class="empty">Aucun bilan disponible.</div>';
+          html += '</div>';
+          docsEl.innerHTML = html;
+        })
+        .catch(function(e) {
+          docsEl.innerHTML = '<div class="panel"><div class="state">' + (e.message === 'forbidden' ? 'Acc&egrave;s r&eacute;serv&eacute; (avocat/admin).' : 'Documents indisponibles (v&eacute;rifiez les identifiants INPI).') + '</div></div>';
+        });
+    }
+
+    function docRow(siren, x) {
+      var conf = /public/i.test(x.confidentiality);
+      var badge = '<span class="badge ' + (conf ? 'pub' : 'conf') + '">' + esc(x.confidentiality || '-') + '</span>';
+      var date = x.date ? '<span>' + esc(x.date) + '</span>' : '';
+      var fname = (x.label + (x.date ? ' ' + x.date : '')).replace(/[^\w\-À-ÿ ]+/g, '_');
+      var base = '/api/company/' + siren + '/document?kind=' + encodeURIComponent(x.kind) + '&id=' + encodeURIComponent(x.id) + '&name=' + encodeURIComponent(fname);
+      var dlHref = base;
+      var previewHref = base + '&disposition=inline';
+      return '<div class="doc"><div class="doc-info"><div class="doc-label">' + esc(x.label) + '</div>'
+        + '<div class="doc-meta">' + date + badge + '</div></div>'
+        + '<div class="doc-actions">'
+        + '<a class="dl preview" href="' + previewHref + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Aper&ccedil;u</a>'
+        + '<a class="dl" href="' + dlHref + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</a>'
+        + '</div></div>';
+    }
+  </script>
+</body>
+</html>

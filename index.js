@@ -7,6 +7,20 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
+// Mini-chargeur .env (sans dépendance) : utile en local. En prod (Render),
+// les variables sont fournies par la plateforme, le .env est simplement absent.
+try {
+  const envPath = path.join(__dirname, ".env");
+  if (fs.existsSync(envPath)) {
+    fs.readFileSync(envPath, "utf8").split("\n").forEach((line) => {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m && process.env[m[1]] === undefined) {
+        process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+      }
+    });
+  }
+} catch (e) { /* ignore */ }
+
 const { stmts } = require("./db");
 const { authenticate, requireRole } = require("./auth");
 const { securityHeaders } = require("./middleware/security");
@@ -27,6 +41,7 @@ const aiRoutes = require("./routes/ai");
 const contactRoutes = require("./routes/contact");
 const docgenRoutes = require("./routes/docgen");
 const consultationsRoutes = require("./routes/consultations");
+const companyRoutes = require("./routes/company");
 
 const { MIME_TYPES } = require("./routes/documents");
 const PUBLIC = path.join(__dirname, "public");
@@ -47,6 +62,7 @@ const PROTECTED_PAGES = {
   "/consultations.html": ["user", "avocat", "admin"],
   "/admin.html": ["admin"],
   "/avocat.html": ["avocat", "admin"],
+  "/recherche-entreprise.html": ["avocat", "admin"],
 };
 
 const server = http.createServer(async (req, res) => {
@@ -74,7 +90,8 @@ const server = http.createServer(async (req, res) => {
     await aiRoutes(pathname, req, res, url) ||
     await contactRoutes(pathname, req, res, url) ||
     await docgenRoutes(pathname, req, res, url) ||
-    await consultationsRoutes(pathname, req, res, url);
+    await consultationsRoutes(pathname, req, res, url) ||
+    await companyRoutes(pathname, req, res, url);
 
   if (handled !== false || res.writableEnded) return;
 

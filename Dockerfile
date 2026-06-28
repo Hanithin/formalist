@@ -1,6 +1,9 @@
 FROM node:22-alpine
 
-RUN apk add --no-cache libreoffice font-noto ttf-dejavu
+# libreoffice : conversion DOCX->PDF ; poppler-utils (pdftotext/pdftoppm) +
+# tesseract-ocr (langue FR) : extraction texte/OCR des statuts INPI
+RUN apk add --no-cache libreoffice font-noto ttf-dejavu \
+    poppler-utils tesseract-ocr tesseract-ocr-data-fra
 
 # Build dependencies for better-sqlite3
 RUN apk add --no-cache python3 make g++

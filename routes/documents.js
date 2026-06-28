@@ -12,7 +12,7 @@ const { sanitizeFilename } = require("../lib/sanitize");
 const { stmts } = require("../db");
 
 const MIME_TYPES = {
-  ".html": "text/html", ".css": "text/css", ".js": "application/javascript",
+  ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "application/javascript; charset=utf-8",
   ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml",
   ".ico": "image/x-icon", ".otf": "font/otf", ".ttf": "font/ttf",
   ".woff": "font/woff", ".woff2": "font/woff2", ".json": "application/json",

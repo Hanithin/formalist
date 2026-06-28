@@ -281,8 +281,119 @@ function updateCapitalDistribution() {
   } else {
     btn.disabled = true;
   }
+
+  renderParticipationDiagram();
 }
 window.updateCapitalDistribution = updateCapitalDistribution;
+
+/* ===== Schéma de structuration des participations (SVG) ===== */
+function _pdEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+function _pdTrunc(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function _pdFmtEur(n) {
+  var v = Number(n) || 0;
+  return v.toLocaleString('fr-FR') + ' €';
+}
+
+function renderParticipationDiagram() {
+  var box = document.getElementById('participation-diagram');
+  if (!box) return;
+  var panels = document.querySelectorAll('#associe-panels .associe-panel');
+  if (!panels.length) { box.innerHTML = '<div class="pd-empty">Ajoutez au moins un actionnaire.</div>'; return; }
+
+  var nomEl = document.querySelector('.step-content[data-step="1"] input[placeholder="Nom de la société"]');
+  var societe = (nomEl && nomEl.value.trim()) || 'Votre société';
+  var formeEl = document.getElementById('forme-juridique');
+  var forme = formeEl ? formeEl.value : '';
+  var capital = (typeof getCapitalTotal === 'function') ? getCapitalTotal() : 0;
+
+  var assoc = [];
+  panels.forEach(function(panel, i) {
+    var input = document.querySelector('.capital-parts-input[data-index="' + i + '"]');
+    var parts = input ? (parseFloat(input.value) || 0) : 0;
+    var isMorale = panel.dataset.type === 'morale';
+    var name, sub;
+    if (isMorale) {
+      var d = panel.querySelector('[data-field="denomination"]');
+      name = (d && d.value.trim()) || ('Société ' + (i + 1));
+      var siret = (panel.querySelector('[data-field="siret"]') || {}).value || '';
+      var fm = (panel.querySelector('[data-field="formeM"]') || {}).value || '';
+      sub = [fm, siret ? 'SIRET ' + siret : ''].filter(Boolean).join(' · ') || 'Personne morale';
+    } else {
+      name = (typeof getAssocieName === 'function') ? getAssocieName(panel, i) : ('Associé ' + (i + 1));
+      sub = 'Personne physique';
+    }
+    assoc.push({ name: name, sub: sub, parts: parts, isMorale: isMorale });
+  });
+
+  var sumParts = assoc.reduce(function(s, a) { return s + a.parts; }, 0);
+  assoc.forEach(function(a) {
+    a.pct = sumParts > 0 ? (a.parts / sumParts * 100) : (100 / assoc.length);
+    a.montant = capital * (a.pct / 100);
+  });
+
+  box.innerHTML = _buildParticipationSVG(assoc, { name: societe, forme: forme, capital: capital });
+}
+window.renderParticipationDiagram = renderParticipationDiagram;
+
+function _buildParticipationSVG(assoc, soc) {
+  var N = assoc.length;
+  var COL = 220, BW = 192, BH = 80;
+  var VW = Math.max(660, N * COL);
+  var VH = 300;
+  var socW = 300, socH = 92;
+  var socX = VW / 2 - socW / 2, socY = 190;
+
+  var defs = '<defs><marker id="pdArrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">'
+    + '<path d="M0,0 L6,3 L0,6 Z" fill="#9ca3af"/></marker></defs>';
+
+  var s = '<svg viewBox="0 0 ' + VW + ' ' + VH + '" font-family="Matter, Inter, sans-serif" xmlns="http://www.w3.org/2000/svg">' + defs;
+
+  // Liens + % d'abord (sous les boîtes)
+  assoc.forEach(function(a, i) {
+    var cx = (i + 0.5) * (VW / N);
+    var x1 = cx, y1 = 92, x2 = VW / 2, y2 = socY;
+    s += '<path d="M' + x1 + ' ' + y1 + ' C ' + x1 + ' ' + (y1 + 50) + ', ' + x2 + ' ' + (y2 - 50) + ', ' + x2 + ' ' + (y2 - 6) + '" '
+      + 'fill="none" stroke="#cbd5e1" stroke-width="1.5" marker-end="url(#pdArrow)"/>';
+    // pastille %
+    var px = x1 + (x2 - x1) * 0.32, py = y1 + (y2 - y1) * 0.30;
+    var pctTxt = (Math.round(a.pct * 10) / 10) + ' %';
+    var pw = 54;
+    s += '<g><rect x="' + (px - pw / 2) + '" y="' + (py - 12) + '" width="' + pw + '" height="22" rx="11" fill="#fff" stroke="#e5e7eb"/>'
+      + '<text x="' + px + '" y="' + (py + 3) + '" text-anchor="middle" font-size="12" font-weight="600" fill="#111">' + pctTxt + '</text></g>';
+  });
+
+  // Boîtes actionnaires
+  assoc.forEach(function(a, i) {
+    var cx = (i + 0.5) * (VW / N);
+    var x = cx - BW / 2;
+    var fill = a.isMorale ? '#f5f3ff' : '#ffffff';
+    var stroke = a.isMorale ? '#c4b5fd' : '#d4d4d8';
+    var icon = a.isMorale ? '🏢' : '👤';
+    s += '<g>'
+      + '<rect x="' + x + '" y="12" width="' + BW + '" height="' + BH + '" rx="14" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>'
+      + '<text x="' + (x + 14) + '" y="38" font-size="15">' + icon + '</text>'
+      + '<text x="' + (x + 38) + '" y="40" font-size="13.5" font-weight="600" fill="#111">' + _pdEsc(_pdTrunc(a.name, 18)) + '</text>'
+      + '<text x="' + (x + 14) + '" y="62" font-size="11" fill="#888">' + _pdEsc(_pdTrunc(a.sub, 26)) + '</text>'
+      + '<text x="' + (x + 14) + '" y="78" font-size="11" fill="#555">' + _pdEsc(_pdFmtEur(a.montant)) + ' · ' + a.parts + ' parts</text>'
+      + '</g>';
+  });
+
+  // Boîte société (créée)
+  s += '<g>'
+    + '<rect x="' + socX + '" y="' + socY + '" width="' + socW + '" height="' + socH + '" rx="16" fill="#111"/>'
+    + '<text x="' + (socX + socW / 2) + '" y="' + (socY + 34) + '" text-anchor="middle" font-size="16" font-weight="600" font-family="Cal Sans, sans-serif" fill="#fff">' + _pdEsc(_pdTrunc(soc.name, 26)) + '</text>'
+    + '<text x="' + (socX + socW / 2) + '" y="' + (socY + 58) + '" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.75)">' + _pdEsc(soc.forme || 'Société') + ' · en création</text>'
+    + '<text x="' + (socX + socW / 2) + '" y="' + (socY + 78) + '" text-anchor="middle" font-size="12.5" font-weight="600" fill="#6ee7b7">Capital ' + _pdEsc(_pdFmtEur(soc.capital)) + '</text>'
+    + '</g>';
+
+  s += '</svg>';
+  return s;
+}
+window._buildParticipationSVG = _buildParticipationSVG;
 
 function distributeEqually() {
   var inputs = document.querySelectorAll('.capital-parts-input');

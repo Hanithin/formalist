@@ -504,75 +504,108 @@
           </div>
 
           <div id="associe-panels">
-            <div class="associe-panel active" data-panel="1">
-              <div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">
+            <div class="associe-panel active" data-panel="1" data-type="physique">
+              <div class="form-grid" style="margin-bottom: 16px;">
                 <div class="field">
-                  <label>Civilit&eacute;</label>
-                  <select style="width: 120px;"><option value="" disabled selected>Choisir...</option><option>Monsieur</option><option>Madame</option></select>
+                  <label>Type d'actionnaire</label>
+                  <select class="associe-type-select" onchange="switchAssocieType(this)"><option>Personne physique</option><option>Personne morale</option></select>
                 </div>
-                <div class="field">
-                  <label>Pr&eacute;nom <span class="required">*</span></label>
-                  <input type="text" placeholder="Pr&eacute;nom" data-field="prenom" oninput="updateTabName(this)">
+                <div class="field"></div>
+              </div>
+
+              <div class="associe-type-block" data-type="physique">
+                <div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">
+                  <div class="field">
+                    <label>Civilit&eacute;</label>
+                    <select style="width: 120px;"><option value="" disabled selected>Choisir...</option><option>Monsieur</option><option>Madame</option></select>
+                  </div>
+                  <div class="field">
+                    <label>Pr&eacute;nom <span class="required">*</span></label>
+                    <input type="text" placeholder="Pr&eacute;nom" data-field="prenom" oninput="updateTabName(this)">
+                  </div>
+                  <div class="field">
+                    <label>Nom <span class="required">*</span></label>
+                    <input type="text" placeholder="Nom" data-field="nom" oninput="updateTabName(this)">
+                  </div>
                 </div>
-                <div class="field">
-                  <label>Nom <span class="required">*</span></label>
-                  <input type="text" placeholder="Nom" data-field="nom" oninput="updateTabName(this)">
+                <div class="form-grid" style="margin-top: 16px;">
+                  <div class="field">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" placeholder="email@exemple.com" data-field="email">
+                  </div>
+                  <div class="field full">
+                    <label>Adresse</label>
+                    <input type="text" placeholder="Adresse de l'associ&eacute;" class="addr-auto">
+                  </div>
+                </div>
+                <div class="form-grid" style="margin-top: 16px;">
+                  <div class="field">
+                    <label>Date de naissance <span class="required">*</span></label>
+                    <input type="date">
+                  </div>
+                  <div class="field">
+                    <label>Ville de naissance</label>
+                    <input type="text" placeholder="Ville de naissance" class="city-birth-auto">
+                  </div>
+                </div>
+                <div class="form-grid" style="margin-top: 16px;">
+                  <div class="field">
+                    <label>Code postal de naissance</label>
+                    <input type="text" placeholder="Code postal" class="cp-birth">
+                  </div>
+                  <div class="field">
+                    <label>Pays de naissance</label>
+                    <input type="text" value="France" class="pays-birth">
+                  </div>
+                </div>
+                <div class="form-grid" style="margin-top: 16px;">
+                  <div class="field">
+                    <label>Nom et pr&eacute;nom du p&egrave;re</label>
+                    <input type="text" placeholder="Nom et pr&eacute;nom du p&egrave;re">
+                  </div>
+                  <div class="field">
+                    <label>Nom et pr&eacute;nom de la m&egrave;re</label>
+                    <input type="text" placeholder="Nom et pr&eacute;nom de la m&egrave;re">
+                  </div>
+                </div>
+                <div class="form-grid" style="margin-top: 16px;">
+                  <div class="field">
+                    <label>Nationalit&eacute;</label>
+                    <input type="text" value="Fran&ccedil;aise">
+                  </div>
+                  <div class="field">
+                    <label>Situation matrimoniale</label>
+                    <select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C&eacute;libataire</option><option>Mari&eacute;(e)</option><option>Pacs&eacute;(e)</option><option>Divorc&eacute;(e)</option><option>Veuf(ve)</option></select>
+                  </div>
                 </div>
               </div>
-              <div class="form-grid" style="margin-top: 16px;">
-                <div class="field">
-                  <label>Type d'associ&eacute;</label>
-                  <select><option value="" disabled selected>Choisir...</option><option>Personne physique</option><option>Personne morale</option></select>
+
+              <div class="associe-type-block" data-type="morale" style="display:none;">
+                <div class="form-subsection">Soci&eacute;t&eacute; actionnaire</div>
+                <div class="form-grid">
+                  <div class="field"><label>D&eacute;nomination <span class="required">*</span></label><input type="text" placeholder="Rechercher une soci&eacute;t&eacute;..." class="denom-auto" data-field="denomination" oninput="updateTabName(this)"></div>
+                  <div class="field"><label>Forme juridique</label><input type="text" placeholder="SAS, SARL, SCI..." data-field="formeM"></div>
                 </div>
-                <div class="field">
-                  <label>Email <span class="required">*</span></label>
-                  <input type="email" placeholder="email@exemple.com" data-field="email">
+                <div class="form-grid" style="margin-top:16px;">
+                  <div class="field"><label>Capital social</label><input type="text" placeholder="Capital social" data-field="capitalM"></div>
+                  <div class="field"><label>Num&eacute;ro RCS</label><input type="text" placeholder="Num&eacute;ro RCS" data-field="rcs"></div>
                 </div>
-              </div>
-              <div class="form-grid" style="margin-top: 16px;">
-                <div class="field full">
-                  <label>Adresse</label>
-                  <input type="text" placeholder="Adresse de l'associ&eacute;" class="addr-auto">
+                <div class="form-grid" style="margin-top:16px;">
+                  <div class="field"><label>Ville d'immatriculation</label><input type="text" placeholder="Ville du RCS" data-field="villeRcs"></div>
+                  <div class="field"><label>Num&eacute;ro SIRET</label><input type="text" placeholder="SIRET" data-field="siret"></div>
                 </div>
-              </div>
-              <div class="form-grid" style="margin-top: 16px;">
-                <div class="field">
-                  <label>Date de naissance <span class="required">*</span></label>
-                  <input type="date">
+                <div class="form-grid" style="margin-top:16px;">
+                  <div class="field"><label>Si&egrave;ge social</label><input type="text" placeholder="Adresse du si&egrave;ge" class="addr-auto" data-field="siege"></div>
+                  <div class="field"><label>Email <span class="required">*</span></label><input type="email" placeholder="email@exemple.com" data-field="emailM"></div>
                 </div>
-                <div class="field">
-                  <label>Ville de naissance</label>
-                  <input type="text" placeholder="Ville de naissance" class="city-birth-auto">
+                <div class="form-subsection" style="margin-top:24px;">Repr&eacute;sentant l&eacute;gal</div>
+                <div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">
+                  <div class="field"><label>Civilit&eacute;</label><select style="width:120px;" data-field="repCivilite"><option value="" disabled selected>Choisir...</option><option>Monsieur</option><option>Madame</option></select></div>
+                  <div class="field"><label>Pr&eacute;nom <span class="required">*</span></label><input type="text" placeholder="Pr&eacute;nom" data-field="repPrenom"></div>
+                  <div class="field"><label>Nom <span class="required">*</span></label><input type="text" placeholder="Nom" data-field="repNom"></div>
                 </div>
-              </div>
-              <div class="form-grid" style="margin-top: 16px;">
-                <div class="field">
-                  <label>Code postal de naissance</label>
-                  <input type="text" placeholder="Code postal" class="cp-birth">
-                </div>
-                <div class="field">
-                  <label>Pays de naissance</label>
-                  <input type="text" value="France" class="pays-birth">
-                </div>
-              </div>
-              <div class="form-grid" style="margin-top: 16px;">
-                <div class="field">
-                  <label>Nom et pr&eacute;nom du p&egrave;re</label>
-                  <input type="text" placeholder="Nom et pr&eacute;nom du p&egrave;re">
-                </div>
-                <div class="field">
-                  <label>Nom et pr&eacute;nom de la m&egrave;re</label>
-                  <input type="text" placeholder="Nom et pr&eacute;nom de la m&egrave;re">
-                </div>
-              </div>
-              <div class="form-grid" style="margin-top: 16px;">
-                <div class="field">
-                  <label>Nationalit&eacute;</label>
-                  <input type="text" value="Fran&ccedil;aise">
-                </div>
-                <div class="field">
-                  <label>Situation matrimoniale</label>
-                  <select class="sit-mat-select" onchange="toggleConjoint(this)"><option value="" disabled selected>Choisir...</option><option>C&eacute;libataire</option><option>Mari&eacute;(e)</option><option>Pacs&eacute;(e)</option><option>Divorc&eacute;(e)</option><option>Veuf(ve)</option></select>
+                <div class="form-grid" style="margin-top:16px;">
+                  <div class="field full"><label>Adresse</label><input type="text" placeholder="Adresse du repr&eacute;sentant" class="addr-auto" data-field="repAdresse"></div>
                 </div>
               </div>
             </div>
@@ -666,7 +699,7 @@
                 <div class="dirigeant-type-panel" data-type="morale">
                   <div class="form-subsection">Informations de la soci&eacute;t&eacute;</div>
                   <div class="form-grid">
-                    <div class="field"><label>Nom de la soci&eacute;t&eacute; <span class="required">*</span></label><input type="text" placeholder="Nom de la soci&eacute;t&eacute;"></div>
+                    <div class="field"><label>Nom de la soci&eacute;t&eacute; <span class="required">*</span></label><input type="text" placeholder="Rechercher une soci&eacute;t&eacute;..." class="denom-auto-dir"></div>
                     <div class="field"><label>Adresse de la soci&eacute;t&eacute;</label><input type="text" placeholder="Adresse" class="addr-auto"></div>
                   </div>
                   <div class="form-grid" style="margin-top:16px;">
@@ -678,7 +711,7 @@
                     <div class="field"><label>Type d'entreprise</label><input type="text" placeholder="Type d'entreprise (SAS, SARL...)"></div>
                   </div>
                   <div class="form-grid" style="margin-top:16px;">
-                    <div class="field"><label>Num&eacute;ro SIREN <span class="required">*</span></label><input type="text" placeholder="Num&eacute;ro SIREN"></div>
+                    <div class="field"><label>Num&eacute;ro SIRET <span class="required">*</span></label><input type="text" placeholder="Num&eacute;ro SIRET"></div>
                     <div class="field"></div>
                   </div>
 
@@ -820,6 +853,11 @@
               <span class="capital-summary-label">Reste &agrave; lib&eacute;rer</span>
               <span class="capital-summary-value" id="summary-reste-liberer">0 &euro;</span>
             </div>
+          </div>
+
+          <div class="participation-section" id="participation-section">
+            <div class="participation-title">Sch&eacute;ma des participations</div>
+            <div class="participation-diagram" id="participation-diagram"></div>
           </div>
 
           <div class="capital-error" id="capital-error">La r&eacute;partition doit &ecirc;tre exactement &eacute;gale &agrave; 100% du capital.</div>

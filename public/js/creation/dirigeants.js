@@ -28,11 +28,19 @@ function buildAssocieOptions(excludeMap, currentSelf) {
     var val = 'associe-' + i;
     // Skip si d\u00e9j\u00e0 choisi par un autre select (mais garde la valeur du select courant)
     if (excludeMap[val] && val !== currentSelf) return;
-    var prenomInput = p.querySelector('input[data-field="prenom"]');
-    var nomInput = p.querySelector('input[data-field="nom"]');
-    var prenom = prenomInput ? prenomInput.value.trim() : '';
-    var nom = nomInput ? nomInput.value.trim() : '';
-    var label = (prenom || nom) ? (prenom + ' ' + nom).trim() : (getAssocieWord() + ' ' + (i + 1));
+    var label;
+    if (p.dataset.type === 'morale') {
+      // Société actionnaire : on affiche sa dénomination (ex. "STERLING PEAK")
+      var denomInput = p.querySelector('.associe-type-block[data-type="morale"] [data-field="denomination"]') || p.querySelector('[data-field="denomination"]');
+      var denom = denomInput ? denomInput.value.trim() : '';
+      label = denom || (getAssocieWord() + ' ' + (i + 1));
+    } else {
+      var prenomInput = p.querySelector('input[data-field="prenom"]');
+      var nomInput = p.querySelector('input[data-field="nom"]');
+      var prenom = prenomInput ? prenomInput.value.trim() : '';
+      var nom = nomInput ? nomInput.value.trim() : '';
+      label = (prenom || nom) ? (prenom + ' ' + nom).trim() : (getAssocieWord() + ' ' + (i + 1));
+    }
     html += '<option value="' + val + '">' + label + '</option>';
   });
   html += '<option value="autre">Autre personne</option>';
@@ -390,9 +398,14 @@ function updateDirigeantTabFromSelect(select) {
     var assocPanels = document.querySelectorAll('#associe-panels .associe-panel');
     var ap = assocPanels[idx];
     if (ap) {
-      var prenom = (ap.querySelector('input[data-field="prenom"]') || {}).value || '';
-      var nom = (ap.querySelector('input[data-field="nom"]') || {}).value || '';
-      name = (prenom + ' ' + nom).trim();
+      if (ap.dataset.type === 'morale') {
+        var denomInput = ap.querySelector('.associe-type-block[data-type="morale"] [data-field="denomination"]') || ap.querySelector('[data-field="denomination"]');
+        name = denomInput ? denomInput.value.trim() : '';
+      } else {
+        var prenom = (ap.querySelector('input[data-field="prenom"]') || {}).value || '';
+        var nom = (ap.querySelector('input[data-field="nom"]') || {}).value || '';
+        name = (prenom + ' ' + nom).trim();
+      }
     }
   } else if (val === 'autre') {
     // En mode "autre", on remplira via updateDirigeantTabName quand le user tape
@@ -485,7 +498,7 @@ function dirigeantPanelHTML(n) {
     + '<div class="dirigeant-type-panel" data-type="morale">'
     + '<div class="form-subsection">Informations de la soci\u00e9t\u00e9</div>'
     + '<div class="form-grid">'
-    + '<div class="field"><label>Nom de la soci\u00e9t\u00e9 <span class="required">*</span></label><input type="text" placeholder="Nom de la soci\u00e9t\u00e9"></div>'
+    + '<div class="field"><label>Nom de la soci\u00e9t\u00e9 <span class="required">*</span></label><input type="text" placeholder="Rechercher une soci\u00e9t\u00e9..." class="denom-auto-dir"></div>'
     + '<div class="field"><label>Adresse de la soci\u00e9t\u00e9</label><input type="text" placeholder="Adresse" class="addr-auto"></div></div>'
     + '<div class="form-grid" style="margin-top:16px;">'
     + '<div class="field"><label>Capital social</label><input type="text" placeholder="Capital social"></div>'
@@ -494,7 +507,7 @@ function dirigeantPanelHTML(n) {
     + '<div class="field"><label>Ville d\'immatriculation <span class="required">*</span></label><input type="text" placeholder="Ville d\'immatriculation"></div>'
     + '<div class="field"><label>Type d\'entreprise</label><input type="text" placeholder="Type d\'entreprise (SAS, SARL...)"></div></div>'
     + '<div class="form-grid" style="margin-top:16px;">'
-    + '<div class="field"><label>Num\u00e9ro SIREN <span class="required">*</span></label><input type="text" placeholder="Num\u00e9ro SIREN"></div>'
+    + '<div class="field"><label>Num\u00e9ro SIRET <span class="required">*</span></label><input type="text" placeholder="Num\u00e9ro SIRET"></div>'
     + '<div class="field"></div></div>'
     + '<div class="form-subsection" style="margin-top:24px;">Repr\u00e9sentant l\u00e9gal (g\u00e9rant/pr\u00e9sident)</div>'
     + '<div class="form-grid" style="grid-template-columns: auto 1fr 1fr;">'
@@ -549,6 +562,7 @@ function addDirigeant() {
 
   // Init autocomplete, custom selects, datepickers
   panel.querySelectorAll('.addr-auto').forEach(function(inp) { initAddressAutocomplete(inp); });
+  panel.querySelectorAll('.denom-auto-dir').forEach(function(inp) { if (typeof initCompanyAutocomplete === 'function') initCompanyAutocomplete(inp, window._applyDirigeantCompany); });
   panel.querySelectorAll('.city-birth-auto').forEach(function(inp) { if (typeof initCityBirthAutocomplete === 'function') initCityBirthAutocomplete(inp); });
   panel.querySelectorAll('select').forEach(function(s) { if (typeof initCustomSelect === 'function') initCustomSelect(s); });
   panel.querySelectorAll('input[type="date"]').forEach(function(d) { if (typeof initCustomDate === 'function') initCustomDate(d); });
