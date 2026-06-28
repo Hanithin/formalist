@@ -202,7 +202,8 @@ db.exec(`
     ended_at TEXT,
     duration_seconds INTEGER DEFAULT 0,
     ip TEXT,
-    user_agent TEXT
+    user_agent TEXT,
+    session_token TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id, started_at DESC);
 
