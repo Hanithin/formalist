@@ -1,0 +1,33 @@
+.neutre,
+.attente,
+.abouti,
+.avance,
+.termine {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.neutre {
+  background: #f4f4f5;
+  color: #52525b;
+}
+
+.attente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.abouti,
+.termine {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.avance {
+  background: #eef2ff;
+  color: #4338ca;
+}

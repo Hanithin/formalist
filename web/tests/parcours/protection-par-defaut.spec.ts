@@ -7,6 +7,9 @@ import { test, expect } from "@playwright/test";
  * vérifient qu'elle est réellement appliquée à l'entrée, sur les vraies adresses.
  */
 
+// Aucune session : c'est précisément ce qu'on vérifie ici.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test("une page protégée renvoie vers la connexion", async ({ page }) => {
   await page.goto("/tableau-de-bord");
   await expect(page).toHaveURL(/\/connexion/);

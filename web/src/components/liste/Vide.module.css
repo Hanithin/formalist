@@ -1,0 +1,35 @@
+.bloc {
+  padding: 48px 24px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 14px;
+}
+
+.titre {
+  margin: 0 0 6px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 17px;
+  color: #111;
+}
+
+.texte {
+  margin: 0 0 20px;
+  font-size: 14.5px;
+  color: #71717a;
+}
+
+.action {
+  display: inline-block;
+  padding: 11px 20px;
+  border-radius: 10px;
+  background: #18181b;
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.action:hover {
+  background: #27272a;
+}

@@ -16,6 +16,9 @@ export default defineConfig({
   use: {
     baseURL: process.env.BASE_URL ?? "http://localhost:3100",
     trace: "on-first-retry",
+    // Session ouverte une fois par preparer.ts : se reconnecter à chaque test
+    // déclenchait la limitation de débit.
+    storageState: "./tests/parcours/session.json",
   },
   webServer: {
     // Port distinct : le serveur d'origine occupe le 3000 pendant la migration,

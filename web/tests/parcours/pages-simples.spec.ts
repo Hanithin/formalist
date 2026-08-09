@@ -17,7 +17,10 @@ async function seConnecter(page: import("@playwright/test").Page) {
   await page.waitForURL(/tableau-de-bord|aide|equipe|parametres/);
 }
 
-test.describe("parcours connecté", () => {
+// La connexion se vérifie sans session préalable : c'est elle qu'on teste.
+test.describe("connexion", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   test("la connexion mène au tableau de bord", async ({ page }) => {
     await seConnecter(page);
     await expect(page).toHaveURL(/\/tableau-de-bord/);
@@ -36,10 +39,10 @@ test.describe("parcours connecté", () => {
     );
     // Le même message qu'avec une adresse inconnue : voir la route de connexion.
   });
+});
 
+test.describe("parcours connecté", () => {
   test("la colonne de navigation est la même sur les trois pages", async ({ page }) => {
-    await seConnecter(page);
-
     const entrees: string[][] = [];
     for (const chemin of ["/aide", "/parametres", "/equipe"]) {
       await page.goto(chemin);
@@ -57,13 +60,11 @@ test.describe("parcours connecté", () => {
   });
 
   test("la page courante est marquée dans la navigation", async ({ page }) => {
-    await seConnecter(page);
     await page.goto("/aide");
     await expect(page.locator('[aria-current="page"]')).toHaveText("Aide & FAQ");
   });
 
   test("un client ne voit ni espace avocat ni administration", async ({ page }) => {
-    await seConnecter(page);
     await page.goto("/aide");
     const liens = await page
       .getByRole("navigation", { name: "Navigation principale" })
@@ -74,7 +75,6 @@ test.describe("parcours connecté", () => {
   });
 
   test("l'aide filtre les questions", async ({ page }) => {
-    await seConnecter(page);
     await page.goto("/aide");
     await expect(page.getByRole("status")).toContainText("10 questions");
 
@@ -87,20 +87,17 @@ test.describe("parcours connecté", () => {
   });
 
   test("les paramètres affichent le compte connecté", async ({ page }) => {
-    await seConnecter(page);
     await page.goto("/parametres");
     await expect(page.getByLabel("Adresse email")).toHaveValue(COMPTE.email);
   });
 
   test("l'équipe est créée au premier accès, avec la personne dedans", async ({ page }) => {
-    await seConnecter(page);
     await page.goto("/equipe");
     await expect(page.getByRole("heading", { level: 2, name: /membre/ })).toContainText("1 membre");
     await expect(page.getByText("Vous")).toBeVisible();
   });
 
   test("la déconnexion referme l'accès", async ({ page }) => {
-    await seConnecter(page);
     await page.goto("/parametres");
     await page.getByRole("button", { name: /se déconnecter/i }).click();
     await page.waitForURL(/\/connexion/);

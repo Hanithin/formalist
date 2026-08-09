@@ -1,0 +1,32 @@
+.barre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.filtre,
+.actif {
+  padding: 7px 14px;
+  border-radius: 100px;
+  font-size: 14px;
+  text-decoration: none;
+  border: 1px solid #e5e5e7;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.filtre {
+  background: #fff;
+  color: #555;
+}
+
+.filtre:hover {
+  border-color: #d4d4d6;
+  background: #fafafa;
+}
+
+.actif {
+  background: #18181b;
+  border-color: #18181b;
+  color: #fff;
+}
