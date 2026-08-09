@@ -1,0 +1,64 @@
+name: Vérification
+
+# Rien ne part en production sans passer ces contrôles : types, couches, tests de
+# domaine, puis les parcours critiques sur une vraie base.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: formalist
+          POSTGRES_PASSWORD: formalist
+          POSTGRES_DB: formalist_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://formalist:formalist@localhost:5432/formalist_ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Appliquer le schéma
+        run: psql "$DATABASE_URL" -f ../migrations/001_schema_initial.sql
+
+      - name: Générer le client Prisma
+        run: npx prisma generate
+
+      - name: Types
+        run: npm run types
+
+      - name: Style et couches
+        run: npm run lint
+
+      - name: Tests de domaine
+        run: npm test
+
+      - name: Navigateur pour les parcours
+        run: npx playwright install --with-deps chromium
+
+      - name: Parcours critiques
+        run: npm run test:parcours

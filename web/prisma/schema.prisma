@@ -1,0 +1,450 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/infrastructure/db/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model api_usage {
+  id                Int       @id @default(autoincrement())
+  user_id           Int?
+  model             String
+  prompt_tokens     Int?      @default(0)
+  completion_tokens Int?      @default(0)
+  total_tokens      Int?      @default(0)
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  users             users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model audit_log {
+  id           Int        @id @default(autoincrement())
+  formalite_id Int
+  actor_id     Int?
+  actor_role   String
+  action       String
+  target_field String?
+  before_value String?
+  after_value  String?
+  comment      String?
+  created_at   DateTime   @default(now()) @db.Timestamptz(6)
+  users        users?     @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  formalites   formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([formalite_id, created_at(sort: Desc)], map: "idx_audit_formalite")
+}
+
+model avocat_availability {
+  id                    Int      @id @default(autoincrement())
+  avocat_id             Int
+  day_of_week           Int
+  start_time            String
+  end_time              String
+  slot_duration_minutes Int      @default(30)
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  users                 users    @relation(fields: [avocat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([avocat_id, day_of_week], map: "idx_availability_avocat")
+}
+
+model avocat_blocked_dates {
+  id         Int      @id @default(autoincrement())
+  avocat_id  Int
+  start_date String
+  end_date   String
+  reason     String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [avocat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([avocat_id, start_date], map: "idx_blocked_avocat")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model contact_messages {
+  id         Int      @id @default(autoincrement())
+  nom        String
+  prenom     String
+  email      String
+  sujet      String
+  message    String
+  status     String   @default("nouveau")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model contrats {
+  id                                       Int      @id @default(autoincrement())
+  user_id                                  Int
+  type                                     String
+  titre                                    String
+  status                                   String   @default("brouillon")
+  data_json                                String?
+  file_path                                String?
+  assigned_avocat_id                       Int?
+  created_at                               DateTime @default(now()) @db.Timestamptz(6)
+  updated_at                               DateTime @default(now()) @db.Timestamptz(6)
+  users_contrats_assigned_avocat_idTousers users?   @relation("contrats_assigned_avocat_idTousers", fields: [assigned_avocat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_contrats_user_idTousers            users    @relation("contrats_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model documents {
+  id               Int        @id @default(autoincrement())
+  formalite_id     Int
+  name             String
+  type             String?
+  file_path        String?
+  uploaded_by      String     @default("user")
+  status           String     @default("generated")
+  created_at       DateTime   @default(now()) @db.Timestamptz(6)
+  rejection_reason String?
+  rejected_at      DateTime?  @db.Timestamptz(6)
+  formalites       formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model email_tokens {
+  token      String    @id
+  user_id    Int
+  type       String    @default("verify")
+  expires_at DateTime  @db.Timestamptz(6)
+  used_at    DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, type], map: "idx_email_tokens_user")
+}
+
+model formalites {
+  id                                         Int                  @id @default(autoincrement())
+  user_id                                    Int
+  type                                       String
+  forme                                      String
+  societe                                    String
+  capital                                    Float?               @db.Real
+  status                                     String               @default("en_cours")
+  offer                                      String               @default("starter")
+  phase                                      Int                  @default(1)
+  business_sub_phase                         String?
+  data_json                                  String?
+  assigned_avocat_id                         Int?
+  created_at                                 DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime             @default(now()) @db.Timestamptz(6)
+  sub_type                                   String?
+  created_by_avocat                          Int?                 @default(0)
+  finalized_at                               String?
+  annonce_text                               String?
+  reference                                  String?
+  team_id                                    Int?
+  audit_log                                  audit_log[]
+  documents                                  documents[]
+  users_formalites_assigned_avocat_idTousers users?               @relation("formalites_assigned_avocat_idTousers", fields: [assigned_avocat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  teams                                      teams?               @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_formalites_user_idTousers            users                @relation("formalites_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  messages                                   messages[]
+  notifications                              notifications[]
+  payments                                   payments[]
+  signature_requests                         signature_requests[]
+  team_notes                                 team_notes[]
+  uploaded_files                             uploaded_files[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model lawyer_consultations {
+  id                                          Int       @id @default(autoincrement())
+  user_id                                     Int
+  avocat_id                                   Int?
+  scheduled_at                                DateTime  @db.Timestamptz(6)
+  duration_minutes                            Int       @default(30)
+  status                                      String    @default("scheduled")
+  price_cents                                 Int?      @default(0)
+  topic                                       String?
+  notes                                       String?
+  created_at                                  DateTime  @default(now()) @db.Timestamptz(6)
+  domain                                      String?
+  description                                 String?
+  documents_json                              String?
+  meeting_link                                String?
+  payment_status                              String?   @default("pending")
+  accepted_at                                 DateTime? @db.Timestamptz(6)
+  done_at                                     String?
+  rating                                      Int?
+  users_lawyer_consultations_avocat_idTousers users?    @relation("lawyer_consultations_avocat_idTousers", fields: [avocat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_lawyer_consultations_user_idTousers   users     @relation("lawyer_consultations_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([avocat_id, scheduled_at(sort: Desc)], map: "idx_consultations_avocat")
+  @@index([user_id, scheduled_at(sort: Desc)], map: "idx_consultations_user")
+}
+
+model messages {
+  id           Int        @id @default(autoincrement())
+  formalite_id Int
+  sender_id    Int
+  content      String
+  read         Boolean    @default(false)
+  created_at   DateTime   @default(now()) @db.Timestamptz(6)
+  file_path    String?
+  kind         String?    @default("text")
+  reply_to_id  Int?
+  formalites   formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users        users      @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model notifications {
+  id           Int         @id @default(autoincrement())
+  user_id      Int
+  type         String
+  content      String
+  formalite_id Int?
+  read         Boolean     @default(false)
+  created_at   DateTime    @default(now()) @db.Timestamptz(6)
+  formalites   formalites? @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users        users       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payments {
+  id                Int         @id @default(autoincrement())
+  user_id           Int
+  formalite_id      Int?
+  amount_cents      Int
+  currency          String      @default("EUR")
+  description       String?
+  status            String      @default("paid")
+  stripe_payment_id String?
+  created_at        DateTime    @default(now()) @db.Timestamptz(6)
+  paid_at           DateTime?   @db.Timestamptz(6)
+  formalites        formalites? @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users             users       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([formalite_id], map: "idx_payments_formalite")
+  @@index([user_id, paid_at(sort: Desc)], map: "idx_payments_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model sacem_declarations {
+  id                                                 Int      @id @default(autoincrement())
+  user_id                                            Int
+  type                                               String   @default("oeuvre")
+  titre                                              String
+  sous_titre                                         String?
+  nature                                             String?
+  statut_oeuvre                                      String?  @default("originale")
+  duree                                              String?
+  bpm                                                Int?
+  genre                                              String?
+  date_creation                                      String?
+  statut_editorial                                   String?  @default("inedite")
+  code_iswc                                          String?
+  createurs_json                                     String?
+  repartition_json                                   String?
+  editeur_json                                       String?
+  fichiers_json                                      String?
+  status                                             String   @default("brouillon")
+  data_json                                          String?
+  file_path                                          String?
+  assigned_avocat_id                                 Int?
+  created_at                                         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at                                         DateTime @default(now()) @db.Timestamptz(6)
+  users_sacem_declarations_assigned_avocat_idTousers users?   @relation("sacem_declarations_assigned_avocat_idTousers", fields: [assigned_avocat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_sacem_declarations_user_idTousers            users    @relation("sacem_declarations_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model sessions {
+  token      String   @id
+  user_id    Int
+  expires_at DateTime @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model signature_requests {
+  id             Int        @id @default(autoincrement())
+  formalite_id   Int
+  associe_index  Int
+  associe_name   String
+  associe_email  String?
+  token          String?    @unique
+  status         String     @default("pending")
+  signature_data String?
+  paraphe_data   String?
+  created_at     DateTime   @default(now()) @db.Timestamptz(6)
+  opened_at      String?
+  signed_at      DateTime?  @db.Timestamptz(6)
+  role           String?    @default("Associé")
+  formalites     formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model support_conversations {
+  user_id     Int     @id
+  archived    Boolean @default(false)
+  archived_at String?
+  users       users   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model support_messages {
+  id                                      Int       @id @default(autoincrement())
+  user_id                                 Int
+  sender_id                               Int
+  content                                 String?
+  file_path                               String?
+  read                                    Boolean   @default(false)
+  created_at                              DateTime? @default(now()) @db.Timestamptz(6)
+  users_support_messages_sender_idTousers users     @relation("support_messages_sender_idTousers", fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_support_messages_user_idTousers   users     @relation("support_messages_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model team_invitations {
+  id           Int       @id @default(autoincrement())
+  team_id      Int
+  email        String
+  role         String    @default("collaborateur")
+  can_create   Boolean   @default(true)
+  can_edit     Boolean   @default(true)
+  can_view_all Boolean   @default(false)
+  token        String    @unique
+  invited_by   Int?
+  expires_at   DateTime  @db.Timestamptz(6)
+  accepted_at  DateTime? @db.Timestamptz(6)
+  revoked_at   DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  users        users?    @relation(fields: [invited_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  teams        teams     @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([team_id], map: "idx_team_invit_team")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model team_members {
+  id           Int      @id @default(autoincrement())
+  team_id      Int
+  user_id      Int
+  role         String   @default("collaborateur")
+  can_create   Boolean  @default(true)
+  can_edit     Boolean  @default(true)
+  can_view_all Boolean  @default(false)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  teams        teams    @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([team_id, user_id])
+  @@index([user_id], map: "idx_team_members_user")
+}
+
+model team_notes {
+  id           Int        @id @default(autoincrement())
+  formalite_id Int
+  team_id      Int
+  author_id    Int
+  content      String
+  created_at   DateTime   @default(now()) @db.Timestamptz(6)
+  users        users      @relation(fields: [author_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  formalites   formalites @relation(fields: [formalite_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  teams        teams      @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([formalite_id, team_id, created_at], map: "idx_team_notes")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model teams {
+  id               Int                @id @default(autoincrement())
+  name             String
+  type             String             @default("client")
+  owner_id         Int
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  formalites       formalites[]
+  team_invitations team_invitations[]
+  team_members     team_members[]
+  team_notes       team_notes[]
+  users            users              @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model uploaded_files {
+  filename      String      @id
+  user_id       Int
+  formalite_id  Int?
+  original_name String?
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  formalites    formalites? @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         users       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_uploaded_files_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_documents {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  source_type String
+  source_id   Int?
+  name        String
+  type        String?
+  file_path   String?
+  status      String?  @default("actif")
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  category    String?
+  users       users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_sessions {
+  id               Int       @id @default(autoincrement())
+  user_id          Int
+  started_at       DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen_at     String    @default(dbgenerated("now()"))
+  ended_at         DateTime? @db.Timestamptz(6)
+  duration_seconds Int?      @default(0)
+  ip               String?
+  user_agent       String?
+  session_token    String?
+  users            users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([session_token], map: "idx_user_sessions_token")
+  @@index([user_id, started_at(sort: Desc)], map: "idx_user_sessions_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                                                              Int                    @id @default(autoincrement())
+  email                                                           String                 @unique
+  password_hash                                                   String
+  salt                                                            String
+  name                                                            String
+  role                                                            String                 @default("user")
+  created_at                                                      DateTime               @default(now()) @db.Timestamptz(6)
+  last_login_at                                                   String?
+  last_seen_at                                                    String?
+  total_time_seconds                                              Int?                   @default(0)
+  suspended                                                       Boolean?               @default(false)
+  roles                                                           String?
+  first_name                                                      String?
+  last_name                                                       String?
+  email_verified                                                  Boolean?               @default(false)
+  api_usage                                                       api_usage[]
+  audit_log                                                       audit_log[]
+  avocat_availability                                             avocat_availability[]
+  avocat_blocked_dates                                            avocat_blocked_dates[]
+  contrats_contrats_assigned_avocat_idTousers                     contrats[]             @relation("contrats_assigned_avocat_idTousers")
+  contrats_contrats_user_idTousers                                contrats[]             @relation("contrats_user_idTousers")
+  email_tokens                                                    email_tokens[]
+  formalites_formalites_assigned_avocat_idTousers                 formalites[]           @relation("formalites_assigned_avocat_idTousers")
+  formalites_formalites_user_idTousers                            formalites[]           @relation("formalites_user_idTousers")
+  lawyer_consultations_lawyer_consultations_avocat_idTousers      lawyer_consultations[] @relation("lawyer_consultations_avocat_idTousers")
+  lawyer_consultations_lawyer_consultations_user_idTousers        lawyer_consultations[] @relation("lawyer_consultations_user_idTousers")
+  messages                                                        messages[]
+  notifications                                                   notifications[]
+  payments                                                        payments[]
+  sacem_declarations_sacem_declarations_assigned_avocat_idTousers sacem_declarations[]   @relation("sacem_declarations_assigned_avocat_idTousers")
+  sacem_declarations_sacem_declarations_user_idTousers            sacem_declarations[]   @relation("sacem_declarations_user_idTousers")
+  sessions                                                        sessions[]
+  support_conversations                                           support_conversations?
+  support_messages_support_messages_sender_idTousers              support_messages[]     @relation("support_messages_sender_idTousers")
+  support_messages_support_messages_user_idTousers                support_messages[]     @relation("support_messages_user_idTousers")
+  team_invitations                                                team_invitations[]
+  team_members                                                    team_members[]
+  team_notes                                                      team_notes[]
+  teams                                                           teams[]
+  uploaded_files                                                  uploaded_files[]
+  user_documents                                                  user_documents[]
+  user_sessions                                                   user_sessions[]
+}
