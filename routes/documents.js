@@ -1,5 +1,5 @@
 /**
- * routes/documents.js — User document vault + file serving
+ * routes/documents.js - User document vault + file serving
  */
 
 const fs = require("fs");
@@ -9,6 +9,8 @@ const { hasRole } = require("../auth");
 const { jsonResponse, errorResponse } = require("../lib/router");
 const { handleUpload, getField, UPLOADS } = require("../middleware/upload");
 const { sanitizeFilename } = require("../lib/sanitize");
+const { peutLireFichier } = require("../lib/file-access");
+const teamAccess = require("../lib/team-access");
 const { stmts } = require("../db");
 
 const MIME_TYPES = {
@@ -54,6 +56,7 @@ module.exports = function documentsRoutes(pathname, req, res, url) {
         const category = getField(parts, "category") || null;
         const sourceId = parseInt(getField(parts, "source_id"), 10) || null;
         stmts.createUserDocument.run(user.id, sourceType, sourceId, docName, ext.slice(1), safeName, category);
+        stmts.registerUploadedFile.run(safeName, user.id, null, filePart.filename || null);
         return jsonResponse(res, 201, { ok: true, filename: safeName });
       } catch (e) {
         return errorResponse(res, e.statusCode || 500, e.message || "Erreur serveur");
@@ -61,7 +64,7 @@ module.exports = function documentsRoutes(pathname, req, res, url) {
     })();
   }
 
-  // Serve uploaded files — Fix #4: sanitize filename in Content-Disposition
+  // Sert un fichier déposé, uniquement à quelqu'un qui a le droit de le lire.
   if (pathname === "/api/file" && req.method === "GET") {
     const filePath = url.searchParams.get("path") || "";
     const safeName = path.basename(filePath);
@@ -70,6 +73,15 @@ module.exports = function documentsRoutes(pathname, req, res, url) {
       res.writeHead(403, { "Content-Type": "text/plain" });
       return res.end("Forbidden");
     }
+
+    const user = authGuard(req, res);
+    if (!user) return;
+    const acces = peutLireFichier(user, safeName);
+    if (!acces.ok) {
+      res.writeHead(acces.status, { "Content-Type": "text/plain" });
+      return res.end(acces.status === 403 ? "Forbidden" : "Not Found");
+    }
+
     try {
       const buf = fs.readFileSync(fullPath);
       const ext = path.extname(safeName);
@@ -81,8 +93,11 @@ module.exports = function documentsRoutes(pathname, req, res, url) {
         const safeCustom = sanitizeFilename(downloadName);
         disposition = `attachment; filename="${safeCustom}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`;
       } else {
+        // Seuls les PDF et images s'affichent dans l'onglet. Tout autre format part en
+        // téléchargement : un fichier affiché en ligne s'exécute dans le domaine.
+        const affichable = [".pdf", ".png", ".jpg", ".jpeg"].includes(ext);
         const safeDisposition = sanitizeFilename(safeName);
-        disposition = `inline; filename="${safeDisposition}"`;
+        disposition = (affichable ? "inline" : "attachment") + `; filename="${safeDisposition}"`;
       }
       res.writeHead(200, {
         "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
@@ -97,13 +112,24 @@ module.exports = function documentsRoutes(pathname, req, res, url) {
     return;
   }
 
-  // Generic upload endpoint
+  // Dépôt de fichier. Le déposant est enregistré : sans ça, personne ne peut dire
+  // plus tard à qui appartient le fichier, et il devient illisible ou public.
   if (pathname === "/api/upload" && req.method === "POST") {
     return (async () => {
+      const user = authGuard(req, res);
+      if (!user) return;
       try {
-        const { filePart, safeName } = await handleUpload(req, {
+        const { parts, filePart, safeName } = await handleUpload(req, {
           allowedExts: [".pdf", ".jpg", ".jpeg", ".png"]
         });
+        // Rattachement au dossier quand le formulaire le précise, après vérification
+        // que la personne a bien le droit d'y écrire.
+        let formaliteId = parseInt(getField(parts, "formalite_id"), 10) || null;
+        if (formaliteId) {
+          const dossier = stmts.getFormaliteById.get(formaliteId);
+          if (!dossier || !teamAccess.canWrite(user, dossier)) formaliteId = null;
+        }
+        stmts.registerUploadedFile.run(safeName, user.id, formaliteId, filePart.filename || null);
         const uploadDate = new Date().toISOString();
         return jsonResponse(res, 200, { ok: true, filename: safeName, originalName: filePart.filename, uploadDate });
       } catch (e) {

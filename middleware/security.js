@@ -5,6 +5,34 @@
 
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || "").split(",").filter(Boolean);
 
+const METHODES_MUTANTES = ["POST", "PUT", "PATCH", "DELETE"];
+
+/**
+ * Refuse une requête modifiante venue d'un autre site.
+ *
+ * Le cookie est en SameSite=Lax, ce qui écarte déjà l'essentiel des requêtes
+ * inter-sites, mais pas toutes. On exige donc que l'origine annoncée soit la nôtre.
+ *
+ * Une requête sans en-tête Origin est acceptée : les navigateurs en envoient un sur
+ * toute requête modifiante, mais les appels serveur à serveur et les anciens clients
+ * n'en ont pas, et les refuser casserait des usages légitimes sans rien protéger de
+ * plus - une attaque inter-sites passe forcément par un navigateur.
+ */
+function origineAcceptee(req) {
+  if (!METHODES_MUTANTES.includes(req.method)) return true;
+
+  const origin = req.headers.origin;
+  if (!origin) return true;
+
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+
+  // En développement, l'origine attendue est celle de l'hôte appelé
+  const host = req.headers.host;
+  if (host && (origin === "http://" + host || origin === "https://" + host)) return true;
+
+  return false;
+}
+
 function securityHeaders(req, res) {
   // CSP — prevent inline script injection (except unsafe-inline for legacy)
   res.setHeader("Content-Security-Policy",
@@ -33,7 +61,13 @@ function securityHeaders(req, res) {
     return true; // signal: request handled
   }
 
+  if (!origineAcceptee(req)) {
+    res.writeHead(403, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ error: "Origine non autorisée" }));
+    return true; // signal: request handled
+  }
+
   return false; // signal: continue processing
 }
 
-module.exports = { securityHeaders };
+module.exports = { securityHeaders, origineAcceptee };

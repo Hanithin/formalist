@@ -177,6 +177,99 @@ try { db.exec("ALTER TABLE users ADD COLUMN suspended INTEGER DEFAULT 0"); } cat
 try { db.exec("ALTER TABLE user_sessions ADD COLUMN session_token TEXT"); } catch (e) { /* column already exists */ }
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN roles TEXT"); } catch (e) { /* column already exists */ }
+try { db.exec("ALTER TABLE users ADD COLUMN first_name TEXT"); } catch (e) { /* column already exists */ }
+try { db.exec("ALTER TABLE users ADD COLUMN last_name TEXT"); } catch (e) { /* column already exists */ }
+// Les comptes déjà en base au moment de l'ajout de la colonne sont considérés confirmés :
+// la vérification d'adresse ne s'applique qu'aux inscriptions suivantes.
+try {
+  db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0");
+  db.exec("UPDATE users SET email_verified = 1");
+} catch (e) { /* column already exists */ }
+// Backfill first_name / last_name depuis `name` pour les comptes créés avant la refonte
+try {
+  db.exec(`UPDATE users
+    SET first_name = TRIM(SUBSTR(name, 1, INSTR(name || ' ', ' ') - 1)),
+        last_name  = TRIM(SUBSTR(name, INSTR(name || ' ', ' ') + 1))
+    WHERE first_name IS NULL OR first_name = ''`);
+} catch (e) { /* best-effort */ }
+// Jetons email à usage unique (confirmation d'adresse, et plus tard réinitialisation de mot de passe)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_tokens (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL DEFAULT 'verify',
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_email_tokens_user ON email_tokens(user_id, type);
+`);
+
+/* ============================================================
+   ÉQUIPES
+   Une équipe regroupe des personnes qui travaillent sur les mêmes dossiers.
+   - type 'client'  : une société et ses collaborateurs
+   - type 'cabinet' : un cabinet d'avocats ; seuls ses avocats peuvent inviter
+   Droits d'un membre : créer, modifier, et voir les dossiers des autres.
+   L'admin d'équipe voit et fait tout.
+   ============================================================ */
+db.exec(`
+  CREATE TABLE IF NOT EXISTS teams (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'client' CHECK(type IN ('client','cabinet')),
+    owner_id INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS team_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'collaborateur' CHECK(role IN ('admin','collaborateur','avocat')),
+    can_create INTEGER NOT NULL DEFAULT 1,
+    can_edit INTEGER NOT NULL DEFAULT 1,
+    can_view_all INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(team_id, user_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+
+  CREATE TABLE IF NOT EXISTS team_invitations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'collaborateur' CHECK(role IN ('admin','collaborateur','avocat')),
+    can_create INTEGER NOT NULL DEFAULT 1,
+    can_edit INTEGER NOT NULL DEFAULT 1,
+    can_view_all INTEGER NOT NULL DEFAULT 0,
+    token TEXT NOT NULL UNIQUE,
+    invited_by INTEGER REFERENCES users(id),
+    expires_at TEXT NOT NULL,
+    accepted_at TEXT,
+    revoked_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_team_invit_team ON team_invitations(team_id);
+`);
+
+// Un dossier appartient à une équipe : c'est ce qui permet le partage (étape 2)
+try { db.exec("ALTER TABLE formalites ADD COLUMN team_id INTEGER REFERENCES teams(id)"); } catch (e) { /* déjà présent */ }
+
+/* Notes internes attachées à un dossier.
+   La note appartient à l'équipe de son auteur : sur un même dossier, l'équipe
+   du client et le cabinet ont chacun leur fil, sans se voir. */
+db.exec(`
+  CREATE TABLE IF NOT EXISTS team_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    formalite_id INTEGER NOT NULL REFERENCES formalites(id) ON DELETE CASCADE,
+    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    author_id INTEGER NOT NULL REFERENCES users(id),
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_team_notes ON team_notes(formalite_id, team_id, created_at);
+`);
 // Backfill `roles` from `role` for legacy rows
 try { db.exec("UPDATE users SET roles = '[\"' || role || '\"]' WHERE roles IS NULL OR roles = ''"); } catch (e) {}
 try { db.exec("ALTER TABLE formalites ADD COLUMN reference TEXT"); } catch (e) { /* column already exists */ }
@@ -285,6 +378,23 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_audit_formalite ON audit_log(formalite_id, created_at DESC);
 `);
 
+// Registre des fichiers déposés : à qui appartient chaque fichier de uploads/.
+//
+// Sans lui, on ne peut pas répondre à « cette personne a-t-elle le droit de lire ce
+// fichier ? » : le nom du fichier déposé pendant la création d'une société n'est
+// mémorisé que côté navigateur, et n'atterrit en base qu'au moment de l'enregistrement.
+// Le registre, lui, est écrit au dépôt, donc toujours présent.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS uploaded_files (
+    filename TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    formalite_id INTEGER REFERENCES formalites(id),
+    original_name TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_uploaded_files_user ON uploaded_files(user_id);
+`);
+
 // Documents : autoriser le status 'rejected' (la contrainte CHECK ne l'inclut pas)
 // On ne peut pas modifier un CHECK en SQLite, donc on accepte que la valeur soit 'rejected'
 // en pratique au niveau applicatif (le CHECK ne sera pas violé si on met un status valide).
@@ -299,22 +409,20 @@ function hashPassword(password) {
   return { hash, salt };
 }
 
-const existingAdmin = db.prepare("SELECT id FROM users WHERE email = ?").get("admin@formalist.fr");
-if (!existingAdmin) {
-  const adminPwd = process.env.SEED_ADMIN_PASSWORD || "admin123";
-  const avocatPwd = process.env.SEED_AVOCAT_PASSWORD || "avocat123";
-  const userPwd = process.env.SEED_USER_PASSWORD || "test123";
-
-  const admin = hashPassword(adminPwd);
-  const avocat = hashPassword(avocatPwd);
-  const user = hashPassword(userPwd);
-
-  const insert = db.prepare("INSERT INTO users (email, password_hash, salt, name, role) VALUES (?, ?, ?, ?, ?)");
-  insert.run("admin@formalist.fr", admin.hash, admin.salt, "Administrateur", "admin");
-  insert.run("avocat@formalist.fr", avocat.hash, avocat.salt, "Me. Sophie Martin", "avocat");
-  insert.run("test@formalist.fr", user.hash, user.salt, "Jean Dupont", "user");
-  console.log("DB seeded: 3 users created");
-}
+// Aucun compte n'est créé automatiquement : les comptes se créent via l'inscription
+// (avec confirmation d'adresse email). L'administrateur est désigné par la variable
+// d'environnement ADMIN_EMAIL — jamais en dur dans le code.
+// Si ce compte existe déjà en base, on s'assure qu'il a bien le rôle admin.
+try {
+  const adminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  if (adminEmail) {
+    const row = db.prepare("SELECT id, role FROM users WHERE email = ?").get(adminEmail);
+    if (row && row.role !== "admin") {
+      db.prepare("UPDATE users SET role = 'admin', roles = '[\"admin\"]' WHERE id = ?").run(row.id);
+      console.log("Rôle admin appliqué au compte configuré dans ADMIN_EMAIL");
+    }
+  }
+} catch (e) { /* best-effort */ }
 
 /* ============================================================
    PREPARED STATEMENTS
@@ -325,6 +433,62 @@ const stmts = {
   getUserByEmail: db.prepare("SELECT * FROM users WHERE email = ?"),
   getUserById: db.prepare("SELECT id, email, name, role, created_at FROM users WHERE id = ?"),
   createUser: db.prepare("INSERT INTO users (email, password_hash, salt, name, role) VALUES (?, ?, ?, ?, ?)"),
+  createUserFull: db.prepare(`INSERT INTO users
+    (email, password_hash, salt, name, first_name, last_name, role, roles, email_verified)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`),
+  setEmailVerified: db.prepare("UPDATE users SET email_verified = 1 WHERE id = ?"),
+  updateUserNames: db.prepare("UPDATE users SET first_name = ?, last_name = ? WHERE id = ?"),
+
+  // Équipes
+  createTeam: db.prepare("INSERT INTO teams (name, type, owner_id) VALUES (?, ?, ?)"),
+  getTeamById: db.prepare("SELECT * FROM teams WHERE id = ?"),
+  getTeamOfUser: db.prepare(`SELECT t.*, m.role, m.can_create, m.can_edit, m.can_view_all
+    FROM team_members m JOIN teams t ON t.id = m.team_id
+    WHERE m.user_id = ? ORDER BY m.created_at ASC LIMIT 1`),
+  renameTeam: db.prepare("UPDATE teams SET name = ? WHERE id = ?"),
+
+  addTeamMember: db.prepare(`INSERT INTO team_members
+    (team_id, user_id, role, can_create, can_edit, can_view_all) VALUES (?, ?, ?, ?, ?, ?)`),
+  getTeamMembers: db.prepare(`SELECT m.*, u.name, u.email, u.last_seen_at
+    FROM team_members m JOIN users u ON u.id = m.user_id
+    WHERE m.team_id = ? ORDER BY (m.role = 'admin') DESC, u.name ASC`),
+  getTeamMember: db.prepare("SELECT * FROM team_members WHERE team_id = ? AND user_id = ?"),
+  getTeamMemberById: db.prepare("SELECT * FROM team_members WHERE id = ?"),
+  updateTeamMember: db.prepare(`UPDATE team_members
+    SET role = ?, can_create = ?, can_edit = ?, can_view_all = ? WHERE id = ?`),
+  removeTeamMember: db.prepare("DELETE FROM team_members WHERE id = ?"),
+  countTeamAdmins: db.prepare("SELECT COUNT(*) c FROM team_members WHERE team_id = ? AND role = 'admin'"),
+
+  createInvitation: db.prepare(`INSERT INTO team_invitations
+    (team_id, email, role, can_create, can_edit, can_view_all, token, invited_by, expires_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+  getInvitationsByTeam: db.prepare(`SELECT i.*, u.name as invited_by_name
+    FROM team_invitations i LEFT JOIN users u ON u.id = i.invited_by
+    WHERE i.team_id = ? AND i.accepted_at IS NULL AND i.revoked_at IS NULL
+    ORDER BY i.created_at DESC`),
+  getInvitationById: db.prepare("SELECT * FROM team_invitations WHERE id = ?"),
+  getInvitationByToken: db.prepare("SELECT * FROM team_invitations WHERE token = ?"),
+  getPendingInvitation: db.prepare(`SELECT * FROM team_invitations
+    WHERE team_id = ? AND email = ? AND accepted_at IS NULL AND revoked_at IS NULL`),
+  acceptInvitation: db.prepare("UPDATE team_invitations SET accepted_at = datetime('now') WHERE id = ?"),
+  revokeInvitation: db.prepare("UPDATE team_invitations SET revoked_at = datetime('now') WHERE id = ?"),
+  refreshInvitation: db.prepare("UPDATE team_invitations SET token = ?, expires_at = ?, created_at = datetime('now') WHERE id = ?"),
+
+  // Notes internes d'équipe sur un dossier
+  createTeamNote: db.prepare("INSERT INTO team_notes (formalite_id, team_id, author_id, content) VALUES (?, ?, ?, ?)"),
+  getTeamNotes: db.prepare(`SELECT n.*, u.name as author_name
+    FROM team_notes n LEFT JOIN users u ON u.id = n.author_id
+    WHERE n.formalite_id = ? AND n.team_id = ? ORDER BY n.created_at ASC`),
+  getTeamNoteById: db.prepare("SELECT * FROM team_notes WHERE id = ?"),
+  deleteTeamNote: db.prepare("DELETE FROM team_notes WHERE id = ?"),
+  countTeamNotes: db.prepare("SELECT COUNT(*) c FROM team_notes WHERE formalite_id = ? AND team_id = ?"),
+
+  // Jetons email
+  createEmailToken: db.prepare("INSERT INTO email_tokens (token, user_id, type, expires_at) VALUES (?, ?, ?, ?)"),
+  getEmailToken: db.prepare("SELECT * FROM email_tokens WHERE token = ?"),
+  useEmailToken: db.prepare("UPDATE email_tokens SET used_at = datetime('now') WHERE token = ?"),
+  deleteEmailTokens: db.prepare("DELETE FROM email_tokens WHERE user_id = ? AND type = ?"),
+  cleanEmailTokens: db.prepare("DELETE FROM email_tokens WHERE expires_at < datetime('now')"),
   getAvocats: db.prepare("SELECT id, email, name, created_at FROM users WHERE role = 'avocat' OR (roles IS NOT NULL AND roles LIKE '%\"avocat\"%') ORDER BY name ASC"),
   getAdmins: db.prepare("SELECT id, email, name FROM users WHERE role = 'admin' OR (roles IS NOT NULL AND roles LIKE '%\"admin\"%') ORDER BY name ASC"),
   updateUserProfile: db.prepare("UPDATE users SET name = ?, email = ? WHERE id = ?"),
@@ -576,6 +740,10 @@ const stmts = {
 
   // User Documents (vault)
   createUserDocument: db.prepare("INSERT INTO user_documents (user_id, source_type, source_id, name, type, file_path, category) VALUES (?, ?, ?, ?, ?, ?, ?)"),
+
+  // Registre de propriété des fichiers déposés
+  registerUploadedFile: db.prepare("INSERT OR REPLACE INTO uploaded_files (filename, user_id, formalite_id, original_name) VALUES (?, ?, ?, ?)"),
+  getUploadedFile: db.prepare("SELECT * FROM uploaded_files WHERE filename = ?"),
   getUserDocuments: db.prepare("SELECT * FROM user_documents WHERE user_id = ? ORDER BY created_at DESC"),
   getUserDocumentsByType: db.prepare("SELECT * FROM user_documents WHERE user_id = ? AND source_type = ? ORDER BY created_at DESC"),
 
