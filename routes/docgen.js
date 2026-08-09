@@ -1,5 +1,5 @@
 /**
- * routes/docgen.js — Document generation (DOCX, PDF, signed PDF)
+ * routes/docgen.js - Document generation (DOCX, PDF, signed PDF)
  * Fixes: #4 (path traversal in Content-Disposition)
  */
 

@@ -57,7 +57,7 @@ body += p('Si\u00e8ge social : {{SIEGE_SOCIAL}}', rPrSmall, { center: true, befo
 // ─── DATE & PRESENTS ───
 body += para({ before: SZ_NONE, after: SZ_MEDIUM, runs: run('Le {{DATE_SIGNATURE_COURTE}} \u00e0 14 heures, sont pr\u00e9sents au si\u00e8ge de la soci\u00e9t\u00e9, les soussign\u00e9s :', rPr) });
 
-// List of present associes (up to 10) — each in its own conditional block
+// List of present associes (up to 10) - each in its own conditional block
 // Use paragraphLoop: opening/closing tags in separate zero-height paragraphs
 var hiddenPPr = '<w:pPr><w:spacing w:before="0" w:after="0" w:line="0" w:lineRule="auto"/><w:rPr><w:rFonts w:ascii="' + FONT + '" w:cs="' + FONT + '" w:eastAsia="' + FONT + '" w:hAnsi="' + FONT + '"/><w:sz w:val="2"/></w:rPr></w:pPr>';
 for (var n = 1; n <= 10; n++) {

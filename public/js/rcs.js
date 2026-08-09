@@ -1,5 +1,5 @@
 // Résolution code postal → ville du RCS (Tribunal de Commerce du département)
-// Miroir de lib/rcs.js côté serveur — voir ce fichier pour la doc complète.
+// Miroir de lib/rcs.js côté serveur - voir ce fichier pour la doc complète.
 (function() {
   var DEPT_TO_RCS = {
     '01':'Bourg-en-Bresse','02':'Saint-Quentin','03':'Cusset','04':'Manosque','05':'Gap','06':'Antibes','07':'Aubenas','08':'Sedan','09':'Foix',

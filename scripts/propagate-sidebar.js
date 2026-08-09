@@ -314,7 +314,7 @@ function processFile(file, activePage) {
     html = html.replace('</head>', NEW_CSS + '\n</head>');
   }
 
-  // 3) Insert/replace modal HTML — juste après </aside>
+  // 3) Insert/replace modal HTML - juste après </aside>
   if (MODAL_REGEX.test(html)) {
     html = html.replace(MODAL_REGEX, MODAL_HTML.trim());
   } else {

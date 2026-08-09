@@ -29,7 +29,7 @@ function computeAction(f, data) {
   if (pendingSig > 0 && totalSig > 0) {
     return { action: pendingSig + " signature(s) en attente", userAction: true };
   }
-  if (f.status === "terminee" || sp === "5e") return { action: "—", userAction: false, terminé: true };
+  if (f.status === "terminee" || sp === "5e") return { action: "-", userAction: false, terminé: true };
   if (sp === "5c" || sp === "5d") return { action: "Préparation dépôt greffe", userAction: false };
   if ((f.phase || 1) >= 6) return { action: "Immatriculation en cours", userAction: false };
   if (sp === "5a" || sp === "5b") return { action: "Avocat vérifie", userAction: false };
@@ -62,13 +62,13 @@ function main() {
     let data = {};
     try { data = JSON.parse(f.data_json || "{}"); } catch (e) {}
     const a = computeAction(f, data);
-    const banque = data.NOM_BANQUE && data.NOM_BANQUE !== "-" ? data.NOM_BANQUE : (data.BANQUE_SHINE ? "Shine" : data.BANQUE_QONTO ? "Qonto" : data.BANQUE_REVOLUT ? "Revolut" : "—");
+    const banque = data.NOM_BANQUE && data.NOM_BANQUE !== "-" ? data.NOM_BANQUE : (data.BANQUE_SHINE ? "Shine" : data.BANQUE_QONTO ? "Qonto" : data.BANQUE_REVOLUT ? "Revolut" : "-");
     const row = [
       String(f.id).padStart(2),
-      (f.reference || "—").padEnd(6),
-      (f.societe || "—").slice(0, 20).padEnd(20),
+      (f.reference || "-").padEnd(6),
+      (f.societe || "-").slice(0, 20).padEnd(20),
       String(f.phase).padStart(5),
-      (f.business_sub_phase || "—").padEnd(3),
+      (f.business_sub_phase || "-").padEnd(3),
       `${f.pending_signatures}/${f.total_signatures}`.padStart(8),
       `${f.total_docs}(${f.rejected_docs})`.padStart(9),
       banque.slice(0, 14).padEnd(14),

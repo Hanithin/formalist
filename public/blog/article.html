@@ -21,7 +21,7 @@
     .nav-wrap.scrolled { padding-top:8px }
     .nav { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:transparent; transition:all 0.3s; max-width:1200px; width:100%; border-radius:16px }
     .nav-wrap.scrolled .nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid #e8e8e8; box-shadow:0 2px 16px rgba(0,0,0,0.06) }
-    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.3px }
+    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing: 0}
     .nav-center { display:flex; align-items:center; gap:32px }
     .nav-center a, .nav-center .nav-dropdown-trigger { font-size:14px; font-weight:500; color:#666; transition:color 0.2s; cursor:pointer; text-decoration:none }
     .nav-center a:hover, .nav-center .nav-dropdown-trigger:hover { color:#111 }
@@ -35,7 +35,7 @@
     .nav-mega-grid { display:grid; grid-template-columns:1.4fr 1fr 240px; gap:0 }
     .nav-mega-col { padding:28px 32px }
     .nav-mega-col:first-child { border-right:1px solid #f0f0f0 }
-    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#bbb; margin-bottom:16px }
+    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing: 0; color:#bbb; margin-bottom:16px }
     .nav-mega-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:12px; transition:all 0.15s; cursor:pointer; text-decoration:none; color:inherit }
     .nav-mega-item:hover { background:#f8f7ff }
     .nav-mega-icon { width:40px; height:40px; border-radius:12px; background:#f5f5f5; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s }
@@ -51,7 +51,7 @@
     .nav-mega-cta::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; background:rgba(255,255,255,0.08); border-radius:50% }
     .nav-mega-cta::after { content:''; position:absolute; bottom:-30px; left:-30px; width:100px; height:100px; background:rgba(255,255,255,0.06); border-radius:50% }
     .nav-mega-cta-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.2); backdrop-filter:blur(4px); padding:5px 12px; border-radius:100px; font-size:11px; font-weight:600; width:fit-content; position:relative; z-index:1 }
-    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
+    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing: 0; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
     .nav-mega-cta-link { display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; margin-top:16px; opacity:0.9; position:relative; z-index:1; text-decoration:none; transition:opacity 0.15s }
     .nav-mega-cta-link:hover { opacity:1 }
     .nav-right { display:flex; align-items:center; gap:8px }
@@ -75,13 +75,13 @@
     .article-meta-author { font-weight:600; color:#111 }
     .article-meta-cat { padding:3px 10px; border-radius:100px; border:1px solid #e0e0e0; font-size:11px; font-weight:500 }
 
-    .article-title { font-family:'Cal Sans','Inter',sans-serif; font-size:44px; font-weight:600; line-height:1.15; letter-spacing:-1.2px; margin-bottom:28px; animation:fade-up 0.6s ease 0.05s both }
+    .article-title { font-family:'Cal Sans','Inter',sans-serif; font-size:44px; font-weight:600; line-height:1.15; letter-spacing: 0; margin-bottom:28px; animation:fade-up 0.6s ease 0.05s both }
     .article-intro { font-size:17px; color:#555; line-height:1.75; margin-bottom:40px; animation:fade-up 0.6s ease 0.1s both }
 
     /* ARTICLE CONTENT */
     .article-content { animation:fade-up 0.6s ease 0.15s both }
-    .article-content h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:26px; font-weight:600; letter-spacing:-0.5px; margin:48px 0 16px; line-height:1.25 }
-    .article-content h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; margin:36px 0 12px; line-height:1.3 }
+    .article-content h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:26px; font-weight:600; letter-spacing: 0; margin:48px 0 16px; line-height:1.25 }
+    .article-content h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing: 0; margin:36px 0 12px; line-height:1.3 }
     .article-content p { font-size:16px; color:#333; line-height:1.8; margin-bottom:20px }
     .article-content a { color:#7c3aed; font-weight:500; text-decoration:underline; text-underline-offset:2px; transition:color 0.2s }
     .article-content a:hover { color:#6d28d9 }
@@ -109,7 +109,7 @@
     .article-hero-img .illus-card { height:320px; display:flex; align-items:center; justify-content:center; position:relative }
     .article-hero-img .illus-card.theme-orange { background:linear-gradient(160deg,#fff8f0 0%,#fef3e2 60%,#fde8c8 100%); border:1px solid #f5e6cc }
     .illus-card .illus-big { position:relative; display:flex; align-items:center; gap:24px }
-    .illus-card .illus-num { font-family:'Cal Sans','Inter',sans-serif; font-size:72px; font-weight:600; letter-spacing:-2px }
+    .illus-card .illus-num { font-family:'Cal Sans','Inter',sans-serif; font-size:72px; font-weight:600; letter-spacing: 0}
     .illus-card .illus-arrow { font-size:36px; color:#999 }
     .illus-card .illus-badge { display:inline-flex; padding:6px 16px; border-radius:100px; font-size:14px; font-weight:700; margin-top:12px }
     .illus-card .illus-label { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; color:#555; margin-top:8px; text-align:center }
@@ -118,7 +118,7 @@
     .article-sidebar { position:sticky; top:100px; animation:fade-up 0.6s ease 0.2s both }
     .sidebar-cta { background:#fff; border:1px solid #e8e8e8; border-radius:20px; padding:32px 28px; margin-bottom:28px }
     .sidebar-cta-logo { width:44px; height:44px; border-radius:12px; background:#111; display:flex; align-items:center; justify-content:center; margin-bottom:20px; font-family:'Cal Sans'; font-size:16px; color:#fff; font-weight:600 }
-    .sidebar-cta h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.3px; line-height:1.3; margin-bottom:12px }
+    .sidebar-cta h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing: 0; line-height:1.3; margin-bottom:12px }
     .sidebar-cta p { font-size:13px; color:#888; line-height:1.6; margin-bottom:24px }
     .sidebar-cta .btn-cta { display:block; width:100%; padding:12px 20px; text-align:center; border-radius:12px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; border:none; margin-bottom:10px }
     .sidebar-cta .btn-cta-primary { background:#7c3aed; color:#fff }
@@ -129,7 +129,7 @@
 
     /* SIDEBAR TOC */
     .sidebar-toc { background:#fff; border:1px solid #e8e8e8; border-radius:20px; padding:28px }
-    .sidebar-toc h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; margin-bottom:16px; color:#111 }
+    .sidebar-toc h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing: 0; margin-bottom:16px; color:#111 }
     .sidebar-toc a { display:block; font-size:13px; color:#888; padding:7px 0 7px 16px; border-left:2px solid #eee; transition:all 0.2s; line-height:1.4 }
     .sidebar-toc a:hover { color:#7c3aed; border-color:#7c3aed }
     .sidebar-toc a.active { color:#7c3aed; border-color:#7c3aed; font-weight:600 }
@@ -147,7 +147,7 @@
 
     /* RELATED ARTICLES */
     .related { max-width:1200px; margin:0 auto; padding:0 40px 80px }
-    .related h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.5px; margin-bottom:32px }
+    .related h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing: 0; margin-bottom:32px }
     .related-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px }
     .related-card { background:#fff; border:1px solid #e8e8e8; border-radius:20px; overflow:hidden; transition:all 0.3s; cursor:pointer; text-decoration:none; color:inherit }
     .related-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.08) }
@@ -160,7 +160,7 @@
     .tag-compta { background:#e0e7ff; color:#4338ca }
     .tag-juridique { background:#fce7f3; color:#be185d }
     .tag-guide { background:#d1fae5; color:#047857 }
-    .related-card-title { font-family:'Cal Sans','Inter',sans-serif; font-size:17px; font-weight:600; line-height:1.3; letter-spacing:-0.2px; margin-bottom:8px }
+    .related-card-title { font-family:'Cal Sans','Inter',sans-serif; font-size:17px; font-weight:600; line-height:1.3; letter-spacing: 0; margin-bottom:8px }
     .related-card-meta { font-size:12px; color:#bbb }
     .illus { position:relative; width:160px; height:120px }
     .illus-circle { position:absolute; border-radius:50% }
@@ -196,10 +196,10 @@
     .foot { padding:56px 40px 32px; background:transparent }
     .foot-inner { max-width:1200px; margin:0 auto }
     .foot-top { display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr 1fr; gap:40px; margin-bottom:56px }
-    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:14px }
+    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing: 0; margin-bottom:14px }
     .foot-brand-p { font-size:13px; color:#999; line-height:1.7; max-width:280px; margin-bottom:24px }
     .foot-mission { font-size:12px; color:#bbb; line-height:1.6; max-width:280px; margin-bottom:20px }
-    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; color:#111; margin-bottom:16px }
+    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing: 0; color:#111; margin-bottom:16px }
     .foot-col a { display:block; font-size:13px; color:#888; padding:5px 0; transition:color 0.2s }
     .foot-col a:hover { color:#111 }
     .foot-bottom { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding-top:24px; border-top:1px solid #e8e8e8 }
@@ -220,7 +220,7 @@
       .nav { padding:0 16px }
       .nav-center { display:none }
       .article-wrap { padding:90px 16px 60px }
-      .article-title { font-size:30px; letter-spacing:-0.8px }
+      .article-title { font-size:30px; letter-spacing: 0}
       .article-intro { font-size:15px }
       .article-content h2 { font-size:22px }
       .article-content h3 { font-size:18px }

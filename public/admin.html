@@ -15,9 +15,9 @@
     body { font-family: 'Matter', 'Inter', -apple-system, sans-serif; color: #111; background: #f5f5f7; display: flex; }
     a { text-decoration: none; color: inherit; }
 
-    /* SIDEBAR — aligné avec dashboard.html */
+    /* SIDEBAR - aligné avec dashboard.html */
     .sidebar {
-      width: 270px;
+      width: 300px;
       background: #fff;
       border-right: 1px solid #e5e5e5;
       display: flex; flex-direction: column;
@@ -33,7 +33,7 @@
       display: inline-flex; align-items: center;
       padding: 3px 8px; border-radius: 6px;
       font-size: 10.5px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.5px;
+      text-transform: uppercase; letter-spacing: 0;
       line-height: 1;
     }
     .logo-badge.avocat { background: #f3e8ff; color: #7c3aed; }
@@ -51,7 +51,7 @@
       box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
     }
 
-    .sidebar-cta-link {
+    .sidebar-cta, .sidebar-cta-link {
       margin: 4px 12px 20px; padding: 13px 18px;
       background: #111; color: #fff; border: none;
       border-radius: 12px; font-size: 14.5px; font-weight: 600;
@@ -60,9 +60,9 @@
       font-family: inherit; text-decoration: none;
       box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     }
-    .sidebar-cta-link:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-    .sidebar-cta-link:active { transform: scale(0.99); }
-    .sidebar-cta-link svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
+    .sidebar-cta:hover, .sidebar-cta-link:hover { background: #2a2a2c; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .sidebar-cta:active, .sidebar-cta-link:active { transform: scale(0.99); }
+    .sidebar-cta svg, .sidebar-cta-link svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
 
     .sidebar-nav { flex: 1; padding: 0 12px; }
     .sidebar-nav button, .sidebar-nav a {
@@ -87,13 +87,13 @@
     .sidebar-nav a.avocat svg { opacity: 0.95; }
     .sidebar-section {
       font-size: 11px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.6px; color: #aaa;
+      letter-spacing: 0; color: #aaa;
       padding: 20px 12px 8px; margin-top: 4px;
     }
     .sidebar-divider { height: 1px; background: #eee; margin: 12px 12px; }
 
     .sidebar-bottom { padding: 14px 16px; background: #fff; border-top: 1px solid #eeeeef; display: flex; align-items: center; gap: 12px; }
-    .sidebar-bottom .avatar { width: 36px; height: 36px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px; }
+    .sidebar-bottom .avatar { width: 36px; height: 36px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0; }
     .sidebar-bottom .info { flex: 1; min-width: 0; }
     .sidebar-bottom .name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
     .sidebar-bottom .email { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
@@ -108,9 +108,9 @@
     .sidebar-bottom button svg { width: 16px; height: 16px; }
 
     /* MAIN */
-    .main { flex: 1; margin-left: 270px; min-height: 100vh; padding: 28px 40px 30px; }
+    .main { flex: 1; margin-left: 300px; min-height: 100vh; padding: 28px 40px 30px; }
     .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-    .page-header h1 { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 26px; font-weight: 600; letter-spacing: -0.3px; color: #111; }
+    .page-header h1 { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 26px; font-weight: 600; letter-spacing: 0; color: #111; }
     .page-header p { font-size: 13.5px; color: #888; margin-top: 4px; }
 
     /* CARDS */
@@ -156,7 +156,7 @@
     }
     .stat-card .label {
       font-size: 11.5px; font-weight: 600; color: #888;
-      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+      text-transform: uppercase; letter-spacing: 0; margin-bottom: 4px;
       padding-right: 56px;
     }
     .stat-card .value {
@@ -197,7 +197,7 @@
       background: #fff; border: 1px solid #ececef; border-radius: 14px; padding: 18px 20px;
       display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden;
     }
-    .activity-kpi .kpi-label { font-size: 11.5px; color: #888; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .activity-kpi .kpi-label { font-size: 11.5px; color: #888; font-weight: 500; letter-spacing: 0; text-transform: uppercase; }
     .activity-kpi .kpi-value { font-family: 'Cal Sans', sans-serif; font-size: 28px; font-weight: 600; color: #111; line-height: 1.15; margin-top: 6px; }
     .activity-kpi .kpi-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
     .activity-kpi .kpi-accent { position: absolute; top: 18px; right: 20px; width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
@@ -244,7 +244,7 @@
     .col-header h2 {
       font-family: 'Cal Sans', 'Inter', sans-serif;
       font-size: 18px; font-weight: 600; color: #111;
-      letter-spacing: -0.1px;
+      letter-spacing: 0;
     }
     .col-header p { font-size: 13.5px; color: #888; margin-top: 3px; }
     .col-header-link {
@@ -293,7 +293,7 @@
       width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
       background: #f5f3ff; color: #7c3aed;
       display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 600; letter-spacing: 0.2px;
+      font-size: 12px; font-weight: 600; letter-spacing: 0;
     }
     .priority-body { flex: 1; min-width: 0; }
     .priority-title {
@@ -310,7 +310,7 @@
       display: inline-block; padding: 2px 7px;
       background: #f3f4f6; color: #555;
       border-radius: 5px; font-size: 10.5px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.3px;
+      text-transform: uppercase; letter-spacing: 0;
     }
     .priority-urgency {
       display: inline-flex; align-items: center; gap: 4px;
@@ -400,7 +400,7 @@
     th {
       text-align: left; padding: 14px 18px;
       font-size: 11.5px; font-weight: 600;
-      color: #777; text-transform: uppercase; letter-spacing: 0.4px;
+      color: #777; text-transform: uppercase; letter-spacing: 0;
       white-space: nowrap;
     }
     td {
@@ -452,13 +452,21 @@
     .role-chip.active.avocat { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
     .role-chip.active.admin { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
     .role-chip.disabled { cursor: not-allowed; opacity: 0.5; }
+    .admin-toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px);
+      background: #18181b; color: #fff; font-size: 14px;
+      padding: 12px 20px; border-radius: 100px; box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 10000;
+      max-width: 90vw; text-align: center;
+    }
+    .admin-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
     .user-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .user-cell .av {
       width: 32px; height: 32px; border-radius: 50%;
       background: #111; color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11.5px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+      font-size: 11.5px; font-weight: 600; flex-shrink: 0; letter-spacing: 0;
     }
     .user-cell .info { min-width: 0; }
     .user-cell .name { font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -549,7 +557,7 @@
     .drawer-section { margin: 0 24px 22px; }
     .drawer-section-title {
       font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.5px; color: #888; margin-bottom: 10px;
+      letter-spacing: 0; color: #888; margin-bottom: 10px;
       display: flex; align-items: center; justify-content: space-between;
     }
 
@@ -562,7 +570,7 @@
       width: 56px; height: 56px; border-radius: 14px;
       background: linear-gradient(135deg, #7c3aed, #5b21b6); color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px; font-weight: 700; flex-shrink: 0; letter-spacing: 0.5px;
+      font-size: 20px; font-weight: 700; flex-shrink: 0; letter-spacing: 0;
       position: relative;
     }
     .drawer-hero .online-dot {
@@ -584,7 +592,7 @@
       display: inline-flex; align-items: center;
       padding: 5px 11px; border-radius: 7px;
       font-size: 11.5px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.5px;
+      text-transform: uppercase; letter-spacing: 0;
       flex-shrink: 0;
     }
     .offer-badge.gray   { background: #f3f4f6; color: #4b5563; }
@@ -600,7 +608,7 @@
       background: #fafafa; border: 1px solid #f0f0f2; border-radius: 12px;
       padding: 12px 14px;
     }
-    .d-tile .lab { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #888; }
+    .d-tile .lab { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0; color: #888; }
     .d-tile .val { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; font-weight: 700; color: #111; margin-top: 6px; line-height: 1; }
     .d-tile .sub { font-size: 12px; color: #888; margin-top: 4px; }
 
@@ -679,7 +687,87 @@
     .section { display: none; }
     .section.active { display: block; animation: fadeUp 0.18s ease; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-  </style>
+  
+    /* Fenêtre "Nouvelle formalité" (identique aux autres pages) */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: 0; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+    /* ===== Modale de saisie / confirmation (remplace prompt et confirm) ===== */
+    .ask-backdrop {
+      position: fixed; inset: 0; z-index: 10000; display: flex;
+      align-items: center; justify-content: center; padding: 24px;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      opacity: 0; transition: opacity 0.18s ease;
+    }
+    .ask-backdrop.open { opacity: 1; }
+    .ask-box {
+      width: 100%; max-width: 460px; background: #fff; border-radius: 18px;
+      padding: 28px; box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+      transform: translateY(12px) scale(0.98); transition: transform 0.18s ease;
+    }
+    .ask-backdrop.open .ask-box { transform: none; }
+    .ask-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; color: #111; line-height: 1.25;
+    }
+    .ask-text { font-size: 14px; color: #52525b; line-height: 1.5; margin-top: 8px; }
+    .ask-field {
+      width: 100%; margin-top: 18px; padding: 12px 14px; font-family: inherit; font-size: 14.5px;
+      color: #111; background: #fff; border: 1px solid #d4d4d8; border-radius: 12px;
+      outline: none; resize: vertical; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .ask-field::placeholder { color: #a1a1aa; }
+    .ask-field:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,0.07); }
+    .ask-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .ask-chip {
+      font-family: inherit; font-size: 12.5px; color: #3f3f46; background: #f4f4f5;
+      border: 1px solid transparent; border-radius: 100px; padding: 6px 12px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .ask-chip:hover { background: #fff; border-color: #111; color: #111; }
+    .ask-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    .ask-btn {
+      font-family: inherit; font-size: 14px; font-weight: 500; padding: 11px 20px;
+      border-radius: 100px; cursor: pointer; border: 1px solid #d4d4d8;
+      background: #fff; color: #111; transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+    .ask-btn:hover { background: #fafafa; border-color: #111; }
+    .ask-submit { background: #111; color: #fff; border-color: #111; }
+    .ask-submit:hover { background: #000; border-color: #000; }
+    .ask-submit:disabled { opacity: 0.4; cursor: default; background: #111; }
+    .ask-submit.danger { background: #dc2626; border-color: #dc2626; }
+    .ask-submit.danger:hover { background: #b91c1c; border-color: #b91c1c; }
+
+</style>
   <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
   <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="/css/sidebar-dark.css">
@@ -687,52 +775,69 @@
 <body>
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <a href="/dashboard.html">
-        <span class="logo-text">formalist</span>
-        <span class="logo-dot" aria-hidden="true"></span>
-      </a>
-      <span class="logo-badge admin">Admin</span>
+      <a href="/dashboard.html"><img src="/images/logo.png" alt="Formalist"></a>
     </div>
 
-    <a href="/dashboard.html?new=1" class="sidebar-cta-link">
+    <button type="button" class="sidebar-cta" onclick="openNewActionModal()">
       Cr&eacute;er une formalit&eacute;
-    </a>
+    </button>
 
     <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+      <a href="/creation.html?new=1&amp;type=creation" data-page="creation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        Cr&eacute;er une soci&eacute;t&eacute;
+      </a>
+      <a href="/modification.html" data-page="modification">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Modifier ma soci&eacute;t&eacute;
+      </a>
+      <a href="/depot-comptes.html" data-page="depot-comptes" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        D&eacute;p&ocirc;t des comptes
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
+      <a href="/fermeture.html" data-page="fermeture" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Fermer ma soci&eacute;t&eacute;
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
+
+      <a href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Contrats
+      </a>
       <a href="/messagerie.html" data-page="messagerie">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
       </a>
 
-      <div class="sidebar-section">Administration</div>
-      <button class="active" data-section="overview" onclick="showSection('overview')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
-        Vue d'ensemble
-      </button>
-      <button data-section="users" onclick="showSection('users')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        Utilisateurs
-      </button>
-      <button data-section="formalites" onclick="showSection('formalites')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Formalités (toutes)
-      </button>
-      <button data-section="avocats" onclick="showSection('avocats')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/></svg>
-        Avocats
-      </button>
-      <button data-section="payments" onclick="showSection('payments')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg>
-        Paiements
-      </button>
-      <button data-section="consultations" onclick="showSection('consultations')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Consultations
-      </button>
-      <button data-section="activity" onclick="showSection('activity')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Activité
-      </button>
+      <div class="sidebar-divider"></div>
+      <a href="/equipe.html" data-page="equipe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        &Eacute;quipe
+      </a>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
     </nav>
     <div class="sidebar-bottom">
       <div class="avatar" id="me-initials">A</div>
@@ -805,7 +910,7 @@
     <section class="section" id="section-formalites">
       <div class="page-header">
         <div>
-          <h1 style="display:inline-flex;align-items:baseline;gap:14px;"><span>Formalités</span><span id="formalites-count" style="font-family:'Matter','Inter',sans-serif;font-size:14.5px;font-weight:400;color:#888;letter-spacing:0;">0 formalité</span></h1>
+          <h1 style="display:inline-flex;align-items:baseline;gap:14px;"><span>Formalités</span><span id="formalites-count" style="font-family:'Matter','Inter',sans-serif;font-size:14.5px;font-weight:400;color:#888;letter-spacing: 0;">0 formalité</span></h1>
           <p>Toutes les démarches et leur assignation</p>
         </div>
       </div>
@@ -824,7 +929,7 @@
         </select>
         <select id="formalites-avocat-filter" onchange="renderFormalites()">
           <option value="all">Tous les avocats</option>
-          <option value="none">— Non assigné</option>
+          <option value="none">- Non assigné</option>
         </select>
       </div>
       <div class="table-wrap" id="formalites-table"></div>
@@ -1003,6 +1108,7 @@
     //  STATE
     // ============================================================
     var state = {
+      me: null,
       users: [],
       avocats: [],
       formalites: [],
@@ -1025,29 +1131,13 @@
       if (!data) return;
       var roles = data.user.roles && data.user.roles.length ? data.user.roles : [data.user.role];
       if (roles.indexOf('admin') === -1) { window.location.href = '/dashboard.html'; return; }
+      state.me = data.user; // sert à empêcher un admin de se retirer ses propres droits
       document.getElementById('me-name').textContent = data.user.name;
       document.getElementById('me-email').textContent = data.user.email;
       document.getElementById('me-initials').textContent = (data.user.name || 'A').split(' ').map(function(n){return n[0]||'';}).join('').slice(0,2).toUpperCase();
 
-      // Inject "Espace avocat" violet link si role inclut 'avocat' (cohérent avec les autres pages)
-      if (roles.indexOf('avocat') !== -1) {
-        var nav = document.querySelector('.sidebar-nav');
-        if (nav) {
-          var adminSection = Array.prototype.find.call(nav.querySelectorAll('.sidebar-section'), function(el){ return el.textContent.trim() === 'Administration'; });
-          var section = document.createElement('div');
-          section.className = 'sidebar-section';
-          section.textContent = 'Services';
-          var a = document.createElement('a');
-          a.href = '/avocat.html';
-          a.className = 'avocat';
-          a.style.cssText = 'margin:6px 0;';
-          a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.9;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>Espace avocat';
-          if (adminSection) {
-            nav.insertBefore(section, adminSection);
-            nav.insertBefore(a, adminSection);
-          }
-        }
-      }
+      // L'accès "Espace avocat" est injecté par common.js, commun à toutes les pages.
+
 
       loadAll();
     });
@@ -1130,12 +1220,12 @@
       return (name || '?').split(' ').map(function(n){ return (n && n[0]) || ''; }).join('').slice(0, 2).toUpperCase();
     }
     function formatMoney(cents, currency) {
-      if (cents == null) return '—';
+      if (cents == null) return '-';
       var amount = (cents / 100).toFixed(2).replace('.', ',');
       return amount + ' ' + (currency === 'USD' ? '$' : '€');
     }
     function formatMoneyShort(cents, currency) {
-      if (cents == null) return '—';
+      if (cents == null) return '-';
       var amount = Math.round(cents / 100).toString();
       return amount + ' ' + (currency === 'USD' ? '$' : '€');
     }
@@ -1156,7 +1246,7 @@
       return s.charAt(0).toUpperCase() + s.slice(1);
     }
     function formatDateTime(iso) {
-      if (!iso) return '—';
+      if (!iso) return '-';
       var d = new Date(iso.replace(' ', 'T') + (iso.endsWith('Z') ? '' : 'Z'));
       if (isNaN(d)) return iso;
       return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -1261,14 +1351,14 @@
       // Activité
       var recent = [];
       state.payments.slice(0, 6).forEach(function(p) {
-        var sub = (p.description || '').replace(/\s*[—–]\s*/g, ' ');
+        var sub = (p.description || '').replace(/\s*[--]\s*/g, ' ');
         recent.push({ ts: p.paid_at || p.created_at, kind: 'pay', user: p.user_name, label: 'a payé ' + formatMoney(p.amount_cents, p.currency), sub: sub });
       });
       state.formalites.slice(0, 6).forEach(function(f) {
         recent.push({ ts: f.created_at, kind: 'form', user: f.user_name, label: 'a démarré ' + (f.societe || 'Sans nom'), sub: f.type || 'Création' });
       });
       state.consultations.slice(0, 4).forEach(function(c) {
-        recent.push({ ts: c.created_at, kind: 'consult', user: c.user_name, label: 'a réservé une consultation', sub: 'avec ' + (c.avocat_name || '—') });
+        recent.push({ ts: c.created_at, kind: 'consult', user: c.user_name, label: 'a réservé une consultation', sub: 'avec ' + (c.avocat_name || '-') });
       });
       recent.sort(function(a,b){ return new Date(b.ts || 0) - new Date(a.ts || 0); });
       recent = recent.slice(0, 20);
@@ -1396,37 +1486,101 @@
       return [u.role];
     }
 
+    // Libellés lisibles : "user" ou "avocat" en clair ne veut rien dire hors du code
+    var ROLE_LABELS = { user: 'Client', avocat: 'Avocat', admin: 'Administrateur' };
+
     function rolesChips(u) {
       var current = parseUserRoles(u);
+      var moi = state.me && state.me.id === u.id;
       var html = '<div class="roles-chips">';
       ['user', 'avocat', 'admin'].forEach(function(r) {
         var on = current.indexOf(r) >= 0;
-        html += '<button type="button" class="role-chip ' + r + (on ? ' active' : '') + '" '
-          + 'onclick="toggleRole(' + u.id + ', \'' + r + '\')">' + r + '</button>';
+        // Un administrateur ne peut pas se retirer lui-même le rôle admin :
+        // il se couperait l'accès à cette page.
+        var verrouille = moi && r === 'admin' && on;
+        html += '<button type="button" class="role-chip ' + r + (on ? ' active' : '')
+          + (verrouille ? ' disabled' : '') + '"'
+          + (verrouille ? ' title="Vous ne pouvez pas retirer votre propre accès administrateur"' : '')
+          + ' onclick="' + (verrouille ? '' : 'toggleRole(' + u.id + ', \'' + r + '\')') + '">'
+          + ROLE_LABELS[r] + '</button>';
       });
       html += '</div>';
       return html;
     }
 
+    /* Confirmation dans le style du produit. La boîte du navigateur bloque la
+       page, affiche "localhost:3000" et ne dit pas ce qui va se passer. */
+    function askConfirm(opts, onOk) {
+      var back = document.createElement('div');
+      back.className = 'ask-backdrop';
+      back.innerHTML = '<div class="ask-box">'
+        + '<div class="ask-title">' + (opts.title || '') + '</div>'
+        + (opts.text ? '<div class="ask-text">' + opts.text + '</div>' : '')
+        + '<div class="ask-actions">'
+        +   '<button type="button" class="ask-btn ask-cancel">Annuler</button>'
+        +   '<button type="button" class="ask-btn ask-submit' + (opts.danger ? ' danger' : '') + '">'
+        +     (opts.submitLabel || 'Confirmer') + '</button>'
+        + '</div></div>';
+      document.body.appendChild(back);
+      requestAnimationFrame(function() { back.classList.add('open'); });
+
+      function close() { back.classList.remove('open'); setTimeout(function() { back.remove(); }, 180); }
+      back.addEventListener('click', function(e) { if (e.target === back) close(); });
+      back.querySelector('.ask-cancel').addEventListener('click', close);
+      back.querySelector('.ask-submit').addEventListener('click', function() { close(); onOk(); });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+      });
+    }
+
+    /* Message court en bas d'écran. Remplace les alert() du navigateur, qui
+       bloquent la page et affichent "localhost:3000". */
+    function showToast(message) {
+      var el = document.getElementById('admin-toast');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'admin-toast';
+        el.className = 'admin-toast';
+        document.body.appendChild(el);
+      }
+      el.textContent = message;
+      el.classList.add('show');
+      clearTimeout(el._t);
+      el._t = setTimeout(function() { el.classList.remove('show'); }, 3500);
+    }
+    window.showToast = showToast;
+
     window.toggleRole = function(userId, role) {
       var u = state.users.find(function(x){ return x.id === userId; });
       if (!u) return;
       var current = parseUserRoles(u);
+
+      if (state.me && state.me.id === userId && role === 'admin' && current.indexOf('admin') >= 0) {
+        showToast('Vous ne pouvez pas retirer votre propre accès administrateur.');
+        return;
+      }
+
       var next;
       if (current.indexOf(role) >= 0) {
         next = current.filter(function(r){ return r !== role; });
-        if (next.length === 0) { alert('Un utilisateur doit avoir au moins un rôle.'); return; }
+        if (next.length === 0) {
+          showToast('Un utilisateur doit garder au moins un rôle.');
+          return;
+        }
       } else {
         next = current.concat([role]);
       }
+
       fetch('/api/admin/users/' + userId + '/role', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roles: next })
       }).then(function(r){ return r.json(); }).then(function(d){
-        if (!d.ok) { alert(d.error || 'Erreur'); return; }
+        if (!d.ok) { showToast(d.error || 'Modification impossible.'); return; }
         u.roles = d.roles;
         u.role = d.role;
+        var ajout = next.length > current.length;
+        showToast(ROLE_LABELS[role] + (ajout ? ' accordé à ' : ' retiré à ') + (u.name || u.email) + '.');
         renderUsers();
         renderOverview();
       });
@@ -1504,7 +1658,7 @@
           + '<td style="text-align:center;"><input type="checkbox" ' + checked + ' onchange="bulkToggleOne(' + f.id + ', this.checked)" style="cursor:pointer;"></td>'
           + '<td><div style="font-weight:600;color:#111;">' + escapeHtml(f.societe || 'Sans nom') + '</div>'
           +   '<div style="font-size:12px;color:#888;">' + escapeHtml(f.forme || '') + ' · Étape ' + (f.phase || 1) + '</div></td>'
-          + '<td><div style="font-size:13px;">' + escapeHtml(f.user_name || '—') + '</div>'
+          + '<td><div style="font-size:13px;">' + escapeHtml(f.user_name || '-') + '</div>'
           +   '<div style="font-size:11.5px;color:#888;">' + escapeHtml(f.user_email || '') + '</div></td>'
           + '<td><span class="chip gray">' + escapeHtml(f.type || 'Création') + '</span></td>'
           + '<td><span class="chip ' + statusCls + '">' + statusLabel + '</span></td>'
@@ -1544,7 +1698,7 @@
     window.bulkAssign = function() {
       var sel = document.getElementById('bulk-avocat-select');
       var avocatId = sel ? sel.value : '';
-      if (!avocatId) { alert('Sélectionnez un avocat'); return; }
+      if (!avocatId) { showToast('Choisissez d’abord un avocat.'); return; }
       var ids = Array.from(_bulkSelected);
       if (ids.length === 0) return;
       var promises = ids.map(function(fid){
@@ -1563,7 +1717,7 @@
         _bulkSelected.clear();
         renderFormalites();
         renderOverview();
-        alert(ok + ' formalité' + (ok > 1 ? 's assignées' : ' assignée'));
+        showToast(ok + (ok > 1 ? ' formalités assignées.' : ' formalité assignée.'));
       });
     };
 
@@ -1615,7 +1769,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ avocat_id: avocatId || null })
       }).then(function(r){ return r.json(); }).then(function(d){
-        if (!d.ok) { alert(d.error || 'Erreur'); return; }
+        if (!d.ok) { showToast(d.error || 'Assignation impossible.'); return; }
         var f = state.formalites.find(function(x){ return x.id === formaliteId; });
         if (f) {
           f.assigned_avocat_id = avocatId ? parseInt(avocatId) : null;
@@ -1722,7 +1876,15 @@
     function promoteToAvocat(userId) {
       var u = state.users.find(function(x){ return x.id === userId; });
       if (!u) return;
-      if (!confirm('Promouvoir ' + u.name + ' en avocat ?')) return;
+      askConfirm({
+        title: 'Donner l’accès avocat à ' + (u.name || u.email) + ' ?',
+        text: 'Cette personne pourra traiter les dossiers qui lui sont assignés et ouvrir un cabinet dans l’espace Équipe.',
+        submitLabel: 'Donner l’accès'
+      }, function() { doPromoteToAvocat(u); });
+    }
+
+    function doPromoteToAvocat(u) {
+      var userId = u.id;
       var roles = parseUserRoles(u);
       if (roles.indexOf('avocat') === -1) roles.push('avocat');
       fetch('/api/admin/users/' + userId + '/role', {
@@ -1730,7 +1892,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roles: roles })
       }).then(function(r){ return r.json(); }).then(function(d){
-        if (!d.ok) { alert(d.error || 'Erreur'); return; }
+        if (!d.ok) { showToast(d.error || 'Enregistrement impossible.'); return; }
         closeCreateAvocatModal();
         loadAll();
       });
@@ -1739,14 +1901,14 @@
       var name = document.getElementById('av-new-name').value.trim();
       var email = document.getElementById('av-new-email').value.trim();
       var password = document.getElementById('av-new-password').value.trim();
-      if (!name || !email || !password) { alert('Tous les champs sont requis'); return; }
-      if (password.length < 8) { alert('Le mot de passe doit faire au moins 8 caractères'); return; }
+      if (!name || !email || !password) { showToast('Nom, email et mot de passe sont requis.'); return; }
+      if (password.length < 8) { showToast('Le mot de passe doit faire au moins 8 caractères.'); return; }
       fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name, email: email, password: password, role: 'avocat' })
       }).then(function(r){ return r.json(); }).then(function(d){
-        if (!d.ok) { alert(d.error || 'Erreur'); return; }
+        if (!d.ok) { showToast(d.error || 'Enregistrement impossible.'); return; }
         closeCreateAvocatModal();
         loadAll();
       });
@@ -1806,12 +1968,12 @@
       state.payments.forEach(function(p) {
         var statusCls = p.status === 'paid' ? 'green' : p.status === 'pending' ? 'amber' : p.status === 'refunded' ? 'gray' : 'red';
         var statusLabel = p.status === 'paid' ? 'Payé' : p.status === 'pending' ? 'En attente' : p.status === 'refunded' ? 'Remboursé' : p.status === 'failed' ? 'Échoué' : p.status;
-        var cleanDesc = (p.description || '—').replace(/\s*[—–]\s*/g, ' ');
+        var cleanDesc = (p.description || '-').replace(/\s*[--]\s*/g, ' ');
         html += '<tr class="row-clickable" onclick="openPaymentDrawer(' + p.id + ')">'
-          + '<td><div style="font-weight:500;">' + escapeHtml(p.user_name || '—') + '</div>'
+          + '<td><div style="font-weight:500;">' + escapeHtml(p.user_name || '-') + '</div>'
           +   '<div style="font-size:11.5px;color:#888;">' + escapeHtml(p.user_email || '') + '</div></td>'
           + '<td>' + escapeHtml(cleanDesc) + '</td>'
-          + '<td>' + escapeHtml(p.societe || '—') + '</td>'
+          + '<td>' + escapeHtml(p.societe || '-') + '</td>'
           + '<td style="font-size:12.5px;color:#555;">' + formatDateTime(p.paid_at || p.created_at) + '</td>'
           + '<td><span class="chip ' + statusCls + '">' + statusLabel + '</span></td>'
           + '<td style="text-align:right;font-weight:600;">' + formatMoney(p.amount_cents, p.currency) + '</td>'
@@ -2094,9 +2256,9 @@
           return actor + ' · statut → <strong style="color:#111;">' + escapeHtml(statusLabels[e.after] || e.after || '?') + '</strong>';
         }
         if (e.subtype === 'avocat_assigned') {
-          return actor + (e.before ? ' a réassigné l\'avocat de ' + escapeHtml(e.before) + ' → ' + escapeHtml(e.after || '—') : ' a assigné ' + escapeHtml(e.after || '—') + ' à un dossier');
+          return actor + (e.before ? ' a réassigné l\'avocat de ' + escapeHtml(e.before) + ' → ' + escapeHtml(e.after || '-') : ' a assigné ' + escapeHtml(e.after || '-') + ' à un dossier');
         }
-        // field_update — peut être groupé
+        // field_update - peut être groupé
         var n = (e._changes || []).length || 1;
         if (n > 1) return actor + ' a modifié ' + n + ' champs dans ' + (societe || 'un dossier');
         return actor + ' a modifié <strong>' + escapeHtml(_humanizeField(e.target_field)) + '</strong> dans ' + (societe || 'un dossier');
@@ -2138,7 +2300,7 @@
       else if (role === 'avocat') { bg = '#7c3aed'; txt = 'Avocat'; }
       else if (role === 'user') { bg = '#0ea5e9'; txt = 'Client'; }
       else return '';
-      return '<span style="display:inline-flex;align-items:center;background:' + bg + ';color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;letter-spacing:0.3px;flex-shrink:0;">' + txt + '</span>';
+      return '<span style="display:inline-flex;align-items:center;background:' + bg + ';color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;letter-spacing: 0;flex-shrink:0;">' + txt + '</span>';
     }
 
     function _formatRelative(ts) {
@@ -2223,10 +2385,10 @@
         var statusCls = c.status === 'done' ? 'green' : c.status === 'scheduled' ? 'gray' : 'red';
         var statusLabel = c.status === 'done' ? 'Terminée' : c.status === 'scheduled' ? 'Programmée' : c.status === 'cancelled' ? 'Annulée' : 'No-show';
         html += '<tr>'
-          + '<td><div style="font-weight:500;">' + escapeHtml(c.user_name || '—') + '</div>'
+          + '<td><div style="font-weight:500;">' + escapeHtml(c.user_name || '-') + '</div>'
           +   '<div style="font-size:11.5px;color:#888;">' + escapeHtml(c.user_email || '') + '</div></td>'
-          + '<td>' + escapeHtml(c.avocat_name || '—') + '</td>'
-          + '<td><div>' + escapeHtml(c.topic || '—') + '</div></td>'
+          + '<td>' + escapeHtml(c.avocat_name || '-') + '</td>'
+          + '<td><div>' + escapeHtml(c.topic || '-') + '</div></td>'
           + '<td style="font-size:12.5px;">' + formatDateTime(c.scheduled_at) + '</td>'
           + '<td>' + (c.duration_minutes || 30) + ' min</td>'
           + '<td><span class="chip ' + statusCls + '">' + statusLabel + '</span></td>'
@@ -2254,16 +2416,16 @@
         var societeCell = s.societe
           ? '<div style="font-weight:500;">' + escapeHtml(s.societe) + '</div>'
             + (s.forme ? '<div style="font-size:11px;color:#888;">' + escapeHtml(s.forme) + '</div>' : '')
-          : '<span style="color:#bbb;">—</span>';
+          : '<span style="color:#bbb;">-</span>';
         var offerCell = s.offer
           ? '<span class="offer-badge ' + (offerCls[s.offer] || 'gray') + '">' + escapeHtml(offerLabels[s.offer] || s.offer) + '</span>'
-          : '<span style="color:#bbb;">—</span>';
+          : '<span style="color:#bbb;">-</span>';
         html += '<tr style="cursor:pointer;" onclick="openSupportConversation(' + s.user_id + ')">'
-          + '<td><div style="font-weight:500;">' + escapeHtml(s.user_name || s.email || '—') + '</div>'
+          + '<td><div style="font-weight:500;">' + escapeHtml(s.user_name || s.email || '-') + '</div>'
           +   '<div style="font-size:11px;color:#888;">' + escapeHtml(s.user_email || '') + '</div></td>'
           + '<td>' + societeCell + '</td>'
           + '<td>' + offerCell + '</td>'
-          + '<td style="max-width:320px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(s.last_message || '—') + '</td>'
+          + '<td style="max-width:320px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(s.last_message || '-') + '</td>'
           + '<td style="color:#888;">' + formatRelative(s.last_message_at) + '</td>'
           + '<td>' + (s.unread_count > 0 ? '<span class="chip amber">' + s.unread_count + '</span>' : '0') + '</td>'
           + '<td><span class="chip ' + (s.archived ? 'gray' : 'amber') + '">' + (s.archived ? 'Archivée' : 'Active') + '</span></td>'
@@ -2285,7 +2447,7 @@
       var head = '<div class="drawer-hero" style="padding:16px 24px;">'
         +   '<div class="av-big">' + initials + '</div>'
         +   '<div class="meta">'
-        +     '<div class="name">' + escapeHtml(conv.user_name || '—') + '</div>'
+        +     '<div class="name">' + escapeHtml(conv.user_name || '-') + '</div>'
         +     '<div style="font-size:12.5px;color:#666;">' + escapeHtml(conv.user_email || '') + '</div>'
         +     '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px;">'
         +       (conv.societe ? '<span style="background:#f5f5f7;padding:2px 8px;border-radius:6px;">' + escapeHtml((conv.forme ? conv.forme + ' · ' : '') + conv.societe) + '</span>' : '')
@@ -2401,7 +2563,7 @@
           + '<div class="d-tile"><div class="lab">Formalités</div><div class="val">' + (u.formalites_count || 0) + '</div><div class="sub">dossiers ouverts</div></div>'
           + '<div class="d-tile"><div class="lab">Total payé</div><div class="val">' + formatMoney(u.total_paid_cents, 'EUR') + '</div><div class="sub">depuis l\'inscription</div></div>'
           + '<div class="d-tile"><div class="lab">Temps total</div><div class="val">' + formatDuration(u.total_time_seconds) + '</div><div class="sub">sur la plateforme</div></div>'
-          + '<div class="d-tile"><div class="lab">Dernière activité</div><div class="val" style="font-size:15px;">' + (online ? 'En ligne' : formatRelative(u.last_seen_at)) + '</div><div class="sub">' + (u.last_login_at ? 'connexion ' + formatRelative(u.last_login_at) : '—') + '</div></div>'
+          + '<div class="d-tile"><div class="lab">Dernière activité</div><div class="val" style="font-size:15px;">' + (online ? 'En ligne' : formatRelative(u.last_seen_at)) + '</div><div class="sub">' + (u.last_login_at ? 'connexion ' + formatRelative(u.last_login_at) : '-') + '</div></div>'
           + '</div>';
 
         // --- META INFOS ---
@@ -2418,7 +2580,7 @@
         // --- SESSIONS ---
         if (d.sessions && d.sessions.length) {
           html += '<div class="drawer-section">'
-            + '<div class="drawer-section-title"><span>Sessions récentes</span><span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing:0;">' + d.sessions.length + '</span></div>'
+            + '<div class="drawer-section-title"><span>Sessions récentes</span><span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing: 0;">' + d.sessions.length + '</span></div>'
             + '<div id="drawer-sessions"></div>'
             + '</div>';
         }
@@ -2459,7 +2621,7 @@
         // Formalités où l'utilisateur est CLIENT (paginé 5 par page)
         if (d.formalites && d.formalites.length) {
           html += '<div class="drawer-section">'
-            + '<div class="drawer-section-title">Formalités' + (d.avocat_formalites && d.avocat_formalites.length ? ' (en tant que client)' : '') + ' <span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing:0;">' + d.formalites.length + '</span></div>'
+            + '<div class="drawer-section-title">Formalités' + (d.avocat_formalites && d.avocat_formalites.length ? ' (en tant que client)' : '') + ' <span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing: 0;">' + d.formalites.length + '</span></div>'
             + '<div id="drawer-client-formalites"></div>'
             + '</div>';
         }
@@ -2467,14 +2629,14 @@
         // Dossiers où l'utilisateur est AVOCAT assigné
         if (d.avocat_formalites && d.avocat_formalites.length) {
           html += '<div class="drawer-section">'
-            + '<div class="drawer-section-title">Dossiers gérés en tant qu\'avocat <span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing:0;">' + d.avocat_formalites.length + '</span></div>';
+            + '<div class="drawer-section-title">Dossiers gérés en tant qu\'avocat <span style="color:#aaa;font-weight:500;text-transform:none;letter-spacing: 0;">' + d.avocat_formalites.length + '</span></div>';
 
           if (window._drawerData.avocatActive.length > 0) {
-            html += '<div style="font-size:11.5px;font-weight:600;color:#7c3aed;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">' + window._drawerData.avocatActive.length + ' actif' + (window._drawerData.avocatActive.length > 1 ? 's' : '') + '</div>'
+            html += '<div style="font-size:11.5px;font-weight:600;color:#7c3aed;text-transform:uppercase;letter-spacing: 0;margin-bottom:6px;">' + window._drawerData.avocatActive.length + ' actif' + (window._drawerData.avocatActive.length > 1 ? 's' : '') + '</div>'
               + '<div id="drawer-avocat-active" style="margin-bottom:10px;"></div>';
           }
           if (window._drawerData.avocatDone.length > 0) {
-            html += '<div style="font-size:11.5px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">' + window._drawerData.avocatDone.length + ' terminé' + (window._drawerData.avocatDone.length > 1 ? 's' : '') + '</div>'
+            html += '<div style="font-size:11.5px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing: 0;margin-bottom:6px;">' + window._drawerData.avocatDone.length + ' terminé' + (window._drawerData.avocatDone.length > 1 ? 's' : '') + '</div>'
               + '<div id="drawer-avocat-done"></div>';
           }
           html += '</div>';
@@ -2581,7 +2743,7 @@
             + '<div class="dev-ic">' + deviceIcon(ua.device) + '</div>'
             + '<div class="ses-body">'
             +   '<div class="ses-t">' + escapeHtml(ua.browser) + ' · ' + escapeHtml(ua.os) + '</div>'
-            +   '<div class="ses-s"><span>' + formatDateTime(s.started_at) + '</span><span>·</span><span>' + escapeHtml(s.ip || '—') + '</span></div>'
+            +   '<div class="ses-s"><span>' + formatDateTime(s.started_at) + '</span><span>·</span><span>' + escapeHtml(s.ip || '-') + '</span></div>'
             + '</div>'
             + '<div class="ses-dur ' + (isLive ? 'live' : '') + '">' + (isLive ? 'Active' : dur) + '</div>'
             + '</div>';
@@ -2593,7 +2755,7 @@
           var statusLabel = p.status === 'paid' ? 'Payé' : p.status === 'pending' ? 'En attente' : p.status === 'failed' ? 'Échoué' : p.status === 'refunded' ? 'Remboursé' : p.status;
           var statusCls = p.status === 'paid' ? 'green' : p.status === 'pending' ? 'amber' : p.status === 'refunded' ? 'gray' : 'red';
           inner += '<div class="sub-list-item">'
-            + '<div class="left"><div class="t">' + escapeHtml(p.description || '—') + '</div>'
+            + '<div class="left"><div class="t">' + escapeHtml(p.description || '-') + '</div>'
             + '<div class="s">' + formatDateTime(p.paid_at || p.created_at) + '</div></div>'
             + '<div class="right" style="display:flex;align-items:center;gap:10px;">'
             +   '<span class="chip ' + statusCls + '">' + statusLabel + '</span>'
@@ -2608,7 +2770,7 @@
           var cCls = c.status === 'done' ? 'green' : c.status === 'scheduled' ? 'blue' : c.status === 'cancelled' ? 'red' : 'gray';
           inner += '<div class="sub-list-item">'
             + '<div class="left"><div class="t">' + escapeHtml(c.topic || 'Consultation') + '</div>'
-            + '<div class="s">Avec ' + escapeHtml(c.avocat_name || '—') + ' · ' + formatDateTime(c.scheduled_at) + '</div></div>'
+            + '<div class="s">Avec ' + escapeHtml(c.avocat_name || '-') + ' · ' + formatDateTime(c.scheduled_at) + '</div></div>'
             + '<div class="right"><span class="chip ' + cCls + '">' + cLabel + '</span></div></div>';
         });
         inner += '</div>';
@@ -2689,7 +2851,7 @@
         ? '<span class="offer-badge ' + (offerCls[p.offer] || 'gray') + '">' + escapeHtml(offerLabels[p.offer] || p.offer) + '</span>'
         : '';
 
-      var cleanDescription = (p.description || 'Paiement').replace(/\s*[—–-]\s*/g, ' ');
+      var cleanDescription = (p.description || 'Paiement').replace(/\s*[---]\s*/g, ' ');
 
       // --- HERO ---
       html += '<div class="drawer-hero">'
@@ -2698,7 +2860,7 @@
         +     '<div class="name">' + escapeHtml(cleanDescription) + '</div>'
         +     offerBadge
         +   '</div>'
-        +   '<div class="email">' + escapeHtml(p.user_name || '—') + ' · ' + escapeHtml(p.user_email || '') + '</div>'
+        +   '<div class="email">' + escapeHtml(p.user_name || '-') + ' · ' + escapeHtml(p.user_email || '') + '</div>'
         +   '<div class="chips" style="margin-top:8px;"><span class="chip ' + statusCls + '">' + statusLabel + '</span></div>'
         + '</div>'
         + '</div>';
@@ -2714,7 +2876,7 @@
         + '<div class="drawer-section-title">Détails</div>'
         + '<div class="drawer-meta">'
         +   '<div class="row"><span class="k">' + iconHash + 'Référence</span><span class="v">#' + p.id + '</span></div>'
-        +   '<div class="row"><span class="k">' + iconHouse + 'Société</span><span class="v">' + escapeHtml(p.societe || '—') + '</span></div>'
+        +   '<div class="row"><span class="k">' + iconHouse + 'Société</span><span class="v">' + escapeHtml(p.societe || '-') + '</span></div>'
         +   '<div class="row"><span class="k">' + iconClock + 'Date paiement</span><span class="v">' + formatDateTime(p.paid_at || p.created_at) + '</span></div>'
         +   (p.payment_method ? '<div class="row"><span class="k">' + iconRef + 'Moyen</span><span class="v">' + escapeHtml(p.payment_method) + '</span></div>' : '')
         + '</div>'
@@ -2749,23 +2911,92 @@
     };
 
     window.refundPayment = function(paymentId) {
-      if (!confirm('Confirmer le remboursement intégral de ce paiement ?')) return;
+      askConfirm({
+        title: 'Rembourser ce paiement ?',
+        text: 'Le remboursement porte sur la totalité du montant. L’opération est définitive.',
+        submitLabel: 'Rembourser',
+        danger: true
+      }, function() { doRefundPayment(paymentId); });
+    };
+
+    function doRefundPayment(paymentId) {
       fetch('/api/admin/payments/' + paymentId + '/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       }).then(function(r){ return r.json(); }).then(function(d){
-        if (!d.ok) { alert(d.error || 'Erreur lors du remboursement'); return; }
+        if (!d.ok) { showToast(d.error || 'Remboursement impossible.'); return; }
         var p = state.payments.find(function(x){ return x.id === paymentId; });
         if (p) p.status = 'refunded';
         closeDrawer();
         renderPayments();
         renderOverview();
       });
-    };
+    }
 
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeDrawer();
     });
   </script>
+  <!-- MODAL : Nouvelle formalit&eacute; -->
+  <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
+    <div class="nd-modal" onclick="event.stopPropagation()">
+      <div class="nd-header">
+        <div>
+          <h3 class="nd-title">Nouvelle formalit&eacute;</h3>
+          <p class="nd-subtitle">Choisissez le type d&apos;op&eacute;ration &agrave; lancer</p>
+        </div>
+        <button class="nd-close" onclick="closeNewActionModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="nd-grid">
+        <a href="/creation.html?new=1&type=creation" class="nd-card">
+          <div class="nd-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Cr&eacute;er une soci&eacute;t&eacute;</div><div class="nd-card-desc">SAS, SARL, SCI, SASU, EURL</div></div>
+        </a>
+        <a href="/auto-entrepreneur.html?new=1" class="nd-card">
+          <div class="nd-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Auto-entrepreneur</div><div class="nd-card-desc">Cr&eacute;ation de micro-entreprise</div></div>
+        </a>
+        <a href="/modification.html" class="nd-card">
+          <div class="nd-card-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Modifier ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Transfert, g&eacute;rant, capital&hellip;</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;p&ocirc;t des comptes</div><div class="nd-card-desc">Comptes annuels au greffe</div></div>
+        </a>
+        <a href="#" class="nd-card">
+          <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">Fermer ma soci&eacute;t&eacute;</div><div class="nd-card-desc">Dissolution, liquidation, radiation</div></div>
+        </a>
+        <a href="/contrats.html?new=1" class="nd-card">
+          <div class="nd-card-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="nd-card-body"><div class="nd-card-title">R&eacute;diger un contrat</div><div class="nd-card-desc">Mod&egrave;les sur mesure</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+      function openNewActionModal() {
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+      }
+      function closeNewActionModal(e) {
+        if (e && e.target && e.target.closest && e.target.closest('.nd-modal') && !e.target.closest('.nd-close')) return;
+        var m = document.getElementById('ndModal');
+        if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+      }
+      window.openNewActionModal = openNewActionModal;
+      window.closeNewActionModal = closeNewActionModal;
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNewActionModal(); });
+    window.openNewActionModal = openNewActionModal;
+    window.closeNewActionModal = closeNewActionModal;
+  </script>
+
+  <!-- Navigation commune + accès selon le rôle -->
+  <script src="/js/common.js"></script>
+  <script src="/js/chat-widget.js"></script>
 </body>
 </html>

@@ -119,7 +119,7 @@ if (naIdx >= 0) {
 }
 
 // ── 6b. Add spacing after "ARTICLE 6 - Apports" title ──
-// The original has w:after="0" on the Article 6 title paragraph — add spacing
+// The original has w:after="0" on the Article 6 title paragraph - add spacing
 var art6Idx = xml.indexOf('ARTICLE 6 - Apports');
 if (art6Idx >= 0) {
   // Find the <w:spacing in the pPr before this text
@@ -165,7 +165,7 @@ xml = xml.replace(/unipersonnelle/g, '');
     }
     var prevPXml = beforeSec.substring(prevPStart, lastPEnd + '</w:p>'.length);
     if (prevPXml.indexOf('<w:t') < 0) {
-      // It's an empty paragraph — include it in the removal
+      // It's an empty paragraph - include it in the removal
       secStart = secStart - (beforeSec.length - prevPStart);
     }
   }

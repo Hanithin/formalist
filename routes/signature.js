@@ -1,5 +1,5 @@
 /**
- * routes/signature.js — Signature request management and signing flow
+ * routes/signature.js - Signature request management and signing flow
  */
 
 const fs = require("fs");
@@ -16,7 +16,7 @@ const PUBLIC = path.join(__dirname, "..", "public");
 module.exports = function signatureRoutes(pathname, req, res, url) {
   let params;
 
-  // POST — create signature requests for all associés
+  // POST - create signature requests for all associés
   if ((params = matchRoute(pathname, "/api/formalites/:id/signature-requests")) && req.method === "POST") {
     return (async () => {
       const user = authGuard(req, res, "user");
@@ -46,7 +46,7 @@ module.exports = function signatureRoutes(pathname, req, res, url) {
     })();
   }
 
-  // POST — persist creator signature
+  // POST - persist creator signature
   if ((params = matchRoute(pathname, "/api/formalites/:id/signature-requests/creator")) && req.method === "POST") {
     return (async () => {
       const user = authGuard(req, res, "user");
@@ -66,7 +66,7 @@ module.exports = function signatureRoutes(pathname, req, res, url) {
     })();
   }
 
-  // GET — signature tracking info
+  // GET - signature tracking info
   if ((params = matchRoute(pathname, "/api/formalites/:id/signature-requests")) && req.method === "GET") {
     const user = authGuard(req, res);
     if (!user) return;
@@ -77,7 +77,7 @@ module.exports = function signatureRoutes(pathname, req, res, url) {
     return jsonResponse(res, 200, { requests });
   }
 
-  // GET /api/sign/:token — serve sign.html
+  // GET /api/sign/:token - serve sign.html
   if ((params = matchRoute(pathname, "/api/sign/:token")) && req.method === "GET") {
     try {
       const sr = stmts.getSignatureRequestByToken.get(params.token);
@@ -106,7 +106,7 @@ module.exports = function signatureRoutes(pathname, req, res, url) {
     }
   }
 
-  // PUT /api/sign/:token — submit signature
+  // PUT /api/sign/:token - submit signature
   if ((params = matchRoute(pathname, "/api/sign/:token")) && req.method === "PUT") {
     return (async () => {
       try {

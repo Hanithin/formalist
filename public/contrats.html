@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>    .sidebar {
-      width: 270px;
+      width: 300px;
       background: #fff;
       border-right: 1px solid #e5e5e5;
       display: flex;
@@ -25,7 +25,7 @@
     .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
     .sidebar-logo a { display: flex; align-items: flex-end; gap: 6px; color: #111; text-decoration: none; }
     .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; color: #111; line-height: 1; }
-    .sidebar-logo img { height: 26px; }
+    .sidebar-logo img { height: 30px; display: block; }
     .sidebar-nav { flex: 1; padding: 0 12px; }
     .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
       display: flex; align-items: center; gap: 12px;
@@ -37,7 +37,7 @@
     .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
     .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
     .sidebar-nav a.active svg { opacity: 1; }
-    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
     .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
     .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
     .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
@@ -64,7 +64,7 @@
       width: 36px; height: 36px; border-radius: 50%;
       background: #111;
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0;
     }
     .user-info { flex: 1; min-width: 0; }
     .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
@@ -115,7 +115,7 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      margin-left: 270px;
+      margin-left: 300px;
     }
     .topbar {
       padding: 30px 48px 4px;
@@ -135,6 +135,99 @@
     .content { padding: 48px; flex: 1; }
 
     /* STEPPER */
+    /* ===== Liste des contrats ===== */
+    .ct-toolbar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .ct-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ct-pill {
+      font-family: inherit; font-size: 13px; color: #52525b; background: #fff;
+      border: 1px solid #e5e5e5; border-radius: 100px; padding: 8px 15px; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .ct-pill:hover { border-color: #111; color: #111; }
+    .ct-pill.active { background: #111; border-color: #111; color: #fff; }
+
+    .ct-search { position: relative; flex: 1; min-width: 200px; }
+    .ct-search svg {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      width: 15px; height: 15px; color: #a1a1aa; pointer-events: none;
+    }
+    .ct-search input {
+      width: 100%; padding: 9px 14px 9px 36px; font-family: inherit; font-size: 13.5px;
+      color: #111; background: #fff; border: 1px solid #e5e5e5; border-radius: 100px; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .ct-search input::placeholder { color: #a1a1aa; }
+    .ct-search input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,0.06); }
+    .ct-new { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .ct-loading { padding: 40px; text-align: center; color: #a1a1aa; font-size: 14px; }
+
+    .ct-rows { display: flex; flex-direction: column; gap: 10px; }
+    .ct-row {
+      display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+      padding: 14px 18px; background: #fff; border: 1px solid #eee; border-radius: 14px;
+      font-family: inherit; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .ct-row:hover { border-color: #d4d4d8; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .ct-row-icon {
+      width: 38px; height: 38px; border-radius: 10px; background: #f4f4f5; color: #52525b;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .ct-row-icon svg { width: 17px; height: 17px; }
+    .ct-row-body { flex: 1; min-width: 0; }
+    .ct-row-title {
+      display: block; font-size: 14.5px; font-weight: 500; color: #111;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ct-row-meta { display: block; font-size: 12.5px; color: #71717a; margin-top: 2px; }
+    .ct-status {
+      font-size: 11.5px; font-weight: 600; border-radius: 100px; padding: 4px 11px;
+      white-space: nowrap; flex-shrink: 0; background: #f4f4f5; color: #52525b;
+    }
+    .ct-status.ok { background: #dcfce7; color: #15803d; }
+    .ct-status.info { background: #dbeafe; color: #1d4ed8; }
+    .ct-status.wait { background: #fef3c7; color: #92400e; }
+    .ct-acts { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .ct-act {
+      width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center;
+      justify-content: center; color: #52525b; border: 1px solid #ececec;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .ct-act:hover { border-color: #111; color: #111; }
+    .ct-act svg { width: 15px; height: 15px; }
+    .ct-open { font-size: 13px; font-weight: 500; color: #111; white-space: nowrap; }
+
+    .ct-empty {
+      background: #fff; border: 1px solid #eee; border-radius: 16px;
+      padding: 44px 32px; text-align: center;
+    }
+    .ct-empty-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; color: #111; margin-bottom: 8px;
+    }
+    .ct-empty-desc {
+      font-size: 14.5px; color: #71717a; line-height: 1.55; max-width: 460px; margin: 0 auto;
+    }
+    .ct-quick-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px; margin-top: 26px; text-align: left;
+    }
+    .ct-quick {
+      font-family: inherit; background: #fafafa; border: 1px solid #ececec; border-radius: 12px;
+      padding: 15px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    }
+    .ct-quick:hover { border-color: #111; background: #fff; }
+    .ct-quick-title { display: block; font-size: 14px; font-weight: 500; color: #111; }
+    .ct-quick-desc { display: block; font-size: 12.5px; color: #71717a; margin-top: 3px; line-height: 1.4; }
+
+    .ct-back {
+      display: inline-flex; align-items: center; gap: 8px; font-family: inherit;
+      font-size: 13.5px; color: #52525b; background: none; border: none; cursor: pointer;
+      padding: 0; margin-bottom: 20px; transition: color 0.15s;
+    }
+    .ct-back:hover { color: #111; }
+
     .stepper {
       display: flex;
       align-items: center;
@@ -246,7 +339,7 @@
       font-size: 16px;
       font-weight: 600;
       margin-bottom: 4px;
-      letter-spacing: -0.2px;
+      letter-spacing: 0;
     }
     .type-desc {
       font-size: 13px;
@@ -271,7 +364,7 @@
       font-size: 17px;
       font-weight: 600;
       margin-bottom: 20px;
-      letter-spacing: -0.2px;
+      letter-spacing: 0;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -425,7 +518,7 @@
       font-family: 'Cal Sans', 'Inter', sans-serif;
       font-size: 22px;
       font-weight: 600;
-      letter-spacing: -0.3px;
+      letter-spacing: 0;
     }
     .summary-section {
       margin-bottom: 24px;
@@ -435,7 +528,7 @@
       font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0;
       color: #999;
       margin-bottom: 12px;
     }
@@ -667,7 +760,7 @@
       font-weight: 600;
       text-align: center;
       margin-bottom: 8px;
-      letter-spacing: -0.3px;
+      letter-spacing: 0;
     }
     .step-subtitle {
       font-size: 14px;
@@ -708,7 +801,7 @@
     }
     .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
     .sidebar-context .ctx-body { flex: 1; min-width: 0; }
-    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0; text-transform: uppercase; }
     .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
     .sidebar-context.single { cursor: default; }
@@ -756,7 +849,7 @@
     }
     @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
     .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
-    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: 0; }
     .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
     .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
     .nd-close svg { width: 20px; height: 20px; }
@@ -787,10 +880,7 @@
   <!-- SIDEBAR -->
           <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <a href="/dashboard.html">
-        <span class="logo-text">formalist</span>
-        <span class="logo-dot" aria-hidden="true"></span>
-      </a>
+      <a href="/dashboard.html"><img src="/images/logo.png" alt="Formalist"></a>
     </div>
 
     <div class="sidebar-context" id="sidebar-context" style="display:none;">
@@ -818,6 +908,24 @@
         Mes formalit&eacute;s
         <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
       </a>
+      <a href="/creation.html?new=1&amp;type=creation" data-page="creation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        Cr&eacute;er une soci&eacute;t&eacute;
+      </a>
+      <a href="/modification.html" data-page="modification">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Modifier ma soci&eacute;t&eacute;
+      </a>
+      <a href="/depot-comptes.html" data-page="depot-comptes" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        D&eacute;p&ocirc;t des comptes
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
+      <a href="/fermeture.html" data-page="fermeture" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Fermer ma soci&eacute;t&eacute;
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
 
       <a href="/consultations.html" data-page="consultations">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -838,6 +946,10 @@
       </a>
 
       <div class="sidebar-divider"></div>
+      <a href="/equipe.html" data-page="equipe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        &Eacute;quipe
+      </a>
       <a href="/aide.html" data-page="aide">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Aide &amp; FAQ
@@ -847,8 +959,8 @@
     <div class="sidebar-bottom">
       <div class="avatar" id="sidebar-avatar">JD</div>
       <div class="user-info">
-        <div class="user-name" id="sidebar-name">Jean Dupont</div>
-        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+        <div class="user-name" id="sidebar-name"></div>
+        <div class="user-email" id="sidebar-email"></div>
       </div>
       <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -885,7 +997,7 @@
         </a>
         <a href="#" class="nd-card">
           <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;p&ocirc;t des comptes</div><div class="nd-card-desc">Comptes annuels au greffe</div></div>
         </a>
         <a href="#" class="nd-card">
           <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
@@ -902,11 +1014,39 @@
   <!-- MAIN -->
   <div class="main">
     <div class="topbar">
-      <h1>Nouveau contrat</h1>
+      <h1 id="page-title">Mes contrats</h1>
       <span class="topbar-date" id="current-date"></span>
     </div>
 
-    <div class="content">
+    <!-- VUE LISTE : écran d'accueil de la page -->
+    <div class="content" id="view-list">
+      <div class="ct-toolbar">
+        <div class="ct-filters" id="ct-filters">
+          <button class="ct-pill active" data-status="all" onclick="setContratFilter('all', this)">Tous</button>
+          <button class="ct-pill" data-status="brouillon" onclick="setContratFilter('brouillon', this)">Brouillons</button>
+          <button class="ct-pill" data-status="en_validation" onclick="setContratFilter('en_validation', this)">En validation</button>
+          <button class="ct-pill" data-status="signe" onclick="setContratFilter('signe', this)">Sign&eacute;s</button>
+        </div>
+        <div class="ct-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="ct-search-input" placeholder="Rechercher un contrat&hellip;" oninput="renderContratsList()">
+        </div>
+        <button class="btn btn-primary ct-new" onclick="startNewContrat()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nouveau contrat
+        </button>
+      </div>
+
+      <div id="ct-list"><div class="ct-loading">Chargement&hellip;</div></div>
+    </div>
+
+    <!-- VUE ASSISTANT -->
+    <div class="content" id="view-wizard" style="display:none;">
+
+      <button class="ct-back" onclick="backToContrats()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Mes contrats
+      </button>
 
       <!-- STEPPER -->
       <div class="stepper">
@@ -1558,84 +1698,14 @@
           // Inject Espace avocat / Administration buttons (multi-roles aware)
           var roles = (u.roles && u.roles.length) ? u.roles : (u.role ? [u.role] : []);
           try { sessionStorage.setItem('user_roles', JSON.stringify(roles)); } catch (_) {}
-          injectRoleButtons(roles);
-        })
+          })
         .catch(function() {
           window.location.href = '/connexion.html';
         });
     }
 
-    function injectRoleButtons(roles) {
-      var nav = document.querySelector('.sidebar-nav');
-      if (!nav || !roles) return;
-      var divider = nav.querySelector('.sidebar-divider');
-      // Badge logo
-      var logo = document.querySelector('.sidebar-logo');
-      var hasAdmin = roles.indexOf('admin') !== -1;
-      var hasAvocat = roles.indexOf('avocat') !== -1;
-      // Avocat : cache le lien Consultation juridique
-      if (hasAvocat) {
-        var cl = nav.querySelector('a[href="/consultations.html"]');
-        if (cl) cl.style.display = 'none';
-      }
-      if (logo && !logo.querySelector('.logo-badge-admin') && !logo.querySelector('.logo-badge-avocat')) {
-        logo.style.display = 'flex';
-        logo.style.alignItems = 'center';
-        logo.style.gap = '10px';
-        if (hasAdmin) {
-          var b = document.createElement('span');
-          b.className = 'logo-badge-admin';
-          b.style.cssText = 'display:inline-flex;align-items:center;padding:3px 8px;background:#111;color:#fff;border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing:0.5px;line-height:1;text-transform:uppercase;';
-          b.textContent = 'Admin';
-          logo.appendChild(b);
-        } else if (hasAvocat) {
-          var b2 = document.createElement('span');
-          b2.className = 'logo-badge-avocat';
-          b2.style.cssText = 'display:inline-flex;align-items:center;padding:3px 8px;background:#f3e8ff;color:#7c3aed;border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing:0.5px;line-height:1;text-transform:uppercase;';
-          b2.textContent = 'Avocat';
-          logo.appendChild(b2);
-        }
-      }
-      if (hasAvocat && !nav.querySelector('.sidebar-avocat-section')) {
-        var dlink = nav.querySelector('a[href="/dashboard.html"]'); if (dlink) dlink.setAttribute('href', '/avocat.html');
-        var section = document.createElement('div');
-        section.className = 'sidebar-section sidebar-avocat-section';
-        section.textContent = 'Avocat';
-        var avCons = document.createElement('a');
-        avCons.href = '/avocat.html#consultations'; avCons.className = 'sidebar-avocat-link';
-        avCons.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.78;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Consultations';
-        var avDispo = document.createElement('a');
-        avDispo.href = '/avocat.html#disponibilites'; avDispo.className = 'sidebar-avocat-link';
-        avDispo.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.78;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Mes disponibilités';
-        if (divider) { nav.insertBefore(section, divider); nav.insertBefore(avCons, divider); nav.insertBefore(avDispo, divider); }
-        else { nav.appendChild(section); nav.appendChild(avCons); nav.appendChild(avDispo); }
-      }
-      if (hasAdmin && !nav.querySelector('.sidebar-admin-link')) {
-        var sectionAdm = document.createElement('div');
-        sectionAdm.className = 'sidebar-section sidebar-admin-section';
-        sectionAdm.textContent = 'Administration';
-        var aA = document.createElement('a');
-        aA.href = '/admin.html'; aA.className = 'sidebar-admin-link';
-        aA.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.78;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Administration';
-        if (divider) { nav.insertBefore(sectionAdm, divider); nav.insertBefore(aA, divider); }
-        else { nav.appendChild(sectionAdm); nav.appendChild(aA); }
-      }
-    }
 
-    // Pré-injection depuis cache (évite le jitter)
-    (function preInject(){
-      try {
-        var cached = sessionStorage.getItem('user_roles');
-        if (cached) {
-          var roles = JSON.parse(cached);
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function(){ injectRoleButtons(roles); });
-          } else {
-            injectRoleButtons(roles);
-          }
-        }
-      } catch (_) {}
-    })();
+
 
     function logout() {
       fetch('/api/auth/logout', { method: 'POST' })
@@ -1655,12 +1725,178 @@
     function handleUrlParams() {
       var params = new URLSearchParams(window.location.search);
       if (params.get('new') === '1') {
-        state = { currentStep: 1, selectedType: null, formData: {}, contratId: null, generated: false, user: state.user };
-        goToStep(1);
-      }
-      if (params.get('id')) {
+        startNewContrat(true);
+      } else if (params.get('id')) {
+        showWizard();
         loadExistingContrat(params.get('id'));
+      } else {
+        showList();
       }
+    }
+
+    /* ===== LISTE DES CONTRATS ===== */
+
+    var _contrats = [];
+    var _contratFilter = 'all';
+
+    var CONTRAT_STATUS = {
+      brouillon:     { label: 'Brouillon',     cls: 'draft' },
+      genere:        { label: 'Généré',        cls: 'info' },
+      en_validation: { label: 'En validation', cls: 'wait' },
+      valide:        { label: 'Validé',        cls: 'ok' },
+      signe:         { label: 'Signé',         cls: 'ok' }
+    };
+
+    // Libellés lisibles des types, alignés sur les cartes de l'étape 1
+    function contratTypeLabel(type) {
+      var card = document.querySelector('.type-card[data-type="' + type + '"] .type-title');
+      if (card) return card.textContent;
+      return String(type || 'Contrat').replace(/_/g, ' ');
+    }
+
+    function showList() {
+      document.getElementById('view-list').style.display = '';
+      document.getElementById('view-wizard').style.display = 'none';
+      document.getElementById('page-title').textContent = 'Mes contrats';
+      loadContrats();
+    }
+
+    function showWizard() {
+      document.getElementById('view-list').style.display = 'none';
+      document.getElementById('view-wizard').style.display = '';
+      document.getElementById('page-title').textContent = 'Nouveau contrat';
+    }
+
+    window.startNewContrat = function(skipHistory) {
+      state = { currentStep: 1, selectedType: null, formData: {}, contratId: null, generated: false, user: state.user };
+      document.querySelectorAll('.type-card').forEach(function(c){ c.classList.remove('selected'); });
+      var next = document.getElementById('btn-next-1');
+      if (next) next.disabled = true;
+      showWizard();
+      goToStep(1);
+      if (!skipHistory) history.pushState({ wizard: true }, '', '/contrats.html?new=1');
+    };
+
+    window.backToContrats = function() {
+      history.pushState({}, '', '/contrats.html');
+      showList();
+    };
+
+    // Le bouton "précédent" du navigateur doit rebasculer entre liste et assistant
+    window.addEventListener('popstate', handleUrlParams);
+
+    function loadContrats() {
+      fetch('/api/contrats', { credentials: 'include' })
+        .then(function(r) { return r.ok ? r.json() : { contrats: [] }; })
+        .then(function(data) {
+          _contrats = data.contrats || [];
+          renderContratsList();
+        })
+        .catch(function() {
+          _contrats = [];
+          renderContratsList();
+        });
+    }
+
+    window.setContratFilter = function(status, el) {
+      _contratFilter = status;
+      document.querySelectorAll('#ct-filters .ct-pill').forEach(function(p){ p.classList.remove('active'); });
+      if (el) el.classList.add('active');
+      renderContratsList();
+    };
+
+    window.renderContratsList = function() {
+      var container = document.getElementById('ct-list');
+      if (!container) return;
+      var query = (document.getElementById('ct-search-input').value || '').toLowerCase().trim();
+
+      var list = _contrats.filter(function(c) {
+        if (_contratFilter !== 'all' && c.status !== _contratFilter) return false;
+        if (!query) return true;
+        return (c.titre || '').toLowerCase().indexOf(query) !== -1
+            || contratTypeLabel(c.type).toLowerCase().indexOf(query) !== -1;
+      });
+
+      if (!_contrats.length) { container.innerHTML = renderContratsEmpty(); return; }
+      if (!list.length) {
+        container.innerHTML = '<div class="ct-empty">'
+          + '<div class="ct-empty-title">Aucun contrat ne correspond</div>'
+          + '<div class="ct-empty-desc">Essayez un autre mot-clé ou retirez le filtre.</div>'
+          + '</div>';
+        return;
+      }
+
+      container.innerHTML = '<div class="ct-rows">' + list.map(renderContratRow).join('') + '</div>';
+    }
+
+    function renderContratRow(c) {
+      var st = CONTRAT_STATUS[c.status] || { label: c.status || 'Brouillon', cls: 'draft' };
+      var isDraft = c.status === 'brouillon' || c.status === 'genere';
+      var action = isDraft ? 'Reprendre' : 'Consulter';
+      var file = c.file_path
+        ? '<a class="ct-act" href="/api/file?path=' + encodeURIComponent(c.file_path) + '&download=' + encodeURIComponent((c.titre || 'contrat') + '.docx') + '" onclick="event.stopPropagation();" title="Télécharger">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>'
+        : '';
+
+      return '<button type="button" class="ct-row" onclick="openContrat(' + c.id + ')">'
+        + '<span class="ct-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>'
+        + '<span class="ct-row-body">'
+        +   '<span class="ct-row-title">' + escapeHtmlCt(c.titre || 'Sans titre') + '</span>'
+        +   '<span class="ct-row-meta">' + escapeHtmlCt(contratTypeLabel(c.type)) + ' · modifié ' + relDateCt(c.updated_at || c.created_at) + '</span>'
+        + '</span>'
+        + '<span class="ct-status ' + st.cls + '">' + st.label + '</span>'
+        + '<span class="ct-acts">' + file + '<span class="ct-open">' + action + '</span></span>'
+        + '</button>';
+    }
+
+    // Aucun contrat : on propose directement les types les plus demandés
+    function renderContratsEmpty() {
+      var quick = ['cdi', 'bail_commercial', 'prestation'];
+      var cards = quick.map(function(t) {
+        var el = document.querySelector('.type-card[data-type="' + t + '"]');
+        if (!el) return '';
+        var title = el.querySelector('.type-title').textContent;
+        var desc = el.querySelector('.type-desc').textContent;
+        return '<button type="button" class="ct-quick" onclick="startNewContrat();selectTypeByKey(\'' + t + '\')">'
+          + '<span class="ct-quick-title">' + escapeHtmlCt(title) + '</span>'
+          + '<span class="ct-quick-desc">' + escapeHtmlCt(desc) + '</span>'
+          + '</button>';
+      }).join('');
+
+      return '<div class="ct-empty">'
+        + '<div class="ct-empty-title">Aucun contrat pour le moment</div>'
+        + '<div class="ct-empty-desc">Rédigez un contrat sur mesure en quelques minutes : vous répondez à quelques questions, nous générons le document prêt à signer.</div>'
+        + '<div class="ct-quick-grid">' + cards + '</div>'
+        + '</div>';
+    }
+
+    window.openContrat = function(id) {
+      history.pushState({ wizard: true }, '', '/contrats.html?id=' + id);
+      showWizard();
+      loadExistingContrat(id);
+    };
+
+    // Sélectionne un type depuis l'écran vide et enchaîne sur l'étape 2
+    window.selectTypeByKey = function(type) {
+      var card = document.querySelector('.type-card[data-type="' + type + '"]');
+      if (card) selectType(card);
+    };
+
+    function escapeHtmlCt(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function relDateCt(iso) {
+      if (!iso) return '-';
+      var d = new Date(String(iso).replace(' ', 'T') + (String(iso).endsWith('Z') ? '' : 'Z'));
+      if (isNaN(d.getTime())) return '-';
+      var min = Math.round((Date.now() - d.getTime()) / 60000);
+      if (min < 60) return 'il y a ' + Math.max(1, min) + ' min';
+      if (min < 60 * 24) return 'il y a ' + Math.round(min / 60) + ' h';
+      if (min < 60 * 48) return 'hier';
+      return 'le ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
     function loadExistingContrat(id) {
@@ -2226,5 +2462,6 @@
   </script>
   <!-- END sidebar refresh JS -->
 <script src="/js/common.js"></script>
+  <script src="/js/chat-widget.js"></script>
 </body>
 </html>

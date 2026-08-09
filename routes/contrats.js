@@ -1,5 +1,5 @@
 /**
- * routes/contrats.js — Contract management CRUD
+ * routes/contrats.js - Contract management CRUD
  */
 
 const { authGuard } = require("../middleware/auth-guard");

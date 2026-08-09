@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Formalist &mdash; La r&eacute;volution des formalit&eacute;s juridiques</title>
+  <title>Formalist - La r&eacute;volution des formalit&eacute;s juridiques</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -36,7 +36,7 @@
     .nav-wrap.scrolled { padding-top:8px }
     .nav { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:transparent; transition:all 0.3s; max-width:1200px; width:100%; border-radius:16px }
     .nav-wrap.scrolled .nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid #e8e8e8; box-shadow:0 2px 16px rgba(0,0,0,0.06) }
-    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.3px; display:flex; align-items:center }
+    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing: 0; display:flex; align-items:center }
     .nav-logo img { height:28px }
     .nav-center { display:flex; align-items:center; gap:32px }
     .nav-center a, .nav-center .nav-dropdown-trigger { font-size:14px; font-weight:500; color:#666; transition:color 0.2s; cursor:pointer; text-decoration:none }
@@ -50,7 +50,7 @@
     .nav-mega-grid { display:grid; grid-template-columns:1.4fr 1fr 240px; gap:0 }
     .nav-mega-col { padding:28px 32px }
     .nav-mega-col:first-child { border-right:1px solid #f0f0f0 }
-    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#bbb; margin-bottom:16px }
+    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing: 0; color:#bbb; margin-bottom:16px }
     .nav-mega-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:12px; transition:all 0.15s; cursor:pointer; text-decoration:none; color:inherit }
     .nav-mega-item:hover { background:#f8f7ff }
     .nav-mega-icon { width:40px; height:40px; border-radius:12px; background:#f5f5f5; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s }
@@ -66,7 +66,7 @@
     .nav-mega-cta::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; background:rgba(255,255,255,0.08); border-radius:50% }
     .nav-mega-cta::after { content:''; position:absolute; bottom:-30px; left:-30px; width:100px; height:100px; background:rgba(255,255,255,0.06); border-radius:50% }
     .nav-mega-cta-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.2); backdrop-filter:blur(4px); padding:5px 12px; border-radius:100px; font-size:11px; font-weight:600; width:fit-content; position:relative; z-index:1 }
-    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
+    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing: 0; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
     .nav-mega-cta-link { display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; margin-top:16px; opacity:0.9; position:relative; z-index:1; text-decoration:none; transition:opacity 0.15s }
     .nav-mega-cta-link:hover { opacity:1 }
     .nav-right { display:flex; align-items:center; gap:8px }
@@ -93,7 +93,7 @@
     .hero-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 20px; border-radius:100px; border:1px solid #e0e0e0; font-size:14px; font-weight:500; color:#555; margin-bottom:40px; cursor:default; animation:fade-up 0.5s ease both; background:#fafafa }
     .hero-pill svg { width:14px; height:14px; color:#7c3aed }
 
-    .hero h1 { font-family:'Cal Sans','Inter',sans-serif; font-size:72px; font-weight:600; line-height:1.05; letter-spacing:-1.5px; margin-bottom:28px; animation:fade-up 0.6s ease 0.1s both; max-width:900px }
+    .hero h1 { font-family:'Cal Sans','Inter',sans-serif; font-size:72px; font-weight:600; line-height:1.05; letter-spacing: 0; margin-bottom:28px; animation:fade-up 0.6s ease 0.1s both; max-width:900px }
     @keyframes typing { 0%{width:0} 100%{width:100%} }
     @keyframes highlight-bg { 0%{width:0} 100%{width:calc(100% + 12px)} }
     @keyframes cursor-move { 0%{left:0} 100%{left:100%} }
@@ -104,7 +104,7 @@
     .hero h1 .highlight::before { content:''; position:absolute; bottom:2px; left:-6px; top:6px; width:var(--w,0%); background:rgba(234,179,8,0.15); border-radius:8px; z-index:-1 }
     .hero h1 .highlight-cursor { position:absolute; top:6px; bottom:2px; width:2px; left:0; background:#ca8a04; border-radius:100px }
     .hero h1 .highlight.done .highlight-cursor { animation:cursor-blink-twice 1.2s ease forwards }
-    .hero h1 .highlight-badge { position:absolute; top:-22px; right:-40px; background:#ca8a04; color:#fff; font-size:11px; font-weight:700; padding:4px 12px; border-radius:100px; letter-spacing:0.3px; white-space:nowrap; opacity:0; animation:fade-up 0.3s ease 1.4s forwards }
+    .hero h1 .highlight-badge { position:absolute; top:-22px; right:-40px; background:#ca8a04; color:#fff; font-size:11px; font-weight:700; padding:4px 12px; border-radius:100px; letter-spacing: 0; white-space:nowrap; opacity:0; animation:fade-up 0.3s ease 1.4s forwards }
     .hero h1 .highlight-badge::after { display:none }
 
     .hero .sub { font-size:18px; line-height:1.65; color:#666; margin-bottom:40px; max-width:600px; animation:fade-up 0.6s ease 0.2s both }
@@ -119,7 +119,7 @@
     .mock-booking { background:#fff; border-radius:16px; border:1px solid #e8e8e8; box-shadow:0 8px 40px rgba(0,0,0,0.06); padding:28px; width:340px; flex-shrink:0 }
     .mock-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#f5f3ff,#ede9fe); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#7c3aed; margin-bottom:8px }
     .mock-author { font-size:13px; color:#999; margin-bottom:4px }
-    .mock-title { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.3px; margin-bottom:10px }
+    .mock-title { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing: 0; margin-bottom:10px }
     .mock-desc { font-size:13px; color:#888; line-height:1.5; margin-bottom:20px }
     .mock-durations { display:flex; align-items:center; gap:0; margin-bottom:18px; background:#f5f5f5; border-radius:100px; padding:3px }
     .mock-dur { padding:6px 14px; border-radius:100px; font-size:13px; font-weight:500; color:#999; cursor:pointer; transition:all 0.2s }
@@ -132,7 +132,7 @@
     .mock-cal-month { font-size:16px; font-weight:600 }
     .mock-cal-month span { color:#2563eb }
     .mock-cal-days { display:grid; grid-template-columns:repeat(5,1fr); gap:0; text-align:center }
-    .mock-cal-day-label { font-size:11px; font-weight:600; color:#999; text-transform:uppercase; padding:8px 0; letter-spacing:0.5px }
+    .mock-cal-day-label { font-size:11px; font-weight:600; color:#999; text-transform:uppercase; padding:8px 0; letter-spacing: 0}
     .mock-cal-day { width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:14px; color:#444; border-radius:50%; margin:2px auto; cursor:pointer; transition:all 0.15s; font-weight:500 }
     .mock-cal-day:hover { background:#f5f5f5 }
     .mock-cal-day.today { background:#f5f3ff; color:#7c3aed; font-weight:600; position:relative }
@@ -146,7 +146,7 @@
     .logos-text { font-size:14px; line-height:1.5; color:#999; max-width:200px; flex-shrink:0; position:relative; z-index:2; padding-right:32px }
     .logos-scroll { flex:1; overflow:hidden; position:relative; mask-image:linear-gradient(to right,transparent 0%,black 80px,black 85%,transparent 100%); -webkit-mask-image:linear-gradient(to right,transparent 0%,black 80px,black 85%,transparent 100%) }
     .logos-track { display:flex; align-items:center; gap:48px; width:max-content; animation:ticker 20s linear infinite }
-    .logo-text-item { font-size:20px; font-weight:700; color:#1a1a1a; letter-spacing:-0.3px; white-space:nowrap; flex-shrink:0 }
+    .logo-text-item { font-size:20px; font-weight:700; color:#1a1a1a; letter-spacing: 0; white-space:nowrap; flex-shrink:0 }
 
 
     /* SECTIONS */
@@ -154,7 +154,7 @@
     .section-head { text-align:center; margin-bottom:56px }
     .section-tag { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:#666; margin-bottom:24px; padding:7px 18px; border-radius:100px; border:1px solid #e0e0e0; background:#fff }
     .section-tag svg { width:16px; height:16px }
-    .section-h { font-family:'Cal Sans','Inter',sans-serif; font-size:52px; font-weight:600; letter-spacing:-0.5px; line-height:1.12; margin-bottom:20px; max-width:800px; margin-left:auto; margin-right:auto }
+    .section-h { font-family:'Cal Sans','Inter',sans-serif; font-size:52px; font-weight:600; letter-spacing: 0; line-height:1.12; margin-bottom:20px; max-width:800px; margin-left:auto; margin-right:auto }
     .section-p { font-size:17px; line-height:1.65; color:#999; max-width:600px; margin:0 auto }
 
     /* FEATURES */
@@ -170,14 +170,14 @@
     .feat-icon.violet { background:#f5f3ff; color:#7c3aed }
     .feat-icon.amber { background:#fef9c3; color:#ca8a04 }
     .feat-icon.dark { background:#111; color:#fff }
-    .feat-card h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:22px; font-weight:600; letter-spacing:-0.5px; margin-bottom:10px }
+    .feat-card h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:22px; font-weight:600; letter-spacing: 0; margin-bottom:10px }
     .feat-card p { font-size:15px; line-height:1.65; color:#666; max-width:440px }
     .feat-visual { margin-top:28px; background:#fafafa; border-radius:14px; border:1px solid #f0f0f0; padding:20px 24px; position:relative; overflow:hidden }
     .feat-bar-wrap { display:flex; align-items:center; gap:20px }
     .feat-bar { height:8px; background:#f0f0f0; border-radius:100px; flex:1 }
     .feat-bar-fill { height:8px; border-radius:100px; background:linear-gradient(90deg,#7c3aed,#a78bfa); width:0%; transition:width 1.5s cubic-bezier(0.16,1,0.3,1) }
     .feat-card.visible .feat-bar-fill { width:78% }
-    .feat-timer { font-family:'Cal Sans',sans-serif; font-size:32px; font-weight:600; color:#7c3aed; letter-spacing:-1.5px }
+    .feat-timer { font-family:'Cal Sans',sans-serif; font-size:32px; font-weight:600; color:#7c3aed; letter-spacing: 0}
     .feat-bar-label { font-size:12px; color:#999; margin-top:8px }
     .feat-bar-label strong { color:#7c3aed }
     .feat-checks { margin-top:20px; list-style:none; display:flex; flex-direction:column; gap:10px }
@@ -187,7 +187,7 @@
     .feat-mini { background:#fff; border-radius:20px; padding:36px 28px; border:1px solid #e8e8e8; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); position:relative; overflow:hidden }
     .feat-mini:hover { border-color:#d0d0d0; transform:translateY(-4px); box-shadow:0 20px 60px rgba(0,0,0,0.06) }
     .feat-mini:hover .feat-icon { transform:scale(1.08) }
-    .feat-mini h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.3px; margin-bottom:8px }
+    .feat-mini h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing: 0; margin-bottom:8px }
     .feat-mini p { font-size:14px; line-height:1.6; color:#666 }
     .feat-mini .feat-icon { margin-bottom:20px }
 
@@ -197,7 +197,7 @@
     .step-card { background:#fff; border-radius:20px; border:1px solid #e8e8e8; padding:36px 28px; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); display:flex; flex-direction:column }
     .step-card:hover { border-color:#d0d0d0; transform:translateY(-4px); box-shadow:0 20px 60px rgba(0,0,0,0.06) }
     .step-badge { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,#f5f3ff,#ede9fe); font-family:'Cal Sans','Inter',sans-serif; font-size:15px; font-weight:600; color:#7c3aed; margin-bottom:24px }
-    .step-card h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.2px; margin-bottom:10px }
+    .step-card h3 { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing: 0; margin-bottom:10px }
     .step-card p { font-size:14px; line-height:1.65; color:#666; margin-bottom:24px }
     .step-visual { margin-top:auto; background:#fafafa; border-radius:14px; border:1px solid #f0f0f0; padding:24px; min-height:180px; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative }
     /* Step 1 visual - form typing */
@@ -254,7 +254,7 @@
     .trust-left { flex:1; z-index:1 }
     .trust-badge { display:inline-flex; padding:6px 14px; border-radius:100px; background:rgba(255,255,255,0.1); font-size:12px; font-weight:600; color:#22c55e; margin-bottom:18px; align-items:center; gap:8px }
     .trust-badge-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; animation:dot-pulse 2s infinite }
-    .trust-left h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; line-height:1.15; margin-bottom:12px }
+    .trust-left h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing: 0; line-height:1.15; margin-bottom:12px }
     .trust-left > p { font-size:14px; line-height:1.65; color:rgba(255,255,255,0.5); max-width:400px; margin-bottom:24px }
     .trust-items { display:flex; flex-direction:column; gap:0 }
     .trust-item { display:flex; align-items:center; gap:10px; font-size:14px; color:rgba(255,255,255,0.7); padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.06); opacity:0; transform:translateX(-10px) }
@@ -277,13 +277,13 @@
     .trust-mini-icon svg { width:18px; height:18px; color:rgba(255,255,255,0.5) }
     .trust-mini-title { font-size:14px; font-weight:600 }
     .trust-mini-desc { font-size:12px; color:rgba(255,255,255,0.35) }
-    .trust-mini-num { font-family:'Cal Sans',sans-serif; font-size:20px; font-weight:600; color:#22c55e; letter-spacing:-0.5px }
+    .trust-mini-num { font-family:'Cal Sans',sans-serif; font-size:20px; font-weight:600; color:#22c55e; letter-spacing: 0}
 
     /* TESTIMONIALS */
     .testi-section { text-align:center; padding:56px 0; overflow:hidden; position:relative }
     .testi-pill { display:inline-flex; align-items:center; gap:8px; padding:7px 18px; border-radius:100px; border:1px solid #e0e0e0; font-size:13px; font-weight:500; color:#666; margin-bottom:28px; background:#fff }
     .testi-pill svg { width:16px; height:16px; color:#999 }
-    .testi-section h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:44px; font-weight:600; letter-spacing:-0.5px; line-height:1.08; margin-bottom:16px; max-width:700px; margin-left:auto; margin-right:auto }
+    .testi-section h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:44px; font-weight:600; letter-spacing: 0; line-height:1.08; margin-bottom:16px; max-width:700px; margin-left:auto; margin-right:auto }
     .testi-section .testi-sub { font-size:16px; line-height:1.6; color:#999; max-width:520px; margin:0 auto 56px }
     .testi-slider-wrap { position:relative; overflow:hidden; margin:0 auto; max-width:1320px; padding:0 40px }
     .testi-scroll { overflow:hidden; position:relative; mask-image:linear-gradient(to right,rgba(0,0,0,0.05) 0%,black 10%,black 90%,rgba(0,0,0,0.05) 100%); -webkit-mask-image:linear-gradient(to right,rgba(0,0,0,0.05) 0%,black 10%,black 90%,rgba(0,0,0,0.05) 100%) }
@@ -306,7 +306,7 @@
     .testi-card-wrap .testi-quote, .testi-card-wrap .testi-author { transition:opacity 0.3s }
     .testi-card-wrap.faded .testi-quote, .testi-card-wrap.faded .testi-author { opacity:0.3 }
     .testi-card-wrap.faded .testi-card { box-shadow:none }
-    .testi-card .testi-quote { font-family:'Cal Sans','Inter',sans-serif; font-size:24px; line-height:1.25; color:#111; font-weight:600; letter-spacing:-0.3px; margin-bottom:28px; flex:1 }
+    .testi-card .testi-quote { font-family:'Cal Sans','Inter',sans-serif; font-size:24px; line-height:1.25; color:#111; font-weight:600; letter-spacing: 0; margin-bottom:28px; flex:1 }
     .testi-card .testi-author { display:flex; align-items:center; gap:12px }
     .testi-card .testi-initials { width:40px; height:40px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#999; flex-shrink:0 }
     .testi-card .testi-name { font-size:14px; font-weight:600; color:#111 }
@@ -325,9 +325,9 @@
     .price-card:hover { border-color:#d0d0d0; transform:translateY(-3px); box-shadow:0 16px 48px rgba(0,0,0,0.06) }
     .price-card.pop { border-color:#7c3aed; border-width:2px }
     .pop-badge { position:absolute; top:-11px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#7c3aed,#2563eb); color:#fff; font-size:11px; font-weight:700; padding:4px 16px; border-radius:100px }
-    .price-name { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing:-0.3px; margin-bottom:6px }
-    .price-val { font-family:'Cal Sans','Inter',sans-serif; font-size:40px; font-weight:600; letter-spacing:-0.5px; margin-bottom:4px }
-    .price-val span { font-size:14px; font-weight:400; letter-spacing:0; color:#999 }
+    .price-name { font-family:'Cal Sans','Inter',sans-serif; font-size:18px; font-weight:600; letter-spacing: 0; margin-bottom:6px }
+    .price-val { font-family:'Cal Sans','Inter',sans-serif; font-size:40px; font-weight:600; letter-spacing: 0; margin-bottom:4px }
+    .price-val span { font-size:14px; font-weight:400; letter-spacing: 0; color:#999 }
     .price-desc { font-size:13px; color:#999; margin-bottom:24px; line-height:1.5 }
     .price-list { list-style:none; margin-bottom:24px }
     .price-list li { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px; color:#555 }
@@ -340,19 +340,19 @@
     .cta-grid { position:absolute; top:0; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(7,1fr); grid-template-rows:repeat(4,1fr); gap:10px; padding:16px; pointer-events:none; mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 20%,rgba(0,0,0,0.15) 50%,rgba(0,0,0,0.4) 75%,rgba(0,0,0,0.5) 100%); -webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 20%,rgba(0,0,0,0.15) 50%,rgba(0,0,0,0.4) 75%,rgba(0,0,0,0.5) 100%) }
     .cta-grid-cell { background:rgba(0,0,0,0.02); border:1px solid rgba(0,0,0,0.05); border-radius:14px }
     .cta-content { position:relative; z-index:2 }
-    .cta-content h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:48px; font-weight:600; letter-spacing:-0.5px; line-height:1.08; margin-bottom:28px }
+    .cta-content h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:48px; font-weight:600; letter-spacing: 0; line-height:1.08; margin-bottom:28px }
     .cta-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap }
 
     /* FOOTER */
     .foot { padding:56px 40px 32px; background:transparent }
     .foot-inner { max-width:1200px; margin:0 auto }
     .foot-top { display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr 1fr; gap:40px; margin-bottom:56px }
-    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:14px }
+    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing: 0; margin-bottom:14px }
     .foot-brand-p { font-size:13px; color:#999; line-height:1.7; max-width:280px; margin-bottom:24px }
     .foot-mission { font-size:12px; color:#bbb; line-height:1.6; max-width:280px; margin-bottom:20px }
     .foot-status { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:100px; border:1px solid #e8e8e8; font-size:12px; font-weight:500; color:#666; background:#fff }
     .foot-status-dot { width:6px; height:6px; border-radius:50%; background:#22c55e }
-    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; color:#111; margin-bottom:16px }
+    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing: 0; color:#111; margin-bottom:16px }
     .foot-col a { display:block; font-size:13px; color:#888; padding:5px 0; transition:color 0.2s }
     .foot-col a:hover { color:#111 }
     .foot-bottom { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding-top:24px; border-top:1px solid #e8e8e8 }
@@ -392,7 +392,7 @@
       .nav-center { display:none }
       .hero-wrap { padding:74px 16px 0 }
       .hero { padding:40px 24px }
-      .hero h1 { font-size:36px; letter-spacing:-1px }
+      .hero h1 { font-size:36px; letter-spacing: 0}
       .hero h1 .highlight-badge { top:-14px; right:-44px; font-size:9px; padding:3px 8px }
       .hero .sub { font-size:16px }
       .hero-btns { flex-direction:column; width:100% }
@@ -406,7 +406,7 @@
       .feat-card.full { grid-column:span 1 }
       .stats { grid-template-columns:repeat(2,1fr); padding:0 16px }
       .section { padding:72px 16px }
-      .section-h { font-size:32px; letter-spacing:-1px }
+      .section-h { font-size:32px; letter-spacing: 0}
       .trust { padding:36px 20px; border-radius:20px; margin:0 16px }
       .trust-left h2 { font-size:28px }
       .trust-right { flex-direction:column }
@@ -597,7 +597,7 @@
       <div class="step-card reveal reveal-d2">
         <div class="step-badge">02</div>
         <h3>Un avocat valide vos documents</h3>
-        <p>Statuts, contrats, PV d'assembl&eacute;e &mdash; tout est g&eacute;n&eacute;r&eacute; en quelques secondes puis v&eacute;rifi&eacute; clause par clause par notre cabinet d'avocats partenaire.</p>
+        <p>Statuts, contrats, PV d'assembl&eacute;e - tout est g&eacute;n&eacute;r&eacute; en quelques secondes puis v&eacute;rifi&eacute; clause par clause par notre cabinet d'avocats partenaire.</p>
         <div class="step-visual">
           <div class="step-doc">
             <div class="step-doc-page">
@@ -746,7 +746,7 @@
       <div class="pricing">
         <div class="price-card reveal reveal-d1"><div class="price-name">Cr&eacute;ation de soci&eacute;t&eacute;</div><div class="price-val">199&euro;</div><div class="price-desc">SASU, SAS, SARL, SCI, EURL&hellip; Statuts sur-mesure, valid&eacute;s par un avocat. Pr&ecirc;t en 5&nbsp;minutes.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Statuts sur-mesure</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Valid&eacute; par un avocat</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Signature &eacute;lectronique</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Suivi du dossier en temps r&eacute;el</li></ul><a href="/connexion.html" class="btn btn-dark">Commencer</a></div>
         <div class="price-card pop reveal reveal-d2"><div class="pop-badge">Populaire</div><div class="price-name">Modification de soci&eacute;t&eacute;</div><div class="price-val">149&euro;</div><div class="price-desc">Changement de si&egrave;ge, d'objet social, de dirigeant&hellip; Formalit&eacute;s au greffe incluses.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>PV d'assembl&eacute;e g&eacute;n&eacute;r&eacute;</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Statuts mis &agrave; jour</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Formalit&eacute;s au greffe incluses</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Messagerie avocat</li></ul><a href="/connexion.html" class="btn btn-dark">Commencer</a></div>
-        <div class="price-card reveal reveal-d3"><div class="price-name">Fermeture de soci&eacute;t&eacute;</div><div class="price-val">249&euro;</div><div class="price-desc">Dissolution, liquidation, radiation &mdash; tout est g&eacute;r&eacute; de A &agrave; Z par notre plateforme.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>PV de dissolution</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Comptes de liquidation</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Publication l&eacute;gale incluse</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Radiation au greffe</li></ul><a href="/connexion.html" class="btn btn-outline">Commencer</a></div>
+        <div class="price-card reveal reveal-d3"><div class="price-name">Fermeture de soci&eacute;t&eacute;</div><div class="price-val">249&euro;</div><div class="price-desc">Dissolution, liquidation, radiation - tout est g&eacute;r&eacute; de A &agrave; Z par notre plateforme.</div><ul class="price-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>PV de dissolution</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Comptes de liquidation</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Publication l&eacute;gale incluse</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Radiation au greffe</li></ul><a href="/connexion.html" class="btn btn-outline">Commencer</a></div>
       </div>
     </div>
 

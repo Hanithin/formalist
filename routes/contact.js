@@ -1,5 +1,5 @@
 /**
- * routes/contact.js — Public contact form
+ * routes/contact.js - Public contact form
  */
 
 const { jsonResponse, errorResponse } = require("../lib/router");

@@ -16,6 +16,34 @@
 .sidebar-logo a,
 .sidebar-logo .logo-text { color: #fff !important; }
 
+/* Le logo est un PNG noir sur fond transparent : on l'inverse pour la sidebar
+   sombre. La taille est fixée ici pour toutes les pages : sans elle, l'image
+   s'affiche à sa taille native (4725 px de large) et fait exploser la colonne. */
+.sidebar-logo img {
+  filter: invert(1);
+  height: 30px;
+  width: auto;
+  max-width: 100%;
+  display: block;
+}
+
+/* ---------- Parcours de formalités ----------
+   Au même niveau que les autres onglets : ni accordéon, ni retrait. */
+
+/* Parcours pas encore ouverts : visibles mais clairement indisponibles */
+.nav-soon {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 100px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.sidebar-nav a[data-soon] { opacity: 0.55; cursor: default; }
+.sidebar-nav a[data-soon]:hover { background: transparent; color: rgba(255, 255, 255, 0.55); }
+
 /* ---------- Bloc contexte (société active) ---------- */
 .sidebar-context {
   background: rgba(255, 255, 255, 0.05);
@@ -31,13 +59,44 @@
 .sidebar-context .ctx-name { color: #fff; }
 .sidebar-context .ctx-chevron { color: rgba(255, 255, 255, 0.6); }
 
-/* ---------- CTA primaire ---------- */
-.sidebar-cta { background: #fff; color: #18181b; box-shadow: none; }
-.sidebar-cta:hover { background: #ececec; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+/* ---------- CTA primaire ----------
+   Deux variantes existent selon les pages : un <button> (.sidebar-cta) et un
+   <a> (.sidebar-cta-link). La mise en forme est définie ici pour toutes les
+   pages : certaines n'ont aucune règle locale et le bouton s'affichait nu. */
+.sidebar-cta,
+.sidebar-cta-link {
+  margin: 4px 12px 20px;
+  padding: 13px 18px;
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+  background: #fff;
+  color: #18181b;
+  box-shadow: none;
+}
+.sidebar-cta:active,
+.sidebar-cta-link:active { transform: scale(0.99); }
+.sidebar-cta:hover,
+.sidebar-cta-link:hover { background: #ececec; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
 
 /* ---------- Navigation ---------- */
 .sidebar-nav a,
-.sidebar-nav .sidebar-dropdown { color: rgba(255, 255, 255, 0.65); }
+.sidebar-nav .sidebar-dropdown {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 15.5px;
+  padding: 11px 12px;
+}
+.sidebar-nav a svg,
+.sidebar-nav .sidebar-dropdown svg { width: 21px; height: 21px; }
 .sidebar-nav a:hover,
 .sidebar-nav .sidebar-dropdown:hover { color: #fff; background: rgba(255, 255, 255, 0.07); }
 .sidebar-nav a.active { color: #fff; background: rgba(255, 255, 255, 0.12); }
@@ -54,11 +113,32 @@
 .nav-badge.muted { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6); }
 .sidebar-nav a.active .nav-badge { background: rgba(255, 255, 255, 0.9); color: #18181b; }
 
-/* ---------- Pied (utilisateur) ---------- */
-.sidebar-bottom { background: transparent; border-top: 1px solid rgba(255, 255, 255, 0.08); }
-.avatar { background: #fff; color: #18181b; }
-.user-name { color: #fff; }
-.user-email { color: rgba(255, 255, 255, 0.5); }
+/* ---------- Pied (utilisateur) ----------
+   Deux nommages coexistent selon les pages : .user-name/.user-email et
+   .sidebar-bottom .name/.email. Les deux doivent être lisibles sur fond sombre. */
+
+/* Le pied reste collé en bas : seule la navigation défile. Sans ça, il fallait
+   faire défiler toute la colonne pour atteindre son compte. */
+.sidebar { overflow: hidden; }
+.sidebar-logo,
+.sidebar-cta,
+.sidebar-cta-link,
+.sidebar-context,
+.sidebar-bottom { flex-shrink: 0; }
+.sidebar-nav { flex: 1; min-height: 0; overflow-y: auto; }
+
+.sidebar-bottom {
+  background: #18181b;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+}
+.avatar { background: #fff; color: #18181b; width: 40px; height: 40px; font-size: 14px; }
+.user-name,
+.sidebar-bottom .name { color: #fff; font-size: 15px; font-weight: 600; }
+.user-email,
+.sidebar-bottom .email { color: rgba(255, 255, 255, 0.5); font-size: 12.5px; }
+.sidebar-bottom button { color: rgba(255, 255, 255, 0.55); }
+.sidebar-bottom button:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 .btn-logout,
 .btn-settings { color: rgba(255, 255, 255, 0.55); }
 .btn-logout:hover,
@@ -125,7 +205,7 @@
 }
 .welcome-path-badge {
   display: inline-flex; align-items: center;
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   color: #047857; background: rgba(16, 185, 129, 0.14);
   padding: 3px 8px; border-radius: 20px; margin-bottom: 12px;
 }

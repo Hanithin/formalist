@@ -36,21 +36,35 @@ function injectSidebarRoleBadge(roles) {
   if (hasAdmin) {
     var b = document.createElement('span');
     b.className = 'logo-badge-admin';
-    b.style.cssText = 'display:inline-flex;align-items:center;padding:3px 8px;background:#111;color:#fff;border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing:0.5px;line-height:1;text-transform:uppercase;';
+    // Pilule ambre translucide sur la sidebar sombre : fond teinté, texte orange
+    // clair, bordure discrète. Un aplat plein jurerait avec le reste du menu.
+    b.style.cssText = 'display:inline-flex;align-items:center;padding:4px 9px;'
+      + 'background:rgba(245,158,11,0.16);color:#fbbf24;border:1px solid rgba(245,158,11,0.38);'
+      + 'border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing: 0;line-height:1;text-transform:uppercase;';
     b.textContent = 'Admin';
     logo.appendChild(b);
   } else if (hasAvocat) {
     var b2 = document.createElement('span');
     b2.className = 'logo-badge-avocat';
-    b2.style.cssText = 'display:inline-flex;align-items:center;padding:3px 8px;background:#f3e8ff;color:#7c3aed;border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing:0.5px;line-height:1;text-transform:uppercase;';
+    // Même traitement en violet, accordé à l'accès "Espace avocat"
+    b2.style.cssText = 'display:inline-flex;align-items:center;padding:4px 9px;'
+      + 'background:rgba(167,139,250,0.16);color:#c4b5fd;border:1px solid rgba(167,139,250,0.38);'
+      + 'border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing: 0;line-height:1;text-transform:uppercase;';
     b2.textContent = 'Avocat';
     logo.appendChild(b2);
   }
 }
 
 // Pré-injection des boutons sidebar depuis le cache (évite le jitter au changement de page)
+//
+// Tout le monde a la même navigation. Les rôles n'ajoutent qu'un accès
+// supplémentaire : "Espace avocat" pour traiter les dossiers à vérifier,
+// "Administration" pour la gestion de la plateforme.
 function injectSidebarRoleButtons(roles) {
   if (!roles) return;
+  // Page ouverte dans un cadre (révision avocat) : pas de navigation à injecter,
+  // ses liens chargeraient une autre page dans le cadre.
+  if (window.self !== window.top) return;
   var hasAvocat = roles.indexOf('avocat') !== -1;
   var hasAdmin = roles.indexOf('admin') !== -1;
   var nav = document.querySelector('.sidebar-nav');
@@ -59,78 +73,80 @@ function injectSidebarRoleButtons(roles) {
 
   injectSidebarRoleBadge(roles);
 
-  // Avocat : cache le lien "Consultation juridique" (service client) car il a sa propre section
-  // Remplace aussi "Tableau de bord" → /avocat.html (le vrai dashboard de l'avocat)
-  if (hasAvocat) {
-    var consLink = nav.querySelector('a[href="/consultations.html"]');
-    if (consLink) consLink.style.display = 'none';
-    var dashLink = nav.querySelector('a[href="/dashboard.html"], a[data-page="dashboard"]');
-    if (dashLink) {
-      dashLink.setAttribute('href', '/avocat.html');
-      // Renomme "Tableau de bord" → "Mes dossiers" pour les avocats (plus explicite et évite
-      // la confusion avec la "Vue d'ensemble" admin)
-      var dashTextNode = null;
-      dashLink.childNodes.forEach(function(n) {
-        if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) dashTextNode = n;
-      });
-      if (dashTextNode) dashTextNode.textContent = ' Mes dossiers';
-      else dashLink.lastChild && (dashLink.lastChild.textContent = ' Mes dossiers');
-    }
+  function place(el) {
+    if (divider) nav.insertBefore(el, divider);
+    else nav.appendChild(el);
   }
 
-  // Admin : cache les liens "user" génériques (Mes formalités, Documents, Contrats) car
-  // ils sont redondants avec la section Administration. Cache aussi /dashboard.html quand
-  // l'admin n'est pas avocat (sinon le lien a été redirigé vers /avocat.html juste au-dessus).
-  if (hasAdmin) {
-    var hidePaths = ['/formalites.html', '/documents.html', '/contrats.html'];
-    if (!hasAvocat) hidePaths.push('/dashboard.html');
-    hidePaths.forEach(function(p) {
-      var link = nav.querySelector('a[href="' + p + '"], a[href^="' + p + '?"]');
-      if (link) link.style.display = 'none';
-    });
+  // Avocat : accès à ses dossiers clients à vérifier
+  if (hasAvocat && !nav.querySelector('.sidebar-avocat-link')) {
+    var aAvocat = document.createElement('a');
+    aAvocat.href = '/avocat.html';
+    aAvocat.className = 'sidebar-avocat-link sidebar-role-link';
+    aAvocat.dataset.page = 'avocat';
+    // Fond neutre plutôt qu'un aplat violet : sur du noir, le violet désaturé
+    // vire au gris-mauve. La couleur ne reste que sur le texte et l'icône.
+    aAvocat.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(196,181,253,0.22);'
+      + 'border-radius:10px;color:#ddd6fe;font-weight:600;margin:6px 0;transition:all .15s ease;';
+    aAvocat.onmouseover = function(){ this.style.background = 'rgba(255,255,255,0.09)'; this.style.borderColor = 'rgba(196,181,253,0.4)'; this.style.color = '#ede9fe'; };
+    aAvocat.onmouseout  = function(){ this.style.background = 'rgba(255,255,255,0.05)'; this.style.borderColor = 'rgba(196,181,253,0.22)'; this.style.color = '#ddd6fe'; };
+    aAvocat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 4v6c0 5-3.8 8.4-9 9-5.2-.6-9-4-9-9V7z"/><polyline points="9 12 11 14 15 10"/></svg>Espace avocat'
+      + '<span class="nav-badge" id="badge-avocat" style="display:none;">0</span>';
+    place(aAvocat);
   }
 
-  // Avocat : section "Avocat" avec Consultations + Mes disponibilités
-  // ("Espace avocat" supprimé — Tableau de bord pointe déjà vers /avocat.html pour les avocats)
-  if (hasAvocat && !nav.querySelector('.sidebar-avocat-section')) {
-    var section = document.createElement('div');
-    section.className = 'sidebar-section sidebar-avocat-section';
-    section.textContent = 'Avocat';
-    var avCons = document.createElement('a');
-    avCons.href = '/avocat.html#consultations';
-    avCons.className = 'sidebar-avocat-link';
-    avCons.dataset.page = 'avocat-consultations';
-    avCons.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.78;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Consultations';
-    var avDispo = document.createElement('a');
-    avDispo.href = '/avocat.html#disponibilites';
-    avDispo.className = 'sidebar-avocat-link';
-    avDispo.dataset.page = 'avocat-disponibilites';
-    avDispo.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.78;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Mes disponibilités';
-    if (divider) {
-      nav.insertBefore(section, divider);
-      nav.insertBefore(avCons, divider);
-      nav.insertBefore(avDispo, divider);
-    } else {
-      nav.appendChild(section);
-      nav.appendChild(avCons);
-      nav.appendChild(avDispo);
-    }
-  }
-
-  // Admin : un seul lien "Administration" (background ambre, aligné avec les autres liens).
-  // On préserve le fond/border mais on s'aligne sur les liens normaux (mêmes padding et
-  // gap que .sidebar-nav a), pas de margin horizontale.
-  if (hasAdmin && !nav.querySelector('.sidebar-admin-section, .sidebar-admin-link')) {
+  // Admin : gestion de la plateforme
+  if (hasAdmin && !nav.querySelector('.sidebar-admin-link')) {
     var aAdmin = document.createElement('a');
     aAdmin.href = '/admin.html';
-    aAdmin.className = 'sidebar-admin-link sidebar-admin-section';
-    aAdmin.style.cssText = 'background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#b45309;font-weight:600;margin:6px 0;transition:all .15s ease;';
-    aAdmin.onmouseover = function(){ this.style.background = '#fef3c7'; this.style.borderColor = '#fcd34d'; };
-    aAdmin.onmouseout  = function(){ this.style.background = '#fffbeb'; this.style.borderColor = '#fde68a'; };
+    aAdmin.className = 'sidebar-admin-link sidebar-role-link';
+    aAdmin.dataset.page = 'admin';
+    aAdmin.style.cssText = 'background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.32);'
+      + 'border-radius:10px;color:#fbbf24;font-weight:600;margin:6px 0;transition:all .15s ease;';
+    aAdmin.onmouseover = function(){ this.style.background = 'rgba(245,158,11,0.2)'; this.style.borderColor = 'rgba(245,158,11,0.5)'; this.style.color = '#fcd34d'; };
+    aAdmin.onmouseout  = function(){ this.style.background = 'rgba(245,158,11,0.12)'; this.style.borderColor = 'rgba(245,158,11,0.32)'; this.style.color = '#fbbf24'; };
     aAdmin.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Administration';
-    if (divider) nav.insertBefore(aAdmin, divider);
-    else nav.appendChild(aAdmin);
+    place(aAdmin);
   }
+
+  // Marque l'entrée correspondant à la page courante (y compris les accès de rôle)
+  var here = location.pathname.replace(/^\//, '').replace('.html', '') || 'dashboard';
+  var current = nav.querySelector('a[data-page="' + here + '"]');
+  if (current) {
+    nav.querySelectorAll('a.active').forEach(function(a) { a.classList.remove('active'); });
+    current.classList.add('active');
+    // Les accès de rôle sont stylés en ligne : la règle .active de la feuille ne
+    // passerait pas devant. On renforce la teinte à la main quand on y est.
+    if (current.classList.contains('sidebar-role-link')) {
+      var teinte = current.classList.contains('sidebar-admin-link')
+        ? { bg: 'rgba(245,158,11,0.22)', bd: 'rgba(245,158,11,0.55)', fg: '#fcd34d' }
+        : { bg: 'rgba(255,255,255,0.12)', bd: 'rgba(196,181,253,0.45)', fg: '#ede9fe' };
+      current.style.background = teinte.bg;
+      current.style.borderColor = teinte.bd;
+      current.style.color = teinte.fg;
+      current.onmouseout = null; // sinon le survol ramènerait l'état inactif
+    }
+  }
+
+  setupFormalitesGroup(nav);
+}
+
+/**
+ * Les parcours pas encore ouverts sont visibles mais ne mènent nulle part :
+ * un clic explique au lieu de tomber sur une page inexistante.
+ */
+function setupFormalitesGroup(nav) {
+  nav.querySelectorAll('a[data-soon]').forEach(function(a) {
+    if (a.dataset.soonBound) return;
+    a.dataset.soonBound = '1';
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      var label = a.textContent.replace('Bientôt', '').trim();
+      var msg = label + ' : ce parcours arrive prochainement.';
+      if (typeof showToast === 'function') showToast(msg);
+      else if (typeof toast === 'function') toast(msg);
+    });
+  });
 }
 
 // Injection IMMÉDIATE depuis sessionStorage (pas d'attente du fetch)
@@ -189,6 +205,21 @@ fetch('/api/auth/me').then(function(r) {
   try { sessionStorage.setItem('user_roles', JSON.stringify(_roles)); } catch (_) {}
   // Injecte si pas déjà fait (cas de la 1re visite sans cache)
   injectSidebarRoleButtons(_roles);
+
+  // Combien de dossiers attendent la vérification de l'avocat : le chiffre est
+  // ce qui rend le raccourci utile, sinon il faut aller voir pour savoir.
+  if (_roles.indexOf('avocat') !== -1) {
+    fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(d) {
+      var aVerifier = (d.formalites || []).filter(function(f) {
+        var sp = f.business_sub_phase;
+        return (sp === '5a' || sp === '5b') && f.assigned_avocat_id === data.user.id;
+      }).length;
+      var badge = document.getElementById('badge-avocat');
+      if (!badge) return;
+      if (aVerifier > 0) { badge.textContent = aVerifier; badge.style.display = ''; }
+      else badge.style.display = 'none';
+    }).catch(function() {});
+  }
 }).catch(function() { window.location.href = '/connexion.html'; });
 
 Formalist.common = {

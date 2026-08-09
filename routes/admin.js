@@ -1,5 +1,5 @@
 /**
- * routes/admin.js — Admin endpoints (stats, users, support management)
+ * routes/admin.js - Admin endpoints (stats, users, support management)
  */
 
 const { authGuard } = require("../middleware/auth-guard");
@@ -29,7 +29,7 @@ module.exports = function adminRoutes(pathname, req, res, url) {
     return jsonResponse(res, 200, { avocats: stmts.getAvocats.all() });
   }
 
-  // GET /api/admin/activity — feed unifié d'événements récents pour la vue admin
+  // GET /api/admin/activity - feed unifié d'événements récents pour la vue admin
   // ?days=N  : fenêtre temporelle (défaut 7), ?limit=N : événements par catégorie (défaut 50)
   if (pathname === "/api/admin/activity" && req.method === "GET") {
     const user = authGuard(req, res, "admin");
@@ -240,6 +240,11 @@ module.exports = function adminRoutes(pathname, req, res, url) {
         // dedupe
         roles = Array.from(new Set(roles));
         if (roles.length === 0) return errorResponse(res, 400, "Au moins un rôle requis");
+        // Un administrateur ne peut pas se retirer ses propres droits : il perdrait
+        // l'accès à cette page, et plus personne ne pourrait les lui rendre.
+        if (parseInt(params.id) === user.id && !roles.includes("admin")) {
+          return errorResponse(res, 403, "Vous ne pouvez pas retirer votre propre accès administrateur");
+        }
         // Le rôle principal = celui avec le plus de droits si présent, sinon le premier
         const primary = roles.includes("admin") ? "admin" : roles.includes("avocat") ? "avocat" : roles[0];
         stmts.updateUserRoles.run(JSON.stringify(roles), primary, parseInt(params.id));

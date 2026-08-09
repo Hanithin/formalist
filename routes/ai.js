@@ -1,5 +1,5 @@
 /**
- * routes/ai.js — AI-powered features (objet social generation)
+ * routes/ai.js - AI-powered features (objet social generation)
  * Fixes: #1 (API key in URL → header), #2 (prompt injection)
  */
 

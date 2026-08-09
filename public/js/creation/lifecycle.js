@@ -1841,7 +1841,7 @@ function _renderChangesModal(entries) {
       } catch (e) {}
     }
     return '<div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#666;margin-top:8px;">'
-      + '<span style="display:inline-flex;align-items:center;gap:4px;background:' + bg + ';color:#fff;padding:2px 7px;border-radius:10px;font-size:10.5px;font-weight:600;letter-spacing:0.3px;">' + role + '</span>'
+      + '<span style="display:inline-flex;align-items:center;gap:4px;background:' + bg + ';color:#fff;padding:2px 7px;border-radius:10px;font-size:10.5px;font-weight:600;letter-spacing: 0;">' + role + '</span>'
       + '<span style="color:#111;font-weight:500;">' + _esc(e.actor_name) + '</span>'
       + (when ? '<span style="color:#999;">·</span><span style="color:#999;">' + when + '</span>' : '')
       + '</div>';
@@ -1851,7 +1851,7 @@ function _renderChangesModal(entries) {
     var av = _formatValue(e.after);
     var fieldLabel = _humanizeFieldName(e.field);
     return '<div style="padding:14px 16px;border:1px solid #f0f0f0;border-radius:12px;margin-bottom:10px;">'
-      + '<div style="font-size:11.5px;color:#7c3aed;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:10px;">' + _esc(fieldLabel) + '</div>'
+      + '<div style="font-size:11.5px;color:#7c3aed;font-weight:600;letter-spacing: 0;text-transform:uppercase;margin-bottom:10px;">' + _esc(fieldLabel) + '</div>'
       + '<div style="display:flex;align-items:stretch;gap:10px;font-size:13.5px;line-height:1.4;">'
       +   '<div style="flex:1;min-width:0;padding:9px 12px;background:#fef2f2;color:' + (bv.empty ? '#9ca3af' : '#991b1b') + ';border-radius:8px;' + (bv.empty ? '' : 'text-decoration:line-through;') + 'word-break:break-word;">' + _esc(bv.text) + '</div>'
       +   '<div style="display:flex;align-items:center;flex-shrink:0;color:#999;">'
@@ -1891,7 +1891,7 @@ function markDocsAsModified(entries) {
     var modBadge = document.createElement('button');
     modBadge.type = 'button';
     modBadge.className = 'doc-modified-badge';
-    modBadge.style.cssText = 'background:#f5f3ff;color:#7c3aed;border:1px solid #e9d5ff;border-radius:100px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-right:8px;font-family:inherit;letter-spacing:0.2px;transition:all 0.15s ease;';
+    modBadge.style.cssText = 'background:#f5f3ff;color:#7c3aed;border:1px solid #e9d5ff;border-radius:100px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-right:8px;font-family:inherit;letter-spacing: 0;transition:all 0.15s ease;';
     modBadge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg> Modifié';
     modBadge.addEventListener('mouseenter', function(){ modBadge.style.background = '#ede9fe'; });
     modBadge.addEventListener('mouseleave', function(){ modBadge.style.background = '#f5f3ff'; });

@@ -559,7 +559,7 @@ function updateSubmitButtonLabel() {
           '</div>' +
           '<div style="display:flex;justify-content:flex-end;margin-bottom:18px;">' +
             '<button id="review-update-btn" type="button" ' +
-              'style="font-family:\'Matter\',\'Inter\',sans-serif;background:#7c3aed;color:#fff;padding:12px 28px;border-radius:100px;font-size:14px;font-weight:500;letter-spacing:0.2px;border:none;cursor:pointer;transition:all 0.2s ease;display:inline-flex;align-items:center;gap:8px;">' +
+              'style="font-family:\'Matter\',\'Inter\',sans-serif;background:#7c3aed;color:#fff;padding:12px 28px;border-radius:100px;font-size:14px;font-weight:500;letter-spacing: 0;border:none;cursor:pointer;transition:all 0.2s ease;display:inline-flex;align-items:center;gap:8px;">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>' +
               'Mettre à jour et régénérer' +
             '</button>' +
@@ -685,7 +685,7 @@ window.STATUS_META = STATUS_META;
 
 function renderStatusPill(status) {
   var meta = STATUS_META[status] || STATUS_META.en_cours;
-  var html = '<span style="display:inline-flex;align-items:center;gap:6px;background:' + meta.bg + ';color:' + meta.color + ';font-size:12px;font-weight:600;padding:5px 11px;border-radius:100px;letter-spacing:0.2px;">' +
+  var html = '<span style="display:inline-flex;align-items:center;gap:6px;background:' + meta.bg + ';color:' + meta.color + ';font-size:12px;font-weight:600;padding:5px 11px;border-radius:100px;letter-spacing: 0;">' +
     '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>' + meta.label + '</span>';
   ['current-status-pill', 'recap-status-pill'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -764,7 +764,7 @@ function openTransitionModal(cfg, targetStatus, triggerBtn) {
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">' + cfg.icon + '</svg>' +
         '</div>' +
         '<div style="flex:1;min-width:0;">' +
-          '<div style="font-family:\'Cal Sans\',sans-serif;font-size:19px;font-weight:600;color:#111;letter-spacing:-0.2px;">' + cfg.title + '</div>' +
+          '<div style="font-family:\'Cal Sans\',sans-serif;font-size:19px;font-weight:600;color:#111;letter-spacing: 0;">' + cfg.title + '</div>' +
           '<div style="font-size:13px;color:#666;margin-top:4px;line-height:1.45;">' + cfg.desc + '</div>' +
         '</div>' +
         '<button type="button" id="transition-close" style="background:none;border:none;color:#999;cursor:pointer;font-size:22px;line-height:1;padding:2px 8px;">×</button>' +

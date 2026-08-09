@@ -1,5 +1,5 @@
 /**
- * routes/consultations.js — Booking + availability for legal consultations
+ * routes/consultations.js - Booking + availability for legal consultations
  */
 
 const { authGuard } = require("../middleware/auth-guard");
@@ -101,7 +101,7 @@ module.exports = function consultationsRoutes(pathname, req, res, url) {
           null,
           DEFAULT_PRICE_CENTS,
           "EUR",
-          "Consultation juridique — " + domain,
+          "Consultation juridique - " + domain,
           "paid",
           null,
           new Date().toISOString(),

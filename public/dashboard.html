@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>    .sidebar {
-      width: 270px;
+      width: 300px;
       background: #fff;
       border-right: 1px solid #e5e5e5;
       display: flex;
@@ -38,7 +38,7 @@
     }
     .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
     .sidebar-context .ctx-body { flex: 1; min-width: 0; }
-    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0; text-transform: uppercase; }
     .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
     .sidebar-context.single { cursor: default; }
@@ -90,7 +90,7 @@
       padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
       border-bottom: 1px solid #f0f0f2;
     }
-    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: 0; }
     .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
     .nd-close {
       background: none; border: none; cursor: pointer; color: #999;
@@ -150,7 +150,7 @@
     }
     .welcome-hero h2 {
       font-size: 28px; font-weight: 600;
-      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: -0.3px;
+      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: 0;
       flex: 1; min-width: 0;
     }
     .welcome-hero p { font-size: 15px; color: rgba(255,255,255,0.7); margin-bottom: 28px; max-width: 540px; line-height: 1.5; position: relative; z-index: 2; }
@@ -169,7 +169,7 @@
     .welcome-badge svg { width: 14px; height: 14px; stroke-width: 2.2; }
     .welcome-group-label {
       font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5);
-      text-transform: uppercase; letter-spacing: 0.8px;
+      text-transform: uppercase; letter-spacing: 0;
       margin: 22px 0 12px; position: relative; z-index: 2;
     }
     .welcome-group-label:first-of-type { margin-top: 0; }
@@ -238,16 +238,16 @@
       align-items: center; justify-content: center;
     }
     .single-hero-progress .pct-value { font-size: 26px; font-weight: 700; color: #111; line-height: 1; font-family: 'Cal Sans', 'Inter', sans-serif; }
-    .single-hero-progress .pct-label { font-size: 10px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .single-hero-progress .pct-label { font-size: 10px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: 0; }
     .single-hero-body { flex: 1; min-width: 0; }
     .single-hero-eyebrow {
       display: inline-block; padding: 4px 10px; background: #eef2ff; color: #4338ca;
       font-size: 11px; font-weight: 600; border-radius: 20px; margin-bottom: 10px;
-      text-transform: uppercase; letter-spacing: 0.3px;
+      text-transform: uppercase; letter-spacing: 0;
     }
     .single-hero-title {
       font-size: 24px; font-weight: 600; margin-bottom: 8px; color: #111;
-      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: -0.2px;
+      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: 0;
     }
     .single-hero-desc { font-size: 14.5px; color: #666; margin-bottom: 20px; line-height: 1.5; }
     .single-hero-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -274,9 +274,311 @@
     .single-celebrate .single-hero-progress circle.bg { stroke: rgba(255,255,255,0.15); }
     .single-celebrate .single-hero-progress circle.fg { stroke: #fff; }
     .single-celebrate .single-hero-progress .pct-value { color: #fff; }
+    .single-hero-progress .pct-value svg { width: 26px; height: 26px; display: block; }
     .single-celebrate .single-hero-progress .pct-label { color: rgba(255,255,255,0.7); }
     .single-celebrate .single-hero-btn { background: #fff; color: #065f46; }
     .single-celebrate .single-hero-btn:hover { background: #f0fdf4; }
+
+    /* ===== Fenêtre "Toutes vos sociétés" ===== */
+    .sm-backdrop {
+      position: fixed; inset: 0; z-index: 9995; display: none;
+      align-items: center; justify-content: center; padding: 24px;
+      background: rgba(17,17,17,0.45); backdrop-filter: blur(2px);
+    }
+    .sm-backdrop.open { display: flex; animation: smFade 0.15s ease; }
+    @keyframes smFade { from { opacity: 0; } to { opacity: 1; } }
+    .sm-modal {
+      width: 100%; max-width: 560px; max-height: 80vh; background: #fff;
+      border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .sm-head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+      padding: 24px 26px 16px;
+    }
+    .sm-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; color: #111; }
+    .sm-sub { font-size: 13.5px; color: #71717a; margin-top: 3px; }
+    .sm-close {
+      width: 32px; height: 32px; border-radius: 9px; border: none; background: none;
+      color: #71717a; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.15s, color 0.15s;
+    }
+    .sm-close:hover { background: #f4f4f5; color: #111; }
+    .sm-close svg { width: 17px; height: 17px; }
+
+    .sm-search { position: relative; padding: 0 26px 14px; flex-shrink: 0; }
+    .sm-search svg {
+      position: absolute; left: 40px; top: 11px; width: 15px; height: 15px;
+      color: #a1a1aa; pointer-events: none;
+    }
+    .sm-search input {
+      width: 100%; padding: 10px 14px 10px 36px; font-family: inherit; font-size: 14px;
+      color: #111; background: #fafafa; border: 1px solid #ececec; border-radius: 100px;
+      outline: none; transition: border-color 0.15s, background 0.15s;
+    }
+    .sm-search input::placeholder { color: #a1a1aa; }
+    .sm-search input:focus { border-color: #111; background: #fff; }
+
+    .sm-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 26px 8px; }
+    .sm-row {
+      display: flex; align-items: center; gap: 14px; padding: 12px 0;
+      border-bottom: 1px solid #f4f4f5; text-decoration: none;
+    }
+    .sm-row:last-child { border-bottom: none; }
+    .sm-row:hover .sm-name { color: #111; text-decoration: underline; }
+    .sm-pct {
+      width: 46px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12.5px; font-weight: 600; background: #f4f4f5; color: #52525b;
+    }
+    .sm-pct.action { background: #fef3c7; color: #92400e; }
+    .sm-pct.done { background: #dcfce7; color: #15803d; }
+    .sm-pct.done svg { width: 16px; height: 16px; }
+    .sm-body { flex: 1; min-width: 0; }
+    .sm-name {
+      display: block; font-size: 14.5px; font-weight: 500; color: #111;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .sm-step { display: block; font-size: 12.5px; color: #71717a; margin-top: 2px; }
+    .sm-status {
+      font-size: 11.5px; font-weight: 600; border-radius: 100px; padding: 4px 10px;
+      white-space: nowrap; flex-shrink: 0; background: #f4f4f5; color: #52525b;
+    }
+    .sm-status.action { background: #fef3c7; color: #92400e; }
+    .sm-status.done { background: #dcfce7; color: #15803d; }
+    .sm-arrow { width: 15px; height: 15px; color: #d4d4d8; flex-shrink: 0; }
+    .sm-none { padding: 28px 0; text-align: center; font-size: 13.5px; color: #a1a1aa; }
+    .sm-foot { padding: 14px 26px 20px; border-top: 1px solid #f4f4f5; flex-shrink: 0; }
+    .sm-foot-link { font-size: 13.5px; color: #52525b; text-decoration: none; }
+    .sm-foot-link:hover { color: #111; }
+
+    /* Accès à toutes les sociétés : un vrai bouton, pas un lien discret */
+    .soc-see-all {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: #111;
+      background: #fff; border: 1px solid #d4d4d8; border-radius: 100px;
+      padding: 9px 16px; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+    .soc-see-all:hover {
+      border-color: #111; background: #fafafa; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .soc-see-all-count {
+      min-width: 22px; height: 22px; padding: 0 7px; border-radius: 100px;
+      background: #111; color: #fff; font-size: 12.5px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .soc-see-all svg { width: 15px; height: 15px; color: #71717a; }
+    .soc-see-all:hover svg { color: #111; }
+
+    /* ===== Vue plusieurs dossiers : une carte par société ===== */
+    .soc-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px; margin-bottom: 20px;
+    }
+    .soc-tile {
+      background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 20px 22px;
+      display: flex; flex-direction: column; gap: 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .soc-tile:hover { border-color: #d4d4d8; box-shadow: 0 3px 14px rgba(0,0,0,0.05); }
+    .soc-tile.action { border-color: #fde68a; }
+    .soc-tile-head { display: flex; align-items: center; gap: 14px; }
+    .soc-tile-ring { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+    .soc-tile-ring svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+    .soc-tile-ring circle { fill: none; stroke-width: 5; stroke-linecap: round; }
+    .soc-tile-ring circle.bg { stroke: #f0f0f0; }
+    .soc-tile-ring circle.fg { stroke: #111; transition: stroke-dashoffset 0.8s ease; }
+    .soc-tile.done .soc-tile-ring circle.fg { stroke: #16a34a; }
+    .soc-tile-pct {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600; color: #111;
+    }
+    .soc-tile.done .soc-tile-pct { color: #16a34a; }
+    .soc-tile.done .soc-tile-pct svg { width: 20px; height: 20px; }
+    .soc-tile-ident { flex: 1; min-width: 0; }
+    .soc-tile-name {
+      font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 17px; color: #111;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .soc-tile-step { font-size: 12.5px; color: #71717a; margin-top: 3px; }
+    .soc-tile-status {
+      font-size: 11.5px; font-weight: 600; border-radius: 100px; padding: 4px 10px;
+      white-space: nowrap; flex-shrink: 0; align-self: flex-start;
+      background: #f4f4f5; color: #52525b;
+    }
+    .soc-tile-status.action { background: #fef3c7; color: #92400e; }
+    .soc-tile-status.done { background: #dcfce7; color: #15803d; }
+    .soc-tile-next {
+      font-size: 13.5px; color: #3f3f46; line-height: 1.5;
+      background: #fafafa; border-radius: 10px; padding: 12px 14px;
+    }
+    .soc-tile-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .soc-tile-unread { font-size: 12.5px; font-weight: 600; color: #dc2626; }
+    .soc-tile-btn {
+      margin-left: auto; font-size: 13.5px; font-weight: 500; color: #fff; background: #111;
+      border-radius: 100px; padding: 9px 18px; text-decoration: none; transition: background 0.15s;
+    }
+    .soc-tile-btn:hover { background: #000; }
+
+    /* Chiffres qui ne sont visibles nulle part ailleurs */
+
+    @media (max-width: 700px) {
+      .soc-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ===== Accueil d'un dossier en cours : parcours, actions, documents, aide ===== */
+    .dash-card {
+      background: #fff; border: 1px solid #eee; border-radius: 16px;
+      padding: 24px 28px; margin-bottom: 20px;
+    }
+    .dash-card-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 18px;
+    }
+    .dash-card-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 17px; font-weight: 600; color: #111;
+    }
+    .dash-card-sub { font-size: 13.5px; color: #71717a; margin-top: 2px; }
+    .dash-card-link { font-size: 13px; color: #52525b; white-space: nowrap; }
+    .dash-card-link:hover { color: #111; }
+    .dash-loading { font-size: 13.5px; color: #a1a1aa; padding: 6px 0; }
+    .dash-empty {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: #52525b; line-height: 1.5;
+      background: #fafafa; border-radius: 12px; padding: 16px 18px;
+    }
+    .dash-empty svg { width: 22px; height: 22px; color: #16a34a; flex-shrink: 0; }
+    .dash-empty.small { font-size: 13.5px; padding: 14px 16px; }
+    .dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .dash-cols .dash-card { margin-bottom: 20px; }
+
+    /* Frise des phases */
+    .journey { display: flex; align-items: flex-start; gap: 4px; }
+    .jn-step { flex: 1; min-width: 0; text-align: center; position: relative; }
+    .jn-step::before {
+      content: ''; position: absolute; top: 15px; left: -50%; width: 100%;
+      height: 2px; background: #ececec; z-index: 0;
+    }
+    .jn-step:first-child::before { display: none; }
+    .jn-step.jn-done::before, .jn-step.jn-current::before { background: #111; }
+    .jn-mark {
+      position: relative; z-index: 1; width: 32px; height: 32px; margin: 0 auto 8px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; background: #fff;
+      border: 2px solid #ececec; color: #a1a1aa;
+    }
+    .jn-mark svg { width: 13px; height: 13px; }
+    .jn-step.jn-done .jn-mark { background: #111; border-color: #111; color: #fff; }
+    .jn-step.jn-current .jn-mark { border-color: #111; color: #111; box-shadow: 0 0 0 4px rgba(17,17,17,0.08); }
+    .jn-authors {
+      display: flex; flex-wrap: wrap; gap: 8px 24px;
+      margin-top: 18px; padding-top: 14px; border-top: 1px solid #f2f2f2;
+      font-size: 12.5px; color: #71717a;
+    }
+    .jn-authors:empty { display: none; }
+    .jn-authors strong { color: #3f3f46; font-weight: 500; }
+    .jn-label { font-size: 12.5px; color: #71717a; line-height: 1.35; padding: 0 4px; }
+    .jn-step.jn-current .jn-label { color: #111; font-weight: 600; }
+
+    /* Actions attendues */
+    .todo-list { display: flex; flex-direction: column; gap: 10px; }
+    .todo {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border: 1px solid #ececec; border-radius: 12px;
+      text-decoration: none; transition: border-color 0.15s, background 0.15s;
+    }
+    .todo:hover { border-color: #d4d4d8; background: #fafafa; }
+    .todo-dot {
+      width: 9px; height: 9px; border-radius: 50%; background: #111; flex-shrink: 0;
+    }
+    .todo.urgent { border-color: #fecaca; background: #fff5f5; }
+    .todo.urgent:hover { border-color: #f87171; }
+    .todo.urgent .todo-dot { background: #dc2626; }
+    .todo-body { flex: 1; min-width: 0; }
+    .todo-title { display: block; font-size: 14.5px; font-weight: 500; color: #111; }
+    .todo-desc { display: block; font-size: 13px; color: #71717a; margin-top: 2px; }
+    .todo-cta {
+      font-size: 13px; font-weight: 500; color: #111; white-space: nowrap;
+      border: 1px solid #d4d4d8; border-radius: 100px; padding: 7px 14px;
+    }
+    .todo:hover .todo-cta { border-color: #111; }
+
+    /* Documents */
+    .doc-list { display: flex; flex-direction: column; }
+    .doc-row {
+      display: flex; align-items: center; gap: 12px; padding: 11px 0;
+      border-bottom: 1px solid #f2f2f2; text-decoration: none;
+    }
+    .doc-row:last-child { border-bottom: none; }
+    .doc-ico {
+      width: 30px; height: 30px; border-radius: 8px; background: #f4f4f5; color: #52525b;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .doc-ico svg { width: 14px; height: 14px; }
+    .doc-name {
+      flex: 1; min-width: 0; font-size: 13.5px; color: #111;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .doc-state {
+      font-size: 11.5px; font-weight: 600; color: #52525b;
+      background: #f4f4f5; border-radius: 100px; padding: 3px 9px; white-space: nowrap;
+    }
+    .doc-state.ok { background: #dcfce7; color: #15803d; }
+    .doc-state.rejected { background: #fee2e2; color: #b91c1c; }
+
+    /* Activité */
+    .act-list { display: flex; flex-direction: column; gap: 2px; }
+    .act-row { display: flex; gap: 12px; padding: 9px 0; }
+    .act-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #d4d4d8;
+      flex-shrink: 0; margin-top: 7px;
+    }
+    .act-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .act-text { font-size: 13.5px; color: #3f3f46; line-height: 1.4; }
+    /* Chaque ligne du fil multi-dossiers mène au dossier concerné */
+    .act-row-link { text-decoration: none; border-radius: 10px; padding: 9px 8px; margin: 0 -8px; transition: background 0.15s; }
+    .act-row-link:hover { background: #fafafa; }
+
+    /* Deux colonnes : le fil tient sur moitié moins de hauteur */
+    .act-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+    .act-cols .act-row { align-items: flex-start; }
+    @media (max-width: 900px) { .act-cols { grid-template-columns: 1fr; } }
+    .act-note {
+      font-size: 13px; color: #52525b; line-height: 1.45; margin-top: 3px;
+      border-left: 2px solid #e4e4e7; padding-left: 10px;
+    }
+    .act-time { font-size: 12px; color: #a1a1aa; margin-top: 2px; }
+
+    /* Avocat et aide */
+    .help-card { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+    .help-who { display: flex; align-items: center; gap: 14px; }
+    .help-avatar {
+      width: 44px; height: 44px; border-radius: 50%; background: #ede9fe; color: #7c3aed;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; flex-shrink: 0;
+    }
+    .help-avatar.pending { background: #f4f4f5; color: #a1a1aa; }
+    .help-name { font-size: 15px; font-weight: 600; color: #111; }
+    .help-role { font-size: 13px; color: #71717a; }
+    .help-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .help-btn {
+      font-size: 13.5px; font-weight: 500; color: #111; text-decoration: none;
+      font-family: inherit; cursor: pointer; background: #fff;
+      border: 1px solid #d4d4d8; border-radius: 100px; padding: 9px 16px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .help-btn:hover { border-color: #111; background: #fafafa; }
+    .help-btn.primary { background: #111; color: #fff; border-color: #111; }
+    .help-btn.primary:hover { background: #000; }
+
+    @media (max-width: 900px) {
+      .dash-cols { grid-template-columns: 1fr; }
+      .journey { flex-wrap: wrap; gap: 14px 4px; }
+      .jn-step { flex: 0 0 33%; }
+      .jn-step::before { display: none; }
+    }
 
     .roadmap {
       background: #fff; border: 1px solid #eee; border-radius: 16px;
@@ -354,7 +656,7 @@
     .ta-counter {
       font-size: 12px; font-weight: 600; color: #78350f;
       min-width: 32px; text-align: center;
-      letter-spacing: 0.5px;
+      letter-spacing: 0;
     }
 
     .kpi-strip {
@@ -385,11 +687,11 @@
     .kpi-icon.red { background: #fee2e2; color: #dc2626; }
     .kpi-trend {
       font-size: 10.5px; font-weight: 600; color: #999;
-      text-transform: uppercase; letter-spacing: 0.4px;
+      text-transform: uppercase; letter-spacing: 0;
     }
     .kpi-value {
       font-size: 28px; font-weight: 700; color: #111; line-height: 1;
-      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: -0.5px;
+      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: 0;
     }
     .kpi-card.active .kpi-value { color: #111; }
     .kpi-label { font-size: 12.5px; color: #888; margin-top: 6px; }
@@ -415,13 +717,12 @@
       user-select: none;
     }
     .iv-header:hover { background: #f3f3f4; }
-    .iv-header-icon {
-      width: 28px !important; height: 28px !important;
-      border-radius: 8px !important;
-      background: #e5e5e7 !important;
-      color: #444 !important;
+    .iv-header-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #ede9fe; color: #7c3aed; font-size: 12.5px; font-weight: 700;
     }
-    .iv-header-icon svg { width: 14px !important; height: 14px !important; }
+    .iv-header-avatar.generic { background: #f4f4f5; color: #a1a1aa; }
     .iv-title { font-size: 13.5px !important; color: #111 !important; }
     .iv-subtitle { font-size: 12px !important; color: #777 !important; margin-top: 1px !important; }
     .iv-chevron {
@@ -432,12 +733,6 @@
     .iv-body { display: none; }
     .interventions-card.expanded .iv-body { display: block; border-top: 1px solid #f0f0f2; }
     .interventions-card { margin: 0 0 12px !important; box-shadow: none !important; border-color: #ececef !important; }
-    .iv-header-icon {
-      width: 40px; height: 40px; border-radius: 11px;
-      background: #4338ca; color: #fff;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .iv-header-icon svg { width: 20px; height: 20px; }
     .iv-header-text { flex: 1; min-width: 0; }
     .iv-title { font-size: 15.5px; font-weight: 600; color: #111; }
     .iv-subtitle { font-size: 13px; color: #4338ca; margin-top: 3px; }
@@ -447,8 +742,38 @@
     .iv-section-alert { background: #fffafa; }
     .iv-section-title {
       font-size: 11px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.6px; color: #999; margin-bottom: 10px;
+      letter-spacing: 0; color: #999; margin-bottom: 10px;
     }
+
+    /* Suivi de l'avocat : frise verticale, la couleur de la pastille dit le type d'action */
+    .iv-timeline { position: relative; }
+    .iv-tl { position: relative; display: flex; gap: 14px; padding: 0 0 18px; }
+    .iv-tl:last-child { padding-bottom: 0; }
+    .iv-tl::before {
+      content: ''; position: absolute; left: 15px; top: 32px; bottom: 0;
+      width: 2px; background: #ececec;
+    }
+    .iv-tl:last-child::before { display: none; }
+    .iv-tl-mark {
+      position: relative; z-index: 1; width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      background: #f4f4f5; color: #52525b;
+    }
+    .iv-tl-mark svg { width: 15px; height: 15px; }
+    .iv-tl-ok .iv-tl-mark { background: #dcfce7; color: #15803d; }
+    .iv-tl-alert .iv-tl-mark { background: #fee2e2; color: #b91c1c; }
+    .iv-tl-note .iv-tl-mark { background: #ede9fe; color: #7c3aed; }
+    .iv-tl-info .iv-tl-mark { background: #dbeafe; color: #1d4ed8; }
+
+    .iv-tl-body { flex: 1; min-width: 0; padding-top: 5px; }
+    .iv-tl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .iv-tl-title { font-size: 14px; font-weight: 500; color: #111; }
+    .iv-tl-date { font-size: 12px; color: #a1a1aa; white-space: nowrap; flex-shrink: 0; }
+    .iv-tl-text {
+      font-size: 13.5px; color: #52525b; line-height: 1.5; margin-top: 5px;
+      background: #fafafa; border-radius: 10px; padding: 10px 12px;
+    }
+    .iv-tl-note .iv-tl-text { background: #faf8ff; }
 
     .iv-doc-reject {
       display: flex; align-items: center; justify-content: space-between; gap: 14px;
@@ -492,7 +817,7 @@
       margin-bottom: 4px;
       box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
     }
-    .sidebar-logo img { height: 26px; }
+    .sidebar-logo img { height: 30px; display: block; }
     .sidebar-nav { flex: 1; padding: 0 12px; }
     .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
       display: flex; align-items: center; gap: 12px;
@@ -504,7 +829,7 @@
     .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
     .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
     .sidebar-nav a.active svg { opacity: 1; }
-    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
     .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
     .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
     .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
@@ -531,7 +856,7 @@
       width: 36px; height: 36px; border-radius: 50%;
       background: #111;
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0;
     }
     .user-info { flex: 1; min-width: 0; }
     .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
@@ -582,7 +907,7 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      margin-left: 270px;
+      margin-left: 300px;
     }
     .topbar {
       padding: 32px 48px 24px;
@@ -597,7 +922,7 @@
       font-family: 'Cal Sans', 'Inter', sans-serif;
       font-size: 24px;
       font-weight: 600;
-      letter-spacing: -0.3px;
+      letter-spacing: 0;
       color: #111;
       line-height: 1.2;
     }
@@ -899,7 +1224,7 @@
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0;
       padding: 3px 8px;
       border-radius: 100px;
       flex-shrink: 0;
@@ -1124,7 +1449,7 @@
     a.ld-row-link:hover .ld-row-arrow { color: #111; transform: translateY(-50%) translateX(2px); }
     .ld-field {
       font-size: 11px; font-weight: 600; color: #888;
-      text-transform: uppercase; letter-spacing: 0.4px;
+      text-transform: uppercase; letter-spacing: 0;
       margin-bottom: 6px;
     }
     .ld-diff { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1217,79 +1542,13 @@
     }
 
     /* ========= NOUVEAU DASHBOARD : KPI + SHORTCUTS + TIMELINE ========= */
-    .db-kpi-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 16px; margin: 28px 0 20px;
-    }
-    .db-kpi {
-      background: #fff;
-      border: 1px solid #ececec;
-      border-radius: 16px;
-      padding: 20px 22px;
-      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-    }
-    .db-kpi:hover { border-color: #d4d4d4; box-shadow: 0 6px 18px rgba(0,0,0,0.04); transform: translateY(-1px); }
-    .db-kpi-head {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .db-kpi-label {
-      font-size: 12px; font-weight: 500; color: #666;
-      text-transform: uppercase; letter-spacing: 0.4px;
-    }
-    .db-kpi-icon {
-      width: 32px; height: 32px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 10px; background: #f5f5f5; color: #555;
-    }
-    .db-kpi[data-tone="action"] .db-kpi-icon { background: #fef3c7; color: #b45309; }
-    .db-kpi[data-tone="pending"] .db-kpi-icon { background: #e0e7ff; color: #4338ca; }
-    .db-kpi[data-tone="capital"] .db-kpi-icon { background: #d1fae5; color: #047857; }
-    .db-kpi[data-tone="total"] .db-kpi-icon { background: #f5f5f5; color: #555; }
-    .db-kpi-value {
-      font-family: 'Cal Sans', 'Inter', sans-serif;
-      font-size: 32px; font-weight: 600; color: #111;
-      line-height: 1; margin-bottom: 6px;
-    }
-    .db-kpi-sub { font-size: 12.5px; color: #888; }
-    @media (max-width: 980px) { .db-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 560px) { .db-kpi-grid { grid-template-columns: 1fr; } }
 
     /* Raccourcis */
-    .db-shortcuts {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 14px; margin-bottom: 32px;
-    }
-    .db-shortcut {
-      background: #fff;
-      border: 1.5px solid #ececec;
-      border-radius: 14px;
-      padding: 16px 18px;
-      display: flex; align-items: center; gap: 14px;
-      text-decoration: none; color: inherit;
-      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
-    }
-    .db-shortcut:hover { border-color: #111; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.05); }
-    .db-shortcut-primary { background: #111; color: #fff; border-color: #111; }
-    .db-shortcut-primary:hover { background: #222; border-color: #222; }
-    .db-shortcut-icon {
-      width: 40px; height: 40px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 10px; flex-shrink: 0;
-      background: #f5f5f5; color: #111;
-    }
-    .db-shortcut-primary .db-shortcut-icon { background: rgba(255,255,255,0.1); color: #fff; }
-    .db-shortcut-body { flex: 1; min-width: 0; }
-    .db-shortcut-title { font-weight: 600; font-size: 14.5px; }
-    .db-shortcut-desc { font-size: 12.5px; opacity: 0.7; margin-top: 2px; }
-    .db-shortcut-arrow { opacity: 0.5; transition: transform 0.15s, opacity 0.15s; flex-shrink: 0; }
-    .db-shortcut:hover .db-shortcut-arrow { opacity: 1; transform: translateX(3px); }
-    @media (max-width: 760px) { .db-shortcuts { grid-template-columns: 1fr; } }
 
     /* Section header (Activité récente) */
     .db-section-head {
-      display: flex; align-items: baseline; justify-content: space-between;
-      margin: 8px 0 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; margin: 8px 0 14px;
     }
     .db-section-head h2 {
       font-family: 'Cal Sans', 'Inter', sans-serif;
@@ -1336,7 +1595,7 @@
     .db-timeline-badge {
       font-size: 10.5px; font-weight: 500; color: #666;
       background: #f5f5f5; padding: 3px 8px; border-radius: 6px;
-      text-transform: uppercase; letter-spacing: 0.4px;
+      text-transform: uppercase; letter-spacing: 0;
     }
     .db-timeline-meta {
       display: flex; align-items: center; gap: 12px;
@@ -1392,6 +1651,45 @@
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
   <!-- MODAL : Nouvelle formalit&eacute; -->
+  <!-- Toute l'activité, avec dates complètes -->
+  <div class="sm-backdrop" id="activityModal" onclick="closeActivityModal(event)">
+    <div class="sm-modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="sm-head">
+        <div>
+          <h3 class="sm-title">Toute l&apos;activit&eacute;</h3>
+          <p class="sm-sub">Ce qui s&apos;est pass&eacute; sur vos dossiers, du plus r&eacute;cent au plus ancien</p>
+        </div>
+        <button class="sm-close" onclick="closeActivityModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="sm-list act-list" id="activityModalList"></div>
+    </div>
+  </div>
+
+  <!-- Toutes les sociétés, avec recherche -->
+  <div class="sm-backdrop" id="societesModal" onclick="closeSocietesModal(event)">
+    <div class="sm-modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="sm-head">
+        <div>
+          <h3 class="sm-title">Toutes vos soci&eacute;t&eacute;s</h3>
+          <p class="sm-sub">Ouvrez un dossier pour reprendre l&aacute; o&ugrave; vous en &ecirc;tes</p>
+        </div>
+        <button class="sm-close" onclick="closeSocietesModal()" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="sm-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="societesSearch" placeholder="Rechercher une soci&eacute;t&eacute;, une &eacute;tape&hellip;" oninput="renderSocietesModalList()">
+      </div>
+      <div class="sm-list" id="societesModalList"></div>
+      <div class="sm-foot">
+        <a href="/formalites.html" class="sm-foot-link">Ouvrir la page Mes formalit&eacute;s &rarr;</a>
+      </div>
+    </div>
+  </div>
+
   <div class="nd-modal-backdrop" id="ndModal" onclick="closeNewActionModal(event)">
     <div class="nd-modal" onclick="event.stopPropagation()">
       <div class="nd-header">
@@ -1418,7 +1716,7 @@
         </a>
         <a href="#" class="nd-card">
           <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;p&ocirc;t des comptes</div><div class="nd-card-desc">Comptes annuels au greffe</div></div>
         </a>
         <a href="#" class="nd-card">
           <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
@@ -1435,10 +1733,7 @@
   <!-- SIDEBAR -->
           <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <a href="/dashboard.html">
-        <span class="logo-text">formalist</span>
-        <span class="logo-dot" aria-hidden="true"></span>
-      </a>
+      <a href="/dashboard.html"><img src="/images/logo.png" alt="Formalist"></a>
     </div>
 
     <div class="sidebar-context" id="sidebar-context" style="display:none;">
@@ -1466,6 +1761,24 @@
         Mes formalit&eacute;s
         <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
       </a>
+      <a href="/creation.html?new=1&amp;type=creation" data-page="creation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        Cr&eacute;er une soci&eacute;t&eacute;
+      </a>
+      <a href="/modification.html" data-page="modification">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Modifier ma soci&eacute;t&eacute;
+      </a>
+      <a href="/depot-comptes.html" data-page="depot-comptes" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        D&eacute;p&ocirc;t des comptes
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
+      <a href="/fermeture.html" data-page="fermeture" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Fermer ma soci&eacute;t&eacute;
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
 
       <a href="/consultations.html" data-page="consultations">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -1486,6 +1799,10 @@
       </a>
 
       <div class="sidebar-divider"></div>
+      <a href="/equipe.html" data-page="equipe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        &Eacute;quipe
+      </a>
       <a href="/aide.html" data-page="aide">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Aide &amp; FAQ
@@ -1495,8 +1812,8 @@
     <div class="sidebar-bottom">
       <div class="avatar" id="sidebar-avatar">JD</div>
       <div class="user-info">
-        <div class="user-name" id="sidebar-name">Jean Dupont</div>
-        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+        <div class="user-name" id="sidebar-name"></div>
+        <div class="user-email" id="sidebar-email"></div>
       </div>
       <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1699,21 +2016,6 @@
       return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
-    function formatRelativeDate(isoStr) {
-      if (!isoStr) return '';
-      var date = new Date(isoStr);
-      var now = new Date();
-      var diffMs = now - date;
-      var diffMin = Math.floor(diffMs / 60000);
-      var diffH = Math.floor(diffMs / 3600000);
-      var diffD = Math.floor(diffMs / 86400000);
-      if (diffMin < 1) return "\u00c0 l'instant";
-      if (diffMin < 60) return 'Il y a ' + diffMin + ' min';
-      if (diffH < 24) return 'Il y a ' + diffH + ' h';
-      if (diffD < 7) return 'Il y a ' + diffD + ' j';
-      if (diffD < 30) return 'Il y a ' + diffD + ' jours';
-      return formatDate(isoStr);
-    }
 
     function escapeHtml(str) {
       var div = document.createElement('div');
@@ -1736,9 +2038,13 @@
 
     // Construit le message d'accueil : phrases de bienvenue pour un nouvel
     // utilisateur (aucun dossier), sinon phrases contextuelles selon l'heure.
-    function buildGreeting(firstName, isNew) {
+    // `count` sert à accorder les phrases : un dossier ne se dit pas au pluriel.
+    function buildGreeting(firstName, isNew, count) {
       var hour = new Date().getHours();
       var greet = (hour >= 18 || hour < 5) ? 'Bonsoir' : 'Bonjour';
+      var solo = count === 1;
+      var leDossier = solo ? 'votre dossier' : 'vos dossiers';
+      var attend = solo ? 'vous attend' : 'vous attendent';
       var phrases;
       if (isNew) {
         phrases = [
@@ -1748,11 +2054,11 @@
           'on commence quand vous voulez.'
         ];
       } else if (hour >= 5 && hour < 12) {
-        phrases = ['prêt à avancer sur vos dossiers ?','une belle journée pour entreprendre.','quoi de prévu ce matin ?','on démarre la journée en beauté.'];
+        phrases = ['prêt à avancer sur ' + leDossier + ' ?','une belle journée pour entreprendre.','quoi de prévu ce matin ?','on démarre la journée en beauté.'];
       } else if (hour >= 12 && hour < 18) {
-        phrases = ['comment avancent vos projets ?','besoin de finaliser un dossier ?','on continue sur notre lancée.','un bon après-midi pour avancer.'];
+        phrases = [solo ? 'comment avance votre projet ?' : 'comment avancent vos projets ?','besoin de finaliser un dossier ?','on continue sur notre lancée.','un bon après-midi pour avancer.'];
       } else {
-        phrases = ['encore un peu de travail ce soir ?','on termine la journée en beauté.','vos dossiers vous attendent.','une dernière vérification avant la fin de journée ?'];
+        phrases = ['encore un peu de travail ce soir ?','on termine la journée en beauté.', leDossier + ' ' + attend + '.','une dernière vérification avant la fin de journée ?'];
       }
       var sub = phrases[Math.floor(Math.random() * phrases.length)];
       return greet + ' ' + firstName + ', ' + sub;
@@ -1777,7 +2083,7 @@
         var gName = (_currentUser && _currentUser.name) ? _currentUser.name
                     : (JSON.parse(sessionStorage.getItem('user') || '{}').name || 'Jean');
         var gEl = document.getElementById('greeting-text');
-        if (gEl) gEl.textContent = buildGreeting(gName.split(' ')[0], allDossiers.length === 0);
+        if (gEl) gEl.textContent = buildGreeting(gName.split(' ')[0], allDossiers.length === 0, allDossiers.length);
       } catch (e) {}
 
       // Reset visibility
@@ -1891,15 +2197,18 @@
       var html = '<div class="interventions-card' + expandedCls + '" data-dossier="' + dossier.id + '">';
 
       // Header (cliquable pour expand/collapse)
+      // Les initiales de l'avocat parlent plus qu'un pictogramme : on sait qui est intervenu
+      var avName = dossier.avocatName || '';
+      var avInitials = avName
+        ? avName.replace(/^(Me\.?|Maître)\s*/i, '').split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join('').toUpperCase()
+        : '';
       html += '<div class="iv-header" onclick="this.parentNode.classList.toggle(\'expanded\')">'
-        + '<div class="iv-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>'
+        + (avInitials
+            ? '<div class="iv-header-avatar">' + escapeHtmlText(avInitials) + '</div>'
+            : '<div class="iv-header-avatar generic">FL</div>')
         + '<div class="iv-header-text">'
-        +   '<div class="iv-title">Votre avocat a travaillé sur ' + escapeHtmlText(dossier.title) + '</div>'
-        +   '<div class="iv-subtitle">'
-        +     (rejected.length > 0 ? rejected.length + ' document' + (rejected.length > 1 ? 's' : '') + ' à renvoyer · ' : '')
-        +     (edits.length > 0 ? edits.length + ' information' + (edits.length > 1 ? 's' : '') + ' modifiée' + (edits.length > 1 ? 's' : '') : '')
-        +     (notes.length > 0 ? (edits.length > 0 ? ' · ' : '') + notes.length + ' autre' + (notes.length > 1 ? 's' : '') + ' action' + (notes.length > 1 ? 's' : '') : '')
-        +   '</div>'
+        +   '<div class="iv-title">' + escapeHtmlText(avName || 'Votre avocat') + ' a travaillé sur ' + escapeHtmlText(dossier.title) + '</div>'
+        +   '<div class="iv-subtitle">' + escapeHtmlText(summarizeLawyerActivity(rejected, edits, notes)) + '</div>'
         + '</div>'
         + '<svg class="iv-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
         + '</div>';
@@ -1909,7 +2218,7 @@
       // Documents à renvoyer (priorité)
       if (rejected.length > 0) {
         html += '<div class="iv-section iv-section-alert">';
-        html += '<div class="iv-section-title">📄 Documents à renvoyer</div>';
+        html += '<div class="iv-section-title">Documents à renvoyer</div>';
         rejected.forEach(function(d) {
           html += '<div class="iv-doc-reject">'
             + '<div class="iv-doc-info">'
@@ -1925,7 +2234,7 @@
       // Modifications du formulaire
       if (edits.length > 0) {
         html += '<div class="iv-section">';
-        html += '<div class="iv-section-title">✏️ Informations ajustées</div>';
+        html += '<div class="iv-section-title">Informations ajustées</div>';
         edits.slice(0, 5).forEach(function(e) {
           var fieldLabel = humanizeField(e.target_field);
           html += '<div class="iv-edit-row">'
@@ -1944,12 +2253,89 @@
         html += '</div>';
       }
 
+      // Autres interventions (prise en charge, validations, notes) : sans cette
+      // section, le sous-titre annonçait des actions que le dépliement ne montrait pas.
+      if (notes.length > 0) {
+        html += '<div class="iv-section">';
+        html += '<div class="iv-section-title">Suivi de votre avocat</div>';
+        html += '<div class="iv-timeline">';
+        notes.forEach(function(n) {
+          var meta = lawyerActionMeta(n);
+          html += '<div class="iv-tl iv-tl-' + meta.tone + '">'
+            + '<span class="iv-tl-mark">' + meta.icon + '</span>'
+            + '<div class="iv-tl-body">'
+            +   '<div class="iv-tl-head">'
+            +     '<span class="iv-tl-title">' + escapeHtmlText(meta.label) + '</span>'
+            +     '<span class="iv-tl-date">' + formatRelativeDate(n.created_at) + '</span>'
+            +   '</div>'
+            +   (n.comment ? '<div class="iv-tl-text">' + escapeHtmlText(n.comment) + '</div>' : '')
+            + '</div>'
+            + '</div>';
+        });
+        html += '</div></div>';
+      }
+
       html += '</div>'; // /iv-body
       html += '</div>'; // /interventions-card
+
+      // Rien à montrer une fois déplié : on n'affiche pas la carte
+      if (rejected.length === 0 && edits.length === 0 && notes.length === 0) return;
 
       // Insertion en haut du content
       var content = document.querySelector('.content');
       if (content) content.insertBefore(htmlToNode(html), content.firstChild);
+    }
+
+    /**
+     * Résume la carte en nommant ce qu'elle contient réellement.
+     * On évite le mot « action », qui laisse croire au client qu'il doit agir :
+     * il est réservé à ce qui l'attend vraiment (documents à renvoyer).
+     */
+    function summarizeLawyerActivity(rejected, edits, notes) {
+      var parts = [];
+      function plural(n, one, many) { return n + ' ' + (n > 1 ? (many || one + 's') : one); }
+
+      if (rejected.length) parts.push(plural(rejected.length, 'document à renvoyer', 'documents à renvoyer'));
+      if (edits.length) parts.push(plural(edits.length, 'information modifiée', 'informations modifiées'));
+
+      var validated = 0, messages = 0, others = 0;
+      notes.forEach(function(n) {
+        if (n.action === 'doc_validated') validated++;
+        else if (n.action === 'note') messages++;
+        else others++;
+      });
+      if (validated) parts.push(plural(validated, 'document validé', 'documents validés'));
+      if (messages) parts.push(plural(messages, 'message'));
+      if (others) parts.push(plural(others, 'mise à jour', 'mises à jour'));
+
+      return parts.join(' · ');
+    }
+
+    // Libellé, couleur et pictogramme d'une intervention avocat.
+    // La couleur porte le sens : vert validé, rouge à refaire, violet message.
+    function lawyerActionMeta(n) {
+      var who = n.actor_name || 'Votre avocat';
+      var svg = {
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+        alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="9"/></svg>',
+        chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-9 8.4 8.5 8.5 0 01-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0112 3.5a8.38 8.38 0 019 8z"/></svg>',
+        file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'
+      };
+      switch (n.action) {
+        case 'doc_validated':
+          return { label: 'Document validé : ' + (n.after_value || 'pièce jointe'), tone: 'ok', icon: svg.check };
+        case 'doc_rejected':
+          return { label: 'Document à remplacer : ' + (n.after_value || 'pièce jointe'), tone: 'alert', icon: svg.alert };
+        case 'doc_generated':
+          return { label: 'Document rédigé : ' + (n.after_value || 'acte'), tone: 'info', icon: svg.file };
+        case 'note':
+          return { label: 'Message de ' + who, tone: 'note', icon: svg.chat };
+        case 'status_change':
+          return { label: n.after_value || 'Dossier mis à jour', tone: 'neutral', icon: svg.flag };
+        default:
+          return { label: who + ' est intervenu sur le dossier', tone: 'neutral', icon: svg.flag };
+      }
     }
 
     function htmlToNode(html) {
@@ -2213,7 +2599,7 @@
           +     '<circle class="bg" cx="66" cy="66" r="56"/>'
           +     '<circle class="fg" cx="66" cy="66" r="56" stroke-dasharray="' + circumference + '" stroke-dashoffset="0"/>'
           +   '</svg>'
-          +   '<div class="pct"><div class="pct-value">✓</div><div class="pct-label">Terminé</div></div>'
+          +   '<div class="pct"><div class="pct-value"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pct-label">Terminé</div></div>'
           + '</div>'
           + '<div class="single-hero-body">'
           +   '<span class="single-hero-eyebrow">Félicitations 🎉</span>'
@@ -2270,6 +2656,9 @@
           + '</div>';
       }
 
+      // Dossier en cours : on remplit l'accueil avec ce qui aide à avancer
+      if (!isDone) html += renderJourney(d) + renderTodos(d) + renderSideBySide(d) + renderHelp(d);
+
       // Activity feed (contrats associés s'il y en a)
       var others = allDossiers.filter(function(x){ return x.type !== 'formalite'; });
       if (others.length > 0) {
@@ -2291,6 +2680,216 @@
       var singleEl = document.getElementById('state-single');
       singleEl.innerHTML = html;
       singleEl.style.display = 'block';
+      if (!isDone) loadSingleExtras(d);
+    }
+
+    /* ---------- Blocs de l'accueil quand un dossier est en cours ---------- */
+
+    // Frise des phases : où en est le dossier, et ce qui vient après
+    function renderJourney(d) {
+      var names = d.phaseNames || [];
+      if (!names.length) return '';
+      var steps = names.map(function(name, i) {
+        var n = i + 1;
+        var cls = n < d.phase ? 'jn-done' : (n === d.phase ? 'jn-current' : 'jn-next');
+        var mark = n < d.phase
+          ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+          : n;
+        return '<div class="jn-step ' + cls + '">'
+          + '<div class="jn-mark">' + mark + '</div>'
+          + '<div class="jn-label">' + escapeHtml(name) + '</div>'
+          + '</div>';
+      }).join('');
+      return '<section class="dash-card">'
+        + '<div class="dash-card-head">'
+        +   '<div><div class="dash-card-title">Votre parcours</div>'
+        +   '<div class="dash-card-sub">Étape ' + d.phase + ' sur ' + d.totalPhases + ' · ' + escapeHtml(d.phaseName || '') + '</div></div>'
+        + '</div>'
+        + '<div class="journey">' + steps + '</div>'
+        + '</section>';
+    }
+
+    // Ce qui bloque, côté client
+    function renderTodos(d) {
+      var todos = d.todos || [];
+      var body;
+      if (!todos.length) {
+        body = '<div class="dash-empty">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+          + '<div><strong>Rien à faire pour l’instant.</strong> Nous traitons votre dossier, vous serez prévenu dès qu’une action vous attend.</div>'
+          + '</div>';
+      } else {
+        body = '<div class="todo-list">' + todos.map(function(t) {
+          return '<a class="todo' + (t.urgent ? ' urgent' : '') + '" href="' + t.href + '">'
+            + '<span class="todo-dot"></span>'
+            + '<span class="todo-body"><span class="todo-title">' + escapeHtml(t.title) + '</span>'
+            + '<span class="todo-desc">' + escapeHtml(t.desc) + '</span></span>'
+            + '<span class="todo-cta">' + escapeHtml(t.cta) + '</span>'
+            + '</a>';
+        }).join('') + '</div>';
+      }
+      return '<section class="dash-card">'
+        + '<div class="dash-card-head"><div>'
+        +   '<div class="dash-card-title">Ce qu’on attend de vous</div>'
+        +   '<div class="dash-card-sub">' + (todos.length ? todos.length + ' action' + (todos.length > 1 ? 's' : '') + ' à traiter' : 'Aucune action en attente') + '</div>'
+        + '</div></div>' + body
+        + '</section>';
+    }
+
+    // Documents et activité : remplis après coup par loadSingleExtras
+    function renderSideBySide(d) {
+      return '<div class="dash-cols">'
+        + '<section class="dash-card">'
+        +   '<div class="dash-card-head"><div>'
+        +     '<div class="dash-card-title">Vos documents</div>'
+        +     '<div class="dash-card-sub">Générés et téléversés pour ce dossier</div>'
+        +   '</div><a class="dash-card-link" href="/documents.html">Tout voir</a></div>'
+        +   '<div id="single-docs" class="dash-loading">Chargement…</div>'
+        + '</section>'
+        + '<section class="dash-card">'
+        +   '<div class="dash-card-head"><div>'
+        +     '<div class="dash-card-title">Activité récente</div>'
+        +     '<div class="dash-card-sub">Les dernières actions sur votre dossier</div>'
+        +   '</div></div>'
+        +   '<div id="single-activity" class="dash-loading">Chargement…</div>'
+        + '</section>'
+        + '</div>';
+    }
+
+    // Interlocuteur et aide
+    function renderHelp(d) {
+      var av = d.avocatName;
+      var initials = av ? av.replace(/^(Me\.?|Maître)\s*/i, '').split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join('').toUpperCase() : null;
+      return '<section class="dash-card help-card">'
+        + '<div class="help-who">'
+        +   (av
+              ? '<div class="help-avatar">' + escapeHtml(initials) + '</div>'
+                + '<div><div class="help-name">' + escapeHtml(av) + '</div>'
+                + '<div class="help-role">Avocat en charge de votre dossier</div></div>'
+              : '<div class="help-avatar pending">FL</div>'
+                + '<div><div class="help-name">Un avocat vous sera assigné</div>'
+                + '<div class="help-role">Dès que votre dossier entre en révision</div></div>')
+        + '</div>'
+        + '<div class="help-actions">'
+        +   '<button type="button" class="help-btn primary" onclick="openChatPanel(\'' + (av ? 'avocat' : 'support') + '\')">'
+        +     (av ? 'Écrire à votre avocat' : 'Poser une question') + '</button>'
+        +   '<a class="help-btn" href="/consultations.html">Prendre une consultation</a>'
+        +   '<a class="help-btn" href="/aide.html">Questions fréquentes</a>'
+        + '</div>'
+        + '</section>';
+    }
+
+    // Documents + activité du dossier en cours
+    function loadSingleExtras(d) {
+      if (!d || !d.id) return;
+      Promise.all([
+        fetch('/api/formalites/' + d.id).then(function(r){ return r.json(); }).catch(function(){ return {}; }),
+        fetch('/api/formalites/' + d.id + '/audit').then(function(r){ return r.json(); }).catch(function(){ return {}; })
+      ]).then(function(res) {
+        renderSingleDocs((res[0] && res[0].documents) || []);
+        renderSingleActivity((res[1] && res[1].entries) || []);
+        renderAuthors(res[0] && res[0].intervenants);
+      });
+    }
+
+    /* Qui a créé le dossier, qui l'a révisé en dernier. Utile dès qu'on
+       travaille à plusieurs sur les mêmes sociétés. */
+    function renderAuthors(info) {
+      var el = document.getElementById('jn-authors');
+      if (!el || !info) return;
+      var bouts = [];
+      if (info.created_by) {
+        bouts.push('<span><strong>Créé par ' + escapeHtml(info.created_by) + '</strong>'
+          + (info.created_at ? ' · ' + formatDateHeure(info.created_at) : '') + '</span>');
+      }
+      if (info.reviewed_by) {
+        bouts.push('<span><strong>Révisé par ' + escapeHtml(info.reviewed_by) + '</strong>'
+          + (info.reviewed_at ? ' · ' + formatDateHeure(info.reviewed_at) : '') + '</span>');
+      }
+      el.innerHTML = bouts.join('');
+    }
+
+    function formatDateHeure(iso) {
+      var d = new Date(String(iso).indexOf('T') === -1 ? String(iso).replace(' ', 'T') + 'Z' : iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+        + ' à ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function renderSingleDocs(docs) {
+      var el = document.getElementById('single-docs');
+      if (!el) return;
+      if (!docs.length) {
+        el.className = '';
+        el.innerHTML = '<div class="dash-empty small">Aucun document pour l’instant. Vos statuts apparaîtront ici dès qu’ils seront rédigés.</div>';
+        return;
+      }
+      var labels = { generated: 'Généré', uploaded: 'Reçu', signed: 'Signé', verified: 'Validé' };
+      el.className = 'doc-list';
+      el.innerHTML = docs.slice(0, 5).map(function(doc) {
+        var state = doc.rejection_reason ? 'À remplacer' : (labels[doc.status] || 'Reçu');
+        var cls = doc.rejection_reason ? ' rejected' : (doc.status === 'signed' || doc.status === 'verified' ? ' ok' : '');
+        return '<a class="doc-row" href="/documents.html">'
+          + '<span class="doc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>'
+          + '<span class="doc-name">' + escapeHtml(doc.name || 'Document') + '</span>'
+          + '<span class="doc-state' + cls + '">' + state + '</span>'
+          + '</a>';
+      }).join('');
+    }
+
+    function renderSingleActivity(entries) {
+      var el = document.getElementById('single-activity');
+      if (!el) return;
+      if (!entries.length) {
+        el.className = '';
+        el.innerHTML = '<div class="dash-empty small">L’activité de votre dossier s’affichera ici.</div>';
+        return;
+      }
+      el.className = 'act-list';
+      el.innerHTML = entries.slice(0, 6).map(function(e) {
+        var isMe = e.actor_role === 'user';
+        var who = isMe ? 'Vous' : (e.actor_name || 'Formalist');
+        var note = e.comment ? '<span class="act-note">' + escapeHtml(e.comment) + '</span>' : '';
+        return '<div class="act-row">'
+          + '<span class="act-dot"></span>'
+          + '<span class="act-body"><span class="act-text"><strong>' + escapeHtml(who) + '</strong> ' + describeAudit(e, isMe) + '</span>'
+          + note
+          + '<span class="act-time">' + formatRelativeDate(e.created_at) + '</span></span>'
+          + '</div>';
+      }).join('');
+    }
+
+    /* Ce qui s'est passé, en clair. Le verbe s'accorde : « Vous avez ajouté »
+       pour le client, « Me Martin a ajouté » pour les autres. */
+    function describeAudit(e, isMe) {
+      var subject = e.after_value || e.target_field || '';
+      var a = isMe ? 'avez' : 'a';
+      switch (e.action) {
+        case 'field_update':
+          return e.target_field
+            ? a + ' renseigné ' + escapeHtml(e.target_field) + (e.after_value ? ' : ' + escapeHtml(e.after_value) : '')
+            : a + ' modifié une information';
+        case 'doc_generated': return a + ' rédigé ' + escapeHtml(subject || 'un document');
+        case 'doc_uploaded': return a + ' ajouté ' + escapeHtml(subject || 'un document');
+        case 'doc_validated': return a + ' validé ' + escapeHtml(subject || 'un document');
+        case 'doc_rejected': return a + ' demandé un nouveau justificatif' + (subject ? ' pour ' + escapeHtml(subject) : '');
+        case 'status_change': return subject ? escapeHtml(subject).toLowerCase() : a + ' fait avancer le dossier';
+        case 'note': return a + ' laissé une note';
+        default: return a + ' mis à jour le dossier';
+      }
+    }
+
+    // "il y a 3 h", "hier", "12 mars" - plus lisible qu'une date brute dans un fil
+    function formatRelativeDate(iso) {
+      if (!iso) return '';
+      var d = new Date(iso.indexOf('T') === -1 ? iso.replace(' ', 'T') + 'Z' : iso);
+      if (isNaN(d.getTime())) return '';
+      var mins = Math.round((Date.now() - d.getTime()) / 60000);
+      if (mins < 1) return 'à l’instant';
+      if (mins < 60) return 'il y a ' + mins + ' min';
+      if (mins < 60 * 24) return 'il y a ' + Math.round(mins / 60) + ' h';
+      if (mins < 60 * 48) return 'hier';
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
     }
 
     // -------- ÉTAT 2+ - Plusieurs sociétés --------
@@ -2298,13 +2897,13 @@
       var list = window._actionList || [];
       if (!list[idx]) return null;
       var d = list[idx];
+      // d.title contient déjà la forme ("SASU STUDIO KERN") : la répéter donnait
+      // "votre SASU SASU STUDIO KERN"
       var formeUpper = (d.typeBadge || '').toUpperCase();
-      var titleStr;
-      if (formeUpper && ['SAS', 'SASU', 'SARL', 'EURL', 'SCI'].indexOf(formeUpper) !== -1) {
-        titleStr = 'Reprendre la création de votre ' + formeUpper + ' ' + escapeHtml(d.title);
-      } else {
-        titleStr = 'Reprendre votre dossier ' + escapeHtml(d.title);
-      }
+      var titre = escapeHtml(d.title);
+      var titleStr = ['SAS', 'SASU', 'SARL', 'EURL', 'SCI'].indexOf(formeUpper) !== -1
+        ? 'Reprendre la création de votre ' + titre
+        : 'Reprendre votre dossier ' + titre;
       return {
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
         title: titleStr,
@@ -2335,6 +2934,142 @@
       window._actionIdx = (window._actionIdx + 1) % window._actionList.length;
       refreshTopAction();
     };
+
+    /* ---------- Fenêtre "Toutes mes sociétés" ---------- */
+
+    window.openSocietesModal = function() {
+      var el = document.getElementById('societesModal');
+      if (!el) return;
+      el.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      var input = document.getElementById('societesSearch');
+      if (input) { input.value = ''; }
+      renderSocietesModalList();
+      setTimeout(function() { if (input) input.focus(); }, 60);
+    };
+
+    window.closeSocietesModal = function(e) {
+      if (e && e.target !== e.currentTarget) return;
+      var el = document.getElementById('societesModal');
+      if (!el) return;
+      el.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    window.renderSocietesModalList = function() {
+      var list = window._societesAll || [];
+      var input = document.getElementById('societesSearch');
+      var q = ((input && input.value) || '').toLowerCase().trim();
+      var body = document.getElementById('societesModalList');
+      if (!body) return;
+
+      var filtered = list.filter(function(d) {
+        if (!q) return true;
+        return (d.title || '').toLowerCase().indexOf(q) !== -1
+            || (d.phaseName || '').toLowerCase().indexOf(q) !== -1
+            || (d.statusLabel || '').toLowerCase().indexOf(q) !== -1;
+      });
+
+      if (!filtered.length) {
+        body.innerHTML = '<div class="sm-none">Aucune société ne correspond à « ' + escapeHtml(q) + ' »</div>';
+        return;
+      }
+
+      body.innerHTML = filtered.map(function(d) {
+        var tone = d.status === 'done' ? 'done' : (d.needsUserAction ? 'action' : 'progress');
+        return '<a class="sm-row" href="' + d.link + '">'
+          + '<span class="sm-pct ' + tone + '">' + (d.status === 'done'
+              ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+              : d.progress + '%') + '</span>'
+          + '<span class="sm-body">'
+          +   '<span class="sm-name">' + escapeHtml(d.title) + '</span>'
+          +   '<span class="sm-step">' + (d.status === 'done'
+                ? 'Immatriculée'
+                : 'Étape ' + d.phase + ' sur ' + d.totalPhases + ' · ' + escapeHtml(d.phaseName || '')) + '</span>'
+          + '</span>'
+          + '<span class="sm-status ' + tone + '">' + escapeHtml(d.statusLabel) + '</span>'
+          + '<svg class="sm-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+          + '</a>';
+      }).join('');
+    };
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape') return;
+      var el = document.getElementById('societesModal');
+      if (el && el.classList.contains('open')) closeSocietesModal();
+    });
+
+    /* ---------- Vue plusieurs dossiers ---------- */
+
+    // Une carte par société : où en est le dossier et ce qu'il faut faire ensuite
+    function renderSocieteTile(d) {
+      var r = 26, c = 2 * Math.PI * r;
+      var offset = c - (d.progress / 100) * c;
+      var done = d.status === 'done';
+      var toneCls = done ? 'done' : (d.needsUserAction ? 'action' : 'progress');
+      var unread = d.unread > 0
+        ? '<span class="soc-tile-unread">' + d.unread + ' message' + (d.unread > 1 ? 's' : '') + '</span>'
+        : '';
+
+      return '<div class="soc-tile ' + toneCls + '">'
+        + '<div class="soc-tile-head">'
+        +   '<div class="soc-tile-ring">'
+        +     '<svg viewBox="0 0 64 64">'
+        +       '<circle class="bg" cx="32" cy="32" r="' + r + '"/>'
+        +       '<circle class="fg" cx="32" cy="32" r="' + r + '" stroke-dasharray="' + c + '" stroke-dashoffset="' + (done ? 0 : offset) + '"/>'
+        +     '</svg>'
+        +     '<span class="soc-tile-pct">' + (done ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : d.progress + '%') + '</span>'
+        +   '</div>'
+        +   '<div class="soc-tile-ident">'
+        +     '<div class="soc-tile-name">' + escapeHtml(d.title) + '</div>'
+        +     '<div class="soc-tile-step">' + (done ? 'Immatriculée' : 'Étape ' + d.phase + ' sur ' + d.totalPhases + ' · ' + escapeHtml(d.phaseName || '')) + '</div>'
+        +   '</div>'
+        +   '<span class="soc-tile-status ' + toneCls + '">' + escapeHtml(d.statusLabel) + '</span>'
+        + '</div>'
+        + '<div class="soc-tile-next">' + escapeHtml(d.nextAction || '') + '</div>'
+        + '<div class="soc-tile-foot">'
+        +   unread
+        +   '<a href="' + d.link + '" class="soc-tile-btn">' + (done ? 'Consulter' : 'Continuer') + '</a>'
+        + '</div>'
+        + '</div>';
+    }
+
+    // Les actions attendues de tous les dossiers, préfixées du nom de la société
+    function renderMultiTodos(societes, nbActions) {
+      if (!nbActions) {
+        return '<section class="dash-card">'
+          + '<div class="dash-card-head"><div>'
+          +   '<div class="dash-card-title">Ce qu’on attend de vous</div>'
+          +   '<div class="dash-card-sub">Aucune action en attente</div>'
+          + '</div></div>'
+          + '<div class="dash-empty">'
+          +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+          +   '<div><strong>Rien à faire pour l’instant.</strong> Nous traitons vos dossiers, vous serez prévenu dès qu’une action vous attend.</div>'
+          + '</div></section>';
+      }
+
+      var rows = '';
+      societes.forEach(function(d) {
+        (d.todos || []).forEach(function(t) {
+          rows += '<a class="todo' + (t.urgent ? ' urgent' : '') + '" href="' + t.href + '">'
+            + '<span class="todo-dot"></span>'
+            + '<span class="todo-body">'
+            +   '<span class="todo-title">' + escapeHtml(t.title) + '</span>'
+            +   '<span class="todo-desc"><strong>' + escapeHtml(d.title) + '</strong> · ' + escapeHtml(t.desc) + '</span>'
+            + '</span>'
+            + '<span class="todo-cta">' + escapeHtml(t.cta) + '</span>'
+            + '</a>';
+        });
+      });
+
+      return '<section class="dash-card">'
+        + '<div class="dash-card-head"><div>'
+        +   '<div class="dash-card-title">Ce qu’on attend de vous</div>'
+        +   '<div class="dash-card-sub">' + nbActions + ' action' + (nbActions > 1 ? 's' : '') + ' sur ' + societes.length + ' dossiers</div>'
+        + '</div></div>'
+        + '<div class="todo-list">' + rows + '</div>'
+        + '</section>';
+    }
 
     function renderMultiState() {
       var societes = allDossiers.filter(function(d){ return d.type === 'formalite'; });
@@ -2398,93 +3133,39 @@
           + '</div>';
       }
 
-      // === DASHBOARD : KPIs + Activité récente + Raccourcis ===
-      // (la liste détaillée des formalités est sur /formalites.html, pas de doublon ici)
-      var nbActions = inProgress.filter(function(d){ return d.needsUserAction; }).length || inProgress.length;
-      var nbPending = pending.length;
+      // === Vos societes : ce que l'utilisateur vient voir en premier ===
+      var nbActions = 0;
+      societes.forEach(function(d){ nbActions += (d.todos || []).length; });
       var nbTotal = societes.length;
 
-      html += '<div class="db-kpi-grid">'
-        + '  <div class="db-kpi" data-tone="action">'
-        +   '<div class="db-kpi-head"><span class="db-kpi-label">Actions à faire</span>'
-        +     '<span class="db-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>'
-        +   '</div>'
-        +   '<div class="db-kpi-value">' + nbActions + '</div>'
-        +   '<div class="db-kpi-sub">' + (nbActions === 0 ? 'Tout est à jour' : 'À traiter pour avancer') + '</div>'
+      // Les trois dossiers les plus récents ; le reste via la fenêtre "Voir toutes"
+      var recentes = societes.slice().sort(function(a, b) {
+        return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+      });
+      window._societesAll = recentes;
+
+      html += '<div class="db-section-head"><h2>Vos sociétés</h2>'
+        + (societes.length > 3
+            ? '<button type="button" class="soc-see-all" onclick="openSocietesModal()">'
+              + 'Voir toutes<span class="soc-see-all-count">' + societes.length + '</span>'
+              + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+              + '</button>'
+            : '')
         + '</div>'
-        + '<div class="db-kpi" data-tone="pending">'
-        +   '<div class="db-kpi-head"><span class="db-kpi-label">En attente</span>'
-        +     '<span class="db-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>'
-        +   '</div>'
-        +   '<div class="db-kpi-value">' + nbPending + '</div>'
-        +   '<div class="db-kpi-sub">' + (nbPending === 0 ? 'Aucun dossier en attente' : 'Validation avocat / banque') + '</div>'
-        + '</div>'
-        + '<div class="db-kpi" data-tone="messages">'
-        +   '<div class="db-kpi-head"><span class="db-kpi-label">Messages non lus</span>'
-        +     '<span class="db-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>'
-        +   '</div>'
-        +   '<div class="db-kpi-value">' + unreadTotal + '</div>'
-        +   '<div class="db-kpi-sub">' + (unreadTotal === 0 ? 'Aucun nouveau message' : 'De l\'avocat ou de l\'équipe') + '</div>'
-        + '</div>'
-        + '<div class="db-kpi" data-tone="total">'
-        +   '<div class="db-kpi-head"><span class="db-kpi-label">Total dossiers</span>'
-        +     '<span class="db-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></span>'
-        +   '</div>'
-        +   '<div class="db-kpi-value">' + nbTotal + '</div>'
-        +   '<div class="db-kpi-sub">' + done.length + ' terminé' + (done.length > 1 ? 's' : '') + '</div>'
-        + '</div>'
+        + '<div class="soc-grid">'
+        + recentes.slice(0, 3).map(renderSocieteTile).join('')
         + '</div>';
 
-      // Raccourcis
-      html += '<div class="db-shortcuts">'
-        +   '<a href="/creation.html" class="db-shortcut db-shortcut-primary">'
-        +     '<div class="db-shortcut-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>'
-        +     '<div class="db-shortcut-body"><div class="db-shortcut-title">Créer une formalité</div><div class="db-shortcut-desc">SAS, SARL, SASU, EURL, SCI…</div></div>'
-        +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="db-shortcut-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
-        +   '</a>'
-        +   '<a href="/consultations.html" class="db-shortcut">'
-        +     '<div class="db-shortcut-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div>'
-        +     '<div class="db-shortcut-body"><div class="db-shortcut-title">Consulter un avocat</div><div class="db-shortcut-desc">Pose ta question à un expert</div></div>'
-        +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="db-shortcut-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
-        +   '</a>'
-        +   '<a href="/formalites.html" class="db-shortcut">'
-        +     '<div class="db-shortcut-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>'
-        +     '<div class="db-shortcut-body"><div class="db-shortcut-title">Toutes mes formalités</div><div class="db-shortcut-desc">' + nbTotal + ' dossier' + (nbTotal > 1 ? 's' : '') + ' au total</div></div>'
-        +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="db-shortcut-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
-        +   '</a>'
-        + '</div>';
+      // === Ce qu'on attend de vous, tous dossiers confondus ===
+      html += renderMultiTodos(societes, nbActions);
 
-      // Activité récente (timeline)
-      var recent = societes.slice().sort(function(a,b) {
-        var ta = a.updatedAt ? new Date(String(a.updatedAt).replace(' ', 'T')).getTime() : 0;
-        var tb = b.updatedAt ? new Date(String(b.updatedAt).replace(' ', 'T')).getTime() : 0;
-        return tb - ta;
-      }).slice(0, 5);
-      if (recent.length > 0) {
-        html += '<div class="db-section-head">'
-          + '<h2>Activité récente</h2>'
-          + '<a href="/formalites.html" class="db-section-link">Voir tout →</a>'
-          + '</div>'
-          + '<div class="db-timeline">';
-        recent.forEach(function(d) {
-          var statusClass = d.status === 'done' ? 'done' : d.status === 'pending' ? 'pending' : 'progress';
-          html += '<a href="' + d.link + '" class="db-timeline-item">'
-            + '  <div class="db-timeline-dot db-timeline-dot-' + statusClass + '"></div>'
-            + '  <div class="db-timeline-body">'
-            +     '<div class="db-timeline-row">'
-            +       '<span class="db-timeline-title">' + escapeHtml(d.title) + '</span>'
-            +       '<span class="db-timeline-badge">' + escapeHtml(d.typeBadgeLabel) + '</span>'
-            +     '</div>'
-            +     '<div class="db-timeline-meta">'
-            +       '<span class="db-timeline-status db-timeline-status-' + statusClass + '">' + d.statusLabel + '</span>'
-            +       '<span class="db-timeline-date">' + formatRelativeDate(d.updatedAt) + '</span>'
-            +     '</div>'
-            + '  </div>'
-            + '  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" class="db-timeline-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
-            + '</a>';
-        });
-        html += '</div>';
-      }
+      // Activité récente : le vrai historique de tous les dossiers, rempli après coup
+      html += '<div class="db-section-head"><h2>Activité récente</h2>'
+        + '<button type="button" class="soc-see-all" id="activity-see-all" style="display:none;"'
+        + ' onclick="openActivityModal()">Voir tout'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+        + '</button></div>'
+        + '<div id="multi-activity" class="dash-card"><div class="dash-loading">Chargement…</div></div>';
 
       var multiEl = document.getElementById('state-multi');
       multiEl.innerHTML = html;
@@ -2497,7 +3178,115 @@
       if (toolbarEl) toolbarEl.style.display = 'none';
       if (containerEl) containerEl.style.display = 'none';
       if (paginationEl) paginationEl.style.display = 'none';
+
+      loadMultiActivity(societes);
     }
+
+    /**
+     * Historique réel de tous les dossiers, fusionné et trié.
+     * Une requête par dossier : on se limite aux 8 plus récents pour ne pas
+     * lancer une rafale d'appels quand un compte en a beaucoup.
+     */
+    function loadMultiActivity(societes) {
+      var el = document.getElementById('multi-activity');
+      if (!el) return;
+
+      var cibles = societes.slice()
+        .sort(function(a, b) { return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); })
+        .slice(0, 8);
+
+      if (!cibles.length) { el.innerHTML = ''; return; }
+
+      Promise.all(cibles.map(function(d) {
+        return fetch('/api/formalites/' + d.id + '/audit')
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            return (res.entries || []).map(function(e) { e._societe = d.title; e._link = d.link; return e; });
+          })
+          .catch(function() { return []; });
+      })).then(function(groups) {
+        var entries = [].concat.apply([], groups)
+          .filter(function(e) { return e && e.created_at; })
+          .sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); })
+          .slice(0, 40); // l'accueil en montre 6, la fenêtre le reste
+
+        if (!entries.length) {
+          el.className = 'dash-card';
+          el.innerHTML = '<div class="dash-empty small">Rien ne s’est encore passé sur vos dossiers.</div>';
+          return;
+        }
+
+        window._activityAll = entries;
+        el.className = 'dash-card';
+        el.innerHTML = '<div class="act-cols">'
+          + entries.slice(0, 6).map(function(e) { return renderActivityRow(e); }).join('')
+          + '</div>';
+        var link = document.getElementById('activity-see-all');
+        if (link) link.style.display = entries.length > 6 ? '' : 'none';
+      });
+    }
+
+    /**
+     * Une ligne d'activité. `absolu` affiche la date complète (fenêtre "Voir tout")
+     * plutôt que le relatif utilisé sur l'accueil.
+     */
+    function renderActivityRow(e, absolu) {
+      var isMe = e.actor_role === 'user';
+      var who = isMe ? 'Vous' : (e.actor_name || 'Formalist');
+      var note = e.comment ? '<span class="act-note">' + escapeHtml(e.comment) + '</span>' : '';
+      // Un changement d'étape se suffit à lui-même : "Dossier pris en charge par
+      // Me. Sophie Martin" ne doit pas être préfixé du nom de son auteur.
+      var texte = (e.action === 'status_change' && e.after_value)
+        ? '<strong>' + escapeHtml(e.after_value) + '</strong>'
+        : '<strong>' + escapeHtml(who) + '</strong> ' + describeAudit(e, isMe);
+      var quand = absolu ? formatFullDate(e.created_at) : formatRelativeDate(e.created_at);
+
+      return '<a class="act-row act-row-link" href="' + e._link + '">'
+        + '<span class="act-dot"></span>'
+        + '<span class="act-body">'
+        +   '<span class="act-text">' + texte + '</span>'
+        +   note
+        +   '<span class="act-time">' + escapeHtml(e._societe) + ' · ' + quand + '</span>'
+        + '</span>'
+        + '</a>';
+    }
+
+    // "9 août 2026 à 14:32" - utile dans la fenêtre, où on compare des dates
+    function formatFullDate(iso) {
+      if (!iso) return '';
+      var d = new Date(String(iso).indexOf('T') === -1 ? String(iso).replace(' ', 'T') + 'Z' : iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+        + ' à ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    /* ---------- Fenêtre "Toute l'activité" ---------- */
+
+    window.openActivityModal = function() {
+      var el = document.getElementById('activityModal');
+      if (!el) return;
+      el.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      var body = document.getElementById('activityModalList');
+      var entries = window._activityAll || [];
+      body.innerHTML = entries.length
+        ? entries.map(function(e) { return renderActivityRow(e, true); }).join('')
+        : '<div class="sm-none">Aucune activité pour l’instant.</div>';
+    };
+
+    window.closeActivityModal = function(e) {
+      if (e && e.target !== e.currentTarget) return;
+      var el = document.getElementById('activityModal');
+      if (!el) return;
+      el.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape') return;
+      var el = document.getElementById('activityModal');
+      if (el && el.classList.contains('open')) closeActivityModal();
+    });
 
     function animateKpiCounters() {
       var els = document.querySelectorAll('.kpi-value[data-target]');
@@ -2583,6 +3372,59 @@
       }
 
       banner.style.display = 'none';
+    }
+
+    /**
+     * Ce qui reste à faire côté client, dans l'ordre où ça bloque le dossier.
+     * Une entrée = une action concrète, avec le lien qui y mène directement.
+     */
+    function buildTodoList(ctx) {
+      var link = '/creation.html?id=' + ctx.formaliteId;
+      var todos = [];
+      if (ctx.status === 'terminee') return todos;
+
+      if (ctx.rejectedDocs > 0) {
+        todos.push({
+          title: ctx.rejectedDocs > 1 ? ctx.rejectedDocs + ' documents à remplacer' : 'Un document à remplacer',
+          desc: 'Votre avocat a demandé un justificatif conforme',
+          cta: 'Téléverser', href: link, urgent: true
+        });
+      }
+      if (!ctx.infosComplete) {
+        todos.push({
+          title: 'Compléter les informations',
+          desc: 'Nom, forme juridique, capital et dirigeant',
+          cta: 'Compléter', href: link
+        });
+      } else if (!ctx.banque) {
+        todos.push({
+          title: 'Choisir votre banque',
+          desc: 'Pour recevoir le dépôt de capital social',
+          cta: 'Choisir', href: link
+        });
+      } else if (ctx.phase < 3) {
+        var n = parseFloat(String(ctx.capital).replace(/[^\d.,]/g, '').replace(',', '.'));
+        var montant = !isNaN(n) && n > 0 ? Number(n).toLocaleString('fr-FR') + ' €' : 'votre capital';
+        todos.push({
+          title: 'Déposer ' + montant + ' sur votre compte ' + ctx.banque,
+          desc: 'Puis envoyez-nous l’attestation de dépôt',
+          cta: 'Envoyer l’attestation', href: link
+        });
+      } else if (ctx.phase === 3) {
+        todos.push({
+          title: 'Téléverser les pièces des associés',
+          desc: 'Pièce d’identité et justificatif de domicile',
+          cta: 'Téléverser', href: link
+        });
+      }
+      if (ctx.pendingSig > 0 && ctx.totalSig > 0) {
+        todos.push({
+          title: ctx.pendingSig > 1 ? ctx.pendingSig + ' signatures manquantes' : 'Une signature manquante',
+          desc: 'Les statuts partent au greffe une fois tous les associés signataires',
+          cta: 'Voir les signatures', href: link, urgent: true
+        });
+      }
+      return todos;
     }
 
     function loadAllDossiers() {
@@ -2715,7 +3557,20 @@
             nextAction: nextAction,
             needsUserAction: needsUserAction,
             phase: displayPhase,
-            totalPhases: phaseNames.length
+            totalPhases: phaseNames.length,
+            phaseNames: phaseNames,
+            avocatName: f.avocat_name || null,
+            todos: buildTodoList({
+              formaliteId: f.id,
+              infosComplete: infosComplete,
+              banque: banqueChoisie,
+              capital: fData.CAPITAL || f.capital,
+              phase: f.phase || 1,
+              rejectedDocs: rejectedDocs,
+              pendingSig: pendingSig,
+              totalSig: totalSig,
+              status: f.status
+            })
           });
         });
         checkAllLoaded();
@@ -2735,7 +3590,8 @@
             type: 'contrat',
             typeBadge: 'contrat',
             typeBadgeLabel: c.type || 'Contrat',
-            title: c.title || c.name || 'Contrat #' + c.id,
+            // La colonne s'appelle `titre` : `title` renvoyait toujours "Contrat #id"
+            title: c.titre || c.title || c.name || 'Contrat #' + c.id,
             status: statusClass,
             statusLabel: statusLabel,
             progress: c.progress || (statusClass === 'done' ? 100 : statusClass === 'pending' ? 20 : 50),
@@ -2843,7 +3699,7 @@
       var end = Math.min(dossierPage * DOSSIERS_PER_PAGE, total);
 
       var html = '<div class="dossiers-pagination">'
-        + '<div class="dossiers-page-info">' + start + ' \u2013 ' + end + ' sur ' + total + '</div>'
+        + '<div class="dossiers-page-info">' + start + ' - ' + end + ' sur ' + total + '</div>'
         + '<div class="dossiers-page-btns">'
         + '<button class="dossiers-page-btn" onclick="onDossierPage(' + (dossierPage - 1) + ')"' + (dossierPage <= 1 ? ' disabled' : '') + '>'
         + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>';
@@ -3021,332 +3877,7 @@
   </style>
 
   <!-- Chat FAB -->
-  <button class="chat-fab" id="chatFab" onclick="toggleChatPanel()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-    <span class="chat-fab-badge" id="chatBadge">0</span>
-  </button>
+  <!-- Bulle de messagerie : injectée par /js/chat-widget.js -->
 
-  <!-- Chat Panel -->
-  <div class="chat-panel" id="chatPanel">
-    <div class="chat-header">
-      <div class="chat-header-title">Messages</div>
-      <div class="chat-tabs">
-        <button class="chat-tab active" data-tab="avocat" onclick="switchChatTab('avocat')">Mon avocat</button>
-        <button class="chat-tab" data-tab="support" onclick="switchChatTab('support')">Support</button>
-      </div>
-    </div>
-
-    <!-- Avocat tab content -->
-    <div id="chatTabAvocat" style="flex:1;flex-direction:column;min-height:0;display:flex;">
-      <div class="chat-select" id="chatFormaliteSelect"></div>
-      <div id="chatAvocatInfo"></div>
-      <div class="chat-messages" id="chatAvocatMessages"></div>
-      <div class="chat-input-area" id="chatAvocatInput">
-        <input type="file" id="chatAvocatFile" accept=".pdf,.jpg,.jpeg,.png,.docx">
-        <button class="chat-btn-attach" onclick="document.getElementById('chatAvocatFile').click()" title="Joindre un fichier">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-        </button>
-        <input type="text" id="chatAvocatText" placeholder="Votre message..." onkeydown="if(event.key==='Enter')sendAvocatMessage()">
-        <button class="chat-btn-send" id="chatAvocatSendBtn" onclick="sendAvocatMessage()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Support tab content -->
-    <div id="chatTabSupport" style="display:none;flex:1;flex-direction:column;min-height:0;">
-      <div class="chat-messages" id="chatSupportMessages"></div>
-      <div class="chat-input-area">
-        <input type="file" id="chatSupportFile" accept=".pdf,.jpg,.jpeg,.png,.docx">
-        <button class="chat-btn-attach" onclick="document.getElementById('chatSupportFile').click()" title="Joindre un fichier">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-        </button>
-        <input type="text" id="chatSupportText" placeholder="Votre message..." onkeydown="if(event.key==='Enter')sendSupportMessage()">
-        <button class="chat-btn-send" id="chatSupportSendBtn" onclick="sendSupportMessage()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-  (function() {
-    var chatOpen = false;
-    var currentTab = 'avocat';
-    var selectedFormaliteId = null;
-    var formalitesList = [];
-    var avocatSSE = null;
-    var supportSSE = null;
-    var totalUnread = 0;
-    // Ferme les EventSource avant la navigation
-    window.addEventListener('beforeunload', function() {
-      if (avocatSSE) { try { avocatSSE.close(); } catch(_) {} avocatSSE = null; }
-      if (supportSSE) { try { supportSSE.close(); } catch(_) {} supportSSE = null; }
-    });
-    window.addEventListener('pagehide', function() {
-      if (avocatSSE) { try { avocatSSE.close(); } catch(_) {} avocatSSE = null; }
-      if (supportSSE) { try { supportSSE.close(); } catch(_) {} supportSSE = null; }
-    });
-
-    window.toggleChatPanel = function() {
-      chatOpen = !chatOpen;
-      document.getElementById('chatPanel').classList.toggle('open', chatOpen);
-      if (chatOpen) {
-        if (currentTab === 'avocat') loadAvocatChat();
-        else loadSupportChat();
-      }
-    };
-
-    window.switchChatTab = function(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.chat-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
-      var avocatTab = document.getElementById('chatTabAvocat');
-      var supportTab = document.getElementById('chatTabSupport');
-      if (tab === 'avocat') {
-        avocatTab.style.display = 'flex';
-        supportTab.style.display = 'none';
-        loadAvocatChat();
-      } else {
-        avocatTab.style.display = 'none';
-        supportTab.style.display = 'flex';
-        loadSupportChat();
-      }
-    };
-
-    var hasAvocat = false;
-
-    function loadFormalitesForChat() {
-      fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
-        formalitesList = (data.formalites || []).filter(function(f) { return f.status !== 'terminee'; });
-        var avocatFormalites = formalitesList.filter(function(f) { return f.assigned_avocat_id; });
-        hasAvocat = avocatFormalites.length > 0;
-        updateTabsVisibility();
-
-        var sel = document.getElementById('chatFormaliteSelect');
-        if (avocatFormalites.length === 0) {
-          sel.innerHTML = '';
-          document.getElementById('chatAvocatMessages').innerHTML = '';
-          if (!hasAvocat && currentTab === 'avocat') {
-            switchChatTab('support');
-          }
-          return;
-        }
-        var html = '<select id="chatFormaliteDropdown" onchange="window._onFormaliteChange(this.value)">';
-        avocatFormalites.forEach(function(f) {
-          html += '<option value="' + f.id + '">' + escapeHtml(f.societe || 'Formalit\u00e9 #' + f.id) + ' (' + (f.forme || '') + ')</option>';
-        });
-        html += '</select>';
-        sel.innerHTML = html;
-        selectedFormaliteId = avocatFormalites[0].id;
-        loadAvocatChat();
-      });
-    }
-
-    function updateTabsVisibility() {
-      var avocatTab = document.querySelector('.chat-tab[data-tab="avocat"]');
-      if (hasAvocat) {
-        avocatTab.style.display = '';
-      } else {
-        avocatTab.style.display = 'none';
-      }
-    }
-
-    window._onFormaliteChange = function(val) {
-      selectedFormaliteId = parseInt(val);
-      loadAvocatChat();
-    };
-
-    function loadAvocatChat() {
-      if (!selectedFormaliteId) { loadFormalitesForChat(); return; }
-      if (formalitesList.length === 0) { loadFormalitesForChat(); return; }
-      fetch('/api/messages?formalite_id=' + selectedFormaliteId).then(function(r) { return r.json(); }).then(function(data) {
-        renderAvocatMessages(data.messages || []);
-        fetch('/api/messages/read?formalite_id=' + selectedFormaliteId, { method: 'PUT' });
-      });
-      if (avocatSSE) avocatSSE.close();
-      avocatSSE = new EventSource('/api/messages/stream?formalite_id=' + selectedFormaliteId);
-      avocatSSE.onmessage = function(e) {
-        try {
-          var msg = JSON.parse(e.data);
-          appendAvocatMessage(msg);
-          fetch('/api/messages/read?formalite_id=' + selectedFormaliteId, { method: 'PUT' });
-        } catch(err) {}
-      };
-    }
-
-    function renderAvocatMessages(messages) {
-      var container = document.getElementById('chatAvocatMessages');
-      container.innerHTML = '';
-      messages.forEach(function(m) { appendAvocatMessage(m, true); });
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function appendAvocatMessage(m, noscroll) {
-      var container = document.getElementById('chatAvocatMessages');
-      var isMine = _currentUser && m.sender_id === _currentUser.id;
-      var div = document.createElement('div');
-      div.className = 'chat-msg ' + (isMine ? 'sent' : 'received');
-      var time = formatTime(m.created_at);
-      var html = '';
-      if (!isMine) html += '<div class="chat-msg-sender">' + escapeHtml(m.sender_name || '') + '</div>';
-      html += '<div>' + escapeHtml(m.content || '') + '</div>';
-      html += '<div class="chat-msg-time">' + time + '</div>';
-      div.innerHTML = html;
-      container.appendChild(div);
-      if (!noscroll) container.scrollTop = container.scrollHeight;
-    }
-
-    window.sendAvocatMessage = function() {
-      var input = document.getElementById('chatAvocatText');
-      var text = input.value.trim();
-      if (!text || !selectedFormaliteId) return;
-      input.value = '';
-      fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formalite_id: selectedFormaliteId, content: text })
-      });
-    };
-
-    document.getElementById('chatAvocatFile').addEventListener('change', function() {
-      var file = this.files[0];
-      if (!file || !selectedFormaliteId) return;
-      var fd = new FormData();
-      fd.append('file', file);
-      fd.append('doc_name', file.name);
-      fd.append('status', 'uploaded');
-      fetch('/api/formalites/' + selectedFormaliteId + '/documents', { method: 'POST', body: fd }).then(function(r) { return r.json(); }).then(function(data) {
-        if (data.ok) {
-          fetch('/api/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ formalite_id: selectedFormaliteId, content: '\ud83d\udcce ' + file.name })
-          });
-        }
-      });
-      this.value = '';
-    });
-
-    function loadSupportChat() {
-      fetch('/api/support').then(function(r) { return r.json(); }).then(function(data) {
-        renderSupportMessages(data.messages || []);
-      });
-      if (supportSSE) supportSSE.close();
-      supportSSE = new EventSource('/api/support/stream');
-      supportSSE.onmessage = function(e) {
-        try {
-          var msg = JSON.parse(e.data);
-          appendSupportMessage(msg);
-        } catch(err) {}
-      };
-    }
-
-    function renderSupportMessages(messages) {
-      var container = document.getElementById('chatSupportMessages');
-      container.innerHTML = '';
-      if (messages.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#888;font-size:13px">Envoyez un message pour contacter le support Formalist</div>';
-      }
-      messages.forEach(function(m) { appendSupportMessage(m, true); });
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function appendSupportMessage(m, noscroll) {
-      var container = document.getElementById('chatSupportMessages');
-      var placeholder = container.querySelector('div[style*="text-align:center"]');
-      if (placeholder) placeholder.remove();
-      var isMine = _currentUser && m.sender_id === _currentUser.id;
-      var div = document.createElement('div');
-      if (m.file_path && !m.content.startsWith('\ud83d\udcce')) {
-        var a = document.createElement('a');
-        a.className = 'chat-msg-file';
-        a.href = '/api/file?path=' + encodeURIComponent(m.file_path);
-        a.target = '_blank';
-        a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' + escapeHtml(m.content || m.file_path);
-        container.appendChild(a);
-      } else {
-        div.className = 'chat-msg ' + (isMine ? 'sent' : 'received');
-        var time = formatTime(m.created_at);
-        var html = '';
-        if (!isMine) html += '<div class="chat-msg-sender">' + escapeHtml(m.sender_name || 'Support') + '</div>';
-        html += '<div>' + escapeHtml(m.content || '') + '</div>';
-        html += '<div class="chat-msg-time">' + time + '</div>';
-        div.innerHTML = html;
-        container.appendChild(div);
-      }
-      if (!noscroll) container.scrollTop = container.scrollHeight;
-    }
-
-    window.sendSupportMessage = function() {
-      var input = document.getElementById('chatSupportText');
-      var text = input.value.trim();
-      if (!text) return;
-      input.value = '';
-      fetch('/api/support', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text })
-      });
-    };
-
-    document.getElementById('chatSupportFile').addEventListener('change', function() {
-      var file = this.files[0];
-      if (!file) return;
-      var fd = new FormData();
-      fd.append('file', file);
-      fd.append('content', file.name);
-      fetch('/api/support', { method: 'POST', body: fd });
-      this.value = '';
-    });
-
-    function setupSendBtn(inputId, btnId) {
-      var input = document.getElementById(inputId);
-      var btn = document.getElementById(btnId);
-      if (!input || !btn) return;
-      input.addEventListener('input', function() {
-        btn.classList.toggle('active', input.value.trim().length > 0);
-      });
-    }
-    setupSendBtn('chatAvocatText', 'chatAvocatSendBtn');
-    setupSendBtn('chatSupportText', 'chatSupportSendBtn');
-
-    function updateUnreadBadge() {
-      var total = 0;
-      var done = 0;
-      var needed = 1;
-      fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
-        (data.formalites || []).forEach(function(f) { total += (f.unread_messages || 0); });
-        done++;
-        if (done >= needed) showBadge(total);
-      });
-      fetch('/api/support/unread').then(function(r) { return r.json(); }).then(function(data) {
-        total += (data.count || 0);
-        needed++;
-        done++;
-        if (done >= needed) showBadge(total);
-      });
-    }
-
-    function showBadge(count) {
-      var badge = document.getElementById('chatBadge');
-      if (count > 0) {
-        badge.textContent = count > 99 ? '99+' : count;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
-      }
-    }
-
-    setInterval(updateUnreadBadge, 30000);
-    setTimeout(updateUnreadBadge, 2000);
-    setTimeout(loadFormalitesForChat, 1000);
-
-    function formatTime(isoStr) {
-      if (!isoStr) return '';
-      var d = new Date(isoStr);
-      return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
-    }
-  })();
-  </script>
 </body>
 </html>

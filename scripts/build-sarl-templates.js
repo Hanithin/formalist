@@ -153,7 +153,7 @@ function sectionTitle(text, opts) {
   var rPrCoverName = '<w:rPr><w:rFonts w:ascii="' + FONT + '" w:cs="' + FONT + '" w:eastAsia="' + FONT + '" w:hAnsi="' + FONT + '"/><w:b w:val="1"/><w:rtl w:val="0"/></w:rPr>';
   // P0: empty paragraph (no spacing, like SCI)
   body += '<w:p><w:pPr><w:rPr><w:rFonts w:ascii="' + FONT + '" w:cs="' + FONT + '" w:eastAsia="' + FONT + '" w:hAnsi="' + FONT + '"/><w:b w:val="1"/></w:rPr></w:pPr><w:r><w:rPr><w:rtl w:val="0"/></w:rPr></w:r></w:p>';
-  // P1: Company info centered — single paragraph with <w:br/> line breaks (exactly like SCI)
+  // P1: Company info centered - single paragraph with <w:br/> line breaks (exactly like SCI)
   var F = '<w:rFonts w:ascii="' + FONT + '" w:cs="' + FONT + '" w:eastAsia="' + FONT + '" w:hAnsi="' + FONT + '"/>';
   var br = '<w:br w:type="textWrapping"/>';
   body += '<w:p><w:pPr><w:spacing w:after="200" w:line="276" w:lineRule="auto"/><w:jc w:val="center"/><w:rPr>' +
@@ -221,7 +221,7 @@ function sectionTitle(text, opts) {
     body += tag('{{/HAS_ASSOC_' + n + '}}');
   }
 
-  // ONT ÉTABLI (structure SCI — before=400, after=200)
+  // ONT ÉTABLI (structure SCI - before=400, after=200)
   body += tag('{{#IS_UNIPERSONNELLE}}');
   body += p('A \u00c9TABLI, AINSI QU\u2019IL SUIT, LES STATUTS D\u2019UNE SOCI\u00c9T\u00c9 \u00c0 RESPONSABILIT\u00c9 LIMIT\u00c9E QU\u2019IL A D\u00c9CID\u00c9 DE CONSTITUER :', rPrBold, { before: 400, after: 200, both: true });
   body += tag('{{/IS_UNIPERSONNELLE}}');
@@ -233,13 +233,13 @@ function sectionTitle(text, opts) {
   body += p('{{NOM_SOCIETE}}', rPrBold, { center: true, before: 0, after: 0, line: 240, pageBreakBefore: true });
   body += p('{{FORME_LABEL}} au capital de {{CAPITAL}} euros', rPr, { center: true, before: 0, after: 0, line: 240 });
   body += p('Si\u00e8ge social : {{ADRESSE_SIEGE}}', rPr, { center: true, before: 0, after: 0, line: 240 });
-  // Empty keepNext paragraphs (like SCI P108-P110 — transition before articles)
+  // Empty keepNext paragraphs (like SCI P108-P110 - transition before articles)
   for (var ek = 0; ek < 3; ek++) {
     body += para({ before: 0, after: 0, line: 0, center: true, keepNext: true });
   }
 
   // ════════════════════════════════════════════════════════════
-  // TITRE I — FORME - DÉNOMINATION - SIÈGE - OBJET – DURÉE
+  // TITRE I - FORME - DÉNOMINATION - SIÈGE - OBJET - DURÉE
   // ════════════════════════════════════════════════════════════
   body += sectionTitle('TITRE I');
   body += p('FORME - D\u00c9NOMINATION - SI\u00c8GE - OBJET \u2013 DUR\u00c9E', rPrBold, { center: true, before: 0, after: 240 });
@@ -280,7 +280,7 @@ function sectionTitle(text, opts) {
   body += content('Les d\u00e9cisions de prorogation de la dur\u00e9e de la Soci\u00e9t\u00e9 ou de dissolution anticip\u00e9e sont prises par d\u00e9cision collective des associ\u00e9s.');
 
   // ════════════════════════════════════════════════════════════
-  // TITRE II — APPORTS – CAPITAL SOCIAL – PARTS SOCIALES
+  // TITRE II - APPORTS - CAPITAL SOCIAL - PARTS SOCIALES
   // ════════════════════════════════════════════════════════════
   body += sectionTitle('TITRE II');
   body += p('APPORTS \u2013 CAPITAL SOCIAL \u2013 FORMES ET DROITS ATTACH\u00c9S AUX PARTS', rPrBold, { center: true, before: 0, after: 240 });
@@ -344,7 +344,7 @@ function sectionTitle(text, opts) {
   body += content('10.5. Chaque fois qu\u2019il est n\u00e9cessaire de poss\u00e9der plusieurs parts sociales pour exercer un droit quelconque, les propri\u00e9taires de parts isol\u00e9es ou en nombre inf\u00e9rieur \u00e0 celui requis ne pourront exercer ce droit qu\u2019\u00e0 condition d\u2019avoir fait leur affaire personnelle du groupement et, \u00e9ventuellement de l\u2019achat ou de la vente du nombre de parts n\u00e9cessaires.');
 
   // ════════════════════════════════════════════════════════════
-  // TITRE III — CESSION DES PARTS SOCIALES (CORRECTED)
+  // TITRE III - CESSION DES PARTS SOCIALES (CORRECTED)
   // ════════════════════════════════════════════════════════════
   body += sectionTitle('TITRE III');
   body += p('TRANSMISSION \u2013 CESSION DES PARTS SOCIALES', rPrBold, { center: true, before: 0, after: 240 });
@@ -363,7 +363,7 @@ function sectionTitle(text, opts) {
   body += content('Les frais de transfert des parts sociales sont \u00e0 la charge des cessionnaires, sauf convention contraire entre c\u00e9dants et cessionnaires.');
 
   // ════════════════════════════════════════════════════════════
-  // TITRE IV — GÉRANCE (CORRECTED: was Président + DG)
+  // TITRE IV - GÉRANCE (CORRECTED: was Président + DG)
   // ════════════════════════════════════════════════════════════
   body += sectionTitle('TITRE IV');
   body += p('ADMINISTRATION DE LA SOCI\u00c9T\u00c9 \u2013 G\u00c9RANCE \u2013 CONTR\u00d4LE', rPrBold, { center: true, before: 0, after: 240 });
@@ -391,7 +391,7 @@ function sectionTitle(text, opts) {
   body += content('Le ou les commissaires aux comptes exercent leurs fonctions et sont r\u00e9mun\u00e9r\u00e9s conform\u00e9ment \u00e0 la loi.');
 
   // ════════════════════════════════════════════════════════════
-  // TITRE V — DÉCISIONS COLLECTIVES DES ASSOCIÉS
+  // TITRE V - DÉCISIONS COLLECTIVES DES ASSOCIÉS
   // ════════════════════════════════════════════════════════════
   body += sectionTitle('TITRE V');
   body += p('D\u00c9CISIONS COLLECTIVES DES ASSOCI\u00c9S', rPrBold, { center: true, before: 0, after: 240 });
@@ -457,7 +457,7 @@ function sectionTitle(text, opts) {
   body += content('Le droit d\u2019information et de communication des associ\u00e9s est exerc\u00e9 dans les conditions l\u00e9gales des articles L.223-26 et suivants du Code de commerce.');
 
   // ════════════════════════════════════════════════════════════
-  // TITRE VI — EXERCICE SOCIAL – COMPTES – RÉSULTAT
+  // TITRE VI - EXERCICE SOCIAL - COMPTES - RÉSULTAT
   // ════════════════════════════════════════════════════════════
   body += sectionTitle('TITRE VI');
   body += p('EXERCICE SOCIAL \u2013 COMPTES ANNUELS \u2013 AFFECTATION DU R\u00c9SULTAT', rPrBold, { center: true, before: 0, after: 240 });
@@ -481,7 +481,7 @@ function sectionTitle(text, opts) {
   body += content('La d\u00e9cision collective des associ\u00e9s ou, \u00e0 d\u00e9faut, la g\u00e9rance fixe les modalit\u00e9s de paiement des dividendes.');
 
   // ════════════════════════════════════════════════════════════
-  // TITRE VII — DISSOLUTION – LIQUIDATION – DISPOSITIONS DIVERSES
+  // TITRE VII - DISSOLUTION - LIQUIDATION - DISPOSITIONS DIVERSES
   // ════════════════════════════════════════════════════════════
   body += sectionTitle('TITRE VII');
   body += p('DISSOLUTION \u2013 LIQUIDATION \u2013 DISPOSITIONS DIVERSES', rPrBold, { center: true, before: 0, after: 240 });

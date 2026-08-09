@@ -102,7 +102,7 @@ function seedPaymentsForUser(userId, email) {
       f.id,
       amount,
       "EUR",
-      "Création " + (f.forme || "société") + " — " + (f.societe || ""),
+      "Création " + (f.forme || "société") + " - " + (f.societe || ""),
       "paid",
       "pi_demo_" + Math.random().toString(36).slice(2, 12),
       paidAt

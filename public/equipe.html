@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Équipe - Formalist</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    body { background: #fafafa; }
+    .topbar {
+      padding: 30px 48px 4px;
+      background: transparent;
+      display: flex; align-items: baseline; justify-content: space-between;
+    }
+    .topbar h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 28px; font-weight: 600;
+      letter-spacing: 0; line-height: 1;
+    }
+    .page-sub {
+      padding: 0 48px;
+      font-size: 14px;
+      color: #888;
+      margin: 0 0 28px;
+      max-width: 760px;
+    }
+    .content-wrap { padding: 0 48px 60px; }
+
+    /* Hero card - sobre */
+    .hero-card {
+      background: #fff; border: 1px solid #ececef;
+      color: #111; border-radius: 16px; padding: 26px 30px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 24px; margin-bottom: 24px;
+    }
+    .hero-card .h-text h2 { font-family: 'Cal Sans', sans-serif; font-size: 21px; font-weight: 600; color: #111; }
+    .hero-card .h-text p { font-size: 13.5px; color: #888; margin-top: 6px; max-width: 520px; line-height: 1.5; }
+    .hero-card .h-cta {
+      padding: 12px 22px; background: #111; color: #fff;
+      border: none; border-radius: 10px; font-family: inherit; font-size: 14px;
+      font-weight: 600; cursor: pointer; flex-shrink: 0;
+      transition: background .15s, transform .15s;
+    }
+    .hero-card .h-cta:hover { background: #2a2a2c; transform: translateY(-1px); }
+
+    /* Next consultation banner - sobre */
+    .next-banner {
+      background: #fff; border: 1px solid #ececef; border-radius: 16px;
+      padding: 22px 26px; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 20px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .next-banner:hover { border-color: #d4d4d8; box-shadow: 0 4px 14px rgba(0,0,0,0.04); }
+    .next-banner .nb-ic {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: #f3f4f6; color: #555;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .next-banner .nb-ic svg { width: 22px; height: 22px; }
+    .next-banner .nb-body { flex: 1; min-width: 0; }
+    .next-banner .nb-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0;
+      color: #888; margin-bottom: 7px;
+    }
+    .next-banner .nb-tag.live { color: #047857; }
+    .next-banner .nb-tag .pulse {
+      width: 6px; height: 6px; border-radius: 50%; background: #10b981;
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .next-banner .nb-title { font-family: 'Cal Sans', sans-serif; font-size: 18px; font-weight: 600; color: #111; line-height: 1.25; }
+    .next-banner .nb-meta { font-size: 13.5px; color: #888; margin-top: 4px; }
+    .next-banner .nb-actions { display: flex; gap: 10px; flex-shrink: 0; align-items: center; }
+    .next-banner .nb-join {
+      padding: 10px 18px; background: #111; color: #fff;
+      border: none; border-radius: 10px; font-family: inherit; font-size: 13.5px;
+      font-weight: 600; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 7px;
+      transition: background .15s;
+    }
+    .next-banner .nb-join:hover { background: #2a2a2c; }
+    .next-banner .nb-link-wait {
+      font-size: 12.5px; color: #888;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .next-banner .nb-link-wait::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;
+      animation: pulse 1.6s infinite;
+    }
+
+    /* Filters */
+    .cons-tabs {
+      display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .cons-tab {
+      padding: 8px 16px; font-size: 13px; border-radius: 100px;
+      border: 1px solid #e5e5e5; background: #fff; color: #666;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .cons-tab:hover { border-color: #999; }
+    .cons-tab.active { background: #111; color: #fff; border-color: #111; }
+    .cons-tab .count {
+      font-size: 11.5px; font-weight: 600; opacity: 0.7;
+      padding: 1px 6px; background: rgba(0,0,0,0.08); border-radius: 100px;
+    }
+    .cons-tab.active .count { background: rgba(255,255,255,0.18); opacity: 1; }
+
+    /* My consultations list */
+    .my-cons-section { margin-bottom: 36px; }
+    .section-title { font-family: 'Cal Sans', sans-serif; font-size: 18px; font-weight: 600; color: #111; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+    .section-title .ct { font-size: 12px; color: #888; font-family: 'Matter', sans-serif; font-weight: 500; }
+    .my-cons-list { display: flex; flex-direction: column; gap: 10px; }
+    .my-cons-item {
+      background: #fff; border: 1px solid #ececef; border-radius: 14px;
+      padding: 16px 20px; display: flex; align-items: center; gap: 16px;
+      transition: all .15s; cursor: pointer;
+    }
+    .my-cons-item:hover { border-color: #c4b5fd; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+    .my-cons-item .ic {
+      width: 44px; height: 44px; border-radius: 11px;
+      background: #f3f4f6; color: #555;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .my-cons-item .ic svg { width: 20px; height: 20px; }
+    .my-cons-item.done .ic { background: #ecfdf5; color: #047857; }
+    .my-cons-item.cancelled .ic { background: #f3f4f6; color: #6b7280; opacity: 0.8; }
+    .my-cons-item.cancelled .t { text-decoration: line-through; color: #888; }
+    .my-cons-item .body { flex: 1; min-width: 0; }
+    .my-cons-item .t-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .my-cons-item .t { font-weight: 600; color: #111; font-size: 15.5px; }
+    .my-cons-item .domain-chip {
+      background: #f3f4f6; color: #555;
+      padding: 3px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0;
+    }
+    .my-cons-item .s { font-size: 13px; color: #888; margin-top: 6px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .my-cons-item .s svg { width: 13px; height: 13px; opacity: 0.7; }
+    .my-cons-item .s .with-ic { display: inline-flex; align-items: center; gap: 5px; }
+    .my-cons-item .right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .my-cons-item .badge {
+      padding: 5px 11px; border-radius: 7px; font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0;
+    }
+    .my-cons-item .badge.scheduled { background: #fef3c7; color: #b45309; }
+    .my-cons-item .badge.confirmed { background: #ecfdf5; color: #047857; }
+    .my-cons-item .badge.done { background: #f3f4f6; color: #555; }
+    .my-cons-item .badge.cancelled { background: #fef2f2; color: #b91c1c; }
+    .my-cons-item .join-btn {
+      padding: 8px 14px; background: #111; color: #fff;
+      border: none; border-radius: 8px; font-family: inherit;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      text-decoration: none; flex-shrink: 0;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .my-cons-item .join-btn:hover { background: #2a2a2c; }
+    .my-cons-item .chev { color: #ccc; margin-left: 4px; flex-shrink: 0; }
+
+    /* Drawer for details */
+    .cons-drawer-bg {
+      position: fixed; inset: 0; background: rgba(17,17,17,0.4); backdrop-filter: blur(2px);
+      z-index: 400; display: none;
+    }
+    .cons-drawer-bg.open { display: block; }
+    .cons-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 520px; max-width: 95vw;
+      background: #fff; z-index: 401; transform: translateX(100%);
+      transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column; box-shadow: -8px 0 32px rgba(0,0,0,0.1);
+    }
+    .cons-drawer.open { transform: translateX(0); }
+    .cd-head { padding: 16px 22px; border-bottom: 1px solid #f0f0f2; display: flex; align-items: center; justify-content: space-between; }
+    .cd-head h2 { font-family: 'Cal Sans', sans-serif; font-size: 17px; font-weight: 600; color: #888; }
+    .cd-close { background: none; border: none; cursor: pointer; color: #888; padding: 6px; border-radius: 8px; }
+    .cd-close:hover { background: #f5f5f7; color: #111; }
+    .cd-body { padding: 22px; overflow-y: auto; flex: 1; }
+    .cd-hero { margin-bottom: 22px; }
+    .cd-hero .domain-chip { display: inline-block; background: #f5f3ff; color: #7c3aed; padding: 4px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0; margin-bottom: 10px; }
+    .cd-hero h1 { font-family: 'Cal Sans', sans-serif; font-size: 24px; font-weight: 700; color: #111; line-height: 1.2; }
+    .cd-hero .with { font-size: 14px; color: #888; margin-top: 6px; }
+    .cd-section { margin-bottom: 22px; }
+    .cd-section-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0; color: #888; margin-bottom: 10px; }
+    .cd-meta-card { background: #fafafa; border: 1px solid #f0f0f2; border-radius: 12px; padding: 4px 16px; }
+    .cd-meta-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #f0f0f2; font-size: 13.5px; }
+    .cd-meta-row:last-child { border-bottom: none; }
+    .cd-meta-row .k { color: #888; display: inline-flex; align-items: center; gap: 8px; }
+    .cd-meta-row .k svg { width: 14px; height: 14px; opacity: 0.6; }
+    .cd-meta-row .v { color: #111; font-weight: 500; text-align: right; }
+    .cd-desc { background: #fafafa; border: 1px solid #f0f0f2; border-radius: 12px; padding: 16px; font-size: 14px; line-height: 1.5; color: #333; white-space: pre-wrap; }
+    .cd-docs { display: flex; flex-direction: column; gap: 8px; }
+    .cd-doc { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #fafafa; border: 1px solid #f0f0f2; border-radius: 10px; text-decoration: none; color: inherit; transition: all .15s; }
+    .cd-doc:hover { border-color: #c4b5fd; background: #f5f3ff; }
+    .cd-doc .doc-ic { width: 36px; height: 36px; border-radius: 9px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .cd-doc .doc-nm { flex: 1; font-size: 13.5px; color: #111; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+    .cd-actions { display: flex; gap: 8px; padding: 16px 22px; border-top: 1px solid #f0f0f2; }
+    .cd-btn { flex: 1; padding: 12px 16px; border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; justify-content: center; gap: 7px; text-decoration: none; }
+    .cd-btn-join { background: #7c3aed; color: #fff; border: 1px solid #7c3aed; }
+    .cd-btn-join:hover { background: #6d28d9; }
+    .cd-btn-cancel { background: #fff; color: #b91c1c; border: 1px solid #fecaca; }
+    .cd-btn-cancel:hover { background: #fef2f2; }
+
+    /* Modal wizard */
+    .wizard-overlay {
+      position: fixed; inset: 0; background: rgba(17,17,17,0.5);
+      backdrop-filter: blur(4px); z-index: 500; display: none;
+      align-items: flex-start; justify-content: center;
+      overflow-y: auto; padding: 40px 20px;
+    }
+    .wizard-overlay.open { display: flex; }
+    .wizard {
+      background: #fff; border-radius: 20px; width: 720px; max-width: 100%;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.2); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .wiz-head {
+      padding: 22px 28px; border-bottom: 1px solid #f0f0f2;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .wiz-head h2 { font-family: 'Cal Sans', sans-serif; font-size: 19px; font-weight: 600; color: #111; }
+    .wiz-close {
+      background: none; border: none; cursor: pointer; color: #999;
+      padding: 6px; border-radius: 8px;
+    }
+    .wiz-close:hover { background: #f5f5f7; color: #111; }
+    .wiz-close svg { width: 20px; height: 20px; }
+
+    .wiz-progress {
+      display: flex; align-items: center; gap: 8px;
+      padding: 18px 28px; border-bottom: 1px solid #f0f0f2;
+    }
+    .wiz-step {
+      flex: 1; height: 4px; border-radius: 2px;
+      background: #f0f0f2; transition: background .25s;
+    }
+    .wiz-step.active { background: #7c3aed; }
+    .wiz-step.done { background: #7c3aed; }
+
+    .wiz-body { padding: 28px; min-height: 320px; }
+    .wiz-step-title { font-family: 'Cal Sans', sans-serif; font-size: 20px; font-weight: 600; color: #111; margin-bottom: 6px; }
+    .wiz-step-sub { font-size: 14px; color: #888; margin-bottom: 22px; }
+
+    .domain-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .domain-card {
+      padding: 16px; border: 1px solid #ececef; border-radius: 12px;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 12px;
+    }
+    .domain-card:hover { border-color: #c4b5fd; background: #faf5ff; }
+    .domain-card.selected { border-color: #7c3aed; background: #f5f3ff; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .domain-card .ic {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: #f5f3ff; color: #7c3aed;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .domain-card.selected .ic { background: #7c3aed; color: #fff; }
+    .domain-card .ic svg { width: 18px; height: 18px; }
+    .domain-card .nm { font-weight: 600; color: #111; font-size: 14.5px; }
+
+    /* Avocat picker */
+    .avocat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+    .avocat-pill {
+      padding: 14px 16px; border: 1px solid #ececef; border-radius: 12px;
+      cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avocat-pill:hover { border-color: #c4b5fd; }
+    .avocat-pill.selected { border-color: #7c3aed; background: #f5f3ff; }
+    .avocat-pill .av {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #f5f3ff; color: #7c3aed;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+    }
+    .avocat-pill.selected .av { background: #7c3aed; color: #fff; }
+    .avocat-pill .nm { font-weight: 600; color: #111; font-size: 14.5px; }
+    .avocat-pill .em { font-size: 12.5px; color: #888; margin-top: 2px; }
+
+    /* Calendar */
+    .cal-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 700px) { .cal-wrap { grid-template-columns: 1fr; } }
+    .cal-days { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; padding-right: 4px; }
+    .cal-day {
+      padding: 11px 14px; border: 1px solid #ececef; border-radius: 10px;
+      cursor: pointer; transition: all .15s;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .cal-day:hover { border-color: #c4b5fd; }
+    .cal-day.selected { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+    .cal-day.disabled { opacity: 0.4; cursor: not-allowed; background: #fafafa; }
+    .cal-day .d-name { font-size: 13px; }
+    .cal-day .d-count { font-size: 11.5px; opacity: 0.7; }
+    .cal-day.selected .d-count { color: rgba(255,255,255,0.85); }
+    .cal-slots { display: flex; flex-wrap: wrap; gap: 6px; max-height: 320px; overflow-y: auto; align-content: flex-start; }
+    .cal-slot {
+      padding: 9px 14px; border: 1px solid #e5e5e7; border-radius: 8px;
+      cursor: pointer; font-size: 13.5px; transition: all .15s;
+      background: #fff;
+    }
+    .cal-slot:hover { border-color: #7c3aed; color: #7c3aed; }
+    .cal-slot.selected { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+    .cal-empty { color: #888; font-size: 13.5px; padding: 14px; text-align: center; }
+
+    /* Step 3 */
+    .form-label { font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 8px; }
+    .form-input, .form-textarea {
+      width: 100%; padding: 11px 14px; border: 1px solid #e5e5e7;
+      border-radius: 10px; font-family: inherit; font-size: 14px;
+      transition: border-color .15s;
+    }
+    .form-input:focus, .form-textarea:focus {
+      outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+    }
+    .form-textarea { min-height: 140px; resize: vertical; }
+    .upload-zone {
+      border: 2px dashed #d4d4d8; border-radius: 12px;
+      padding: 20px; text-align: center; cursor: pointer;
+      transition: all .15s;
+    }
+    .upload-zone:hover { border-color: #7c3aed; background: #faf5ff; }
+    .upload-zone svg { width: 28px; height: 28px; color: #888; margin: 0 auto 8px; display: block; }
+    .upload-zone .t { font-size: 14px; font-weight: 600; color: #555; }
+    .upload-zone .s { font-size: 12.5px; color: #888; margin-top: 3px; }
+    .uploaded-files { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .uploaded-file {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; background: #f5f3ff; border: 1px solid #e9d5ff;
+      border-radius: 8px; font-size: 13px;
+    }
+    .uploaded-file .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #111; }
+    .uploaded-file .rm { background: none; border: none; cursor: pointer; color: #b91c1c; padding: 2px; }
+
+    /* Step 4 recap */
+    .recap-card {
+      background: #fafafa; border: 1px solid #ececef;
+      border-radius: 14px; padding: 22px; margin-bottom: 18px;
+    }
+    .recap-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid #ececef;
+      font-size: 14px;
+    }
+    .recap-row:last-child { border-bottom: none; }
+    .recap-row .k { color: #888; }
+    .recap-row .v { color: #111; font-weight: 500; text-align: right; }
+    .recap-total {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 14px 22px; background: #111; color: #fff;
+      border-radius: 12px; margin-bottom: 18px;
+    }
+    .recap-total .lab { font-size: 14px; opacity: 0.7; }
+    .recap-total .val { font-family: 'Cal Sans', sans-serif; font-size: 22px; font-weight: 700; }
+
+    .wiz-foot {
+      padding: 18px 28px; border-top: 1px solid #f0f0f2;
+      display: flex; justify-content: space-between; gap: 10px;
+    }
+    .wiz-btn {
+      padding: 11px 20px; border-radius: 10px; font-family: inherit;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
+    .wiz-btn-prev { background: #fff; color: #555; border: 1px solid #e5e5e7; }
+    .wiz-btn-prev:hover { background: #f8f8f9; }
+    .wiz-btn-prev:disabled { opacity: 0.4; cursor: not-allowed; }
+    .wiz-btn-next { background: #7c3aed; color: #fff; border: 1px solid #7c3aed; }
+    .wiz-btn-next:hover { background: #6d28d9; }
+    .wiz-btn-next:disabled { opacity: 0.4; cursor: not-allowed; background: #7c3aed; }
+    .wiz-btn-pay { background: #10b981; color: #fff; border: 1px solid #10b981; }
+    .wiz-btn-pay:hover { background: #047857; }
+
+    .empty-state {
+      padding: 60px 20px; text-align: center; background: #fff;
+      border: 1px solid #ececef; border-radius: 16px;
+    }
+    .empty-state .ic {
+      width: 56px; height: 56px; margin: 0 auto 16px;
+      border-radius: 14px; background: #f3f4f6; color: #555;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .empty-state .t { font-family: 'Cal Sans', sans-serif; font-size: 18px; font-weight: 600; color: #555; }
+    .empty-state .s { font-size: 13.5px; color: #888; margin-top: 4px; }
+
+    /* Toast minimal pour les erreurs de validation du wizard */
+    .wiz-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #111;
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+      z-index: 10000;
+      max-width: 380px;
+      display: flex; align-items: center; gap: 10px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+    }
+    .wiz-toast.visible { opacity: 1; transform: translateY(0); }
+    .wiz-toast-error {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+    }
+    .wiz-toast-error svg { color: #f87171; flex-shrink: 0; }
+
+    /* Champ en erreur : flash rouge subtil */
+    .form-textarea.field-error,
+    .form-input.field-error {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+      animation: field-shake 0.35s ease;
+    }
+    @keyframes field-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+  
+    /* Fenêtre "Nouvelle formalité" (identique aux autres pages) */
+    .nd-modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .nd-modal-backdrop.open { display: flex; animation: ndFadeIn 0.15s ease; }
+    @keyframes ndFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nd-modal {
+      background: #fff; border-radius: 16px; max-width: 720px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      overflow: hidden; animation: ndSlideUp 0.18s ease;
+    }
+    @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+    .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: 0; }
+    .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
+    .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .nd-close svg { width: 20px; height: 20px; }
+    .nd-close:hover { background: #f5f5f7; color: #111; }
+    .nd-grid { padding: 18px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .nd-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eee; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.05s; }
+    .nd-card:hover { border-color: #111; background: #fafafa; }
+    .nd-card:active { transform: scale(0.99); }
+    .nd-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nd-card-icon svg { width: 19px; height: 19px; }
+    .nd-card-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .nd-card-icon.blue { background: #e3f2fd; color: #1565c0; }
+    .nd-card-icon.violet { background: #ede7f6; color: #5e35b1; }
+    .nd-card-icon.amber { background: #fff8e1; color: #b8860b; }
+    .nd-card-icon.red { background: #ffebee; color: #c62828; }
+    .nd-card-icon.teal { background: #e0f2f1; color: #00695c; }
+    .nd-card-title { font-size: 14px; font-weight: 600; color: #111; }
+    .nd-card-desc { font-size: 12.5px; color: #888; margin-top: 2px; }
+
+    /* ===== Équipe ===== */
+    .content { padding: 16px 48px 48px; flex: 1; }
+    /* Une seule règle : la seconde écrasait la première et collait le
+       sous-titre sous le titre. */
+    .page-sub { padding: 0 48px; font-size: 14.5px; color: #71717a; margin: 6px 0 24px; }
+
+    /* Le contenu ne s'étire pas sur toute la largeur : au-delà, les lignes
+       de membres deviennent illisibles. */
+    .content { max-width: 1040px; }
+
+    /* Les badges de rôle et les actions s'alignent d'une ligne à l'autre,
+       même quand une ligne n'a pas d'actions (le propriétaire). */
+    .tm-role { min-width: 118px; text-align: center; }
+    .tm-actions { min-width: 150px; justify-content: flex-end; }
+    .tm-row { gap: 16px; }
+
+    .tm-invite input[type=email] { flex: 1 1 260px; }
+    .tm-perms {
+      margin-top: 16px; padding-top: 14px; border-top: 1px dashed #ececec;
+    }
+    .tm-section-gap { height: 4px; }
+    .tm-alone {
+      margin-top: 14px; padding: 14px 16px; background: #fafafa;
+      border: 1px dashed #e4e4e7; border-radius: 12px;
+      font-size: 13.5px; color: #71717a; line-height: 1.55;
+    }
+
+    .tm-card {
+      background: #fff; border: 1px solid #eee; border-radius: 16px;
+      padding: 22px 24px; margin-bottom: 16px;
+    }
+    .tm-card-head { margin-bottom: 16px; }
+    .tm-card-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 17px; color: #111; }
+    .tm-card-sub { font-size: 13.5px; color: #71717a; margin-top: 3px; }
+    .tm-loading { font-size: 13.5px; color: #a1a1aa; }
+
+    .tm-invite { display: flex; gap: 10px; flex-wrap: wrap; }
+    .tm-invite input[type=email] {
+      flex: 1; min-width: 220px; padding: 11px 14px; font-family: inherit; font-size: 14px;
+      color: #111; background: #fff; border: 1px solid #d4d4d8; border-radius: 10px; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .tm-invite input[type=email]:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,0.06); }
+    .tm-invite select {
+      padding: 11px 14px; font-family: inherit; font-size: 14px; color: #111;
+      background: #fff; border: 1px solid #d4d4d8; border-radius: 10px; cursor: pointer;
+    }
+    .tm-btn {
+      font-family: inherit; font-size: 14px; font-weight: 500; padding: 11px 20px;
+      border-radius: 100px; background: #111; color: #fff; border: 1px solid #111;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .tm-btn:hover { background: #000; }
+    .tm-btn:disabled { opacity: 0.5; cursor: default; }
+    .tm-btn-ghost { background: #fff; color: #111; border-color: #d4d4d8; }
+    .tm-btn-ghost:hover { background: #fafafa; border-color: #111; }
+
+    .tm-perms { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px; }
+    .tm-perms label {
+      display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #3f3f46; cursor: pointer;
+    }
+    .tm-perms input[type=checkbox] { width: 16px; height: 16px; accent-color: #111; cursor: pointer; }
+
+    .tm-row {
+      display: flex; align-items: center; gap: 14px; padding: 14px 0;
+      border-bottom: 1px solid #f4f4f5;
+    }
+    .tm-row:last-child { border-bottom: none; }
+    .tm-avatar {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #f4f4f5; color: #52525b; font-size: 13px; font-weight: 700;
+    }
+    .tm-avatar.admin { background: #fef3c7; color: #92400e; }
+    .tm-avatar.avocat { background: #ede9fe; color: #6d28d9; }
+    .tm-body { flex: 1; min-width: 0; }
+    .tm-name { font-size: 14.5px; font-weight: 500; color: #111; }
+    .tm-mail { font-size: 12.5px; color: #71717a; margin-top: 2px; }
+    .tm-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .tm-tag {
+      font-size: 11.5px; color: #52525b; background: #f4f4f5;
+      border-radius: 100px; padding: 3px 9px;
+    }
+    .tm-role {
+      font-size: 11.5px; font-weight: 600; border-radius: 100px; padding: 4px 11px;
+      background: #f4f4f5; color: #52525b; white-space: nowrap; flex-shrink: 0;
+    }
+    .tm-role.admin { background: #fef3c7; color: #92400e; }
+    .tm-role.avocat { background: #ede9fe; color: #6d28d9; }
+    .tm-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .tm-link {
+      font-family: inherit; font-size: 13px; color: #52525b; background: none;
+      border: none; cursor: pointer; padding: 6px 8px; border-radius: 8px;
+    }
+    .tm-link:hover { color: #111; background: #f4f4f5; }
+    .tm-link.danger:hover { color: #b91c1c; background: #fee2e2; }
+
+    .tm-notice {
+      background: #ecfdf5; color: #0f766e; border-radius: 12px;
+      padding: 14px 16px; font-size: 14px; margin-bottom: 16px;
+    }
+    .tm-notice.error { background: #fee2e2; color: #b91c1c; }
+    .tm-error { color: #b91c1c; font-size: 13px; margin-top: 12px; }
+    .tm-empty { font-size: 13.5px; color: #71717a; background: #fafafa; border-radius: 10px; padding: 14px 16px; }
+    /* ===== Modale de saisie / confirmation (remplace prompt et confirm) ===== */
+    .ask-backdrop {
+      position: fixed; inset: 0; z-index: 10000; display: flex;
+      align-items: center; justify-content: center; padding: 24px;
+      background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(2px);
+      opacity: 0; transition: opacity 0.18s ease;
+    }
+    .ask-backdrop.open { opacity: 1; }
+    .ask-box {
+      width: 100%; max-width: 460px; background: #fff; border-radius: 18px;
+      padding: 28px; box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+      transform: translateY(12px) scale(0.98); transition: transform 0.18s ease;
+    }
+    .ask-backdrop.open .ask-box { transform: none; }
+    .ask-title {
+      font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; color: #111; line-height: 1.25;
+    }
+    .ask-text { font-size: 14px; color: #52525b; line-height: 1.5; margin-top: 8px; }
+    .ask-field {
+      width: 100%; margin-top: 18px; padding: 12px 14px; font-family: inherit; font-size: 14.5px;
+      color: #111; background: #fff; border: 1px solid #d4d4d8; border-radius: 12px;
+      outline: none; resize: vertical; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .ask-field::placeholder { color: #a1a1aa; }
+    .ask-field:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,0.07); }
+    .ask-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .ask-chip {
+      font-family: inherit; font-size: 12.5px; color: #3f3f46; background: #f4f4f5;
+      border: 1px solid transparent; border-radius: 100px; padding: 6px 12px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .ask-chip:hover { background: #fff; border-color: #111; color: #111; }
+    .ask-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    .ask-btn {
+      font-family: inherit; font-size: 14px; font-weight: 500; padding: 11px 20px;
+      border-radius: 100px; cursor: pointer; border: 1px solid #d4d4d8;
+      background: #fff; color: #111; transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+    .ask-btn:hover { background: #fafafa; border-color: #111; }
+    .ask-submit { background: #111; color: #fff; border-color: #111; }
+    .ask-submit:hover { background: #000; border-color: #000; }
+    .ask-submit:disabled { opacity: 0.4; cursor: default; background: #111; }
+    .ask-submit.danger { background: #dc2626; border-color: #dc2626; }
+    .ask-submit.danger:hover { background: #b91c1c; border-color: #b91c1c; }
+
+</style>
+  <link rel="preload" href="/fonts/CalSans-SemiBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/Matter-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="/css/sidebar-dark.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard.html"><img src="/images/logo.png" alt="Formalist"></a>
+    </div>
+
+    <button type="button" class="sidebar-cta" onclick="openNewActionModal()">Cr&eacute;er une formalit&eacute;</button>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Tableau de bord
+      </a>
+      <a href="/formalites.html" data-page="formalites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Mes formalit&eacute;s
+        <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
+      </a>
+      <a href="/creation.html?new=1&amp;type=creation" data-page="creation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        Cr&eacute;er une soci&eacute;t&eacute;
+      </a>
+      <a href="/modification.html" data-page="modification">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Modifier ma soci&eacute;t&eacute;
+      </a>
+      <a href="/depot-comptes.html" data-page="depot-comptes" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        D&eacute;p&ocirc;t des comptes
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
+      <a href="/fermeture.html" data-page="fermeture" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Fermer ma soci&eacute;t&eacute;
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
+
+      <a class="active" href="/consultations.html" data-page="consultations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultation juridique
+      </a>
+      <a href="/documents.html" data-page="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Documents
+      </a>
+      <a href="/contrats.html" data-page="contrats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Contrats
+      </a>
+      <a href="/messagerie.html" data-page="messagerie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Messagerie
+        <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <a href="/equipe.html" data-page="equipe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        &Eacute;quipe
+      </a>
+      <a href="/aide.html" data-page="aide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Aide &amp; FAQ
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="avatar" id="sidebar-avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name"></div>
+        <div class="user-email" id="sidebar-email"></div>
+      </div>
+      <a href="/parametres.html" class="btn-settings" title="Paramètres">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </a>
+      <button class="btn-logout" onclick="fetch('/api/auth/logout',{method:'POST'}).then(function(){window.location.href='/connexion.html';})" title="Déconnexion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <h1>&Eacute;quipe</h1>
+      <span class="topbar-date" id="current-date"></span>
+    </div>
+    <p class="page-sub" id="team-sub">Invitez vos collaborateurs et d&eacute;finissez ce qu&rsquo;ils peuvent faire.</p>
+
+    <div class="content">
+      <div id="team-notice" class="tm-notice" style="display:none;"></div>
+
+      <!-- Inviter -->
+      <section class="tm-card" id="invite-card">
+        <div class="tm-card-head">
+          <div>
+            <div class="tm-card-title">Inviter quelqu&rsquo;un</div>
+            <div class="tm-card-sub" id="invite-sub">La personne recevra un email pour rejoindre l&rsquo;&eacute;quipe.</div>
+          </div>
+        </div>
+        <form id="invite-form" class="tm-invite">
+          <input type="email" id="invite-email" placeholder="adresse@exemple.com" required>
+          <select id="invite-role">
+            <option value="collaborateur">Collaborateur</option>
+            <option value="admin">Administrateur</option>
+          </select>
+          <button type="submit" class="tm-btn">Envoyer l&rsquo;invitation</button>
+        </form>
+        <div class="tm-perms" id="invite-perms">
+          <label><input type="checkbox" id="perm-create" checked> Peut cr&eacute;er des soci&eacute;t&eacute;s</label>
+          <label><input type="checkbox" id="perm-edit" checked> Peut modifier les dossiers</label>
+          <label><input type="checkbox" id="perm-viewall"> Voit tous les dossiers de l&rsquo;&eacute;quipe</label>
+        </div>
+        <div id="invite-error" class="tm-error" style="display:none;"></div>
+      </section>
+
+      <!-- Invitations en attente -->
+      <section class="tm-card" id="pending-card" style="display:none;">
+        <div class="tm-card-head">
+          <div>
+            <div class="tm-card-title">Invitations en attente</div>
+            <div class="tm-card-sub" id="pending-sub"></div>
+          </div>
+        </div>
+        <div id="pending-list"></div>
+      </section>
+
+      <!-- Membres -->
+      <section class="tm-card">
+        <div class="tm-card-head">
+          <div>
+            <div class="tm-card-title">Membres</div>
+            <div class="tm-card-sub" id="members-sub">Chargement&hellip;</div>
+          </div>
+        </div>
+        <div id="members-list"><div class="tm-loading">Chargement&hellip;</div></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/chat-widget.js"></script>
+  <script>
+    var TEAM = null;
+
+    var ROLES = {
+      admin: { label: 'Administrateur', cls: 'admin' },
+      avocat: { label: 'Avocat', cls: 'avocat' },
+      collaborateur: { label: 'Collaborateur', cls: '' }
+    };
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function initials(name, email) {
+      var base = (name || email || '?').replace(/^(Me\.?|Maître)\s*/i, '').trim();
+      var parts = base.split(/[\s@.]+/).filter(Boolean);
+      return ((parts[0] || '?')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+    }
+
+    function relDate(iso) {
+      if (!iso) return 'jamais connecté';
+      var d = new Date(String(iso).replace(' ', 'T') + (String(iso).endsWith('Z') ? '' : 'Z'));
+      if (isNaN(d.getTime())) return '';
+      var min = Math.round((Date.now() - d.getTime()) / 60000);
+      if (min < 60) return 'vu il y a ' + Math.max(1, min) + ' min';
+      if (min < 60 * 24) return 'vu il y a ' + Math.round(min / 60) + ' h';
+      if (min < 60 * 48) return 'vu hier';
+      return 'vu le ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    }
+
+    /* ----- Chargement ----- */
+
+    function loadTeam() {
+      fetch('/api/team').then(function(r) { return r.json(); }).then(function(data) {
+        TEAM = data;
+        render();
+      }).catch(function() {
+        document.getElementById('members-list').innerHTML =
+          '<div class="tm-empty">Impossible de charger l’équipe pour l’instant.</div>';
+      });
+    }
+
+    function render() {
+      var estCabinet = TEAM.team.type === 'cabinet';
+      var peutGerer = TEAM.me.can_manage;
+
+      document.getElementById('team-sub').textContent = estCabinet
+        ? TEAM.team.name + ' · seuls les avocats du cabinet peuvent inviter.'
+        : TEAM.team.name + ' · invitez vos collaborateurs et définissez ce qu’ils peuvent faire.';
+
+      // Formulaire d'invitation réservé à ceux qui gèrent l'équipe
+      document.getElementById('invite-card').style.display = peutGerer ? '' : 'none';
+      var roleSelect = document.getElementById('invite-role');
+      if (estCabinet && !roleSelect.querySelector('option[value=avocat]')) {
+        var opt = document.createElement('option');
+        opt.value = 'avocat';
+        opt.textContent = 'Avocat';
+        roleSelect.insertBefore(opt, roleSelect.firstChild);
+        roleSelect.value = 'avocat';
+      }
+
+      renderMembers();
+      renderInvitations();
+    }
+
+    function renderMembers() {
+      var list = TEAM.members || [];
+      document.getElementById('members-sub').textContent =
+        list.length + (list.length > 1 ? ' personnes dans l’équipe' : ' personne dans l’équipe');
+
+      // Seul dans l'équipe : on le dit, plutôt que d'afficher une liste d'une ligne
+      if (list.length === 1 && TEAM.me.can_manage) {
+        document.getElementById('members-list').innerHTML =
+          renderMemberRow(list[0])
+          + '<div class="tm-alone">Vous êtes seul dans l’équipe. Invitez un collaborateur '
+          + 'ci-dessus : il recevra un email et rejoindra vos dossiers selon les droits que vous cochez.</div>';
+        return;
+      }
+
+      document.getElementById('members-list').innerHTML = list.map(function(m) { return renderMemberRow(m); }).join('');
+    }
+
+    function renderMemberRow(m) {
+      return (function() {
+        var role = ROLES[m.role] || ROLES.collaborateur;
+        var droits = [];
+        if (m.role === 'admin') droits.push('Tous les droits');
+        else {
+          if (m.can_create) droits.push('Crée des sociétés');
+          if (m.can_edit) droits.push('Modifie les dossiers');
+          droits.push(m.can_view_all ? 'Voit tous les dossiers' : 'Voit ses dossiers');
+        }
+
+        var actions = '';
+        if (TEAM.me.can_manage && !m.is_owner) {
+          actions = '<button type="button" class="tm-link" onclick="editMember(' + m.id + ')">Modifier</button>'
+            + '<button type="button" class="tm-link danger" onclick="removeMember(' + m.id + ', \'' + esc(m.name || m.email).replace(/'/g, "\\'") + '\')">Retirer</button>';
+        }
+
+        return '<div class="tm-row">'
+          + '<span class="tm-avatar ' + role.cls + '">' + esc(initials(m.name, m.email)) + '</span>'
+          + '<span class="tm-body">'
+          +   '<div class="tm-name">' + esc(m.name || m.email) + (m.is_owner ? ' · propriétaire' : '') + '</div>'
+          +   '<div class="tm-mail">' + esc(m.email) + ' · ' + relDate(m.last_seen_at) + '</div>'
+          +   '<div class="tm-tags">' + droits.map(function(d) { return '<span class="tm-tag">' + d + '</span>'; }).join('') + '</div>'
+          + '</span>'
+          + '<span class="tm-role ' + role.cls + '">' + role.label + '</span>'
+          + '<span class="tm-actions">' + actions + '</span>'
+          + '</div>';
+      })();
+    }
+
+    function renderInvitations() {
+      var list = TEAM.invitations || [];
+      var card = document.getElementById('pending-card');
+      if (!list.length || !TEAM.me.can_manage) { card.style.display = 'none'; return; }
+      card.style.display = '';
+      document.getElementById('pending-sub').textContent =
+        list.length + (list.length > 1 ? ' invitations envoyées, en attente de réponse' : ' invitation envoyée, en attente de réponse');
+
+      document.getElementById('pending-list').innerHTML = list.map(function(i) {
+        var role = ROLES[i.role] || ROLES.collaborateur;
+        var etat = i.expired ? 'Expirée' : 'Envoyée ' + relDate(i.created_at).replace('vu ', '');
+        return '<div class="tm-row">'
+          + '<span class="tm-avatar">@</span>'
+          + '<span class="tm-body">'
+          +   '<div class="tm-name">' + esc(i.email) + '</div>'
+          +   '<div class="tm-mail">' + etat + (i.invited_by_name ? ' par ' + esc(i.invited_by_name) : '') + '</div>'
+          + '</span>'
+          + '<span class="tm-role ' + role.cls + '">' + role.label + '</span>'
+          + '<span class="tm-actions">'
+          +   '<button type="button" class="tm-link" onclick="resendInvite(' + i.id + ')">Renvoyer</button>'
+          +   '<button type="button" class="tm-link danger" onclick="cancelInvite(' + i.id + ')">Annuler</button>'
+          + '</span>'
+          + '</div>';
+      }).join('');
+    }
+
+    /* ----- Actions ----- */
+
+    document.getElementById('invite-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var err = document.getElementById('invite-error');
+      err.style.display = 'none';
+      var btn = this.querySelector('button[type=submit]');
+      btn.disabled = true;
+      btn.textContent = 'Envoi…';
+
+      fetch('/api/team/invitations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('invite-email').value.trim(),
+          role: document.getElementById('invite-role').value,
+          can_create: document.getElementById('perm-create').checked,
+          can_edit: document.getElementById('perm-edit').checked,
+          can_view_all: document.getElementById('perm-viewall').checked
+        })
+      }).then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+        .then(function(res) {
+          btn.disabled = false;
+          btn.textContent = 'Envoyer l’invitation';
+          if (res.status !== 201) {
+            err.textContent = res.data.error || 'Envoi impossible.';
+            err.style.display = 'block';
+            return;
+          }
+          document.getElementById('invite-email').value = '';
+          notice('Invitation envoyée.' + (res.data.mailSent === false ? ' L’email n’a pas pu partir : le lien est dans les logs serveur.' : ''));
+          loadTeam();
+        }).catch(function() {
+          btn.disabled = false;
+          btn.textContent = 'Envoyer l’invitation';
+          err.textContent = 'Erreur de connexion au serveur.';
+          err.style.display = 'block';
+        });
+    });
+
+    window.resendInvite = function(id) {
+      fetch('/api/team/invitations/' + id + '/resend', { method: 'POST' })
+        .then(function() { notice('Invitation renvoyée.'); loadTeam(); });
+    };
+
+    window.cancelInvite = function(id) {
+      fetch('/api/team/invitations/' + id, { method: 'DELETE' })
+        .then(function() { notice('Invitation annulée.'); loadTeam(); });
+    };
+
+    window.removeMember = function(id, nom) {
+      askConfirm({
+        title: 'Retirer ' + nom + ' ?',
+        text: 'La personne perdra l’accès aux dossiers de l’équipe. Son compte Formalist reste actif.',
+        submitLabel: 'Retirer',
+        danger: true
+      }, function() {
+        fetch('/api/team/members/' + id, { method: 'DELETE' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.error) { notice(d.error, true); return; }
+            notice(nom + ' a été retiré de l’équipe.');
+            loadTeam();
+          });
+      });
+    };
+
+    window.editMember = function(id) {
+      var m = (TEAM.members || []).find(function(x) { return x.id === id; });
+      if (!m) return;
+      askMemberRights(m, function(valeurs) {
+        fetch('/api/team/members/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(valeurs)
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          if (d.error) { notice(d.error, true); return; }
+          notice('Droits mis à jour.');
+          loadTeam();
+        });
+      });
+    };
+
+    function notice(msg, erreur) {
+      var el = document.getElementById('team-notice');
+      el.textContent = msg;
+      el.className = 'tm-notice' + (erreur ? ' error' : '');
+      el.style.display = 'block';
+      setTimeout(function() { el.style.display = 'none'; }, 6000);
+    }
+
+    /* ----- Fenêtres ----- */
+
+    function askConfirm(opts, onOk) {
+      var back = document.createElement('div');
+      back.className = 'ask-backdrop';
+      back.innerHTML = '<div class="ask-box">'
+        + '<div class="ask-title">' + esc(opts.title) + '</div>'
+        + (opts.text ? '<div class="ask-text">' + esc(opts.text) + '</div>' : '')
+        + '<div class="ask-actions">'
+        +   '<button type="button" class="ask-btn ask-cancel">Annuler</button>'
+        +   '<button type="button" class="ask-btn ask-submit' + (opts.danger ? ' danger' : '') + '">' + esc(opts.submitLabel || 'Confirmer') + '</button>'
+        + '</div></div>';
+      document.body.appendChild(back);
+      requestAnimationFrame(function() { back.classList.add('open'); });
+      function close() { back.classList.remove('open'); setTimeout(function() { back.remove(); }, 180); }
+      back.addEventListener('click', function(e) { if (e.target === back) close(); });
+      back.querySelector('.ask-cancel').addEventListener('click', close);
+      back.querySelector('.ask-submit').addEventListener('click', function() { close(); onOk(); });
+    }
+
+    // Choix du rôle et des droits d'un membre
+    function askMemberRights(m, onOk) {
+      var estCabinet = TEAM.team.type === 'cabinet';
+      var back = document.createElement('div');
+      back.className = 'ask-backdrop';
+      back.innerHTML = '<div class="ask-box">'
+        + '<div class="ask-title">Droits de ' + esc(m.name || m.email) + '</div>'
+        + '<div class="ask-text">Un administrateur a tous les droits sur les dossiers de l’équipe.</div>'
+        + '<select class="ask-field" id="edit-role">'
+        +   (estCabinet ? '<option value="avocat">Avocat</option>' : '')
+        +   '<option value="collaborateur">Collaborateur</option>'
+        +   '<option value="admin">Administrateur</option>'
+        + '</select>'
+        + '<div class="tm-perms" id="edit-perms" style="margin-top:14px;">'
+        +   '<label><input type="checkbox" id="edit-create"> Peut créer des sociétés</label>'
+        +   '<label><input type="checkbox" id="edit-edit"> Peut modifier les dossiers</label>'
+        +   '<label><input type="checkbox" id="edit-viewall"> Voit tous les dossiers de l’équipe</label>'
+        + '</div>'
+        + '<div class="ask-actions">'
+        +   '<button type="button" class="ask-btn ask-cancel">Annuler</button>'
+        +   '<button type="button" class="ask-btn ask-submit">Enregistrer</button>'
+        + '</div></div>';
+      document.body.appendChild(back);
+      requestAnimationFrame(function() { back.classList.add('open'); });
+
+      var sel = back.querySelector('#edit-role');
+      sel.value = m.role;
+      back.querySelector('#edit-create').checked = !!m.can_create;
+      back.querySelector('#edit-edit').checked = !!m.can_edit;
+      back.querySelector('#edit-viewall').checked = !!m.can_view_all;
+
+      // Un administrateur a tout : les cases n'ont plus d'objet
+      function refresh() {
+        var admin = sel.value === 'admin';
+        back.querySelector('#edit-perms').style.opacity = admin ? '0.45' : '1';
+        back.querySelectorAll('#edit-perms input').forEach(function(c) { c.disabled = admin; });
+      }
+      sel.addEventListener('change', refresh);
+      refresh();
+
+      function close() { back.classList.remove('open'); setTimeout(function() { back.remove(); }, 180); }
+      back.addEventListener('click', function(e) { if (e.target === back) close(); });
+      back.querySelector('.ask-cancel').addEventListener('click', close);
+      back.querySelector('.ask-submit').addEventListener('click', function() {
+        var valeurs = {
+          role: sel.value,
+          can_create: back.querySelector('#edit-create').checked,
+          can_edit: back.querySelector('#edit-edit').checked,
+          can_view_all: back.querySelector('#edit-viewall').checked
+        };
+        close();
+        onOk(valeurs);
+      });
+    }
+
+    /* ----- Retour du lien d'invitation ----- */
+    (function () {
+      var etats = {
+        ok: ['Vous avez rejoint l’équipe.', false],
+        deja: ['Cette invitation a déjà été acceptée.', false],
+        expiree: ['Cette invitation a expiré. Demandez-en une nouvelle.', true],
+        annulee: ['Cette invitation a été annulée.', true],
+        invalide: ['Ce lien d’invitation n’est pas valide.', true],
+        'autre-compte': ['Cette invitation vise une autre adresse email. Connectez-vous avec le compte invité.', true]
+      };
+      var e = etats[new URLSearchParams(location.search).get('invit')];
+      if (!e) return;
+      notice(e[0], e[1]);
+      history.replaceState(null, '', location.pathname);
+    })();
+
+    (function setDate() {
+      var el = document.getElementById('current-date');
+      if (!el) return;
+      var d = new Date();
+      var jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+      var mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+      el.textContent = jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+    })();
+
+    loadTeam();
+  </script>
+
+</body>
+</html>

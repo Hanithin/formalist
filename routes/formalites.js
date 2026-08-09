@@ -1,9 +1,10 @@
 /**
- * routes/formalites.js — Formalités CRUD + assignment/validation
+ * routes/formalites.js - Formalités CRUD + assignment/validation
  */
 
 const { authGuard } = require("../middleware/auth-guard");
 const { hasRole } = require("../auth");
+const teamAccess = require("../lib/team-access");
 const { matchRoute, jsonResponse, errorResponse } = require("../lib/router");
 const { parseBody } = require("../lib/multipart");
 const { handleUpload, getField } = require("../middleware/upload");
@@ -17,6 +18,9 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
       const user = authGuard(req, res);
       if (!user) return;
       if (!hasRole(user, "user", "avocat", "admin")) return errorResponse(res, 403, "Accès refusé");
+      if (!teamAccess.canCreate(user)) {
+        return errorResponse(res, 403, "Votre rôle dans l'équipe ne permet pas de créer une société");
+      }
       try {
         const body = await parseBody(req);
         // Auto-assign : si l'utilisateur a le rôle avocat (primaire OU dans roles[]),
@@ -46,6 +50,8 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
           reference
         );
         const formaliteId = result.lastInsertRowid;
+        // Le dossier appartient à l'équipe : c'est ce qui le rend visible aux collègues
+        teamAccess.attachToTeam(formaliteId, user);
         const formalite = stmts.getFormaliteById.get(formaliteId);
         if (isAvocatCreator) {
           // Avocat-created: skip verification, start at 5c, assign to self
@@ -72,14 +78,8 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
   if (pathname === "/api/formalites" && req.method === "GET") {
     const user = authGuard(req, res);
     if (!user) return;
-    let formalites;
-    if (hasRole(user, "admin")) {
-      formalites = stmts.getAllFormalites.all();
-    } else if (hasRole(user, "avocat")) {
-      formalites = stmts.getFormalitesByAvocatWithClient.all(user.id, user.id);
-    } else {
-      formalites = stmts.getFormalitesByUser.all(user.id);
-    }
+    // Ses dossiers, plus ceux de l'équipe quand ses droits le permettent
+    let formalites = teamAccess.listFormalites(user);
     formalites = formalites.map(f => {
       const unread = stmts.countUnreadMessages.get(f.id, user.id);
       return { ...f, unread_messages: unread ? unread.count : 0 };
@@ -195,7 +195,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
     return jsonResponse(res, 200, { ok: true });
   }
 
-  // POST /api/formalites/:id/documents/:docId/reject — refuse un doc + raison
+  // POST /api/formalites/:id/documents/:docId/reject - refuse un doc + raison
   if ((params = matchRoute(pathname, "/api/formalites/:id/documents/:docId/reject")) && req.method === "POST") {
     return (async () => {
       const user = authGuard(req, res, "avocat");
@@ -211,7 +211,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
         if (formalite) {
           stmts.createNotification.run(
             formalite.user_id, "doc_rejected",
-            `Document à renvoyer : "${doc.name}" — ${reason}`,
+            `Document à renvoyer : "${doc.name}" - ${reason}`,
             formalite.id
           );
           stmts.createAuditEntry.run(
@@ -267,19 +267,22 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
     if (!user) return;
     const formalite = stmts.getFormaliteWithClient.get(params.id) || stmts.getFormaliteById.get(params.id);
     if (!formalite) return errorResponse(res, 404, "Formalité introuvable");
-    // Multi-rôles aware : admin bypass, avocat assigné OK, owner OK
-    if (!hasRole(user, "admin")) {
-      if (hasRole(user, "avocat")) {
-        if (formalite.assigned_avocat_id !== user.id && !(formalite.created_by_avocat && formalite.user_id === user.id) && formalite.user_id !== user.id) {
-          return errorResponse(res, 403, "Accès refusé");
-        }
-      } else if (formalite.user_id !== user.id) {
-        return errorResponse(res, 403, "Accès refusé");
-      }
+    // Propriétaire, avocat assigné, admin plateforme, ou membre d'équipe autorisé
+    const accesAvocat = hasRole(user, "avocat")
+      && (formalite.assigned_avocat_id === user.id
+          || (formalite.created_by_avocat && formalite.user_id === user.id));
+    if (!accesAvocat && !teamAccess.canRead(user, formalite)) {
+      return errorResponse(res, 403, "Accès refusé");
     }
     const docs = stmts.getDocsByFormalite.all(params.id);
     const unread = stmts.countUnreadMessages.get(params.id, user.id);
-    return jsonResponse(res, 200, { formalite, documents: docs, unread_messages: unread ? unread.count : 0 });
+    return jsonResponse(res, 200, {
+      formalite,
+      documents: docs,
+      unread_messages: unread ? unread.count : 0,
+      // Qui a créé le dossier, qui l'a révisé en dernier, et quand
+      intervenants: teamAccess.intervenants(params.id),
+    });
   }
 
   if ((params = matchRoute(pathname, "/api/formalites/:id")) && req.method === "PUT") {
@@ -291,10 +294,11 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
         const formalite = stmts.getFormaliteById.get(params.id);
         if (!formalite) return errorResponse(res, 404, "Formalité introuvable");
 
-        // Autorisations : user owner / avocat assigné / admin (multi-rôles aware)
+        // Autorisations : propriétaire, avocat assigné, admin, ou membre d'équipe
+        // ayant le droit de modifier
         const _isAdmin = hasRole(user, "admin");
         const _isAvocat = hasRole(user, "avocat");
-        if (!_isAdmin) {
+        if (!_isAdmin && !teamAccess.canWrite(user, formalite)) {
           if (!_isAvocat && formalite.user_id !== user.id) return errorResponse(res, 403, "Accès refusé");
           if (_isAvocat && formalite.assigned_avocat_id !== user.id && !(formalite.created_by_avocat && formalite.user_id === user.id) && formalite.user_id !== user.id) {
             return errorResponse(res, 403, "Accès refusé");
@@ -356,7 +360,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
     })();
   }
 
-  // PUT /api/formalites/:id/transition — change le statut du dossier (avocat / admin)
+  // PUT /api/formalites/:id/transition - change le statut du dossier (avocat / admin)
   // body: { status: 'en_attente_validation'|'corrections_demandees'|'valide'|'rejete'|'en_cours', comment?: string }
   if ((params = matchRoute(pathname, "/api/formalites/:id/transition")) && req.method === "PUT") {
     return (async () => {
@@ -402,7 +406,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
             try { stmts.createMessage.run(params.id, user.id, String(body.comment).trim()); } catch (_) {}
           }
         }
-        // Notification user — message contextualisé selon le nouveau statut
+        // Notification user - message contextualisé selon le nouveau statut
         const statusMessages = {
           en_attente_validation: `Votre dossier "${formalite.societe}" est en attente de validation par votre avocat.`,
           corrections_demandees: `Votre avocat a demandé des corrections sur votre dossier "${formalite.societe}". Consultez la messagerie.`,
@@ -423,7 +427,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
     })();
   }
 
-  // GET /api/formalites/:id/audit — historique
+  // GET /api/formalites/:id/audit - historique
   if ((params = matchRoute(pathname, "/api/formalites/:id/audit")) && req.method === "GET") {
     const user = authGuard(req, res);
     if (!user) return;
@@ -439,7 +443,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
     return jsonResponse(res, 200, { entries });
   }
 
-  // POST /api/formalites/:id/finalize — finalise un dossier (avocat)
+  // POST /api/formalites/:id/finalize - finalise un dossier (avocat)
   if ((params = matchRoute(pathname, "/api/formalites/:id/finalize")) && req.method === "POST") {
     const user = authGuard(req, res, "avocat");
     if (!user) return;
@@ -458,7 +462,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
     return jsonResponse(res, 200, { ok: true });
   }
 
-  // GET /api/formalites/:id/annonce-text — génère le texte JAL
+  // GET /api/formalites/:id/annonce-text - génère le texte JAL
   if ((params = matchRoute(pathname, "/api/formalites/:id/annonce-text")) && req.method === "GET") {
     const user = authGuard(req, res);
     if (!user) return;
@@ -469,7 +473,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
     return jsonResponse(res, 200, { text, cached: !!formalite.annonce_text });
   }
 
-  // PUT /api/formalites/:id/annonce-text — sauvegarde (avocat peut éditer)
+  // PUT /api/formalites/:id/annonce-text - sauvegarde (avocat peut éditer)
   if ((params = matchRoute(pathname, "/api/formalites/:id/annonce-text")) && req.method === "PUT") {
     return (async () => {
       const user = authGuard(req, res, "avocat");
@@ -487,7 +491,7 @@ module.exports = function formalitesRoutes(pathname, req, res, url) {
     })();
   }
 
-  // POST /api/formalites/:id/audit — ajouter une entrée manuelle
+  // POST /api/formalites/:id/audit - ajouter une entrée manuelle
   if ((params = matchRoute(pathname, "/api/formalites/:id/audit")) && req.method === "POST") {
     return (async () => {
       const user = authGuard(req, res);
@@ -581,7 +585,7 @@ function generateAnnonceText(formalite) {
   const siegeStr = adresseComplete
     ? adresseComplete
     : `${adresse}, ${cp} ${ville}`;
-  // RCS résolu depuis le code postal (Tribunal de Commerce du département) —
+  // RCS résolu depuis le code postal (Tribunal de Commerce du département) -
   // évite d'imprimer une commune sans tribunal (ex: Sainte-Foy-lès-Lyon → Lyon).
   const { resolveRcsCity } = require("../lib/rcs");
   const rcsExplicit = pick("RCS_VILLE", "rcs_ville");

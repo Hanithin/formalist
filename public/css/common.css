@@ -12,6 +12,9 @@
     }
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    /* Règle typographique du produit : letter-spacing à 0 partout, sur tous les
+       textes et à toutes les tailles. Ne pas réintroduire de valeur négative. */
+    :root { letter-spacing: 0; }
     html { height: 100%; overflow-y: scroll; scrollbar-gutter: stable; }
     body {
       font-family: 'Matter', 'Inter', -apple-system, sans-serif;
@@ -24,7 +27,7 @@
 
     /* SIDEBAR */
     .sidebar {
-      width: 270px;
+      width: 300px;
       background: #fff;
       border-right: 1px solid #e5e5e5;
       display: flex;
@@ -52,7 +55,7 @@
       margin-bottom: 4px;
       box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
     }
-    .sidebar-logo img { height: 26px; }
+    .sidebar-logo img { height: 30px; display: block; }
 
     /* CTA primaire "Nouvelle formalité" */
     .sidebar-cta, .sidebar-cta-link {
@@ -77,7 +80,7 @@
     .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
     .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
     .sidebar-nav a.active svg { opacity: 1; }
-    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
     .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
     .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
     .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
@@ -113,7 +116,7 @@
       width: 36px; height: 36px; border-radius: 50%;
       background: #111;
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0;
     }
     .user-info { flex: 1; min-width: 0; }
     .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
@@ -129,7 +132,7 @@
     .btn-logout svg, .btn-settings svg { width: 16px; height: 16px; }
 
     /* MAIN */
-    .main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; margin-left: 270px; }
+    .main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; margin-left: 300px; }
     .topbar {
       padding: 24px 48px; background: transparent;
       display: flex; align-items: center; gap: 16px;

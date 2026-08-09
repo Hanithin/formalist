@@ -42,12 +42,15 @@ const contactRoutes = require("./routes/contact");
 const docgenRoutes = require("./routes/docgen");
 const consultationsRoutes = require("./routes/consultations");
 const companyRoutes = require("./routes/company");
+const teamRoutes = require("./routes/team");
 
 const { MIME_TYPES } = require("./routes/documents");
 const PUBLIC = path.join(__dirname, "public");
 
 // Rate limiter for login
 const loginRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
+// Inscription + renvoi du lien de confirmation : plus strict (envoi d'emails)
+const signupRateLimit = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5 });
 
 // Protected pages
 const PROTECTED_PAGES = {
@@ -60,6 +63,7 @@ const PROTECTED_PAGES = {
   "/messagerie.html": ["user", "avocat", "admin"],
   "/formalites.html": ["user", "avocat", "admin"],
   "/consultations.html": ["user", "avocat", "admin"],
+  "/equipe.html": ["user", "avocat", "admin"],
   "/admin.html": ["admin"],
   "/avocat.html": ["avocat", "admin"],
   "/recherche-entreprise.html": ["avocat", "admin"],
@@ -76,6 +80,9 @@ const server = http.createServer(async (req, res) => {
   if (pathname === "/api/auth/login" && req.method === "POST") {
     if (loginRateLimit(req, res)) return;
   }
+  if ((pathname === "/api/auth/register" || pathname === "/api/auth/resend-verification") && req.method === "POST") {
+    if (signupRateLimit(req, res)) return;
+  }
 
   // Route through all API handlers
   const handled =
@@ -91,7 +98,8 @@ const server = http.createServer(async (req, res) => {
     await contactRoutes(pathname, req, res, url) ||
     await docgenRoutes(pathname, req, res, url) ||
     await consultationsRoutes(pathname, req, res, url) ||
-    await companyRoutes(pathname, req, res, url);
+    await companyRoutes(pathname, req, res, url) ||
+    await teamRoutes(pathname, req, res, url);
 
   if (handled !== false || res.writableEnded) return;
 
@@ -150,6 +158,7 @@ server.listen(PORT, () => {
   console.log("Templates loaded:", templates.length);
 
   stmts.cleanSessions.run();
+  stmts.cleanEmailTokens.run();
 
   console.log("Warming up LibreOffice...");
   warmup(templateCache[templates[0]]);

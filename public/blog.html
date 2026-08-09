@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Blog &mdash; Formalist</title>
+  <title>Blog - Formalist</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -26,7 +26,7 @@
     .nav-wrap.scrolled { padding-top:8px }
     .nav { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:transparent; transition:all 0.3s; max-width:1200px; width:100%; border-radius:16px }
     .nav-wrap.scrolled .nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid #e8e8e8; box-shadow:0 2px 16px rgba(0,0,0,0.06) }
-    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing:-0.3px }
+    .nav-logo { font-family:'Cal Sans','Inter',sans-serif; font-size:28px; font-weight:600; letter-spacing: 0}
     .nav-center { display:flex; align-items:center; gap:32px }
     .nav-center a, .nav-center .nav-dropdown-trigger { font-size:14px; font-weight:500; color:#666; transition:color 0.2s; cursor:pointer; text-decoration:none }
     .nav-center a:hover, .nav-center .nav-dropdown-trigger:hover { color:#111 }
@@ -40,7 +40,7 @@
     .nav-mega-grid { display:grid; grid-template-columns:1.4fr 1fr 240px; gap:0 }
     .nav-mega-col { padding:28px 32px }
     .nav-mega-col:first-child { border-right:1px solid #f0f0f0 }
-    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#bbb; margin-bottom:16px }
+    .nav-mega-col h5 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing: 0; color:#bbb; margin-bottom:16px }
     .nav-mega-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:12px; transition:all 0.15s; cursor:pointer; text-decoration:none; color:inherit }
     .nav-mega-item:hover { background:#f8f7ff }
     .nav-mega-icon { width:40px; height:40px; border-radius:12px; background:#f5f5f5; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s }
@@ -56,7 +56,7 @@
     .nav-mega-cta::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; background:rgba(255,255,255,0.08); border-radius:50% }
     .nav-mega-cta::after { content:''; position:absolute; bottom:-30px; left:-30px; width:100px; height:100px; background:rgba(255,255,255,0.06); border-radius:50% }
     .nav-mega-cta-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.2); backdrop-filter:blur(4px); padding:5px 12px; border-radius:100px; font-size:11px; font-weight:600; width:fit-content; position:relative; z-index:1 }
-    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.3px; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
+    .nav-mega-cta-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; letter-spacing: 0; line-height:1.2; margin-top:auto; position:relative; z-index:1 }
     .nav-mega-cta-link { display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; margin-top:16px; opacity:0.9; position:relative; z-index:1; text-decoration:none; transition:opacity 0.15s }
     .nav-mega-cta-link:hover { opacity:1 }
     .nav-right { display:flex; align-items:center; gap:8px }
@@ -70,7 +70,7 @@
 
     /* BLOG HERO */
     .blog-hero { max-width:1200px; margin:0 auto; padding:120px 40px 48px; text-align:center }
-    .blog-hero h1 { font-family:'Cal Sans','Inter',sans-serif; font-size:56px; font-weight:600; line-height:1.1; letter-spacing:-1.5px; margin-bottom:16px; animation:fade-up 0.6s ease both }
+    .blog-hero h1 { font-family:'Cal Sans','Inter',sans-serif; font-size:56px; font-weight:600; line-height:1.1; letter-spacing: 0; margin-bottom:16px; animation:fade-up 0.6s ease both }
     .blog-hero p { font-size:18px; color:#666; max-width:560px; margin:0 auto; line-height:1.6; animation:fade-up 0.6s ease 0.1s both }
 
     /* BLOG FILTERS */
@@ -151,7 +151,7 @@
     .tag-creation { background:#f3e8ff; color:#7c3aed }
     .tag-guide { background:#d1fae5; color:#047857 }
     .tag-tech { background:#e0f2fe; color:#0369a1 }
-    .blog-card-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; line-height:1.3; letter-spacing:-0.3px; margin-bottom:12px; color:#111 }
+    .blog-card-title { font-family:'Cal Sans','Inter',sans-serif; font-size:20px; font-weight:600; line-height:1.3; letter-spacing: 0; margin-bottom:12px; color:#111 }
     .blog-card-excerpt { font-size:14px; color:#777; line-height:1.6; flex:1; margin-bottom:16px }
     .blog-card-meta { font-size:12.5px; color:#bbb; display:flex; align-items:center; gap:4px }
     .blog-card-meta span { display:inline-flex; align-items:center }
@@ -165,7 +165,7 @@
     .blog-featured-img .illus { width:280px; height:220px }
     .blog-featured-body { padding:48px 44px; display:flex; flex-direction:column; justify-content:center }
     .blog-featured-body .blog-card-tag { font-size:13px; padding:6px 16px }
-    .blog-featured-body .blog-card-title { font-size:28px; letter-spacing:-0.5px; line-height:1.25; margin-bottom:16px }
+    .blog-featured-body .blog-card-title { font-size:28px; letter-spacing: 0; line-height:1.25; margin-bottom:16px }
     .blog-featured-body .blog-card-excerpt { font-size:15px; line-height:1.7; margin-bottom:20px }
     .blog-featured-body .read-more { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#7c3aed; transition:gap 0.2s }
     .blog-featured-body .read-more:hover { gap:10px }
@@ -174,7 +174,7 @@
     /* NEWSLETTER */
     .blog-newsletter { max-width:1200px; margin:0 auto; padding:0 40px 80px }
     .blog-newsletter-inner { background:#fff; border:1px solid #e8e8e8; border-radius:24px; padding:56px; text-align:center }
-    .blog-newsletter-inner h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:12px }
+    .blog-newsletter-inner h2 { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing: 0; margin-bottom:12px }
     .blog-newsletter-inner p { font-size:15px; color:#777; margin-bottom:28px; max-width:440px; margin-left:auto; margin-right:auto; line-height:1.6 }
     .blog-newsletter-form { display:flex; gap:10px; max-width:420px; margin:0 auto }
     .blog-newsletter-form input { flex:1; padding:12px 20px; border:1.5px solid #e0e0e0; border-radius:12px; font-family:inherit; font-size:14px; outline:none; transition:border-color 0.2s }
@@ -199,10 +199,10 @@
     .foot { padding:56px 40px 32px; background:transparent }
     .foot-inner { max-width:1200px; margin:0 auto }
     .foot-top { display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr 1fr; gap:40px; margin-bottom:56px }
-    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing:-0.5px; margin-bottom:14px }
+    .foot-brand { font-family:'Cal Sans','Inter',sans-serif; font-size:32px; font-weight:600; letter-spacing: 0; margin-bottom:14px }
     .foot-brand-p { font-size:13px; color:#999; line-height:1.7; max-width:280px; margin-bottom:24px }
     .foot-mission { font-size:12px; color:#bbb; line-height:1.6; max-width:280px; margin-bottom:20px }
-    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:-0.2px; color:#111; margin-bottom:16px }
+    .foot-col h4 { font-family:'Cal Sans','Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing: 0; color:#111; margin-bottom:16px }
     .foot-col a { display:block; font-size:13px; color:#888; padding:5px 0; transition:color 0.2s }
     .foot-col a:hover { color:#111 }
     .foot-bottom { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding-top:24px; border-top:1px solid #e8e8e8 }

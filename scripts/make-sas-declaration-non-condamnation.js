@@ -64,7 +64,7 @@ function buildDeclarationPage(fields, role, isFirst, societeRepresentee) {
   body += p('D\u00c9CLARATION DE NON-CONDAMNATION', rPrTitle, titleOpts);
   body += p('souscrite en application de l\u2019article A.123-51 du Code de commerce', rPrSubtitle, { center: true, before: SZ_NONE, after: SZ_XLARGE });
 
-  // Identity — gendered (using EST_HOMME / EST_FEMME conditionals)
+  // Identity - gendered (using EST_HOMME / EST_FEMME conditionals)
   var gH = fields.EST_HOMME; // e.g. "{{EST_HOMME}}" or "{{DG_1_EST_HOMME}}"
   var gF = fields.EST_FEMME;
   // "Je soussigné," or "Je soussignée,"

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>    .sidebar {
-      width: 270px;
+      width: 300px;
       background: #fff;
       border-right: 1px solid #e5e5e5;
       display: flex;
@@ -25,7 +25,7 @@
     .sidebar-logo { padding: 0 24px; margin-bottom: 20px; }
     .sidebar-logo a { display: flex; align-items: flex-end; gap: 6px; color: #111; text-decoration: none; }
     .sidebar-logo .logo-text { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; color: #111; line-height: 1; }
-    .sidebar-logo img { height: 26px; }
+    .sidebar-logo img { height: 30px; display: block; }
     .sidebar-nav { flex: 1; padding: 0 12px; }
     .sidebar-nav a, .sidebar-nav .sidebar-dropdown {
       display: flex; align-items: center; gap: 12px;
@@ -37,7 +37,7 @@
     .sidebar-nav a svg, .sidebar-nav .sidebar-dropdown svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.78; stroke-width: 1.7; }
     .sidebar-nav a:hover svg, .sidebar-nav .sidebar-dropdown:hover svg { opacity: 0.95; }
     .sidebar-nav a.active svg { opacity: 1; }
-    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
+    .sidebar-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0; color: #aaa; padding: 20px 12px 8px; margin-top: 4px; }
     .sidebar-section:first-child { padding-top: 4px; margin-top: 0; }
     .sidebar-dropdown { position: relative; background: none; border: none; font-family: inherit; width: 100%; text-align: left; }
     .sidebar-dropdown .chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.2s; opacity: 0.35; }
@@ -64,7 +64,7 @@
       width: 36px; height: 36px; border-radius: 50%;
       background: #111;
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px;
+      font-size: 13px; font-weight: 600; flex-shrink: 0; letter-spacing: 0;
     }
     .user-info { flex: 1; min-width: 0; }
     .user-name { font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.2; }
@@ -116,7 +116,7 @@
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
-      margin-left: 270px;
+      margin-left: 300px;
     }
     @media (max-width: 768px) {
       .main { margin-left: 0; }
@@ -159,7 +159,7 @@
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0;
       color: #999;
       padding: 16px 24px 8px;
     }
@@ -257,34 +257,63 @@
       font-size: 14px; line-height: 1.55; color: #666;
       max-width: 520px; margin: 0 auto 28px;
     }
-    .welcome-cards {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-      margin-bottom: 24px;
+    /* Acces direct aux conversations depuis l'ecran d'accueil */
+    .welcome-convs {
+      display: flex; flex-direction: column; gap: 10px;
+      max-width: 420px; margin: 0 auto; text-align: left;
     }
-    @media (max-width: 700px) { .welcome-cards { grid-template-columns: 1fr; } }
-    .welcome-card {
-      background: #fff; border: 1px solid #ececef; border-radius: 14px;
-      padding: 16px; display: flex; align-items: flex-start; gap: 12px;
-      text-align: left;
+    .wcv {
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      padding: 12px 14px; background: #fff; border: 1px solid #ececef;
+      border-radius: 14px; font-family: inherit; cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .welcome-card .wc-ic {
-      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-      display: inline-flex; align-items: center; justify-content: center;
+    .wcv:hover { border-color: #111; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .wcv-avatar {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #111; color: #fff; font-size: 12.5px; font-weight: 700;
     }
-    .welcome-card .wc-ic svg { width: 18px; height: 18px; }
-    .welcome-card .wc-ic.violet { background: #f5f3ff; color: #7c3aed; }
-    .welcome-card .wc-ic.blue { background: #eff6ff; color: #2563eb; }
-    .welcome-card .wc-ic.amber { background: #fef3c7; color: #b45309; }
-    .welcome-card .wc-ic.green { background: #ecfdf5; color: #047857; }
-    .welcome-card .wc-text { flex: 1; min-width: 0; }
-    .welcome-card .wc-t { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
-    .welcome-card .wc-s { font-size: 12.5px; color: #888; line-height: 1.4; }
-    .welcome-hint {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 12.5px; color: #888;
-      padding: 8px 14px; background: #fafafa; border: 1px solid #f0f0f2;
-      border-radius: 999px;
+    .wcv-avatar.support { background: #7c3aed; }
+    .wcv-body { flex: 1; min-width: 0; }
+    .wcv-title {
+      display: block; font-size: 14px; font-weight: 500; color: #111;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    .wcv-sub { display: block; font-size: 12.5px; color: #71717a; margin-top: 1px; }
+    .wcv-badge {
+      min-width: 20px; height: 20px; border-radius: 10px; background: #dc2626;
+      color: #fff; font-size: 11px; font-weight: 700; display: flex;
+      align-items: center; justify-content: center; padding: 0 6px; flex-shrink: 0;
+    }
+
+    /* Recherche dans la liste des conversations */
+    .conv-search { position: relative; margin-top: 12px; }
+    .conv-search svg {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; color: #a1a1aa; pointer-events: none;
+    }
+    .conv-search input {
+      width: 100%; padding: 8px 12px 8px 34px; font-family: inherit; font-size: 13px;
+      color: #111; background: #fafafa; border: 1px solid #ececef; border-radius: 100px;
+      outline: none; transition: border-color 0.15s, background 0.15s;
+    }
+    .conv-search input::placeholder { color: #a1a1aa; }
+    .conv-search input:focus { border-color: #111; background: #fff; }
+    .conv-none { padding: 24px 16px; text-align: center; font-size: 13px; color: #a1a1aa; }
+    .conv-item.unread .conv-name { font-weight: 600; }
+    .conv-item.unread .conv-preview { color: #111; }
+
+    /* Separateur de jour dans le fil */
+    .chat-day {
+      display: flex; align-items: center; gap: 12px;
+      margin: 18px 0 10px; color: #a1a1aa; font-size: 12px;
+    }
+    .chat-day::before, .chat-day::after {
+      content: ''; flex: 1; height: 1px; background: #ececef;
+    }
+    .chat-day span { flex-shrink: 0; }
+
     .chat-view-info {
       display: flex; align-items: center; gap: 16px;
     }
@@ -292,7 +321,7 @@
       width: 50px; height: 50px; border-radius: 14px;
       background: #111; color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 700; flex-shrink: 0; letter-spacing: 0.3px;
+      font-size: 18px; font-weight: 700; flex-shrink: 0; letter-spacing: 0;
     }
     .chat-view-info.support .av-big { background: #7c3aed; }
     .chat-view-info .info-text { flex: 1; min-width: 0; }
@@ -303,7 +332,7 @@
     }
     .chat-view-info .info-forme {
       font-size: 11.5px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.5px;
+      text-transform: uppercase; letter-spacing: 0;
       color: #555; background: #f3f4f6;
       padding: 4px 10px; border-radius: 6px;
     }
@@ -361,7 +390,7 @@
     .empty-chat-desc strong { color: #111; font-weight: 600; }
     .empty-chat-subjects-title {
       font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.5px; color: #888; margin-bottom: 10px;
+      letter-spacing: 0; color: #888; margin-bottom: 10px;
     }
     .empty-chat-subjects {
       display: flex; flex-direction: column; gap: 7px; width: 100%; max-width: 380px;
@@ -401,6 +430,7 @@
     .tip-item .tip-s { font-size: 12.5px; color: #888; margin-top: 2px; }
     .chat-messages {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
       padding: 20px 24px;
       display: flex;
@@ -445,7 +475,7 @@
       align-self: flex-start;
       border-bottom-left-radius: 4px;
     }
-    /* Variantes selon le type de message (kind) — la bulle prend la couleur du tag */
+    /* Variantes selon le type de message (kind) - la bulle prend la couleur du tag */
     .chat-msg.kind-correction_request { background: #fef3c7; color: #5b3210; border: 1px solid #fde68a; }
     .chat-msg.kind-correction_request.sent { background: #fde68a; color: #5b3210; border-color: #fcd34d; }
     .chat-msg.kind-rejection { background: #fee2e2; color: #5b1010; border: 1px solid #fecaca; }
@@ -489,7 +519,7 @@
       display: inline-flex; align-items: center; gap: 5px;
       padding: 4px 10px 4px 9px;
       border-radius: 100px 100px 100px 4px;
-      font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0;
       margin-bottom: 4px;
     }
     .chat-msg-wrap.sent .chat-msg-kind { border-radius: 100px 100px 4px 100px; }
@@ -618,7 +648,7 @@
     }
     .sidebar-context .ctx-icon svg { width: 17px; height: 17px; stroke-width: 1.6; }
     .sidebar-context .ctx-body { flex: 1; min-width: 0; }
-    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+    .sidebar-context .ctx-label { font-size: 10.5px; color: #999; font-weight: 500; letter-spacing: 0; text-transform: uppercase; }
     .sidebar-context .ctx-name { font-size: 13.5px; color: #111; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sidebar-context .ctx-chevron { width: 14px; height: 14px; color: #999; flex-shrink: 0; opacity: 0.6; }
     .sidebar-context.single { cursor: default; }
@@ -665,7 +695,7 @@
     }
     @keyframes ndSlideUp { from { transform: translateY(8px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
     .nd-header { padding: 22px 24px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f0f0f2; }
-    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: -0.2px; }
+    .nd-title { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 600; color: #111; margin: 0; letter-spacing: 0; }
     .nd-subtitle { font-size: 13.5px; color: #888; margin: 4px 0 0; }
     .nd-close { background: none; border: none; cursor: pointer; color: #999; padding: 4px; border-radius: 8px; transition: background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
     .nd-close svg { width: 20px; height: 20px; }
@@ -695,10 +725,7 @@
   <!-- SIDEBAR -->
           <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <a href="/dashboard.html">
-        <span class="logo-text">formalist</span>
-        <span class="logo-dot" aria-hidden="true"></span>
-      </a>
+      <a href="/dashboard.html"><img src="/images/logo.png" alt="Formalist"></a>
     </div>
 
     <div class="sidebar-context" id="sidebar-context" style="display:none;">
@@ -726,6 +753,24 @@
         Mes formalit&eacute;s
         <span class="nav-badge" id="badge-formalites" style="display:none;">0</span>
       </a>
+      <a href="/creation.html?new=1&amp;type=creation" data-page="creation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        Cr&eacute;er une soci&eacute;t&eacute;
+      </a>
+      <a href="/modification.html" data-page="modification">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Modifier ma soci&eacute;t&eacute;
+      </a>
+      <a href="/depot-comptes.html" data-page="depot-comptes" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        D&eacute;p&ocirc;t des comptes
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
+      <a href="/fermeture.html" data-page="fermeture" data-soon="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Fermer ma soci&eacute;t&eacute;
+        <span class="nav-soon">Bient&ocirc;t</span>
+      </a>
 
       <a href="/consultations.html" data-page="consultations">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -746,6 +791,10 @@
       </a>
 
       <div class="sidebar-divider"></div>
+      <a href="/equipe.html" data-page="equipe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        &Eacute;quipe
+      </a>
       <a href="/aide.html" data-page="aide">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Aide &amp; FAQ
@@ -755,8 +804,8 @@
     <div class="sidebar-bottom">
       <div class="avatar" id="sidebar-avatar">JD</div>
       <div class="user-info">
-        <div class="user-name" id="sidebar-name">Jean Dupont</div>
-        <div class="user-email" id="sidebar-email">test@formalist.fr</div>
+        <div class="user-name" id="sidebar-name"></div>
+        <div class="user-email" id="sidebar-email"></div>
       </div>
       <a href="/parametres.html" class="btn-settings" title="Param&egrave;tres">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -793,7 +842,7 @@
         </a>
         <a href="#" class="nd-card">
           <div class="nd-card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-          <div class="nd-card-body"><div class="nd-card-title">D&eacute;poser mes comptes</div><div class="nd-card-desc">D&eacute;p&ocirc;t annuel au greffe</div></div>
+          <div class="nd-card-body"><div class="nd-card-title">D&eacute;p&ocirc;t des comptes</div><div class="nd-card-desc">Comptes annuels au greffe</div></div>
         </a>
         <a href="#" class="nd-card">
           <div class="nd-card-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
@@ -814,7 +863,10 @@
       <div class="conv-list">
         <div class="conv-list-header">
           <h2>Messagerie</h2>
-          <p>Vos conversations</p>
+          <div class="conv-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="convSearch" placeholder="Rechercher une conversation&hellip;" oninput="renderConversations()">
+          </div>
         </div>
         <div class="conv-items" id="convItems">
           <!-- Populated by JS -->
@@ -826,49 +878,16 @@
         <div class="chat-view-empty" id="chatEmpty">
           <div class="welcome-pane">
             <div class="welcome-ic">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             </div>
-            <h2 class="welcome-title">Votre messagerie centralisée</h2>
-            <p class="welcome-desc">Retrouvez ici toutes vos discussions au même endroit : échanges avec les avocats assignés à vos formalités et support Formalist pour toute autre question.</p>
-
-            <div class="welcome-cards">
-              <div class="welcome-card">
-                <div class="wc-ic violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-                <div class="wc-text">
-                  <div class="wc-t">Discussions avocat</div>
-                  <div class="wc-s">Une conversation par formalité. Posez vos questions, partagez vos justificatifs, suivez l'avancement.</div>
-                </div>
-              </div>
-              <div class="welcome-card">
-                <div class="wc-ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-                <div class="wc-text">
-                  <div class="wc-t">Support Formalist</div>
-                  <div class="wc-s">Facturation, problème technique, suggestion : notre équipe vous répond sous quelques heures (lun-ven 9h-19h).</div>
-                </div>
-              </div>
-              <div class="welcome-card">
-                <div class="wc-ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></div>
-                <div class="wc-text">
-                  <div class="wc-t">Documents partagés</div>
-                  <div class="wc-s">Joignez attestation de capital, pièces d'identité, justificatifs… directement dans la conversation.</div>
-                </div>
-              </div>
-              <div class="welcome-card">
-                <div class="wc-ic green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                <div class="wc-text">
-                  <div class="wc-t">Historique conservé</div>
-                  <div class="wc-s">Toutes vos conversations sont archivées et restent accessibles tant que vos formalités sont actives.</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="welcome-hint">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
-              Sélectionnez une conversation à gauche pour commencer
-            </div>
+            <h2 class="welcome-title">Choisissez une conversation</h2>
+            <p class="welcome-desc">Un fil par dossier avec l&apos;avocat qui le suit, et un fil avec le support pour tout le reste.</p>
+            <div class="welcome-convs" id="welcomeConvs"></div>
           </div>
         </div>
-        <div id="chatActive" style="display:none;flex:1;flex-direction:column">
+        <!-- min-height:0 : sans ça, la liste des messages déborde au lieu de défiler
+             et pousse la zone de saisie hors de l'écran -->
+        <div id="chatActive" style="display:none;flex:1;flex-direction:column;min-width:0;min-height:0;">
           <div class="chat-view-header" id="chatViewHeader">
             <div class="chat-view-info" id="chatViewInfo"></div>
             <div id="chatViewActions" style="display:none;"></div>
@@ -959,7 +978,7 @@
       var done = 0;
       var needed = 2;
 
-      // 1. Formalites with avocat OR with unread/active messages \u2014 rendu imm\u00e9diat
+      // 1. Formalites with avocat OR with unread/active messages - rendu imm\u00e9diat
       fetch('/api/formalites').then(function(r) { return r.json(); }).then(function(data) {
         var formalites = data.formalites || [];
         formalites.forEach(function(f) {
@@ -998,6 +1017,7 @@
               var last = msgs[msgs.length - 1];
               conv.lastMsg = last.content || '';
               conv.lastTime = last.created_at || conv.lastTime;
+              conv.lastFromMe = !!(_currentUser && last.sender_id === _currentUser.id);
               if (!conv.subtitle || conv.subtitle === 'Avocat assign\u00e9') {
                 var avocatMsg = msgs.find(function(m) { return m.sender_role === 'avocat'; });
                 if (avocatMsg) conv.subtitle = avocatMsg.sender_name;
@@ -1014,10 +1034,12 @@
         var msgs = data.messages || [];
         var lastMsg = '';
         var lastTime = '';
+        var lastFromMe = false;
         if (msgs.length > 0) {
           var last = msgs[msgs.length - 1];
           lastMsg = last.content || '';
           lastTime = last.created_at || '';
+          lastFromMe = !!(_currentUser && last.sender_id === _currentUser.id);
         }
         conversations.push({
           type: 'support',
@@ -1027,6 +1049,7 @@
           subtitle: 'Assistance et aide',
           lastMsg: lastMsg,
           lastTime: lastTime,
+          lastFromMe: lastFromMe,
           unread: 0
         });
         // Get unread count
@@ -1040,12 +1063,21 @@
     }
 
     // --- Render conversation list ---
-    function renderConversations() {
+    window.renderConversations = function() {
       var container = document.getElementById('convItems');
       var html = '';
 
+      var searchEl = document.getElementById('convSearch');
+      var query = ((searchEl && searchEl.value) || '').toLowerCase().trim();
+      function matches(c) {
+        if (!query) return true;
+        return (c.title || '').toLowerCase().indexOf(query) !== -1
+            || (c.subtitle || '').toLowerCase().indexOf(query) !== -1
+            || (c.lastMsg || '').toLowerCase().indexOf(query) !== -1;
+      }
+
       // Avocat conversations
-      var avocatConvs = conversations.filter(function(c) { return c.type === 'avocat'; });
+      var avocatConvs = conversations.filter(function(c) { return c.type === 'avocat' && matches(c); });
       if (avocatConvs.length > 0) {
         html += '<div class="conv-section-title">Avocat</div>';
         avocatConvs.forEach(function(c) {
@@ -1054,13 +1086,20 @@
       }
 
       // Support
-      var supportConvs = conversations.filter(function(c) { return c.type === 'support'; });
-      html += '<div class="conv-section-title">Support</div>';
-      supportConvs.forEach(function(c) {
-        html += renderConvItem(c);
-      });
+      var supportConvs = conversations.filter(function(c) { return c.type === 'support' && matches(c); });
+      if (supportConvs.length > 0) {
+        html += '<div class="conv-section-title">Support</div>';
+        supportConvs.forEach(function(c) {
+          html += renderConvItem(c);
+        });
+      }
+
+      if (!html) {
+        html = '<div class="conv-none">Aucune conversation ne correspond à « ' + escapeHtml(query) +' »</div>';
+      }
 
       container.innerHTML = html;
+      renderWelcomeConvs();
 
       // Add click handlers
       container.querySelectorAll('.conv-item').forEach(function(el) {
@@ -1126,16 +1165,38 @@
       }, 2000);
     }
 
+    // Accès direct aux conversations depuis l'écran d'accueil : évite un aller-retour
+    // vers la colonne de gauche quand on arrive sur la page.
+    function renderWelcomeConvs() {
+      var el = document.getElementById('welcomeConvs');
+      if (!el) return;
+      el.innerHTML = conversations.map(function(c) {
+        var who = c.type === 'support' ? 'Support Formalist' : (c.subtitle || 'Avocat assigné');
+        var badge = c.unread > 0 ? '<span class="wcv-badge">' + c.unread + '</span>' : '';
+        return '<button type="button" class="wcv" onclick="selectConversation(\'' + c.id + '\')">'
+          + '<span class="wcv-avatar' + (c.type === 'support' ? ' support' : '') + '">'
+          +   escapeHtml((c.title || 'CV').substring(0, 2).toUpperCase()) + '</span>'
+          + '<span class="wcv-body">'
+          +   '<span class="wcv-title">' + escapeHtml(c.title || 'Conversation') + '</span>'
+          +   '<span class="wcv-sub">' + escapeHtml(who) + '</span>'
+          + '</span>' + badge
+          + '</button>';
+      }).join('');
+    }
+
     function renderConvItem(c) {
       var isActive = activeConv && activeConv.id === c.id;
       var title = c.title || 'Conversation';
       var lastMsg = c.lastMsg || '';
       var initials = (title.split(' ').map(function(n) { return (n && n[0]) || ''; }).join('') || 'CV').substring(0,2).toUpperCase();
-      var preview = lastMsg.length > 40 ? lastMsg.substring(0, 40) + '...' : (lastMsg || 'Aucun message');
+      // « Vous : » devant l'aperçu quand c'est le dernier message envoyé par le client
+      var prefix = c.lastFromMe ? 'Vous : ' : '';
+      var raw = lastMsg ? prefix + lastMsg : '';
+      var preview = raw.length > 44 ? raw.substring(0, 44) + '…' : (raw || 'Aucun message');
       var time = formatShortDate(c.lastTime);
       var avatarClass = c.type === 'support' ? 'conv-avatar support' : 'conv-avatar';
 
-      var html = '<div class="conv-item' + (isActive ? ' active' : '') + '" data-conv-id="' + c.id + '">';
+      var html = '<div class="conv-item' + (isActive ? ' active' : '') + (c.unread > 0 ? ' unread' : '') + '" data-conv-id="' + c.id + '">';
       html += '<div class="' + avatarClass + '">' + escapeHtml(initials) + '</div>';
       html += '<div class="conv-info">';
       html += '<div class="conv-name">' + escapeHtml(title) + '</div>';
@@ -1283,6 +1344,7 @@
     function renderMessages(messages) {
       var container = document.getElementById('chatMessages');
       container.innerHTML = '';
+      container._lastDayKey = null; // nouveau fil : les séparateurs repartent de zéro
       // Bandeau d'intro pour la conversation support : rassure l'utilisateur sur le délai
       if (activeConv && activeConv.type === 'support') {
         var banner = document.createElement('div');
@@ -1323,7 +1385,7 @@
           +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
           + '</div>'
           + '<div class="empty-chat-title">Support Formalist</div>'
-          + '<div class="empty-chat-desc">Notre équipe vous répond généralement sous quelques heures (lun–ven 9h–19h). Posez-nous toute question sur vos formalités, facturation, documents, fonctionnalités…</div>'
+          + '<div class="empty-chat-desc">Notre équipe vous répond généralement sous quelques heures (lun-ven 9h-19h). Posez-nous toute question sur vos formalités, facturation, documents, fonctionnalités…</div>'
           + '<div class="empty-chat-subjects-title">Sujets fréquents</div>'
           + '<div class="empty-chat-subjects">';
         subjects.forEach(function(s){
@@ -1355,11 +1417,44 @@
       if (input) { input.value = text; input.focus(); }
     };
 
+    /* Repères temporels dans le fil : sans eux, deux messages séparés de trois
+       semaines se suivent sans qu'on le voie. */
+    function dayKey(iso) {
+      if (!iso) return '';
+      var d = new Date(String(iso).replace(' ', 'T') + (String(iso).endsWith('Z') ? '' : 'Z'));
+      if (isNaN(d.getTime())) return '';
+      return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+    }
+
+    function dayLabel(iso) {
+      var d = new Date(String(iso).replace(' ', 'T') + (String(iso).endsWith('Z') ? '' : 'Z'));
+      if (isNaN(d.getTime())) return '';
+      var today = new Date();
+      var yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+      if (dayKey(d.toISOString()) === dayKey(today.toISOString())) return "Aujourd'hui";
+      if (dayKey(d.toISOString()) === dayKey(yesterday.toISOString())) return 'Hier';
+      var opts = { day: 'numeric', month: 'long' };
+      if (d.getFullYear() !== today.getFullYear()) opts.year = 'numeric';
+      return d.toLocaleDateString('fr-FR', opts);
+    }
+
+    function maybeAppendDaySeparator(container, iso) {
+      var key = dayKey(iso);
+      if (!key || container._lastDayKey === key) return;
+      container._lastDayKey = key;
+      var sep = document.createElement('div');
+      sep.className = 'chat-day';
+      sep.innerHTML = '<span>' + dayLabel(iso) + '</span>';
+      container.appendChild(sep);
+    }
+
     function appendMessage(m, noscroll) {
       var container = document.getElementById('chatMessages');
       // Remove placeholder
       var placeholder = container.querySelector('div[style*="text-align:center"]');
       if (placeholder) placeholder.remove();
+
+      maybeAppendDaySeparator(container, m.created_at);
 
       var isMine = _currentUser && m.sender_id === _currentUser.id;
 
@@ -1395,7 +1490,7 @@
           wrap.appendChild(badge);
         }
 
-        // Bulle principale — coloration spécifique pour les messages typés (correction, rejet…)
+        // Bulle principale - coloration spécifique pour les messages typés (correction, rejet…)
         var div = document.createElement('div');
         var typedClass = (m.kind && m.kind !== 'text') ? ' kind-' + m.kind : '';
         div.className = 'chat-msg ' + (isMine ? 'sent' : 'received') + typedClass;
@@ -1411,7 +1506,7 @@
           }
         }
         html += '<div>' + escapeHtml(m.content || '') + '</div>';
-        // CTA contextuel (visible côté destinataire) — voir le dossier ou joindre un document
+        // CTA contextuel (visible côté destinataire) - voir le dossier ou joindre un document
         if (m.kind && m.kind !== 'text' && !isMine) {
           var fid = m.formalite_id || (activeConv && activeConv.formaliteId);
           if (m.kind === 'correction_request' || m.kind === 'rejection' || m.kind === 'validation_pending' || m.kind === 'validation') {

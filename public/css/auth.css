@@ -1,0 +1,668 @@
+/* ==========================================================================
+   auth.css - pages Connexion / Inscription
+   Deux colonnes : formulaire à gauche, panneau vivant à droite.
+   Le panneau raconte le métier (statuts, annonce légale, greffe, signature)
+   plutôt que d'illustrer : c'est ce que l'utilisateur vient faire.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Cal Sans';
+  src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Matter';
+  src: url('/fonts/Matter-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: block;
+}
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Matter', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #111;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ---------------------------------------------------------------- Structure */
+
+.auth-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+.auth-left {
+  display: flex;
+  flex-direction: column;
+  padding: 32px 40px;
+  background: #fff;
+}
+
+/* Logo, formulaire et pied partagent la même colonne : un seul axe vertical,
+   sinon le logo collé au bord ne s'aligne avec rien. */
+.auth-topbar,
+.auth-footer,
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.auth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.auth-footer {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #52525b;
+}
+
+.auth-footer a {
+  color: #111;
+  border-bottom: 1px solid #c9c9cd;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.auth-footer a:hover {
+  color: #111;
+  border-color: #111;
+}
+
+.auth-topbar img {
+  height: 26px;
+  display: block;
+}
+
+.back-link {
+  font-size: 14px;
+  color: #52525b;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: #111;
+}
+
+.auth-form-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 48px 0;
+}
+
+.login-card h1 {
+  font-family: 'Cal Sans', 'Inter', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.12;
+  margin-bottom: 10px;
+}
+
+.login-card .subtitle {
+  font-size: 15px;
+  line-height: 1.55;
+  color: #52525b;
+  margin-bottom: 30px;
+}
+
+.login-card .subtitle a {
+  color: #111;
+  font-weight: 500;
+  border-bottom: 1px solid #c9c9cd;
+  transition: border-color 0.2s;
+}
+
+.login-card .subtitle a:hover {
+  border-color: #111;
+}
+
+/* ------------------------------------------------------------------ Champs */
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3f3f46;
+  margin-bottom: 6px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  font-family: 'Matter', 'Inter', sans-serif;
+  font-size: 15px;
+  color: #111;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input::placeholder {
+  color: #86868b;
+}
+
+.form-group input:focus,
+.form-group input:focus-visible {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .form-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 4px 0 22px;
+}
+
+.form-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+}
+
+.form-options label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #111;
+  cursor: pointer;
+}
+
+.form-options a {
+  font-size: 13px;
+  color: #52525b;
+  transition: color 0.2s;
+}
+
+.form-options a:hover {
+  color: #111;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  border-radius: 100px;
+  font-family: 'Matter', 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  background: #111;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-login:hover:not(:disabled) {
+  background: #000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+}
+
+.btn-login:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Action secondaire : même poids visuel que le bouton principal, sans le
+   concurrencer. Un lien souligné se perdait sous le bloc de champs. */
+.btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  border-radius: 100px;
+  font-family: 'Matter', 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  color: #111;
+  background: #fff;
+  border: 1px solid #d4d4d8;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.btn-secondary:hover {
+  border-color: #111;
+  background: #fafafa;
+}
+
+/* Séparateur "ou" entre les deux actions */
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 0;
+  font-size: 12px;
+  color: #71717a;
+}
+
+.auth-or::before,
+.auth-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e5e5;
+}
+
+:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------- Messages */
+
+.auth-notice {
+  color: #0f766e;
+  background: #ecfdf5;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.auth-error {
+  color: #ef4444;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.auth-inline-action {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.auth-inline-action a {
+  color: #111;
+  border-bottom: 1px solid #c9c9cd;
+}
+
+.auth-inline-action a:hover {
+  border-color: #111;
+}
+
+/* ------------------------------------------------------------ Panneau droit */
+
+.auth-right {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  overflow: hidden;
+  background: radial-gradient(130% 130% at 75% 8%, #faf9f7 0%, #eeecea 52%, #dedbd7 100%);
+}
+
+/* Halo lent en fond : le panneau respire sans attirer l'oeil */
+.auth-right::before {
+  content: "";
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  top: -120px;
+  right: -120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.11), transparent 70%);
+  pointer-events: none;
+  animation: authGlow 9s ease-in-out infinite;
+}
+
+.auth-right-content {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.auth-right-title {
+  font-family: 'Cal Sans', 'Inter', sans-serif;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+  opacity: 0;
+  animation: authSlideIn 0.7s ease-out 0.2s forwards;
+}
+
+.auth-right-sub {
+  font-size: 15px;
+  line-height: 1.55;
+  color: #4b5563;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: authSlideIn 0.7s ease-out 0.35s forwards;
+}
+
+.auth-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.auth-card {
+  width: 100%;
+  padding: 16px 18px;
+  text-align: left;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.04);
+  opacity: 0;
+}
+
+/* --tilt garde l'inclinaison pendant le flottement : sans elle, l'animation
+   de translation écraserait la rotation et les cartes se remettraient droites. */
+.auth-card-1 {
+  --tilt: -2deg;
+  animation: authCardIn 0.6s ease-out 0.5s forwards, authHover 6s ease-in-out 1.1s infinite;
+}
+
+.auth-card-2 {
+  --tilt: 1deg;
+  animation: authCardIn 0.6s ease-out 0.7s forwards, authHover 6s ease-in-out 1.3s infinite;
+}
+
+.auth-card-3 {
+  --tilt: -1deg;
+  animation: authCardIn 0.6s ease-out 0.9s forwards, authHover 6s ease-in-out 1.5s infinite;
+}
+
+.auth-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.auth-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #52525b;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.auth-card-ref {
+  font-size: 11px;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Etapes du dossier : coche pour ce qui est fait, point pulsé pour l'étape en cours */
+
+.auth-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #111;
+}
+
+.auth-step-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+}
+
+.auth-step-mark svg {
+  width: 10px;
+  height: 10px;
+  stroke: #fff;
+  stroke-width: 3;
+  fill: none;
+}
+
+.auth-step-current .auth-step-mark {
+  background: #fff;
+  border: 2px solid #7c3aed;
+}
+
+.auth-step-current .auth-step-mark::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7c3aed;
+  animation: authPulse 2.2s ease-out infinite;
+}
+
+.auth-step-todo {
+  color: #71717a;
+}
+
+.auth-step-todo .auth-step-mark {
+  background: transparent;
+  border: 2px dashed #d4d4d8;
+}
+
+.auth-progress {
+  height: 4px;
+  border-radius: 100px;
+  background: #ececec;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.auth-progress span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 100px;
+  background: #111;
+  animation: authFill 1.4s cubic-bezier(0.22, 1, 0.36, 1) 1.1s forwards;
+}
+
+/* Signature : qui a signé, qui reste */
+
+.auth-signers {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-avatars {
+  display: flex;
+}
+
+.auth-av {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  margin-left: -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-av:first-child {
+  margin-left: 0;
+}
+
+/* Atténué mais lisible : l'associé qui n'a pas encore signé */
+.auth-av-pending {
+  background: #f4f4f5;
+  color: #71717a;
+  border-style: dashed;
+  border-color: #d4d4d8;
+}
+
+.auth-signers-text {
+  font-size: 13px;
+  color: #111;
+  line-height: 1.35;
+}
+
+.auth-signers-text small {
+  display: block;
+  font-size: 11px;
+  color: #71717a;
+}
+
+/* Documents générés */
+
+.auth-doc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.auth-doc-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #f4f4f5;
+  color: #71717a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-doc-icon svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.auth-doc-name {
+  flex: 1;
+  min-width: 0;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-doc-meta {
+  font-size: 11px;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- Animations */
+
+@keyframes authSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes authCardIn {
+  from { opacity: 0; transform: translateY(30px) rotate(var(--tilt, 0deg)); }
+  to   { opacity: 1; transform: translateY(0) rotate(var(--tilt, 0deg)); }
+}
+
+@keyframes authHover {
+  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+  50%      { transform: translateY(-6px) rotate(var(--tilt, 0deg)); }
+}
+
+@keyframes authGlow {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.75; }
+  50%      { transform: translate(-30px, 40px) scale(1.15); opacity: 1; }
+}
+
+@keyframes authPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.45); }
+  70%  { box-shadow: 0 0 0 7px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+@keyframes authFill {
+  to { width: 66%; }
+}
+
+/* ------------------------------------------------------------------ Réglages */
+
+@media (max-width: 900px) {
+  .auth-split {
+    grid-template-columns: 1fr;
+  }
+  .auth-right {
+    display: none;
+  }
+  .auth-left {
+    padding: 24px 20px 32px;
+  }
+}
+
+/* Les cartes gardent leur inclinaison sans bouger, le contenu reste lisible */
+@media (prefers-reduced-motion: reduce) {
+  .auth-right::before,
+  .auth-right-title,
+  .auth-right-sub,
+  .auth-card,
+  .auth-step-current .auth-step-mark::after,
+  .auth-progress span {
+    animation: none;
+  }
+  .auth-right-title,
+  .auth-right-sub,
+  .auth-card {
+    opacity: 1;
+  }
+  .auth-progress span {
+    width: 66%;
+  }
+}

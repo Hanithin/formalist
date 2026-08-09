@@ -1,5 +1,5 @@
 /**
- * routes/support.js — User support chat
+ * routes/support.js - User support chat
  */
 
 const { authGuard } = require("../middleware/auth-guard");

@@ -18,7 +18,7 @@
     .intro-icon svg { width: 28px; height: 28px; color: #111; }
     .intro h1 {
       font-family: 'Cal Sans', 'Inter', sans-serif;
-      font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 12px;
+      font-size: 28px; font-weight: 600; letter-spacing: 0; margin-bottom: 12px;
     }
     .intro-lead {
       font-size: 15px; color: #666; line-height: 1.7; max-width: 580px; margin: 0 auto 24px;
@@ -46,7 +46,7 @@
       font-family: 'Matter', 'Inter', sans-serif;
       background: #111; color: #fff;
       padding: 14px 40px; border-radius: 100px;
-      font-size: 15px; font-weight: 400; letter-spacing: 0.2px;
+      font-size: 15px; font-weight: 400; letter-spacing: 0;
       border: none; cursor: pointer;
       transition: all 0.2s ease;
     }
@@ -81,7 +81,7 @@
     .step-label {
       position: absolute; top: 44px; left: 50%; transform: translateX(-50%);
       white-space: nowrap;
-      font-size: 13px; color: #999; transition: color 0.2s ease; letter-spacing: 0.2px;
+      font-size: 13px; color: #999; transition: color 0.2s ease; letter-spacing: 0;
     }
     .step.active .step-label { color: #111; font-weight: 600; }
     .step.done .step-label { color: #111; font-weight: 500; }
@@ -95,14 +95,14 @@
     .step-segment.done { background: #111; }
     .step-segment.active { background: linear-gradient(90deg, #111 50%, #e5e5e5 50%); }
 
-    /* En mode révision avocat, l'étape 6 (Offres) n'est pas pertinente — on cache le bloc
+    /* En mode révision avocat, l'étape 6 (Offres) n'est pas pertinente - on cache le bloc
        de tarification et on laisse à JS le soin d'injecter un panneau de mise à jour. */
     body.review-mode .step-content[data-step="6"] > h2,
     body.review-mode .step-content[data-step="6"] > .form-desc,
     body.review-mode .step-content[data-step="6"] .pricing-grid,
     body.review-mode #btn-submit-offer { display: none !important; }
 
-    /* Mode consultation user (read-only) — inputs grisés, navigation gardée pour voir le dossier */
+    /* Mode consultation user (read-only) - inputs grisés, navigation gardée pour voir le dossier */
     body.user-readonly .step-content input[readonly],
     body.user-readonly .step-content textarea[readonly] {
       background: #fafafa;
@@ -123,7 +123,7 @@
     }
 
     /* STEPPER · mode révision avocat (violet) */
-    /* Classes utilitaires couleurs review-mode (avocat) — préférer ces classes aux inline styles */
+    /* Classes utilitaires couleurs review-mode (avocat) - préférer ces classes aux inline styles */
     .review-text { color: #6d28d9; }
     .review-text-strong { color: #5b21b6; }
     .review-bg-soft { background: #f5f3ff; }
@@ -441,7 +441,7 @@
       font-family: 'Matter', 'Inter', sans-serif;
       background: #111; color: #fff;
       padding: 12px 32px; border-radius: 100px;
-      font-size: 14px; font-weight: 400; letter-spacing: 0.2px;
+      font-size: 14px; font-weight: 400; letter-spacing: 0;
       border: none; cursor: pointer;
       transition: all 0.2s ease;
       display: flex; align-items: center; gap: 8px;
@@ -706,7 +706,7 @@
     .pricing-badge {
       position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
       background: #111; color: #fff;
-      font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+      font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: uppercase;
       padding: 6px 14px; border-radius: 100px;
       white-space: nowrap;
     }
@@ -790,7 +790,7 @@
       display: inline-flex; align-items: baseline; gap: 6px;
     }
     .recap-banner-label {
-      font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 500;
+      font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0; font-weight: 500;
     }
     .recap-banner-value { font-size: 13px; font-weight: 600; color: #111; }
 
@@ -805,7 +805,7 @@
     .gen-doc-section-head { margin-bottom: 10px; }
     .gen-doc-section-label {
       font-family: 'Cal Sans', 'Inter', sans-serif;
-      font-size: 16px; font-weight: 600; color: #111; letter-spacing: -0.2px;
+      font-size: 16px; font-weight: 600; color: #111; letter-spacing: 0;
     }
     .gen-doc-section-sub { font-size: 13px; color: #888; margin-top: 3px; }
     .gen-doc-link-block { margin-top: 28px; padding-top: 22px; border-top: 1px solid #ececef; }
@@ -1151,7 +1151,7 @@
       display: inline-flex; align-items: center; gap: 5px;
       font-size: 10px; font-weight: 600; color: #b45309;
       background: #fef3c7; padding: 3px 8px; border-radius: 999px;
-      text-transform: uppercase; letter-spacing: 0.4px;
+      text-transform: uppercase; letter-spacing: 0;
       margin-bottom: 4px;
     }
     .lc-status-dot {
@@ -1819,7 +1819,7 @@
     .app-dialog-icon.warning { background: #fffbeb; color: #d97706; }
     .app-dialog-title {
       font-family: 'Cal Sans','Inter',sans-serif; font-size: 21px; font-weight: 600;
-      color: #111; margin: 0 0 8px; letter-spacing: -0.2px;
+      color: #111; margin: 0 0 8px; letter-spacing: 0;
     }
     .app-dialog-msg { font-size: 14.5px; color: #555; line-height: 1.6; margin: 0 0 24px; }
     .app-dialog-btn {
@@ -1892,7 +1892,7 @@
     }
     .propose-mod-actions .btn-submit:hover { background: #333; }
 
-    /* ===== LOCKED MODE — affiner pour étapes spécifiques ===== */
+    /* ===== LOCKED MODE - affiner pour étapes spécifiques ===== */
     .locked-banner-actions {
       display: flex;
       gap: 10px;
@@ -1917,7 +1917,7 @@
 
     /* Quand une étape est verrouillée : on grise les zones cliquables (cartes capital,
        "Sélectionner", "Répartir également", boutons "Suivant" non-navigation, etc.).
-       Exception : .pricing-grid n'est PAS grisée globalement — on autorise l'upgrade
+       Exception : .pricing-grid n'est PAS grisée globalement - on autorise l'upgrade
        d'offre et chaque carte est stylée individuellement par _applyUpgradeUI. */
     .step-locked .capital-cards-container,
     .step-locked .capital-actions-row,
@@ -1944,7 +1944,7 @@
       border-radius: 18px;
       pointer-events: none;
     }
-    /* Badge "Offre actuelle" — même style que le badge "Recommandé" mais discret */
+    /* Badge "Offre actuelle" - même style que le badge "Recommandé" mais discret */
     .pricing-card.offer-current .pricing-badge {
       content: '';
     }
@@ -1992,6 +1992,6 @@
       border-color: #ececec !important;
       cursor: not-allowed !important;
     }
-    /* "Retour" et "Suivant" restent actifs en lecture seule — l'utilisateur peut naviguer
+    /* "Retour" et "Suivant" restent actifs en lecture seule - l'utilisateur peut naviguer
        librement, il ne pourra simplement pas modifier les champs. Seul le bouton de paiement
        est caché (par le JS, via display:none sur #btn-submit-offer). */

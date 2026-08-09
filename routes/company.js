@@ -1,5 +1,5 @@
 /**
- * routes/company.js — Proxy INPI RNE (API officielle, gratuite).
+ * routes/company.js - Proxy INPI RNE (API officielle, gratuite).
  *   GET /api/company/:siren                      -> { siren, capital }      (auth)
  *   GET /api/company/:siren/documents            -> { actes, bilans }       (avocat/admin)
  *   GET /api/company/:siren/document?kind&id&name -> flux PDF               (avocat/admin)
@@ -257,7 +257,7 @@ function nameNearMarker(text, nom, mk) {
 // Marqueur de naissance uniquement (pour cibler l'acte fondateur en phase OCR).
 const BIRTH_MARKER = /nee? le|nee? a/;
 
-// Cache mémoire des identités déjà extraites (clé siren|nom|prenom), TTL 1h —
+// Cache mémoire des identités déjà extraites (clé siren|nom|prenom), TTL 1h -
 // évite de re-télécharger/ré-OCR/ré-appeler l'IA si on resélectionne la société.
 const _repCache = new Map();
 function repCacheGet(key) {
@@ -271,7 +271,7 @@ function repCacheSet(key, val) {
   if (_repCache.size > 500) _repCache.delete(_repCache.keys().next().value);
 }
 
-// Couche texte seule (pdftotext, rapide, sans OCR) — pour le pré-scan des actes.
+// Couche texte seule (pdftotext, rapide, sans OCR) - pour le pré-scan des actes.
 function pdfTextLayer(buffer) {
   const tmp = path.join(os.tmpdir(), "formalist_scan_" + process.pid + "_" + Date.now() + "_" + Math.floor(Math.random() * 1e6));
   const pdf = tmp + ".pdf";

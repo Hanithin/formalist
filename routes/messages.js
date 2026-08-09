@@ -1,6 +1,6 @@
 /**
- * routes/messages.js — Chat messages between user and avocat
- * Fixes: #10 (XSS stored — sanitize content before DB insert)
+ * routes/messages.js - Chat messages between user and avocat
+ * Fixes: #10 (XSS stored - sanitize content before DB insert)
  */
 
 const { authGuard } = require("../middleware/auth-guard");

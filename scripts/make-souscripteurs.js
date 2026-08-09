@@ -13,7 +13,7 @@ var SZ_SMALL = 40;    // 2pt
 var SZ_MEDIUM = 120;  // 6pt
 var SZ_LARGE = 240;   // 12pt
 var SZ_XLARGE = 360;  // 18pt
-var SZ_SECTION = 480; // 24pt — between major sections
+var SZ_SECTION = 480; // 24pt - between major sections
 
 var FONT = 'Cambria';
 var rPr = '<w:rPr><w:rFonts w:ascii="' + FONT + '" w:cs="' + FONT + '" w:eastAsia="' + FONT + '" w:hAnsi="' + FONT + '"/><w:rtl w:val="0"/></w:rPr>';
