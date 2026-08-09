@@ -17,9 +17,15 @@ import { NOM_COOKIE } from "@/lib/cookies";
 export default function proxy(requete: NextRequest) {
   const { pathname, search } = requete.nextUrl;
 
-  if (estPublic(pathname)) return NextResponse.next();
+  // Le chemin courant est transmis aux composants serveur, qui ne peuvent pas le
+  // lire autrement : ils reçoivent les entêtes, pas l'adresse demandée.
+  const entetes = new Headers(requete.headers);
+  entetes.set("x-chemin", pathname);
+  const laisserPasser = () => NextResponse.next({ request: { headers: entetes } });
 
-  if (requete.cookies.get(NOM_COOKIE)?.value) return NextResponse.next();
+  if (estPublic(pathname)) return laisserPasser();
+
+  if (requete.cookies.get(NOM_COOKIE)?.value) return laisserPasser();
 
   // Une requête d'API reçoit un refus, pas une redirection : rediriger une requête
   // en arrière-plan rend une page de connexion là où du JSON est attendu.

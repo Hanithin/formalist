@@ -8,7 +8,13 @@ import boundaries from "eslint-plugin-boundaries";
  *   app             ->  domain, infrastructure, components, lib
  *   infrastructure  ->  domain, lib
  *   domain          ->  lib
- *   components      ->  lib
+ *   components      ->  domain, lib
+ *
+ * Les composants atteignent le domaine, qui est pur : ni entrées-sorties, ni
+ * secrets, ni accès réseau. Ce qu'ils ne doivent jamais atteindre, c'est
+ * l'infrastructure - identifiants de connexion, requêtes, clés d'API - qui
+ * partirait au navigateur avec eux. Le domaine doit donc rester libre de tout
+ * secret : c'est la contrepartie de cette ouverture.
  *
  * C'est cette règle qui rend impossible l'accident qu'on cherche à éviter : un
  * composant client qui importe la base ou une clé d'API, et l'expédie au navigateur.
@@ -41,7 +47,7 @@ const eslintConfig = [
             { from: [{ element: { type: "app" } }], allow: [{ to: { element: { type: ["domain", "infrastructure", "components", "lib"] } } }] },
             { from: [{ element: { type: "infrastructure" } }], allow: [{ to: { element: { type: ["domain", "lib"] } } }] },
             { from: [{ element: { type: "domain" } }], allow: [{ to: { element: { type: ["lib"] } } }] },
-            { from: [{ element: { type: "components" } }], allow: [{ to: { element: { type: ["lib"] } } }] },
+            { from: [{ element: { type: "components" } }], allow: [{ to: { element: { type: ["domain", "lib"] } } }] },
             { from: [{ element: { type: "lib" } }], allow: [{ to: { element: { type: ["lib"] } } }] },
           ],
         },

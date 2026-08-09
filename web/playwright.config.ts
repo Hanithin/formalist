@@ -7,6 +7,8 @@ import { defineConfig } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests/parcours",
+  // Crée le compte d'essai avant la série
+  globalSetup: "./tests/parcours/preparer.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

@@ -48,8 +48,13 @@ src/
 app  ->  domain, infrastructure, components, lib
 infrastructure  ->  domain, lib
 domain  ->  lib
-components  ->  lib
+components  ->  domain, lib
 ```
+
+Les composants atteignent le domaine, qui est pur : ni entrées-sorties, ni secrets,
+ni accès réseau. Ce qu'ils ne doivent jamais atteindre, c'est l'infrastructure -
+identifiants de connexion, requêtes, clés d'API - qui partirait au navigateur avec
+eux. En contrepartie, le domaine doit rester libre de tout secret.
 
 La règle `boundaries/dependencies` d'ESLint fait respecter ce sens : un import à
 contresens échoue au contrôle, il n'est pas laissé à la vigilance en revue. Un

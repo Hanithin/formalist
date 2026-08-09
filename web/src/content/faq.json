@@ -1,0 +1,62 @@
+[
+  {
+    "titre": "Création d'entreprise",
+    "questions": [
+      {
+        "question": "Quels documents sont nécessaires pour créer une société ?",
+        "reponse": "Pour créer une société, vous aurez besoin d'une pièce d'identité valide, un justificatif de domicile de moins de 3 mois, et les informations relatives à votre activité (dénomination sociale, objet social, capital social, etc.)."
+      },
+      {
+        "question": "Combien de temps prend la création d'une société ?",
+        "reponse": "Le processus complet prend généralement entre 5 et 10 jours ouvrés. La rédaction des statuts est réalisée sous 48h, puis le dossier est déposé au greffe."
+      },
+      {
+        "question": "Quelle forme juridique choisir ?",
+        "reponse": "Le choix dépend de votre situation : SASU pour un associé unique avec une grande flexibilité, SAS pour plusieurs associés, SARL/EURL pour un cadre plus encadré, SCI pour la gestion immobilière. Notre équipe peut vous conseiller."
+      }
+    ]
+  },
+  {
+    "titre": "Auto-entrepreneur",
+    "questions": [
+      {
+        "question": "Comment devenir auto-entrepreneur ?",
+        "reponse": "L'inscription se fait directement sur notre plateforme. Remplissez le formulaire avec vos informations personnelles et votre activité, nous nous chargeons de la déclaration auprès de l'URSSAF."
+      },
+      {
+        "question": "Quels sont les plafonds de chiffre d'affaires ?",
+        "reponse": "Pour 2024 : 188 700€ pour les activités de vente, et 77 700€ pour les prestations de services et professions libérales."
+      }
+    ]
+  },
+  {
+    "titre": "Contrats",
+    "questions": [
+      {
+        "question": "Comment fonctionne la rédaction de contrats ?",
+        "reponse": "Vous décrivez votre besoin via notre formulaire guidé, un avocat spécialisé rédige votre contrat sur mesure sous 48 à 72h. Vous pouvez demander des modifications illimitées."
+      },
+      {
+        "question": "Les contrats sont-ils juridiquement valables ?",
+        "reponse": "Oui, tous nos contrats sont rédigés par des avocats inscrits au Barreau et sont parfaitement conformes au droit français en vigueur."
+      }
+    ]
+  },
+  {
+    "titre": "Mon compte & facturation",
+    "questions": [
+      {
+        "question": "Comment modifier mes informations personnelles ?",
+        "reponse": "Rendez-vous dans Paramètres depuis l'icône en bas de la barre latérale. Vous pouvez y modifier votre nom, email et mot de passe."
+      },
+      {
+        "question": "Quels sont les moyens de paiement acceptés ?",
+        "reponse": "Nous acceptons les cartes bancaires (Visa, Mastercard, American Express) et les virements bancaires pour les entreprises."
+      },
+      {
+        "question": "Comment obtenir une facture ?",
+        "reponse": "Vos factures sont automatiquement générées et disponibles dans la section Mes documents. Vous pouvez les télécharger au format PDF."
+      }
+    ]
+  }
+]
