@@ -1,0 +1,76 @@
+<h2 id="bareme">Le bar&egrave;me IS 2026 d&eacute;taill&eacute;</h2>
+        <p>L'imp&ocirc;t sur les soci&eacute;t&eacute;s fran&ccedil;ais repose sur un syst&egrave;me &agrave; deux taux. Le <strong>taux r&eacute;duit de 15&nbsp;%</strong> s'applique sur les 42&nbsp;500 premiers euros de b&eacute;n&eacute;fice pour les PME &eacute;ligibles (CA inf&eacute;rieur &agrave; 10&nbsp;millions d'euros, capital enti&egrave;rement lib&eacute;r&eacute;). Au-del&agrave;, le <strong>taux normal de 25&nbsp;%</strong> s'applique.</p>
+
+        <h3 id="conditions-reduit">Conditions du taux r&eacute;duit</h3>
+        <p>Pour b&eacute;n&eacute;ficier du taux r&eacute;duit de 15&nbsp;%, votre soci&eacute;t&eacute; doit remplir trois conditions cumulatives :</p>
+        <ul>
+          <li><strong>Chiffre d'affaires</strong> : inf&eacute;rieur &agrave; 10&nbsp;millions d'euros HT</li>
+          <li><strong>Capital social</strong> : enti&egrave;rement lib&eacute;r&eacute; &agrave; la cl&ocirc;ture de l'exercice</li>
+          <li><strong>D&eacute;tention</strong> : capital d&eacute;tenu &agrave; 75&nbsp;% minimum par des personnes physiques</li>
+        </ul>
+
+        <pre><code><span class="cm">// Simulation IS 2026 &ndash; PME &eacute;ligible</span>
+
+B&eacute;n&eacute;fice imposable : <span class="nb">120 000 &euro;</span>
+
+Tranche 1 (0 &ndash; 42 500 &euro;) &times; <span class="kw">15%</span> = <span class="st">6 375 &euro;</span>
+Tranche 2 (42 500 &ndash; 120 000 &euro;) &times; <span class="kw">25%</span> = <span class="st">19 375 &euro;</span>
+
+<span class="fn">IS total = 25 750 &euro;</span>
+<span class="cm">Taux effectif = 21,46%</span></code></pre>
+
+        <h2 id="abattements">Cr&eacute;dits d'imp&ocirc;t et abattements disponibles</h2>
+        <p>Plusieurs dispositifs permettent de r&eacute;duire significativement votre IS. Voici les principaux leviers &agrave; conna&icirc;tre pour l'exercice 2026.</p>
+
+        <h3 id="cir">Cr&eacute;dit d'imp&ocirc;t recherche (CIR)</h3>
+        <p>Le CIR reste le dispositif le plus puissant : <strong>30&nbsp;% des d&eacute;penses de R&amp;D</strong> (jusqu'&agrave; 100&nbsp;millions d'euros), puis 5&nbsp;% au-del&agrave;. Les d&eacute;penses &eacute;ligibles incluent les salaires des chercheurs, les frais de sous-traitance (plafonn&eacute;s), les d&eacute;p&ocirc;ts de brevets et la veille technologique.</p>
+
+        <h3 id="cii">Cr&eacute;dit d'imp&ocirc;t innovation (CII)</h3>
+        <p>R&eacute;serv&eacute; aux PME, le CII offre un cr&eacute;dit de <strong>20&nbsp;% des d&eacute;penses d'innovation</strong> (plafonn&eacute; &agrave; 400&nbsp;000&nbsp;&euro;). Il couvre la conception de prototypes ou les installations pilotes de produits nouveaux.</p>
+
+        <blockquote>Astuce fiscale : le CIR et le CII sont cumulables. Une PME innovante peut ainsi r&eacute;duire son IS de 30&nbsp;% sur la partie R&amp;D et de 20&nbsp;% sur la partie innovation pure.</blockquote>
+
+        <h3 id="jei">Statut Jeune Entreprise Innovante (JEI)</h3>
+        <p>Les entreprises de moins de 8 ans consacrant au moins 15&nbsp;% de leurs charges &agrave; la R&amp;D b&eacute;n&eacute;ficient d'une <strong>exon&eacute;ration totale d'IS</strong> sur le premier exercice b&eacute;n&eacute;ficiaire, puis de 50&nbsp;% sur le suivant.</p>
+
+        <h2 id="optimisation">Strat&eacute;gies d'optimisation l&eacute;gale</h2>
+        <p>Au-del&agrave; des cr&eacute;dits d'imp&ocirc;t, plusieurs strat&eacute;gies permettent de r&eacute;duire l&eacute;galement la base imposable.</p>
+
+        <h3 id="remuneration">Arbitrage r&eacute;mun&eacute;ration / dividendes</h3>
+        <p>Le choix entre se verser une r&eacute;mun&eacute;ration (d&eacute;ductible de l'IS) ou des dividendes (soumis &agrave; la flat tax de 30&nbsp;%) d&eacute;pend de votre situation personnelle. En r&egrave;gle g&eacute;n&eacute;rale, privil&eacute;giez la r&eacute;mun&eacute;ration jusqu'au seuil o&ugrave; les cotisations sociales deviennent moins avantageuses.</p>
+
+        <h3 id="provisions">Provisions et amortissements</h3>
+        <p>La constitution de <strong>provisions pour risques</strong> (cr&eacute;ances douteuses, litiges en cours) et l'utilisation de l'<strong>amortissement d&eacute;gressif</strong> pour les immobilisations neuves permettent de diff&eacute;rer l'IS dans le temps. L'amortissement d&eacute;gressif offre un coefficient multiplicateur allant de 1,25 &agrave; 2,25 selon la dur&eacute;e d'utilisation.</p>
+
+        <pre><code><span class="cm">// Amortissement d&eacute;gressif &ndash; mat&eacute;riel 5 ans</span>
+
+Valeur d'acquisition : <span class="nb">50 000 &euro;</span>
+Coefficient d&eacute;gressif : <span class="kw">1,75</span>
+Taux lin&eacute;aire : 20% &times; 1,75 = <span class="fn">35%</span>
+
+Ann&eacute;e 1 : 50 000 &times; 35% = <span class="st">17 500 &euro;</span>
+Ann&eacute;e 2 : 32 500 &times; 35% = <span class="st">11 375 &euro;</span>
+Ann&eacute;e 3 : 21 125 &times; 35% = <span class="st">7 394 &euro;</span>
+<span class="cm">// Bascule en lin&eacute;aire ensuite</span></code></pre>
+
+        <h2 id="calendrier">Calendrier fiscal 2026</h2>
+        <p>Ne manquez aucune &eacute;ch&eacute;ance pour &eacute;viter les p&eacute;nalit&eacute;s de retard (majoration de 10&nbsp;% de l'IS d&ucirc;).</p>
+        <ol>
+          <li><strong>15 mars 2026</strong> : 1er acompte d'IS (25&nbsp;% de l'IS de l'exercice pr&eacute;c&eacute;dent)</li>
+          <li><strong>15 juin 2026</strong> : 2e acompte d'IS</li>
+          <li><strong>15 septembre 2026</strong> : 3e acompte d'IS</li>
+          <li><strong>15 d&eacute;cembre 2026</strong> : 4e acompte d'IS</li>
+          <li><strong>15 mai 2027</strong> : d&eacute;p&ocirc;t de la liasse fiscale et solde de liquidation</li>
+        </ol>
+
+        <blockquote>Attention : les soci&eacute;t&eacute;s dont l'IS de l'ann&eacute;e pr&eacute;c&eacute;dente d&eacute;passe 150&nbsp;000&nbsp;&euro; doivent calculer leur 4e acompte de mani&egrave;re sp&eacute;cifique sur la base du r&eacute;sultat pr&eacute;visionnel.</blockquote>
+
+        <h2 id="erreurs">Les erreurs fr&eacute;quentes &agrave; &eacute;viter</h2>
+        <p>M&ecirc;me les dirigeants exp&eacute;riment&eacute;s commettent des erreurs co&ucirc;teuses en mati&egrave;re d'IS.</p>
+        <ul>
+          <li><strong>Oublier la lib&eacute;ration du capital</strong> : un capital non enti&egrave;rement lib&eacute;r&eacute; fait perdre le taux r&eacute;duit de 15&nbsp;% sur les 42&nbsp;500&nbsp;&euro;</li>
+          <li><strong>N&eacute;gliger le report d&eacute;ficitaire</strong> : les d&eacute;ficits sont reportables en avant sans limitation de dur&eacute;e (plafonn&eacute;s &agrave; 1&nbsp;M&euro; + 50&nbsp;% du b&eacute;n&eacute;fice au-del&agrave;)</li>
+          <li><strong>Ne pas anticiper les acomptes</strong> : la majoration de 10&nbsp;% s'applique d&egrave;s le premier retard</li>
+          <li><strong>Confondre CIR et CII</strong> : les d&eacute;penses &eacute;ligibles ne sont pas les m&ecirc;mes, m&eacute;langez-les et vous risquez un redressement</li>
+          <li><strong>Ignorer l'int&eacute;gration fiscale</strong> : les groupes de soci&eacute;t&eacute;s (d&eacute;tention &gt; 95&nbsp;%) peuvent compenser les b&eacute;n&eacute;fices et d&eacute;ficits entre filiales</li>
+        </ul>

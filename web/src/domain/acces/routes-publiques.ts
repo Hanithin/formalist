@@ -30,7 +30,15 @@ export const API_PUBLIQUES = [
 ] as const;
 
 /** Chemins techniques servis par le cadre, jamais porteurs de données. */
-const PREFIXES_TECHNIQUES = ["/_next/", "/fonts/", "/images/", "/favicon", "/robots.txt", "/sitemap.xml"];
+const PREFIXES_TECHNIQUES = [
+  "/_next/",
+  "/fonts/",
+  "/images/",
+  "/favicon",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/flux.xml",
+];
 
 export function estPublic(chemin: string): boolean {
   const propre = chemin.length > 1 ? chemin.replace(/\/+$/, "") : chemin;

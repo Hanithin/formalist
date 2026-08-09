@@ -72,6 +72,13 @@ describe("cas particuliers de chemins", () => {
     expect(estPublic("/fonts/Matter-Regular.ttf")).toBe(true);
   });
 
+  it("les fichiers destinés aux moteurs sont servis", () => {
+    // Oubliés au départ : le flux revenait vide, renvoyé vers la page de connexion.
+    expect(estPublic("/robots.txt")).toBe(true);
+    expect(estPublic("/sitemap.xml")).toBe(true);
+    expect(estPublic("/flux.xml")).toBe(true);
+  });
+
   it("une adresse qui ressemble à une adresse publique ne l'est pas", () => {
     expect(estPublic("/connexion-secrete")).toBe(false);
     expect(estPublic("/api/auth/connexion-admin")).toBe(false);

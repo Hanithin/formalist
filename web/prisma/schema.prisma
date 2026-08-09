@@ -454,3 +454,12 @@ model users {
   user_documents                                                  user_documents[]
   user_sessions                                                   user_sessions[]
 }
+
+model tentatives {
+  id         Int      @id @default(autoincrement())
+  action     String
+  cle        String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([action, cle, created_at(sort: Desc)], map: "idx_tentatives_cle")
+}

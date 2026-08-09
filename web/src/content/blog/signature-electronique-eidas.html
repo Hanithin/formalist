@@ -1,0 +1,73 @@
+<h2 id="niveaux">Les trois niveaux de signature eIDAS</h2>
+        <p>Le r&egrave;glement europ&eacute;en eIDAS (Electronic IDentification, Authentication and trust Services) d&eacute;finit trois niveaux de signature &eacute;lectronique, chacun offrant un degr&eacute; de s&eacute;curit&eacute; et de valeur probante diff&eacute;rent.</p>
+
+        <h3 id="simple">Signature &eacute;lectronique simple (SES)</h3>
+        <p>C'est la forme la plus basique. Il peut s'agir d'une case &agrave; cocher, d'un nom tap&eacute; au clavier ou d'une image de signature. Elle a une valeur juridique mais faible en cas de contestation.</p>
+
+        <h3 id="avancee">Signature &eacute;lectronique avanc&eacute;e (AES)</h3>
+        <p>Elle doit remplir quatre crit&egrave;res : &ecirc;tre li&eacute;e au signataire de mani&egrave;re univoque, permettre son identification, &ecirc;tre cr&eacute;&eacute;e avec des donn&eacute;es sous son contr&ocirc;le exclusif, et d&eacute;tecter toute modification ult&eacute;rieure du document.</p>
+
+        <h3 id="qualifiee">Signature &eacute;lectronique qualifi&eacute;e (QES)</h3>
+        <p>C'est l'&eacute;quivalent num&eacute;rique de la signature manuscrite. Elle n&eacute;cessite un certificat qualifi&eacute; d&eacute;livr&eacute; par un prestataire de confiance agr&eacute;&eacute; et un dispositif de cr&eacute;ation de signature qualifi&eacute;.</p>
+
+        <pre><code><span class="cm">// Comparaison des niveaux eIDAS</span>
+
+<span class="kw">Simple (SES)</span>
+  Valeur juridique  : <span class="nb">Faible (charge de preuve sur l'&eacute;metteur)</span>
+  V&eacute;rification id.  : <span class="fn">Aucune exig&eacute;e</span>
+  Cas d'usage       : <span class="st">CGV, emails, documents internes</span>
+
+<span class="kw">Avanc&eacute;e (AES)</span>
+  Valeur juridique  : <span class="nb">Moyenne (pr&eacute;somption de fiabilit&eacute;)</span>
+  V&eacute;rification id.  : <span class="fn">Authentification forte</span>
+  Cas d'usage       : <span class="st">Contrats commerciaux, baux, NDA</span>
+
+<span class="kw">Qualifi&eacute;e (QES)</span>
+  Valeur juridique  : <span class="st">&Eacute;quivalente &agrave; la signature manuscrite</span>
+  V&eacute;rification id.  : <span class="fn">Certificat qualifi&eacute; + dispositif qualifi&eacute;</span>
+  Cas d'usage       : <span class="st">Actes notari&eacute;s, march&eacute;s publics, statuts</span></code></pre>
+
+        <h2 id="conformite">Conformit&eacute; europ&eacute;enne</h2>
+        <p>L'un des grands avantages du r&egrave;glement eIDAS est sa port&eacute;e europ&eacute;enne. Une signature &eacute;lectronique qualifi&eacute;e cr&eacute;&eacute;e en France est automatiquement reconnue dans les <strong>27 &Eacute;tats membres de l'UE</strong>.</p>
+        <p>Depuis la mise &agrave; jour eIDAS 2.0 (entr&eacute;e en application progressive en 2025-2026), de nouvelles exigences s'appliquent :</p>
+        <ul>
+          <li><strong>Portefeuille d'identit&eacute; num&eacute;rique europ&eacute;en</strong> (EUDI Wallet) pour stocker ses certificats</li>
+          <li><strong>Interop&eacute;rabilit&eacute; renforc&eacute;e</strong> entre les prestataires de confiance nationaux</li>
+          <li><strong>Archivage &eacute;lectronique qualifi&eacute;</strong> pour garantir la p&eacute;rennit&eacute; des signatures</li>
+          <li><strong>Horodatage qualifi&eacute;</strong> obligatoire pour les transactions sensibles</li>
+        </ul>
+
+        <blockquote>Avec eIDAS 2.0, l'Europe cr&eacute;e un v&eacute;ritable espace de confiance num&eacute;rique unique. Les entrepreneurs fran&ccedil;ais peuvent d&eacute;sormais signer des contrats transfrontaliers en toute s&eacute;curit&eacute; juridique.</blockquote>
+
+        <h2 id="cas-usage">Cas d'usage concrets</h2>
+        <p>La signature &eacute;lectronique couvre aujourd'hui la quasi-totalit&eacute; des besoins des entreprises :</p>
+        <ul>
+          <li><strong>Cr&eacute;ation d'entreprise</strong> : signature des statuts, du registre des b&eacute;n&eacute;ficiaires effectifs, des actes de nomination</li>
+          <li><strong>Contrats commerciaux</strong> : NDA, contrats de prestation, partenariats</li>
+          <li><strong>Ressources humaines</strong> : contrats de travail, avenants, soldes de tout compte</li>
+          <li><strong>Immobilier</strong> : baux commerciaux, &eacute;tats des lieux, mandats de gestion</li>
+          <li><strong>Finance</strong> : ouverture de comptes, mandats SEPA, garanties</li>
+        </ul>
+
+        <h2 id="bonnes-pratiques">Bonnes pratiques de mise en &oelig;uvre</h2>
+        <p>Pour tirer le meilleur parti de la signature &eacute;lectronique, suivez ces recommandations :</p>
+        <ol>
+          <li><strong>Choisissez le bon niveau</strong> en fonction de l'enjeu juridique du document</li>
+          <li><strong>V&eacute;rifiez l'agr&eacute;ment</strong> de votre prestataire sur la liste de confiance europ&eacute;enne</li>
+          <li><strong>Conservez les preuves</strong> (certificats, journaux d'audit, horodatage)</li>
+          <li><strong>Informez vos signataires</strong> sur le processus et recueillez leur consentement explicite</li>
+          <li><strong>Archivez les documents sign&eacute;s</strong> dans un coffre-fort num&eacute;rique conforme</li>
+        </ol>
+
+        <blockquote>Formalist int&egrave;gre la signature &eacute;lectronique avanc&eacute;e eIDAS directement dans son workflow de g&eacute;n&eacute;ration de documents. Vos statuts, contrats et actes sont sign&eacute;s en un clic.</blockquote>
+
+        <div class="article-footer">
+          <div class="article-tags">
+            <span class="article-tag">Signature &eacute;lectronique</span>
+            <span class="article-tag">eIDAS</span>
+            <span class="article-tag">Conformit&eacute;</span>
+            <span class="article-tag">Europe</span>
+            <span class="article-tag">S&eacute;curit&eacute;</span>
+          </div>
+          <div class="article-share"><span>Partager :</span><a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a><a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a></div>
+        </div>
