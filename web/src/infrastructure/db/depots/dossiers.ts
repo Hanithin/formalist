@@ -1,0 +1,107 @@
+import { prisma } from "../client";
+import { Interdit } from "../utilisateur-courant";
+import { peutLire, peutModifier, type Appartenance, type Dossier } from "@/domain/acces/regles";
+import type { UtilisateurConnecte } from "../sessions";
+
+/**
+ * Accès aux dossiers.
+ *
+ * Toutes les fonctions exigent l'utilisateur en premier argument. Il n'existe
+ * volontairement aucun `trouverParId(id)` : on ne peut pas charger un dossier sans
+ * dire pour qui, donc on ne peut pas oublier le contrôle. C'est la faille de
+ * /api/file rendue impossible par la forme du code plutôt que par la vigilance.
+ */
+
+/** Appartenance de l'utilisateur à son équipe, avec les droits attachés. */
+async function appartenanceDe(utilisateurId: number): Promise<Appartenance | null> {
+  const membre = await prisma.team_members.findFirst({
+    where: { user_id: utilisateurId },
+    include: { teams: { select: { id: true, type: true } } },
+  });
+  if (!membre?.teams) return null;
+
+  return {
+    equipeId: membre.teams.id,
+    type: membre.teams.type === "cabinet" ? "cabinet" : "client",
+    role: (membre.role ?? "user") as Appartenance["role"],
+    voitTousLesDossiers: !!membre.can_view_all,
+    peutModifier: !!membre.can_edit,
+    peutCreer: !!membre.can_create,
+  };
+}
+
+function versDossier(ligne: {
+  id: number;
+  user_id: number;
+  assigned_avocat_id: number | null;
+  team_id: number | null;
+}): Dossier {
+  return {
+    id: ligne.id,
+    proprietaireId: ligne.user_id,
+    avocatAssigneId: ligne.assigned_avocat_id,
+    equipeId: ligne.team_id,
+  };
+}
+
+/**
+ * Charge un dossier pour cet utilisateur.
+ *
+ * Rend null quand le dossier n'existe pas ou qu'il n'y a pas droit : l'appelant ne
+ * doit pas pouvoir distinguer les deux, sans quoi l'existence d'un dossier se
+ * déduit de la réponse.
+ */
+export async function lireDossier(utilisateur: UtilisateurConnecte, id: number) {
+  const ligne = await prisma.formalites.findUnique({ where: { id } });
+  if (!ligne) return null;
+
+  const appartenance = await appartenanceDe(utilisateur.id);
+  if (!peutLire(utilisateur, versDossier(ligne), appartenance)) return null;
+  return ligne;
+}
+
+/** Comme lireDossier, mais lève Interdit plutôt que de rendre null. */
+export async function exigerDossier(utilisateur: UtilisateurConnecte, id: number) {
+  const dossier = await lireDossier(utilisateur, id);
+  if (!dossier) throw new Interdit("Ce dossier n'existe pas ou ne vous est pas accessible");
+  return dossier;
+}
+
+/** Charge un dossier en vue de le modifier. Lire ne suffit pas. */
+export async function exigerDossierModifiable(utilisateur: UtilisateurConnecte, id: number) {
+  const ligne = await prisma.formalites.findUnique({ where: { id } });
+  if (!ligne) throw new Interdit("Ce dossier n'existe pas ou ne vous est pas accessible");
+
+  const appartenance = await appartenanceDe(utilisateur.id);
+  if (!peutModifier(utilisateur, versDossier(ligne), appartenance)) {
+    throw new Interdit("Vous n'avez pas le droit de modifier ce dossier");
+  }
+  return ligne;
+}
+
+/** Les dossiers visibles par cet utilisateur. */
+export async function listerDossiers(utilisateur: UtilisateurConnecte) {
+  if (utilisateur.roles.includes("admin")) {
+    return prisma.formalites.findMany({ orderBy: { updated_at: "desc" } });
+  }
+
+  const appartenance = await appartenanceDe(utilisateur.id);
+  const conditions: object[] = [
+    { user_id: utilisateur.id },
+    { assigned_avocat_id: utilisateur.id },
+  ];
+
+  // L'équipe n'élargit la vue que si le droit est accordé
+  if (appartenance && peutLire(
+    utilisateur,
+    { id: 0, proprietaireId: -1, avocatAssigneId: null, equipeId: appartenance.equipeId },
+    appartenance
+  )) {
+    conditions.push({ team_id: appartenance.equipeId });
+  }
+
+  return prisma.formalites.findMany({
+    where: { OR: conditions },
+    orderBy: { updated_at: "desc" },
+  });
+}

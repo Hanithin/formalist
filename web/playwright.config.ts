@@ -12,12 +12,14 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
+    baseURL: process.env.BASE_URL ?? "http://localhost:3100",
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run build && npm run start",
-    url: "http://localhost:3000",
+    // Port distinct : le serveur d'origine occupe le 3000 pendant la migration,
+    // et Playwright réutiliserait sa réponse en croyant tester Next.
+    command: "npm run build && npm run start -- --port 3100",
+    url: "http://localhost:3100",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
