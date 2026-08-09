@@ -28,6 +28,7 @@ export default async function preparer() {
 
   const ancien = await prisma.users.findUnique({ where: { email: COMPTE.email } });
   if (ancien) {
+    await prisma.messages.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.documents.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.contrats.deleteMany({ where: { user_id: ancien.id } });
     await prisma.formalites.deleteMany({ where: { user_id: ancien.id } });
@@ -123,6 +124,48 @@ export default async function preparer() {
       titre: "Conditions générales de vente",
       status: "signe",
       data_json: "{}",
+    },
+  });
+
+  // Un avocat, et deux messages échangés : sans interlocuteur, la messagerie
+  // ne montre que des messages à soi-même, ce qui ne vérifie rien.
+  const empreinteAvocat = hacher("MotDePasseAvocat2026!");
+  const avocat = await prisma.users.upsert({
+    where: { email: "avocat-parcours@exemple.test" },
+    update: {},
+    create: {
+      email: "avocat-parcours@exemple.test",
+      password_hash: empreinteAvocat.hash,
+      salt: empreinteAvocat.salt,
+      name: "Maître Dupont",
+      role: "avocat",
+      roles: JSON.stringify(["avocat"]),
+      email_verified: true,
+    },
+  });
+
+  await prisma.formalites.update({
+    where: { id: enCours.id },
+    data: { assigned_avocat_id: avocat.id },
+  });
+
+  await prisma.messages.create({
+    data: {
+      formalite_id: enCours.id,
+      sender_id: avocat.id,
+      content: "Bonjour, il manque une pièce d'identité lisible.",
+      kind: "document_request",
+      read: false,
+    },
+  });
+
+  await prisma.messages.create({
+    data: {
+      formalite_id: enCours.id,
+      sender_id: compte.id,
+      content: "Merci, je la dépose aujourd'hui.",
+      kind: "text",
+      read: true,
     },
   });
 

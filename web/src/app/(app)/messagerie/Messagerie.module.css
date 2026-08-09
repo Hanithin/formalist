@@ -1,0 +1,195 @@
+/* Deux colonnes qui occupent la hauteur disponible : la page messagerie utilise
+   tout l'espace plutôt qu'un panneau au milieu du contenu. Seuls le fil et la
+   liste défilent ; le champ de saisie reste visible. */
+
+.disposition {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1px;
+  background: #ececef;
+  border: 1px solid #ececef;
+  border-radius: 14px;
+  overflow: hidden;
+  height: calc(100vh - 180px);
+  min-height: 420px;
+}
+
+.fils {
+  background: #fff;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.fil,
+.filActif {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 1px solid #f1f1f3;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fil:hover {
+  background: #fafafa;
+}
+
+.filActif {
+  background: #f3f3f4;
+}
+
+.societe {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #111;
+}
+
+.apercu {
+  grid-column: 1;
+  font-size: 12.5px;
+  color: #71717a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pastille {
+  grid-row: 1;
+  grid-column: 2;
+  align-self: center;
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 100px;
+  background: #18181b;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.conversation {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fil2 {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jour {
+  margin: 16px 0 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+.mien,
+.recu {
+  max-width: 78%;
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14.5px;
+}
+
+.mien {
+  margin-left: auto;
+  background: #18181b;
+  color: #fff;
+}
+
+.recu {
+  background: #f4f4f5;
+  color: #111;
+}
+
+.intention {
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.mien .intention {
+  color: #fbbf24;
+}
+
+.contenu {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.signature {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  opacity: 0.6;
+}
+
+.saisie {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  border-top: 1px solid #ececef;
+}
+
+.saisie textarea {
+  flex: 1;
+  resize: none;
+  padding: 10px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14.5px;
+}
+
+.saisie textarea:focus {
+  outline: none;
+  border-color: #18181b;
+}
+
+.saisie button {
+  padding: 0 20px;
+  border: none;
+  border-radius: 12px;
+  background: #18181b;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saisie button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .disposition {
+    grid-template-columns: 1fr;
+  }
+}

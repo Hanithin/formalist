@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/navigation/Sidebar";
+import { Bulle } from "@/components/messagerie/Bulle";
 import { utilisateurCourant } from "@/infrastructure/db/utilisateur-courant";
 import styles from "./layout.module.css";
 
@@ -28,6 +29,8 @@ export default async function DispositionApplication({ children }: { children: R
         utilisateur={{ nom: utilisateur.nom, email: utilisateur.email, roles: utilisateur.roles }}
       />
       <div className={styles.contenu}>{children}</div>
+      {/* Une seule bulle, pour toutes les pages de l'application. */}
+      <Bulle />
     </div>
   );
 }

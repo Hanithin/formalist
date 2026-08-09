@@ -1,0 +1,98 @@
+.bouton {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 100px;
+  background: #18181b;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.bouton:hover {
+  background: #27272a;
+}
+
+.pastille,
+.pastilleFil {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 100px;
+  background: #fff;
+  color: #18181b;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.panneau {
+  position: fixed;
+  right: 24px;
+  bottom: 84px;
+  z-index: 40;
+  width: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+}
+
+.liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.liste a {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #f1f1f3;
+  text-decoration: none;
+}
+
+.liste a:hover {
+  background: #fafafa;
+}
+
+.societe {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.apercu {
+  grid-column: 1;
+  font-size: 12.5px;
+  color: #71717a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pastilleFil {
+  grid-row: 1;
+  grid-column: 2;
+  background: #18181b;
+  color: #fff;
+}
+
+.aucun {
+  margin: 0;
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13.5px;
+  color: #71717a;
+}
