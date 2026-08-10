@@ -5,6 +5,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { dossiersDuCabinet } from "@/infrastructure/db/depots/avocat";
 import { comptes, dateCourte, depuis, estFiltre, etatCabinet, FILTRES, retenir } from "@/domain/formalite/avocat";
 import { SousNavigation } from "./SousNavigation";
+import { Vide } from "@/components/liste/Vide";
 import styles from "./Avocat.module.css";
 
 export const metadata: Metadata = {
@@ -72,31 +73,12 @@ export default async function EspaceAvocat({
 
       <div className={styles.content}>
         {dossiers.length === 0 ? (
-          <div className={styles.emptyStateHero}>
-            <div className={styles.emptyIcon}>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-              </svg>
-            </div>
-            <h3>Aucun dossier pour le moment</h3>
-            <p>
-              Vos dossiers clients apparaîtront ici dès qu&apos;ils vous seront assignés, ou créez
-              directement une formalité.
-            </p>
-            <div className={styles.emptyActions}>
-              <Link href="/creation?type=creation" className={styles.btnPrimary}>
-                Créer une formalité
-              </Link>
-            </div>
-          </div>
+          <Vide
+            icone="/avocat"
+            titre="Aucun dossier pour le moment"
+            texte="Vos dossiers clients apparaîtront ici dès qu'ils vous seront assignés. Vous pouvez aussi créer directement une formalité."
+            action={{ libelle: "Créer une formalité", lien: "/creation?type=creation" }}
+          />
         ) : (
           <>
             <div className={styles.counters}>
@@ -143,29 +125,13 @@ export default async function EspaceAvocat({
             </nav>
 
             {retenus.length === 0 ? (
-              <div className={styles.emptyStateHero}>
-                <div className={styles.emptyIcon}>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                </div>
-                <h3>Aucun résultat</h3>
-                <p>Aucun dossier ne correspond à ce filtre.</p>
-                <div className={styles.emptyActions}>
-                  <Link href="/avocat" className={styles.btnSecondary}>
-                    Voir tous les dossiers
-                  </Link>
-                </div>
-              </div>
+              <Vide
+                ton="filtre"
+                icone="/recherche-entreprise"
+                titre="Aucun résultat"
+                texte="Aucun dossier ne correspond à ce filtre."
+                action={{ libelle: "Voir tous les dossiers", lien: "/avocat" }}
+              />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.dossiersTable}>

@@ -21,10 +21,15 @@ export default async function PageMessagerie({
     return (
       <main>
         <h1>Messagerie</h1>
+        {/* Un fil s'ouvre avec l'avocat d'un dossier : sans dossier, il n'y a
+            personne à qui écrire ici. Le support, lui, répond tout de suite -
+            c'est la porte à montrer, pas « créez une société ». */}
         <Vide
+          icone="/messagerie"
           titre="Aucune conversation"
-          texte="Vos échanges avec l'avocat en charge de vos dossiers apparaîtront ici."
-          action={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
+          texte="Un fil s'ouvre avec l'avocat en charge de votre dossier, dès qu'il en prend un. Pour une question sur la plateforme, le support répond sous 24 heures ouvrées."
+          action={{ libelle: "Écrire au support", lien: "/support" }}
+          secondaire={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
         />
       </main>
     );

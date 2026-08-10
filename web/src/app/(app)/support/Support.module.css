@@ -210,10 +210,4 @@
   height: 100%;
 }
 
-.aucune {
-  margin: auto;
-  padding: 24px;
-  text-align: center;
-  font-size: 14px;
-  color: #71717a;
-}
+/* .aucune passait par ici : le fil vide prend le ton « discret » de Vide. */

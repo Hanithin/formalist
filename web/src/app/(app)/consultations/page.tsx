@@ -44,9 +44,15 @@ export default async function Consultations() {
       <section className={styles.bloc}>
         <h2>Prendre rendez-vous</h2>
         {avocats.length === 0 ? (
+          // Rien à faire de son côté : l'écran ne demande donc pas un geste, il
+          // donne une sortie. « Réessayez plus tard » seul laissait sans recours.
           <Vide
+            ton="indisponible"
+            niveau={3}
+            icone="/consultations"
             titre="Aucun créneau ouvert"
-            texte="Les avocats n'ont pas encore publié leurs disponibilités. Réessayez plus tard."
+            texte="Les avocats n'ont pas encore publié leurs disponibilités. Écrivez au support : nous vous proposerons un rendez-vous par un autre moyen."
+            action={{ libelle: "Écrire au support", lien: "/support" }}
           />
         ) : (
           <PriseDeRendezVous avocats={avocats} />
@@ -54,11 +60,25 @@ export default async function Consultations() {
       </section>
 
       <section className={styles.bloc}>
+        {/* Le titre ne change pas selon qu'il y ait ou non un rendez-vous : un
+            repère de navigation qui se renomme n'est plus un repère. Le compte
+            s'ajoute quand il y a quelque chose à compter. */}
         <h2>
           {aVenir.length === 0
-            ? "Aucun rendez-vous à venir"
+            ? "Rendez-vous à venir"
             : accorder(aVenir.length, "rendez-vous à venir", "rendez-vous à venir")}
         </h2>
+
+        {aVenir.length === 0 && (
+          <Vide
+            ton="encart"
+            texte={
+              avocats.length === 0
+                ? "Rien de prévu pour le moment."
+                : "Rien de prévu. Choisissez un créneau ci-dessus, il apparaîtra ici."
+            }
+          />
+        )}
 
         {aVenir.length > 0 && (
           <ul className={styles.rendezVous}>

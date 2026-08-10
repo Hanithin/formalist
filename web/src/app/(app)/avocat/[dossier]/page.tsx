@@ -8,6 +8,7 @@ import { libelleEtat } from "@/domain/formalite/transitions";
 import { etatDocument } from "@/domain/document/statuts";
 import { Notes } from "./Notes";
 import { Verification } from "./Verification";
+import { Vide } from "@/components/liste/Vide";
 import styles from "../Avocat.module.css";
 
 export const metadata: Metadata = {
@@ -150,9 +151,7 @@ export default async function DossierAvocat({
                   ))}
 
                   {renseignes.length === 0 && (
-                    <div className={styles.notesEmpty}>
-                      Le client n&apos;a encore rien renseigné.
-                    </div>
+                    <Vide ton="encart" texte="Le client n'a encore rien renseigné." />
                   )}
                 </div>
 
@@ -236,7 +235,7 @@ export default async function DossierAvocat({
 
         {onglet === "pieces" &&
           (documents.length === 0 ? (
-            <div className={styles.notesEmpty}>Aucune pièce déposée.</div>
+            <Vide ton="encart" texte="Aucune pièce déposée." />
           ) : (
             documents.map((d) => {
               const etatPiece = etatDocument({
@@ -309,7 +308,7 @@ export default async function DossierAvocat({
 
         {onglet === "journal" &&
           (historique.length === 0 ? (
-            <div className={styles.notesEmpty}>Aucune intervention enregistrée.</div>
+            <Vide ton="encart" texte="Aucune intervention enregistrée." />
           ) : (
             <div className={styles.auditTimeline}>
               {historique.map((h) => (

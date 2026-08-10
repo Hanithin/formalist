@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { Vide } from "@/components/liste/Vide";
 import styles from "./TableauDeBord.module.css";
 
 /**
@@ -167,9 +168,7 @@ export function ToutesLesSocietes({ lignes }: { lignes: Ligne[] }) {
 
               <div className={styles.smList}>
                 {filtrees.length === 0 ? (
-                  <div className={styles.smNone}>
-                    Aucune société ne correspond à « {recherche} »
-                  </div>
+                  <Vide ton="discret" texte={"Aucune société ne correspond à « " + recherche + " »"} />
                 ) : (
                   filtrees.map((l) => (
                     <Link key={l.id} href={l.lien} className={styles.smRow}>

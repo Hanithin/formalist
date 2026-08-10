@@ -89,10 +89,4 @@
   color: #fff;
 }
 
-.aucun {
-  margin: 0;
-  padding: 24px 16px;
-  text-align: center;
-  font-size: 13.5px;
-  color: #71717a;
-}
+/* .aucun passait par ici : le panneau vide prend le ton « discret » de Vide. */

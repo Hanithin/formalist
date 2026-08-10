@@ -1,35 +1,245 @@
-.bloc {
-  padding: 48px 24px;
+/**
+ * Les cinq tons de l'absence de contenu. Voir Vide.tsx pour ce qu'ils disent.
+ *
+ * Aucune couleur n'est écrite ici : tout vient des teintes de globals.css, pour
+ * qu'un changement d'identité n'ait pas à passer par ce fichier.
+ */
+
+/* ---------- accueil : rien n'existe encore ---------- */
+
+.accueil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 32px 60px;
   text-align: center;
-  background: #fff;
-  border: 1px solid #ececef;
-  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-large);
+  box-shadow: var(--ombre);
+}
+
+/* ---------- indisponible : personne ne peut rien y faire ---------- */
+
+.indisponible {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 28px 40px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-large);
+}
+
+/* ---------- filtre : ce tri-là ne rend rien ----------
+   Pas de carte : une carte pleine pour un filtre vide donne le même poids à
+   « vous n'avez rien » et « ce tri ne rend rien », qui ne se valent pas. */
+
+.filtre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 34px 20px 36px;
+  text-align: center;
+  background: var(--surface-creuse);
+  border: 1px dashed var(--trait);
+  border-radius: var(--rayon);
+}
+
+/* ---------- encart : la place manquante dans une carte déjà titrée ---------- */
+
+.encart {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  text-align: left;
+  background: var(--surface-creuse);
+  border-radius: var(--rayon);
+}
+
+/* ---------- discret : un fil, un panneau étroit ----------
+   margin: auto centre la phrase dans la colonne de discussion, qui est en flex. */
+
+.discret {
+  margin: auto;
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--gris);
+}
+
+/* ---------- Pièces communes ---------- */
+
+.icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--gris-clair);
+}
+
+.icone svg {
+  display: block;
+}
+
+.accueil .icone,
+.indisponible .icone,
+.filtre .icone {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 18px;
+  border-radius: var(--rayon);
+  background: var(--surface-creuse);
+  border: 1px solid var(--trait);
+}
+
+.accueil .icone svg,
+.indisponible .icone svg,
+.filtre .icone svg {
+  width: 24px;
+  height: 24px;
+}
+
+.filtre .icone {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  background: var(--surface);
+}
+
+.filtre .icone svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Dans l'encart le pictogramme reste sur la ligne du texte. */
+.encart .icone svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Rien à faire n'est pas un manque : la coche prend le vert des états aboutis. */
+.positif {
+  color: var(--abouti-encre);
+}
+
+.corps {
+  min-width: 0;
 }
 
 .titre {
   margin: 0 0 6px;
-  font-family: var(--police-titre), sans-serif;
-  font-size: 17px;
-  color: #111;
+  font-size: 18px;
+}
+
+.filtre .titre,
+.encart .titre {
+  font-size: 15.5px;
 }
 
 .texte {
-  margin: 0 0 20px;
+  margin: 0;
+  max-width: 46ch;
   font-size: 14.5px;
-  color: #71717a;
+  color: var(--gris);
+  line-height: 1.55;
+}
+
+.accueil .texte,
+.indisponible .texte,
+.filtre .texte {
+  margin-inline: auto;
+}
+
+.encart .texte {
+  max-width: none;
+  font-size: 14px;
+  color: var(--encre-douce);
+}
+
+.accueil .texte {
+  font-size: 15.5px;
+}
+
+/* ---------- Gestes ---------- */
+
+.gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  margin-top: 24px;
+}
+
+.encart .gestes {
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+
+.filtre .gestes {
+  margin-top: 18px;
 }
 
 .action {
-  display: inline-block;
-  padding: 11px 20px;
+  padding: 11px 22px;
   border-radius: 10px;
-  background: #18181b;
-  color: #fff;
+  background: var(--encre);
+  color: var(--surface);
   font-size: 14.5px;
   font-weight: 600;
   text-decoration: none;
 }
 
 .action:hover {
-  background: #27272a;
+  background: var(--encre-douce);
+}
+
+/* Sur un filtre vide, revenir à la liste entière n'est pas un engagement : le
+   geste reste un bouton, mais il ne pèse pas celui d'un premier dossier. */
+.filtre .action {
+  padding: 9px 18px;
+  background: var(--surface);
+  border: 1px solid var(--trait-marque);
+  color: var(--encre);
+  font-size: 14px;
+}
+
+.filtre .action:hover {
+  background: var(--surface);
+  border-color: var(--encre);
+}
+
+.secondaire {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--gris);
+  text-decoration: none;
+  border-bottom: 1px solid var(--trait-marque);
+}
+
+.secondaire:hover {
+  color: var(--encre);
+  border-bottom-color: var(--encre);
+}
+
+@media (max-width: 700px) {
+  .accueil {
+    padding: 40px 20px 44px;
+  }
+
+  .gestes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action {
+    text-align: center;
+  }
+
+  .secondaire {
+    align-self: center;
+  }
 }

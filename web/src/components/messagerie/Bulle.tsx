@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Vide } from "@/components/liste/Vide";
 import styles from "./Bulle.module.css";
 
 interface Apercu {
@@ -66,7 +67,7 @@ export function Bulle() {
       {ouverte && (
         <div className={styles.panneau} role="dialog" aria-label="Messages">
           {apercus.length === 0 ? (
-            <p className={styles.aucun}>Aucune conversation pour le moment.</p>
+            <Vide ton="discret" texte="Aucune conversation pour le moment." />
           ) : (
             <ul className={styles.liste}>
               {apercus.map((a) => (

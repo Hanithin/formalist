@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useId } from "react";
+import { Vide } from "@/components/liste/Vide";
 import styles from "./Aide.module.css";
 
 interface Section {
@@ -56,6 +57,18 @@ export function Recherche({ sections }: { sections: Section[] }) {
             ? "1 question"
             : total + " questions"}
       </p>
+
+      {/* La ligne au-dessus annonce le compte aux lecteurs d'écran ; quand il
+          tombe à zéro, la page n'affichait plus rien d'autre. */}
+      {total === 0 && (
+        <Vide
+          ton="filtre"
+          icone="/aide"
+          titre="Aucune question ne correspond"
+          texte="Essayez un autre mot, ou posez-nous directement la question."
+          action={{ libelle: "Écrire au support", lien: "/support" }}
+        />
+      )}
 
       {resultats.map((section) => (
         <section key={section.titre} className={styles.section}>

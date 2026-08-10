@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { listerContrats } from "@/infrastructure/db/depots/documents";
-import { FILTRES_CONTRATS, filtreValide, statutContrat } from "@/domain/document/statuts";
+import {
+  FILTRES_CONTRATS,
+  filtreValide,
+  libelleFiltre,
+  statutContrat,
+} from "@/domain/document/statuts";
 import { accorder } from "@/domain/formalite/etapes";
 import { Filtres } from "@/components/liste/Filtres";
 import { Etat } from "@/components/liste/Etat";
@@ -30,10 +35,26 @@ export default async function Contrats({
       <Filtres filtres={FILTRES_CONTRATS} actif={actif} base="/contrats" />
 
       {contrats.length === 0 ? (
-        <Vide
-          titre={actif === "tous" ? "Aucun contrat" : "Aucun contrat dans ce filtre"}
-          texte="NDA, CGV, CGU, prestation : rédigés et conformes, relus par un avocat."
-        />
+        actif === "tous" ? (
+          // La rédaction ne se lance pas encore depuis l'application : l'écran le
+          // dit et ouvre la seule porte qui marche, plutôt que de laisser une
+          // impasse sous un texte qui vante la prestation.
+          <Vide
+            icone="/contrats"
+            titre="Aucun contrat"
+            texte="Bail, CDI, prestation : vos contrats se préparent avec un avocat, puis se retrouvent ici pour relecture et signature."
+            action={{ libelle: "Prendre une consultation", lien: "/consultations" }}
+            secondaire={{ libelle: "Écrire au support", lien: "/support" }}
+          />
+        ) : (
+          <Vide
+            ton="filtre"
+            icone="/contrats"
+            titre={"Aucun contrat dans « " + libelleFiltre(FILTRES_CONTRATS, actif) + " »"}
+            texte="Vous en avez peut-être à un autre stade."
+            action={{ libelle: "Voir tous les contrats", lien: "/contrats" }}
+          />
+        )
       ) : (
         <>
           <p className={styles.compte}>{accorder(contrats.length, "contrat", "contrats")}</p>

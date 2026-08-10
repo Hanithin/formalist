@@ -31,15 +31,23 @@ export default async function Formalites({
       <Filtres filtres={FILTRES_FORMALITES} actif={actif} base="/formalites" />
 
       {dossiers.length === 0 ? (
-        <Vide
-          titre={actif === "tous" ? "Aucune formalité" : "Aucune formalité dans ce filtre"}
-          texte={
-            actif === "tous"
-              ? "Créez votre société en quelques minutes, accompagné par un avocat."
-              : "Essayez un autre filtre pour retrouver vos dossiers."
-          }
-          action={actif === "tous" ? { libelle: "Créer une société", lien: "/creation?type=creation" } : undefined}
-        />
+        actif === "tous" ? (
+          <Vide
+            icone="/formalites"
+            titre="Aucune formalité"
+            texte="Vos créations, modifications et fermetures de société se suivent ici, étape par étape."
+            action={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
+            secondaire={{ libelle: "Créer mon auto-entreprise", lien: "/auto-entrepreneur" }}
+          />
+        ) : (
+          <Vide
+            ton="filtre"
+            icone="/formalites"
+            titre="Aucune formalité dans ce filtre"
+            texte="Vous en avez peut-être dans un autre état."
+            action={{ libelle: "Voir toutes les formalités", lien: "/formalites" }}
+          />
+        )
       ) : (
         <>
           <p className={styles.compte}>

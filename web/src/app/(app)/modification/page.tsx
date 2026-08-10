@@ -47,9 +47,11 @@ export default async function Modification({
 
       {societes.length === 0 ? (
         <Vide
+          icone="/modification"
           titre="Aucune société à modifier"
-          texte="Créez d'abord une société : vous pourrez ensuite en changer le siège, le nom ou le dirigeant."
+          texte="Une modification porte sur une société déjà immatriculée : changement de siège, de dénomination ou de dirigeant. Créez-en une d'abord."
           action={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
+          secondaire={{ libelle: "Voir mes formalités", lien: "/formalites" }}
         />
       ) : (
         <ChoixModification societes={societes} modifications={MODIFICATIONS} />

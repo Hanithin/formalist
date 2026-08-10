@@ -69,10 +69,8 @@
       padding: 12px 14px; font-size: 13px; color: #5b21b6; margin-bottom: 16px;
     }
 .notesIntro svg { width: 16px; height: 16px; flex-shrink: 0; }
-.notesEmpty {
-      font-size: 13.5px; color: #71717a; background: #fafafa;
-      border-radius: 10px; padding: 16px 18px;
-    }
+/* .notesEmpty passait par ici ; les trois emplacements utilisent le ton
+   « encart » de components/liste/Vide. */
 .note {
       background: #fff; border: 1px solid #ececec; border-radius: 12px;
       padding: 12px 14px; margin-bottom: 10px;
@@ -237,16 +235,10 @@
 .badgeDoc.rejected { background: #fee2e2; color: #dc2626; }
 .docCard.docRejected { border-color: #fca5a5; background: #fffafa; }
 .docRejectionInfo { margin-top: 8px; font-size: 12.5px; color: #991b1b; background: #fef2f2; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #dc2626; }
-.emptyStateHero { text-align: center; padding: 80px 40px; }
-.emptyStateHero .emptyIcon { width: 80px; height: 80px; border-radius: 24px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
-.emptyStateHero .emptyIcon svg { width: 36px; height: 36px; color: #bbb; }
-.emptyStateHero h3 { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #111; }
-.emptyStateHero p { font-size: 14px; color: #999; line-height: 1.6; max-width: 400px; margin: 0 auto; }
-.emptyStateHero .emptyActions { margin-top: 28px; display: flex; gap: 12px; justify-content: center; }
-.emptyStateHero .btnPrimary { padding: 12px 24px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-.emptyStateHero .btnPrimary:hover { background: #333; }
-.emptyStateHero .btnSecondary { padding: 12px 24px; background: #fff; color: #111; border: 1px solid #e5e5e5; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-.emptyStateHero .btnSecondary:hover { border-color: #111; }
+/* Le bloc emptyStateHero et ses boutons vivaient ici, avec leurs propres teintes
+   en dur. L'absence de dossier passe désormais par components/liste/Vide, comme
+   partout ailleurs dans l'application. */
+
 /* On indique en permanence qu'on est dans l'espace avocat : les dossiers
        affichés sont ceux des clients, pas ceux de son propre compte. */
     .topbarTitle { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauDeLEquipe } from "@/infrastructure/db/depots/equipe";
 import { rolesProposables } from "@/domain/equipe/invitations";
+import { Vide } from "@/components/liste/Vide";
 import { Inviter } from "./Inviter";
 import styles from "./Equipe.module.css";
 
@@ -75,13 +76,27 @@ export default async function PageEquipe() {
       )}
 
       <section>
+        {/* Le titre reste « Invitations » : l'état vide se dit dans le bloc, pas
+            dans le titre de la section. */}
         <h2>
           {enAttente.length === 0
-            ? "Aucune invitation en attente"
+            ? "Invitations"
             : enAttente.length === 1
               ? "1 invitation en attente"
               : enAttente.length + " invitations en attente"}
         </h2>
+
+        {invitations.length === 0 && (
+          <Vide
+            ton="encart"
+            texte={
+              peutGerer
+                ? "Aucune invitation envoyée. Celles que vous enverrez apparaîtront ici, avec leur état."
+                : "Aucune invitation envoyée."
+            }
+          />
+        )}
+
         {invitations.length > 0 && (
           <ul className={styles.etats}>
             {invitations.map((i) => (

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Vide } from "@/components/liste/Vide";
 import styles from "./Support.module.css";
 
 interface Conversation {
@@ -77,7 +78,9 @@ export function Support({
     <div className={estAdmin ? styles.dispositionAdmin : styles.disposition}>
       {estAdmin && (
         <nav className={styles.conversations} aria-label="Conversations de support">
-          {conversations.length === 0 && <p className={styles.aucune}>Aucune conversation.</p>}
+          {conversations.length === 0 && (
+            <Vide ton="discret" texte="Aucune conversation ouverte." />
+          )}
           {conversations.map((c) => (
             <button
               key={c.clientId}
@@ -96,11 +99,14 @@ export function Support({
       <section className={styles.echange}>
         <div className={styles.fil} ref={fil} role="log" aria-live="polite">
           {messages.length === 0 && (
-            <p className={styles.aucune}>
-              {estAdmin
-                ? "Choisissez une conversation."
-                : "Aucun message pour l'instant. Écrivez-nous, on vous répond."}
-            </p>
+            <Vide
+              ton="discret"
+              texte={
+                estAdmin
+                  ? "Choisissez une conversation."
+                  : "Aucun message pour l'instant. Écrivez-nous, on vous répond."
+              }
+            />
           )}
 
           {messages.map((m) => (

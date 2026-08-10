@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { listerDocuments } from "@/infrastructure/db/depots/documents";
-import { FILTRES_DOCUMENTS, filtreValide, etatDocument } from "@/domain/document/statuts";
+import {
+  FILTRES_DOCUMENTS,
+  filtreValide,
+  libelleFiltre,
+  etatDocument,
+} from "@/domain/document/statuts";
 import { accorder } from "@/domain/formalite/etapes";
 import { Filtres } from "@/components/liste/Filtres";
 import { Etat } from "@/components/liste/Etat";
@@ -30,11 +35,24 @@ export default async function Documents({
       <Filtres filtres={FILTRES_DOCUMENTS} actif={actif} base="/documents" />
 
       {documents.length === 0 ? (
-        <Vide
-          titre="Aucun document"
-          texte="Vos statuts, attestations et pièces déposées apparaîtront ici."
-          action={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
-        />
+        actif === "tous" ? (
+          <Vide
+            icone="/documents"
+            titre="Aucun document"
+            texte="Statuts, attestations, K-bis et pièces déposées : tout ce qui est produit sur vos dossiers se retrouve ici."
+            action={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
+          />
+        ) : (
+          // Hors du filtre « Tous », proposer de créer une société n'a pas de
+          // sens : la liste complète n'est peut-être pas vide.
+          <Vide
+            ton="filtre"
+            icone="/documents"
+            titre={"Aucun document dans « " + libelleFiltre(FILTRES_DOCUMENTS, actif) + " »"}
+            texte="Vous en avez peut-être d'une autre nature."
+            action={{ libelle: "Voir tous les documents", lien: "/documents" }}
+          />
+        )
       ) : (
         <>
           <p className={styles.compte}>{accorder(documents.length, "document", "documents")}</p>

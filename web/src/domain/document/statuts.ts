@@ -85,3 +85,13 @@ export const FILTRES_FORMALITES: Filtre[] = [
 export function filtreValide(filtres: Filtre[], valeur: string | undefined): string {
   return valeur && filtres.some((f) => f.valeur === valeur) ? valeur : "tous";
 }
+
+/**
+ * Le libellé d'un filtre, pour le nommer quand il ne rend rien.
+ *
+ * « Aucun document dans Mes dépôts » se comprend, « Aucun document dans ce
+ * filtre » oblige à remonter à la barre de filtres pour savoir lequel.
+ */
+export function libelleFiltre(filtres: Filtre[], valeur: string): string {
+  return filtres.find((f) => f.valeur === valeur)?.libelle ?? valeur;
+}
