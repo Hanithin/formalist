@@ -6,7 +6,7 @@ services:
     runtime: docker
     region: frankfurt          # EU (RGPD) — proche France
     plan: starter              # un disque persistant exige un plan payant (>= Starter)
-    healthCheckPath: /connexion.html
+    healthCheckPath: /connexion
     autoDeploy: true
     envVars:
       - key: NODE_ENV
@@ -21,13 +21,17 @@ services:
         sync: false
       - key: INPI_PASSWORD
         sync: false
-      - key: SEED_ADMIN_PASSWORD
+      # Base Postgres (Neon) : l'application n'utilise plus SQLite.
+      - key: DATABASE_URL
         sync: false
-      - key: SEED_AVOCAT_PASSWORD
+      - key: RESEND_API_KEY
         sync: false
-      - key: SEED_USER_PASSWORD
+      - key: ADMIN_EMAIL
         sync: false
     disk:
       name: formalist-data
-      mountPath: /app/persist   # data/ et uploads/ y sont reliés (voir Dockerfile)
+      # uploads/ y est relié (voir Dockerfile). Les données sont désormais dans
+      # Postgres ; ce disque ne porte plus que les pièces déposées, et
+      # disparaîtra avec le passage au stockage objet.
+      mountPath: /app/persist
       sizeGB: 1

@@ -3,14 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "migrer": "node migrate-to-postgres.js",
+    "verifier-migration": "node migrate-to-postgres.js --verifier"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
-    "docx-templates": "^4.15.0",
-    "docxtemplater": "^3.68.2",
-    "jszip": "^3.10.1",
-    "pg": "^8.23.0",
-    "pizzip": "^3.2.0"
+    "pg": "^8.23.0"
   }
 }

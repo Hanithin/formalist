@@ -327,9 +327,36 @@ export default async function preparer() {
     })
   );
 
+  // Deux comptes réservés aux essais de rôle : plusieurs tests les modifient en
+  // parallèle, et partager une cible les faisait se marcher dessus.
+  const cibles: Record<string, number> = {};
+  for (const suffixe of ["role-a", "role-b"]) {
+    const e = hacher("MotDePasseCible2026!");
+    const cible = await prisma.users.upsert({
+      where: { email: "cible-" + suffixe + "@exemple.test" },
+      update: { roles: JSON.stringify(["user"]), role: "user", suspended: false },
+      create: {
+        email: "cible-" + suffixe + "@exemple.test",
+        password_hash: e.hash,
+        salt: e.salt,
+        name: "Cible " + suffixe,
+        role: "user",
+        roles: JSON.stringify(["user"]),
+        email_verified: true,
+      },
+    });
+    cibles[suffixe] = cible.id;
+  }
+
   await writeFile(
     path.join(import.meta.dirname, "comptes.json"),
-    JSON.stringify({ client: compte.id, avocat: avocat.id, admin: administrateur.id })
+    JSON.stringify({
+      client: compte.id,
+      avocat: avocat.id,
+      admin: administrateur.id,
+      cibleA: cibles["role-a"],
+      cibleB: cibles["role-b"],
+    })
   );
 
   // Session avocat, pour vérifier l'espace qui lui est réservé.

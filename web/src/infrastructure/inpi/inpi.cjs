@@ -17,8 +17,6 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
-// const { authGuard } = require("../middleware/auth-guard");  // servait au routeur HTTP, retiré
-// const { jsonResponse, errorResponse } = require("../lib/router");  // servait au routeur HTTP, retiré
 
 const INPI_HOST = "registre-national-entreprises.inpi.fr";
 let _token = null;

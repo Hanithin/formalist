@@ -1,40 +1,42 @@
-FROM node:22-alpine
+FROM node:24-alpine
 
-# libreoffice : conversion DOCX->PDF ; poppler-utils (pdftotext/pdftoppm) +
-# tesseract-ocr (langue FR) : extraction texte/OCR des statuts INPI
+# libreoffice : conversion DOCX vers PDF. poppler-utils et tesseract : extraction
+# de texte et reconnaissance de caractères sur les statuts issus de l'INPI.
 RUN apk add --no-cache libreoffice font-noto ttf-dejavu \
     poppler-utils tesseract-ocr tesseract-ocr-data-fra
 
-# Build dependencies for better-sqlite3
-RUN apk add --no-cache python3 make g++
-
-# Install Cambria font for document generation
+# Cambria est employée par les gabarits Word : sans elle, LibreOffice substitue
+# une autre police et la mise en page des statuts change.
 COPY fonts/cambria.ttf /usr/share/fonts/cambria/cambria.ttf
 RUN fc-cache -f
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --omit=dev
+# Les gabarits sont lus depuis la racine du dépôt par web/, d'où leur place ici.
+COPY templates ./templates
+COPY migrations ./migrations
 
-# Keep libstdc++ needed by better-sqlite3 at runtime
-RUN apk del python3 make g++ && apk add --no-cache libstdc++
+WORKDIR /app/web
 
-COPY . .
+COPY web/package*.json ./
+RUN npm ci
 
-# Cookies sécurisés (Secure) + HOME inscriptible pour le profil LibreOffice
+COPY web/ ./
+
+# Le client Prisma n'est pas versionné : il se génère depuis le schéma.
+RUN npx prisma generate
+
 ENV NODE_ENV=production \
     HOME=/root
 
-# Données persistantes (SQLite + uploads) sur l'unique disque Render monté
-# sur /app/persist. On y redirige data/ et uploads/ via des liens symboliques.
-RUN rm -rf /app/data /app/uploads \
-    && ln -s /app/persist/data /app/data \
-    && ln -s /app/persist/uploads /app/uploads \
-    && mkdir -p /app/tmp
+RUN npm run build
+
+WORKDIR /app
+
+# Les pièces déposées vivent sur le disque persistant de Render, monté sur
+# /app/persist. Elles passeront au stockage objet, ce qui rendra ce lien inutile.
+RUN rm -rf /app/uploads && ln -s /app/persist/uploads /app/uploads
 
 EXPOSE 3000
 
-# Crée les cibles des liens symboliques sur le disque monté (/app/persist)
-# avant de démarrer, sinon mkdir('/app/data') échoue (lien cassé au 1er boot).
-CMD ["sh", "-c", "mkdir -p /app/persist/data /app/persist/uploads && node index.js"]
+CMD ["sh", "-c", "mkdir -p /app/persist/uploads && cd /app/web && npm run start -- --port 3000 --hostname 0.0.0.0"]

@@ -74,9 +74,11 @@ test.describe("administrateur", () => {
   });
 
   test("accorde et retire le rôle avocat", async ({ page, request }) => {
+    // Un compte réservé à ce test : plusieurs tests modifient des rôles en
+    // parallèle, et partager une cible les faisait se marcher dessus.
     const cible = JSON.parse(
       readFileSync(path.join(import.meta.dirname, "comptes.json"), "utf8")
-    ).client as number;
+    ).cibleA as number;
 
     const accorde = await request.put("/api/administration/roles", {
       data: { compte: cible, roles: ["user", "avocat"] },
@@ -85,10 +87,8 @@ test.describe("administrateur", () => {
     expect((await accorde.json()).principal).toBe("avocat");
 
     await page.goto("/administration");
-    // Le rôle accordé se voit sur la ligne du compte. On cible la ligne par son
-    // adresse exacte : « admin-parcours@… » et « avocat-parcours@… » la contiennent.
     const ligne = page.locator("li").filter({
-      has: page.getByText("parcours@exemple.test", { exact: true }),
+      has: page.getByText("cible-role-a@exemple.test", { exact: true }),
     });
     await expect(ligne.getByLabel("Avocat")).toBeChecked();
 
@@ -124,7 +124,7 @@ test.describe("administrateur", () => {
   test("une liste de rôles vide est refusée", async ({ request }) => {
     const cible = JSON.parse(
       readFileSync(path.join(import.meta.dirname, "comptes.json"), "utf8")
-    ).client as number;
+    ).cibleB as number;
 
     const reponse = await request.put("/api/administration/roles", {
       data: { compte: cible, roles: [] },
@@ -135,7 +135,7 @@ test.describe("administrateur", () => {
   test("un rôle inventé est écarté sans faire échouer le reste", async ({ request }) => {
     const cible = JSON.parse(
       readFileSync(path.join(import.meta.dirname, "comptes.json"), "utf8")
-    ).client as number;
+    ).cibleB as number;
 
     const reponse = await request.put("/api/administration/roles", {
       data: { compte: cible, roles: ["user", "super-admin"] },
