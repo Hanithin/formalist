@@ -47,3 +47,5 @@ next-env.d.ts
 tests/parcours/session.json
 tests/parcours/session-avocat.json
 tests/parcours/jeton-signature.txt
+tests/parcours/session-admin.json
+tests/parcours/comptes.json

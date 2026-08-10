@@ -238,6 +238,56 @@ export default async function preparer() {
     jetonSignature
   );
 
+  // Un administrateur de plateforme, distinct de celui du dépôt : suspendre ou
+  // rétrograder un vrai compte pendant les essais serait fâcheux.
+  const empreinteAdmin = hacher("MotDePasseAdmin2026!");
+  const administrateur = await prisma.users.upsert({
+    where: { email: "admin-parcours@exemple.test" },
+    update: { suspended: false, roles: JSON.stringify(["admin"]), role: "admin" },
+    create: {
+      email: "admin-parcours@exemple.test",
+      password_hash: empreinteAdmin.hash,
+      salt: empreinteAdmin.salt,
+      name: "Admin Parcours",
+      role: "admin",
+      roles: JSON.stringify(["admin"]),
+      email_verified: true,
+    },
+  });
+
+  const jetonAdmin = jeton();
+  await prisma.sessions.create({
+    data: {
+      token: jetonAdmin,
+      user_id: administrateur.id,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  await writeFile(
+    path.join(import.meta.dirname, "session-admin.json"),
+    JSON.stringify({
+      cookies: [
+        {
+          name: "formalist_session",
+          value: jetonAdmin,
+          domain: "localhost",
+          path: "/",
+          expires: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+          httpOnly: true,
+          secure: false,
+          sameSite: "Lax",
+        },
+      ],
+      origins: [],
+    })
+  );
+
+  await writeFile(
+    path.join(import.meta.dirname, "comptes.json"),
+    JSON.stringify({ client: compte.id, avocat: avocat.id, admin: administrateur.id })
+  );
+
   // Session avocat, pour vérifier l'espace qui lui est réservé.
   const jetonAvocat = jeton();
   await prisma.sessions.create({

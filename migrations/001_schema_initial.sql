@@ -68,7 +68,9 @@ CREATE TABLE IF NOT EXISTS formalites (
 
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  formalite_id INTEGER NOT NULL REFERENCES formalites(id),
+  -- Facultatif : les actions de plateforme - accorder un rôle, suspendre un
+  -- compte - ne concernent aucun dossier, et ce sont les plus sensibles.
+  formalite_id INTEGER REFERENCES formalites(id),
   actor_id INTEGER REFERENCES users(id),
   actor_role TEXT NOT NULL,
   action TEXT NOT NULL,

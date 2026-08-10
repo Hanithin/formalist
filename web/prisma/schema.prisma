@@ -20,8 +20,8 @@ model api_usage {
 }
 
 model audit_log {
-  id           Int        @id @default(autoincrement())
-  formalite_id Int
+  id           Int         @id @default(autoincrement())
+  formalite_id Int?
   actor_id     Int?
   actor_role   String
   action       String
@@ -29,11 +29,12 @@ model audit_log {
   before_value String?
   after_value  String?
   comment      String?
-  created_at   DateTime   @default(now()) @db.Timestamptz(6)
-  users        users?     @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  formalites   formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at   DateTime    @default(now()) @db.Timestamptz(6)
+  users        users?      @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  formalites   formalites? @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([formalite_id, created_at(sort: Desc)], map: "idx_audit_formalite")
+  @@index([actor_id, created_at(sort: Desc)], map: "idx_audit_acteur")
 }
 
 model avocat_availability {
