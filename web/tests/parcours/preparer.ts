@@ -170,6 +170,21 @@ export default async function preparer() {
     data: { assigned_avocat_id: avocat.id },
   });
 
+  // Un dossier immatriculé, assigné à l'avocat : il sert à vérifier qu'un
+  // dossier terminé ne revient pas en arrière.
+  await prisma.formalites.create({
+    data: {
+      user_id: compte.id,
+      assigned_avocat_id: avocat.id,
+      type: "creation",
+      forme: "SASU",
+      societe: "PARCOURS IMMATRICULEE",
+      status: "terminee",
+      phase: 5,
+      data_json: "{}",
+    },
+  });
+
   await prisma.messages.create({
     data: {
       formalite_id: enCours.id,

@@ -1,6 +1,8 @@
 import { prisma } from "../client";
 import { exigerDossierModifiable } from "./dossiers";
 import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
+import { monteeEnOffrePermise } from "@/domain/formalite/transitions";
+import { Interdit } from "../utilisateur-courant";
 import { regle } from "@/domain/formalite/formes";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "../sessions";
@@ -84,4 +86,43 @@ export async function enregistrerBrouillon(
   });
 
   return fusionne;
+}
+
+/**
+ * Montée en offre.
+ *
+ * Réservée au propriétaire du dossier : c'est lui qui paie. On ne redescend pas,
+ * le travail déjà fait au titre d'une offre supérieure n'étant pas défait.
+ */
+export async function changerDOffre(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  offre: string
+) {
+  const dossier = await prisma.formalites.findUnique({ where: { id: dossierId } });
+  if (!dossier || dossier.user_id !== utilisateur.id) {
+    throw new Interdit("Ce dossier n'existe pas ou ne vous est pas accessible");
+  }
+
+  if (!monteeEnOffrePermise(dossier.offer, offre)) {
+    throw new Interdit("Cette offre n'est pas une montée depuis la vôtre");
+  }
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: { offer: offre, updated_at: new Date() },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "user",
+      action: "offre_modifiee",
+      before_value: dossier.offer,
+      after_value: offre,
+    },
+  });
+
+  return { offre };
 }

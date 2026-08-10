@@ -1,6 +1,11 @@
 import { prisma } from "../client";
 import { Interdit } from "../utilisateur-courant";
 import { exigerDossier, listerDossiers } from "./dossiers";
+import {
+  transitionPermise,
+  libelleEtat,
+  messageAuClient,
+} from "@/domain/formalite/transitions";
 import { equipeDe } from "./equipe";
 import type { UtilisateurConnecte } from "../sessions";
 
@@ -125,6 +130,107 @@ export async function ajouterNote(
       content: contenu.slice(0, 5000),
     },
   });
+}
+
+/**
+ * Fait changer un dossier d'état.
+ *
+ * Le client est prévenu quand le changement le concerne, et la trace est écrite
+ * dans le journal d'audit - c'est elle qui permet d'instruire une contestation.
+ */
+export async function changerEtatDossier(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  vers: string,
+  commentaire?: string
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  if (dossier.status === vers) return { inchange: true as const };
+
+  if (!transitionPermise(dossier.status, vers)) {
+    throw new Interdit(
+      "Un dossier « " + libelleEtat(dossier.status) + " » ne peut pas passer à « " +
+        libelleEtat(vers) + " »"
+    );
+  }
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: {
+      status: vers,
+      finalized_at: vers === "terminee" ? new Date() : dossier.finalized_at,
+      updated_at: new Date(),
+    },
+  });
+
+  const message = messageAuClient(vers, dossier.societe || "votre société");
+  if (message) {
+    await prisma.notifications.create({
+      data: {
+        user_id: dossier.user_id,
+        type: "changement_etat",
+        content: message,
+        formalite_id: dossierId,
+      },
+    });
+  }
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: utilisateur.roles[0] ?? "avocat",
+      action: "etat_" + vers,
+      before_value: dossier.status,
+      after_value: vers,
+      comment: commentaire?.slice(0, 1000) ?? null,
+    },
+  });
+
+  return { inchange: false as const, etat: vers };
+}
+
+/**
+ * Assigne un avocat à un dossier.
+ *
+ * Un avocat s'attribue un dossier de son cabinet ; un administrateur en assigne
+ * un à quelqu'un d'autre.
+ */
+export async function assignerAvocat(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  avocatId: number
+) {
+  exigerAvocat(utilisateur);
+  await exigerDossier(utilisateur, dossierId);
+
+  if (avocatId !== utilisateur.id && !utilisateur.roles.includes("admin")) {
+    throw new Interdit("Vous ne pouvez vous assigner qu'à vous-même");
+  }
+
+  const cible = await prisma.users.findUnique({ where: { id: avocatId } });
+  if (!cible || cible.role !== "avocat") {
+    throw new Interdit("Ce compte n'est pas un avocat");
+  }
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: { assigned_avocat_id: avocatId, updated_at: new Date() },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: utilisateur.roles[0] ?? "avocat",
+      action: "avocat_assigne",
+      after_value: cible.name,
+    },
+  });
+
+  return { avocat: cible.name };
 }
 
 /** Valide ou refuse une pièce déposée par le client. */

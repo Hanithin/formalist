@@ -43,9 +43,16 @@ test.describe("formalités", () => {
     await expect(page.getByText("PARCOURS TERMINEE")).toBeVisible();
   });
 
-  test("le compte s'accorde au singulier", async ({ page }) => {
+  test("le compte s'accorde selon le nombre", async ({ page }) => {
+    // Le jeu de données comprend deux dossiers terminés : le pluriel s'applique.
     await page.goto("/formalites?filtre=terminee");
-    await expect(page.getByText("1 formalité", { exact: true })).toBeVisible();
+    await expect(page.getByText(/^\d+ formalités$/)).toBeVisible();
+
+    // Et le singulier reste sans s : c'est ce qui avait été relevé en revue.
+    await page.goto("/formalites?filtre=tous");
+    const compte = await page.getByText(/^\d+ formalités?$/).textContent();
+    const nombre = Number(compte!.split(" ")[0]);
+    expect(compte).toBe(nombre + (nombre <= 1 ? " formalité" : " formalités"));
   });
 });
 

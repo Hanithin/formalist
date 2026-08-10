@@ -46,7 +46,8 @@ test.describe("espace avocat", () => {
 
   test("signale les dossiers assignés et les pièces à vérifier", async ({ page }) => {
     await page.goto("/avocat");
-    await expect(page.getByText("Assigné à vous")).toBeVisible();
+    // Deux dossiers sont assignés à cet avocat dans le jeu de données.
+    await expect(page.getByText("Assigné à vous").first()).toBeVisible();
     await expect(page.getByText(/pièce à vérifier/).first()).toBeVisible();
   });
 
