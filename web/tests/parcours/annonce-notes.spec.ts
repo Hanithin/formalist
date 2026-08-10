@@ -76,7 +76,8 @@ test.describe("notes internes", () => {
     const { dossiers } = await (await request.get("/api/formalites")).json();
     const dossier = dossiers.find((d: { societe: string }) => d.societe === "PARCOURS EN COURS");
 
-    await page.goto("/avocat/" + dossier.id);
+    // Les notes internes ont leur onglet dans la fiche.
+    await page.goto("/avocat/" + dossier.id + "?onglet=notes");
     const texte = "Note à supprimer " + Date.now();
     await page.getByLabel("Ajouter une note").fill(texte);
     await page.getByRole("button", { name: "Ajouter la note" }).click();

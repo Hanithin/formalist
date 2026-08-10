@@ -18,7 +18,7 @@ test.describe("tableau de bord du client", () => {
 
     await expect(page.getByRole("heading", { name: "Ce qu'on attend de vous" })).toBeVisible();
     // Le document refusé du jeu de données doit remonter en premier.
-    await expect(page.getByText("Un document à remplacer")).toBeVisible();
+    await expect(page.getByText("Un document à remplacer").first()).toBeVisible();
     await expect(page.getByText(/PARCOURS EN COURS/).first()).toBeVisible();
   });
 
@@ -35,13 +35,14 @@ test.describe("tableau de bord du client", () => {
     await page.goto("/tableau-de-bord");
     await expect(page.getByRole("heading", { name: /Vos sociétés|Votre société/ })).toBeVisible();
 
+    // Trois vignettes, pas une de plus, et le bouton annonce le total.
     const vignettes = page.getByRole("region", { name: "Vos sociétés" });
-    const { dossiers } = await (await request.get("/api/formalites")).json();
-    for (const d of dossiers.slice(0, 3)) {
-      await expect(vignettes.getByText(d.societe || "Sans nom").first()).toBeVisible();
-    }
+    await expect(vignettes.getByRole("link", { name: /Continuer|Consulter/ })).toHaveCount(3);
 
-    await expect(page.getByRole("button", { name: /Voir toutes/ })).toBeVisible();
+    const { dossiers } = await (await request.get("/api/formalites")).json();
+    await expect(page.getByRole("button", { name: /Voir toutes/ })).toContainText(
+      String(dossiers.length)
+    );
   });
 
   test("« Voir toutes » ouvre la fenêtre et sa recherche", async ({ page }) => {
@@ -89,15 +90,29 @@ test.describe("espace avocat", () => {
 
   test("liste les dossiers du cabinet", async ({ page }) => {
     await page.goto("/avocat");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Dossiers du cabinet");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Espace avocat");
     await expect(page.getByRole("link", { name: "PARCOURS EN COURS" })).toBeVisible();
+  });
+
+  test("un filtre laisse exactement le nombre de dossiers qu'il annonce", async ({ page }) => {
+    // Le compte affiché à côté d'un filtre n'a d'intérêt que s'il correspond à ce
+    // que le filtre laisse.
+    for (const filtre of ["tous", "verifier", "encours", "termines", "miens"]) {
+      await page.goto("/avocat?filtre=" + filtre);
+
+      const actif = page.locator("nav[aria-label='Filtrer les dossiers'] a[aria-current='page']");
+      const annonce = Number((await actif.innerText()).match(/(\d+)\s*$/)?.[1]);
+      const lignes = await page.locator("table tbody tr").count();
+
+      expect(lignes, filtre).toBe(annonce);
+    }
   });
 
   test("signale les dossiers assignés et les pièces à vérifier", async ({ page }) => {
     await page.goto("/avocat");
     // Deux dossiers sont assignés à cet avocat dans le jeu de données.
     await expect(page.getByText("Assigné à vous").first()).toBeVisible();
-    await expect(page.getByText(/pièce à vérifier/).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /À vérifier/ })).toBeVisible();
   });
 
   test("le dossier montre les informations et ce qui manque encore", async ({ page }) => {
@@ -114,6 +129,8 @@ test.describe("espace avocat", () => {
     await page.goto("/avocat");
     await page.getByRole("link", { name: "PARCOURS EN COURS" }).click();
     await page.waitForURL(/\/avocat\/\d+/);
+    await page.getByRole("link", { name: "Notes internes" }).click();
+    await page.waitForURL(/onglet=notes/);
 
     const texte = "Point de vigilance " + Date.now();
     await page.getByLabel("Ajouter une note").fill(texte);
@@ -127,6 +144,8 @@ test.describe("espace avocat", () => {
     await page.goto("/avocat");
     await page.getByRole("link", { name: "PARCOURS EN COURS" }).click();
     await page.waitForURL(/\/avocat\/\d+/);
+    await page.getByRole("link", { name: /^Pièces/ }).click();
+    await page.waitForURL(/onglet=pieces/);
 
     const boutons = page.getByRole("button", { name: "Demander une autre pièce" });
     if ((await boutons.count()) === 0) test.skip();
@@ -136,8 +155,11 @@ test.describe("espace avocat", () => {
     await page.getByRole("button", { name: "Refuser" }).click();
 
     await expect(page.getByText("Motif : Document périmé")).toBeVisible();
+
     // L'intervention est tracée : c'est ce qui permet d'instruire un litige.
-    await expect(page.getByText("document_refuse")).toBeVisible();
+    await page.getByRole("link", { name: "Journal" }).click();
+    await page.waitForURL(/onglet=journal/);
+    await expect(page.getByText("document_refuse").first()).toBeVisible();
   });
 });
 

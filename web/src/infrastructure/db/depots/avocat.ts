@@ -31,7 +31,7 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
 
   const identifiants = dossiers.map((d) => d.id);
 
-  const [clients, documents, notes] = await Promise.all([
+  const [clients, documents, notes, nonLus, encaisse] = await Promise.all([
     prisma.users.findMany({
       where: { id: { in: dossiers.map((d) => d.user_id) } },
       select: { id: true, name: true, email: true },
@@ -46,23 +46,49 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
       where: { formalite_id: { in: identifiants } },
       _count: { _all: true },
     }),
+    prisma.messages.groupBy({
+      by: ["formalite_id"],
+      where: {
+        formalite_id: { in: identifiants },
+        read: false,
+        sender_id: { not: utilisateur.id },
+      },
+      _count: { _all: true },
+    }),
+    prisma.payments.groupBy({
+      by: ["formalite_id"],
+      where: { formalite_id: { in: identifiants }, status: "paid" },
+      _sum: { amount_cents: true },
+    }),
   ]);
 
   const parClient = new Map(clients.map((c) => [c.id, c]));
   const aVerifier = new Map(documents.map((d) => [d.formalite_id, d._count._all]));
   const nbNotes = new Map(notes.map((n) => [n.formalite_id, n._count._all]));
+  const messages = new Map(nonLus.map((m) => [m.formalite_id, m._count._all]));
+  const paye = new Map(encaisse.map((p) => [p.formalite_id, p._sum.amount_cents ?? 0]));
 
   return dossiers.map((d) => ({
     id: d.id,
+    reference: d.reference || "#" + String(d.id).padStart(4, "0"),
     societe: d.societe || "Sans nom",
     forme: d.forme,
+    capital: d.capital,
+    type: d.type,
+    sousType: d.sub_type,
     status: d.status,
     phase: d.phase ?? 1,
+    sousPhase: d.business_sub_phase,
     offre: d.offer,
+    creePar: (d.created_by_avocat ? "avocat" : "client") as "avocat" | "client",
+    creeLe: d.created_at,
+    majLe: d.updated_at,
     client: parClient.get(d.user_id)?.name ?? "Client inconnu",
     clientEmail: parClient.get(d.user_id)?.email ?? null,
     documentsAVerifier: aVerifier.get(d.id) ?? 0,
     notes: nbNotes.get(d.id) ?? 0,
+    nonLus: messages.get(d.id) ?? 0,
+    payeCentimes: paye.get(d.id) ?? 0,
     monDossier: d.assigned_avocat_id === utilisateur.id,
   }));
 }
@@ -71,7 +97,7 @@ export async function dossierPourAvocat(utilisateur: UtilisateurConnecte, dossie
   exigerAvocat(utilisateur);
   const dossier = await exigerDossier(utilisateur, dossierId);
 
-  const [client, documents, notes, historique] = await Promise.all([
+  const [client, documents, notes, historique, nonLus] = await Promise.all([
     prisma.users.findUnique({
       where: { id: dossier.user_id },
       select: { name: true, email: true },
@@ -91,6 +117,9 @@ export async function dossierPourAvocat(utilisateur: UtilisateurConnecte, dossie
       take: 30,
       include: { users: { select: { name: true } } },
     }),
+    prisma.messages.count({
+      where: { formalite_id: dossierId, read: false, sender_id: { not: utilisateur.id } },
+    }),
   ]);
 
   let donnees: Record<string, unknown> = {};
@@ -100,7 +129,7 @@ export async function dossierPourAvocat(utilisateur: UtilisateurConnecte, dossie
     donnees = {};
   }
 
-  return { dossier, client, documents, notes, historique, donnees };
+  return { dossier, client, documents, notes, historique, donnees, nonLus };
 }
 
 /**
