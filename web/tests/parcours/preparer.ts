@@ -30,6 +30,8 @@ export default async function preparer() {
   if (ancien) {
     // Les essais de création laissent des dossiers, des pièces déposées et leur
     // inscription au registre : on retire dans l'ordre des dépendances.
+    await prisma.support_messages.deleteMany({ where: { user_id: ancien.id } });
+    await prisma.support_conversations.deleteMany({ where: { user_id: ancien.id } });
     await prisma.lawyer_consultations.deleteMany({ where: { user_id: ancien.id } });
     await prisma.signature_requests.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.uploaded_files.deleteMany({ where: { user_id: ancien.id } });
@@ -70,7 +72,7 @@ export default async function preparer() {
   // plusieurs fois d'affilée déclencherait la limitation, et les tests
   // échoueraient sur un mécanisme qui fonctionne.
   await prisma.tentatives.deleteMany({
-    where: { action: { in: ["inscription", "renvoi-verification"] } },
+    where: { action: { in: ["inscription", "renvoi-verification", "objet-social"] } },
   });
   await prisma.users.deleteMany({ where: { email: { startsWith: "nouvelle-" } } });
   await prisma.users.deleteMany({ where: { email: { startsWith: "nouveau-" } } });

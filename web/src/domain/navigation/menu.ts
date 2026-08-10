@@ -47,6 +47,7 @@ export const MENU: GroupeMenu[] = [
       { libelle: "Contrats", lien: "/contrats" },
       { libelle: "Consultation juridique", lien: "/consultations" },
       { libelle: "Messagerie", lien: "/messagerie" },
+      { libelle: "Support", lien: "/support" },
     ],
   },
   {
