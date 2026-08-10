@@ -1,0 +1,166 @@
+.page {
+  padding: 32px 40px 60px;
+  max-width: 980px;
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.entete h1 {
+  font-family: var(--police-titre), sans-serif;
+  font-size: 28px;
+  margin: 0;
+}
+
+.date {
+  margin: 0;
+  font-size: 14.5px;
+  color: #71717a;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section h2 {
+  font-family: var(--police-titre), sans-serif;
+  font-size: 19px;
+  margin: 0 0 4px;
+}
+
+.precision {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: #71717a;
+}
+
+.bandeau {
+  margin-bottom: 32px;
+  padding: 24px;
+  border-radius: 14px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.bandeau h2 {
+  margin: 0 0 4px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 19px;
+  color: #065f46;
+}
+
+.bandeau p {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  color: #047857;
+}
+
+.bandeau a {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: #047857;
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.actions,
+.societes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action,
+.actionUrgente {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 16px;
+  align-items: center;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+}
+
+/* L'urgence se voit à la bordure autant qu'au mot : la couleur seule ne suffit
+   pas à distinguer ce qui bloque. */
+.actionUrgente {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.actionTitre {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+
+.actionPrecision {
+  grid-column: 1;
+  font-size: 13px;
+  color: #71717a;
+}
+
+.actionBouton {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  padding: 9px 16px;
+  border-radius: 9px;
+  background: #18181b;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.societe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+}
+
+.avancement {
+  min-width: 46px;
+  padding: 5px 0;
+  border-radius: 9px;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.nom {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #111;
+  text-decoration: none;
+}
+
+.nom:hover {
+  text-decoration: underline;
+}
+
+.forme {
+  font-size: 13px;
+  color: #71717a;
+}

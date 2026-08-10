@@ -97,7 +97,19 @@ test.describe("parcours connecté", () => {
     await expect(page.getByText("Vous")).toBeVisible();
   });
 
+});
+
+/**
+ * La déconnexion révoque la session en base, pas seulement le cookie. Ce test
+ * ouvre donc la sienne : avec la session partagée par la série, il déconnectait
+ * tous les autres tests qui tournaient en même temps.
+ */
+test.describe("déconnexion", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   test("la déconnexion referme l'accès", async ({ page }) => {
+    await seConnecter(page);
+
     await page.goto("/parametres");
     await page.getByRole("button", { name: /se déconnecter/i }).click();
     await page.waitForURL(/\/connexion/);

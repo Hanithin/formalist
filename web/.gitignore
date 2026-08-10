@@ -45,3 +45,4 @@ next-env.d.ts
 # Client Prisma : régénéré par `prisma generate`, jamais versionné
 /src/infrastructure/db/generated/
 tests/parcours/session.json
+tests/parcours/session-avocat.json

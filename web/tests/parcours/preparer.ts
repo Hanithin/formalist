@@ -31,6 +31,8 @@ export default async function preparer() {
     // Les essais de création laissent des dossiers, des pièces déposées et leur
     // inscription au registre : on retire dans l'ordre des dépendances.
     await prisma.uploaded_files.deleteMany({ where: { user_id: ancien.id } });
+    await prisma.team_notes.deleteMany({ where: { formalites: { user_id: ancien.id } } });
+    await prisma.audit_log.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.messages.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.documents.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.contrats.deleteMany({ where: { user_id: ancien.id } });
@@ -190,6 +192,35 @@ export default async function preparer() {
         {
           name: "formalist_session",
           value: valeur,
+          domain: "localhost",
+          path: "/",
+          expires: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+          httpOnly: true,
+          secure: false,
+          sameSite: "Lax",
+        },
+      ],
+      origins: [],
+    })
+  );
+
+  // Session avocat, pour vérifier l'espace qui lui est réservé.
+  const jetonAvocat = jeton();
+  await prisma.sessions.create({
+    data: {
+      token: jetonAvocat,
+      user_id: avocat.id,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  await writeFile(
+    path.join(import.meta.dirname, "session-avocat.json"),
+    JSON.stringify({
+      cookies: [
+        {
+          name: "formalist_session",
+          value: jetonAvocat,
           domain: "localhost",
           path: "/",
           expires: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
