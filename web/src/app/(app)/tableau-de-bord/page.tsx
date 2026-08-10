@@ -6,6 +6,7 @@ import { etatTableauDeBord, salutation } from "@/domain/formalite/actions";
 import { libelleDossier, tonDossier, avancement, accorder } from "@/domain/formalite/etapes";
 import { Etat } from "@/components/liste/Etat";
 import { Vide } from "@/components/liste/Vide";
+import { Avancement } from "./Avancement";
 import styles from "./TableauDeBord.module.css";
 
 export const metadata: Metadata = {
@@ -20,6 +21,10 @@ export default async function TableauDeBord() {
 
   const prenom = utilisateur.nom.split(" ")[0];
   const actions = societes.flatMap((s) => s.actions.map((a) => ({ ...a, societe: s.societe })));
+
+  // Un seul dossier : on le met en avant plutôt que de le noyer dans une liste
+  // d'une ligne. C'est l'état le plus fréquent au démarrage.
+  const seul = societes.length === 1 ? societes[0] : null;
 
   return (
     <main className={styles.page}>
@@ -40,15 +45,54 @@ export default async function TableauDeBord() {
         />
       )}
 
-      {etat === "tous_termines" && (
-        <section className={styles.bandeau}>
-          <h2>
-            {dossiers.length === 1
-              ? "Votre société est immatriculée"
-              : "Tous vos dossiers sont finalisés"}
-          </h2>
-          <p>{accorder(dossiers.length, "formalité terminée", "formalités terminées")}.</p>
-          <Link href="/creation?type=creation">Nouvelle société</Link>
+      {seul && (
+        <section
+          className={
+            etat === "tous_termines"
+              ? `${styles.singleHero} ${styles.singleCelebrate}`
+              : styles.singleHero
+          }
+        >
+          <Avancement pourcentage={avancement(seul.phase, seul.offre)} />
+
+          <div className={styles.singleHeroBody}>
+            <div className={styles.singleHeroTitle}>{seul.societe}</div>
+            <div className={styles.singleHeroDesc}>
+              {etat === "tous_termines"
+                ? "Votre société est officielle. Le K-bis et le registre des bénéficiaires sont dans vos documents."
+                : libelleDossier({ status: seul.status, phase: seul.phase, offer: seul.offre })}
+            </div>
+
+            <div className={styles.singleHeroActions}>
+              <Link
+                href={
+                  etat === "tous_termines" ? "/documents" : "/creation?dossier=" + seul.id
+                }
+                className={styles.singleHeroBtn}
+              >
+                {etat === "tous_termines" ? "Voir mes documents" : "Reprendre mon dossier"}
+              </Link>
+              <Link href={"/formalites/" + seul.id} className={styles.singleHeroLink}>
+                Détail du dossier
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {etat === "tous_termines" && !seul && (
+        <section className={`${styles.singleHero} ${styles.singleCelebrate}`}>
+          <div className={styles.singleHeroBody}>
+            <div className={styles.singleHeroTitle}>Tous vos dossiers sont finalisés</div>
+            <div className={styles.singleHeroDesc}>
+              {accorder(dossiers.length, "formalité terminée", "formalités terminées")}.
+            </div>
+            <div className={styles.singleHeroActions}>
+              <Link href="/creation?type=creation" className={styles.singleHeroBtn}>
+                Nouvelle société
+              </Link>
+            </div>
+          </div>
         </section>
       )}
 
@@ -76,22 +120,35 @@ export default async function TableauDeBord() {
         </section>
       )}
 
-      {societes.length > 0 && (
+      {societes.length > 1 && (
         <section className={styles.section}>
-          <h2>{societes.length === 1 ? "Votre société" : "Vos sociétés"}</h2>
+          <h2>Vos sociétés</h2>
 
-          <ul className={styles.societes}>
+          <ul className={styles.socGrid}>
             {societes.map((s) => (
-              <li key={s.id} className={styles.societe}>
-                <span className={styles.avancement}>{avancement(s.phase, s.offre)}%</span>
-                <Link href={"/formalites/" + s.id} className={styles.nom}>
-                  {s.societe}
-                </Link>
-                <span className={styles.forme}>{s.forme}</span>
-                <Etat
-                  libelle={libelleDossier({ status: s.status, phase: s.phase, offer: s.offre })}
-                  ton={tonDossier({ status: s.status, phase: s.phase })}
-                />
+              <li
+                key={s.id}
+                className={s.status === "terminee" ? `${styles.socTile} ${styles.done}` : styles.socTile}
+              >
+                <div className={styles.socTileHead}>
+                  <span className={styles.socTilePct}>{avancement(s.phase, s.offre)}%</span>
+                  <Link href={"/formalites/" + s.id} className={styles.socTileName}>
+                    {s.societe}
+                  </Link>
+                  <span className={styles.socTileForme}>{s.forme}</span>
+                </div>
+
+                <div className={styles.socTileFoot}>
+                  <Etat
+                    libelle={libelleDossier({ status: s.status, phase: s.phase, offer: s.offre })}
+                    ton={tonDossier({ status: s.status, phase: s.phase })}
+                  />
+                  {s.actions.length > 0 && (
+                    <Link href={s.actions[0].lien} className={styles.socTileBtn}>
+                      {s.actions[0].bouton}
+                    </Link>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

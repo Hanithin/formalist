@@ -25,11 +25,18 @@
 }
 
 .logo {
-  font-family: var(--police-titre), sans-serif;
-  font-size: 28px;
-  line-height: 1;
-  color: #fff;
-  text-decoration: none;
+  display: block;
+  line-height: 0;
+}
+
+/* Le PNG est noir sur fond transparent : on l'inverse pour la colonne sombre.
+   La taille est fixée ici - sans elle, l'image s'affiche à sa taille native de
+   4 725 px et fait exploser la colonne, ce qui était arrivé sur six pages. */
+.logo img {
+  filter: invert(1);
+  height: 30px;
+  width: auto;
+  max-width: 100%;
 }
 
 .badgeAdmin {
@@ -79,6 +86,26 @@
   font-weight: 600;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
+}
+
+.icone {
+  flex-shrink: 0;
+  display: inline-flex;
+  line-height: 0;
+  opacity: 0.78;
+}
+
+.icone svg {
+  width: 21px;
+  height: 21px;
+}
+
+.lienActif .icone {
+  opacity: 1;
+}
+
+.lien:hover .icone {
+  opacity: 0.95;
 }
 
 .lien,
@@ -147,9 +174,38 @@
 }
 
 .identite {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* Paramètres et déconnexion : discrets, ils ne sont pas ce qu'on vient chercher. */
+.bouton {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.bouton:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bouton svg {
+  width: 16px;
+  height: 16px;
 }
 
 .nom {

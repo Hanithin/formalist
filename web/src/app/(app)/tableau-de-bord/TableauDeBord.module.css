@@ -1,6 +1,316 @@
+/**
+ * Tableau de bord.
+ *
+ * Reprise des règles de public/dashboard.html : la carte d'avancement circulaire,
+ * la feuille de route, les vignettes de société, les actions attendues. Les noms
+ * de classes passent en camelCase, ce que les modules CSS exigent ; les valeurs
+ * sont inchangées.
+ */
+
+/* ============================
+       ÉTAT 1 - Une seule formalité (focus)
+       ============================ */
+    .singleHero {
+      background: #fff; border: 1px solid #eee; border-radius: 20px;
+      padding: 36px 40px; margin-bottom: 20px; position: relative;
+      display: flex; align-items: center; gap: 36px;
+    }
+.singleHeroProgress {
+      flex-shrink: 0; width: 132px; height: 132px; position: relative;
+    }
+.singleHeroProgress svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.singleHeroProgress circle.bg { fill: none; stroke: #f0f0f2; stroke-width: 8; }
+.singleHeroProgress circle.fg {
+      fill: none; stroke: #111; stroke-width: 8; stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+.singleHeroProgress .pct {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+.singleHeroProgress .pctValue { font-size: 26px; font-weight: 700; color: #111; line-height: 1; font-family: 'Cal Sans', 'Inter', sans-serif; }
+.singleHeroProgress .pctLabel { font-size: 10px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: 0; }
+.singleHeroBody { flex: 1; min-width: 0; }
+.singleHeroEyebrow {
+      display: inline-block; padding: 4px 10px; background: #eef2ff; color: #4338ca;
+      font-size: 11px; font-weight: 600; border-radius: 20px; margin-bottom: 10px;
+      text-transform: uppercase; letter-spacing: 0;
+    }
+.singleHeroTitle {
+      font-size: 24px; font-weight: 600; margin-bottom: 8px; color: #111;
+      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: 0;
+    }
+.singleHeroDesc { font-size: 14.5px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+.singleHeroActions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.singleHeroBtn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px;
+      background: #111; color: #fff; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: background 0.15s, transform 0.05s; font-family: inherit;
+    }
+.singleHeroBtn:hover { background: #2a2a2c; }
+.singleHeroBtn:active { transform: scale(0.99); }
+.singleHeroBtn svg { width: 14px; height: 14px; }
+.singleHeroBtn.ghost { background: transparent; color: #666; border: 1px solid #e5e5e7; }
+.singleHeroBtn.ghost:hover { background: #f5f5f7; color: #111; }
+/* État 1 - Société terminée : célébration + roadmap */
+    .singleCelebrate {
+      background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+      color: #fff;
+    }
+.singleCelebrate .singleHeroTitle { color: #fff; }
+.singleCelebrate .singleHeroDesc { color: rgba(255,255,255,0.85); }
+.singleCelebrate .singleHeroEyebrow { background: rgba(255,255,255,0.15); color: #fff; }
+.singleCelebrate .singleHeroProgress circle.bg { stroke: rgba(255,255,255,0.15); }
+.singleCelebrate .singleHeroProgress circle.fg { stroke: #fff; }
+.singleCelebrate .singleHeroProgress .pctValue { color: #fff; }
+.singleHeroProgress .pctValue svg { width: 26px; height: 26px; display: block; }
+.singleCelebrate .singleHeroProgress .pctLabel { color: rgba(255,255,255,0.7); }
+.singleCelebrate .singleHeroBtn { background: #fff; color: #065f46; }
+.singleCelebrate .singleHeroBtn:hover { background: #f0fdf4; }
+.smPct {
+      width: 46px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12.5px; font-weight: 600; background: #f4f4f5; color: #52525b;
+    }
+.smPct.action { background: #fef3c7; color: #92400e; }
+.smPct.done { background: #dcfce7; color: #15803d; }
+.smPct.done svg { width: 16px; height: 16px; }
+/* Accès à toutes les sociétés : un vrai bouton, pas un lien discret */
+    .socSeeAll {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: #111;
+      background: #fff; border: 1px solid #d4d4d8; border-radius: 100px;
+      padding: 9px 16px; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+.socSeeAll:hover {
+      border-color: #111; background: #fafafa; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+.socSeeAllCount {
+      min-width: 22px; height: 22px; padding: 0 7px; border-radius: 100px;
+      background: #111; color: #fff; font-size: 12.5px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+.socSeeAll svg { width: 15px; height: 15px; color: #71717a; }
+.socSeeAll:hover svg { color: #111; }
+/* ===== Vue plusieurs dossiers : une carte par société ===== */
+    .socGrid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px; margin-bottom: 20px;
+    }
+.socTile {
+      background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 20px 22px;
+      display: flex; flex-direction: column; gap: 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+.socTile:hover { border-color: #d4d4d8; box-shadow: 0 3px 14px rgba(0,0,0,0.05); }
+.socTile.action { border-color: #fde68a; }
+.socTileHead { display: flex; align-items: center; gap: 14px; }
+.socTileRing { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+.socTileRing svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+.socTileRing circle { fill: none; stroke-width: 5; stroke-linecap: round; }
+.socTileRing circle.bg { stroke: #f0f0f0; }
+.socTileRing circle.fg { stroke: #111; transition: stroke-dashoffset 0.8s ease; }
+.socTile.done .socTileRing circle.fg { stroke: #16a34a; }
+.socTilePct {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600; color: #111;
+    }
+.socTile.done .socTilePct { color: #16a34a; }
+.socTile.done .socTilePct svg { width: 20px; height: 20px; }
+.socTileIdent { flex: 1; min-width: 0; }
+.socTileName {
+      font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 17px; color: #111;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+.socTileStep { font-size: 12.5px; color: #71717a; margin-top: 3px; }
+.socTileStatus {
+      font-size: 11.5px; font-weight: 600; border-radius: 100px; padding: 4px 10px;
+      white-space: nowrap; flex-shrink: 0; align-self: flex-start;
+      background: #f4f4f5; color: #52525b;
+    }
+.socTileStatus.action { background: #fef3c7; color: #92400e; }
+.socTileStatus.done { background: #dcfce7; color: #15803d; }
+.socTileNext {
+      font-size: 13.5px; color: #3f3f46; line-height: 1.5;
+      background: #fafafa; border-radius: 10px; padding: 12px 14px;
+    }
+.socTileFoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.socTileUnread { font-size: 12.5px; font-weight: 600; color: #dc2626; }
+.socTileBtn {
+      margin-left: auto; font-size: 13.5px; font-weight: 500; color: #fff; background: #111;
+      border-radius: 100px; padding: 9px 18px; text-decoration: none; transition: background 0.15s;
+    }
+.socTileBtn:hover { background: #000; }
+.socGrid { grid-template-columns: 1fr; }
+/* ===== Accueil d'un dossier en cours : parcours, actions, documents, aide ===== */
+    .dashCard {
+      background: #fff; border: 1px solid #eee; border-radius: 16px;
+      padding: 24px 28px; margin-bottom: 20px;
+    }
+.dashCardHead {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 18px;
+    }
+.dashCardTitle {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 17px; font-weight: 600; color: #111;
+    }
+.dashCardSub { font-size: 13.5px; color: #71717a; margin-top: 2px; }
+.dashCardLink { font-size: 13px; color: #52525b; white-space: nowrap; }
+.dashCardLink:hover { color: #111; }
+.dashLoading { font-size: 13.5px; color: #a1a1aa; padding: 6px 0; }
+.dashEmpty {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: #52525b; line-height: 1.5;
+      background: #fafafa; border-radius: 12px; padding: 16px 18px;
+    }
+.dashEmpty svg { width: 22px; height: 22px; color: #16a34a; flex-shrink: 0; }
+.dashEmpty.small { font-size: 13.5px; padding: 14px 16px; }
+.dashCols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.dashCols .dashCard { margin-bottom: 20px; }
+/* Actions attendues */
+    .todoList { display: flex; flex-direction: column; gap: 10px; }
+.todo {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border: 1px solid #ececec; border-radius: 12px;
+      text-decoration: none; transition: border-color 0.15s, background 0.15s;
+    }
+.todo:hover { border-color: #d4d4d8; background: #fafafa; }
+.todoDot {
+      width: 9px; height: 9px; border-radius: 50%; background: #111; flex-shrink: 0;
+    }
+.todo.urgent { border-color: #fecaca; background: #fff5f5; }
+.todo.urgent:hover { border-color: #f87171; }
+.todo.urgent .todoDot { background: #dc2626; }
+.todoBody { flex: 1; min-width: 0; }
+.todoTitle { display: block; font-size: 14.5px; font-weight: 500; color: #111; }
+.todoDesc { display: block; font-size: 13px; color: #71717a; margin-top: 2px; }
+.todoCta {
+      font-size: 13px; font-weight: 500; color: #111; white-space: nowrap;
+      border: 1px solid #d4d4d8; border-radius: 100px; padding: 7px 14px;
+    }
+.todo:hover .todoCta { border-color: #111; }
+/* Activité */
+    .actList { display: flex; flex-direction: column; gap: 2px; }
+.actRow { display: flex; gap: 12px; padding: 9px 0; }
+.actDot {
+      width: 7px; height: 7px; border-radius: 50%; background: #d4d4d8;
+      flex-shrink: 0; margin-top: 7px;
+    }
+.actBody { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.actText { font-size: 13.5px; color: #3f3f46; line-height: 1.4; }
+/* Chaque ligne du fil multi-dossiers mène au dossier concerné */
+    .actRowLink { text-decoration: none; border-radius: 10px; padding: 9px 8px; margin: 0 -8px; transition: background 0.15s; }
+.actRowLink:hover { background: #fafafa; }
+/* Deux colonnes : le fil tient sur moitié moins de hauteur */
+    .actCols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+.actCols .actRow { align-items: flex-start; }
+.actCols { grid-template-columns: 1fr; }
+.actNote {
+      font-size: 13px; color: #52525b; line-height: 1.45; margin-top: 3px;
+      border-left: 2px solid #e4e4e7; padding-left: 10px;
+    }
+.actTime { font-size: 12px; color: #a1a1aa; margin-top: 2px; }
+.dashCols { grid-template-columns: 1fr; }
+.roadmap {
+      background: #fff; border: 1px solid #eee; border-radius: 16px;
+      padding: 28px; margin-bottom: 20px;
+    }
+.roadmapTitle {
+      font-size: 17px; font-weight: 600; color: #111; margin-bottom: 4px;
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+    }
+.roadmapSubtitle { font-size: 13.5px; color: #888; margin-bottom: 20px; }
+.roadmapSteps { display: flex; flex-direction: column; gap: 10px; }
+.roadmapStep {
+      display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+      border: 1px solid #eee; border-radius: 12px; text-decoration: none;
+      color: inherit; transition: border-color 0.15s, background 0.15s;
+    }
+.roadmapStep:hover { border-color: #111; background: #fafafa; }
+.roadmapStepCheck {
+      width: 22px; height: 22px; border: 2px solid #ddd; border-radius: 50%;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+.roadmapStep.done .roadmapStepCheck {
+      background: #10b981; border-color: #10b981;
+    }
+.roadmapStep.done .roadmapStepCheck svg { display: block; }
+.roadmapStepCheck svg { display: none; width: 12px; height: 12px; color: #fff; }
+.roadmapStepBody { flex: 1; min-width: 0; }
+.roadmapStepTitle { font-size: 14px; font-weight: 600; color: #111; }
+.roadmapStepDesc { font-size: 12.5px; color: #888; margin-top: 2px; }
+.roadmapStepCta {
+      font-size: 12.5px; color: #4338ca; font-weight: 600;
+      padding: 6px 12px; border: 1px solid #c7d2fe; background: #eef2ff;
+      border-radius: 8px; text-decoration: none; transition: all 0.15s;
+    }
+.roadmapStepCta:hover { background: #e0e7ff; border-color: #6366f1; }
+.roadmapStep.done .roadmapStepTitle { color: #888; text-decoration: line-through; text-decoration-thickness: 1px; }
+/* HERO BANNER */
+    .heroBanner {
+      margin: 0 48px 32px;
+      padding: 28px 32px;
+      border-radius: 20px;
+      background: #FDD835;
+      color: #111;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+.heroIcon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #111;
+    }
+.heroIcon svg { width: 22px; height: 22px; stroke-width: 2; }
+.heroContent { flex: 1; }
+.heroTitle {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+.heroDesc {
+      font-size: 13px;
+      color: rgba(0,0,0,0.55);
+      line-height: 1.4;
+    }
+.heroBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 22px;
+      background: #111;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+.heroBtn:hover { background: #333; }
+.heroBtn svg { width: 16px; height: 16px; }
+.heroBanner { margin: 0 20px 24px; padding: 20px; flex-direction: column; align-items: flex-start; gap: 16px; }
+
+/* ---------- Gabarit de la page ---------- */
+
 .page {
   padding: 32px 40px 60px;
-  max-width: 980px;
+  max-width: var(--largeur-contenu);
+  width: 100%;
 }
 
 .entete {
@@ -9,19 +319,13 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 28px;
-}
-
-.entete h1 {
-  font-family: var(--police-titre), sans-serif;
-  font-size: 28px;
-  margin: 0;
+  margin-bottom: 24px;
 }
 
 .date {
   margin: 0;
   font-size: 14.5px;
-  color: #71717a;
+  color: var(--gris);
 }
 
 .section {
@@ -29,57 +333,26 @@
 }
 
 .section h2 {
-  font-family: var(--police-titre), sans-serif;
-  font-size: 19px;
   margin: 0 0 4px;
 }
 
 .precision {
   margin: 0 0 14px;
   font-size: 13.5px;
-  color: #71717a;
+  color: var(--gris);
 }
 
-.bandeau {
-  margin-bottom: 32px;
-  padding: 24px;
-  border-radius: 14px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-}
+/* ---------- Ce qu'on attend ----------
+   L'urgence se voit à la bordure autant qu'à la teinte : la couleur seule ne
+   distingue pas ce qui bloque. */
 
-.bandeau h2 {
-  margin: 0 0 4px;
-  font-family: var(--police-titre), sans-serif;
-  font-size: 19px;
-  color: #065f46;
-}
-
-.bandeau p {
-  margin: 0 0 14px;
-  font-size: 14.5px;
-  color: #047857;
-}
-
-.bandeau a {
-  display: inline-block;
-  padding: 10px 18px;
-  border-radius: 10px;
-  background: #047857;
-  color: #fff;
-  font-size: 14.5px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.actions,
-.societes {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .action,
@@ -88,79 +361,85 @@
   grid-template-columns: 1fr auto;
   gap: 2px 16px;
   align-items: center;
-  padding: 16px 18px;
-  background: #fff;
-  border: 1px solid #ececef;
-  border-radius: 12px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-large);
 }
 
-/* L'urgence se voit à la bordure autant qu'au mot : la couleur seule ne suffit
-   pas à distinguer ce qui bloque. */
 .actionUrgente {
-  border-color: #fca5a5;
-  background: #fef2f2;
+  border-color: var(--critique-trait);
+  background: var(--critique-fond);
 }
 
 .actionTitre {
-  font-size: 15px;
+  font-size: 15.5px;
   font-weight: 600;
-  color: #111;
+  color: var(--encre);
 }
 
 .actionPrecision {
   grid-column: 1;
-  font-size: 13px;
-  color: #71717a;
+  font-size: 13.5px;
+  color: var(--gris);
 }
 
 .actionBouton {
   grid-row: 1 / span 2;
   grid-column: 2;
-  padding: 9px 16px;
-  border-radius: 9px;
-  background: #18181b;
+  padding: 11px 20px;
+  border-radius: 10px;
+  background: var(--encre);
   color: #fff;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.societe {
+.actionBouton:hover {
+  background: #27272a;
+}
+
+/* ---------- Le dossier unique ---------- */
+
+.singleHeroLink {
+  font-size: 14.5px;
+  color: var(--gris);
+}
+
+/* ---------- Vignettes de société ---------- */
+
+.socTileHead {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  background: #fff;
-  border: 1px solid #ececef;
-  border-radius: 12px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
-.avancement {
+.socTilePct {
   min-width: 46px;
   padding: 5px 0;
   border-radius: 9px;
-  background: #f4f4f5;
-  color: #52525b;
+  background: var(--surface-creuse);
+  border: 1px solid var(--trait);
+  color: var(--encre-douce);
   font-size: 12.5px;
   font-weight: 600;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
-.nom {
-  font-size: 15.5px;
-  font-weight: 600;
-  color: #111;
-  text-decoration: none;
-}
-
-.nom:hover {
-  text-decoration: underline;
-}
-
-.forme {
+.socTileForme {
   font-size: 13px;
-  color: #71717a;
+  color: var(--gris);
+}
+
+.socTileFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }

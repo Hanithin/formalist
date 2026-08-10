@@ -114,7 +114,9 @@ test.describe("déconnexion", () => {
     await seConnecter(page);
 
     await page.goto("/parametres");
-    await page.getByRole("button", { name: /se déconnecter/i }).click();
+    // La colonne de navigation en porte un aussi, sous forme d'icône : on vise
+    // celui de la page.
+    await page.locator("main").getByRole("button", { name: /se déconnecter/i }).click();
     await page.waitForURL(/\/connexion/);
 
     await page.goto("/equipe");
