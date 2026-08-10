@@ -233,6 +233,28 @@ export async function assignerAvocat(
   return { avocat: cible.name };
 }
 
+/**
+ * Supprime une note interne.
+ *
+ * Seul son auteur peut la retirer : une note engage celui qui l'a écrite, et un
+ * confrère n'a pas à effacer son analyse.
+ */
+export async function supprimerNote(utilisateur: UtilisateurConnecte, noteId: number) {
+  exigerAvocat(utilisateur);
+
+  const note = await prisma.team_notes.findUnique({ where: { id: noteId } });
+  if (!note) throw new Interdit("Cette note n'existe pas ou ne vous est pas accessible");
+
+  await exigerDossier(utilisateur, note.formalite_id);
+
+  if (note.author_id !== utilisateur.id && !utilisateur.roles.includes("admin")) {
+    throw new Interdit("Seul l'auteur d'une note peut la supprimer");
+  }
+
+  await prisma.team_notes.delete({ where: { id: noteId } });
+  return { supprimee: noteId };
+}
+
 /** Valide ou refuse une pièce déposée par le client. */
 export async function statuerSurDocument(
   utilisateur: UtilisateurConnecte,

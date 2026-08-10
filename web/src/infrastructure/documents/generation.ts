@@ -52,6 +52,21 @@ export function genererDocument(gabarit: string, donnees: Record<string, unknown
   }
 }
 
+/**
+ * Appose une signature dans un document Word.
+ *
+ * L'image est placée près du nom du signataire, avec des ajustements accumulés
+ * sur des documents réels - c'est docx.cjs qui s'en charge, repris tel quel.
+ */
+export function apposerSignature(
+  docx: Buffer,
+  signature: string,
+  nomSignataire: string,
+  index?: number
+): Buffer {
+  return charger().injectSignature(docx, signature, nomSignataire, index);
+}
+
 /** Le gabarit existe-t-il ? Évite d'échouer au milieu d'une série. */
 export function gabaritDisponible(gabarit: string): boolean {
   try {

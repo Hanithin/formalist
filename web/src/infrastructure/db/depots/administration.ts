@@ -192,6 +192,46 @@ export async function assignerDepuisAdministration(
   return { avocat: avocat.name };
 }
 
+/**
+ * Marque un paiement comme remboursé.
+ *
+ * Ne rembourse rien par soi-même : aucun prestataire de paiement n'est branché,
+ * le virement se fait à la main. Cette fonction enregistre la décision, pour que
+ * la comptabilité et le client la voient. Le jour où un prestataire arrivera,
+ * c'est ici que l'appel viendra se greffer.
+ */
+export async function marquerRembourse(utilisateur: UtilisateurConnecte, paiementId: number) {
+  exigerAdministrateur(utilisateur);
+
+  const paiement = await prisma.payments.findUnique({ where: { id: paiementId } });
+  if (!paiement) throw new ChangementRefuse({ champ: "paiement", message: "Paiement introuvable" });
+
+  // Rembourser deux fois, ou rembourser un paiement qui a échoué, n'a pas de sens.
+  if (paiement.status !== "paid") {
+    throw new ChangementRefuse({
+      champ: "paiement",
+      message: "Seul un paiement encaissé peut être remboursé",
+    });
+  }
+
+  await prisma.payments.update({
+    where: { id: paiementId },
+    data: { status: "refunded" },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: paiement.formalite_id,
+      actor_id: utilisateur.id,
+      actor_role: "admin",
+      action: "paiement_rembourse",
+      before_value: String((paiement.amount_cents ?? 0) / 100) + " euros",
+    },
+  });
+
+  return { rembourse: paiementId };
+}
+
 /** Les avocats disponibles pour une assignation. */
 export async function avocats(utilisateur: UtilisateurConnecte) {
   exigerAdministrateur(utilisateur);

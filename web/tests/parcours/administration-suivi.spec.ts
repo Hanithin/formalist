@@ -108,3 +108,24 @@ test.describe("administrateur", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Suivi");
   });
 });
+
+test.describe("remboursement", () => {
+  test("un client ne rembourse rien", async ({ request }) => {
+    const reponse = await request.post("/api/administration/remboursement", {
+      data: { paiement: 1 },
+    });
+    expect(reponse.status()).toBe(403);
+  });
+
+  test.describe("administrateur", () => {
+    test.use({ storageState: "./tests/parcours/session-admin.json" });
+
+    test("un paiement inexistant est signalé", async ({ request }) => {
+      const reponse = await request.post("/api/administration/remboursement", {
+        data: { paiement: 999999 },
+      });
+      expect(reponse.status()).toBe(400);
+      expect((await reponse.json()).error).toContain("introuvable");
+    });
+  });
+});

@@ -103,11 +103,37 @@ export async function nonLus(utilisateur: UtilisateurConnecte) {
   });
 }
 
+/**
+ * Archive une conversation.
+ *
+ * Elle disparaît de la liste sans que rien ne soit effacé : les échanges restent
+ * consultables, et une nouvelle question rouvre la conversation.
+ */
+export async function archiver(utilisateur: UtilisateurConnecte, clientId: number, archivee = true) {
+  if (!utilisateur.roles.includes("admin")) {
+    throw new Interdit("Réservé aux administrateurs");
+  }
+
+  await prisma.support_conversations.upsert({
+    where: { user_id: clientId },
+    update: { archived: archivee, archived_at: archivee ? new Date() : null },
+    create: { user_id: clientId, archived: archivee, archived_at: archivee ? new Date() : null },
+  });
+
+  return { archivee };
+}
+
 /** Les conversations, pour l'administration. Les archivées sont écartées. */
 export async function conversations(utilisateur: UtilisateurConnecte) {
   if (!utilisateur.roles.includes("admin")) {
     throw new Interdit("Cette vue est réservée aux administrateurs");
   }
+
+  const archivees = new Set(
+    (await prisma.support_conversations.findMany({ where: { archived: true } })).map(
+      (c) => c.user_id
+    )
+  );
 
   const derniers = await prisma.support_messages.findMany({
     orderBy: { created_at: "desc" },
@@ -116,6 +142,7 @@ export async function conversations(utilisateur: UtilisateurConnecte) {
 
   const parClient = new Map<number, (typeof derniers)[number]>();
   for (const m of derniers) {
+    if (archivees.has(m.user_id)) continue;
     if (!parClient.has(m.user_id)) parClient.set(m.user_id, m);
   }
 
