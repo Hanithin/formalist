@@ -4,6 +4,7 @@ import {
   creneauxLibres,
   etatConsultation,
   annulable,
+  enMinutes,
   type PlageHebdomadaire,
 } from "@/domain/consultation/creneaux";
 import type { UtilisateurConnecte } from "../sessions";
@@ -84,6 +85,129 @@ export async function mesConsultations(utilisateur: UtilisateurConnecte) {
       annulable: annulable(etat, c.scheduled_at),
       monRendezVous: c.user_id === utilisateur.id,
     };
+  });
+}
+
+/**
+ * Disponibilités d'un avocat.
+ *
+ * Sans elles, aucun créneau n'est proposé et la prise de rendez-vous ne sert à
+ * rien. Un avocat ne gère que les siennes.
+ */
+function exigerAvocat(utilisateur: UtilisateurConnecte) {
+  if (!utilisateur.roles.includes("avocat") && !utilisateur.roles.includes("admin")) {
+    throw new Interdit("Réservé aux avocats");
+  }
+}
+
+export async function mesDisponibilites(utilisateur: UtilisateurConnecte) {
+  exigerAvocat(utilisateur);
+
+  const [plages, absences] = await Promise.all([
+    prisma.avocat_availability.findMany({
+      where: { avocat_id: utilisateur.id },
+      orderBy: [{ day_of_week: "asc" }, { start_time: "asc" }],
+    }),
+    prisma.avocat_blocked_dates.findMany({
+      where: { avocat_id: utilisateur.id },
+      orderBy: { start_date: "asc" },
+    }),
+  ]);
+
+  return { plages, absences };
+}
+
+export async function ajouterPlage(
+  utilisateur: UtilisateurConnecte,
+  plage: { jourSemaine: number; debut: string; fin: string; dureeCreneauMinutes: number }
+) {
+  exigerAvocat(utilisateur);
+
+  const debut = enMinutes(plage.debut);
+  const fin = enMinutes(plage.fin);
+
+  // Une plage incohérente ne produirait aucun créneau, et l'avocat croirait
+  // avoir publié ses disponibilités.
+  if (debut === null || fin === null) {
+    throw new Interdit("Les heures doivent être au format 09:30");
+  }
+  if (fin <= debut) {
+    throw new Interdit("L'heure de fin doit suivre l'heure de début");
+  }
+  if (plage.dureeCreneauMinutes <= 0 || fin - debut < plage.dureeCreneauMinutes) {
+    throw new Interdit("La plage est trop courte pour un créneau de cette durée");
+  }
+
+  return prisma.avocat_availability.create({
+    data: {
+      avocat_id: utilisateur.id,
+      day_of_week: plage.jourSemaine,
+      start_time: plage.debut,
+      end_time: plage.fin,
+      slot_duration_minutes: plage.dureeCreneauMinutes,
+    },
+  });
+}
+
+export async function retirerPlage(utilisateur: UtilisateurConnecte, plageId: number) {
+  exigerAvocat(utilisateur);
+
+  const plage = await prisma.avocat_availability.findUnique({ where: { id: plageId } });
+  if (!plage || plage.avocat_id !== utilisateur.id) {
+    throw new Interdit("Cette plage n'existe pas ou ne vous appartient pas");
+  }
+
+  await prisma.avocat_availability.delete({ where: { id: plageId } });
+  return { retiree: plageId };
+}
+
+/** Période d'absence : congés, formation, indisponibilité. */
+export async function ajouterAbsence(
+  utilisateur: UtilisateurConnecte,
+  absence: { debut: string; fin: string; motif?: string }
+) {
+  exigerAvocat(utilisateur);
+
+  if (absence.fin < absence.debut) {
+    throw new Interdit("La date de fin précède la date de début");
+  }
+
+  return prisma.avocat_blocked_dates.create({
+    data: {
+      avocat_id: utilisateur.id,
+      start_date: absence.debut,
+      end_date: absence.fin,
+      reason: absence.motif?.slice(0, 200) ?? null,
+    },
+  });
+}
+
+export async function retirerAbsence(utilisateur: UtilisateurConnecte, absenceId: number) {
+  exigerAvocat(utilisateur);
+
+  const absence = await prisma.avocat_blocked_dates.findUnique({ where: { id: absenceId } });
+  if (!absence || absence.avocat_id !== utilisateur.id) {
+    throw new Interdit("Cette absence n'existe pas ou ne vous appartient pas");
+  }
+
+  await prisma.avocat_blocked_dates.delete({ where: { id: absenceId } });
+  return { retiree: absenceId };
+}
+
+/** L'avocat marque un rendez-vous comme honoré. */
+export async function marquerFait(utilisateur: UtilisateurConnecte, consultationId: number) {
+  exigerAvocat(utilisateur);
+
+  const consultation = await prisma.lawyer_consultations.findUnique({
+    where: { id: consultationId },
+  });
+  if (!consultation || (consultation.avocat_id !== utilisateur.id && !utilisateur.roles.includes("admin"))) {
+    throw new Interdit("Ce rendez-vous n'existe pas ou ne vous est pas accessible");
+  }
+
+  return prisma.lawyer_consultations.update({
+    where: { id: consultationId },
+    data: { status: "done", done_at: new Date() },
   });
 }
 

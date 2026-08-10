@@ -3,10 +3,12 @@ import { Interdit } from "../utilisateur-courant";
 import {
   peutGererLEquipe,
   etatInvitation,
+  peutRetirer,
   DUREE_INVITATION_MS,
   type Equipe,
   type Membre,
 } from "@/domain/equipe/invitations";
+import { jeton } from "@/lib/mots-de-passe";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -119,3 +121,106 @@ export async function exigerGestionDEquipe(utilisateur: UtilisateurConnecte) {
 }
 
 export const EXPIRATION_INVITATION = DUREE_INVITATION_MS;
+
+/**
+ * Accepte une invitation.
+ *
+ * Le jeton fait foi : la personne invitée n'est pas forcément connectée, et son
+ * adresse peut différer de celle du compte qu'elle utilise. On exige donc une
+ * session, et que son adresse corresponde à l'invitation - sans quoi un jeton
+ * intercepté ferait entrer n'importe qui dans l'équipe.
+ */
+export async function accepterInvitation(utilisateur: UtilisateurConnecte, jeton: string) {
+  const invitation = await prisma.team_invitations.findUnique({ where: { token: jeton } });
+
+  const etat = invitation
+    ? etatInvitation({
+        accepteeLe: invitation.accepted_at,
+        revoqueeLe: invitation.revoked_at,
+        expireLe: invitation.expires_at,
+      })
+    : null;
+
+  if (!invitation || etat !== "en_attente") return { ok: false as const, etat: etat ?? "inconnue" };
+
+  if (invitation.email.toLowerCase() !== utilisateur.email.toLowerCase()) {
+    return { ok: false as const, etat: "autre_compte" as const };
+  }
+
+  // Déjà membre : on n'ajoute pas une seconde fois, mais on clôt l'invitation.
+  const deja = await prisma.team_members.findFirst({
+    where: { team_id: invitation.team_id, user_id: utilisateur.id },
+  });
+
+  if (!deja) {
+    await prisma.team_members.create({
+      data: {
+        team_id: invitation.team_id,
+        user_id: utilisateur.id,
+        role: invitation.role,
+        can_view_all: invitation.can_view_all,
+        can_edit: invitation.can_edit,
+        can_create: invitation.can_create,
+      },
+    });
+  }
+
+  await prisma.team_invitations.update({
+    where: { id: invitation.id },
+    data: { accepted_at: new Date() },
+  });
+
+  return { ok: true as const, equipeId: invitation.team_id };
+}
+
+/** Renvoie une invitation en attente : nouveau jeton, nouveau délai. */
+export async function renvoyerInvitation(utilisateur: UtilisateurConnecte, invitationId: number) {
+  const { equipe } = await exigerGestionDEquipe(utilisateur);
+
+  const invitation = await prisma.team_invitations.findUnique({ where: { id: invitationId } });
+  if (!invitation || invitation.team_id !== equipe.id) {
+    throw new Interdit("Cette invitation n'existe pas ou ne vous est pas accessible");
+  }
+  if (invitation.accepted_at) throw new Interdit("Cette invitation a déjà été acceptée");
+
+  return prisma.team_invitations.update({
+    where: { id: invitationId },
+    data: {
+      token: jeton(),
+      expires_at: new Date(Date.now() + DUREE_INVITATION_MS),
+      revoked_at: null,
+    },
+  });
+}
+
+export async function revoquerInvitation(utilisateur: UtilisateurConnecte, invitationId: number) {
+  const { equipe } = await exigerGestionDEquipe(utilisateur);
+
+  const invitation = await prisma.team_invitations.findUnique({ where: { id: invitationId } });
+  if (!invitation || invitation.team_id !== equipe.id) {
+    throw new Interdit("Cette invitation n'existe pas ou ne vous est pas accessible");
+  }
+
+  return prisma.team_invitations.update({
+    where: { id: invitationId },
+    data: { revoked_at: new Date() },
+  });
+}
+
+/** Retire un membre, sauf si l'équipe se retrouverait sans personne pour la gérer. */
+export async function retirerMembre(utilisateur: UtilisateurConnecte, membreId: number) {
+  const { equipe, membres } = await exigerGestionDEquipe(utilisateur);
+
+  const cible = membres.find((m) => m.id === membreId);
+  if (!cible) throw new Interdit("Ce membre n'existe pas ou ne vous est pas accessible");
+
+  const verdict = peutRetirer(
+    equipe,
+    membres.map((m) => ({ utilisateurId: m.user_id, role: m.role as Membre["role"] })),
+    { utilisateurId: cible.user_id, role: cible.role as Membre["role"] }
+  );
+  if (!verdict.autorise) throw new Interdit(verdict.raison ?? "Ce membre ne peut pas être retiré");
+
+  await prisma.team_members.delete({ where: { id: membreId } });
+  return { retire: cible.user_id };
+}

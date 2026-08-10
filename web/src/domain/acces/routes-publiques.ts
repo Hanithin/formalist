@@ -28,6 +28,9 @@ export const API_PUBLIQUES = [
   "/api/contact",
   // Les associés signent sans compte : leur jeton fait foi.
   "/api/signature/signer",
+  // Le lien d'invitation est cliqué depuis un email : il redirige vers la
+  // connexion quand il n'y a pas de session, plutôt que de refuser sèchement.
+  "/api/equipe/accepter",
 ] as const;
 
 /** Chemins techniques servis par le cadre, jamais porteurs de données. */

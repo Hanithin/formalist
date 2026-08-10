@@ -30,6 +30,7 @@ export default async function preparer() {
   if (ancien) {
     // Les essais de création laissent des dossiers, des pièces déposées et leur
     // inscription au registre : on retire dans l'ordre des dépendances.
+    await prisma.team_invitations.deleteMany({ where: { email: { contains: "exemple.test" } } });
     await prisma.support_messages.deleteMany({ where: { user_id: ancien.id } });
     await prisma.support_conversations.deleteMany({ where: { user_id: ancien.id } });
     await prisma.lawyer_consultations.deleteMany({ where: { user_id: ancien.id } });
