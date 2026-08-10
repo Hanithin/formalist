@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import styles from "../Authentification.module.css";
 
 export function FormulaireConnexion() {
   const [erreur, setErreur] = useState<string | null>(null);
@@ -37,27 +38,40 @@ export function FormulaireConnexion() {
 
   return (
     <form action={soumettre} noValidate>
-      <label htmlFor="email">Adresse email</label>
-      <input id="email" name="email" type="email" autoComplete="email" required autoFocus />
+      <div className={styles.formGroup}>
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="vous@exemple.com"
+          autoComplete="email"
+          required
+          autoFocus
+        />
+      </div>
 
-      <label htmlFor="motDePasse">Mot de passe</label>
-      <input
-        id="motDePasse"
-        name="motDePasse"
-        type="password"
-        autoComplete="current-password"
-        required
-      />
-
-      <button type="submit" disabled={enCours}>
-        {enCours ? "Connexion en cours" : "Se connecter"}
-      </button>
+      <div className={styles.formGroup}>
+        <label htmlFor="motDePasse">Mot de passe</label>
+        <input
+          id="motDePasse"
+          name="motDePasse"
+          type="password"
+          placeholder="Votre mot de passe"
+          autoComplete="current-password"
+          required
+        />
+      </div>
 
       {erreur && (
-        <p role="alert" aria-live="polite">
+        <p role="alert" aria-live="polite" className={styles.authError}>
           {erreur}
         </p>
       )}
+
+      <button className={styles.btnLogin} type="submit" disabled={enCours}>
+        {enCours ? "Connexion en cours" : "Se connecter"}
+      </button>
     </form>
   );
 }

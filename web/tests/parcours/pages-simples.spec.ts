@@ -11,7 +11,9 @@ const COMPTE = { email: "parcours@exemple.test", motDePasse: "MotDePasseParcours
 
 async function seConnecter(page: import("@playwright/test").Page) {
   await page.goto("/connexion");
-  await page.getByLabel("Adresse email").fill(COMPTE.email);
+  // Le champ s'appelle « Email » sur la page de connexion, « Adresse email »
+  // sur l'inscription : ce sont deux formulaires distincts.
+  await page.getByLabel("Email", { exact: true }).fill(COMPTE.email);
   await page.getByLabel("Mot de passe").fill(COMPTE.motDePasse);
   await page.getByRole("button", { name: /se connecter/i }).click();
   await page.waitForURL(/tableau-de-bord|aide|equipe|parametres/);
@@ -28,7 +30,7 @@ test.describe("connexion", () => {
 
   test("un mot de passe faux ne dit pas si le compte existe", async ({ page }) => {
     await page.goto("/connexion");
-    await page.getByLabel("Adresse email").fill(COMPTE.email);
+    await page.getByLabel("Email", { exact: true }).fill(COMPTE.email);
     await page.getByLabel("Mot de passe").fill("mauvais-mot-de-passe");
     await page.getByRole("button", { name: /se connecter/i }).click();
 

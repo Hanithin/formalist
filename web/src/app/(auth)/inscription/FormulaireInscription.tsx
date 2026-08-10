@@ -28,7 +28,7 @@ export function FormulaireInscription() {
 
   if (confirmation) {
     return (
-      <p role="status" aria-live="polite">
+      <p role="status" aria-live="polite" className={styles.authNotice}>
         {confirmation}
       </p>
     );
@@ -38,17 +38,23 @@ export function FormulaireInscription() {
 
   return (
     <form action={soumettre} noValidate>
-      <label htmlFor="prenom">Prénom</label>
-      <input id="prenom" name="prenom" autoComplete="given-name" required />
-      {erreur("prenom") && <p role="alert">{erreur("prenom")}</p>}
+      <div className={styles.formGroup}>
+        <label htmlFor="prenom">Prénom</label>
+        <input id="prenom" name="prenom" autoComplete="given-name" required />
+      </div>
+      {erreur("prenom") && <p role="alert" className={styles.authError}>{erreur("prenom")}</p>}
 
-      <label htmlFor="nom">Nom</label>
-      <input id="nom" name="nom" autoComplete="family-name" required />
-      {erreur("nom") && <p role="alert">{erreur("nom")}</p>}
+      <div className={styles.formGroup}>
+        <label htmlFor="nom">Nom</label>
+        <input id="nom" name="nom" autoComplete="family-name" required />
+      </div>
+      {erreur("nom") && <p role="alert" className={styles.authError}>{erreur("nom")}</p>}
 
-      <label htmlFor="email">Adresse email</label>
-      <input id="email" name="email" type="email" autoComplete="email" required />
-      {erreur("email") && <p role="alert">{erreur("email")}</p>}
+      <div className={styles.formGroup}>
+        <label htmlFor="email">Adresse email</label>
+        <input id="email" name="email" type="email" autoComplete="email" required />
+      </div>
+      {erreur("email") && <p role="alert" className={styles.authError}>{erreur("email")}</p>}
 
       <label htmlFor="motDePasse">Mot de passe</label>
       <input
@@ -67,9 +73,9 @@ export function FormulaireInscription() {
       </p>
       {erreur("motDePasse") && <p role="alert">{erreur("motDePasse")}</p>}
 
-      {erreur("_") && <p role="alert">{erreur("_")}</p>}
+      {erreur("_") && <p role="alert" className={styles.authError}>{erreur("_")}</p>}
 
-      <button type="submit" disabled={enCours}>
+      <button className={styles.btnLogin} type="submit" disabled={enCours}>
         {enCours ? "Création en cours" : "Créer mon compte"}
       </button>
     </form>
