@@ -26,6 +26,14 @@ export interface RegleForme {
   /** Part du capital à libérer à la constitution, en fraction de 1. */
   liberationMinimale: number;
   description: string;
+  /**
+   * Proposée au client ?
+   *
+   * Une forme sans gabarit de statuts ne peut aboutir à rien : la proposer
+   * conduirait le client jusqu'à la génération, où plus rien ne serait possible.
+   * Les règles restent déclarées, prêtes pour le jour où les gabarits existent.
+   */
+  disponible: boolean;
 }
 
 export const FORMES: Record<Forme, RegleForme> = {
@@ -39,6 +47,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Président",
     liberationMinimale: 0.5,
     description: "Société par actions simplifiée à associé unique.",
+  disponible: true,
   },
   SAS: {
     code: "SAS",
@@ -50,6 +59,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Président",
     liberationMinimale: 0.5,
     description: "Société par actions simplifiée, à plusieurs associés.",
+  disponible: true,
   },
   EURL: {
     code: "EURL",
@@ -61,6 +71,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Gérant",
     liberationMinimale: 0.2,
     description: "Société à responsabilité limitée à associé unique.",
+  disponible: true,
   },
   SARL: {
     code: "SARL",
@@ -72,6 +83,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Gérant",
     liberationMinimale: 0.2,
     description: "Société à responsabilité limitée, de 2 à 100 associés.",
+  disponible: true,
   },
   SCI: {
     code: "SCI",
@@ -83,6 +95,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Gérant",
     liberationMinimale: 0,
     description: "Société civile immobilière, pour détenir un bien à plusieurs.",
+  disponible: true,
   },
   SA: {
     code: "SA",
@@ -94,10 +107,18 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Président",
     liberationMinimale: 0.5,
     description: "Société anonyme. Capital minimum de 37 000 euros.",
+    // Aucun gabarit de statuts n'existe pour la SA : voir templates/.
+    disponible: false,
   },
 };
 
-export const FORMES_PROPOSEES: Forme[] = ["SASU", "SAS", "EURL", "SARL", "SCI", "SA"];
+/** Les formes réellement proposables, gabarits à l'appui. */
+export const FORMES_PROPOSEES: Forme[] = (Object.keys(FORMES) as Forme[]).filter(
+  (f) => FORMES[f].disponible
+);
+
+/** Toutes les formes décrites, disponibles ou non. */
+export const TOUTES_LES_FORMES: Forme[] = Object.keys(FORMES) as Forme[];
 
 export function estForme(valeur: string | null | undefined): valeur is Forme {
   return !!valeur && valeur in FORMES;

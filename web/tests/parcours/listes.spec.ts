@@ -15,8 +15,11 @@ test.describe("formalités", () => {
     await expect(page.getByText("PARCOURS EN COURS")).toBeVisible();
     await expect(page.getByText("PARCOURS TERMINEE")).toBeVisible();
 
-    // Le libellé vient de la phase, pas d'un texte figé
-    await expect(page.getByText("En attente de signature")).toBeVisible();
+    // Le libellé vient de la phase, pas d'un texte figé. Les essais de création
+    // ajoutent d'autres dossiers à la même étape : on vise celui-ci.
+    await expect(
+      page.locator("li", { hasText: "PARCOURS EN COURS" }).getByText("En attente de signature")
+    ).toBeVisible();
   });
 
   test("le filtre restreint la liste et se lit dans l'adresse", async ({ page }) => {

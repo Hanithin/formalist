@@ -108,3 +108,100 @@ test.describe("accès au brouillon", () => {
     expect([400, 403]).toContain(reponse.status());
   });
 });
+
+test.describe("pièces et documents", () => {
+  /** Remplit les quatre premières étapes d'une SASU et rend l'adresse du dossier. */
+  async function dossierPret(page: import("@playwright/test").Page) {
+    await page.goto("/creation");
+    const dossier = new URL(page.url()).searchParams.get("dossier")!;
+
+    await page.getByLabel("Forme juridique").selectOption("SASU");
+    await page.getByLabel("Nom de la société").fill("ESSAI DOCUMENTS");
+    await page.getByLabel("Activité").fill("Conseil");
+    await page.getByLabel("Adresse du siège").fill("3 rue Centrale");
+    await page.getByLabel("Code postal").fill("33000");
+    await page.getByLabel("Ville").fill("Bordeaux");
+    await page.getByRole("button", { name: "Continuer" }).click();
+    await expect(page.getByRole("heading", { level: 2 })).toContainText("Associés");
+
+    await page.getByRole("button", { name: /Ajouter un associé/ }).click();
+    await page.getByLabel("Prénom").fill("Camille");
+    await page.getByLabel("Nom", { exact: true }).fill("Durand");
+    await page.getByLabel("Apport, en euros").fill("1000");
+    await page.getByRole("button", { name: "Continuer" }).click();
+    await expect(page.getByRole("heading", { level: 2 })).toContainText("Dirigeants");
+
+    await page.getByRole("button", { name: /Ajouter un président/ }).click();
+    await page.getByLabel("Prénom").fill("Camille");
+    await page.getByLabel("Nom", { exact: true }).fill("Durand");
+    await page.getByRole("button", { name: "Continuer" }).click();
+    await expect(page.getByRole("heading", { level: 2 })).toContainText("Répartition du capital");
+
+    await page.getByLabel("Capital social, en euros").fill("1000");
+    await page.getByLabel("Montant libéré à la constitution").fill("1000");
+    await page.getByRole("button", { name: "Continuer" }).click();
+    await expect(page.getByRole("heading", { level: 2 })).toContainText("Pièces justificatives");
+
+    return dossier;
+  }
+
+  test("les pièces demandées dépendent de la forme", async ({ page }) => {
+    await dossierPret(page);
+    await expect(page.getByText("Pièce d'identité du dirigeant")).toBeVisible();
+    // Une SASU libère du capital : l'attestation est demandée.
+    await expect(page.getByText("Attestation de dépôt de capital")).toBeVisible();
+  });
+
+  test("un fichier au contenu trompeur est refusé", async ({ page }) => {
+    await dossierPret(page);
+
+    await page.getByLabel("Choisir un fichier").first().setInputFiles({
+      name: "piege.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("<html><script>alert(1)</script></html>"),
+    });
+
+    // Next place un signaleur de navigation qui porte aussi role="alert".
+    await expect(page.locator("fieldset p[role=alert]")).toContainText(
+      "ne correspond pas à son format"
+    );
+  });
+
+  test("un vrai PDF est accepté et enregistré", async ({ page }) => {
+    await dossierPret(page);
+
+    await page.getByLabel("Choisir un fichier").first().setInputFiles({
+      name: "identite.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4\nfaux document d'essai"),
+    });
+
+    await expect(page.getByText("Pièce enregistrée")).toBeVisible();
+  });
+
+  test("les documents sont produits à partir des gabarits", async ({ page, request }) => {
+    const dossier = await dossierPret(page);
+
+    const reponse = await request.post("/api/formalites/documents", {
+      data: { dossier: Number(dossier) },
+    });
+    expect(reponse.status()).toBe(201);
+
+    const corps = await reponse.json();
+    const titres = corps.documents.map((d: { titre: string }) => d.titre);
+    expect(titres).toContain("Statuts constitutifs");
+    expect(titres).toContain("Liste des souscripteurs");
+    expect(titres).toContain("Procès-verbal de nomination");
+  });
+
+  test("un dossier incomplet ne produit pas de documents troués", async ({ page, request }) => {
+    await page.goto("/creation");
+    const dossier = new URL(page.url()).searchParams.get("dossier")!;
+
+    const reponse = await request.post("/api/formalites/documents", {
+      data: { dossier: Number(dossier) },
+    });
+    expect(reponse.status()).toBe(400);
+    expect((await reponse.json()).error).toContain("incomplet");
+  });
+});

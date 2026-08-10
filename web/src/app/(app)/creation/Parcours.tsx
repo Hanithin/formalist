@@ -9,6 +9,8 @@ import {
   type Etape,
 } from "@/domain/formalite/parcours";
 import { FORMES_PROPOSEES, FORMES, regle } from "@/domain/formalite/formes";
+import { piecesAttendues } from "@/domain/formalite/documents";
+import { Pieces } from "./Pieces";
 import styles from "./Parcours.module.css";
 
 interface Props {
@@ -16,9 +18,16 @@ interface Props {
   etapes: Etape[];
   etapeCourante: number;
   brouillonInitial: Brouillon;
+  piecesDeposees: { type: string | null; nom: string }[];
 }
 
-export function Parcours({ dossierId, etapes, etapeCourante, brouillonInitial }: Props) {
+export function Parcours({
+  dossierId,
+  etapes,
+  etapeCourante,
+  brouillonInitial,
+  piecesDeposees,
+}: Props) {
   const [brouillon, setBrouillon] = useState(brouillonInitial);
   const [anomalies, setAnomalies] = useState<Record<string, string>>({});
   const [enCours, demarrer] = useTransition();
@@ -179,10 +188,11 @@ export function Parcours({ dossierId, etapes, etapeCourante, brouillonInitial }:
         )}
 
         {etape.identifiant === "pieces" && (
-          <p>
-            Le dépôt des pièces arrive avec le portage du reste du parcours. Vos
-            informations sont enregistrées.
-          </p>
+          <Pieces
+            dossierId={dossierId}
+            pieces={piecesAttendues(brouillon.forme)}
+            deposees={piecesDeposees}
+          />
         )}
 
         {etape.identifiant === "offre" && (

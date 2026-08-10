@@ -17,6 +17,13 @@ describe("formes juridiques", () => {
     }
   });
 
+  it("une forme sans gabarit n'est pas proposée au client", () => {
+    // La SA est décrite, ses règles sont prêtes, mais aucun gabarit de statuts
+    // n'existe : la proposer mènerait le client dans une impasse.
+    expect(FORMES.SA.disponible).toBe(false);
+    expect(FORMES_PROPOSEES).not.toContain("SA");
+  });
+
   it("le titre du dirigeant suit la forme : il figure dans les actes", () => {
     expect(regle("SASU")?.titreDirigeant).toBe("Président");
     expect(regle("SARL")?.titreDirigeant).toBe("Gérant");

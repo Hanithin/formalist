@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { ouvrirBrouillon, commencerFormalite } from "@/infrastructure/db/depots/brouillons";
+import { documentsDuDossier } from "@/infrastructure/db/depots/documents";
 import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
 
@@ -26,6 +27,7 @@ export default async function Creation({
   }
 
   const { brouillon } = await ouvrirBrouillon(utilisateur, Number(dossier));
+  const deposees = await documentsDuDossier(utilisateur, Number(dossier));
   const courante = etapeAccessible(Number(etape) || 1, brouillon);
 
   return (
@@ -36,6 +38,7 @@ export default async function Creation({
         etapes={ETAPES}
         etapeCourante={courante}
         brouillonInitial={brouillon}
+        piecesDeposees={deposees.map((d) => ({ type: d.type, nom: d.name }))}
       />
     </main>
   );
