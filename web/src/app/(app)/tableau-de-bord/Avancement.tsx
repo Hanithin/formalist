@@ -40,7 +40,8 @@ export function Avancement({ pourcentage }: { pourcentage: number }) {
  * recouvre tout l'écran - ce qui est arrivé.
  */
 export function Anneau({ pourcentage, termine }: { pourcentage: number; termine: boolean }) {
-  const rayon = 28;
+  // Rayon 26 dans un carré de 64 : le trait de 5 tient à l'intérieur du cadre.
+  const rayon = 26;
   const circonference = 2 * Math.PI * rayon;
   const reste = circonference - (circonference * Math.min(Math.max(pourcentage, 0), 100)) / 100;
 
@@ -54,7 +55,7 @@ export function Anneau({ pourcentage, termine }: { pourcentage: number; termine:
           cy="32"
           r={rayon}
           strokeDasharray={circonference}
-          strokeDashoffset={reste}
+          strokeDashoffset={termine ? 0 : reste}
         />
       </svg>
       <span className={styles.socTilePct}>

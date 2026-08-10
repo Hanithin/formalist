@@ -19,8 +19,8 @@
       flex-shrink: 0; width: 132px; height: 132px; position: relative;
     }
 .singleHeroProgress svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.singleHeroProgress circle.bg { fill: none; stroke: #f0f0f2; stroke-width: 8; }
-.singleHeroProgress circle.fg {
+.singleHeroProgress circle:global(.bg) { fill: none; stroke: #f0f0f2; stroke-width: 8; }
+.singleHeroProgress circle:global(.fg) {
       fill: none; stroke: #111; stroke-width: 8; stroke-linecap: round;
       transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -61,10 +61,10 @@
 .singleCelebrate .singleHeroTitle { color: #fff; }
 .singleCelebrate .singleHeroDesc { color: rgba(255,255,255,0.85); }
 .singleCelebrate .singleHeroEyebrow { background: rgba(255,255,255,0.15); color: #fff; }
-.singleCelebrate .singleHeroProgress circle.bg { stroke: rgba(255,255,255,0.15); }
-.singleCelebrate .singleHeroProgress circle.fg { stroke: #fff; }
+.singleCelebrate .singleHeroProgress circle:global(.bg) { stroke: rgba(255,255,255,0.15); }
+.singleCelebrate .singleHeroProgress circle:global(.fg) { stroke: #fff; }
 .singleCelebrate .singleHeroProgress .pctValue { color: #fff; }
-.singleHeroProgress .pctValue svg { width: 26px; height: 26px; display: block; }
+.singleHeroProgress .pctValue svg { width: 26px; height: 26px; display: block; transform: none; }
 .singleCelebrate .singleHeroProgress .pctLabel { color: rgba(255,255,255,0.7); }
 .singleCelebrate .singleHeroBtn { background: #fff; color: #065f46; }
 .singleCelebrate .singleHeroBtn:hover { background: #f0fdf4; }
@@ -110,15 +110,18 @@
 .socTileRing { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
 .socTileRing svg { width: 64px; height: 64px; transform: rotate(-90deg); }
 .socTileRing circle { fill: none; stroke-width: 5; stroke-linecap: round; }
-.socTileRing circle.bg { stroke: #f0f0f0; }
-.socTileRing circle.fg { stroke: #111; transition: stroke-dashoffset 0.8s ease; }
-.socTile.done .socTileRing circle.fg { stroke: #16a34a; }
+.socTileRing circle:global(.bg) { stroke: #f0f0f0; }
+.socTileRing circle:global(.fg) { stroke: #111; transition: stroke-dashoffset 0.8s ease; }
+.socTile.done .socTileRing circle:global(.fg) { stroke: #16a34a; }
 .socTilePct {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       font-size: 14px; font-weight: 600; color: #111;
     }
 .socTile.done .socTilePct { color: #16a34a; }
-.socTile.done .socTilePct svg { width: 20px; height: 20px; }
+/* transform: none - l'anneau est tourné d'un quart de tour pour démarrer en
+   haut, et la coche, qui est à l'intérieur, héritait de cette rotation : elle se
+   lisait comme un chevron. */
+.socTile.done .socTilePct svg { width: 20px; height: 20px; transform: none; }
 .socTileIdent { flex: 1; min-width: 0; }
 .socTileName {
       font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 17px; color: #111;
@@ -143,7 +146,9 @@
       border-radius: 100px; padding: 9px 18px; text-decoration: none; transition: background 0.15s;
     }
 .socTileBtn:hover { background: #000; }
+@media (max-width: 700px) {
 .socGrid { grid-template-columns: 1fr; }
+}
 /* ===== Accueil d'un dossier en cours : parcours, actions, documents, aide ===== */
     .dashCard {
       background: #fff; border: 1px solid #eee; border-radius: 16px;
@@ -207,13 +212,72 @@
 /* Deux colonnes : le fil tient sur moitié moins de hauteur */
     .actCols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
 .actCols .actRow { align-items: flex-start; }
-.actCols { grid-template-columns: 1fr; }
+@media (max-width: 900px) { .actCols { grid-template-columns: 1fr; } }
 .actNote {
       font-size: 13px; color: #52525b; line-height: 1.45; margin-top: 3px;
       border-left: 2px solid #e4e4e7; padding-left: 10px;
     }
 .actTime { font-size: 12px; color: #a1a1aa; margin-top: 2px; }
-.dashCols { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+      .dashCols { grid-template-columns: 1fr; }
+}
+/* ============================
+       ÉTAT 2+ - top action
+       ============================ */
+    .topAction {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-radius: 16px; padding: 20px 24px;
+      display: flex; align-items: center; gap: 18px; margin-bottom: 16px;
+      border: 1px solid #fcd34d;
+    }
+.topActionIcon {
+      width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center;
+    }
+.topActionIcon svg { width: 22px; height: 22px; color: #111; }
+.topActionBody { flex: 1; min-width: 0; }
+.topActionTitle { font-size: 15px; font-weight: 600; color: #111; }
+.topActionDesc { font-size: 13px; color: #78350f; margin-top: 2px; }
+.topActionBtn {
+      flex-shrink: 0; padding: 10px 18px; background: #111; color: #fff;
+      border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+.topActionBtn:hover { background: #2a2a2c; }
+.topActionBtn svg { width: 14px; height: 14px; }
+.topActionNav {
+      display: flex; align-items: center; gap: 6px;
+      margin-right: 10px; flex-shrink: 0;
+    }
+/* margin et padding à zéro : les boutons reçoivent une mise en forme par défaut
+   dans globals.css, que la page d'origine n'avait pas. */
+.taArrow {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(0,0,0,0.06); border: none; cursor: pointer;
+      margin: 0; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #111; transition: background 0.15s;
+    }
+/* :not(:disabled) uniquement pour passer devant la règle de globals.css, qui
+   porte déjà ces deux pseudo-classes. */
+.taArrow:hover:not(:disabled) { background: rgba(0,0,0,0.12); border-color: transparent; }
+.taArrow svg { width: 14px; height: 14px; }
+.taCounter {
+      font-size: 12px; font-weight: 600; color: #78350f;
+      min-width: 32px; text-align: center;
+      letter-spacing: 0;
+    }
+/* Section header (Vos sociétés, Activité récente) */
+    .dbSectionHead {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; margin: 8px 0 14px;
+    }
+.dbSectionHead h2 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 18px; font-weight: 600; color: #111;
+      margin: 0;
+    }
 .roadmap {
       background: #fff; border: 1px solid #eee; border-radius: 16px;
       padding: 28px; margin-bottom: 20px;
@@ -303,127 +367,61 @@
     }
 .heroBtn:hover { background: #333; }
 .heroBtn svg { width: 16px; height: 16px; }
+@media (max-width: 768px) {
 .heroBanner { margin: 0 20px 24px; padding: 20px; flex-direction: column; align-items: flex-start; gap: 16px; }
+}
 
-/* ---------- Gabarit de la page ---------- */
+/* ---------- Gabarit de la page ----------
+   La zone principale occupe toute la largeur laissée par la colonne : le
+   tableau de bord n'est pas une page de lecture, il n'a pas de largeur de
+   confort. */
 
 .page {
-  padding: 32px 40px 60px;
-  max-width: var(--largeur-contenu);
+  padding: 0;
+  max-width: none;
   width: 100%;
 }
+.topbar {
+      padding: 32px 48px 24px;
+      background: transparent;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+    }
+.topbarLeft { min-width: 0; flex: 1; }
+.topbar h1 {
+      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 0;
+      color: #111;
+      line-height: 1.2;
+    }
+.topbarSub {
+      font-size: 14px;
+      color: #888;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+.topbarActions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      padding-top: 4px;
+    }
+.topbarDate { font-size: 14.5px; color: #888; white-space: nowrap; }
+.content { padding: 0 48px 48px; flex: 1; }
+@media (max-width: 768px) {
+      .topbar { flex-direction: column; padding: 24px 20px 16px; }
+      .topbarActions { padding-top: 0; }
+      .content { padding: 0 20px 20px; }
+    }
 
-.entete {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.date {
-  margin: 0;
-  font-size: 14.5px;
-  color: var(--gris);
-}
-
-.section {
-  margin-bottom: 32px;
-}
-
-.section h2 {
-  margin: 0 0 4px;
-}
-
-.precision {
-  margin: 0 0 14px;
-  font-size: 13.5px;
-  color: var(--gris);
-}
-
-/* ---------- Ce qu'on attend ----------
-   L'urgence se voit à la bordure autant qu'à la teinte : la couleur seule ne
-   distingue pas ce qui bloque. */
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.action,
-.actionUrgente {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 16px;
-  align-items: center;
-  padding: 18px 20px;
-  background: var(--surface);
-  border: 1px solid var(--trait);
-  border-radius: var(--rayon-large);
-}
-
-.actionUrgente {
-  border-color: var(--critique-trait);
-  background: var(--critique-fond);
-}
-
-.actionTitre {
-  font-size: 15.5px;
-  font-weight: 600;
-  color: var(--encre);
-}
-
-.actionPrecision {
-  grid-column: 1;
-  font-size: 13.5px;
-  color: var(--gris);
-}
-
-.actionBouton {
-  grid-row: 1 / span 2;
-  grid-column: 2;
-  padding: 11px 20px;
-  border-radius: 10px;
-  background: var(--encre);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.actionBouton:hover {
-  background: #27272a;
-}
-
-/* ---------- Le dossier unique ---------- */
+/* Le lien discret à côté du bouton plein, sur le dossier unique. */
 
 .singleHeroLink {
   font-size: 14.5px;
   color: var(--gris);
-}
-
-/* ---------- Vignettes de société ---------- */
-
-.socTileHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-
-
-.socTileFoot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }

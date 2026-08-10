@@ -28,10 +28,22 @@ test.describe("tableau de bord du client", () => {
     await expect(lien).toHaveAttribute("href", /\/creation\?dossier=\d+/);
   });
 
-  test("les sociétés sont listées avec leur avancement", async ({ page }) => {
+  test("les trois sociétés les plus récentes sont mises en avant", async ({ page, request }) => {
+    // L'accueil ne liste pas tous les dossiers : il montre les trois derniers et
+    // renvoie au reste. Sur trente-cinq dossiers, tout lister ferait de l'accueil
+    // une deuxième page « Mes formalités ».
     await page.goto("/tableau-de-bord");
     await expect(page.getByRole("heading", { name: /Vos sociétés|Votre société/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: "PARCOURS TERMINEE" })).toBeVisible();
+
+    const { dossiers } = await (await request.get("/api/formalites")).json();
+    for (const d of dossiers.slice(0, 3)) {
+      await expect(page.getByText(d.societe || "Sans nom").first()).toBeVisible();
+    }
+
+    await expect(page.getByRole("link", { name: /Voir toutes/ })).toHaveAttribute(
+      "href",
+      "/formalites"
+    );
   });
 });
 

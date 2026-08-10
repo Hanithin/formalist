@@ -2,6 +2,7 @@ import { prisma } from "../client";
 import { listerDossiers } from "./dossiers";
 import { actionsAttendues, type ContexteDossier } from "@/domain/formalite/actions";
 import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
+import type { EntreeJournal } from "@/domain/formalite/journal";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -38,11 +39,11 @@ function lireBrouillon(dataJson: string | null): Brouillon & Record<string, unkn
 
 export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
   const dossiers = await listerDossiers(utilisateur);
-  if (dossiers.length === 0) return { dossiers: [], societes: [] };
+  if (dossiers.length === 0) return { dossiers: [], societes: [], activite: [] };
 
   const identifiants = dossiers.map((d) => d.id);
 
-  const [rejetes, signatures] = await Promise.all([
+  const [rejetes, signatures, nonLus, journal] = await Promise.all([
     prisma.documents.groupBy({
       by: ["formalite_id"],
       where: { formalite_id: { in: identifiants }, rejection_reason: { not: null } },
@@ -53,9 +54,28 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       where: { formalite_id: { in: identifiants } },
       _count: { _all: true },
     }),
+    // Ses propres messages ne lui sont pas signalés comme non lus.
+    prisma.messages.groupBy({
+      by: ["formalite_id"],
+      where: {
+        formalite_id: { in: identifiants },
+        read: false,
+        sender_id: { not: utilisateur.id },
+      },
+      _count: { _all: true },
+    }),
+    // Le fil d'activité, en une requête plutôt qu'un appel par dossier comme le
+    // faisait la page d'origine.
+    prisma.audit_log.findMany({
+      where: { formalite_id: { in: identifiants } },
+      orderBy: { created_at: "desc" },
+      take: 40,
+      include: { users: { select: { name: true } } },
+    }),
   ]);
 
   const rejetesPar = new Map(rejetes.map((r) => [r.formalite_id, r._count._all]));
+  const nonLusPar = new Map(nonLus.map((m) => [m.formalite_id, m._count._all]));
 
   const signaturesPar = new Map<number, { total: number; enAttente: number }>();
   for (const s of signatures) {
@@ -90,9 +110,25 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       status: d.status,
       phase: d.phase ?? 1,
       offre: d.offer,
+      nonLus: nonLusPar.get(d.id) ?? 0,
+      majLe: d.updated_at,
       actions: actionsAttendues(contexte),
     };
   });
 
-  return { dossiers, societes };
+  const nomsPar = new Map(societes.map((s) => [s.id, s.societe]));
+
+  const activite: (EntreeJournal & { dossierId: number; societe: string })[] = journal.map((e) => ({
+    dossierId: e.formalite_id as number,
+    societe: nomsPar.get(e.formalite_id as number) ?? "Sans nom",
+    action: e.action,
+    auteurRole: e.actor_role,
+    auteur: e.users?.name ?? null,
+    champ: e.target_field,
+    valeur: e.after_value,
+    commentaire: e.comment,
+    quand: e.created_at,
+  }));
+
+  return { dossiers, societes, activite };
 }
