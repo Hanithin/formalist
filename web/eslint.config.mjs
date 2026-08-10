@@ -79,6 +79,7 @@ const eslintConfig = [
       // Déplacés depuis lib/ sans être réécrits : c'est le but. Les passer au
       // style du reste supposerait de les reprendre, ce qu'on ne veut pas.
       "src/infrastructure/documents/*.cjs",
+      "src/infrastructure/inpi/*.cjs",
       ".next/**",
       "node_modules/**",
     ],

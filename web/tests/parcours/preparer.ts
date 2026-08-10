@@ -37,6 +37,7 @@ export default async function preparer() {
     await prisma.audit_log.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.messages.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.documents.deleteMany({ where: { formalites: { user_id: ancien.id } } });
+    // Les essais créent des contrats à chaque série : on repart propre.
     await prisma.contrats.deleteMany({ where: { user_id: ancien.id } });
     await prisma.formalites.deleteMany({ where: { user_id: ancien.id } });
     await prisma.team_invitations.deleteMany({ where: { invited_by: ancien.id } });
