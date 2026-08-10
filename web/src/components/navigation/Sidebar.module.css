@@ -48,22 +48,89 @@
   color: #fbbf24;
 }
 
-.action {
+/* ---------- Société active ----------
+   Reprise de .sidebar-context : la pastille est blanche sur la colonne sombre, le
+   libellé en capitales, le nom tronqué plutôt que replié sur deux lignes. */
+
+.contexte {
   flex-shrink: 0;
-  margin: 4px 12px 20px;
-  padding: 13px 18px;
-  border-radius: 12px;
-  background: #fff;
-  color: #18181b;
-  font-size: 14.5px;
-  font-weight: 600;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 12px 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
   text-decoration: none;
-  transition: background 0.15s;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
-.action:hover {
-  background: #ececec;
+.contexte:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Une seule société : il n'y a rien à choisir, donc rien à survoler. */
+.contexteSeul {
+  cursor: default;
+}
+
+.contexteSeul:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ctxIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fff;
+  color: #18181b;
+}
+
+.ctxIcone svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+.ctxCorps {
+  flex: 1;
+  min-width: 0;
+}
+
+.ctxLibelle {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ctxNom {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ctxChevron {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  opacity: 0.6;
 }
 
 .navigation {
@@ -73,26 +140,13 @@
   padding: 0 12px;
 }
 
-.groupe {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* L'espace entre deux groupes est porté par le titre, une seule fois. Il l'était
-   aussi par le groupe, ce qui doublait le blanc et étirait la colonne. */
-.titreGroupe {
-  margin: 4px 0 0;
-  padding: 20px 12px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.groupe:first-child .titreGroupe {
-  margin-top: 0;
-  padding-top: 4px;
+/* Le filet de séparation, à la place des titres de rubrique : c'est ainsi que la
+   colonne d'origine découpait ses douze entrées. */
+.filet {
+  height: 1px;
+  margin: 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .icone {
@@ -105,6 +159,8 @@
 .icone svg {
   width: 21px;
   height: 21px;
+  /* Les tracés sont dessinés à 1.6 : la colonne les épaississait à 1.7. */
+  stroke-width: 1.7;
 }
 
 .lienActif .icone {
@@ -121,9 +177,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-bottom: 2px;
   padding: 11px 12px;
   border-radius: 10px;
   font-size: 15.5px;
+  /* 450 et 550 : deux graisses intermédiaires que la colonne d'origine tirait de
+     la variable de Matter. L'écart entre une entrée et l'entrée active se lit,
+     sans que le gras ne saute aux yeux. */
+  font-weight: 450;
   /* La page d'origine ne fixait pas d'interligne : le texte y valait sa hauteur
      naturelle. Notre corps de page en impose un de 1.6, qui ajoutait cinq pixels
      à chaque entrée et étirait la colonne. */
@@ -143,6 +204,7 @@
 
 .lienActif {
   color: #fff;
+  font-weight: 550;
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -159,6 +221,29 @@
   border-radius: 100px;
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+}
+
+/* ---------- Compteurs ----------
+   « 3 en cours », « 2 non lus ». Sur l'entrée active, le rapport s'inverse : le
+   fond devient clair pour rester lisible sur la surbrillance. */
+
+.compteur {
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.lienActif .compteur {
+  background: rgba(255, 255, 255, 0.9);
+  color: #18181b;
 }
 
 .pied {

@@ -1,79 +1,116 @@
 import { describe, it, expect } from "vitest";
-import { MENU, menuPour, entreeActive } from "@/domain/navigation/menu";
+import {
+  MENU,
+  SEPARATEUR,
+  menuPour,
+  entreesDuMenu,
+  entreeActive,
+} from "@/domain/navigation/menu";
 import { ICONES } from "@/domain/navigation/icones";
+
+const liensPour = (roles: Parameters<typeof menuPour>[0]) =>
+  entreesDuMenu(menuPour(roles)).map((e) => e.lien);
 
 describe("menu selon les rôles", () => {
   it("un client ne voit ni l'espace avocat ni l'administration", () => {
-    const liens = menuPour(["user"]).flatMap((g) => g.entrees.map((e) => e.lien));
+    const liens = liensPour(["user"]);
     expect(liens).not.toContain("/avocat");
     expect(liens).not.toContain("/administration");
     expect(liens).toContain("/tableau-de-bord");
   });
 
   it("un avocat voit l'espace avocat, pas l'administration", () => {
-    const liens = menuPour(["avocat"]).flatMap((g) => g.entrees.map((e) => e.lien));
+    const liens = liensPour(["avocat"]);
     expect(liens).toContain("/avocat");
     expect(liens).not.toContain("/administration");
   });
 
   it("un administrateur voit tout", () => {
-    const liens = menuPour(["admin"]).flatMap((g) => g.entrees.map((e) => e.lien));
+    const liens = liensPour(["admin"]);
     expect(liens).toContain("/avocat");
     expect(liens).toContain("/administration");
   });
 
-  it("aucun groupe vide n'est affiché", () => {
-    for (const groupe of menuPour(["user"])) {
-      expect(groupe.entrees.length).toBeGreaterThan(0);
-    }
-  });
-
   it("les rôles cumulés additionnent les entrées, sans doublon", () => {
-    const liens = menuPour(["avocat", "admin"]).flatMap((g) => g.entrees.map((e) => e.lien));
+    const liens = liensPour(["avocat", "admin"]);
     expect(liens).toContain("/administration");
     expect(new Set(liens).size).toBe(liens.length);
+  });
+
+  it("les paramètres ne sont pas dans la colonne", () => {
+    // On y accède par la roue crantée du pied, comme dans la colonne d'origine.
+    expect(liensPour(["admin"])).not.toContain("/parametres");
+  });
+});
+
+describe("filets de séparation", () => {
+  it("un client perd les entrées de métier, et le filet qui les précédait", () => {
+    const menu = menuPour(["user"]);
+    // Sans les trois entrées réservées, le second filet n'a plus rien à séparer.
+    expect(menu.filter((e) => e === SEPARATEUR)).toHaveLength(1);
+  });
+
+  it("un administrateur garde les deux", () => {
+    expect(menuPour(["admin"]).filter((e) => e === SEPARATEUR)).toHaveLength(2);
+  });
+
+  it("aucun filet en tête, en queue, ni deux de suite", () => {
+    for (const roles of [["user"], ["avocat"], ["admin"]] as const) {
+      const menu = menuPour([...roles]);
+      expect(menu[0]).not.toBe(SEPARATEUR);
+      expect(menu[menu.length - 1]).not.toBe(SEPARATEUR);
+      for (let i = 1; i < menu.length; i++) {
+        expect(menu[i] === SEPARATEUR && menu[i - 1] === SEPARATEUR).toBe(false);
+      }
+    }
   });
 });
 
 describe("entrée active", () => {
-  const groupes = menuPour(["admin"]);
+  const menu = menuPour(["admin"]);
 
   it("marque la page courante", () => {
-    expect(entreeActive("/documents", groupes)).toBe("/documents");
+    expect(entreeActive("/documents", menu)).toBe("/documents");
   });
 
   it("marque encore la rubrique sur une sous-page", () => {
-    expect(entreeActive("/formalites/12", groupes)).toBe("/formalites");
+    expect(entreeActive("/formalites/12", menu)).toBe("/formalites");
   });
 
   it("ignore les paramètres d'adresse dans la comparaison", () => {
-    expect(entreeActive("/creation", groupes)).toBe("/creation");
+    expect(entreeActive("/creation", menu)).toBe("/creation");
   });
 
   it("ne marque rien sur une page hors menu", () => {
-    expect(entreeActive("/page-inconnue", groupes)).toBeNull();
+    expect(entreeActive("/page-inconnue", menu)).toBeNull();
   });
 
   it("choisit l'entrée la plus précise", () => {
     // /avocat ne doit pas être marquée quand on est sur /avocat-quelque-chose
-    expect(entreeActive("/avocat-autre-chose", groupes)).toBeNull();
+    expect(entreeActive("/avocat-autre-chose", menu)).toBeNull();
   });
 });
 
 describe("intégrité du menu", () => {
+  const entrees = entreesDuMenu(MENU);
+
   it("aucun lien ne pointe encore vers une page .html", () => {
-    const liens = MENU.flatMap((g) => g.entrees.map((e) => e.lien));
-    expect(liens.filter((l) => l.includes(".html"))).toEqual([]);
+    expect(entrees.filter((e) => e.lien.includes(".html"))).toEqual([]);
   });
 
   it("aucun lien en double", () => {
-    const liens = MENU.flatMap((g) => g.entrees.map((e) => e.lien.split("?")[0]));
+    const liens = entrees.map((e) => e.lien.split("?")[0]);
     expect(new Set(liens).size).toBe(liens.length);
+  });
+
+  it("les compteurs ne sont posés que là où la colonne d'origine en avait", () => {
+    const avecCompteur = entrees.filter((e) => e.compteur).map((e) => e.lien);
+    expect(avecCompteur).toEqual(["/formalites", "/messagerie"]);
   });
 });
 
 describe("icônes de la navigation", () => {
-  const liens = MENU.flatMap((g) => g.entrees.map((e) => e.lien.split("?")[0]));
+  const liens = entreesDuMenu(MENU).map((e) => e.lien.split("?")[0]);
 
   it("chaque entrée a la sienne", () => {
     for (const lien of liens) {

@@ -1,14 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
-import { menuPour, entreeActive } from "@/domain/navigation/menu";
+import { menuPour, entreeActive, SEPARATEUR } from "@/domain/navigation/menu";
+import { libelleCompteur, type ResumeColonne } from "@/domain/navigation/colonne";
 import { icone } from "@/domain/navigation/icones";
 import type { Role } from "@/domain/acces/regles";
 import { Deconnexion } from "./Deconnexion";
+import { NouvelleFormalite } from "./NouvelleFormalite";
 import styles from "./Sidebar.module.css";
 
 interface Props {
   chemin: string;
   utilisateur: { nom: string; email: string; roles: Role[] };
+  resume: ResumeColonne;
 }
 
 /** Initiales pour l'avatar : « Hani Madfai » donne HM. */
@@ -21,9 +24,9 @@ function initiales(nom: string): string {
     .join("");
 }
 
-export function Sidebar({ chemin, utilisateur }: Props) {
-  const groupes = menuPour(utilisateur.roles);
-  const active = entreeActive(chemin, groupes);
+export function Sidebar({ chemin, utilisateur, resume }: Props) {
+  const menu = menuPour(utilisateur.roles);
+  const active = entreeActive(chemin, menu);
   const estAdmin = utilisateur.roles.includes("admin");
 
   return (
@@ -40,50 +43,57 @@ export function Sidebar({ chemin, utilisateur }: Props) {
         {estAdmin && <span className={styles.badgeAdmin}>Admin</span>}
       </div>
 
-      <Link href="/creation?type=creation" className={styles.action}>
-        Créer une formalité
-      </Link>
+      {/* Le bloc de contexte n'apparaît qu'une fois une société ouverte, comme à
+          l'origine où il restait en display:none jusque-là. Avec une seule, il
+          n'ouvre rien : il situe. Avec plusieurs, il mène à la liste. */}
+      {resume.societe && (
+        <Contexte nom={resume.societe} plusieurs={resume.plusieurs} />
+      )}
+
+      <NouvelleFormalite />
 
       <nav className={styles.navigation} aria-label="Navigation principale">
-        {groupes.map((groupe, i) => (
-          <div key={groupe.titre ?? i} className={styles.groupe}>
-            {groupe.titre && <p className={styles.titreGroupe}>{groupe.titre}</p>}
+        {menu.map((element, i) => {
+          if (element === SEPARATEUR) {
+            return <hr key={"filet-" + i} className={styles.filet} />;
+          }
 
-            {groupe.entrees.map((entree) => {
-              const lienNu = entree.lien.split("?")[0];
-              const dessin = (
-                <span
-                  className={styles.icone}
-                  aria-hidden="true"
-                  /* Les tracés viennent de la navigation d'origine, pas d'une saisie. */
-                  dangerouslySetInnerHTML={{ __html: icone(entree.lien) }}
-                />
-              );
+          const lienNu = element.lien.split("?")[0];
+          const dessin = (
+            <span
+              className={styles.icone}
+              aria-hidden="true"
+              /* Les tracés viennent de la navigation, pas d'une saisie. */
+              dangerouslySetInnerHTML={{ __html: icone(element.lien) }}
+            />
+          );
 
-              if (entree.bientot) {
-                return (
-                  <span key={entree.lien} className={styles.bientot} aria-disabled="true">
-                    {dessin}
-                    {entree.libelle}
-                    <span className={styles.pastille}>Bientôt</span>
-                  </span>
-                );
-              }
+          if (element.bientot) {
+            return (
+              <span key={element.lien} className={styles.bientot} aria-disabled="true">
+                {dessin}
+                {element.libelle}
+                <span className={styles.pastille}>Bientôt</span>
+              </span>
+            );
+          }
 
-              return (
-                <Link
-                  key={entree.lien}
-                  href={entree.lien}
-                  className={lienNu === active ? styles.lienActif : styles.lien}
-                  aria-current={lienNu === active ? "page" : undefined}
-                >
-                  {dessin}
-                  {entree.libelle}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+          const estActive = lienNu === active;
+          const compteur = element.compteur ? libelleCompteur(element.compteur, resume) : null;
+
+          return (
+            <Link
+              key={element.lien}
+              href={element.lien}
+              className={estActive ? styles.lienActif : styles.lien}
+              aria-current={estActive ? "page" : undefined}
+            >
+              {dessin}
+              {element.libelle}
+              {compteur && <span className={styles.compteur}>{compteur}</span>}
+            </Link>
+          );
+        })}
       </nav>
 
       <div className={styles.pied}>
@@ -105,5 +115,55 @@ export function Sidebar({ chemin, utilisateur }: Props) {
         <Deconnexion />
       </div>
     </aside>
+  );
+}
+
+/** La société active : pastille, libellé, nom tronqué, chevron s'il y a un choix. */
+function Contexte({ nom, plusieurs }: { nom: string; plusieurs: boolean }) {
+  const dedans = (
+    <>
+      <span className={styles.ctxIcone} aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 21h18M5 21V7l7-4 7 4v14" />
+        </svg>
+      </span>
+
+      <span className={styles.ctxCorps}>
+        <span className={styles.ctxLibelle}>Société active</span>
+        <span className={styles.ctxNom}>{nom}</span>
+      </span>
+
+      {plusieurs && (
+        <svg
+          className={styles.ctxChevron}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      )}
+    </>
+  );
+
+  if (!plusieurs) {
+    return <div className={`${styles.contexte} ${styles.contexteSeul}`}>{dedans}</div>;
+  }
+
+  return (
+    <Link href="/formalites" className={styles.contexte}>
+      {dedans}
+    </Link>
   );
 }

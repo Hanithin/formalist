@@ -1,0 +1,267 @@
+/**
+ * Le bouton de colonne et la fenêtre « Nouvelle formalité ».
+ *
+ * Portage des règles .sidebar-cta et .nd-* de public/dashboard.html, une fois la
+ * cascade appliquée : le bouton est celui de sidebar-dark.css, chargé après le
+ * <style> de la page, donc blanc sur la colonne sombre et non noir.
+ */
+
+/* ---------- Le bouton ---------- */
+
+.action {
+  flex-shrink: 0;
+  margin: 4px 12px 20px;
+  padding: 13px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  color: #18181b;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: none;
+  transition:
+    background 0.15s,
+    transform 0.05s,
+    box-shadow 0.15s;
+}
+
+.action:hover {
+  background: #ececec;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.action:active {
+  transform: scale(0.99);
+}
+
+/* ---------- La fenêtre ---------- */
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 17, 17, 0.45);
+  backdrop-filter: blur(2px);
+  animation: apparait 0.15s ease;
+}
+
+@keyframes apparait {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fenetre {
+  width: 100%;
+  max-width: 720px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  animation: monte 0.18s ease;
+}
+
+@keyframes monte {
+  from {
+    transform: translateY(8px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voile,
+  .fenetre {
+    animation: none;
+  }
+}
+
+.entete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f0f0f2;
+}
+
+.titre {
+  margin: 0;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.soustitre {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: #888;
+}
+
+.fermer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 4px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #999;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.fermer:hover {
+  background: #f5f5f7;
+  color: #111;
+}
+
+.fermer svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---------- Les six cartes ---------- */
+
+.grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 18px;
+}
+
+.carte,
+.carteBientot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    transform 0.05s;
+}
+
+.carte:hover {
+  border-color: #111;
+  background: #fafafa;
+}
+
+.carte:active {
+  transform: scale(0.99);
+}
+
+/* Les deux parcours annoncés portaient un href="#" qui renvoyait en haut de la
+   page. La carte reste visible, et dit qu'elle n'est pas ouverte. */
+.carteBientot {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.pastille {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+.pastille svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+
+.green {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.blue {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.violet {
+  background: #ede7f6;
+  color: #5e35b1;
+}
+
+.amber {
+  background: #fff8e1;
+  color: #b8860b;
+}
+
+.red {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.teal {
+  background: #e0f2f1;
+  color: #00695c;
+}
+
+.corps {
+  min-width: 0;
+}
+
+.carteTitre {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.carteDesc {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: #888;
+}
+
+.bientot {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  color: #71717a;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .grille {
+    grid-template-columns: 1fr;
+  }
+}
