@@ -23,7 +23,7 @@ export const PAGES_PUBLIQUES = [
 export const API_PUBLIQUES = [
   "/api/auth/connexion",
   "/api/auth/inscription",
-  "/api/auth/verifier-email",
+  "/api/auth/verifier",
   "/api/auth/renvoyer-verification",
   "/api/contact",
   // Les associés signent sans compte : leur jeton fait foi.
@@ -54,23 +54,4 @@ export function estPublic(chemin: string): boolean {
   if (propre.startsWith("/signer/")) return true;
 
   return PREFIXES_TECHNIQUES.some((p) => propre.startsWith(p));
-}
-
-/**
- * Pages produites à la compilation.
- *
- * Elles ne peuvent pas porter un jeton propre à la requête : leur HTML existe
- * avant elle. La politique de sécurité les traite donc à part - c'est une
- * question de rendu, pas d'authentification, d'où une liste distincte de celle
- * des adresses publiques.
- */
-export function estPreGeneree(chemin: string): boolean {
-  const propre = chemin.length > 1 ? chemin.replace(/\/+$/, "") : chemin;
-  return (
-    propre === "/" ||
-    propre === "/blog" ||
-    propre.startsWith("/blog/") ||
-    propre === "/contact" ||
-    propre === "/connexion"
-  );
 }

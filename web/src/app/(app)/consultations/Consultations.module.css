@@ -1,0 +1,181 @@
+.page {
+  padding: 32px 40px 60px;
+  max-width: 900px;
+}
+
+.page h1 {
+  margin: 0 0 6px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 28px;
+}
+
+.resume {
+  margin: 0 0 24px;
+  font-size: 14.5px;
+  color: #71717a;
+}
+
+.bloc {
+  margin-bottom: 32px;
+}
+
+.bloc h2 {
+  margin: 0 0 12px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 19px;
+}
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 620px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 14px;
+}
+
+.formulaire label {
+  margin-top: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.formulaire select,
+.formulaire input[type="text"],
+.formulaire input:not([type]),
+.formulaire textarea {
+  padding: 11px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.creneaux {
+  margin: 16px 0 0;
+  padding: 16px;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+}
+
+.creneaux legend {
+  padding: 0 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.journee {
+  margin-bottom: 14px;
+}
+
+.jour {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #71717a;
+  text-transform: capitalize;
+}
+
+.heures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Le créneau choisi se distingue par le fond ET la bordure : la couleur seule
+   ne suffit pas à le signaler. */
+.heure,
+.heureChoisie {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 9px;
+  font-size: 14px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.heure input,
+.heureChoisie input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.heure:hover {
+  border-color: #a1a1aa;
+}
+
+.heureChoisie {
+  background: #18181b;
+  border-color: #18181b;
+  color: #fff;
+}
+
+.heure:focus-within,
+.heureChoisie:focus-within {
+  outline: 2px solid #18181b;
+  outline-offset: 2px;
+}
+
+.formulaire button[type="submit"] {
+  align-self: flex-start;
+  margin-top: 18px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #18181b;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rendezVous {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rendezVous li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+}
+
+.quand {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #111;
+}
+
+.sujet,
+.avocat {
+  font-size: 13.5px;
+  color: #52525b;
+}
+
+.rendezVous button {
+  padding: 7px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 9px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}

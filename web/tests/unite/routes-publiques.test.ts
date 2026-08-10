@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  estPublic,
-  estPreGeneree,
-  PAGES_PUBLIQUES,
-  API_PUBLIQUES,
-} from "@/domain/acces/routes-publiques";
+import { estPublic, PAGES_PUBLIQUES, API_PUBLIQUES } from "@/domain/acces/routes-publiques";
 
 /**
  * Ce fichier existe pour qu'ouvrir une adresse au public soit une décision visible.
@@ -22,7 +17,7 @@ const OUVERTURES_ATTENDUES = [
   "/blog",
   "/api/auth/connexion",
   "/api/auth/inscription",
-  "/api/auth/verifier-email",
+  "/api/auth/verifier",
   "/api/auth/renvoyer-verification",
   "/api/contact",
   "/api/signature/signer",
@@ -90,26 +85,4 @@ describe("cas particuliers de chemins", () => {
     expect(estPublic("/api/auth/connexion-admin")).toBe(false);
   });
 
-});
-
-describe("pages pré-générées", () => {
-  it("la vitrine et le blog sont produits à la compilation", () => {
-    expect(estPreGeneree("/")).toBe(true);
-    expect(estPreGeneree("/blog")).toBe(true);
-    expect(estPreGeneree("/blog/capital-social-creation")).toBe(true);
-  });
-
-  it("les pages d'application ne le sont pas", () => {
-    // Elles portent des données : leur politique de sécurité reste stricte.
-    expect(estPreGeneree("/tableau-de-bord")).toBe(false);
-    expect(estPreGeneree("/aide")).toBe(false);
-    expect(estPreGeneree("/administration")).toBe(false);
-  });
-
-  it("« pré-générée » n'est pas « publique » : ce sont deux questions", () => {
-    expect(estPublic("/connexion")).toBe(true);
-    expect(estPreGeneree("/connexion")).toBe(true);
-    expect(estPublic("/api/contact")).toBe(true);
-    expect(estPreGeneree("/api/contact")).toBe(false);
-  });
 });

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { estPublic, estPreGeneree } from "@/domain/acces/routes-publiques";
+import { estPublic } from "@/domain/acces/routes-publiques";
 import { nouvelleAdresse } from "@/domain/navigation/anciennes-adresses";
 import { NOM_COOKIE } from "@/lib/cookies";
 
@@ -26,19 +26,10 @@ import { NOM_COOKIE } from "@/lib/cookies";
  * 'strict-dynamic' laisse les scripts autorisés en charger d'autres : Next
  * charge ses fragments ainsi, et les énumérer serait intenable.
  */
-function politiqueDeSecurite(jeton: string | null): string {
-  // Une page pré-générée est produite à la compilation : elle ne peut pas porter
-  // un jeton propre à la requête. Ses scripts en ligne sont ceux de Next, et ces
-  // pages ne montrent aucune donnée de client - c'est la vitrine. On y accepte
-  // donc les scripts en ligne, et on garde la politique stricte partout où il y
-  // a quelque chose à protéger.
-  const scripts = jeton
-    ? "'self' 'nonce-" + jeton + "' 'strict-dynamic'"
-    : "'self' 'unsafe-inline'";
-
+function politiqueDeSecurite(jeton: string): string {
   return [
     "default-src 'self'",
-    "script-src " + scripts,
+    "script-src 'self' 'nonce-" + jeton + "' 'strict-dynamic'",
     // Les styles restent en ligne : les modules CSS de Next les injectent, et il
     // n'existe pas d'équivalent de strict-dynamic pour eux.
     "style-src 'self' 'unsafe-inline'",
@@ -65,13 +56,12 @@ export default function proxy(requete: NextRequest) {
     return NextResponse.redirect(new URL(cible, requete.url), 308);
   }
 
-  const preGeneree = estPreGeneree(pathname);
-  const jeton = preGeneree ? null : crypto.randomUUID().replace(/-/g, "");
+  const jeton = crypto.randomUUID().replace(/-/g, "");
 
   const entetes = new Headers(requete.headers);
   entetes.set("x-chemin", pathname);
   // Next lit cet en-tête et appose le jeton sur les scripts qu'il produit.
-  if (jeton) entetes.set("x-nonce", jeton);
+  entetes.set("x-nonce", jeton);
 
   const laisserPasser = () => {
     const reponse = NextResponse.next({ request: { headers: entetes } });

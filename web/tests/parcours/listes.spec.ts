@@ -58,7 +58,8 @@ test.describe("documents", () => {
 
   test("les statuts techniques sont traduits", async ({ page }) => {
     await page.goto("/documents");
-    await expect(page.getByText("Généré")).toBeVisible();
+    // Les essais de génération ajoutent d'autres documents : on vise le premier.
+    await expect(page.getByText("Généré").first()).toBeVisible();
     await expect(page.getByText("generated")).toHaveCount(0);
   });
 });
