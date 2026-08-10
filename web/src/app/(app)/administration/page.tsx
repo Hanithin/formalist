@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauAdministration } from "@/infrastructure/db/depots/administration";
@@ -22,6 +23,9 @@ export default async function Administration() {
     <main className={styles.page}>
       <p className={styles.eyebrow}>Administration</p>
       <h1>Plateforme</h1>
+      <p className={styles.precision}>
+        <Link href="/administration/dossiers">Suivi des dossiers, paiements et activité</Link>
+      </p>
 
       <dl className={styles.chiffres}>
         <div>

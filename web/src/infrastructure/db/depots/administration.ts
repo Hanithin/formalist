@@ -86,6 +86,122 @@ export async function tableauAdministration(utilisateur: UtilisateurConnecte) {
   };
 }
 
+/**
+ * Les vues d'administration.
+ *
+ * Le serveur d'origine les servait par dix points d'entrée distincts, chacun
+ * appelé séparément par la page - dix allers-retours pour un seul écran. Elles
+ * sont ici demandées ensemble, en une passe.
+ */
+export async function vuesAdministration(utilisateur: UtilisateurConnecte) {
+  exigerAdministrateur(utilisateur);
+
+  const [dossiers, paiements, contacts, consultations, activite, usageIA] = await Promise.all([
+    prisma.formalites.findMany({
+      orderBy: { updated_at: "desc" },
+      take: 50,
+      include: { users_formalites_user_idTousers: { select: { name: true, email: true } } },
+    }),
+    prisma.payments.findMany({ orderBy: { paid_at: "desc" }, take: 50 }),
+    prisma.contact_messages.findMany({ orderBy: { created_at: "desc" }, take: 50 }),
+    prisma.lawyer_consultations.findMany({ orderBy: { scheduled_at: "desc" }, take: 50 }),
+    prisma.audit_log.findMany({
+      orderBy: { created_at: "desc" },
+      take: 50,
+      include: { users: { select: { name: true } } },
+    }),
+    prisma.api_usage.aggregate({
+      _sum: { total_tokens: true },
+      _count: { _all: true },
+    }),
+  ]);
+
+  return {
+    dossiers: dossiers.map((d) => ({
+      id: d.id,
+      societe: d.societe || "Sans nom",
+      forme: d.forme,
+      status: d.status,
+      client: d.users_formalites_user_idTousers?.name ?? "Inconnu",
+      email: d.users_formalites_user_idTousers?.email ?? null,
+      avocatId: d.assigned_avocat_id,
+      majLe: d.updated_at,
+    })),
+    paiements: paiements.map((p) => ({
+      id: p.id,
+      montant: (p.amount_cents ?? 0) / 100,
+      statut: p.status,
+      payeLe: p.paid_at,
+    })),
+    contacts: contacts.map((c) => ({
+      id: c.id,
+      nom: [c.prenom, c.nom].filter(Boolean).join(" "),
+      email: c.email,
+      sujet: c.sujet,
+      recuLe: c.created_at,
+    })),
+    consultations: consultations.map((c) => ({
+      id: c.id,
+      debut: c.scheduled_at,
+      sujet: c.topic,
+      statut: c.status,
+    })),
+    activite: activite.map((a) => ({
+      id: a.id,
+      action: a.action,
+      auteur: a.users?.name ?? "Système",
+      dossierId: a.formalite_id,
+      quand: a.created_at,
+    })),
+    usageIA: {
+      appels: usageIA._count._all,
+      jetons: usageIA._sum.total_tokens ?? 0,
+    },
+  };
+}
+
+/** Assigne un avocat à un dossier, depuis l'administration. */
+export async function assignerDepuisAdministration(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  avocatId: number
+) {
+  exigerAdministrateur(utilisateur);
+
+  const avocat = await prisma.users.findUnique({ where: { id: avocatId } });
+  if (!avocat || avocat.role !== "avocat") throw new ChangementRefuse({
+    champ: "avocat",
+    message: "Ce compte n'est pas un avocat",
+  });
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: { assigned_avocat_id: avocatId, updated_at: new Date() },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "admin",
+      action: "avocat_assigne",
+      after_value: avocat.name,
+    },
+  });
+
+  return { avocat: avocat.name };
+}
+
+/** Les avocats disponibles pour une assignation. */
+export async function avocats(utilisateur: UtilisateurConnecte) {
+  exigerAdministrateur(utilisateur);
+  return prisma.users.findMany({
+    where: { role: "avocat", suspended: false },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 export async function changerLesRoles(
   utilisateur: UtilisateurConnecte,
   cibleId: number,
