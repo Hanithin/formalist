@@ -60,15 +60,19 @@ test("le mot employé pour le dirigeant suit la forme choisie", async ({ page })
   await page.getByRole("button", { name: "Continuer" }).click();
 
   // Une SARL demande deux associés : un seul ne suffit pas à passer l'étape.
+  // Chaque personne est un groupe nommé : les champs ne se numérotent plus, on
+  // les atteint par leur groupe.
   await page.getByRole("button", { name: /Ajouter un associé/ }).click();
-  await page.getByLabel("Prénom").fill("Camille");
-  await page.getByLabel("Nom", { exact: true }).fill("Durand");
+  const premier = page.getByRole("group", { name: "Associé 1" });
+  await premier.getByLabel("Prénom").fill("Camille");
+  await premier.getByLabel("Nom", { exact: true }).fill("Durand");
   await page.getByRole("button", { name: "Continuer" }).click();
   await expect(page.getByText(/au moins 2 associés/)).toBeVisible();
 
   await page.getByRole("button", { name: /Ajouter un associé/ }).click();
-  await page.getByLabel("Prénom 2").fill("Alex");
-  await page.getByLabel("Nom 2", { exact: true }).fill("Martin");
+  const second = page.getByRole("group", { name: "Associé 2" });
+  await second.getByLabel("Prénom").fill("Alex");
+  await second.getByLabel("Nom", { exact: true }).fill("Martin");
   await page.getByRole("button", { name: "Continuer" }).click();
 
   // Une SARL a un gérant, pas un président : le mot figure dans les actes.
@@ -125,19 +129,21 @@ test.describe("pièces et documents", () => {
     await expect(page.getByRole("heading", { level: 2 })).toContainText("Associés");
 
     await page.getByRole("button", { name: /Ajouter un associé/ }).click();
-    await page.getByLabel("Prénom").fill("Camille");
-    await page.getByLabel("Nom", { exact: true }).fill("Durand");
-    await page.getByLabel("Apport, en euros").fill("1000");
+    const associe = page.getByRole("group", { name: "Associé 1" });
+    await associe.getByLabel("Prénom").fill("Camille");
+    await associe.getByLabel("Nom", { exact: true }).fill("Durand");
+    await associe.getByLabel("Apport").fill("1000");
     await page.getByRole("button", { name: "Continuer" }).click();
     await expect(page.getByRole("heading", { level: 2 })).toContainText("Dirigeants");
 
     await page.getByRole("button", { name: /Ajouter un président/ }).click();
-    await page.getByLabel("Prénom").fill("Camille");
-    await page.getByLabel("Nom", { exact: true }).fill("Durand");
+    const dirigeant = page.getByRole("group").first();
+    await dirigeant.getByLabel("Prénom").fill("Camille");
+    await dirigeant.getByLabel("Nom", { exact: true }).fill("Durand");
     await page.getByRole("button", { name: "Continuer" }).click();
     await expect(page.getByRole("heading", { level: 2 })).toContainText("Répartition du capital");
 
-    await page.getByLabel("Capital social, en euros").fill("1000");
+    await page.getByLabel("Capital social").fill("1000");
     await page.getByLabel("Montant libéré à la constitution").fill("1000");
     await page.getByRole("button", { name: "Continuer" }).click();
     await expect(page.getByRole("heading", { level: 2 })).toContainText("Pièces justificatives");
