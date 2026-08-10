@@ -1,0 +1,168 @@
+.parcours {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.etapes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  position: sticky;
+  top: 24px;
+}
+
+.etape,
+.etapeActive {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 14.5px;
+}
+
+.etape {
+  color: #71717a;
+}
+
+.etapeActive {
+  background: #fff;
+  border: 1px solid #ececef;
+  color: #111;
+  font-weight: 600;
+}
+
+.numero {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.etapeActive .numero {
+  background: #18181b;
+  color: #fff;
+}
+
+.contenu {
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 14px;
+  padding: 28px;
+}
+
+.avancement {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  color: #71717a;
+}
+
+.description {
+  margin: 0 0 24px;
+  color: #71717a;
+  font-size: 14.5px;
+}
+
+.champs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.champs label {
+  margin-top: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.champs input,
+.champs select,
+.champs textarea {
+  padding: 11px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.champs input:focus,
+.champs select:focus,
+.champs textarea:focus {
+  outline: none;
+  border-color: #18181b;
+}
+
+.champs [role="alert"] {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #9c2620;
+}
+
+.personne {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 16px;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+}
+
+.personne legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.actions button {
+  padding: 12px 20px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.principal {
+  margin-left: auto;
+  background: #18181b !important;
+  border-color: #18181b !important;
+  color: #fff;
+}
+
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 820px) {
+  .parcours {
+    grid-template-columns: 1fr;
+  }
+
+  .etapes {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    gap: 4px;
+  }
+}

@@ -28,6 +28,7 @@ export default async function preparer() {
 
   const ancien = await prisma.users.findUnique({ where: { email: COMPTE.email } });
   if (ancien) {
+    // Les essais de création laissent des dossiers vides : on repart propre.
     await prisma.messages.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.documents.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.contrats.deleteMany({ where: { user_id: ancien.id } });
