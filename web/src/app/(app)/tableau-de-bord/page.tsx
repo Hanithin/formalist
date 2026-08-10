@@ -3,7 +3,14 @@ import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauDeBord } from "@/infrastructure/db/depots/tableau-de-bord";
 import { etatTableauDeBord, salutation } from "@/domain/formalite/actions";
-import { libelleDossier, avancement, accorder, nombreDEtapes } from "@/domain/formalite/etapes";
+import {
+  libelleDossier,
+  avancement,
+  accorder,
+  nombreDEtapes,
+  nomEtape,
+  etatCourt,
+} from "@/domain/formalite/etapes";
 import { dateRelative, phraseJournal, seSuffitAElleMeme } from "@/domain/formalite/journal";
 import { Vide } from "@/components/liste/Vide";
 import { Avancement, Anneau } from "./Avancement";
@@ -14,6 +21,14 @@ export const metadata: Metadata = {
   title: "Tableau de bord - Formalist",
   robots: { index: false, follow: false },
 };
+
+/** Les formes dont on dit « la création de votre SASU X » plutôt que « le dossier X ». */
+const FORMES_SOCIETE = new Set(["SAS", "SASU", "SARL", "EURL", "SCI"]);
+
+/** « SASU STUDIO KERN » : la forme précède le nom, comme dans la page d'origine. */
+function nomComplet(societe: { forme: string | null; societe: string }): string {
+  return societe.forme ? societe.forme.toUpperCase() + " " + societe.societe : societe.societe;
+}
 
 /** Le chevron du bouton « Voir toutes ». */
 function Chevron() {
@@ -58,11 +73,13 @@ export default async function TableauDeBord() {
       bouton: "Consulter",
     });
   } else {
-    for (const s of societes.filter((s) => s.actions.length > 0)) {
+    for (const s of societes.filter((s) => s.attendLeClient)) {
       priorites.push({
         icone: s.status === "en_attente" ? "attente" : "document",
-        titre: "Reprendre " + s.societe,
-        precision: s.actions[0].titre,
+        titre: FORMES_SOCIETE.has((s.forme ?? "").toUpperCase())
+          ? "Reprendre la création de votre " + nomComplet(s)
+          : "Reprendre votre dossier " + nomComplet(s),
+        precision: "Prochaine étape : " + s.prochaineEtape,
         lien: s.actions[0].lien,
         bouton: "Continuer",
       });
@@ -163,40 +180,38 @@ export default async function TableauDeBord() {
             <div className={styles.socGrid}>
               {recentes.map((s) => {
                 const termine = s.status === "terminee";
-                const ton = termine ? styles.done : s.actions.length > 0 ? styles.action : "";
-                const libelle = libelleDossier({
-                  status: s.status,
-                  phase: s.phase,
-                  offer: s.offre,
-                });
+                const etat = etatCourt(s);
+                // La vignette ne distingue que trois teintes : terminé, en
+                // attente d'une action du client, ou en cours. « En attente »
+                // porte la teinte neutre, comme dans la page d'origine.
+                const ton = termine ? styles.done : s.attendLeClient ? styles.action : "";
 
                 return (
                   <div key={s.id} className={`${styles.socTile} ${ton}`}>
                     <div className={styles.socTileHead}>
-                      <Anneau pourcentage={avancement(s.phase, s.offre)} termine={termine} />
+                      <Anneau
+                        pourcentage={avancement(s.etapeAffichee, s.offre)}
+                        termine={termine}
+                      />
 
                       <div className={styles.socTileIdent}>
-                        <div className={styles.socTileName}>{s.societe}</div>
+                        <div className={styles.socTileName}>{nomComplet(s)}</div>
                         <div className={styles.socTileStep}>
                           {termine
                             ? "Immatriculée"
                             : "Étape " +
-                              s.phase +
+                              s.etapeAffichee +
                               " sur " +
                               nombreDEtapes(s.offre) +
                               " · " +
-                              libelle}
+                              nomEtape(s.etapeAffichee, s.offre)}
                         </div>
                       </div>
 
-                      <span className={`${styles.socTileStatus} ${ton}`}>{libelle}</span>
+                      <span className={`${styles.socTileStatus} ${ton}`}>{etat.libelle}</span>
                     </div>
 
-                    <div className={styles.socTileNext}>
-                      {s.actions.length > 0
-                        ? s.actions[0].titre
-                        : "Rien à faire : nous avançons sur votre dossier."}
-                    </div>
+                    <div className={styles.socTileNext}>{s.prochaineEtape}</div>
 
                     <div className={styles.socTileFoot}>
                       {s.nonLus > 0 && (

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   actionsAttendues,
   attendLeClient,
+  prochaineEtape,
   etatTableauDeBord,
   salutation,
   type ContexteDossier,
@@ -132,5 +133,30 @@ describe("salutation", () => {
     expect(salutation(new Date("2026-08-10T10:00:00"))).toBe("Bonjour");
     expect(salutation(new Date("2026-08-10T21:00:00"))).toBe("Bonsoir");
     expect(salutation(new Date("2026-08-10T03:00:00"))).toBe("Bonsoir");
+  });
+});
+
+describe("où en est le dossier, en une phrase", () => {
+  it("quand une action est attendue, c'est elle qu'on annonce", () => {
+    expect(prochaineEtape(base)).toBe(
+      "Compléter les informations : nom, forme juridique, capital et dirigeant."
+    );
+  });
+
+  it("sinon, on dit ce que fait la plateforme", () => {
+    const enRevision: ContexteDossier = {
+      ...base,
+      phase: 4,
+      informationsCompletes: true,
+      banque: "Qonto",
+    };
+    expect(prochaineEtape(enRevision)).toContain("Un avocat vérifie");
+
+    expect(prochaineEtape({ ...enRevision, phase: 5 })).toContain("déposé au greffe");
+  });
+
+  it("un dossier terminé annonce son K-bis, pas une étape", () => {
+    // Une vignette muette pousse à ouvrir le dossier pour rien.
+    expect(prochaineEtape({ ...base, status: "terminee" })).toContain("K-bis");
   });
 });

@@ -1,6 +1,6 @@
 import { prisma } from "../client";
 import { listerDossiers } from "./dossiers";
-import { actionsAttendues, type ContexteDossier } from "@/domain/formalite/actions";
+import { actionsAttendues, prochaineEtape, type ContexteDossier } from "@/domain/formalite/actions";
 import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
 import type { EntreeJournal } from "@/domain/formalite/journal";
 import type { UtilisateurConnecte } from "../sessions";
@@ -103,16 +103,24 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       signaturesTotal: compteurs.total,
     };
 
+    const actions = actionsAttendues(contexte);
+
     return {
       id: d.id,
       societe: d.societe || "Sans nom",
       forme: d.forme,
       status: d.status,
       phase: d.phase ?? 1,
+      // Une fois les informations saisies, l'étape 1 est derrière nous, même si
+      // la colonne n'a pas encore bougé : sans cela la vignette annonce « Étape 1
+      // · Informations » à quelqu'un qui en est au dépôt du capital.
+      etapeAffichee: Math.max(d.phase ?? 1, contexte.informationsCompletes ? 2 : 1),
       offre: d.offer,
       nonLus: nonLusPar.get(d.id) ?? 0,
       majLe: d.updated_at,
-      actions: actionsAttendues(contexte),
+      attendLeClient: actions.length > 0,
+      prochaineEtape: prochaineEtape(contexte),
+      actions,
     };
   });
 

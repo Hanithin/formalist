@@ -9,9 +9,49 @@
 export type EtatDossier = "en_cours" | "terminee" | "en_attente";
 export type Ton = "avance" | "attente" | "termine";
 
+/**
+ * Le nom des étapes du parcours.
+ *
+ * Court, parce qu'il s'affiche à côté du numéro d'étape : « Étape 2 sur 5 ·
+ * Dépôt du capital ». Le libellé long, lui, dit ce qu'on attend et se lit
+ * ailleurs.
+ */
+export function nomsDEtapes(offre: string | null | undefined): string[] {
+  const parcours = [
+    "Informations",
+    "Dépôt du capital",
+    "Documents",
+    "Signature",
+    "Immatriculation",
+  ];
+  if (offre && offre !== "starter") parcours.splice(4, 0, "Révision avocat");
+  return parcours;
+}
+
 /** Une offre au-delà de la formule d'entrée ajoute l'étape de révision par l'avocat. */
 export function nombreDEtapes(offre: string | null | undefined): number {
-  return offre && offre !== "starter" ? 6 : 5;
+  return nomsDEtapes(offre).length;
+}
+
+export function nomEtape(phase: number, offre: string | null | undefined): string {
+  const noms = nomsDEtapes(offre);
+  return noms[Math.min(Math.max(phase, 1) - 1, noms.length - 1)];
+}
+
+/**
+ * L'état du dossier en deux mots, pour la pastille.
+ *
+ * Quatre valeurs, et seulement quatre : la pastille ne se coupe pas, un libellé
+ * long y pousserait le nom de la société hors de la vignette.
+ */
+export function etatCourt(dossier: {
+  status: string | null;
+  attendLeClient: boolean;
+}): { ton: "done" | "pending" | "action" | "progress"; libelle: string } {
+  if (dossier.status === "terminee") return { ton: "done", libelle: "Terminée" };
+  if (dossier.status === "en_attente") return { ton: "pending", libelle: "En attente" };
+  if (dossier.attendLeClient) return { ton: "action", libelle: "Action requise" };
+  return { ton: "progress", libelle: "En cours" };
 }
 
 export function avancement(phase: number, offre: string | null | undefined): number {

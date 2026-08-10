@@ -139,7 +139,9 @@
       font-size: 13.5px; color: #3f3f46; line-height: 1.5;
       background: #fafafa; border-radius: 10px; padding: 12px 14px;
     }
-.socTileFoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* margin-top: auto - les vignettes d'une même rangée ont la hauteur de la plus
+   haute ; sans cela leurs boutons s'arrêtent à des hauteurs différentes. */
+.socTileFoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; }
 .socTileUnread { font-size: 12.5px; font-weight: 600; color: #dc2626; }
 .socTileBtn {
       margin-left: auto; font-size: 13.5px; font-weight: 500; color: #fff; background: #111;

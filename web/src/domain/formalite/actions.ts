@@ -111,6 +111,31 @@ export function attendLeClient(ctx: ContexteDossier): boolean {
   return actionsAttendues(ctx).length > 0;
 }
 
+/**
+ * Où en est le dossier, en une phrase.
+ *
+ * Quand quelque chose est attendu du client, c'est cette action ; sinon, c'est ce
+ * que fait la plateforme. Une vignette qui ne dit rien pousse à ouvrir le dossier
+ * pour rien.
+ */
+export function prochaineEtape(ctx: ContexteDossier): string {
+  if (ctx.status === "terminee") {
+    return "Votre société est immatriculée, le K-bis est disponible.";
+  }
+
+  const [premiere] = actionsAttendues(ctx);
+  if (premiere) {
+    const precision = premiere.precision;
+    return premiere.titre + " : " + precision.charAt(0).toLowerCase() + precision.slice(1) + ".";
+  }
+
+  if (ctx.phase >= 5) return "Dossier déposé au greffe, réception du K-bis sous 24 à 72 h.";
+  if (ctx.phase === 4) {
+    return "Un avocat vérifie l'ensemble de vos documents avant le dépôt au greffe.";
+  }
+  return "Votre dossier est en cours de traitement par notre équipe.";
+}
+
 export type EtatTableauDeBord = "aucun" | "unique" | "plusieurs" | "tous_termines";
 
 /**

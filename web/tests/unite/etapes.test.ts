@@ -6,6 +6,8 @@ import {
   libelleDossier,
   tonDossier,
   accorder,
+  nomEtape,
+  etatCourt,
 } from "@/domain/formalite/etapes";
 
 describe("nombre d'étapes selon l'offre", () => {
@@ -89,5 +91,42 @@ describe("accord du pluriel", () => {
 
   it("au-delà, le pluriel", () => {
     expect(accorder(4, "dossier", "dossiers")).toBe("4 dossiers");
+  });
+});
+
+describe("le nom court d'une étape", () => {
+  it("suit le parcours de l'offre", () => {
+    expect(nomEtape(2, "starter")).toBe("Dépôt du capital");
+    // L'offre supérieure insère la révision par l'avocat avant l'immatriculation.
+    expect(nomEtape(5, "business")).toBe("Révision avocat");
+    expect(nomEtape(5, "starter")).toBe("Immatriculation");
+  });
+
+  it("une phase hors bornes retombe sur une étape existante", () => {
+    expect(nomEtape(0, "starter")).toBe("Informations");
+    expect(nomEtape(99, "starter")).toBe("Immatriculation");
+  });
+});
+
+describe("l'état affiché sur la pastille", () => {
+  // Une pastille ne se coupe pas : un libellé long y pousserait le nom de la
+  // société hors de la vignette. D'où quatre valeurs, et seulement quatre.
+  it("tient en deux mots", () => {
+    const cas = [
+      { status: "terminee", attendLeClient: false },
+      { status: "en_attente", attendLeClient: false },
+      { status: "en_cours", attendLeClient: true },
+      { status: "en_cours", attendLeClient: false },
+    ];
+    expect(cas.map((c) => etatCourt(c).libelle)).toEqual([
+      "Terminée",
+      "En attente",
+      "Action requise",
+      "En cours",
+    ]);
+  });
+
+  it("un dossier terminé le reste, même s'il porte encore une action", () => {
+    expect(etatCourt({ status: "terminee", attendLeClient: true }).ton).toBe("done");
   });
 });
