@@ -27,9 +27,16 @@ import { NOM_COOKIE } from "@/lib/cookies";
  * charge ses fragments ainsi, et les énumérer serait intenable.
  */
 function politiqueDeSecurite(jeton: string): string {
+  // React a besoin d'eval() en développement, pour reconstruire les piles
+  // d'appels et alimenter les outils de débogage. Il ne s'en sert jamais en
+  // production : la tolérance s'arrête donc au développement, et un test vérifie
+  // qu'elle n'apparaît pas dans la politique servie en production.
+  const developpement = process.env.NODE_ENV !== "production";
+  const eval_ = developpement ? " 'unsafe-eval'" : "";
+
   return [
     "default-src 'self'",
-    "script-src 'self' 'nonce-" + jeton + "' 'strict-dynamic'",
+    "script-src 'self' 'nonce-" + jeton + "' 'strict-dynamic'" + eval_,
     // Les styles restent en ligne : les modules CSS de Next les injectent, et il
     // n'existe pas d'équivalent de strict-dynamic pour eux.
     "style-src 'self' 'unsafe-inline'",

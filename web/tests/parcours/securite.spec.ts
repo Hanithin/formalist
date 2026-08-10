@@ -14,6 +14,9 @@ test.describe("politique de sécurité de contenu", () => {
 
     const scripts = politique.match(/script-src ([^;]*)/)![1];
     expect(scripts).not.toContain("unsafe-inline");
+    // React réclame eval() en développement ; la tolérance ne doit pas suivre
+    // jusqu'en production, où ces parcours s'exécutent.
+    expect(scripts).not.toContain("unsafe-eval");
     expect(scripts).toContain("nonce-");
     expect(scripts).toContain("strict-dynamic");
   });
