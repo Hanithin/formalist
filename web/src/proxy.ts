@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { estPublic } from "@/domain/acces/routes-publiques";
+import { estPublic, estPreGeneree } from "@/domain/acces/routes-publiques";
+import { nouvelleAdresse } from "@/domain/navigation/anciennes-adresses";
 import { NOM_COOKIE } from "@/lib/cookies";
 
 /**
@@ -14,14 +15,72 @@ import { NOM_COOKIE } from "@/lib/cookies";
  * est vérifiée par exigerUtilisateur, côté serveur. Ce filtre écarte le trafic non
  * authentifié avant qu'il n'atteigne quoi que ce soit ; il ne le remplace pas.
  */
+/**
+ * Politique de sécurité de contenu.
+ *
+ * Le serveur d'origine devait autoriser 'unsafe-inline' : tout son JavaScript
+ * était écrit dans les pages, ce qui annulait l'essentiel de la protection. Ici,
+ * seuls les scripts portant le jeton de la requête s'exécutent - un script
+ * injecté dans une page ne l'a pas.
+ *
+ * 'strict-dynamic' laisse les scripts autorisés en charger d'autres : Next
+ * charge ses fragments ainsi, et les énumérer serait intenable.
+ */
+function politiqueDeSecurite(jeton: string | null): string {
+  // Une page pré-générée est produite à la compilation : elle ne peut pas porter
+  // un jeton propre à la requête. Ses scripts en ligne sont ceux de Next, et ces
+  // pages ne montrent aucune donnée de client - c'est la vitrine. On y accepte
+  // donc les scripts en ligne, et on garde la politique stricte partout où il y
+  // a quelque chose à protéger.
+  const scripts = jeton
+    ? "'self' 'nonce-" + jeton + "' 'strict-dynamic'"
+    : "'self' 'unsafe-inline'";
+
+  return [
+    "default-src 'self'",
+    "script-src " + scripts,
+    // Les styles restent en ligne : les modules CSS de Next les injectent, et il
+    // n'existe pas d'équivalent de strict-dynamic pour eux.
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self'",
+    "connect-src 'self' https://api-adresse.data.gouv.fr https://geo.api.gouv.fr https://recherche-entreprises.api.gouv.fr",
+    "frame-src 'self' blob:",
+    "frame-ancestors 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+  ].join("; ");
+}
+
 export default function proxy(requete: NextRequest) {
   const { pathname, search } = requete.nextUrl;
 
   // Le chemin courant est transmis aux composants serveur, qui ne peuvent pas le
   // lire autrement : ils reçoivent les entêtes, pas l'adresse demandée.
+  // Ancienne adresse : redirection permanente, pour que les liens déjà envoyés
+  // continuent de fonctionner et que les moteurs enregistrent le changement.
+  const cible = nouvelleAdresse(pathname, requete.nextUrl.searchParams);
+  if (cible) {
+    return NextResponse.redirect(new URL(cible, requete.url), 308);
+  }
+
+  const preGeneree = estPreGeneree(pathname);
+  const jeton = preGeneree ? null : crypto.randomUUID().replace(/-/g, "");
+
   const entetes = new Headers(requete.headers);
   entetes.set("x-chemin", pathname);
-  const laisserPasser = () => NextResponse.next({ request: { headers: entetes } });
+  // Next lit cet en-tête et appose le jeton sur les scripts qu'il produit.
+  if (jeton) entetes.set("x-nonce", jeton);
+
+  const laisserPasser = () => {
+    const reponse = NextResponse.next({ request: { headers: entetes } });
+    reponse.headers.set("Content-Security-Policy", politiqueDeSecurite(jeton));
+    reponse.headers.set("X-Content-Type-Options", "nosniff");
+    reponse.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    reponse.headers.set("X-Frame-Options", "SAMEORIGIN");
+    return reponse;
+  };
 
   if (estPublic(pathname)) return laisserPasser();
 

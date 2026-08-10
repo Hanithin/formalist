@@ -17,7 +17,6 @@ export const PAGES_PUBLIQUES = [
   "/mot-de-passe-oublie",
   "/contact",
   "/blog",
-  "/aide",
 ] as const;
 
 /** Points d'entrée ouverts, parce qu'ils servent justement à s'authentifier. */
@@ -55,4 +54,23 @@ export function estPublic(chemin: string): boolean {
   if (propre.startsWith("/signer/")) return true;
 
   return PREFIXES_TECHNIQUES.some((p) => propre.startsWith(p));
+}
+
+/**
+ * Pages produites à la compilation.
+ *
+ * Elles ne peuvent pas porter un jeton propre à la requête : leur HTML existe
+ * avant elle. La politique de sécurité les traite donc à part - c'est une
+ * question de rendu, pas d'authentification, d'où une liste distincte de celle
+ * des adresses publiques.
+ */
+export function estPreGeneree(chemin: string): boolean {
+  const propre = chemin.length > 1 ? chemin.replace(/\/+$/, "") : chemin;
+  return (
+    propre === "/" ||
+    propre === "/blog" ||
+    propre.startsWith("/blog/") ||
+    propre === "/contact" ||
+    propre === "/connexion"
+  );
 }
