@@ -1,0 +1,104 @@
+.formulaire {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.formulaire label {
+  width: 100%;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.formulaire input {
+  padding: 11px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.formulaire button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #18181b;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.erreur {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  font-size: 13.5px;
+  color: #9c2620;
+}
+
+.fiche {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 14px;
+}
+
+.fiche h2 {
+  margin: 0 0 16px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 21px;
+}
+
+.fiche h3 {
+  margin: 22px 0 10px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 16px;
+}
+
+.champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.champs dt {
+  font-size: 12.5px;
+  color: #71717a;
+}
+
+.champs dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: #111;
+}
+
+.representants {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.representants li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fafafa;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.representants span {
+  color: #71717a;
+}

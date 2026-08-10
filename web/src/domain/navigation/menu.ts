@@ -34,6 +34,7 @@ export const MENU: GroupeMenu[] = [
     titre: "Ma société",
     entrees: [
       { libelle: "Créer une société", lien: "/creation?type=creation" },
+      { libelle: "Créer mon auto-entreprise", lien: "/auto-entrepreneur" },
       { libelle: "Modifier ma société", lien: "/modification" },
       { libelle: "Dépôt des comptes", lien: "/depot-des-comptes", bientot: true },
       { libelle: "Fermer ma société", lien: "/fermeture", bientot: true },
@@ -53,6 +54,7 @@ export const MENU: GroupeMenu[] = [
     entrees: [
       { libelle: "Équipe", lien: "/equipe" },
       { libelle: "Espace avocat", lien: "/avocat", roles: ["avocat", "admin"] },
+      { libelle: "Recherche d'entreprise", lien: "/recherche-entreprise", roles: ["avocat", "admin"] },
       { libelle: "Administration", lien: "/administration", roles: ["admin"] },
     ],
   },
