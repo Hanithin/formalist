@@ -35,15 +35,52 @@ test.describe("tableau de bord du client", () => {
     await page.goto("/tableau-de-bord");
     await expect(page.getByRole("heading", { name: /Vos sociétés|Votre société/ })).toBeVisible();
 
+    const vignettes = page.getByRole("region", { name: "Vos sociétés" });
     const { dossiers } = await (await request.get("/api/formalites")).json();
     for (const d of dossiers.slice(0, 3)) {
-      await expect(page.getByText(d.societe || "Sans nom").first()).toBeVisible();
+      await expect(vignettes.getByText(d.societe || "Sans nom").first()).toBeVisible();
     }
 
-    await expect(page.getByRole("link", { name: /Voir toutes/ })).toHaveAttribute(
-      "href",
-      "/formalites"
+    await expect(page.getByRole("button", { name: /Voir toutes/ })).toBeVisible();
+  });
+
+  test("« Voir toutes » ouvre la fenêtre et sa recherche", async ({ page }) => {
+    await page.goto("/tableau-de-bord");
+    await page.getByRole("button", { name: /Voir toutes/ }).click();
+
+    const fenetre = page.getByRole("dialog", { name: "Toutes vos sociétés" });
+    await expect(fenetre).toBeVisible();
+
+    await fenetre.getByLabel("Rechercher une société").fill("PARCOURS TERMINEE");
+    await expect(fenetre.getByText("PARCOURS TERMINEE")).toBeVisible();
+    await expect(fenetre.getByText("PARCOURS SIGNATURE")).toHaveCount(0);
+
+    // Une recherche sans résultat le dit, plutôt que de laisser une liste vide.
+    await fenetre.getByLabel("Rechercher une société").fill("zzzz introuvable");
+    await expect(fenetre.getByText(/Aucune société ne correspond/)).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(fenetre).not.toBeVisible();
+  });
+
+  test("aucun lien de l'accueil ne mène nulle part", async ({ page, request }) => {
+    // Les vignettes ont pointé sur /formalites/<id>, qui n'existe pas : la page
+    // s'affichait bien et « Continuer » rendait un 404.
+    await page.goto("/tableau-de-bord");
+    await page.getByRole("button", { name: /Voir toutes/ }).click();
+
+    const adresses = await page.getByRole("link").evaluateAll((liens) =>
+      liens
+        .map((l) => (l as HTMLAnchorElement).getAttribute("href") ?? "")
+        .filter((h) => h.startsWith("/"))
     );
+
+    for (const adresse of [...new Set(adresses)]) {
+      expect(
+        (await request.get(adresse)).status(),
+        adresse + " ne répond pas"
+      ).toBeLessThan(400);
+    }
   });
 });
 

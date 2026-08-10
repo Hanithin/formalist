@@ -4,7 +4,6 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauDeBord } from "@/infrastructure/db/depots/tableau-de-bord";
 import { etatTableauDeBord, salutation } from "@/domain/formalite/actions";
 import {
-  libelleDossier,
   avancement,
   accorder,
   nombreDEtapes,
@@ -15,6 +14,7 @@ import { dateRelative, phraseJournal, seSuffitAElleMeme } from "@/domain/formali
 import { Vide } from "@/components/liste/Vide";
 import { Avancement, Anneau } from "./Avancement";
 import { ActionPrioritaire, type Priorite } from "./ActionPrioritaire";
+import { ToutesLesSocietes, type Ligne } from "./ToutesLesSocietes";
 import styles from "./TableauDeBord.module.css";
 
 export const metadata: Metadata = {
@@ -28,23 +28,6 @@ const FORMES_SOCIETE = new Set(["SAS", "SASU", "SARL", "EURL", "SCI"]);
 /** « SASU STUDIO KERN » : la forme précède le nom, comme dans la page d'origine. */
 function nomComplet(societe: { forme: string | null; societe: string }): string {
   return societe.forme ? societe.forme.toUpperCase() + " " + societe.societe : societe.societe;
-}
-
-/** Le chevron du bouton « Voir toutes ». */
-function Chevron() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
 }
 
 export default async function TableauDeBord() {
@@ -86,8 +69,33 @@ export default async function TableauDeBord() {
     }
   }
 
-  // Les trois dossiers les plus récents ; le reste se consulte dans la liste.
+  // Les trois dossiers les plus récents ; le reste se consulte dans la fenêtre.
   const recentes = societes.slice(0, 3);
+
+  // Le dossier s'ouvre là où on le reprend : dans le parcours de création, pas
+  // sur une page de détail.
+  const dossier = (id: number) => "/creation?dossier=" + id;
+
+  const lignes: Ligne[] = societes.map((s) => {
+    const termine = s.status === "terminee";
+    return {
+      id: s.id,
+      nom: nomComplet(s),
+      etape: termine
+        ? "Immatriculée"
+        : "Étape " +
+          s.etapeAffichee +
+          " sur " +
+          nombreDEtapes(s.offre) +
+          " · " +
+          nomEtape(s.etapeAffichee, s.offre),
+      etat: etatCourt(s).libelle,
+      ton: termine ? "done" : s.attendLeClient ? "action" : "",
+      pourcentage: avancement(s.etapeAffichee, s.offre),
+      termine,
+      lien: dossier(s.id),
+    };
+  });
 
   return (
     <main className={styles.page}>
@@ -121,25 +129,25 @@ export default async function TableauDeBord() {
                 : styles.singleHero
             }
           >
-            <Avancement pourcentage={avancement(seul.phase, seul.offre)} />
+            <Avancement pourcentage={avancement(seul.etapeAffichee, seul.offre)} />
 
             <div className={styles.singleHeroBody}>
-              <div className={styles.singleHeroTitle}>{seul.societe}</div>
+              <div className={styles.singleHeroTitle}>{nomComplet(seul)}</div>
               <div className={styles.singleHeroDesc}>
                 {etat === "tous_termines"
                   ? "Votre société est officielle. Le K-bis et le registre des bénéficiaires sont dans vos documents."
-                  : libelleDossier({ status: seul.status, phase: seul.phase, offer: seul.offre })}
+                  : "Prochaine étape · " + seul.prochaineEtape}
               </div>
 
               <div className={styles.singleHeroActions}>
                 <Link
-                  href={etat === "tous_termines" ? "/documents" : "/creation?dossier=" + seul.id}
+                  href={etat === "tous_termines" ? "/documents" : dossier(seul.id)}
                   className={styles.singleHeroBtn}
                 >
-                  {etat === "tous_termines" ? "Voir mes documents" : "Reprendre mon dossier"}
+                  {etat === "tous_termines" ? "Voir mes documents" : "Continuer"}
                 </Link>
-                <Link href={"/formalites/" + seul.id} className={styles.singleHeroLink}>
-                  Détail du dossier
+                <Link href="/formalites" className={styles.singleHeroLink}>
+                  Toutes mes formalités
                 </Link>
               </div>
             </div>
@@ -166,15 +174,12 @@ export default async function TableauDeBord() {
           <>
             <ActionPrioritaire priorites={priorites} />
 
+            {/* La section porte son titre : sans cela le bloc n'existe pas
+                comme repère de navigation. */}
+            <section aria-labelledby="vos-societes">
             <div className={styles.dbSectionHead}>
-              <h2>Vos sociétés</h2>
-              {societes.length > 3 && (
-                <Link href="/formalites" className={styles.socSeeAll}>
-                  Voir toutes
-                  <span className={styles.socSeeAllCount}>{societes.length}</span>
-                  <Chevron />
-                </Link>
-              )}
+              <h2 id="vos-societes">Vos sociétés</h2>
+              {societes.length > 3 && <ToutesLesSocietes lignes={lignes} />}
             </div>
 
             <div className={styles.socGrid}>
@@ -219,7 +224,7 @@ export default async function TableauDeBord() {
                           {accorder(s.nonLus, "message", "messages")}
                         </span>
                       )}
-                      <Link href={"/formalites/" + s.id} className={styles.socTileBtn}>
+                      <Link href={dossier(s.id)} className={styles.socTileBtn}>
                         {termine ? "Consulter" : "Continuer"}
                       </Link>
                     </div>
@@ -227,6 +232,7 @@ export default async function TableauDeBord() {
                 );
               })}
             </div>
+            </section>
           </>
         )}
 
@@ -312,7 +318,7 @@ export default async function TableauDeBord() {
                     return (
                       <Link
                         key={i}
-                        href={"/formalites/" + e.dossierId}
+                        href={dossier(e.dossierId)}
                         className={`${styles.actRow} ${styles.actRowLink}`}
                       >
                         <span className={styles.actDot} />
