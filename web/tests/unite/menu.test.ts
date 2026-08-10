@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { MENU, menuPour, entreeActive } from "@/domain/navigation/menu";
+import { ICONES } from "@/domain/navigation/icones";
 
 describe("menu selon les rôles", () => {
   it("un client ne voit ni l'espace avocat ni l'administration", () => {
@@ -68,5 +69,29 @@ describe("intégrité du menu", () => {
   it("aucun lien en double", () => {
     const liens = MENU.flatMap((g) => g.entrees.map((e) => e.lien.split("?")[0]));
     expect(new Set(liens).size).toBe(liens.length);
+  });
+});
+
+describe("icônes de la navigation", () => {
+  const liens = MENU.flatMap((g) => g.entrees.map((e) => e.lien.split("?")[0]));
+
+  it("chaque entrée a la sienne", () => {
+    for (const lien of liens) {
+      expect(ICONES[lien], lien).toBeTruthy();
+    }
+  });
+
+  it("deux entrées ne partagent jamais la même", () => {
+    // Une icône répétée ne distingue rien : « Créer une société » et « Créer mon
+    // auto-entreprise » portaient toutes deux la maison.
+    const dessins = liens.map((lien) => ICONES[lien]);
+    const doublons = dessins.filter((d, i) => dessins.indexOf(d) !== i);
+    expect(doublons).toEqual([]);
+  });
+
+  it("aucune n'est vide", () => {
+    for (const lien of liens) {
+      expect(ICONES[lien], lien).toMatch(/<(path|circle|rect|line|polyline)/);
+    }
   });
 });

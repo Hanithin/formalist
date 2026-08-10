@@ -77,15 +77,22 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-bottom: 14px;
 }
 
+/* L'espace entre deux groupes est porté par le titre, une seule fois. Il l'était
+   aussi par le groupe, ce qui doublait le blanc et étirait la colonne. */
 .titreGroupe {
-  margin: 14px 12px 6px;
+  margin: 4px 0 0;
+  padding: 20px 12px 8px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
+}
+
+.groupe:first-child .titreGroupe {
+  margin-top: 0;
+  padding-top: 4px;
 }
 
 .icone {
@@ -113,10 +120,14 @@
 .bientot {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 11px 12px;
   border-radius: 10px;
   font-size: 15.5px;
+  /* La page d'origine ne fixait pas d'interligne : le texte y valait sa hauteur
+     naturelle. Notre corps de page en impose un de 1.6, qui ajoutait cinq pixels
+     à chaque entrée et étirait la colonne. */
+  line-height: 1.2;
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
 }
