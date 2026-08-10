@@ -94,7 +94,8 @@ test.describe("parcours connecté", () => {
   test("l'équipe est créée au premier accès, avec la personne dedans", async ({ page }) => {
     await page.goto("/equipe");
     await expect(page.getByRole("heading", { level: 2, name: /membre/ })).toContainText("1 membre");
-    await expect(page.getByText("Vous")).toBeVisible();
+    // La pastille du membre, pas les textes d'explication de la page.
+    await expect(page.getByText("Vous", { exact: true })).toBeVisible();
   });
 
 });

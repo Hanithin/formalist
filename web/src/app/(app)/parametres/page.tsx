@@ -4,6 +4,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { FormulaireProfil } from "./FormulaireProfil";
 import { FormulaireMotDePasse } from "./FormulaireMotDePasse";
 import { Deconnexion } from "./Deconnexion";
+import styles from "./Parametres.module.css";
 
 export const metadata: Metadata = {
   title: "Paramètres - Formalist",
@@ -25,19 +26,29 @@ export default async function Parametres() {
   return (
     <main>
       <h1>Paramètres</h1>
+      <p>Votre compte et son accès.</p>
 
-      <section>
+      <section className={styles.bloc}>
         <h2>Vos informations</h2>
+        <p className={styles.explication}>
+          Le nom figure sur vos documents, l&apos;adresse sert à vous connecter.
+        </p>
         <FormulaireProfil prenom={prenom} nom={nom} email={compte.email} />
       </section>
 
-      <section>
+      <section className={styles.bloc}>
         <h2>Mot de passe</h2>
+        <p className={styles.explication}>
+          Le changer ferme vos autres sessions, sur les appareils où vous êtes resté connecté.
+        </p>
         <FormulaireMotDePasse />
       </section>
 
-      <section>
+      <section className={`${styles.bloc} ${styles.session}`}>
         <h2>Session</h2>
+        <p className={styles.explication}>
+          Vous fermez la session de cet appareil. Les autres restent ouvertes.
+        </p>
         <Deconnexion />
       </section>
     </main>

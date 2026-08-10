@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FormulaireInscription } from "./FormulaireInscription";
+import { Propos } from "../Propos";
+import styles from "../Authentification.module.css";
 
 export const metadata: Metadata = {
   title: "Créer un compte - Formalist",
@@ -10,15 +12,19 @@ export const metadata: Metadata = {
 
 export default function Inscription() {
   return (
-    <main>
-      <h1>Créer un compte</h1>
-      <p>Quelques minutes suffisent pour lancer la création de votre société.</p>
+    <main className={styles.disposition}>
+      <div className={styles.formulaire}>
+        <h1>Créer un compte</h1>
+        <p>Quelques minutes suffisent pour lancer la création de votre société.</p>
 
-      <FormulaireInscription />
+        <FormulaireInscription />
 
-      <p>
-        Vous avez déjà un compte ? <Link href="/connexion">Se connecter</Link>
-      </p>
+        <p className={styles.pied}>
+          Vous avez déjà un compte ? <Link href="/connexion">Se connecter</Link>
+        </p>
+      </div>
+
+      <Propos />
     </main>
   );
 }

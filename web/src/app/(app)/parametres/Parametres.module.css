@@ -1,0 +1,39 @@
+/* Les paramètres : des blocs séparés, chacun avec sa propre action.
+   Regrouper tous les champs dans un seul formulaire donnerait un bouton unique
+   qui enregistre des choses sans rapport. */
+
+.bloc {
+  max-width: 520px;
+  margin-bottom: 18px !important;
+  padding: 24px 26px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-large);
+}
+
+.bloc h2 {
+  margin-bottom: 4px;
+  font-size: 17px;
+}
+
+.explication {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  color: var(--gris);
+}
+
+.bloc form label:first-of-type {
+  margin-top: 10px;
+}
+
+/* La déconnexion n'est pas une action principale : elle reste discrète. */
+.session button {
+  background: var(--surface);
+  border-color: var(--trait-marque);
+  color: var(--critique-encre);
+}
+
+.session button:hover:not(:disabled) {
+  background: var(--critique-fond);
+  border-color: var(--critique-trait);
+}

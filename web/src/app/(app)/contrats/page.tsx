@@ -6,6 +6,7 @@ import { accorder } from "@/domain/formalite/etapes";
 import { Filtres } from "@/components/liste/Filtres";
 import { Etat } from "@/components/liste/Etat";
 import { Vide } from "@/components/liste/Vide";
+import styles from "@/components/liste/Liste.module.css";
 
 export const metadata: Metadata = {
   title: "Contrats - Formalist",
@@ -35,15 +36,17 @@ export default async function Contrats({
         />
       ) : (
         <>
-          <p>{accorder(contrats.length, "contrat", "contrats")}</p>
-          <ul>
+          <p className={styles.compte}>{accorder(contrats.length, "contrat", "contrats")}</p>
+          <ul className={styles.liste}>
             {contrats.map((c) => {
               const etat = statutContrat(c.status);
               return (
-                <li key={c.id}>
-                  <strong>{c.titre}</strong>
-                  <span>{c.type}</span>
-                  <Etat libelle={etat.libelle} ton={etat.ton} />
+                <li key={c.id} className={styles.ligne}>
+                  <span className={styles.titre}>{c.titre}</span>
+                  <span className={styles.precision}>{c.type}</span>
+                  <span className={styles.etat}>
+                    <Etat libelle={etat.libelle} ton={etat.ton} />
+                  </span>
                 </li>
               );
             })}

@@ -1,49 +1,376 @@
+/**
+ * Socle visuel de Formalist.
+ *
+ * Les valeurs reprennent l'identité en place : colonne sombre #18181b, contenu
+ * sur gris clair, cartes blanches à bord fin, Cal Sans pour les titres et Matter
+ * pour le texte. Elles sont déclarées une fois ici, et les pages n'ont plus à les
+ * recopier - c'est ce qui manquait à la version d'origine, où chaque page
+ * redéfinissait ses propres couleurs.
+ *
+ * Les éléments nus - titres, formulaires, boutons, listes - sont habillés
+ * directement : une page sans feuille propre reste présentable.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Encres et fonds */
+  --encre: #18181b;
+  --encre-douce: #3f3f46;
+  --gris: #71717a;
+  --gris-clair: #a1a1aa;
+  --papier: #f5f5f5;
+  --surface: #ffffff;
+  --surface-creuse: #fafafa;
+  --trait: #ececef;
+  --trait-marque: #d4d4d8;
+
+  /* Couleurs de sens : elles doublent toujours un mot, jamais seules */
+  --attente-fond: #fef3c7;
+  --attente-encre: #92400e;
+  --attente-trait: #fcd34d;
+  --abouti-fond: #dcfce7;
+  --abouti-encre: #15803d;
+  --abouti-trait: #a7f3d0;
+  --avance-fond: #eef2ff;
+  --avance-encre: #4338ca;
+  --critique-fond: #fef2f2;
+  --critique-encre: #9c2620;
+  --critique-trait: #fca5a5;
+  --avocat: #6d28d9;
+  --admin: #b45309;
+
+  /* Rythme */
+  --rayon: 12px;
+  --rayon-large: 14px;
+  --rayon-pastille: 100px;
+  --ombre: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --ombre-portee: 0 6px 18px rgba(24, 24, 27, 0.08);
+
+  --largeur-contenu: 980px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html {
   height: 100%;
 }
 
-html,
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  min-height: 100%;
+  background: var(--papier);
+  color: var(--encre);
+  font-family: var(--police-texte), ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 15.5px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Titres ---------- */
+
+h1,
+h2,
+h3 {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-wrap: balance;
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: 19px;
+}
+
+h3 {
+  font-size: 16px;
+}
+
+p {
+  margin: 0 0 12px;
 }
 
 a {
   color: inherit;
-  text-decoration: none;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+:focus-visible {
+  outline: 2px solid var(--encre);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- Gabarit de page ----------
+   Une page d'application reçoit sa marge et sa largeur sans avoir à les redire. */
+
+main {
+  padding: 32px 40px 60px;
+  max-width: var(--largeur-contenu);
+  width: 100%;
+}
+
+main > h1 {
+  margin-bottom: 6px;
+}
+
+main > h1 + p {
+  color: var(--gris);
+  font-size: 14.5px;
+  margin-bottom: 26px;
+}
+
+main > section {
+  margin-bottom: 30px;
+}
+
+main > section > h2 {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 700px) {
+  main {
+    padding: 24px 20px 48px;
   }
+}
+
+/* ---------- Formulaires ----------
+   Habillés au niveau des éléments : une page qui pose un label et un champ
+   obtient une saisie correcte sans feuille propre. */
+
+label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 5px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--encre-douce);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  max-width: 460px;
+  padding: 11px 14px;
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--encre);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  margin: 0 8px 0 0;
+  accent-color: var(--encre);
+}
+
+/* Une case à cocher et son libellé se lisent sur une ligne. */
+label:has(input[type="checkbox"]),
+label:has(input[type="radio"]) {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-weight: 400;
+  color: var(--encre);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--trait-marque);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--encre);
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.07);
+}
+
+input[type="file"] {
+  padding: 9px;
+  background: var(--surface-creuse);
+  font-size: 14px;
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+fieldset {
+  margin: 16px 0 0;
+  padding: 16px 18px;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  background: var(--surface);
+}
+
+legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--encre-douce);
+}
+
+/* ---------- Boutons ----------
+   Le premier bouton d'un formulaire est l'action principale : il est plein. */
+
+button {
+  margin-top: 18px;
+  padding: 11px 20px;
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--encre);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: var(--surface-creuse);
+  border-color: var(--trait-marque);
+}
+
+button[type="submit"] {
+  background: var(--encre);
+  border-color: var(--encre);
+  color: #fff;
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  background: #27272a;
+  border-color: #27272a;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---------- Messages ----------
+   Un refus et une confirmation ne se distinguent pas que par la couleur : le
+   fond, le trait et le mot changent ensemble. */
+
+[role="alert"] {
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--critique-trait);
+  border-radius: 10px;
+  background: var(--critique-fond);
+  color: var(--critique-encre);
+  font-size: 13.5px;
+}
+
+[role="status"] {
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--abouti-trait);
+  border-radius: 10px;
+  background: var(--abouti-fond);
+  color: var(--abouti-encre);
+  font-size: 13.5px;
+}
+
+/* Le signaleur de navigation de Next porte role="alert" sans rien afficher. */
+#__next-route-announcer__ {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+/* ---------- Listes ----------
+   Une liste de contenu devient une pile de cartes ; les listes de navigation et
+   de formulaire gardent leur mise en forme propre. */
+
+main ul,
+main ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+main section > ul > li,
+main section > ol > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+}
+
+main li strong {
+  font-weight: 600;
+}
+
+/* ---------- Définitions ---------- */
+
+dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+dt {
+  font-size: 12.5px;
+  color: var(--gris);
+}
+
+dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+}
+
+/* ---------- Tableaux ---------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+
+th {
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gris);
+}
+
+th,
+td {
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+/* Les chiffres alignés en colonne se lisent mieux à chasse fixe. */
+td:has(+ td),
+.nombre {
+  font-variant-numeric: tabular-nums;
 }

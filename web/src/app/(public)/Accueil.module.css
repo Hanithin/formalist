@@ -1,0 +1,175 @@
+/* L'accueil ouvre sur ce que fait Formalist et sur ce qui le distingue : des
+   documents relus par des avocats. Le reste de la page décline ce point. */
+
+.hero {
+  padding: 64px 0 56px;
+  max-width: 720px;
+}
+
+.pastille {
+  display: inline-block;
+  margin: 0 0 18px;
+  padding: 6px 14px;
+  border-radius: var(--rayon-pastille);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  font-size: 13px;
+  color: var(--encre-douce);
+}
+
+.hero h1 {
+  font-size: 46px;
+  line-height: 1.08;
+  margin-bottom: 18px;
+}
+
+.accroche {
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--encre-douce);
+  margin-bottom: 28px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.principal {
+  display: inline-block;
+  padding: 14px 28px;
+  border-radius: var(--rayon-pastille);
+  background: var(--encre);
+  color: #fff;
+  font-size: 15.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.principal:hover {
+  background: #27272a;
+}
+
+.secondaire {
+  font-size: 15px;
+  color: var(--encre-douce);
+}
+
+.mentions {
+  margin-top: 18px;
+  font-size: 13.5px;
+  color: var(--gris);
+}
+
+/* Les prestations : quatre entrées de même poids, sans hiérarchie inventée. */
+.prestations {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.prestations li {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 6px !important;
+  padding: 22px !important;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.prestations li:hover {
+  border-color: var(--trait-marque) !important;
+  box-shadow: var(--ombre-portee);
+}
+
+.prestations h3 {
+  margin: 0;
+}
+
+.prestations p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gris);
+  flex: 1;
+}
+
+.prestations a {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--encre);
+}
+
+/* Les étapes sont une vraie séquence : la numérotation dit quelque chose. */
+.etapes {
+  counter-reset: etape;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.etapes li {
+  counter-increment: etape;
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 6px !important;
+  padding: 22px !important;
+}
+
+.etapes li::before {
+  content: counter(etape);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: var(--encre);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.etapes h3 {
+  margin: 0;
+}
+
+.etapes p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gris);
+}
+
+.fin {
+  margin-top: 8px;
+  padding: 32px;
+  border-radius: var(--rayon-large);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+}
+
+.fin h2 {
+  margin-bottom: 6px;
+}
+
+.fin p {
+  margin: 0;
+  color: var(--encre-douce);
+}
+
+@media (max-width: 700px) {
+  .hero {
+    padding: 40px 0 36px;
+  }
+
+  .hero h1 {
+    font-size: 34px;
+  }
+}

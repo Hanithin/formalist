@@ -6,6 +6,7 @@ import { accorder } from "@/domain/formalite/etapes";
 import { Filtres } from "@/components/liste/Filtres";
 import { Etat } from "@/components/liste/Etat";
 import { Vide } from "@/components/liste/Vide";
+import styles from "@/components/liste/Liste.module.css";
 
 export const metadata: Metadata = {
   title: "Documents - Formalist",
@@ -36,18 +37,25 @@ export default async function Documents({
         />
       ) : (
         <>
-          <p>{accorder(documents.length, "document", "documents")}</p>
-          <ul>
+          <p className={styles.compte}>{accorder(documents.length, "document", "documents")}</p>
+          <ul className={styles.liste}>
             {documents.map((d) => {
               const etat = etatDocument({ status: d.statut, rejection_reason: d.motifRejet });
               return (
-                <li key={d.id}>
-                  <strong>{d.nom}</strong>
-                  {d.societe && <span>{d.societe}</span>}
-                  <Etat libelle={etat.libelle} ton={etat.ton} />
-                  {etat.motif && <span>Motif : {etat.motif}</span>}
+                <li key={d.id} className={styles.ligne}>
+                  <span className={styles.titre}>{d.nom}</span>
+                  <span className={styles.precision}>
+                    {d.societe && <span>{d.societe}</span>}
+                    <Etat libelle={etat.libelle} ton={etat.ton} />
+                    {etat.motif && <span className={styles.motif}>Motif : {etat.motif}</span>}
+                  </span>
                   {d.fichier && (
-                    <a href={"/api/fichier?nom=" + encodeURIComponent(d.fichier)}>Télécharger</a>
+                    <a
+                      href={"/api/fichier?nom=" + encodeURIComponent(d.fichier)}
+                      className={styles.action}
+                    >
+                      Télécharger
+                    </a>
                   )}
                 </li>
               );

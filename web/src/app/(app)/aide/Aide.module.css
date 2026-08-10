@@ -1,0 +1,113 @@
+/* L'aide : une recherche large, puis des questions dépliables.
+   Le compte de résultats est annoncé à voix haute, pour que la recherche se
+   suive sans regarder la liste. */
+
+.recherche {
+  position: relative;
+  max-width: 560px;
+  margin-bottom: 6px;
+}
+
+.recherche input {
+  max-width: none;
+  padding: 15px 20px;
+  font-size: 16px;
+  border-radius: var(--rayon-large);
+  box-shadow: var(--ombre);
+}
+
+.resultat {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  color: var(--gris);
+}
+
+.section {
+  margin-bottom: 26px;
+}
+
+.section h2 {
+  margin-bottom: 10px;
+  font-size: 17px;
+}
+
+.question {
+  margin-bottom: 6px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.question[open] {
+  border-color: var(--trait-marque);
+}
+
+.question summary {
+  padding: 15px 18px;
+  font-size: 14.5px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.question summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Le chevron dit qu'il y a quelque chose à déplier, et où on en est. */
+.question summary::after {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--gris-clair);
+  border-bottom: 2px solid var(--gris-clair);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.2s;
+}
+
+.question[open] summary::after {
+  transform: rotate(-135deg) translate(-2px, -2px);
+}
+
+.question summary:hover {
+  background: var(--surface-creuse);
+}
+
+.reponse {
+  margin: 0;
+  padding: 0 18px 18px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--encre-douce);
+}
+
+.contact {
+  margin-top: 8px;
+  padding: 22px 24px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-large);
+}
+
+.contact h2 {
+  margin-bottom: 4px;
+  font-size: 17px;
+}
+
+.contact p {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--gris);
+}
+
+.contact a {
+  color: var(--encre);
+  font-weight: 600;
+}

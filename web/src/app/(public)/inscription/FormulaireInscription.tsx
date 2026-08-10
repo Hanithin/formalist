@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import styles from "../Authentification.module.css";
 
 export function FormulaireInscription() {
   const [erreurs, setErreurs] = useState<Record<string, string[]>>({});
@@ -60,7 +61,7 @@ export function FormulaireInscription() {
         aria-describedby="aide-mot-de-passe"
       />
       {/* On dit la règle avant la saisie, pas après le refus. */}
-      <p id="aide-mot-de-passe">
+      <p id="aide-mot-de-passe" className={styles.aide}>
         Au moins 8 caractères. Une phrase est plus sûre et plus facile à retenir qu&apos;un mot
         compliqué.
       </p>

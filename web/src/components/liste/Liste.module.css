@@ -1,0 +1,93 @@
+/* Feuille commune aux listes de l'application : formalités, documents, contrats.
+   Une seule définition plutôt qu'une par page - c'est ce qui avait dérivé dans la
+   version d'origine, où chaque liste avait fini par avoir sa propre allure. */
+
+.compte {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: var(--gris);
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ligne {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  align-items: center;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.ligne:hover {
+  border-color: var(--trait-marque);
+  box-shadow: var(--ombre);
+}
+
+.titre {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--encre);
+  text-decoration: none;
+}
+
+a.titre:hover {
+  text-decoration: underline;
+}
+
+/* La deuxième ligne porte le contexte : forme, société, motif. */
+.precision {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.etat {
+  grid-row: 1;
+  grid-column: 2;
+  justify-self: end;
+}
+
+.action {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--encre);
+  white-space: nowrap;
+}
+
+/* L'avancement en tête de ligne, à chasse fixe pour que les chiffres s'alignent. */
+.avancement {
+  min-width: 46px;
+  padding: 5px 0;
+  border-radius: 9px;
+  background: var(--surface-creuse);
+  border: 1px solid var(--trait);
+  color: var(--encre-douce);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.motif {
+  color: var(--attente-encre);
+}

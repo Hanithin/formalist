@@ -1,0 +1,85 @@
+/* Vitrine : fond clair, contenu centré, respiration.
+   Elle ne partage pas la colonne sombre de l'application - un visiteur qui
+   n'a pas de compte n'a pas de navigation à afficher. */
+
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 0 8px;
+}
+
+.logo {
+  font-family: var(--police-titre), sans-serif;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--encre);
+  text-decoration: none;
+}
+
+.liens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+  font-size: 14.5px;
+}
+
+.liens a {
+  color: var(--encre-douce);
+  text-decoration: none;
+}
+
+.liens a:hover {
+  color: var(--encre);
+  text-decoration: underline;
+}
+
+.connexion {
+  padding: 9px 18px;
+  border-radius: var(--rayon-pastille);
+  background: var(--encre);
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.connexion:hover {
+  background: #27272a;
+  text-decoration: none !important;
+}
+
+.pied {
+  margin-top: 60px;
+  padding: 28px 0 0;
+  border-top: 1px solid var(--trait);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13.5px;
+  color: var(--gris);
+}
+
+.pied nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.pied a {
+  color: var(--gris);
+  text-decoration: none;
+}
+
+.pied a:hover {
+  color: var(--encre);
+  text-decoration: underline;
+}

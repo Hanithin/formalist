@@ -81,7 +81,8 @@
   font-size: 14.5px;
 }
 
-.comptes {
+.comptes,
+.liste {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -167,4 +168,67 @@
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
+}
+
+
+/* ---------- Suivi ----------
+   Chaque bloc a le même gabarit : un titre, une précision, une pile de lignes. */
+
+.ligne {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+}
+
+.ligneTitre {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--encre);
+}
+
+.ligneDetail {
+  grid-column: 1;
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.quand {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  font-size: 12.5px;
+  color: var(--gris-clair);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* L'assignation reste sur la ligne du dossier : la sortir dans une fenêtre
+   ferait perdre de vue le dossier qu'on assigne. */
+.assignation {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assignation label {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--gris);
+  white-space: nowrap;
+}
+
+.assignation select {
+  width: auto;
+  min-width: 150px;
+  margin: 0;
+  padding: 7px 10px;
+  font-size: 13.5px;
 }

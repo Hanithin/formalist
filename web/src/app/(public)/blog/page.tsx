@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { listerArticles } from "@/infrastructure/contenu/blog";
 import { adresseAbsolue } from "@/lib/site";
+import styles from "./Blog.module.css";
 
 export const metadata: Metadata = {
   title: "Le blog - Formalist",
@@ -15,20 +16,22 @@ export default async function Blog() {
 
   return (
     <main>
-      <h1>Le blog</h1>
-      <p>Création et modification de sociétés, expliquées simplement.</p>
+      <header className={styles.entete}>
+        <h1>Le blog</h1>
+        <p>Création et modification de sociétés, expliquées simplement.</p>
+      </header>
 
-      <ul>
+      <ul className={styles.articles}>
         {articles.map((a) => (
           <li key={a.identifiant}>
             <article>
               <h2>
                 <Link href={"/blog/" + a.identifiant}>{a.titre}</Link>
               </h2>
-              <time dateTime={a.publieLe.toISOString()}>
+              <time className={styles.date} dateTime={a.publieLe.toISOString()}>
                 {new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "UTC" }).format(a.publieLe)}
               </time>
-              <p>{a.resume}</p>
+              <p className={styles.resume}>{a.resume}</p>
             </article>
           </li>
         ))}

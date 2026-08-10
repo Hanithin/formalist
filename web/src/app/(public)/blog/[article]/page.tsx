@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { lireArticle, identifiantsArticles } from "@/infrastructure/contenu/blog";
+import Link from "next/link";
 import { adresseAbsolue } from "@/lib/site";
+import styles from "../Blog.module.css";
 
 type Parametres = { params: Promise<{ article: string }> };
 
@@ -56,16 +58,20 @@ export default async function PageArticle({ params }: Parametres) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(donneesStructurees) }}
       />
-      <article>
+      <article className={styles.article}>
         <h1>{trouve.article.titre}</h1>
-        <time dateTime={trouve.article.publieLe.toISOString()}>
+        <time className={styles.date} dateTime={trouve.article.publieLe.toISOString()}>
           {new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "UTC" }).format(
             trouve.article.publieLe
           )}
         </time>
         {/* Contenu rédactionnel existant, déjà publié : servi tel quel plutôt que
             réécrit. Il ne vient d'aucune saisie utilisateur. */}
-        <div dangerouslySetInnerHTML={{ __html: trouve.corps }} />
+        <div className={styles.corps} dangerouslySetInnerHTML={{ __html: trouve.corps }} />
+
+        <Link href="/blog" className={styles.retour}>
+          Tous les articles
+        </Link>
       </article>
     </main>
   );

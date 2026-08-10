@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useId } from "react";
+import styles from "./Aide.module.css";
 
 interface Section {
   titre: string;
@@ -37,16 +38,18 @@ export function Recherche({ sections }: { sections: Section[] }) {
 
   return (
     <>
-      <label htmlFor={idChamp}>Rechercher une question</label>
-      <input
-        id={idChamp}
-        type="search"
-        value={terme}
-        onChange={(e) => setTerme(e.target.value)}
-        placeholder="Statuts, capital, facturation…"
-      />
+      <div className={styles.recherche}>
+        <label htmlFor={idChamp}>Rechercher une question</label>
+        <input
+          id={idChamp}
+          type="search"
+          value={terme}
+          onChange={(e) => setTerme(e.target.value)}
+          placeholder="Statuts, capital, facturation…"
+        />
+      </div>
 
-      <p role="status" aria-live="polite">
+      <p role="status" aria-live="polite" className={styles.resultat}>
         {total === 0
           ? "Aucune question ne correspond"
           : total === 1
@@ -55,12 +58,12 @@ export function Recherche({ sections }: { sections: Section[] }) {
       </p>
 
       {resultats.map((section) => (
-        <section key={section.titre}>
+        <section key={section.titre} className={styles.section}>
           <h2>{section.titre}</h2>
           {section.questions.map((x) => (
-            <details key={x.question}>
+            <details key={x.question} className={styles.question}>
               <summary>{x.question}</summary>
-              <p>{x.reponse}</p>
+              <p className={styles.reponse}>{x.reponse}</p>
             </details>
           ))}
         </section>

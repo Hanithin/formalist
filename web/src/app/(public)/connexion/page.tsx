@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { FormulaireConnexion } from "./FormulaireConnexion";
 import { messageJeton, type EtatJeton } from "@/domain/acces/inscription";
+import { Propos } from "../Propos";
+import styles from "../Authentification.module.css";
 
 export const metadata: Metadata = {
   title: "Connexion - Formalist",
@@ -20,9 +22,10 @@ export default async function Connexion({
   const etat = etats.includes(confirmation as EtatJeton) ? (confirmation as EtatJeton) : null;
 
   return (
-    <main>
-      <h1>Bienvenue sur Formalist</h1>
-      <p>Créez et modifiez votre société, accompagné par des avocats.</p>
+    <main className={styles.disposition}>
+      <div className={styles.formulaire}>
+        <h1>Bienvenue sur Formalist</h1>
+        <p>Créez et modifiez votre société, accompagné par des avocats.</p>
 
       {etat && (
         <p role="status" aria-live="polite">
@@ -34,9 +37,12 @@ export default async function Connexion({
         <FormulaireConnexion />
       </Suspense>
 
-      <p>
-        Pas encore de compte ? <Link href="/inscription">Créer un compte</Link>
-      </p>
+        <p className={styles.pied}>
+          Pas encore de compte ? <Link href="/inscription">Créer un compte</Link>
+        </p>
+      </div>
+
+      <Propos />
     </main>
   );
 }

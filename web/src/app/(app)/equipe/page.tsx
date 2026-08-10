@@ -3,6 +3,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauDeLEquipe } from "@/infrastructure/db/depots/equipe";
 import { rolesProposables } from "@/domain/equipe/invitations";
 import { Inviter } from "./Inviter";
+import styles from "./Equipe.module.css";
 
 export const metadata: Metadata = {
   title: "Équipe - Formalist",
@@ -41,17 +42,21 @@ export default async function PageEquipe() {
         <h2>
           {membres.length === 1 ? "1 membre" : membres.length + " membres"}
         </h2>
-        <ul>
+        <ul className={styles.membres}>
           {membres.map((m) => (
-            <li key={m.id}>
-              <strong>{m.users?.name}</strong>
-              <span>{m.users?.email}</span>
-              <span>{LIBELLES[m.role] ?? m.role}</span>
-              {m.user_id === utilisateur.id && <span>Vous</span>}
-              <span>
-                {m.can_view_all ? "Voit tous les dossiers" : "Voit ses dossiers"}
-                {m.can_edit && ", peut modifier"}
-                {m.can_create && ", peut créer"}
+            <li key={m.id} className={styles.membre}>
+              <span className={styles.nom}>
+                {m.users?.name}
+                {m.user_id === utilisateur.id && <span className={styles.vous}> Vous</span>}
+              </span>
+              <span className={styles.role}>{LIBELLES[m.role] ?? m.role}</span>
+              <span className={styles.details}>
+                <span>{m.users?.email}</span>
+                <span>
+                  {m.can_view_all ? "Voit tous les dossiers" : "Voit ses dossiers"}
+                  {m.can_edit && ", peut modifier"}
+                  {m.can_create && ", peut créer"}
+                </span>
               </span>
             </li>
           ))}
@@ -59,8 +64,12 @@ export default async function PageEquipe() {
       </section>
 
       {peutGerer && (
-        <section>
+        <section className={styles.invitation}>
           <h2>Inviter quelqu&apos;un</h2>
+          <p className={styles.explication}>
+            La personne reçoit un lien valable sept jours. Elle rejoint l&apos;équipe avec les
+            droits que vous choisissez ici.
+          </p>
           <Inviter roles={rolesProposables(equipe).map((r) => ({ valeur: r, libelle: LIBELLES[r] }))} />
         </section>
       )}
@@ -74,12 +83,12 @@ export default async function PageEquipe() {
               : enAttente.length + " invitations en attente"}
         </h2>
         {invitations.length > 0 && (
-          <ul>
+          <ul className={styles.etats}>
             {invitations.map((i) => (
               <li key={i.id}>
-                <span>{i.email}</span>
+                <strong>{i.email}</strong>
                 <span>{LIBELLES[i.role] ?? i.role}</span>
-                <span>{ETATS[i.etat]}</span>
+                <span className={styles[i.etat]}>{ETATS[i.etat]}</span>
               </li>
             ))}
           </ul>

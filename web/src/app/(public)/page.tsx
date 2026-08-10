@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import styles from "./Accueil.module.css";
 import { adresseAbsolue, ADRESSE_SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -67,20 +68,31 @@ export default function Accueil() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANISATION) }}
       />
 
-      <section>
-        <p>Plateforme de formalités juridiques nouvelle génération</p>
+      <section className={styles.hero}>
+        <p className={styles.pastille}>Plateforme de formalités juridiques</p>
         <h1>Créez votre société, accompagné par des avocats</h1>
-        <p>
-          Statuts sur-mesure en quelques minutes, chaque clause vérifiée par un avocat, signature
-          électronique et dépôt au greffe.
+        <p className={styles.accroche}>
+          Des statuts sur-mesure en quelques minutes, chaque clause vérifiée par un avocat,
+          signature électronique et dépôt au greffe.
         </p>
-        <Link href="/connexion">Commencer</Link>
-        <p>Sans engagement · Documents en 5 minutes · Validé par des avocats</p>
+
+        <div className={styles.actions}>
+          <Link href="/inscription" className={styles.principal}>
+            Créer ma société
+          </Link>
+          <Link href="/contact" className={styles.secondaire}>
+            Parler à quelqu&apos;un
+          </Link>
+        </div>
+
+        <p className={styles.mentions}>
+          Sans engagement · Documents en 5 minutes · Relus par des avocats
+        </p>
       </section>
 
       <section>
         <h2>Ce que nous prenons en charge</h2>
-        <ul>
+        <ul className={styles.prestations}>
           {PRESTATIONS.map((p) => (
             <li key={p.titre}>
               <h3>{p.titre}</h3>
@@ -93,7 +105,7 @@ export default function Accueil() {
 
       <section>
         <h2>De zéro à immatriculé en 3 étapes</h2>
-        <ol>
+        <ol className={styles.etapes}>
           {ETAPES.map((e) => (
             <li key={e.titre}>
               <h3>{e.titre}</h3>
@@ -103,7 +115,7 @@ export default function Accueil() {
         </ol>
       </section>
 
-      <section>
+      <section className={styles.fin}>
         <h2>Une question avant de vous lancer ?</h2>
         <p>
           <Link href="/contact">Écrivez-nous</Link>, nous répondons sous 24 heures ouvrées. Vous

@@ -1,0 +1,67 @@
+.disposition {
+  display: grid;
+  grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+  padding: 48px 0 40px;
+  max-width: none;
+}
+
+.formulaire h1 {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.formulaire > p {
+  color: var(--gris);
+  margin-bottom: 20px;
+}
+
+.formulaire form {
+  padding: 26px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon-large);
+}
+
+.formulaire form label:first-of-type {
+  margin-top: 0;
+}
+
+.reponses {
+  padding: 28px 0 0;
+}
+
+.reponses h2 {
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+
+.reponses dl {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.reponses dt {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--encre);
+}
+
+.reponses dd {
+  margin: 4px 0 0;
+  font-size: 14.5px;
+  color: var(--gris);
+}
+
+@media (max-width: 860px) {
+  .disposition {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .reponses {
+    padding-top: 0;
+  }
+}

@@ -7,6 +7,7 @@ import { libelleDossier, tonDossier, avancement, accorder } from "@/domain/forma
 import { Filtres } from "@/components/liste/Filtres";
 import { Etat } from "@/components/liste/Etat";
 import { Vide } from "@/components/liste/Vide";
+import styles from "@/components/liste/Liste.module.css";
 
 export const metadata: Metadata = {
   title: "Mes formalités - Formalist",
@@ -41,16 +42,22 @@ export default async function Formalites({
         />
       ) : (
         <>
-          <p>{accorder(dossiers.length, "formalité", "formalités")}</p>
-          <ul>
+          <p className={styles.compte}>
+            {accorder(dossiers.length, "formalité", "formalités")}
+          </p>
+          <ul className={styles.liste}>
             {dossiers.map((d) => (
-              <li key={d.id}>
-                <Link href={"/formalites/" + d.id}>
-                  <strong>{d.societe || "Sans nom"}</strong>
+              <li key={d.id} className={styles.ligne}>
+                <Link href={"/formalites/" + d.id} className={styles.titre}>
+                  {d.societe || "Sans nom"}
                 </Link>
-                <span>{d.forme}</span>
-                <Etat libelle={libelleDossier(d)} ton={tonDossier(d)} />
-                <span>{avancement(d.phase ?? 1, d.offer)}%</span>
+                <span className={styles.precision}>
+                  <span className={styles.avancement}>{avancement(d.phase ?? 1, d.offer)}%</span>
+                  {d.forme}
+                </span>
+                <span className={styles.etat}>
+                  <Etat libelle={libelleDossier(d)} ton={tonDossier(d)} />
+                </span>
               </li>
             ))}
           </ul>
