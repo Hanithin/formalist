@@ -30,6 +30,7 @@ export default async function preparer() {
   if (ancien) {
     // Les essais de création laissent des dossiers, des pièces déposées et leur
     // inscription au registre : on retire dans l'ordre des dépendances.
+    await prisma.signature_requests.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.uploaded_files.deleteMany({ where: { user_id: ancien.id } });
     await prisma.team_notes.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.audit_log.deleteMany({ where: { formalites: { user_id: ancien.id } } });
@@ -202,6 +203,39 @@ export default async function preparer() {
       ],
       origins: [],
     })
+  );
+
+  // Un jeton de signature connu, pour vérifier le circuit de bout en bout. Dans
+  // la vraie vie il arrive par email et n'apparaît jamais dans une réponse.
+  // Sur un dossier qui n'appartient qu'à lui : ouvrir un circuit efface les
+  // demandes non signées, et un autre test emporterait ce jeton avec.
+  const dossierSignature = await prisma.formalites.create({
+    data: {
+      user_id: compte.id,
+      type: "creation",
+      forme: "SASU",
+      societe: "PARCOURS SIGNATURE",
+      status: "en_cours",
+      phase: 4,
+      data_json: "{}",
+    },
+  });
+
+  const jetonSignature = jeton();
+  await prisma.signature_requests.create({
+    data: {
+      formalite_id: dossierSignature.id,
+      associe_index: 0,
+      associe_name: "Camille Parcours",
+      associe_email: COMPTE.email,
+      role: "associe",
+      token: jetonSignature,
+      status: "pending",
+    },
+  });
+  await writeFile(
+    path.join(import.meta.dirname, "jeton-signature.txt"),
+    jetonSignature
   );
 
   // Session avocat, pour vérifier l'espace qui lui est réservé.

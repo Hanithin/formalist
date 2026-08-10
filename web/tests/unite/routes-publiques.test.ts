@@ -21,6 +21,7 @@ const OUVERTURES_ATTENDUES = [
   "/api/auth/verifier-email",
   "/api/auth/renvoyer-verification",
   "/api/contact",
+  "/api/signature/signer",
 ];
 
 describe("liste des adresses publiques", () => {

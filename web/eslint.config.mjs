@@ -76,9 +76,9 @@ const eslintConfig = [
   {
     ignores: [
       "src/infrastructure/db/generated/**",
-      // Déplacé depuis lib/docx.js sans être réécrit : c'est le but. Le passer
-      // au style du reste supposerait de le reprendre, ce qu'on ne veut pas.
-      "src/infrastructure/documents/docx.cjs",
+      // Déplacés depuis lib/ sans être réécrits : c'est le but. Les passer au
+      // style du reste supposerait de les reprendre, ce qu'on ne veut pas.
+      "src/infrastructure/documents/*.cjs",
       ".next/**",
       "node_modules/**",
     ],

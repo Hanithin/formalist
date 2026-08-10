@@ -133,7 +133,7 @@ model formalites {
   updated_at                                 DateTime             @default(now()) @db.Timestamptz(6)
   sub_type                                   String?
   created_by_avocat                          Int?                 @default(0)
-  finalized_at                               String?
+  finalized_at                               DateTime?            @db.Timestamptz(6)
   annonce_text                               String?
   reference                                  String?
   team_id                                    Int?
@@ -168,7 +168,7 @@ model lawyer_consultations {
   meeting_link                                String?
   payment_status                              String?   @default("pending")
   accepted_at                                 DateTime? @db.Timestamptz(6)
-  done_at                                     String?
+  done_at                                     DateTime? @db.Timestamptz(6)
   rating                                      Int?
   users_lawyer_consultations_avocat_idTousers users?    @relation("lawyer_consultations_avocat_idTousers", fields: [avocat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users_lawyer_consultations_user_idTousers   users     @relation("lawyer_consultations_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -275,17 +275,17 @@ model signature_requests {
   signature_data String?
   paraphe_data   String?
   created_at     DateTime   @default(now()) @db.Timestamptz(6)
-  opened_at      String?
+  opened_at      DateTime?  @db.Timestamptz(6)
   signed_at      DateTime?  @db.Timestamptz(6)
   role           String?    @default("Associé")
   formalites     formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model support_conversations {
-  user_id     Int     @id
-  archived    Boolean @default(false)
-  archived_at String?
-  users       users   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_id     Int       @id
+  archived    Boolean   @default(false)
+  archived_at DateTime? @db.Timestamptz(6)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model support_messages {
@@ -397,7 +397,7 @@ model user_sessions {
   id               Int       @id @default(autoincrement())
   user_id          Int
   started_at       DateTime  @default(now()) @db.Timestamptz(6)
-  last_seen_at     String    @default(dbgenerated("now()"))
+  last_seen_at     DateTime  @default(now()) @db.Timestamptz(6)
   ended_at         DateTime? @db.Timestamptz(6)
   duration_seconds Int?      @default(0)
   ip               String?
@@ -418,8 +418,8 @@ model users {
   name                                                            String
   role                                                            String                 @default("user")
   created_at                                                      DateTime               @default(now()) @db.Timestamptz(6)
-  last_login_at                                                   String?
-  last_seen_at                                                    String?
+  last_login_at                                                   DateTime?              @db.Timestamptz(6)
+  last_seen_at                                                    DateTime?              @db.Timestamptz(6)
   total_time_seconds                                              Int?                   @default(0)
   suspended                                                       Boolean?               @default(false)
   roles                                                           String?

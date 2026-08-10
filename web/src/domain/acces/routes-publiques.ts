@@ -27,6 +27,8 @@ export const API_PUBLIQUES = [
   "/api/auth/verifier-email",
   "/api/auth/renvoyer-verification",
   "/api/contact",
+  // Les associés signent sans compte : leur jeton fait foi.
+  "/api/signature/signer",
 ] as const;
 
 /** Chemins techniques servis par le cadre, jamais porteurs de données. */
@@ -48,6 +50,9 @@ export function estPublic(chemin: string): boolean {
 
   // Le blog a des articles : /blog/mon-article est public comme /blog
   if (propre.startsWith("/blog/")) return true;
+
+  // Page de signature : l'associé n'a pas de compte, son jeton est dans l'adresse.
+  if (propre.startsWith("/signer/")) return true;
 
   return PREFIXES_TECHNIQUES.some((p) => propre.startsWith(p));
 }

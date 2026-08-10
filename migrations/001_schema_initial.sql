@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','avocat','admin')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_login_at TEXT,
-  last_seen_at TEXT,
+  last_login_at TIMESTAMPTZ,
+  last_seen_at TIMESTAMPTZ,
   total_time_seconds INTEGER DEFAULT 0,
   suspended BOOLEAN DEFAULT FALSE,
   roles TEXT,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS formalites (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   sub_type TEXT,
   created_by_avocat INTEGER DEFAULT 0,
-  finalized_at TEXT,
+  finalized_at TIMESTAMPTZ,
   annonce_text TEXT,
   reference TEXT,
   team_id INTEGER REFERENCES teams(id)
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS lawyer_consultations (
   meeting_link TEXT,
   payment_status TEXT DEFAULT 'pending',
   accepted_at TIMESTAMPTZ,
-  done_at TEXT,
+  done_at TIMESTAMPTZ,
   rating INTEGER
 );
 
@@ -243,7 +243,7 @@ CREATE TABLE IF NOT EXISTS signature_requests (
   signature_data TEXT,
   paraphe_data TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  opened_at TEXT,
+  opened_at TIMESTAMPTZ,
   signed_at TIMESTAMPTZ,
   role TEXT DEFAULT 'Associé'
 );
@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS signature_requests (
 CREATE TABLE IF NOT EXISTS support_conversations (
   user_id INTEGER PRIMARY KEY REFERENCES users(id),
   archived BOOLEAN NOT NULL DEFAULT FALSE,
-  archived_at TEXT
+  archived_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS support_messages (
@@ -326,7 +326,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id),
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_seen_at TEXT NOT NULL DEFAULT now(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   ended_at TIMESTAMPTZ,
   duration_seconds INTEGER DEFAULT 0,
   ip TEXT,

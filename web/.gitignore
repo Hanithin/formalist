@@ -46,3 +46,4 @@ next-env.d.ts
 /src/infrastructure/db/generated/
 tests/parcours/session.json
 tests/parcours/session-avocat.json
+tests/parcours/jeton-signature.txt
