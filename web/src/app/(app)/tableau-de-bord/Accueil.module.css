@@ -1,0 +1,321 @@
+/**
+ * L'écran d'un compte sans dossier.
+ *
+ * Portage de la section « ÉTAT 0 - Aucune formalité » de public/dashboard.html.
+ * Les valeurs sont celles de la page d'origine ; seuls les noms de classes passent
+ * en camelCase, ce que les modules CSS exigent.
+ *
+ * Attention en relisant l'original : le <style> de la page ne dit pas ce qui
+ * s'affichait. /css/sidebar-dark.css était chargé après lui, à la même
+ * spécificité, et reprenait tout ce bloc - le fond, les cartes, la pastille, la
+ * flèche, la ligne « Première étape ». Ce sont ses valeurs qui sont ici.
+ */
+
+/* Le bloc est clair. Le <style> de la page le dessinait en dégradé sombre avec un
+   halo, mais sidebar-dark.css - chargé après - le repassait en blanc et coupait le
+   halo (display: none). C'est cette version-là qui s'affichait. */
+.hero {
+  position: relative;
+  overflow: hidden;
+  margin: 32px 0 24px;
+  padding: 48px 40px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #ececec;
+  color: #111;
+}
+
+/* ---------- Le haut : la salutation et la réassurance ---------- */
+
+.haut {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 10px;
+}
+
+.titre {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 8px 14px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 20px;
+  color: #047857;
+  font-size: 12.5px;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+}
+
+.badge strong {
+  color: #065f46;
+  font-weight: 600;
+}
+
+.badge svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+  flex-shrink: 0;
+}
+
+.chapeau {
+  position: relative;
+  z-index: 2;
+  max-width: 540px;
+  margin-bottom: 28px;
+  font-size: 15px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* ---------- « Première étape » ----------
+   Le script d'origine posait ce bloc sans style. Il porte le même contraste que
+   les cartes de parcours, en plus bas. */
+
+.premierPas {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 24px;
+  padding: 12px 16px;
+  background: #f7f7f8;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  font-size: 13.5px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.premierPas strong {
+  color: #111;
+  font-weight: 600;
+}
+
+.etape {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Les groupes de parcours ---------- */
+
+.groupe {
+  position: relative;
+  z-index: 2;
+  margin: 22px 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.groupe:first-of-type {
+  margin-top: 0;
+}
+
+.parcours {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* globals.css fait des cartes des listes de contenu : ici la carte est le lien. */
+.parcours > li {
+  display: block;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.chemin {
+  position: relative;
+  display: block;
+  height: 100%;
+  padding: 22px;
+  background: #fafafa;
+  border: 1px solid #ececec;
+  border-radius: 14px;
+  color: #111;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.chemin:hover {
+  background: #f3f3f4;
+  border-color: #ddd;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+/* Le parcours mis en avant : dégradé vert et liseré plus épais. */
+.recommande {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  border: 1.5px solid #10b981;
+}
+
+.recommande:hover {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  border-color: #059669;
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.16);
+}
+
+.recommande .icone {
+  background: #10b981;
+  color: #fff;
+}
+
+/* Sur la carte mise en avant, la flèche est déjà là, et pleine. */
+.recommande .fleche {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+  opacity: 1;
+  transform: none;
+}
+
+.fleche {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #ececec;
+  color: #111;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.fleche svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.chemin:hover .fleche {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  background: #f0f0f2;
+  color: #111;
+}
+
+.icone svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 3px 8px;
+  background: rgba(16, 185, 129, 0.14);
+  border-radius: 20px;
+  color: #047857;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.cheminTitre {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cheminDesc {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  color: #888;
+}
+
+.cheminMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.cheminMeta svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* ---------- Écrans étroits ---------- */
+
+@media (max-width: 800px) {
+  .parcours {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 700px) {
+  .haut {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

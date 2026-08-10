@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import { tableauDeBord } from "@/infrastructure/db/depots/tableau-de-bord";
+import { tableauDeBord, focusDuDossier } from "@/infrastructure/db/depots/tableau-de-bord";
 import { etatTableauDeBord, salutation } from "@/domain/formalite/actions";
 import {
   avancement,
@@ -10,9 +10,16 @@ import {
   nomEtape,
   etatCourt,
 } from "@/domain/formalite/etapes";
-import { dateRelative, phraseJournal, seSuffitAElleMeme } from "@/domain/formalite/journal";
-import { Vide } from "@/components/liste/Vide";
+import { nomsDEtapes } from "@/domain/formalite/etapes";
+import { Accueil } from "./Accueil";
 import { Avancement, Anneau } from "./Avancement";
+import { Attentes, ActiviteRecente } from "./Blocs";
+import {
+  Frise,
+  DocumentsDuDossier,
+  Interlocuteur,
+  FeuilleDeRoute,
+} from "./Focus";
 import { ActionPrioritaire, type Priorite } from "./ActionPrioritaire";
 import { ToutesLesSocietes, type Ligne } from "./ToutesLesSocietes";
 import styles from "./TableauDeBord.module.css";
@@ -21,6 +28,30 @@ export const metadata: Metadata = {
   title: "Tableau de bord - Formalist",
   robots: { index: false, follow: false },
 };
+
+/** Le type est enregistré sans accent : il s'écrit correctement à l'affichage. */
+const TYPES: Record<string, string> = {
+  creation: "Création",
+  modification: "Modification",
+  fermeture: "Fermeture",
+  depot: "Dépôt des comptes",
+};
+
+function Chevron() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
 
 /** Les formes dont on dit « la création de votre SASU X » plutôt que « le dossier X ». */
 const FORMES_SOCIETE = new Set(["SAS", "SASU", "SARL", "EURL", "SCI"]);
@@ -41,6 +72,11 @@ export default async function TableauDeBord() {
   // Un seul dossier : on le met en avant plutôt que de le noyer dans une liste
   // d'une ligne. C'est l'état le plus fréquent au démarrage.
   const seul = societes.length === 1 ? societes[0] : null;
+  const seulTermine = seul?.status === "terminee";
+
+  // Les documents et l'avocat du dossier, pour l'état à un seul dossier en cours.
+  // Une requête de plus, et seulement dans ce cas.
+  const focus = seul && !seulTermine ? await focusDuDossier(utilisateur, seul.id) : null;
 
   // Le bandeau du haut : les messages non lus passent devant tout, puis les
   // dossiers en attente, puis ceux qui attendent une action du client.
@@ -97,61 +133,100 @@ export default async function TableauDeBord() {
     };
   });
 
+  // Sur un compte sans dossier, la salutation monte dans le bloc d'accueil et le
+  // bandeau disparaît : c'est ce que faisait la page d'origine, et une date pleine
+  // posée au-dessus d'un écran sans contenu n'informe de rien.
+  const accueil = etat === "aucun";
+
   return (
     <main className={styles.page}>
-      <header className={styles.topbar}>
-        <div className={styles.topbarLeft}>
-          <h1>
-            {salutation()} {prenom}
-          </h1>
-        </div>
-        <div className={styles.topbarActions}>
-          <span className={styles.topbarDate}>
-            {new Intl.DateTimeFormat("fr-FR", { dateStyle: "full" }).format(new Date())}
-          </span>
-        </div>
-      </header>
+      {!accueil && (
+        <header className={styles.topbar}>
+          <div className={styles.topbarLeft}>
+            <h1>
+              {salutation()} {prenom}
+            </h1>
+          </div>
+          <div className={styles.topbarActions}>
+            <span className={styles.topbarDate}>
+              {new Intl.DateTimeFormat("fr-FR", { dateStyle: "full" }).format(new Date())}
+            </span>
+          </div>
+        </header>
+      )}
 
       <div className={styles.content}>
-        {etat === "aucun" && (
-          <Vide
-            titre="Bienvenue sur Formalist"
-            texte="Créez votre société en quelques minutes, accompagné par un avocat."
-            action={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
-          />
-        )}
+        {accueil && <Accueil salutation={salutation() + " " + prenom} />}
 
         {seul && (
-          <section
-            className={
-              etat === "tous_termines"
-                ? `${styles.singleHero} ${styles.singleCelebrate}`
-                : styles.singleHero
-            }
-          >
-            <Avancement pourcentage={avancement(seul.etapeAffichee, seul.offre)} />
+          <>
+            <section
+              className={
+                seulTermine
+                  ? `${styles.singleHero} ${styles.singleCelebrate}`
+                  : styles.singleHero
+              }
+            >
+              <Avancement
+                pourcentage={avancement(seul.etapeAffichee, seul.offre)}
+                termine={seulTermine}
+              />
 
-            <div className={styles.singleHeroBody}>
-              <div className={styles.singleHeroTitle}>{nomComplet(seul)}</div>
-              <div className={styles.singleHeroDesc}>
-                {etat === "tous_termines"
-                  ? "Votre société est officielle. Le K-bis et le registre des bénéficiaires sont dans vos documents."
-                  : "Prochaine étape · " + seul.prochaineEtape}
-              </div>
+              <div className={styles.singleHeroBody}>
+                <span className={styles.singleHeroEyebrow}>
+                  {seulTermine ? "Félicitations 🎉" : (TYPES[seul.type] ?? seul.type)}
+                </span>
 
-              <div className={styles.singleHeroActions}>
-                <Link
-                  href={etat === "tous_termines" ? "/documents" : dossier(seul.id)}
-                  className={styles.singleHeroBtn}
-                >
-                  {etat === "tous_termines" ? "Voir mes documents" : "Continuer"}
-                </Link>
-                <Link href="/formalites" className={styles.singleHeroLink}>
-                  Toutes mes formalités
-                </Link>
+                <div className={styles.singleHeroTitle}>
+                  {seulTermine ? nomComplet(seul) + " est immatriculée" : nomComplet(seul)}
+                </div>
+                <div className={styles.singleHeroDesc}>
+                  {seulTermine
+                    ? "Votre société est officielle. Découvrez les prochaines étapes pour la faire grandir."
+                    : "Prochaine étape · " + seul.prochaineEtape}
+                </div>
+
+                <div className={styles.singleHeroActions}>
+                  <Link href={dossier(seul.id)} className={styles.singleHeroBtn}>
+                    {seulTermine ? "Voir mon dossier" : "Continuer"}
+                    {!seulTermine && <Chevron />}
+                  </Link>
+                  {/* La page d'origine ouvrait ici la fenêtre « Nouvelle
+                      formalité ». Elle s'ouvre depuis la colonne ; ce second
+                      geste mène droit au parcours de création. */}
+                  <Link
+                    href="/creation?type=creation"
+                    className={`${styles.singleHeroBtn} ${styles.ghost}`}
+                  >
+                    + Nouvelle formalité
+                  </Link>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+
+            {/* Un dossier en cours : on remplit l'accueil avec ce qui aide à
+                avancer. Terminé : on montre ce qui vient après. */}
+            {seulTermine ? (
+              <FeuilleDeRoute />
+            ) : (
+              <>
+                <Frise
+                  etapes={nomsDEtapes(seul.offre)}
+                  etape={seul.etapeAffichee}
+                  nomEtape={nomEtape(seul.etapeAffichee, seul.offre)}
+                />
+
+                <Attentes societes={societes} nbActions={nbActions} />
+
+                <div className={styles.dashCols}>
+                  <DocumentsDuDossier documents={focus?.documents ?? []} />
+                  <ActiviteRecente activite={activite} lienDossier={dossier} avecTitre />
+                </div>
+
+                <Interlocuteur avocat={focus?.avocat ?? null} />
+              </>
+            )}
+          </>
         )}
 
         {etat === "tous_termines" && !seul && (
@@ -236,67 +311,7 @@ export default async function TableauDeBord() {
           </>
         )}
 
-        {societes.length > 1 && (
-          <section className={styles.dashCard}>
-            <div className={styles.dashCardHead}>
-              <div>
-                {/* Un titre de section reste un titre : la page d'origine le
-                    posait en div, ce qui le rendait invisible à la navigation
-                    par titres. */}
-                <h2 className={styles.dashCardTitle}>Ce qu&apos;on attend de vous</h2>
-                <div className={styles.dashCardSub}>
-                  {nbActions === 0
-                    ? "Aucune action en attente"
-                    : accorder(nbActions, "action", "actions") +
-                      " sur " +
-                      accorder(societes.length, "dossier", "dossiers")}
-                </div>
-              </div>
-            </div>
-
-            {nbActions === 0 ? (
-              <div className={styles.dashEmpty}>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-                <div>
-                  <strong>Rien à faire pour l&apos;instant.</strong> Nous traitons vos dossiers,
-                  vous serez prévenu dès qu&apos;une action vous attend.
-                </div>
-              </div>
-            ) : (
-              <div className={styles.todoList}>
-                {societes.flatMap((s) =>
-                  s.actions.map((a, i) => (
-                    <Link
-                      key={s.id + "-" + i}
-                      href={a.lien}
-                      className={a.urgent ? `${styles.todo} ${styles.urgent}` : styles.todo}
-                    >
-                      <span className={styles.todoDot} />
-                      <span className={styles.todoBody}>
-                        <span className={styles.todoTitle}>{a.titre}</span>
-                        <span className={styles.todoDesc}>
-                          <strong>{s.societe}</strong> · {a.precision}
-                        </span>
-                      </span>
-                      <span className={styles.todoCta}>{a.bouton}</span>
-                    </Link>
-                  ))
-                )}
-              </div>
-            )}
-          </section>
-        )}
+        {societes.length > 1 && <Attentes societes={societes} nbActions={nbActions} />}
 
         {societes.length > 1 && (
           <>
@@ -304,47 +319,7 @@ export default async function TableauDeBord() {
               <h2>Activité récente</h2>
             </div>
 
-            <section className={styles.dashCard}>
-              {activite.length === 0 ? (
-                <div className={`${styles.dashEmpty} ${styles.small}`}>
-                  Rien ne s&apos;est encore passé sur vos dossiers.
-                </div>
-              ) : (
-                <div className={styles.actCols}>
-                  {activite.slice(0, 6).map((e, i) => {
-                    const cestMoi = e.auteurRole === "user";
-                    const qui = cestMoi ? "Vous" : (e.auteur ?? "Formalist");
-
-                    return (
-                      <Link
-                        key={i}
-                        href={dossier(e.dossierId)}
-                        className={`${styles.actRow} ${styles.actRowLink}`}
-                      >
-                        <span className={styles.actDot} />
-                        <span className={styles.actBody}>
-                          <span className={styles.actText}>
-                            {seSuffitAElleMeme(e) ? (
-                              <strong>{e.valeur}</strong>
-                            ) : (
-                              <>
-                                <strong>{qui}</strong> {phraseJournal(e, cestMoi)}
-                              </>
-                            )}
-                          </span>
-                          {e.commentaire && (
-                            <span className={styles.actNote}>{e.commentaire}</span>
-                          )}
-                          <span className={styles.actTime}>
-                            {e.societe} · {dateRelative(e.quand)}
-                          </span>
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+            <ActiviteRecente activite={activite} lienDossier={dossier} />
           </>
         )}
       </div>

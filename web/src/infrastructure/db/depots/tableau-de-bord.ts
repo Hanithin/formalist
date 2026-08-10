@@ -1,5 +1,5 @@
 import { prisma } from "../client";
-import { listerDossiers } from "./dossiers";
+import { listerDossiers, exigerDossier } from "./dossiers";
 import { actionsAttendues, prochaineEtape, type ContexteDossier } from "@/domain/formalite/actions";
 import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
 import type { EntreeJournal } from "@/domain/formalite/journal";
@@ -95,9 +95,10 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       phase: d.phase ?? 1,
       banque: banqueDe(brouillon),
       capital: brouillon.capital ?? null,
-      // Les trois premières étapes du parcours renseignent la société, ses
-      // associés et son dirigeant : au-delà, les informations sont complètes.
-      informationsCompletes: (premiereEtapeIncomplete(brouillon) ?? 9) > 3,
+      // Les deux premières étapes renseignent la société avec ses associés, puis
+      // son dirigeant : au-delà, les informations sont complètes. Le seuil valait
+      // 3 du temps où les associés formaient une étape à part.
+      informationsCompletes: (premiereEtapeIncomplete(brouillon) ?? 9) > 2,
       documentsRejetes: rejetesPar.get(d.id) ?? 0,
       signaturesEnAttente: compteurs.enAttente,
       signaturesTotal: compteurs.total,
@@ -109,6 +110,8 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       id: d.id,
       societe: d.societe || "Sans nom",
       forme: d.forme,
+      // Le type nomme le bandeau du bloc de tête : « Création », « Modification ».
+      type: d.type,
       status: d.status,
       phase: d.phase ?? 1,
       // Une fois les informations saisies, l'étape 1 est derrière nous, même si
@@ -139,4 +142,41 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
   }));
 
   return { dossiers, societes, activite };
+}
+
+/**
+ * Ce que l'accueil affiche en plus quand un seul dossier est ouvert.
+ *
+ * La page d'origine allait le chercher après coup (loadSingleExtras : deux appels
+ * à /api/formalites/:id et /audit, avec « Chargement… » en attendant). Ici il
+ * arrive avec la page, et le mot d'attente disparaît.
+ */
+export async function focusDuDossier(utilisateur: UtilisateurConnecte, dossierId: number) {
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  const [documents, avocat] = await Promise.all([
+    prisma.documents.findMany({
+      where: { formalite_id: dossierId },
+      orderBy: { created_at: "desc" },
+      take: 6,
+      select: { id: true, name: true, status: true, rejection_reason: true, file_path: true },
+    }),
+    dossier.assigned_avocat_id
+      ? prisma.users.findUnique({
+          where: { id: dossier.assigned_avocat_id },
+          select: { name: true },
+        })
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    documents: documents.map((d) => ({
+      id: d.id,
+      nom: d.name,
+      statut: d.status,
+      motifRejet: d.rejection_reason,
+      fichier: d.file_path,
+    })),
+    avocat: avocat?.name ?? null,
+  };
 }
