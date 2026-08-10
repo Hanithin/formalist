@@ -30,7 +30,12 @@ export function Sidebar({ chemin, utilisateur }: Props) {
     <aside className={styles.colonne}>
       <div className={styles.entete}>
         <Link href="/tableau-de-bord" className={styles.logo}>
-          <Image src="/images/logo.png" alt="Formalist" width={150} height={30} priority />
+          <Image src="/images/logo.png"
+            alt="Formalist"
+            width={150}
+            height={30}
+            style={{ height: 30, width: "auto" }}
+            priority />
         </Link>
         {estAdmin && <span className={styles.badgeAdmin}>Admin</span>}
       </div>

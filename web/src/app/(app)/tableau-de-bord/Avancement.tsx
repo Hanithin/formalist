@@ -31,3 +31,41 @@ export function Avancement({ pourcentage }: { pourcentage: number }) {
     </div>
   );
 }
+
+/**
+ * Petit anneau des vignettes de société.
+ *
+ * Le pourcentage est placé au centre, en absolu : l'anneau doit donc être son
+ * ancêtre positionné. Sans lui, le pourcentage se place par rapport à la page et
+ * recouvre tout l'écran - ce qui est arrivé.
+ */
+export function Anneau({ pourcentage, termine }: { pourcentage: number; termine: boolean }) {
+  const rayon = 28;
+  const circonference = 2 * Math.PI * rayon;
+  const reste = circonference - (circonference * Math.min(Math.max(pourcentage, 0), 100)) / 100;
+
+  return (
+    <div className={styles.socTileRing}>
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle className="bg" cx="32" cy="32" r={rayon} />
+        <circle
+          className="fg"
+          cx="32"
+          cy="32"
+          r={rayon}
+          strokeDasharray={circonference}
+          strokeDashoffset={reste}
+        />
+      </svg>
+      <span className={styles.socTilePct}>
+        {termine ? (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        ) : (
+          pourcentage + "%"
+        )}
+      </span>
+    </div>
+  );
+}

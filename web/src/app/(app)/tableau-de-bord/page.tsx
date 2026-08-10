@@ -6,7 +6,7 @@ import { etatTableauDeBord, salutation } from "@/domain/formalite/actions";
 import { libelleDossier, tonDossier, avancement, accorder } from "@/domain/formalite/etapes";
 import { Etat } from "@/components/liste/Etat";
 import { Vide } from "@/components/liste/Vide";
-import { Avancement } from "./Avancement";
+import { Avancement, Anneau } from "./Avancement";
 import styles from "./TableauDeBord.module.css";
 
 export const metadata: Metadata = {
@@ -128,14 +128,22 @@ export default async function TableauDeBord() {
             {societes.map((s) => (
               <li
                 key={s.id}
-                className={s.status === "terminee" ? `${styles.socTile} ${styles.done}` : styles.socTile}
+                className={
+                  s.status === "terminee" ? `${styles.socTile} ${styles.done}` : styles.socTile
+                }
               >
                 <div className={styles.socTileHead}>
-                  <span className={styles.socTilePct}>{avancement(s.phase, s.offre)}%</span>
-                  <Link href={"/formalites/" + s.id} className={styles.socTileName}>
-                    {s.societe}
-                  </Link>
-                  <span className={styles.socTileForme}>{s.forme}</span>
+                  <Anneau pourcentage={avancement(s.phase, s.offre)} termine={s.status === "terminee"} />
+
+                  <div className={styles.socTileIdent}>
+                    <Link href={"/formalites/" + s.id} className={styles.socTileName}>
+                      {s.societe}
+                    </Link>
+                    <div className={styles.socTileStep}>
+                      {s.forme} ·{" "}
+                      {libelleDossier({ status: s.status, phase: s.phase, offer: s.offre })}
+                    </div>
+                  </div>
                 </div>
 
                 <div className={styles.socTileFoot}>

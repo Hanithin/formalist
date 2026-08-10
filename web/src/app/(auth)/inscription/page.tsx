@@ -17,7 +17,12 @@ export default function Inscription() {
       <div className={styles.authLeft}>
         <div className={styles.authTopbar}>
           <Link href="/" className={styles.logo}>
-            <Image src="/images/logo.png" alt="Formalist" width={140} height={30} priority />
+            <Image src="/images/logo.png"
+              alt="Formalist"
+              width={140}
+              height={30}
+              style={{ height: 30, width: "auto" }}
+              priority />
           </Link>
           <Link href="/" className={styles.backLink}>
             Retour
