@@ -29,7 +29,13 @@ export default async function Creation({
   }
 
   const { brouillon } = await ouvrirBrouillon(utilisateur, Number(dossier));
-  const deposees = await documentsDuDossier(utilisateur, Number(dossier));
+  const documents = await documentsDuDossier(utilisateur, Number(dossier));
+
+  // Les deux vivent dans la même table et se distinguent par leur statut :
+  // « uploaded » pour une pièce remise par le client, « generated » pour un acte
+  // produit à partir du brouillon. Le type, lui, porte l'extension.
+  const deposees = documents.filter((d) => d.status !== "generated");
+  const actes = documents.filter((d) => d.status === "generated");
   const courante = etapeAccessible(Number(etape) || 1, brouillon);
 
   return (
@@ -58,6 +64,12 @@ export default async function Creation({
           etapeCourante={courante}
           brouillonInitial={brouillon}
           piecesDeposees={deposees.map((d) => ({ type: d.type, nom: d.name }))}
+          actesProduits={actes.map((d) => ({
+            id: d.id,
+            nom: d.name,
+            fichier: d.file_path,
+            statut: d.status,
+          }))}
         />
       </div>
     </main>

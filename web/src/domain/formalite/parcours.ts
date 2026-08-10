@@ -1,4 +1,6 @@
 import { regle, verifierAssocies, verifierCapital, verifierRepartition, type Anomalie } from "./formes";
+import { conjointRequis, nomDeLaPartie, type PersonneMorale, type PersonnePhysique } from "./etat-civil";
+import { apportsDe, valeurNominale } from "./capital";
 
 /**
  * Le parcours de création, étape par étape.
@@ -11,6 +13,11 @@ import { regle, verifierAssocies, verifierCapital, verifierRepartition, type Ano
  *
  * Le brouillon vit désormais dans le dossier. Ce module décrit les étapes et dit,
  * pour un brouillon donné, ce qui manque encore.
+ *
+ * Les six étapes sont celles du parcours d'origine (public/creation.html) : les
+ * associés sont dans l'étape « Société », et la dernière montre les actes produits.
+ * Un découpage en sept, avec les associés à part, avait été introduit en passant à
+ * Next ; il ne correspondait plus au dossier que les clients connaissent.
  */
 
 export interface Etape {
@@ -18,6 +25,8 @@ export interface Etape {
   identifiant: string;
   titre: string;
   description: string;
+  /** Le mot du fil d'étapes, court : « Société », « Capital ». */
+  libelleCourt: string;
 }
 
 export const ETAPES: Etape[] = [
@@ -25,126 +34,272 @@ export const ETAPES: Etape[] = [
     numero: 1,
     identifiant: "societe",
     titre: "Informations de la société",
-    description: "Nom, forme juridique, activité et adresse du siège.",
+    description: "Forme, nom, siège, activité, capital et associés.",
+    libelleCourt: "Société",
   },
   {
     numero: 2,
-    identifiant: "associes",
-    titre: "Associés",
-    description: "Qui détient la société.",
-  },
-  {
-    numero: 3,
     identifiant: "dirigeants",
     titre: "Dirigeants",
     description: "Qui la représente et l'engage.",
+    libelleCourt: "Dirigeants",
+  },
+  {
+    numero: 3,
+    identifiant: "capital",
+    titre: "Répartition du capital",
+    description: "Parts, montants souscrits et libération.",
+    libelleCourt: "Capital",
   },
   {
     numero: 4,
-    identifiant: "capital",
-    titre: "Répartition du capital",
-    description: "Montant, libération et parts de chacun.",
+    identifiant: "documents",
+    titre: "Pièces justificatives",
+    description: "Identité, domicile et attestation de dépôt.",
+    libelleCourt: "Documents",
   },
   {
     numero: 5,
-    identifiant: "pieces",
-    titre: "Pièces justificatives",
-    description: "Identité, domicile et attestation de dépôt.",
+    identifiant: "offres",
+    titre: "Votre offre",
+    description: "Ce que nous prenons en charge.",
+    libelleCourt: "Offres",
   },
   {
     numero: 6,
-    identifiant: "offre",
-    titre: "Votre offre",
-    description: "Ce que nous prenons en charge.",
+    identifiant: "actes",
+    titre: "Mes documents",
+    description: "Les actes produits, à relire et à signer.",
+    libelleCourt: "Mes documents",
   },
 ];
 
+/* ---------- Les listes de choix de l'étape 1 ---------- */
+
+export const MODES_DOMICILIATION = [
+  "Bail commercial ou professionnel",
+  "Société de domiciliation",
+  "Domicile personnel du dirigeant",
+] as const;
+export type ModeDomiciliation = (typeof MODES_DOMICILIATION)[number];
+
+/** Les banques proposées, « Autre » ouvrant la saisie libre. */
+export const BANQUES = ["Qonto", "Shine", "Revolut Business", "Autre"] as const;
+export type Banque = (typeof BANQUES)[number];
+
+export const OPTIONS_FISCALES = ["IS", "IR"] as const;
+export type OptionFiscale = (typeof OPTIONS_FISCALES)[number];
+
+export const REGIMES_TVA = [
+  "Je ne sais pas",
+  "Franchise en base de TVA",
+  "Régime réel simplifié",
+  "Régime réel normal",
+] as const;
+export type RegimeTva = (typeof REGIMES_TVA)[number];
+
+export const REMUNERATIONS = ["Déterminée ultérieurement", "Fixe", "Variable"] as const;
+export type Remuneration = (typeof REMUNERATIONS)[number];
+
+export const REGIMES_SOCIAUX = ["Assimilé salarié", "Travailleur non salarié"] as const;
+export type RegimeSocial = (typeof REGIMES_SOCIAUX)[number];
+
+/* ---------- Les parties au dossier ---------- */
+
+/**
+ * Un associé : une personne physique ou une société.
+ *
+ * Les montants de l'étape « Capital » vivent sur l'associé et non dans une table
+ * à part : c'est ce qui garantit qu'une part ne survit pas à l'associé qu'on
+ * retire, ce qui arrivait dans le formulaire d'origine.
+ */
 export interface Associe {
-  prenom?: string;
-  nom?: string;
-  /** Part du capital détenue, en euros. */
+  type?: "physique" | "morale";
+  personne?: PersonnePhysique;
+  societe?: PersonneMorale;
+
+  /** MONTANT_SOUSCRIT_ : ce que l'associé s'engage à apporter, en euros. */
   apport?: number;
+  /** MONTANT_VERSE_ : ce qu'il a effectivement versé. */
+  versement?: number;
+  /** NB_PARTS_ */
+  parts?: number;
+  /** DESC_APPORT_NATURE_ et APPORTS_NATURE_ */
+  apportEnNature?: { description?: string; montant?: number };
 }
 
 export interface Dirigeant {
-  prenom?: string;
-  nom?: string;
+  /**
+   * L'associé repris, par son rang dans la liste. Absent : une autre personne,
+   * dont l'état civil est saisi ici. C'est le select « Sélectionner… / Autre
+   * personne » du formulaire d'origine.
+   */
+  associe?: number;
+  personne?: PersonnePhysique;
+  /** REMUNERATION_DG_ */
+  remuneration?: Remuneration;
+  /** REGIME_SOCIAL_DG_ */
+  regimeSocial?: RegimeSocial;
 }
 
 /** Le brouillon, tel qu'il est stocké dans le dossier. */
 export interface Brouillon {
+  /* Étape 1 - la société */
   forme?: string;
   denomination?: string;
-  activite?: string;
   adresse?: string;
   codePostal?: string;
   ville?: string;
+  modeDomiciliation?: ModeDomiciliation;
   capital?: number;
-  capitalLibere?: number;
+  /** Nom de la banque du dépôt. La clé de gabarit reste NOM_BANQUE. */
+  banque?: Banque;
+  banqueAutre?: { nom?: string; adresse?: string; ville?: string; codePostal?: string };
+  dateDebutActivite?: string;
+  dateCloturePremierExercice?: string;
+  /** En années. 99 par défaut dans les statuts. */
+  dureeDeVie?: number;
+  optionFiscale?: OptionFiscale;
+  regimeTva?: RegimeTva;
+  /** OBJET_SOCIAL_ : le texte retenu, généré ou écrit à la main. */
+  activite?: string;
+  /** La description saisie pour la génération, gardée pour pouvoir la reprendre. */
+  descriptionActivite?: string;
   associes?: Associe[];
+
+  /* Étape 2 */
   dirigeants?: Dirigeant[];
+
+  /* Étape 3 */
+  /** Le total des parts émises, réparties entre les associés. */
+  partsTotales?: number;
+  capitalLibere?: number;
+
+  /* Étape 4 */
+  /** Paraphes portés sur les actes. */
+  paraphes?: string;
+
+  /* Étape 5 */
   offre?: string;
+
+  /* Étape 6 */
+  noteAvocat?: string;
 }
 
 const CODE_POSTAL = /^\d{5}$/;
+
+/** Le nom d'un associé pour un message d'anomalie : son nom, ou son rang. */
+function designer(associe: Associe, rang: number): string {
+  return nomDeLaPartie(associe) || "l'associé " + (rang + 1);
+}
+
+/** Ce qui manque à l'étape 1 : la société elle-même, puis ses associés. */
+function verifierSociete(brouillon: Brouillon): Anomalie[] {
+  const anomalies: Anomalie[] = [];
+
+  if (!regle(brouillon.forme)) {
+    anomalies.push({ champ: "forme", message: "Choisissez une forme juridique" });
+  }
+  if (!brouillon.denomination?.trim()) {
+    anomalies.push({ champ: "denomination", message: "Indiquez le nom de la société" });
+  }
+  if (!brouillon.activite?.trim()) {
+    anomalies.push({ champ: "activite", message: "Décrivez l'activité" });
+  }
+  if (!brouillon.adresse?.trim()) {
+    anomalies.push({ champ: "adresse", message: "Indiquez l'adresse du siège" });
+  }
+  if (!CODE_POSTAL.test(brouillon.codePostal ?? "")) {
+    anomalies.push({ champ: "codePostal", message: "Le code postal comporte cinq chiffres" });
+  }
+  if (!brouillon.ville?.trim()) {
+    anomalies.push({ champ: "ville", message: "Indiquez la ville" });
+  }
+
+  // « Autre » ouvre la saisie : sans nom, l'attestation de dépôt reste en blanc.
+  if (brouillon.banque === "Autre" && !brouillon.banqueAutre?.nom?.trim()) {
+    anomalies.push({ champ: "banqueAutre.nom", message: "Indiquez le nom de la banque" });
+  }
+
+  const associes = brouillon.associes ?? [];
+
+  // Sans associé, l'étape n'est pas faite - même si la forme n'est pas encore
+  // choisie. Se reposer sur les règles de forme rendait l'étape vide « complète ».
+  if (associes.length === 0) {
+    anomalies.push({ champ: "associes", message: "Ajoutez au moins un associé" });
+    return anomalies;
+  }
+
+  if (brouillon.forme) anomalies.push(...verifierAssocies(brouillon.forme, associes.length));
+
+  associes.forEach((a, i) => {
+    if (a.type === "morale") {
+      if (!a.societe?.denomination?.trim()) {
+        anomalies.push({
+          champ: "associes." + i,
+          message: "Indiquez la dénomination de l'associé " + (i + 1),
+        });
+      }
+      return;
+    }
+
+    const personne = a.personne ?? {};
+    if (!personne.prenom?.trim() || !personne.nom?.trim()) {
+      anomalies.push({
+        champ: "associes." + i,
+        message: "Renseignez le prénom et le nom de l'associé " + (i + 1),
+      });
+    }
+    if (!personne.dateDeNaissance) {
+      anomalies.push({
+        champ: "associes." + i + ".dateDeNaissance",
+        message: "Indiquez la date de naissance de " + designer(a, i),
+      });
+    }
+    // Le conjoint n'est exigé que quand la situation l'implique : les statuts
+    // mentionnent son consentement pour un apport de bien commun.
+    if (conjointRequis(personne.situationMatrimoniale) && !personne.conjoint?.nom?.trim()) {
+      anomalies.push({
+        champ: "associes." + i + ".conjoint",
+        message: "Renseignez le conjoint de " + designer(a, i),
+      });
+    }
+  });
+
+  return anomalies;
+}
 
 /** Ce qui manque à une étape donnée. Une liste vide vaut « étape complète ». */
 export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] {
   const anomalies: Anomalie[] = [];
 
-  if (numero === 1) {
-    if (!regle(brouillon.forme)) {
-      anomalies.push({ champ: "forme", message: "Choisissez une forme juridique" });
-    }
-    if (!brouillon.denomination?.trim()) {
-      anomalies.push({ champ: "denomination", message: "Indiquez le nom de la société" });
-    }
-    if (!brouillon.activite?.trim()) {
-      anomalies.push({ champ: "activite", message: "Décrivez l'activité" });
-    }
-    if (!brouillon.adresse?.trim()) {
-      anomalies.push({ champ: "adresse", message: "Indiquez l'adresse du siège" });
-    }
-    if (!CODE_POSTAL.test(brouillon.codePostal ?? "")) {
-      anomalies.push({ champ: "codePostal", message: "Le code postal comporte cinq chiffres" });
-    }
-    if (!brouillon.ville?.trim()) {
-      anomalies.push({ champ: "ville", message: "Indiquez la ville" });
-    }
-    return anomalies;
-  }
+  if (numero === 1) return verifierSociete(brouillon);
 
   if (numero === 2) {
+    const dirigeants = brouillon.dirigeants ?? [];
     const associes = brouillon.associes ?? [];
 
-    // Sans associé, l'étape n'est pas faite - même si la forme n'est pas encore
-    // choisie. Se reposer sur les règles de forme rendait l'étape vide « complète ».
-    if (associes.length === 0) {
-      anomalies.push({ champ: "associes", message: "Ajoutez au moins un associé" });
-      return anomalies;
-    }
-
-    if (brouillon.forme) anomalies.push(...verifierAssocies(brouillon.forme, associes.length));
-
-    associes.forEach((a, i) => {
-      if (!a.prenom?.trim() || !a.nom?.trim()) {
-        anomalies.push({
-          champ: "associes." + i,
-          message: "Renseignez le prénom et le nom de l'associé " + (i + 1),
-        });
-      }
-    });
-    return anomalies;
-  }
-
-  if (numero === 3) {
-    const dirigeants = brouillon.dirigeants ?? [];
     if (dirigeants.length === 0) {
       const titre = regle(brouillon.forme)?.titreDirigeant ?? "dirigeant";
       anomalies.push({ champ: "dirigeants", message: "Désignez le " + titre.toLowerCase() });
+      return anomalies;
     }
+
     dirigeants.forEach((d, i) => {
-      if (!d.prenom?.trim() || !d.nom?.trim()) {
+      // Un dirigeant repris d'un associé n'a pas d'état civil propre : il suffit
+      // que le rang désigne encore quelqu'un.
+      if (d.associe !== undefined) {
+        if (!associes[d.associe]) {
+          anomalies.push({
+            champ: "dirigeants." + i,
+            message: "L'associé choisi pour le dirigeant " + (i + 1) + " n'existe plus",
+          });
+        }
+        return;
+      }
+
+      const personne = d.personne ?? {};
+      if (!personne.prenom?.trim() || !personne.nom?.trim()) {
         anomalies.push({
           champ: "dirigeants." + i,
           message: "Renseignez le prénom et le nom du dirigeant " + (i + 1),
@@ -154,7 +309,7 @@ export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] 
     return anomalies;
   }
 
-  if (numero === 4) {
+  if (numero === 3) {
     const capital = brouillon.capital ?? 0;
     const libere = brouillon.capitalLibere ?? 0;
 
@@ -165,18 +320,73 @@ export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] 
 
     if (brouillon.forme) anomalies.push(...verifierCapital(brouillon.forme, capital, libere));
 
-    const parts = (brouillon.associes ?? []).map((a) => a.apport ?? 0);
-    if (parts.length) anomalies.push(...verifierRepartition(capital, parts));
+    const associes = brouillon.associes ?? [];
+    const nominale = valeurNominale(brouillon);
+
+    // Le montant souscrit se déduit des parts, comme dans les actes : l'écran
+    // saisit des parts, pas des euros. Lire `apport` ici rendait l'étape
+    // impossible à franchir dès qu'on répartissait en parts.
+    const souscrits = associes.map((a) => apportsDe(a, nominale).souscrit);
+    if (souscrits.length) anomalies.push(...verifierRepartition(capital, souscrits));
+
+    // Le nombre de parts distribuées doit tomber juste : c'est ce total qui est
+    // écrit dans la liste des souscripteurs.
+    const total = brouillon.partsTotales ?? 0;
+    if (total > 0) {
+      const distribuees = associes.reduce((somme, a) => somme + (a.parts ?? 0), 0);
+      if (distribuees !== total) {
+        anomalies.push({
+          champ: "partsTotales",
+          message:
+            "Les parts réparties (" + distribuees + ") ne font pas le total annoncé (" + total + ")",
+        });
+      }
+    }
+
+    associes.forEach((a, i) => {
+      const souscrit = apportsDe(a, nominale).souscrit;
+      const verse = a.versement ?? 0;
+      if (verse > souscrit) {
+        anomalies.push({
+          champ: "associes." + i + ".versement",
+          message: "Le versement de " + designer(a, i) + " dépasse ce qu'il a souscrit",
+        });
+      }
+    });
     return anomalies;
   }
 
-  if (numero === 6 && !brouillon.offre) {
+  if (numero === 5 && !brouillon.offre) {
     anomalies.push({ champ: "offre", message: "Choisissez une offre" });
   }
 
-  // Étape 5 : les pièces sont vérifiées à leur dépôt, pas ici. Elle ne bloque
+  // Étape 4 : les pièces sont vérifiées à leur dépôt, pas ici. Elle ne bloque
   // donc jamais le parcours, et compte comme faite dès le départ.
+  // Étape 6 : les actes sont produits par le dossier, il n'y a rien à saisir.
   return anomalies;
+}
+
+/**
+ * Les associés qu'un dirigeant peut reprendre.
+ *
+ * Ceux déjà désignés par un autre dirigeant sont écartés : la même personne ne
+ * peut pas être à la fois présidente et directrice générale. Celui du dirigeant
+ * courant reste dans la liste, sans quoi son propre choix disparaîtrait du menu.
+ */
+export function associesProposables(
+  associes: Associe[],
+  dirigeants: Dirigeant[],
+  rangDuDirigeant: number
+): { rang: number; nom: string }[] {
+  const pris = new Set(
+    dirigeants
+      .filter((d, i) => i !== rangDuDirigeant && d.associe !== undefined)
+      .map((d) => d.associe as number)
+  );
+
+  return associes
+    .map((a, i) => ({ rang: i, nom: nomDeLaPartie(a) || "Associé " + (i + 1) }))
+    .filter((a) => !pris.has(a.rang));
 }
 
 /** La première étape encore incomplète, ou null si tout est renseigné. */

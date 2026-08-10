@@ -5,10 +5,21 @@ import { useRouter } from "next/navigation";
 import {
   verifierEtape,
   avancementParcours,
+  BANQUES,
+  MODES_DOMICILIATION,
+  OPTIONS_FISCALES,
+  REGIMES_TVA,
   type Brouillon,
   type Etape,
 } from "@/domain/formalite/parcours";
 import { FORMES_PROPOSEES, FORMES, regle } from "@/domain/formalite/formes";
+import { Adresse, Ville } from "./Adresse";
+import { Associes } from "./Associes";
+import { Actes, type ActeProduit } from "./Actes";
+import { Capital } from "./Capital";
+import { Dirigeants } from "./Dirigeants";
+import { Offres } from "./Offres";
+import { ObjetSocial } from "./ObjetSocial";
 import { piecesAttendues } from "@/domain/formalite/documents";
 import { Pieces } from "./Pieces";
 import styles from "./Parcours.module.css";
@@ -19,6 +30,7 @@ interface Props {
   etapeCourante: number;
   brouillonInitial: Brouillon;
   piecesDeposees: { type: string | null; nom: string }[];
+  actesProduits: ActeProduit[];
 }
 
 /** La coche des étapes franchies. */
@@ -73,6 +85,7 @@ export function Parcours({
   etapeCourante,
   brouillonInitial,
   piecesDeposees,
+  actesProduits,
 }: Props) {
   const [brouillon, setBrouillon] = useState(brouillonInitial);
   const [anomalies, setAnomalies] = useState<Record<string, string>>({});
@@ -84,6 +97,24 @@ export function Parcours({
 
   function modifier(champ: keyof Brouillon, valeur: unknown) {
     setBrouillon((actuel) => ({ ...actuel, [champ]: valeur }));
+  }
+
+  /**
+   * Plusieurs champs d'un coup.
+   *
+   * Choisir une adresse remplit la voie, le code postal et la ville : trois
+   * appels successifs à modifier() partiraient du même état et les deux derniers
+   * écraseraient le premier.
+   */
+  function modifierPlusieurs(valeurs: Partial<Brouillon>) {
+    setBrouillon((actuel) => ({ ...actuel, ...valeurs }));
+  }
+
+  function modifierBanque(champ: "nom" | "adresse" | "ville" | "codePostal", valeur: string) {
+    setBrouillon((actuel) => ({
+      ...actuel,
+      banqueAutre: { ...actuel.banqueAutre, [champ]: valeur },
+    }));
   }
 
   async function enregistrer(suite: number) {
@@ -172,21 +203,8 @@ export function Parcours({
                 />
               </Champ>
 
-              <Champ
-                id="activite"
-                libelle="Activité"
-                requis
-                pleineLargeur
-                anomalie={anomalies.activite}
-              >
-                <textarea
-                  id="activite"
-                  rows={3}
-                  value={brouillon.activite ?? ""}
-                  onChange={(e) => modifier("activite", e.target.value)}
-                />
-              </Champ>
-
+              {/* L'adresse est complétée sur la Base Adresse Nationale, qui
+                  remplit aussi le code postal et la ville. */}
               <Champ
                 id="adresse"
                 libelle="Adresse du siège"
@@ -194,10 +212,14 @@ export function Parcours({
                 pleineLargeur
                 anomalie={anomalies.adresse}
               >
-                <input
+                <Adresse
                   id="adresse"
-                  value={brouillon.adresse ?? ""}
-                  onChange={(e) => modifier("adresse", e.target.value)}
+                  valeur={brouillon.adresse ?? ""}
+                  surChangement={(v) => modifier("adresse", v)}
+                  surCompletion={(codePostal, ville) =>
+                    modifierPlusieurs({ codePostal, ville })
+                  }
+                  placeholder="Rechercher l'adresse..."
                 />
               </Champ>
 
@@ -212,36 +234,31 @@ export function Parcours({
               </Champ>
 
               <Champ id="ville" libelle="Ville" requis anomalie={anomalies.ville}>
-                <input
+                <Ville
                   id="ville"
-                  value={brouillon.ville ?? ""}
-                  onChange={(e) => modifier("ville", e.target.value)}
+                  valeur={brouillon.ville ?? ""}
+                  surChangement={(v) => modifier("ville", v)}
+                  surCompletion={(codePostal) => modifier("codePostal", codePostal)}
                 />
               </Champ>
-            </>
-          )}
 
-          {etape.identifiant === "associes" && (
-            <Personnes
-              libelle="Associé"
-              avecApport
-              personnes={brouillon.associes ?? []}
-              surChangement={(v) => modifier("associes", v)}
-              anomalies={anomalies}
-            />
-          )}
+              <Champ id="modeDomiciliation" libelle="Mode de domiciliation">
+                <select
+                  id="modeDomiciliation"
+                  value={brouillon.modeDomiciliation ?? ""}
+                  onChange={(e) => modifier("modeDomiciliation", e.target.value)}
+                >
+                  <option value="">Choisir...</option>
+                  {MODES_DOMICILIATION.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </Champ>
 
-          {etape.identifiant === "dirigeants" && (
-            <Personnes
-              libelle={titreDirigeant}
-              personnes={brouillon.dirigeants ?? []}
-              surChangement={(v) => modifier("dirigeants", v)}
-              anomalies={anomalies}
-            />
-          )}
-
-          {etape.identifiant === "capital" && (
-            <>
+              {/* Le montant du capital est saisi ici, comme dans le parcours
+                  d'origine ; sa répartition en parts vient à l'étape « Capital ». */}
               <Champ id="capital" libelle="Capital social" requis anomalie={anomalies.capital}>
                 <span className={styles.suffix}>
                   <input
@@ -254,53 +271,224 @@ export function Parcours({
                 </span>
               </Champ>
 
-              <Champ
-                id="capitalLibere"
-                libelle="Montant libéré à la constitution"
-                requis
-                anomalie={anomalies.libere}
-              >
-                <span className={styles.suffix}>
-                  <input
-                    id="capitalLibere"
-                    inputMode="decimal"
-                    value={brouillon.capitalLibere ?? ""}
-                    onChange={(e) => modifier("capitalLibere", Number(e.target.value) || 0)}
-                  />
-                  <span>€</span>
-                </span>
+              <Champ id="banque" libelle="Banque">
+                <select
+                  id="banque"
+                  value={brouillon.banque ?? ""}
+                  onChange={(e) => modifier("banque", e.target.value)}
+                >
+                  <option value="">Choisir...</option>
+                  {BANQUES.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
               </Champ>
 
-              {anomalies.repartition && (
-                <div className={`${styles.field} ${styles.full}`}>
-                  <p role="alert">{anomalies.repartition}</p>
-                </div>
+              {/* « Autre » ouvre la saisie : c'est le nom qui figure sur
+                  l'attestation de dépôt du capital. */}
+              {brouillon.banque === "Autre" && (
+                <>
+                  <Champ
+                    id="banqueNom"
+                    libelle="Nom de la banque"
+                    requis
+                    anomalie={anomalies["banqueAutre.nom"]}
+                  >
+                    <input
+                      id="banqueNom"
+                      placeholder="Ex : Crédit Agricole"
+                      value={brouillon.banqueAutre?.nom ?? ""}
+                      onChange={(e) => modifierBanque("nom", e.target.value)}
+                    />
+                  </Champ>
+
+                  <Champ id="banqueAdresse" libelle="Adresse de la banque">
+                    <Adresse
+                      id="banqueAdresse"
+                      valeur={brouillon.banqueAutre?.adresse ?? ""}
+                      surChangement={(v) => modifierBanque("adresse", v)}
+                      surCompletion={(codePostal, ville) =>
+                        modifier("banqueAutre", {
+                          ...brouillon.banqueAutre,
+                          codePostal,
+                          ville,
+                        })
+                      }
+                      placeholder="Rechercher l'adresse..."
+                    />
+                  </Champ>
+
+                  <Champ id="banqueVille" libelle="Ville de la banque">
+                    <input
+                      id="banqueVille"
+                      value={brouillon.banqueAutre?.ville ?? ""}
+                      onChange={(e) => modifierBanque("ville", e.target.value)}
+                    />
+                  </Champ>
+
+                  <Champ id="banqueCp" libelle="Code postal de la banque">
+                    <input
+                      id="banqueCp"
+                      inputMode="numeric"
+                      maxLength={5}
+                      value={brouillon.banqueAutre?.codePostal ?? ""}
+                      onChange={(e) =>
+                        modifierBanque("codePostal", e.target.value.replace(/\D/g, ""))
+                      }
+                    />
+                  </Champ>
+                </>
               )}
+
+              <Champ id="dateDebutActivite" libelle="Date de début d'activité">
+                <input
+                  id="dateDebutActivite"
+                  type="date"
+                  value={brouillon.dateDebutActivite ?? ""}
+                  onChange={(e) => modifier("dateDebutActivite", e.target.value)}
+                />
+              </Champ>
+
+              <Champ
+                id="dateCloturePremierExercice"
+                libelle="Date de clôture de la première année"
+              >
+                <input
+                  id="dateCloturePremierExercice"
+                  type="date"
+                  value={brouillon.dateCloturePremierExercice ?? ""}
+                  onChange={(e) => modifier("dateCloturePremierExercice", e.target.value)}
+                />
+              </Champ>
+
+              <Champ id="dureeDeVie" libelle="Durée de vie (années)">
+                <input
+                  id="dureeDeVie"
+                  inputMode="numeric"
+                  /* 99 ans : la durée que portent les statuts par défaut. */
+                  placeholder="99"
+                  value={brouillon.dureeDeVie ?? ""}
+                  onChange={(e) => modifier("dureeDeVie", Number(e.target.value) || undefined)}
+                />
+              </Champ>
+
+              <Champ id="optionFiscale" libelle="Option fiscale">
+                <select
+                  id="optionFiscale"
+                  value={brouillon.optionFiscale ?? ""}
+                  onChange={(e) => modifier("optionFiscale", e.target.value)}
+                >
+                  <option value="">Choisir...</option>
+                  {OPTIONS_FISCALES.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+              </Champ>
+
+              <Champ id="regimeTva" libelle="Régime TVA">
+                <select
+                  id="regimeTva"
+                  value={brouillon.regimeTva ?? ""}
+                  onChange={(e) => modifier("regimeTva", e.target.value)}
+                >
+                  <option value="">Choisir...</option>
+                  {REGIMES_TVA.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </Champ>
+
+              <Champ
+                id="activite"
+                libelle="Objet social / Activité de l'entreprise"
+                requis
+                pleineLargeur
+                anomalie={undefined}
+              >
+                <ObjetSocial
+                  valeur={brouillon.activite ?? ""}
+                  surChangement={(v) => modifier("activite", v)}
+                  description={brouillon.descriptionActivite ?? ""}
+                  surDescription={(v) => modifier("descriptionActivite", v)}
+                  anomalie={anomalies.activite}
+                />
+              </Champ>
             </>
           )}
 
-          {etape.identifiant === "pieces" && (
-            <div className={styles.full}>
-              <Pieces
-                dossierId={dossierId}
-                pieces={piecesAttendues(brouillon.forme)}
-                deposees={piecesDeposees}
-              />
-            </div>
+          {/* Les associés font partie de l'étape « Société » : c'est le
+              découpage du parcours d'origine. */}
+          {etape.identifiant === "societe" && (
+            <Associes
+              associes={brouillon.associes ?? []}
+              surChangement={(v) => modifier("associes", v)}
+              anomalies={anomalies}
+            />
           )}
 
-          {etape.identifiant === "offre" && (
-            <Champ id="offre" libelle="Offre" requis pleineLargeur anomalie={anomalies.offre}>
-              <select
-                id="offre"
-                value={brouillon.offre ?? ""}
-                onChange={(e) => modifier("offre", e.target.value)}
-              >
-                <option value="">Choisissez une offre</option>
-                <option value="starter">Essentiel - documents générés et déposés</option>
-                <option value="business">Accompagné - relecture par un avocat</option>
-              </select>
-            </Champ>
+          {etape.identifiant === "dirigeants" && (
+            <Dirigeants
+              libelle={titreDirigeant}
+              dirigeants={brouillon.dirigeants ?? []}
+              associes={brouillon.associes ?? []}
+              surChangement={(v) => modifier("dirigeants", v)}
+              anomalies={anomalies}
+            />
+          )}
+
+          {etape.identifiant === "capital" && (
+            <Capital
+              brouillon={brouillon}
+              surChangement={modifierPlusieurs}
+              surAssocies={(v) => modifier("associes", v)}
+              anomalies={anomalies}
+            />
+          )}
+
+          {etape.identifiant === "documents" && (
+            <>
+              <div className={styles.full}>
+                <Pieces
+                  dossierId={dossierId}
+                  pieces={piecesAttendues(brouillon.forme)}
+                  deposees={piecesDeposees}
+                />
+              </div>
+
+              {/* Les paraphes figurent en pied de chaque page des actes. */}
+              <Champ id="paraphes" libelle="Paraphes / Initiales">
+                <input
+                  id="paraphes"
+                  maxLength={10}
+                  placeholder="Ex : CD"
+                  value={brouillon.paraphes ?? ""}
+                  onChange={(e) => modifier("paraphes", e.target.value)}
+                />
+              </Champ>
+            </>
+          )}
+
+          {etape.identifiant === "offres" && (
+            <Offres
+              choisie={brouillon.offre}
+              surChangement={(code) => modifier("offre", code)}
+              anomalie={anomalies.offre}
+            />
+          )}
+
+          {etape.identifiant === "actes" && (
+            <Actes
+              dossierId={dossierId}
+              brouillon={brouillon}
+              actes={actesProduits}
+              surNote={(texte) => modifier("noteAvocat", texte)}
+            />
           )}
         </div>
 
@@ -353,96 +541,3 @@ export function Parcours({
   );
 }
 
-interface Personne {
-  prenom?: string;
-  nom?: string;
-  apport?: number;
-}
-
-function Personnes({
-  libelle,
-  personnes,
-  surChangement,
-  anomalies,
-  avecApport = false,
-}: {
-  libelle: string;
-  personnes: Personne[];
-  surChangement: (p: Personne[]) => void;
-  anomalies: Record<string, string>;
-  avecApport?: boolean;
-}) {
-  function modifier(index: number, champ: keyof Personne, valeur: string | number) {
-    surChangement(personnes.map((p, i) => (i === index ? { ...p, [champ]: valeur } : p)));
-  }
-
-  return (
-    <>
-      {personnes.map((p, i) => (
-        <fieldset key={i} className={styles.personne}>
-          <legend>
-            {libelle} {i + 1}
-          </legend>
-
-          <div className={styles.personneGrille}>
-            <Champ id={"prenom-" + i} libelle="Prénom" requis>
-              <input
-                id={"prenom-" + i}
-                value={p.prenom ?? ""}
-                onChange={(e) => modifier(i, "prenom", e.target.value)}
-              />
-            </Champ>
-
-            <Champ id={"nom-" + i} libelle="Nom" requis>
-              <input
-                id={"nom-" + i}
-                value={p.nom ?? ""}
-                onChange={(e) => modifier(i, "nom", e.target.value)}
-              />
-            </Champ>
-
-            {avecApport && (
-              <Champ id={"apport-" + i} libelle="Apport" requis>
-                <span className={styles.suffix}>
-                  <input
-                    id={"apport-" + i}
-                    inputMode="decimal"
-                    value={p.apport ?? ""}
-                    onChange={(e) => modifier(i, "apport", Number(e.target.value) || 0)}
-                  />
-                  <span>€</span>
-                </span>
-              </Champ>
-            )}
-          </div>
-
-          <button
-            type="button"
-            className={styles.retirer}
-            onClick={() => surChangement(personnes.filter((_, j) => j !== i))}
-          >
-            Retirer
-          </button>
-
-          {anomalies[(avecApport ? "associes." : "dirigeants.") + i] && (
-            <p role="alert">{anomalies[(avecApport ? "associes." : "dirigeants.") + i]}</p>
-          )}
-        </fieldset>
-      ))}
-
-      {(anomalies.associes || anomalies.dirigeants) && (
-        <div className={styles.full}>
-          <p role="alert">{anomalies.associes ?? anomalies.dirigeants}</p>
-        </div>
-      )}
-
-      <button
-        type="button"
-        className={styles.ajouter}
-        onClick={() => surChangement([...personnes, {}])}
-      >
-        Ajouter un {libelle.toLowerCase()}
-      </button>
-    </>
-  );
-}

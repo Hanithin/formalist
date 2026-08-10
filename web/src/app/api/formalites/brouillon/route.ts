@@ -2,6 +2,18 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { commencerFormalite, enregistrerBrouillon } from "@/infrastructure/db/depots/brouillons";
+import {
+  BANQUES,
+  MODES_DOMICILIATION,
+  OPTIONS_FISCALES,
+  REGIMES_SOCIAUX,
+  REGIMES_TVA,
+  REMUNERATIONS,
+} from "@/domain/formalite/parcours";
+import {
+  REGIMES_MATRIMONIAUX,
+  SITUATIONS_MATRIMONIALES,
+} from "@/domain/formalite/etat-civil";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
@@ -10,24 +22,111 @@ import { route } from "@/lib/reponses";
  * on enregistre au fil de la saisie, et c'est le passage d'étape qui contrôle
  * l'ensemble. Refuser un brouillon incomplet ferait perdre la saisie en cours.
  */
-const ASSOCIE = z.object({
+const CIVILITE = z.enum(["Monsieur", "Madame"]);
+
+const CONJOINT = z.object({
+  civilite: CIVILITE.optional(),
   prenom: z.string().trim().max(60).optional(),
   nom: z.string().trim().max(60).optional(),
+  nomDeNaissance: z.string().trim().max(60).optional(),
+  regimeMatrimonial: z.enum(REGIMES_MATRIMONIAUX).optional(),
+  dateMariage: z.string().trim().max(10).optional(),
+  villeMariage: z.string().trim().max(100).optional(),
+  contratDeMariage: z.boolean().optional(),
+});
+
+const PERSONNE = z.object({
+  civilite: CIVILITE.optional(),
+  prenom: z.string().trim().max(60).optional(),
+  nom: z.string().trim().max(60).optional(),
+  nomDeNaissance: z.string().trim().max(60).optional(),
+  email: z.string().trim().max(150).optional(),
+  adresse: z.string().trim().max(200).optional(),
+  codePostal: z.string().trim().max(5).optional(),
+  ville: z.string().trim().max(100).optional(),
+  dateDeNaissance: z.string().trim().max(10).optional(),
+  villeDeNaissance: z.string().trim().max(100).optional(),
+  codePostalDeNaissance: z.string().trim().max(5).optional(),
+  paysDeNaissance: z.string().trim().max(60).optional(),
+  nomDuPere: z.string().trim().max(120).optional(),
+  nomDeLaMere: z.string().trim().max(120).optional(),
+  nationalite: z.string().trim().max(60).optional(),
+  situationMatrimoniale: z.enum(SITUATIONS_MATRIMONIALES).optional(),
+  conjoint: CONJOINT.optional(),
+});
+
+const SOCIETE_ASSOCIEE = z.object({
+  denomination: z.string().trim().max(150).optional(),
+  adresse: z.string().trim().max(200).optional(),
+  codePostal: z.string().trim().max(5).optional(),
+  ville: z.string().trim().max(100).optional(),
+  capital: z.number().nonnegative().optional(),
+  numeroRcs: z.string().trim().max(30).optional(),
+  villeImmatriculation: z.string().trim().max(100).optional(),
+  forme: z.string().trim().max(20).optional(),
+  siret: z.string().trim().max(20).optional(),
+  representant: z
+    .object({
+      civilite: CIVILITE.optional(),
+      prenom: z.string().trim().max(60).optional(),
+      nom: z.string().trim().max(60).optional(),
+    })
+    .optional(),
+});
+
+const ASSOCIE = z.object({
+  type: z.enum(["physique", "morale"]).optional(),
+  personne: PERSONNE.optional(),
+  societe: SOCIETE_ASSOCIEE.optional(),
   apport: z.number().nonnegative().optional(),
+  versement: z.number().nonnegative().optional(),
+  parts: z.number().int().nonnegative().optional(),
+  apportEnNature: z
+    .object({
+      description: z.string().trim().max(500).optional(),
+      montant: z.number().nonnegative().optional(),
+    })
+    .optional(),
+});
+
+const DIRIGEANT = z.object({
+  associe: z.number().int().nonnegative().max(99).optional(),
+  personne: PERSONNE.optional(),
+  remuneration: z.enum(REMUNERATIONS).optional(),
+  regimeSocial: z.enum(REGIMES_SOCIAUX).optional(),
 });
 
 const BROUILLON = z.object({
   forme: z.string().trim().max(10).optional(),
   denomination: z.string().trim().max(150).optional(),
-  activite: z.string().trim().max(500).optional(),
+  activite: z.string().trim().max(2000).optional(),
+  descriptionActivite: z.string().trim().max(500).optional(),
   adresse: z.string().trim().max(200).optional(),
   codePostal: z.string().trim().max(5).optional(),
   ville: z.string().trim().max(100).optional(),
+  modeDomiciliation: z.enum(MODES_DOMICILIATION).optional(),
   capital: z.number().nonnegative().optional(),
   capitalLibere: z.number().nonnegative().optional(),
+  banque: z.enum(BANQUES).optional(),
+  banqueAutre: z
+    .object({
+      nom: z.string().trim().max(120).optional(),
+      adresse: z.string().trim().max(200).optional(),
+      ville: z.string().trim().max(100).optional(),
+      codePostal: z.string().trim().max(5).optional(),
+    })
+    .optional(),
+  dateDebutActivite: z.string().trim().max(10).optional(),
+  dateCloturePremierExercice: z.string().trim().max(10).optional(),
+  dureeDeVie: z.number().int().positive().max(99).optional(),
+  optionFiscale: z.enum(OPTIONS_FISCALES).optional(),
+  regimeTva: z.enum(REGIMES_TVA).optional(),
   associes: z.array(ASSOCIE).max(100).optional(),
-  dirigeants: z.array(ASSOCIE.omit({ apport: true })).max(20).optional(),
+  dirigeants: z.array(DIRIGEANT).max(20).optional(),
+  partsTotales: z.number().int().nonnegative().optional(),
+  paraphes: z.string().trim().max(10).optional(),
   offre: z.string().trim().max(30).optional(),
+  noteAvocat: z.string().trim().max(2000).optional(),
 });
 
 const ENREGISTREMENT = z.object({

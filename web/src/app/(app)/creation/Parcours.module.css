@@ -227,3 +227,1022 @@
 .btnNext:disabled {
       background: #e5e5e5; color: #999; cursor: not-allowed; transform: none;
     }
+
+/* ============================
+   Autocomplétion d'adresse et de commune
+   ============================
+   La liste de propositions est posée en absolu sous le champ : dans la grille du
+   formulaire, un flux normal pousserait les champs suivants à chaque frappe. */
+
+.completion {
+  position: relative;
+}
+
+.propositions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(17, 17, 17, 0.12);
+}
+
+.propositions li {
+  display: block;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.proposition,
+.propositionActive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #111;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+}
+
+.propositionActive {
+  background: #f5f5f7;
+}
+
+.proposition:hover:not(:disabled) {
+  background: #f5f5f7;
+  border-color: transparent;
+}
+
+.propositionCode {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================
+   Objet social rédigé par l'IA
+   ============================
+   Le violet est celui du bloc d'origine : il distingue l'assistance du reste du
+   formulaire, où tout est en noir. */
+
+.objet {
+  display: block;
+}
+
+.objetAide {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #8b5cf6;
+}
+
+.objetAide svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.objetSaisie {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.objetSaisie input {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+.objetBouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.objetBouton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  border-color: transparent;
+  opacity: 0.9;
+}
+
+.objetBouton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.objetBouton svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Le sablier tourne pendant la génération : sans lui, rien ne dit que l'appel
+   est parti, et on reclique. */
+.objetBouton:disabled svg {
+  animation: battement 1s ease-in-out infinite;
+}
+
+@keyframes battement {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .objetBouton:disabled svg {
+    animation: none;
+  }
+}
+
+.objetTexte {
+  width: 100%;
+  max-width: none;
+  min-height: 260px;
+  margin-top: 10px;
+}
+
+.objetErreur {
+  margin: 8px 0 0;
+}
+
+.objetNote {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: #71717a;
+}
+
+/* Remplacer un objet social déjà écrit se confirme : c'est un texte relu. */
+.objetConfirmation {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 13.5px;
+}
+
+.objetConfirmation p {
+  margin: 0 0 10px;
+}
+
+.objetConfirmationGestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.objetConfirmationGestes button {
+  margin: 0;
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+/* ============================
+   Associés en onglets
+   ============================
+   Reprise des règles .associe-tab de css/creation.css : un onglet par associé,
+   souligné quand il est actif, pastille verte quand il est renseigné, croix au
+   survol. L'état civil complet fait une quinzaine de champs : les empiler rendait
+   l'étape illisible, d'où un seul panneau à la fois. */
+
+.onglets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.ongletEnveloppe {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.onglet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 18px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: #999;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.onglet:hover:not(:disabled) {
+  background: none;
+  border-color: transparent;
+  color: #666;
+}
+
+.actif {
+  color: #111;
+  font-weight: 500;
+  border-bottom-color: #111;
+}
+
+.actif:hover:not(:disabled) {
+  color: #111;
+  border-bottom-color: #111;
+}
+
+/* La pastille dit « celui-là est rempli », sans avoir à ouvrir l'onglet. */
+.ongletPastille {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.ongletFermer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0 4px 0 -8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    opacity 0.2s;
+}
+
+/* La croix apparaît au survol et à la tabulation : sans le focus, elle serait
+   inatteignable au clavier. */
+.ongletEnveloppe:hover .ongletFermer,
+.ongletFermer:focus-visible {
+  opacity: 1;
+}
+
+.ongletFermer:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: transparent;
+}
+
+.ongletFermer svg {
+  width: 10px;
+  height: 10px;
+}
+
+.ongletAjouter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 8px;
+  padding: 8px 16px;
+  border: 1.5px dashed #e5e5e5;
+  border-radius: 100px;
+  background: none;
+  color: #999;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.ongletAjouter:hover:not(:disabled) {
+  border-color: #111;
+  color: #111;
+  background: #f5f5f5;
+}
+
+.ongletAjouter svg {
+  width: 14px;
+  height: 14px;
+}
+
+.panneau {
+  animation: monteeDouce 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes monteeDouce {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panneau {
+    animation: none;
+  }
+}
+
+/* ---------- Conjoint et représentant : un bloc dans le panneau ---------- */
+
+.conjoint {
+  margin-top: 16px;
+  padding: 16px 18px;
+  background: #fafafa;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+}
+
+.conjointTitre {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---------- Résultats de la recherche au registre ---------- */
+
+.resultatCorps {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.resultatNom {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.resultatDetail {
+  margin-top: 1px;
+  font-size: 12px;
+  color: #888;
+}
+
+/* Le rappel d'un état civil repris d'un associé : il n'y a rien à saisir, on dit
+   où le corriger plutôt que de laisser un panneau vide. */
+.rappel {
+  padding: 12px 14px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: #3730a3;
+}
+
+.rappel p {
+  margin: 0;
+}
+
+/* ============================
+   Étape Capital
+   ============================
+   Reprise des règles .capital-* et .associe-card de css/creation.css : la barre de
+   couverture, une carte par associé, le bloc d'apport et le récapitulatif. */
+
+/* ---------- La barre de couverture ---------- */
+
+.barreBloc {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+}
+
+.barreEntete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.barreLibelle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.barrePct {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+.barrePiste {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  background: #e5e5e5;
+  border-radius: 100px;
+}
+
+.barreRemplissage {
+  height: 100%;
+  border-radius: 100px;
+  transition:
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.3s;
+}
+
+/* Trois états, trois teintes : ça tombe juste, il manque, on dépasse. */
+.barreOk {
+  background: #22c55e;
+}
+
+.barreManque {
+  background: #f59e0b;
+}
+
+.barreTrop {
+  background: #ef4444;
+}
+
+.barreSous {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+/* ---------- Une carte par associé ---------- */
+
+.cartes {
+  margin: 24px 0;
+}
+
+.carte {
+  margin-bottom: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.carte:hover {
+  border-color: #999;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+.carteHaut {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+}
+
+.carteAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.carteInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.carteNom {
+  margin-bottom: 2px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.carteDetail {
+  font-size: 12px;
+  color: #999;
+  font-variant-numeric: tabular-nums;
+}
+
+.cartePiste {
+  width: 100%;
+  height: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: #f5f5f5;
+  border-radius: 100px;
+}
+
+.carteRemplissage {
+  height: 100%;
+  background: #111;
+  border-radius: 100px;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.carteSaisie {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.carteSaisieLibelle {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.carteSaisie input {
+  width: 100px;
+  max-width: none;
+  padding: 10px 12px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Le bloc d'apport, sous la carte ---------- */
+
+.carteBas {
+  padding: 16px 24px 14px;
+  border-top: 1px solid #e5e5e5;
+  background: #fafafa;
+  border-radius: 0 0 15px 15px;
+}
+
+.apportLigne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.apportChamp {
+  flex: 1;
+  min-width: 160px;
+}
+
+.apportChamp label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #666;
+}
+
+.apportChamp input,
+.apportChamp textarea {
+  width: 100%;
+  max-width: none;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.apportChamp textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.apportAide {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #999;
+}
+
+.apportResume {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 4px;
+  padding: 10px 14px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.apportResumeItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.apportResumeLibelle {
+  font-size: 11px;
+  color: #888;
+}
+
+.apportResumeValeur {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Le récapitulatif ---------- */
+
+.recap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 0;
+  padding: 20px 24px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.recapItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recapItem dt {
+  font-size: 12px;
+  color: #999;
+}
+
+.recapItem dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+.recapLettres {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #71717a;
+}
+
+.erreurCapital {
+  margin-top: 16px;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .carteHaut {
+    flex-wrap: wrap;
+  }
+
+  .recap {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================
+   Étape Offres
+   ============================
+   Reprise de .pricing-* de css/creation.css. La formule recommandée est surélevée
+   et porte sa pastille, jusqu'à ce qu'un choix soit fait : la carte retenue prend
+   alors le liseré, et la recommandation s'efface pour ne pas se disputer le regard
+   avec elle. */
+
+.offres {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: stretch;
+  gap: 28px;
+  padding-top: 20px;
+}
+
+.offre {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 36px 28px 32px;
+  background: #fff;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 18px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.offre:hover {
+  border-color: #999;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.offreEnRetrait {
+  opacity: 0.92;
+}
+
+.offreEnRetrait:hover {
+  transform: translateY(-4px);
+}
+
+.offreRecommandee {
+  border-color: #111;
+  border-width: 2px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+  transform: translateY(-8px);
+}
+
+.offreRecommandee:hover {
+  border-color: #111;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.offreRetenue {
+  border-color: #111;
+  border-width: 2px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  opacity: 1;
+}
+
+.offrePastille {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 14px;
+  border-radius: 100px;
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.offreNom {
+  margin: 0 0 16px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #111;
+}
+
+.offrePrix {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin: 0 0 6px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: #111;
+}
+
+.offrePrix sup {
+  top: 0;
+  vertical-align: baseline;
+  font-size: 14px;
+  font-weight: 500;
+  color: #999;
+}
+
+/* Les frais annexes sont annoncés à côté du prix : les cacher serait trompeur. */
+.offreFrais {
+  margin: 0 0 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #888;
+}
+
+.offreDesc {
+  margin: 12px 0 24px;
+  min-height: 63px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.offreBouton {
+  width: 100%;
+  margin: 0;
+  padding: 13px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  background: transparent;
+  color: #111;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.offreBouton:hover:not(:disabled) {
+  border-color: #111;
+  background: #f5f5f5;
+}
+
+.offreRecommandee .offreBouton,
+.offreRetenue .offreBouton {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.offreRecommandee .offreBouton:hover:not(:disabled),
+.offreRetenue .offreBouton:hover:not(:disabled) {
+  background: #222;
+  border-color: #222;
+}
+
+.offreInclut {
+  margin: 16px 0 14px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #111;
+}
+
+.offreContenu {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offreContenu li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 13.5px;
+  color: #333;
+  line-height: 1.45;
+}
+
+.offreContenu li svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #22c55e;
+}
+
+/* ============================
+   Étape Mes documents
+   ============================ */
+
+.actes {
+  margin-top: 20px;
+  padding: 20px 24px 22px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+}
+
+.actesEntete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.actesTitre {
+  margin: 0;
+  font-size: 16px;
+}
+
+.actesBouton {
+  margin: 0;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #111;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.actesBouton:hover:not(:disabled) {
+  background: #2a2a2c;
+  border-color: transparent;
+}
+
+.actesBouton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actesVide {
+  margin: 0;
+  font-size: 13.5px;
+  color: #71717a;
+  line-height: 1.5;
+}
+
+.actesListe {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actesListe li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f2f2f2;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
+.actesListe li:last-child {
+  border-bottom: none;
+}
+
+.acteNom {
+  min-width: 0;
+  font-size: 13.5px;
+  color: #111;
+}
+
+.acteLien {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+.acteAbsent {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: #a1a1aa;
+}
+
+@media (max-width: 900px) {
+  .offres {
+    grid-template-columns: 1fr;
+  }
+
+  .offreRecommandee {
+    transform: none;
+  }
+}
