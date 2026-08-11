@@ -94,6 +94,11 @@ const PDF_CACHE_MAX = 50;
 
 const DOCX_LIB_PATH = path.join(__dirname, "docx.js");
 function getPdfCacheKey(template, data) {
+  // Le dossier des gabarits est résolu par docx.cjs : le nommer ici une seconde
+  // fois finirait par diverger. La constante manquait, et toute clé de cache
+  // demandée levait « TEMPLATES is not defined » - défaut resté dormant tant que
+  // personne ne passait de clé.
+  const { TEMPLATES } = require("./docx.cjs");
   const templatePath = path.join(TEMPLATES, path.basename(template));
   let mtime = "";
   try { mtime = fs.statSync(templatePath).mtimeMs.toString(); } catch (e) {}

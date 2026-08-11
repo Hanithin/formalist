@@ -1227,4 +1227,4 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
   return zip.generate({ type: "nodebuffer" });
 }
 
-module.exports = { templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature };
+module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature };

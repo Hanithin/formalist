@@ -43,6 +43,8 @@ export const GET = route(async (requete: Request) => {
   }
 
   try {
+    // La conversion cache sur l'empreinte du contenu : rouvrir un aperçu ne
+    // relance pas LibreOffice.
     const pdf = await convertirEnPdf(docx);
     return new NextResponse(new Uint8Array(pdf), {
       headers: {

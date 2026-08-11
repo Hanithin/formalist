@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { journal } from "@/lib/journal";
 
@@ -44,6 +45,10 @@ export class ConversionImpossible extends Error {
  *
  * @param gabarit et @param donnees ne servent qu'à la clé de cache : deux
  * conversions du même document ne relancent pas LibreOffice.
+ *
+ * Sans gabarit - un fichier déjà déposé, dont on ne connaît que les octets - la
+ * clé est l'empreinte du contenu. Rouvrir un aperçu ne relance donc pas une
+ * conversion d'une seconde.
  */
 export async function convertirEnPdf(
   docx: Buffer,
@@ -52,15 +57,16 @@ export async function convertirEnPdf(
 ): Promise<Buffer> {
   const pdf = charger();
 
-  const cle = gabarit ? pdf.getPdfCacheKey(gabarit, donnees ?? {}) : null;
-  if (cle) {
-    const enCache = pdf.getCachedPdf(cle);
-    if (enCache) return enCache;
-  }
+  const cle = gabarit
+    ? pdf.getPdfCacheKey(gabarit, donnees ?? {})
+    : createHash("md5").update(docx).digest("hex");
+
+  const enCache = pdf.getCachedPdf(cle);
+  if (enCache) return enCache;
 
   try {
     const converti = await pdf.enqueueConversion(docx);
-    if (cle) pdf.setCachedPdf(cle, converti);
+    pdf.setCachedPdf(cle, converti);
     return converti;
   } catch (e) {
     throw new ConversionImpossible(e);
