@@ -3,8 +3,11 @@
 import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  SANS_CHAMP_OBLIGATOIRE,
   verifierEtape,
   avancementParcours,
+  libellesDesAssocies,
+  motAssocie,
   BANQUES,
   MODES_DOMICILIATION,
   OPTIONS_FISCALES,
@@ -14,6 +17,8 @@ import {
 } from "@/domain/formalite/parcours";
 import { FORMES_PROPOSEES, FORMES, regle } from "@/domain/formalite/formes";
 import { Adresse, Ville } from "./Adresse";
+import { Choix } from "./Choix";
+import { DateChoisie } from "./DateChoisie";
 import { Associes } from "./Associes";
 import { Actes, type ActeProduit } from "./Actes";
 import { Capital } from "./Capital";
@@ -70,7 +75,7 @@ function Champ({
     <div className={pleineLargeur ? `${styles.field} ${styles.full}` : styles.field}>
       {/* L'astérisque est posée par le style, pas écrite dans le libellé : dans
           le texte, elle ferait partie du nom du champ. */}
-      <label htmlFor={id} className={requis ? styles.requis : undefined}>
+      <label htmlFor={id} className={requis && !SANS_CHAMP_OBLIGATOIRE ? styles.requis : undefined}>
         {libelle}
       </label>
       {children}
@@ -140,6 +145,22 @@ export function Parcours({
 
   const titreDirigeant = regle(brouillon.forme)?.titreDirigeant ?? "Dirigeant";
 
+  /**
+   * L'étape des associés change de nom : une société par actions a des
+   * actionnaires, et le pluriel n'apparaît qu'au deuxième. Les autres étapes
+   * gardent le titre de leur description.
+   */
+  const libellesAssocies = libellesDesAssocies(
+    brouillon.forme,
+    (brouillon.associes ?? []).length
+  );
+  const titreDe = (e: Etape) =>
+    e.identifiant === "associes" ? libellesAssocies.titre : e.titre;
+  const descriptionDe = (e: Etape) =>
+    e.identifiant === "associes" ? libellesAssocies.description : e.description;
+  const libelleCourtDe = (e: Etape) =>
+    e.identifiant === "associes" ? libellesAssocies.libelleCourt : e.libelleCourt;
+
   return (
     <>
       {/* Les segments sont des frères des étapes, pas leurs enfants : c'est eux
@@ -154,7 +175,7 @@ export function Parcours({
             <Fragment key={e.numero}>
               <div className={`${styles.step} ${ton}`} aria-current={courante ? "step" : undefined}>
                 <span className={styles.stepCircle}>{franchie ? <Coche /> : e.numero}</span>
-                <span className={styles.stepLabel}>{e.titre}</span>
+                <span className={styles.stepLabel}>{libelleCourtDe(e)}</span>
               </div>
               {i < etapes.length - 1 && (
                 <span
@@ -169,25 +190,23 @@ export function Parcours({
 
       <section className={styles.formCard}>
         <p className={styles.avancement}>{avancement}% renseigné</p>
-        <h2>{etape.titre}</h2>
-        <p className={styles.formDesc}>{etape.description}</p>
+        <h2>{titreDe(etape)}</h2>
+        <p className={styles.formDesc}>{descriptionDe(etape)}</p>
 
         <div className={styles.formGrid}>
           {etape.identifiant === "societe" && (
             <>
               <Champ id="forme" libelle="Forme juridique" requis anomalie={anomalies.forme}>
-                <select
+                <Choix
                   id="forme"
-                  value={brouillon.forme ?? ""}
-                  onChange={(e) => modifier("forme", e.target.value)}
-                >
-                  <option value="">Choisissez une forme</option>
-                  {FORMES_PROPOSEES.map((f) => (
-                    <option key={f} value={f}>
-                      {FORMES[f].libelle} - {FORMES[f].description}
-                    </option>
-                  ))}
-                </select>
+                  valeur={brouillon.forme ?? ""}
+                  placeholder="Choisissez une forme"
+                  options={FORMES_PROPOSEES.map((f) => ({
+                    valeur: f,
+                    libelle: FORMES[f].libelle + " - " + FORMES[f].description,
+                  }))}
+                  surChangement={(v) => modifier("forme", v)}
+                />
               </Champ>
 
               <Champ
@@ -243,18 +262,12 @@ export function Parcours({
               </Champ>
 
               <Champ id="modeDomiciliation" libelle="Mode de domiciliation">
-                <select
+                <Choix
                   id="modeDomiciliation"
-                  value={brouillon.modeDomiciliation ?? ""}
-                  onChange={(e) => modifier("modeDomiciliation", e.target.value)}
-                >
-                  <option value="">Choisir...</option>
-                  {MODES_DOMICILIATION.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                  valeur={brouillon.modeDomiciliation ?? ""}
+                  options={MODES_DOMICILIATION.map((m) => ({ valeur: m, libelle: m }))}
+                  surChangement={(v) => modifier("modeDomiciliation", v)}
+                />
               </Champ>
 
               {/* Le montant du capital est saisi ici, comme dans le parcours
@@ -272,18 +285,12 @@ export function Parcours({
               </Champ>
 
               <Champ id="banque" libelle="Banque">
-                <select
+                <Choix
                   id="banque"
-                  value={brouillon.banque ?? ""}
-                  onChange={(e) => modifier("banque", e.target.value)}
-                >
-                  <option value="">Choisir...</option>
-                  {BANQUES.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
+                  valeur={brouillon.banque ?? ""}
+                  options={BANQUES.map((b) => ({ valeur: b, libelle: b }))}
+                  surChangement={(v) => modifier("banque", v)}
+                />
               </Champ>
 
               {/* « Autre » ouvre la saisie : c'est le nom qui figure sur
@@ -343,11 +350,10 @@ export function Parcours({
               )}
 
               <Champ id="dateDebutActivite" libelle="Date de début d'activité">
-                <input
+                <DateChoisie
                   id="dateDebutActivite"
-                  type="date"
-                  value={brouillon.dateDebutActivite ?? ""}
-                  onChange={(e) => modifier("dateDebutActivite", e.target.value)}
+                  valeur={brouillon.dateDebutActivite ?? ""}
+                  surChangement={(iso) => modifier("dateDebutActivite", iso)}
                 />
               </Champ>
 
@@ -355,11 +361,10 @@ export function Parcours({
                 id="dateCloturePremierExercice"
                 libelle="Date de clôture de la première année"
               >
-                <input
+                <DateChoisie
                   id="dateCloturePremierExercice"
-                  type="date"
-                  value={brouillon.dateCloturePremierExercice ?? ""}
-                  onChange={(e) => modifier("dateCloturePremierExercice", e.target.value)}
+                  valeur={brouillon.dateCloturePremierExercice ?? ""}
+                  surChangement={(iso) => modifier("dateCloturePremierExercice", iso)}
                 />
               </Champ>
 
@@ -375,33 +380,21 @@ export function Parcours({
               </Champ>
 
               <Champ id="optionFiscale" libelle="Option fiscale">
-                <select
+                <Choix
                   id="optionFiscale"
-                  value={brouillon.optionFiscale ?? ""}
-                  onChange={(e) => modifier("optionFiscale", e.target.value)}
-                >
-                  <option value="">Choisir...</option>
-                  {OPTIONS_FISCALES.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
+                  valeur={brouillon.optionFiscale ?? ""}
+                  options={OPTIONS_FISCALES.map((o) => ({ valeur: o, libelle: o }))}
+                  surChangement={(v) => modifier("optionFiscale", v)}
+                />
               </Champ>
 
               <Champ id="regimeTva" libelle="Régime TVA">
-                <select
+                <Choix
                   id="regimeTva"
-                  value={brouillon.regimeTva ?? ""}
-                  onChange={(e) => modifier("regimeTva", e.target.value)}
-                >
-                  <option value="">Choisir...</option>
-                  {REGIMES_TVA.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
+                  valeur={brouillon.regimeTva ?? ""}
+                  options={REGIMES_TVA.map((r) => ({ valeur: r, libelle: r }))}
+                  surChangement={(v) => modifier("regimeTva", v)}
+                />
               </Champ>
 
               <Champ
@@ -422,13 +415,12 @@ export function Parcours({
             </>
           )}
 
-          {/* Les associés font partie de l'étape « Société » : c'est le
-              découpage du parcours d'origine. */}
-          {etape.identifiant === "societe" && (
+          {etape.identifiant === "associes" && (
             <Associes
               associes={brouillon.associes ?? []}
               surChangement={(v) => modifier("associes", v)}
               anomalies={anomalies}
+              mot={motAssocie(brouillon.forme)}
             />
           )}
 

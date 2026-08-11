@@ -6,10 +6,12 @@ import {
   etapeAccessible,
   avancementParcours,
   associesProposables,
+  libellesDesAssocies,
+  motAssocie,
   type Brouillon,
 } from "@/domain/formalite/parcours";
 
-/** Les six étapes du parcours d'origine : les associés sont dans la première. */
+/** Les sept étapes du parcours d'origine, les associés en deuxième. */
 const societe: Brouillon = {
   forme: "SASU",
   denomination: "ATELIER MERIDIEN",
@@ -36,10 +38,11 @@ const complet: Brouillon = {
   offre: "starter",
 };
 
-describe("le parcours suit les six étapes d'origine", () => {
+describe("le parcours suit les sept étapes d'origine", () => {
   it("les libellés courts sont ceux du fil d'étapes", () => {
     expect(ETAPES.map((e) => e.libelleCourt)).toEqual([
       "Société",
+      "Associés",
       "Dirigeants",
       "Capital",
       "Documents",
@@ -49,12 +52,39 @@ describe("le parcours suit les six étapes d'origine", () => {
   });
 });
 
-describe("étape 1, la société et ses associés", () => {
+describe("le mot qui désigne les porteurs de parts", () => {
+  it("une société par actions a des actionnaires", () => {
+    expect(motAssocie("SAS")).toBe("Actionnaire");
+    expect(motAssocie("SASU")).toBe("Actionnaire");
+    expect(motAssocie("SA")).toBe("Actionnaire");
+  });
+
+  it("les autres formes ont des associés", () => {
+    expect(motAssocie("SARL")).toBe("Associé");
+    expect(motAssocie("SCI")).toBe("Associé");
+    expect(motAssocie(undefined)).toBe("Associé");
+  });
+
+  it("le pluriel n'apparaît qu'au deuxième", () => {
+    expect(libellesDesAssocies("SARL", 1).libelleCourt).toBe("Associé");
+    expect(libellesDesAssocies("SARL", 2).libelleCourt).toBe("Associés");
+  });
+
+  it("une forme unipersonnelle reste au singulier", () => {
+    expect(libellesDesAssocies("SASU", 1).libelleCourt).toBe("Actionnaire");
+    expect(libellesDesAssocies("SASU", 1).description).toContain("unique");
+  });
+});
+
+describe("étape 1, la société", () => {
   it("un brouillon vide manque de tout", () => {
     const champs = verifierEtape(1, {}).map((a) => a.champ);
     expect(champs).toContain("forme");
     expect(champs).toContain("denomination");
-    expect(champs).toContain("associes");
+  });
+
+  it("les associés ne sont plus jugés ici : ils ont leur étape", () => {
+    expect(verifierEtape(1, { ...societe, associes: [] })).toEqual([]);
   });
 
   it("complète, elle ne signale rien", () => {
@@ -71,23 +101,31 @@ describe("étape 1, la société et ses associés", () => {
   });
 
   it("une SASU refuse deux associés", () => {
-    const champs = verifierEtape(1, {
+    const champs = verifierEtape(2, {
       ...societe,
       associes: [...societe.associes!, { type: "physique", personne: { prenom: "B", nom: "B" } }],
     }).map((a) => a.champ);
     expect(champs).toContain("associes");
   });
 
-  it("un associé sans nom est signalé, avec son rang", () => {
-    const anomalies = verifierEtape(1, {
+  it("un porteur sans nom est signalé, avec son rang et le bon mot", () => {
+    // La société d'essai est une SASU : on parle donc d'actionnaire.
+    const anomalies = verifierEtape(2, {
       ...societe,
       associes: [{ type: "physique", personne: { prenom: "Camille" } }],
     });
-    expect(anomalies.some((a) => a.message.includes("associé 1"))).toBe(true);
+    expect(anomalies.some((a) => a.message.includes("actionnaire 1"))).toBe(true);
+
+    const sarl = verifierEtape(2, {
+      ...societe,
+      forme: "SARL",
+      associes: [{ type: "physique", personne: { prenom: "Camille" } }],
+    });
+    expect(sarl.some((a) => a.message.includes("associé 1"))).toBe(true);
   });
 
   it("la date de naissance est exigée : le greffe la demande", () => {
-    const anomalies = verifierEtape(1, {
+    const anomalies = verifierEtape(2, {
       ...societe,
       associes: [{ type: "physique", personne: { prenom: "Camille", nom: "Durand" } }],
     });
@@ -95,7 +133,7 @@ describe("étape 1, la société et ses associés", () => {
   });
 
   it("un associé marié doit renseigner son conjoint", () => {
-    const anomalies = verifierEtape(1, {
+    const anomalies = verifierEtape(2, {
       ...societe,
       associes: [
         {
@@ -114,7 +152,7 @@ describe("étape 1, la société et ses associés", () => {
 
   it("un associé célibataire n'a pas de conjoint à renseigner", () => {
     expect(
-      verifierEtape(1, {
+      verifierEtape(2, {
         ...societe,
         associes: [
           {
@@ -132,7 +170,7 @@ describe("étape 1, la société et ses associés", () => {
   });
 
   it("un associé personne morale est jugé sur sa dénomination", () => {
-    const anomalies = verifierEtape(1, {
+    const anomalies = verifierEtape(2, {
       ...societe,
       associes: [{ type: "morale", societe: {} }],
     });
@@ -149,31 +187,31 @@ describe("étape 1, la société et ses associés", () => {
   });
 });
 
-describe("étape 2, les dirigeants", () => {
+describe("étape 3, les dirigeants", () => {
   it("le mot employé suit la forme juridique", () => {
-    expect(verifierEtape(2, { forme: "SARL" })[0].message).toContain("gérant");
-    expect(verifierEtape(2, { forme: "SASU" })[0].message).toContain("président");
+    expect(verifierEtape(3, { forme: "SARL" })[0].message).toContain("gérant");
+    expect(verifierEtape(3, { forme: "SASU" })[0].message).toContain("président");
   });
 
   it("un dirigeant repris d'un associé n'a pas d'état civil à saisir", () => {
-    expect(verifierEtape(2, { ...societe, dirigeants: [{ associe: 0 }] })).toEqual([]);
+    expect(verifierEtape(3, { ...societe, dirigeants: [{ associe: 0 }] })).toEqual([]);
   });
 
   it("un dirigeant qui désigne un associé retiré est signalé", () => {
-    const anomalies = verifierEtape(2, { ...societe, dirigeants: [{ associe: 4 }] });
+    const anomalies = verifierEtape(3, { ...societe, dirigeants: [{ associe: 4 }] });
     expect(anomalies[0].message).toContain("n'existe plus");
   });
 
   it("une autre personne doit être nommée", () => {
-    const anomalies = verifierEtape(2, { ...societe, dirigeants: [{ personne: {} }] });
+    const anomalies = verifierEtape(3, { ...societe, dirigeants: [{ personne: {} }] });
     expect(anomalies[0].champ).toBe("dirigeants.0");
   });
 });
 
-describe("étape 3, le capital", () => {
+describe("étape 4, le capital", () => {
   it("la répartition doit couvrir le capital", () => {
     // 50 parts sur 100 émises, à 20 € la part : 1 000 € souscrits sur 2 000 €.
-    const anomalies = verifierEtape(3, {
+    const anomalies = verifierEtape(4, {
       ...complet,
       capital: 2000,
       capitalLibere: 2000,
@@ -184,16 +222,16 @@ describe("étape 3, le capital", () => {
   });
 
   it("cohérente, elle passe", () => {
-    expect(verifierEtape(3, complet)).toEqual([]);
+    expect(verifierEtape(4, complet)).toEqual([]);
   });
 
   it("les parts réparties doivent faire le total annoncé", () => {
-    const anomalies = verifierEtape(3, { ...complet, partsTotales: 200 });
+    const anomalies = verifierEtape(4, { ...complet, partsTotales: 200 });
     expect(anomalies.some((a) => a.champ === "partsTotales")).toBe(true);
   });
 
   it("un versement ne peut pas dépasser ce qui est souscrit", () => {
-    const anomalies = verifierEtape(3, {
+    const anomalies = verifierEtape(4, {
       ...complet,
       associes: [{ ...complet.associes![0], versement: 5000 }],
     });
@@ -203,15 +241,15 @@ describe("étape 3, le capital", () => {
 
 describe("étapes qui ne bloquent pas", () => {
   it("les pièces se vérifient à leur dépôt", () => {
-    expect(verifierEtape(4, {})).toEqual([]);
+    expect(verifierEtape(5, {})).toEqual([]);
   });
 
   it("les actes sont produits par le dossier, il n'y a rien à saisir", () => {
-    expect(verifierEtape(6, {})).toEqual([]);
+    expect(verifierEtape(7, {})).toEqual([]);
   });
 
   it("l'offre, elle, est exigée", () => {
-    expect(verifierEtape(5, {})[0].champ).toBe("offre");
+    expect(verifierEtape(6, {})[0].champ).toBe("offre");
   });
 });
 
@@ -223,12 +261,12 @@ describe("progression dans le parcours", () => {
   it("aucune étape vide ne se déclare complète", () => {
     // Sans forme juridique, les étapes des associés et du capital passaient à
     // travers les règles de forme et se disaient faites alors que rien n'était saisi.
-    expect(verifierEtape(1, {}).length).toBeGreaterThan(0);
-    expect(verifierEtape(3, {}).length).toBeGreaterThan(0);
+    expect(verifierEtape(2, {}).length).toBeGreaterThan(0);
+    expect(verifierEtape(4, {}).length).toBeGreaterThan(0);
   });
 
   it("la société renseignée fait avancer d'un cran", () => {
-    expect(premiereEtapeIncomplete(societe)).toBe(2);
+    expect(premiereEtapeIncomplete(societe)).toBe(3);
   });
 
   it("un brouillon complet ne bloque plus", () => {
@@ -237,7 +275,7 @@ describe("progression dans le parcours", () => {
 
   it("on ne saute pas par-dessus une étape incomplète", () => {
     // Demander le capital sans dirigeant ramène à l'étape des dirigeants.
-    expect(etapeAccessible(3, societe)).toBe(2);
+    expect(etapeAccessible(4, societe)).toBe(3);
   });
 
   it("revenir en arrière reste libre", () => {
@@ -251,7 +289,7 @@ describe("progression dans le parcours", () => {
 
   it("l'avancement se compte en étapes complètes", () => {
     // Sur un brouillon vide, seules les pièces et les actes ne bloquent pas.
-    expect(avancementParcours({})).toBe(33);
+    expect(avancementParcours({})).toBe(29);
     expect(avancementParcours(complet)).toBe(100);
   });
 });
@@ -314,11 +352,11 @@ describe("le capital se répartit en parts, pas en euros saisis", () => {
   };
 
   it("des parts qui couvrent le capital suffisent", () => {
-    expect(verifierEtape(3, parParts)).toEqual([]);
+    expect(verifierEtape(4, parParts)).toEqual([]);
   });
 
   it("des parts qui ne le couvrent pas sont signalées", () => {
-    const anomalies = verifierEtape(3, {
+    const anomalies = verifierEtape(4, {
       ...parParts,
       partsTotales: 200,
       associes: [{ ...parParts.associes![0], parts: 100 }],
@@ -330,7 +368,7 @@ describe("le capital se répartit en parts, pas en euros saisis", () => {
 
   it("un apport en nature compte dans le souscrit", () => {
     expect(
-      verifierEtape(3, {
+      verifierEtape(4, {
         ...parParts,
         associes: [
           {

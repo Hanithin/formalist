@@ -95,10 +95,9 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       phase: d.phase ?? 1,
       banque: banqueDe(brouillon),
       capital: brouillon.capital ?? null,
-      // Les deux premières étapes renseignent la société avec ses associés, puis
-      // son dirigeant : au-delà, les informations sont complètes. Le seuil valait
-      // 3 du temps où les associés formaient une étape à part.
-      informationsCompletes: (premiereEtapeIncomplete(brouillon) ?? 9) > 2,
+      // Les trois premières étapes du parcours renseignent la société, ses
+      // associés et son dirigeant : au-delà, les informations sont complètes.
+      informationsCompletes: (premiereEtapeIncomplete(brouillon) ?? 9) > 3,
       documentsRejetes: rejetesPar.get(d.id) ?? 0,
       signaturesEnAttente: compteurs.enAttente,
       signaturesTotal: compteurs.total,

@@ -10,6 +10,7 @@ import {
 } from "@/domain/formalite/etat-civil";
 import type { Associe } from "@/domain/formalite/parcours";
 import { Adresse } from "./Adresse";
+import { Choix } from "./Choix";
 import { Champ, EtatCivil } from "./EtatCivil";
 import { RechercheSociete } from "./RechercheSociete";
 import styles from "./Parcours.module.css";
@@ -29,9 +30,11 @@ interface Props {
   associes: Associe[];
   surChangement: (associes: Associe[]) => void;
   anomalies: Record<string, string>;
+  /** « Actionnaire » pour une société par actions, « Associé » sinon. */
+  mot: string;
 }
 
-export function Associes({ associes, surChangement, anomalies }: Props) {
+export function Associes({ associes, surChangement, anomalies, mot }: Props) {
   const [actif, setActif] = useState(0);
   const rang = Math.min(actif, Math.max(associes.length - 1, 0));
   const associe = associes[rang];
@@ -79,7 +82,7 @@ export function Associes({ associes, surChangement, anomalies }: Props) {
 
   return (
     <div className={styles.full}>
-      <div className={styles.onglets} role="tablist" aria-label="Associés">
+      <div className={styles.onglets} role="tablist" aria-label={mot + "s"}>
         {associes.map((a, i) => (
           <span key={i} className={styles.ongletEnveloppe}>
             <button
@@ -92,15 +95,15 @@ export function Associes({ associes, surChangement, anomalies }: Props) {
               onClick={() => setActif(i)}
             >
               {renseigne(a) && <span className={styles.ongletPastille} aria-hidden="true" />}
-              {nomDeLaPartie(a) || "Associé " + (i + 1)}
+              {nomDeLaPartie(a) || mot + " " + (i + 1)}
             </button>
 
-            {/* Le dernier associé ne se retire pas : la société en exige au moins un. */}
+            {/* Le dernier ne se retire pas : la société en exige au moins un. */}
             {associes.length > 1 && (
               <button
                 type="button"
                 className={styles.ongletFermer}
-                aria-label={"Retirer " + (nomDeLaPartie(a) || "l'associé " + (i + 1))}
+                aria-label={"Retirer " + (nomDeLaPartie(a) || "l'" + mot.toLowerCase() + " " + (i + 1))}
                 onClick={() => retirer(i)}
               >
                 <svg
@@ -131,7 +134,7 @@ export function Associes({ associes, surChangement, anomalies }: Props) {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Ajouter un associé
+          Ajouter un {mot.toLowerCase()}
         </button>
       </div>
 
@@ -146,16 +149,15 @@ export function Associes({ associes, surChangement, anomalies }: Props) {
         >
           <div className={styles.formGrid}>
             <Champ id={"type-" + rang} libelle="Type d'actionnaire">
-              <select
+              <Choix
                 id={"type-" + rang}
-                value={associe.type ?? "physique"}
-                onChange={(e) =>
-                  remplacer(rang, { type: e.target.value as "physique" | "morale" })
-                }
-              >
-                <option value="physique">Personne physique</option>
-                <option value="morale">Personne morale</option>
-              </select>
+                valeur={associe.type ?? "physique"}
+                options={[
+                  { valeur: "physique", libelle: "Personne physique" },
+                  { valeur: "morale", libelle: "Personne morale" },
+                ]}
+                surChangement={(v) => remplacer(rang, { type: v as "physique" | "morale" })}
+              />
             </Champ>
 
             {associe.type === "morale" ? (
@@ -279,25 +281,19 @@ function Morale({
 
         <div className={styles.formGrid}>
           <Champ id={"repCivilite-" + rang} libelle="Civilité">
-            <select
+            <Choix
               id={"repCivilite-" + rang}
-              value={societe.representant?.civilite ?? ""}
-              onChange={(e) =>
+              valeur={societe.representant?.civilite ?? ""}
+              options={CIVILITES.map((c) => ({ valeur: c, libelle: c }))}
+              surChangement={(v) =>
                 surChangement({
                   representant: {
                     ...societe.representant,
-                    civilite: (e.target.value || undefined) as PersonnePhysique["civilite"],
+                    civilite: (v || undefined) as PersonnePhysique["civilite"],
                   },
                 })
               }
-            >
-              <option value="">Choisir...</option>
-              {CIVILITES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            />
           </Champ>
 
           <Champ id={"repPrenom-" + rang} libelle="Prénom">

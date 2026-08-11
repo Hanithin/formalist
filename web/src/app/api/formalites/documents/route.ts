@@ -5,6 +5,7 @@ import { ouvrirBrouillon } from "@/infrastructure/db/depots/brouillons";
 import { documentsAProduire } from "@/domain/formalite/documents";
 import { premiereEtapeIncomplete } from "@/domain/formalite/parcours";
 import { donneesDeGabarit } from "@/domain/formalite/gabarit";
+import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { genererDocument } from "@/infrastructure/documents/generation";
 import { enregistrerDocumentProduit } from "@/infrastructure/documents/depot";
 import { nomDeStockage } from "@/lib/fichiers";
@@ -27,7 +28,7 @@ export const POST = route(async (requete: Request) => {
   // Un dossier incomplet produirait des documents troués, qui seraient déposés
   // au greffe en l'état. Mieux vaut dire ce qui manque.
   const bloquante = premiereEtapeIncomplete(brouillon);
-  if (bloquante !== null && bloquante < 4) {
+  if (bloquante !== null && bloquante < 5) {
     return NextResponse.json(
       { error: "Le dossier est incomplet", etape: bloquante },
       { status: 400 }
@@ -39,7 +40,11 @@ export const POST = route(async (requete: Request) => {
     aUnDirigeant: (brouillon.dirigeants ?? []).length > 0,
   });
 
-  const donnees = donneesDeGabarit(brouillon);
+  // La ville du RCS vient de la table du registre, pas de la commune du siège :
+  // Sainte-Foy-lès-Lyon relève du tribunal de commerce de Lyon.
+  const donnees = donneesDeGabarit(brouillon, {
+    villeRcs: villeDuRcs(brouillon.codePostal, brouillon.ville),
+  });
   const produits = [];
 
   for (const document of aProduire) {

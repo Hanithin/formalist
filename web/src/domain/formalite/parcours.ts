@@ -1,4 +1,11 @@
-import { regle, verifierAssocies, verifierCapital, verifierRepartition, type Anomalie } from "./formes";
+import {
+  estUnipersonnelle,
+  regle,
+  verifierAssocies,
+  verifierCapital,
+  verifierRepartition,
+  type Anomalie,
+} from "./formes";
 import { conjointRequis, nomDeLaPartie, type PersonneMorale, type PersonnePhysique } from "./etat-civil";
 import { apportsDe, valeurNominale } from "./capital";
 
@@ -14,10 +21,9 @@ import { apportsDe, valeurNominale } from "./capital";
  * Le brouillon vit désormais dans le dossier. Ce module décrit les étapes et dit,
  * pour un brouillon donné, ce qui manque encore.
  *
- * Les six étapes sont celles du parcours d'origine (public/creation.html) : les
- * associés sont dans l'étape « Société », et la dernière montre les actes produits.
- * Un découpage en sept, avec les associés à part, avait été introduit en passant à
- * Next ; il ne correspondait plus au dossier que les clients connaissent.
+ * Les sept étapes sont celles du parcours d'origine (public/creation.html), dans
+ * son ordre : société, associés, dirigeants, capital, documents, offres, puis les
+ * actes produits.
  */
 
 export interface Etape {
@@ -34,45 +40,99 @@ export const ETAPES: Etape[] = [
     numero: 1,
     identifiant: "societe",
     titre: "Informations de la société",
-    description: "Forme, nom, siège, activité, capital et associés.",
+    description: "Renseignez les informations générales de votre future société.",
     libelleCourt: "Société",
   },
   {
     numero: 2,
-    identifiant: "dirigeants",
-    titre: "Dirigeants",
-    description: "Qui la représente et l'engage.",
-    libelleCourt: "Dirigeants",
+    identifiant: "associes",
+    titre: "Associés",
+    description: "Ajoutez les associés de votre société. Minimum 2 pour une SAS, SARL ou SCI.",
+    libelleCourt: "Associés",
   },
   {
     numero: 3,
-    identifiant: "capital",
-    titre: "Répartition du capital",
-    description: "Parts, montants souscrits et libération.",
-    libelleCourt: "Capital",
+    identifiant: "dirigeants",
+    titre: "Dirigeants",
+    description: "Désignez le ou les dirigeants de la société.",
+    libelleCourt: "Dirigeants",
   },
   {
     numero: 4,
-    identifiant: "documents",
-    titre: "Pièces justificatives",
-    description: "Identité, domicile et attestation de dépôt.",
-    libelleCourt: "Documents",
+    identifiant: "capital",
+    titre: "Répartition du capital",
+    description:
+      "Répartissez le capital social entre les associés. 100% du capital doit être distribué.",
+    libelleCourt: "Capital",
   },
   {
     numero: 5,
-    identifiant: "offres",
-    titre: "Votre offre",
-    description: "Ce que nous prenons en charge.",
-    libelleCourt: "Offres",
+    identifiant: "documents",
+    titre: "Pièces justificatives",
+    description:
+      "Téléversez les documents nécessaires à la constitution de votre dossier. Formats acceptés : PDF, JPG, PNG (max 10 Mo).",
+    libelleCourt: "Documents",
   },
   {
     numero: 6,
+    identifiant: "offres",
+    titre: "Choisissez votre offre",
+    description: "Sélectionnez l'offre qui correspond à vos besoins.",
+    libelleCourt: "Offres",
+  },
+  {
+    numero: 7,
     identifiant: "actes",
     titre: "Mes documents",
     description: "Les actes produits, à relire et à signer.",
     libelleCourt: "Mes documents",
   },
 ];
+
+/**
+ * Le mot qui désigne les porteurs de parts, et les libellés de l'étape 2.
+ *
+ * Une société par actions a des actionnaires, les autres des associés : le mot
+ * change le libellé de l'étape, son titre et sa description. C'est ce que faisait
+ * updateAssocieLabel() dans associes.js, et le fil d'étapes d'origine portait pour
+ * cela un identifiant sur ce seul libellé.
+ */
+const FORMES_PAR_ACTIONS = new Set(["SAS", "SASU", "SELAS", "SELASU", "SCA", "SE", "SA"]);
+
+export function motAssocie(forme: string | null | undefined): "Actionnaire" | "Associé" {
+  return FORMES_PAR_ACTIONS.has((forme ?? "").toUpperCase()) ? "Actionnaire" : "Associé";
+}
+
+/**
+ * Le mot qui désigne une fraction du capital.
+ *
+ * Une société par actions émet des actions, les autres des parts sociales. Le mot
+ * figure dans les statuts et dans la liste des souscripteurs : il ne s'invente pas.
+ */
+export function motPart(forme: string | null | undefined, pluriel = false): string {
+  const mot = FORMES_PAR_ACTIONS.has((forme ?? "").toUpperCase()) ? "action" : "part";
+  return pluriel ? mot + "s" : mot;
+}
+
+export function libellesDesAssocies(
+  forme: string | null | undefined,
+  nombre: number
+): { libelleCourt: string; titre: string; description: string } {
+  const mot = motAssocie(forme);
+  const unique = estUnipersonnelle(forme, nombre);
+  // Au singulier tant qu'il n'y en a qu'un : « Associé » puis « Associés ».
+  const pluriel = mot + (unique || nombre < 2 ? "" : "s");
+
+  return {
+    libelleCourt: pluriel,
+    titre: pluriel,
+    description: unique
+      ? "Renseignez l'" + mot.toLowerCase() + " unique de votre société."
+      : "Ajoutez les " +
+        mot.toLowerCase() +
+        "s de votre société. Minimum 2 pour une SAS, SARL ou SCI.",
+  };
+}
 
 /* ---------- Les listes de choix de l'étape 1 ---------- */
 
@@ -188,12 +248,29 @@ export interface Brouillon {
 
 const CODE_POSTAL = /^\d{5}$/;
 
+/**
+ * Interrupteur d'essai : aucun champ obligatoire dans le parcours.
+ *
+ * Mis à 1 dans web/.env, il laisse traverser les sept étapes sans rien saisir -
+ * pour parcourir l'enchaînement et voir les écrans. Rien n'est retiré : les règles
+ * restent écrites juste dessous et reprennent dès que la variable disparaît.
+ *
+ * Trois effets à connaître pendant l'essai : l'avancement affiche 100 %, la phase
+ * enregistrée sur le dossier passe au bout du parcours, et les actes se génèrent
+ * même sur un dossier vide - ils sortiront alors remplis de tirets.
+ *
+ * NEXT_PUBLIC_ parce que la vérification tourne aussi dans le navigateur, à la
+ * sortie de chaque étape. À ne pas laisser en production.
+ */
+export const SANS_CHAMP_OBLIGATOIRE =
+  process.env.NEXT_PUBLIC_PARCOURS_SANS_VALIDATION === "1";
+
 /** Le nom d'un associé pour un message d'anomalie : son nom, ou son rang. */
 function designer(associe: Associe, rang: number): string {
   return nomDeLaPartie(associe) || "l'associé " + (rang + 1);
 }
 
-/** Ce qui manque à l'étape 1 : la société elle-même, puis ses associés. */
+/** Ce qui manque à l'étape 1 : la société elle-même. */
 function verifierSociete(brouillon: Brouillon): Anomalie[] {
   const anomalies: Anomalie[] = [];
 
@@ -221,12 +298,19 @@ function verifierSociete(brouillon: Brouillon): Anomalie[] {
     anomalies.push({ champ: "banqueAutre.nom", message: "Indiquez le nom de la banque" });
   }
 
+  return anomalies;
+}
+
+/** Ce qui manque à l'étape 2 : les porteurs de parts. */
+function verifierLesAssocies(brouillon: Brouillon): Anomalie[] {
+  const anomalies: Anomalie[] = [];
   const associes = brouillon.associes ?? [];
+  const mot = motAssocie(brouillon.forme).toLowerCase();
 
   // Sans associé, l'étape n'est pas faite - même si la forme n'est pas encore
   // choisie. Se reposer sur les règles de forme rendait l'étape vide « complète ».
   if (associes.length === 0) {
-    anomalies.push({ champ: "associes", message: "Ajoutez au moins un associé" });
+    anomalies.push({ champ: "associes", message: "Ajoutez au moins un " + mot });
     return anomalies;
   }
 
@@ -237,7 +321,7 @@ function verifierSociete(brouillon: Brouillon): Anomalie[] {
       if (!a.societe?.denomination?.trim()) {
         anomalies.push({
           champ: "associes." + i,
-          message: "Indiquez la dénomination de l'associé " + (i + 1),
+          message: "Indiquez la dénomination de l'" + mot + " " + (i + 1),
         });
       }
       return;
@@ -247,7 +331,7 @@ function verifierSociete(brouillon: Brouillon): Anomalie[] {
     if (!personne.prenom?.trim() || !personne.nom?.trim()) {
       anomalies.push({
         champ: "associes." + i,
-        message: "Renseignez le prénom et le nom de l'associé " + (i + 1),
+        message: "Renseignez le prénom et le nom de l'" + mot + " " + (i + 1),
       });
     }
     if (!personne.dateDeNaissance) {
@@ -271,11 +355,15 @@ function verifierSociete(brouillon: Brouillon): Anomalie[] {
 
 /** Ce qui manque à une étape donnée. Une liste vide vaut « étape complète ». */
 export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] {
+  // En mode d'essai, aucune étape ne retient : voir SANS_CHAMP_OBLIGATOIRE.
+  if (SANS_CHAMP_OBLIGATOIRE) return [];
+
   const anomalies: Anomalie[] = [];
 
   if (numero === 1) return verifierSociete(brouillon);
+  if (numero === 2) return verifierLesAssocies(brouillon);
 
-  if (numero === 2) {
+  if (numero === 3) {
     const dirigeants = brouillon.dirigeants ?? [];
     const associes = brouillon.associes ?? [];
 
@@ -309,7 +397,7 @@ export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] 
     return anomalies;
   }
 
-  if (numero === 3) {
+  if (numero === 4) {
     const capital = brouillon.capital ?? 0;
     const libere = brouillon.capitalLibere ?? 0;
 
@@ -356,13 +444,13 @@ export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] 
     return anomalies;
   }
 
-  if (numero === 5 && !brouillon.offre) {
+  if (numero === 6 && !brouillon.offre) {
     anomalies.push({ champ: "offre", message: "Choisissez une offre" });
   }
 
-  // Étape 4 : les pièces sont vérifiées à leur dépôt, pas ici. Elle ne bloque
+  // Étape 5 : les pièces sont vérifiées à leur dépôt, pas ici. Elle ne bloque
   // donc jamais le parcours, et compte comme faite dès le départ.
-  // Étape 6 : les actes sont produits par le dossier, il n'y a rien à saisir.
+  // Étape 7 : les actes sont produits par le dossier, il n'y a rien à saisir.
   return anomalies;
 }
 

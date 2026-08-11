@@ -1,6 +1,7 @@
 import { prisma } from "../client";
 import { exigerDossierModifiable } from "./dossiers";
-import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
+import { ETAPES, premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
+import { nombreDEtapes } from "@/domain/formalite/etapes";
 import { monteeEnOffrePermise } from "@/domain/formalite/transitions";
 import { Interdit } from "../utilisateur-courant";
 import { regle } from "@/domain/formalite/formes";
@@ -80,7 +81,14 @@ export async function enregistrerBrouillon(
       societe: fusionne.denomination ?? dossier.societe,
       forme: regle(fusionne.forme) ? fusionne.forme! : dossier.forme,
       offer: fusionne.offre ?? dossier.offer,
-      phase: premiereEtapeIncomplete(fusionne) ?? 6,
+      // Deux échelles se croisent ici : le formulaire compte sept étapes, le cycle
+      // de vie du dossier cinq ou six selon l'offre - c'est cette seconde que
+      // lisent le tableau de bord et l'espace avocat. La progression du formulaire
+      // est donc bornée, sans quoi la vignette annonçait « Étape 7 sur 6 ».
+      phase: Math.min(
+        premiereEtapeIncomplete(fusionne) ?? ETAPES.length,
+        nombreDEtapes(fusionne.offre)
+      ),
       updated_at: new Date(),
     },
   });
