@@ -42,14 +42,19 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
   // Sous le seuil, la liste disparaît sans qu'on ait à la vider : l'état suit la
   // saisie plutôt que d'être remis à zéro depuis un effet.
   const assezLong = valeur.trim().length >= MINIMUM;
-  // La saisie qui vient d'être remplie par un choix ne relance pas de recherche.
-  const choisi = useRef(false);
+
+  /**
+   * L'autocomplétion suit la frappe, jamais une valeur posée par le code.
+   *
+   * Sans cette distinction, remplir l'adresse depuis ailleurs - la recherche au
+   * registre, ou le choix d'une proposition - rouvrait aussitôt la liste sur la
+   * valeur qu'on venait d'écrire.
+   */
+  const frappe = useRef(false);
 
   useEffect(() => {
-    if (choisi.current) {
-      choisi.current = false;
-      return;
-    }
+    if (!frappe.current) return;
+    frappe.current = false;
 
     const terme = valeur.trim();
     if (terme.length < MINIMUM) return;
@@ -97,7 +102,6 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
   }, [valeur]);
 
   function retenir(proposition: Proposition) {
-    choisi.current = true;
     surChangement(proposition.voie);
     surCompletion?.(proposition.codePostal, proposition.ville);
     setOuvert(false);
@@ -115,7 +119,10 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
         aria-expanded={ouvert && assezLong && propositions.length > 0}
         aria-controls={id + "-propositions"}
         aria-autocomplete="list"
-        onChange={(e) => surChangement(e.target.value)}
+        onChange={(e) => {
+          frappe.current = true;
+          surChangement(e.target.value);
+        }}
         onBlur={() => setOuvert(false)}
         onKeyDown={(e) => {
           if (!ouvert || !assezLong || propositions.length === 0) return;
@@ -178,14 +185,13 @@ export function Ville({
 }) {
   const [communes, setCommunes] = useState<{ nom: string; codePostal: string }[]>([]);
   const [ouvert, setOuvert] = useState(false);
-  const choisi = useRef(false);
   const assezLong = valeur.trim().length >= MINIMUM;
+  // Comme pour l'adresse : la liste ne s'ouvre que sur une frappe.
+  const frappe = useRef(false);
 
   useEffect(() => {
-    if (choisi.current) {
-      choisi.current = false;
-      return;
-    }
+    if (!frappe.current) return;
+    frappe.current = false;
 
     const terme = valeur.trim();
     if (terme.length < MINIMUM) return;
@@ -227,7 +233,10 @@ export function Ville({
         aria-expanded={ouvert && assezLong && communes.length > 0}
         aria-controls={id + "-communes"}
         aria-autocomplete="list"
-        onChange={(e) => surChangement(e.target.value)}
+        onChange={(e) => {
+          frappe.current = true;
+          surChangement(e.target.value);
+        }}
         onBlur={() => setOuvert(false)}
       />
 
@@ -240,7 +249,6 @@ export function Ville({
                 className={styles.proposition}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  choisi.current = true;
                   surChangement(c.nom);
                   if (c.codePostal) surCompletion?.(c.codePostal);
                   setOuvert(false);

@@ -4,7 +4,7 @@ import { nomDeLaPartie, nomComplet } from "@/domain/formalite/etat-civil";
 import { regle } from "@/domain/formalite/formes";
 import { apportsDe, valeurNominale } from "@/domain/formalite/capital";
 import { nombreEnFrancais } from "@/domain/formalite/lettres";
-import type { Associe, Brouillon } from "@/domain/formalite/parcours";
+import { motAssocie, motPart, type Associe, type Brouillon } from "@/domain/formalite/parcours";
 import { Champ } from "./EtatCivil";
 import styles from "./Parcours.module.css";
 
@@ -31,6 +31,25 @@ interface Props {
   anomalies: Record<string, string>;
 }
 
+/** La palette des segments, dans l'ordre de la page d'origine. */
+const COULEURS = [
+  "#111",
+  "#6366f1",
+  "#22c55e",
+  "#f59e0b",
+  "#ef4444",
+  "#06b6d4",
+  "#ec4899",
+  "#8b5cf6",
+  "#14b8a6",
+  "#f97316",
+];
+
+/** Un pourcentage à une décimale, sans le zéro inutile : « 33,3 » et « 50 ». */
+function pourcent(valeur: number): string {
+  return valeur.toFixed(1).replace(/\.0$/, "");
+}
+
 function euros(valeur: number): string {
   return valeur.toLocaleString("fr-FR", { maximumFractionDigits: 2 }) + " €";
 }
@@ -54,6 +73,7 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
   const nominale = valeurNominale(brouillon);
 
   const forme = regle(brouillon.forme);
+  const mot = motAssocie(brouillon.forme);
   const minimumLiberation = Math.round((forme?.liberationMinimale ?? 0) * 100);
 
   const detail = associes.map((a) => apportsDe(a, nominale));
@@ -67,6 +87,39 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
   const couverture = capital > 0 ? Math.min((souscrit / capital) * 100, 100) : 0;
   const ton =
     souscrit > capital ? styles.barreTrop : souscrit === capital ? styles.barreOk : styles.barreManque;
+
+  /**
+   * Le dégradé conique du camembert.
+   *
+   * Un segment par associé dans l'ordre de la liste, puis le reste non réparti en
+   * gris. Au-delà de 100 %, le disque passe entièrement au rouge : ce n'est plus
+   * une répartition, c'est une erreur.
+   */
+  const pourcentageGlobal = partsTotales > 0 ? Math.round((partsReparties / partsTotales) * 100) : 0;
+
+  const segments: string[] = [];
+  let degre = 0;
+  detail.forEach((a, i) => {
+    if (a.parts <= 0) return;
+    const angle = partsTotales > 0 ? (a.parts / partsTotales) * 360 : 0;
+    segments.push(
+      COULEURS[i % COULEURS.length] + " " + degre.toFixed(2) + "deg " + (degre + angle).toFixed(2) + "deg"
+    );
+    degre += angle;
+  });
+  if (degre < 360 && partsReparties < partsTotales) {
+    segments.push("#e0e0e0 " + degre.toFixed(2) + "deg 360deg");
+  }
+
+  const gradient =
+    partsReparties > partsTotales
+      ? "conic-gradient(#ef4444 0deg 360deg)"
+      : segments.length > 0
+        ? "conic-gradient(" + segments.join(", ") + ")"
+        : "conic-gradient(#e0e0e0 0deg 360deg)";
+
+  const teinteDuCentre =
+    pourcentageGlobal === 100 ? "#22c55e" : pourcentageGlobal > 100 ? "#ef4444" : "#111";
 
   function modifierAssocie(index: number, valeurs: Partial<Associe>) {
     surAssocies(associes.map((a, i) => (i === index ? { ...a, ...valeurs } : a)));
@@ -106,8 +159,48 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
             {euros(souscrit)} répartis sur {euros(capital)}
           </span>
           <span>
-            {partsReparties} / {partsTotales || "?"} parts
+            {partsReparties} / {partsTotales || "?"} {motPart(brouillon.forme, true)}
           </span>
+        </div>
+      </div>
+
+      {/* ---------- Le camembert de la répartition ---------- */}
+      <div className={styles.chartSection}>
+        <div className={styles.donutWrap}>
+          <div className={styles.donut} style={{ background: gradient }} />
+          <div className={styles.donutCenter}>
+            <span className={styles.donutPct} style={{ color: teinteDuCentre }}>
+              {pourcentageGlobal}%
+            </span>
+            <span className={styles.donutLabel}>réparti</span>
+          </div>
+        </div>
+
+        <div className={styles.donutLegend}>
+          {associes.map((associe, i) => {
+            const nom =
+              nomDeLaPartie(associe) || nomComplet(associe.personne ?? {}) || mot + " " + (i + 1);
+            const a = detail[i];
+            const pct = partsTotales > 0 ? (a.parts / partsTotales) * 100 : 0;
+            const montant = partsTotales > 0 ? (a.parts / partsTotales) * capital : 0;
+
+            return (
+              <div key={i} className={styles.donutItem}>
+                <span
+                  className={styles.donutDot}
+                  style={{ background: COULEURS[i % COULEURS.length] }}
+                  aria-hidden="true"
+                />
+                <span className={styles.donutInfo}>
+                  <span className={styles.donutNom}>{nom}</span>
+                  <span className={styles.donutDetail}>
+                    {a.parts} {motPart(brouillon.forme, a.parts > 1)} · {euros(montant)}
+                  </span>
+                </span>
+                <span className={styles.donutItemPct}>{pourcent(pct)}%</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -115,7 +208,7 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
       <div className={styles.formGrid}>
         <Champ
           id="partsTotales"
-          libelle="Nombre total de parts"
+          libelle={"Nombre total de " + motPart(brouillon.forme, true)}
           requis
           anomalie={anomalies.partsTotales}
         >
@@ -146,7 +239,7 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
       <div className={styles.cartes}>
         {associes.map((associe, i) => {
           const nom =
-            nomDeLaPartie(associe) || nomComplet(associe.personne ?? {}) || "Associé " + (i + 1);
+            nomDeLaPartie(associe) || nomComplet(associe.personne ?? {}) || mot + " " + (i + 1);
           const a = detail[i];
           const pourcentage =
             partsTotales > 0 ? Math.round((a.parts / partsTotales) * 1000) / 10 : 0;
@@ -174,7 +267,7 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
 
                 <div className={styles.carteSaisie}>
                   <label htmlFor={"parts-" + i} className={styles.carteSaisieLibelle}>
-                    Parts
+                    {motPart(brouillon.forme, true)}
                   </label>
                   <input
                     id={"parts-" + i}
@@ -258,7 +351,9 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
       </div>
 
       {associes.length === 0 && (
-        <p role="alert">Ajoutez d&apos;abord un associé à l&apos;étape « Société ».</p>
+        <p role="alert">
+          Ajoutez d&apos;abord un {mot.toLowerCase()} à l&apos;étape « {mot}s ».
+        </p>
       )}
 
       {/* ---------- Le récapitulatif ---------- */}

@@ -107,14 +107,13 @@ export function RechercheSociete({
   const [resultats, setResultats] = useState<Resultat[]>([]);
   const [ouvert, setOuvert] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const choisi = useRef(false);
   const assezLong = terme.trim().length >= MINIMUM;
+  // La liste ne s'ouvre que sur une frappe, jamais sur un nom qu'on vient d'écrire.
+  const frappe = useRef(false);
 
   useEffect(() => {
-    if (choisi.current) {
-      choisi.current = false;
-      return;
-    }
+    if (!frappe.current) return;
+    frappe.current = false;
     if (terme.trim().length < MINIMUM) return;
 
     const abandon = new AbortController();
@@ -143,7 +142,6 @@ export function RechercheSociete({
   }, [terme]);
 
   async function retenir(resultat: Resultat) {
-    choisi.current = true;
     const nom = resultat.nom_complet ?? resultat.nom_raison_sociale ?? "";
     const siege = resultat.siege ?? {};
 
@@ -198,7 +196,10 @@ export function RechercheSociete({
           aria-expanded={ouvert && assezLong && resultats.length > 0}
           aria-controls={id + "-resultats"}
           aria-autocomplete="list"
-          onChange={(e) => setTerme(e.target.value)}
+          onChange={(e) => {
+            frappe.current = true;
+            setTerme(e.target.value);
+          }}
           onBlur={() => setOuvert(false)}
         />
 

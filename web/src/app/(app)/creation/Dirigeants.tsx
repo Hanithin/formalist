@@ -9,6 +9,7 @@ import {
   type Associe,
   type Dirigeant,
 } from "@/domain/formalite/parcours";
+import { Choix } from "./Choix";
 import { Champ, EtatCivil } from "./EtatCivil";
 import styles from "./Parcours.module.css";
 
@@ -176,19 +177,19 @@ export function Dirigeants({ libelle, dirigeants, associes, surChangement, anoma
               requis
               anomalie={anomalies["dirigeants." + rang]}
             >
-              <select
+              <Choix
                 id={"choix-dirigeant-" + rang}
-                value={dirigeant.associe !== undefined ? String(dirigeant.associe) : AUTRE}
-                onChange={(e) => choisir(rang, e.target.value)}
-              >
-                <option value="">Sélectionner...</option>
-                {associesProposables(associes, dirigeants, rang).map((a) => (
-                  <option key={a.rang} value={a.rang}>
-                    {a.nom}
-                  </option>
-                ))}
-                <option value={AUTRE}>Autre personne</option>
-              </select>
+                valeur={dirigeant.associe !== undefined ? String(dirigeant.associe) : AUTRE}
+                placeholder="Sélectionner..."
+                options={[
+                  ...associesProposables(associes, dirigeants, rang).map((a) => ({
+                    valeur: String(a.rang),
+                    libelle: a.nom,
+                  })),
+                  { valeur: AUTRE, libelle: "Autre personne" },
+                ]}
+                surChangement={(v) => choisir(rang, v)}
+              />
             </Champ>
 
             {/* Un associé repris n'a pas d'état civil à saisir : il est rappelé,
@@ -215,41 +216,25 @@ export function Dirigeants({ libelle, dirigeants, associes, surChangement, anoma
             )}
 
             <Champ id={"remuneration-" + rang} libelle="Rémunération">
-              <select
+              <Choix
                 id={"remuneration-" + rang}
-                value={dirigeant.remuneration ?? ""}
-                onChange={(e) =>
-                  remplacer(rang, {
-                    remuneration: (e.target.value || undefined) as Dirigeant["remuneration"],
-                  })
+                valeur={dirigeant.remuneration ?? ""}
+                options={REMUNERATIONS.map((r) => ({ valeur: r, libelle: r }))}
+                surChangement={(v) =>
+                  remplacer(rang, { remuneration: (v || undefined) as Dirigeant["remuneration"] })
                 }
-              >
-                <option value="">Choisir...</option>
-                {REMUNERATIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+              />
             </Champ>
 
             <Champ id={"regimeSocial-" + rang} libelle="Régime social">
-              <select
+              <Choix
                 id={"regimeSocial-" + rang}
-                value={dirigeant.regimeSocial ?? ""}
-                onChange={(e) =>
-                  remplacer(rang, {
-                    regimeSocial: (e.target.value || undefined) as Dirigeant["regimeSocial"],
-                  })
+                valeur={dirigeant.regimeSocial ?? ""}
+                options={REGIMES_SOCIAUX.map((r) => ({ valeur: r, libelle: r }))}
+                surChangement={(v) =>
+                  remplacer(rang, { regimeSocial: (v || undefined) as Dirigeant["regimeSocial"] })
                 }
-              >
-                <option value="">Choisir...</option>
-                {REGIMES_SOCIAUX.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+              />
             </Champ>
           </div>
         </div>

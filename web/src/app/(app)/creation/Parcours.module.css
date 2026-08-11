@@ -1246,3 +1246,916 @@
     transform: none;
   }
 }
+
+/* ============================
+   Sélecteur de date
+   ============================
+   Portage de .cdp de css/creation.css, valeur par valeur. Le contrôle natif du
+   navigateur impose ses couleurs - le bleu de Chrome - au milieu d'un formulaire
+   en noir et blanc : l'original le masquait pour cette raison. */
+
+.cdp {
+  position: relative;
+  width: 100%;
+}
+
+.cdpTrigger {
+  width: 100%;
+  margin: 0;
+  padding: 12px 16px;
+  padding-right: 40px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111;
+  background: transparent;
+  text-align: left;
+  outline: none;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.cdpTrigger:hover:not(:disabled) {
+  background-color: transparent;
+  border-color: #e0e0e0;
+}
+
+/* Tant qu'aucune date n'est choisie, le déclencheur porte le gris d'un placeholder. */
+.cdpVide {
+  color: #999;
+}
+
+.cdpOuvert .cdpTrigger {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+}
+
+.cdpCal {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 1000;
+  width: 300px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  user-select: none;
+}
+
+.cdpHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cdpHeader > span:first-child {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cdpNavs {
+  display: flex;
+  gap: 6px;
+}
+
+.cdpNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cdpNav:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #e5e5e5;
+}
+
+.cdpNav svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cdpGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.cdpDow {
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.cdpDay {
+  margin: 0;
+  padding: 8px 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  color: #111;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.cdpDay:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: transparent;
+}
+
+/* Les jours des mois voisins sont là pour tenir la grille, pas pour être choisis. */
+.cdpAutre {
+  display: block;
+  color: #ccc;
+  cursor: default;
+}
+
+.cdpAujourdhui {
+  font-weight: 700;
+  color: #111;
+}
+
+.cdpChoisi {
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+}
+
+.cdpChoisi:hover:not(:disabled) {
+  background: #333;
+}
+
+/* ============================
+   Menu déroulant
+   ============================
+   Portage de .cselect de css/creation.css. Les paliers de z-index sont ceux de
+   l'original : la liste ouverte doit passer au-dessus du champ voisin, et le champ
+   au-dessus de la grille. */
+
+.cselect {
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+.cselectOuvert {
+  z-index: 1001;
+}
+
+.field:has(.cselectOuvert) {
+  position: relative;
+  z-index: 1002;
+}
+
+.formGrid:has(.cselectOuvert) {
+  position: relative;
+  z-index: 1003;
+}
+
+.cselectTrigger {
+  width: 100%;
+  margin: 0;
+  padding: 12px 16px;
+  padding-right: 40px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111;
+  background: transparent;
+  text-align: left;
+  outline: none;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cselectTrigger:hover:not(:disabled) {
+  background-color: transparent;
+  border-color: #e0e0e0;
+}
+
+.cselectVide {
+  color: #999;
+}
+
+.cselectOuvert .cselectTrigger {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+}
+
+.cselectOpts {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.cselectOpts::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cselectOpts::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+
+.cselectOpts li {
+  display: block;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.cselectOpt {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.cselectOpt:hover:not(:disabled),
+.cselectOptSurvolee {
+  background: #f5f5f5;
+  border-color: transparent;
+}
+
+.cselectOptRetenue {
+  font-weight: 600;
+  background: #f5f5f5;
+}
+
+/* ============================
+   Dépôt des pièces
+   ============================
+   Portage de .doc-upload-card de css/creation.css : bordure pointillée, resserrement
+   au survol d'un fichier, et passage au vert une fois la pièce déposée. */
+
+.docList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.docCard {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  border: 1.5px dashed #ddd;
+  border-radius: 14px;
+  background: transparent;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.docCard:hover {
+  border-color: #999;
+}
+
+/* Un fichier survole la carte : elle se resserre, pour dire qu'elle le recevra. */
+.docGlisse {
+  border-color: #111;
+  background: #f5f5f5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transform: scale(1.01);
+}
+
+.docDepose {
+  border-style: solid;
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.docHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.docIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #f5f5f5;
+  transition: background 0.2s;
+}
+
+.docIcone svg {
+  width: 20px;
+  height: 20px;
+  color: #999;
+}
+
+.docDepose .docIcone {
+  background: #dcfce7;
+}
+
+.docDepose .docIcone svg {
+  color: #22c55e;
+}
+
+.docInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.docTitre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.docRequis {
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #fef2f2;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.docDesc {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #999;
+  line-height: 1.5;
+}
+
+.docZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.docZone svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #999;
+}
+
+.docZone span {
+  font-size: 13px;
+  color: #999;
+}
+
+.docZone span strong {
+  color: #111;
+  font-weight: 500;
+}
+
+/* Le champ de fichier est masqué : c'est la zone entière qui le déclenche. */
+.docZone input[type="file"] {
+  display: none;
+}
+
+.docFormats {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #999;
+}
+
+/* ============================
+   Camembert de la répartition
+   ============================
+   Portage de .donut-* de css/creation.css. Le disque est un dégradé conique dont
+   le centre est évidé par un ::after blanc, et la transition de 0,4 s fait glisser
+   les segments quand on change une part. */
+
+.chartSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+  margin-bottom: 28px;
+  padding: 24px;
+  background: transparent;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+}
+
+.donutWrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 180px;
+  height: 180px;
+}
+
+.donut {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  transition: background 0.4s;
+}
+
+/* L'anneau se creuse par un disque blanc posé au centre. */
+.donut::after {
+  content: "";
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  right: 30px;
+  bottom: 30px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.donutPct {
+  font-family: var(--police-titre), sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+.donutLabel {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #999;
+}
+
+.donutLegend {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.donutItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.donutItem:hover {
+  background: #f5f5f5;
+}
+
+.donutDot {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.donutInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.donutNom {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.donutDetail {
+  display: block;
+  font-size: 12px;
+  color: #999;
+  font-variant-numeric: tabular-nums;
+}
+
+.donutItemPct {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 700px) {
+  .chartSection {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* ============================
+   Documents générés
+   ============================
+   Portage de .gen-doc-* de css/creation.css, et de l'entrée en cascade que
+   lifecycle.js posait carte par carte. */
+
+.genSection {
+  margin-top: 16px;
+  padding-top: 22px;
+  border-top: 1px solid #ececef;
+}
+
+.genSection:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.genSectionHead {
+  margin-bottom: 10px;
+}
+
+.genSectionLabel {
+  margin: 0;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+}
+
+.genSectionSub {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #888;
+}
+
+.genList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.genCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background: #fff;
+  transition: all 0.2s ease;
+  /* La carte se pose au lieu d'apparaître : c'est l'animation de l'original,
+     décalée de soixante millisecondes par rang. */
+  opacity: 0;
+  animation: genEntree 0.4s ease forwards;
+}
+
+@keyframes genEntree {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .genCard {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+.genCard:hover {
+  border-color: #ddd;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.genCardEnAttente {
+  background: #fafafa;
+  border-color: #eee;
+}
+
+.genCardEnAttente .genNom,
+.genCardEnAttente .genMeta {
+  color: #999;
+}
+
+.genCardEnAttente .genIcone {
+  opacity: 0.5;
+}
+
+.genIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.genIcone svg {
+  width: 22px;
+  height: 22px;
+}
+
+.genInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.genNom {
+  margin-bottom: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.genMeta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #bbb;
+}
+
+.genBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.genBadge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.genBadgePret {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.genBadgeSigne {
+  background: #faf5ff;
+  color: #8b5cf6;
+}
+
+.genBadgeVerrou {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.genActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.genBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: transparent;
+  color: #111;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.genBtn:hover:not(:disabled) {
+  border-color: #111;
+  color: #111;
+  background: #f5f5f5;
+}
+
+.genBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.genBtnPrimaire {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.genBtnPrimaire:hover:not(:disabled) {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.genBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.genBtn:disabled:hover {
+  border-color: #e0e0e0;
+  color: #111;
+  background: transparent;
+}
+
+/* ============================
+   Aperçu d'un acte
+   ============================ */
+
+.apercuVoile {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.apercuFenetre {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  height: 90vh;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 20px;
+  animation: apercuEntree 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes apercuEntree {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apercuFenetre {
+    animation: none;
+  }
+}
+
+.apercuEntete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+  padding: 18px 22px;
+  border-bottom: 1px solid #ececef;
+}
+
+.apercuTitre {
+  margin: 0;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+}
+
+.apercuGestes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.apercuFermer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: #71717a;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.apercuFermer:hover:not(:disabled) {
+  background: #f4f4f5;
+  color: #111;
+  border-color: transparent;
+}
+
+.apercuFermer svg {
+  width: 17px;
+  height: 17px;
+}
+
+.apercuCorps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+}
+
+.apercuCadre {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.apercuMessage {
+  margin: 0;
+  padding: 24px;
+  font-size: 14px;
+  color: #71717a;
+  text-align: center;
+}

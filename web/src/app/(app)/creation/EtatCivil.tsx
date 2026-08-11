@@ -8,7 +8,10 @@ import {
   type Conjoint,
   type PersonnePhysique,
 } from "@/domain/formalite/etat-civil";
+import { SANS_CHAMP_OBLIGATOIRE } from "@/domain/formalite/parcours";
 import { Adresse } from "./Adresse";
+import { Choix } from "./Choix";
+import { DateChoisie } from "./DateChoisie";
 import styles from "./Parcours.module.css";
 
 /**
@@ -58,7 +61,7 @@ export function Champ({
 }) {
   return (
     <div className={pleineLargeur ? `${styles.field} ${styles.full}` : styles.field}>
-      <label htmlFor={id} className={requis ? styles.requis : undefined}>
+      <label htmlFor={id} className={requis && !SANS_CHAMP_OBLIGATOIRE ? styles.requis : undefined}>
         {libelle}
       </label>
       {children}
@@ -101,20 +104,14 @@ export function EtatCivil({
   return (
     <>
       <Champ id={"civilite-" + rang} libelle="Civilité">
-        <select
+        <Choix
           id={"civilite-" + rang}
-          value={personne.civilite ?? ""}
-          onChange={(e) =>
-            surChangement({ civilite: (e.target.value || undefined) as PersonnePhysique["civilite"] })
+          valeur={personne.civilite ?? ""}
+          options={CIVILITES.map((c) => ({ valeur: c, libelle: c }))}
+          surChangement={(v) =>
+            surChangement({ civilite: (v || undefined) as PersonnePhysique["civilite"] })
           }
-        >
-          <option value="">Choisir...</option>
-          {CIVILITES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        />
       </Champ>
 
       <Champ
@@ -164,11 +161,10 @@ export function EtatCivil({
         requis
         anomalie={anomalies[cle + ".dateDeNaissance"]}
       >
-        <input
+        <DateChoisie
           id={"naissance-" + rang}
-          type="date"
-          value={personne.dateDeNaissance ?? ""}
-          onChange={(e) => surChangement({ dateDeNaissance: e.target.value })}
+          valeur={personne.dateDeNaissance ?? ""}
+          surChangement={(iso) => surChangement({ dateDeNaissance: iso })}
         />
       </Champ>
 
@@ -229,23 +225,16 @@ export function EtatCivil({
       </Champ>
 
       <Champ id={"situation-" + rang} libelle="Situation matrimoniale">
-        <select
+        <Choix
           id={"situation-" + rang}
-          value={situation ?? ""}
-          onChange={(e) =>
+          valeur={situation ?? ""}
+          options={SITUATIONS_MATRIMONIALES.map((s) => ({ valeur: s, libelle: s }))}
+          surChangement={(v) =>
             surChangement({
-              situationMatrimoniale: (e.target.value ||
-                undefined) as PersonnePhysique["situationMatrimoniale"],
+              situationMatrimoniale: (v || undefined) as PersonnePhysique["situationMatrimoniale"],
             })
           }
-        >
-          <option value="">Choisir...</option>
-          {SITUATIONS_MATRIMONIALES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        />
       </Champ>
 
       {/* Le conjoint n'apparaît que pour un mariage ou un PACS, et les libellés
@@ -256,20 +245,14 @@ export function EtatCivil({
 
           <div className={styles.formGrid}>
             <Champ id={"conjointCivilite-" + rang} libelle="Civilité du conjoint">
-              <select
+              <Choix
                 id={"conjointCivilite-" + rang}
-                value={conjoint.civilite ?? ""}
-                onChange={(e) =>
-                  surConjoint({ civilite: (e.target.value || undefined) as Conjoint["civilite"] })
+                valeur={conjoint.civilite ?? ""}
+                options={CIVILITES.map((c) => ({ valeur: c, libelle: c }))}
+                surChangement={(v) =>
+                  surConjoint({ civilite: (v || undefined) as Conjoint["civilite"] })
                 }
-              >
-                <option value="">Choisir...</option>
-                {CIVILITES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+              />
             </Champ>
 
             <Champ
@@ -305,11 +288,10 @@ export function EtatCivil({
               id={"dateUnion-" + rang}
               libelle={pacs ? "Date de PACS" : "Date de mariage"}
             >
-              <input
+              <DateChoisie
                 id={"dateUnion-" + rang}
-                type="date"
-                value={conjoint.dateMariage ?? ""}
-                onChange={(e) => surConjoint({ dateMariage: e.target.value })}
+                valeur={conjoint.dateMariage ?? ""}
+                surChangement={(iso) => surConjoint({ dateMariage: iso })}
               />
             </Champ>
 
@@ -326,11 +308,12 @@ export function EtatCivil({
 
             {!pacs && (
               <Champ id={"contrat-" + rang} libelle="Contrat de mariage">
-                <select
+                <Choix
                   id={"contrat-" + rang}
-                  value={contratCourant?.libelle ?? ""}
-                  onChange={(e) => {
-                    const choix = CONTRATS.find((c) => c.libelle === e.target.value);
+                  valeur={contratCourant?.libelle ?? ""}
+                  options={CONTRATS.map((c) => ({ valeur: c.libelle, libelle: c.libelle }))}
+                  surChangement={(v) => {
+                    const choix = CONTRATS.find((c) => c.libelle === v);
                     surConjoint({
                       contratDeMariage: choix?.contrat ?? false,
                       // Sans contrat, le régime légal s'applique : il est écrit,
@@ -338,14 +321,7 @@ export function EtatCivil({
                       regimeMatrimonial: choix?.regime,
                     });
                   }}
-                >
-                  <option value="">Choisir...</option>
-                  {CONTRATS.map((c) => (
-                    <option key={c.libelle} value={c.libelle}>
-                      {c.libelle}
-                    </option>
-                  ))}
-                </select>
+                />
               </Champ>
             )}
 
@@ -353,23 +329,16 @@ export function EtatCivil({
                 contrat de mariage à déclarer. */}
             {pacs && (
               <Champ id={"regime-" + rang} libelle="Régime">
-                <select
+                <Choix
                   id={"regime-" + rang}
-                  value={conjoint.regimeMatrimonial ?? ""}
-                  onChange={(e) =>
+                  valeur={conjoint.regimeMatrimonial ?? ""}
+                  options={REGIMES_MATRIMONIAUX.map((r) => ({ valeur: r, libelle: r }))}
+                  surChangement={(v) =>
                     surConjoint({
-                      regimeMatrimonial: (e.target.value ||
-                        undefined) as Conjoint["regimeMatrimonial"],
+                      regimeMatrimonial: (v || undefined) as Conjoint["regimeMatrimonial"],
                     })
                   }
-                >
-                  <option value="">Choisir...</option>
-                  {REGIMES_MATRIMONIAUX.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
+                />
               </Champ>
             )}
           </div>
