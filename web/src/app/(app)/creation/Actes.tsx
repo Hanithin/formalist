@@ -7,15 +7,18 @@ import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
 import { personneDuDirigeant } from "@/domain/formalite/gabarit";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Champ } from "./EtatCivil";
+import { Apercu } from "./Apercu";
 import styles from "./Parcours.module.css";
 
 /**
  * La dernière étape : les actes produits, à relire et à faire signer.
  *
- * Reprise de l'étape « Mes documents » de public/creation.html. Trois gestes s'y
- * enchaînent : produire les documents, les relire, ouvrir les signatures. Ils sont
- * présentés dans cet ordre et non côte à côte - signer un acte qu'on n'a pas relu
- * est précisément ce qu'il faut éviter.
+ * Portage de la liste .gen-doc-card de public/js/creation/lifecycle.js : une carte
+ * par document, avec sa pastille d'état, « Visualiser » et « Télécharger », et
+ * l'entrée en cascade de 60 millisecondes par carte.
+ *
+ * Trois gestes s'enchaînent dans cet ordre : produire, relire, signer. Signer un
+ * acte qu'on n'a pas relu est précisément ce qu'il faut éviter.
  *
  * Les signataires ne sont pas saisis ici : ce sont les associés du dossier, avec
  * leur email. Les faire retaper ouvrirait la porte à une signature demandée à la
@@ -36,8 +39,107 @@ interface Props {
   surNote: (texte: string) => void;
 }
 
+function Oeil() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function Fleche() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function Coche() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function Cadenas() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 018 0v4" />
+    </svg>
+  );
+}
+
+/** L'icône du document, celle de la page d'origine pour un acte. */
+function Document() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  );
+}
+
+/** Ce que chaque acte dit de lui-même, sous son nom. */
+const DESCRIPTIONS: Record<string, string> = {
+  "Statuts constitutifs": "L'acte fondateur de la société, à signer par tous les associés",
+  "Liste des souscripteurs": "Qui souscrit quoi, et pour quel montant",
+  "Déclaration de non-condamnation": "Attestation du dirigeant, exigée par le greffe",
+  "Attestation de domiciliation": "Justifie l'adresse du siège social",
+  "Procès-verbal de nomination": "Désigne le dirigeant et fixe ses pouvoirs",
+  "Attestation de dépôt de capital": "Remise par la banque après le versement",
+};
+
 export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
+  const [apercu, setApercu] = useState<{ nom: string; fichier: string } | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -51,9 +153,7 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
     }))
     .filter((s) => s.nom && s.email);
 
-  const sansEmail = associes.filter(
-    (a) => nomDeLaPartie(a) && !a.personne?.email?.trim()
-  );
+  const sansEmail = associes.filter((a) => nomDeLaPartie(a) && !a.personne?.email?.trim());
 
   function produire() {
     setMessage(null);
@@ -82,7 +182,8 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
 
       setMessage({
         ok: true,
-        texte: (corps.documents?.length ?? 0) + " document(s) produits. Relisez-les avant signature.",
+        texte:
+          (corps.documents?.length ?? 0) + " document(s) produits. Relisez-les avant signature.",
       });
       router.refresh();
     });
@@ -142,9 +243,102 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
       </dl>
 
       {/* ---------- Les actes ---------- */}
-      <div className={styles.actes}>
+      <div className={styles.genSection}>
+        <div className={styles.genSectionHead}>
+          <p className={styles.genSectionLabel}>Documents générés</p>
+          <p className={styles.genSectionSub}>
+            Statuts, PV et attestations préparés automatiquement
+          </p>
+        </div>
+
+        {actes.length === 0 ? (
+          <p className={styles.actesVide}>
+            Aucun document produit pour l&apos;instant. Les statuts, la liste des souscripteurs et
+            les déclarations sont générés à partir de ce que vous avez saisi.
+          </p>
+        ) : (
+          <div className={styles.genList}>
+            {actes.map((a, i) => {
+              const signe = a.statut === "signed";
+              const pret = !!a.fichier;
+
+              return (
+                <div
+                  key={a.id}
+                  className={pret ? styles.genCard : `${styles.genCard} ${styles.genCardEnAttente}`}
+                  /* L'entrée en cascade de l'original : soixante millisecondes
+                     par carte, pour que la liste se pose au lieu d'apparaître. */
+                  style={{ animationDelay: 60 * i + "ms" }}
+                >
+                  <span className={styles.genIcone} aria-hidden="true">
+                    <Document />
+                  </span>
+
+                  <div className={styles.genInfo}>
+                    <div className={styles.genNom}>{a.nom}</div>
+                    <div className={styles.genMeta}>{DESCRIPTIONS[a.nom] ?? "Document du dossier"}</div>
+                  </div>
+
+                  <span
+                    className={[
+                      styles.genBadge,
+                      signe ? styles.genBadgeSigne : pret ? styles.genBadgePret : styles.genBadgeVerrou,
+                    ].join(" ")}
+                  >
+                    {signe ? (
+                      <>
+                        <Coche /> Signé
+                      </>
+                    ) : pret ? (
+                      <>
+                        <Coche /> Prêt
+                      </>
+                    ) : (
+                      <>
+                        <Cadenas /> En attente
+                      </>
+                    )}
+                  </span>
+
+                  <div className={styles.genActions}>
+                    <button
+                      type="button"
+                      className={styles.genBtn}
+                      disabled={!a.fichier}
+                      onClick={() => a.fichier && setApercu({ nom: a.nom, fichier: a.fichier })}
+                    >
+                      <Oeil /> Visualiser
+                    </button>
+
+                    {a.fichier ? (
+                      <a
+                        href={
+                          "/api/fichier?nom=" +
+                          encodeURIComponent(a.fichier) +
+                          "&titre=" +
+                          encodeURIComponent(a.nom)
+                        }
+                        className={`${styles.genBtn} ${styles.genBtnPrimaire}`}
+                      >
+                        <Fleche /> Télécharger
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        className={`${styles.genBtn} ${styles.genBtnPrimaire}`}
+                        disabled
+                      >
+                        <Fleche /> Télécharger
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className={styles.actesEntete}>
-          <h3 className={styles.actesTitre}>Vos documents</h3>
           <button
             type="button"
             className={styles.actesBouton}
@@ -154,37 +348,35 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
             {actes.length > 0 ? "Régénérer les documents" : "Générer les documents"}
           </button>
         </div>
-
-        {actes.length === 0 ? (
-          <p className={styles.actesVide}>
-            Aucun document produit pour l&apos;instant. Les statuts, la liste des souscripteurs et
-            les déclarations sont générés à partir de ce que vous avez saisi.
-          </p>
-        ) : (
-          <ul className={styles.actesListe}>
-            {actes.map((a) => (
-              <li key={a.id}>
-                <span className={styles.acteNom}>{a.nom}</span>
-                {a.fichier ? (
-                  <a
-                    href={"/api/fichier?nom=" + encodeURIComponent(a.fichier)}
-                    className={styles.acteLien}
-                  >
-                    Télécharger
-                  </a>
-                ) : (
-                  <span className={styles.acteAbsent}>Fichier indisponible</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
       {/* ---------- La signature ---------- */}
-      <div className={styles.actes}>
+      <div className={styles.genSection}>
+        <div className={styles.genSectionHead}>
+          <p className={styles.genSectionLabel}>Signature</p>
+          <p className={styles.genSectionSub}>
+            Chaque signataire reçoit son propre lien par email
+          </p>
+        </div>
+
+        {signataires.length > 0 ? (
+          <p className={styles.actesVide}>
+            {signataires.map((s) => s.nom + " (" + s.email + ")").join(", ")}.
+          </p>
+        ) : (
+          <p className={styles.actesVide}>
+            Aucun signataire : renseignez l&apos;adresse email des associés à l&apos;étape
+            « Associés ».
+          </p>
+        )}
+
+        {sansEmail.length > 0 && signataires.length > 0 && (
+          <p role="alert">
+            {sansEmail.length} associé(s) sans adresse email ne recevront pas de demande.
+          </p>
+        )}
+
         <div className={styles.actesEntete}>
-          <h3 className={styles.actesTitre}>Signature</h3>
           <button
             type="button"
             className={styles.actesBouton}
@@ -196,24 +388,6 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
             Demander les signatures
           </button>
         </div>
-
-        {signataires.length > 0 ? (
-          <p className={styles.actesVide}>
-            Chaque signataire reçoit son propre lien par email :{" "}
-            {signataires.map((s) => s.nom + " (" + s.email + ")").join(", ")}.
-          </p>
-        ) : (
-          <p className={styles.actesVide}>
-            Aucun signataire : renseignez l&apos;adresse email des associés à l&apos;étape
-            « Société ».
-          </p>
-        )}
-
-        {sansEmail.length > 0 && signataires.length > 0 && (
-          <p role="alert">
-            {sansEmail.length} associé(s) sans adresse email ne recevront pas de demande.
-          </p>
-        )}
       </div>
 
       {/* ---------- Le mot à l'avocat ---------- */}
@@ -233,6 +407,14 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
         <p role={message.ok ? "status" : "alert"} aria-live="polite">
           {message.texte}
         </p>
+      )}
+
+      {apercu && (
+        <Apercu
+          nom={apercu.nom}
+          fichier={apercu.fichier}
+          surFermeture={() => setApercu(null)}
+        />
       )}
     </div>
   );

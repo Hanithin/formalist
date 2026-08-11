@@ -1041,9 +1041,14 @@ function generateDocxFromBuffer(buf, data) {
     return p;
   });
   // "Nombre d'actions souscrites : 100" → "Nombre d'actions souscrites : 100 actions"
+  //
+  // Le nombre est formaté à la française : au-delà de mille, il porte un séparateur
+  // de milliers. Un \d+ s'arrêtait dessus et insérait le mot au milieu du nombre -
+  // « 1 actions 000 ». Les trois espaces possibles sont donc acceptées : ordinaire,
+  // insécable et fine insécable.
   docXml = docXml.replace(
-    /(Nombre d['’]actions souscrites\s*:\s*\d+)(?!\s*actions)/g,
-    '$1 actions'
+    /(Nombre d['’]actions souscrites\s*:\s*\d[\d \u00a0\u202f]*)(?!\s*actions)/g,
+    (_, capture) => capture.replace(/\s+$/, '') + ' actions'
   );
   // Remove "- Reste à libérer : 0 euros" line (nothing left to release → useless line)
   docXml = docXml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function(p) {

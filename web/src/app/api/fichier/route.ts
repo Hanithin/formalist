@@ -24,9 +24,27 @@ const TYPES: Record<string, string> = {
 /** Seuls les PDF et images s'affichent dans l'onglet : le reste part en téléchargement. */
 const AFFICHABLES = [".pdf", ".png", ".jpg", ".jpeg"];
 
+/**
+ * Le nom sous lequel le fichier est proposé.
+ *
+ * Le dépôt nomme les fichiers par une empreinte, pour qu'un nom ne renseigne pas
+ * sur son contenu. Mais cinq actes téléchargés qui s'appellent tous par leur
+ * empreinte sont indistinguables : le titre du document est donc accepté en
+ * paramètre, et nettoyé - lettres, chiffres, espaces, tirets et apostrophes, comme
+ * le faisait la page d'origine.
+ */
+function nomProposé(titre: string | null, defaut: string, extension: string): string {
+  const propre = (titre ?? "")
+    .replace(/[^a-zA-Z0-9\u00C0-\u024F \-']/g, "")
+    .trim()
+    .slice(0, 120);
+  return propre ? propre + extension : defaut;
+}
+
 export const GET = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
-  const demande = new URL(requete.url).searchParams.get("nom") ?? "";
+  const adresse = new URL(requete.url);
+  const demande = adresse.searchParams.get("nom") ?? "";
 
   const nom = await fichierLisible(utilisateur, demande);
   if (!nom) {
@@ -46,7 +64,10 @@ export const GET = route(async (requete: Request) => {
     headers: {
       "Content-Type": TYPES[extension] ?? "application/octet-stream",
       "Content-Disposition":
-        (AFFICHABLES.includes(extension) ? "inline" : "attachment") + '; filename="' + nom + '"',
+        (AFFICHABLES.includes(extension) ? "inline" : "attachment") +
+        '; filename="' +
+        nomProposé(adresse.searchParams.get("titre"), nom, extension) +
+        '"',
       "Cache-Control": "private, no-store",
     },
   });

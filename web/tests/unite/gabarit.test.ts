@@ -151,10 +151,13 @@ describe("les champs remis aux gabarits Word", () => {
     dirigeants: [{ associe: 0, remuneration: "Fixe" }],
   };
 
-  const donnees = donneesDeGabarit(brouillon);
+  const donnees = donneesDeGabarit(brouillon, {
+    maintenant: new Date("2026-08-11T10:00:00"),
+    villeRcs: "Paris",
+  });
 
   it("la société et son capital, en chiffres et en lettres", () => {
-    expect(donnees.SOCIETE_NOM).toBe("ATELIER MERIDIEN");
+    expect(donnees.NOM_SOCIETE).toBe("ATELIER MERIDIEN");
     expect(donnees.CAPITAL_LETTRES).toBe("mille");
     expect(donnees.VALEUR_NOMINALE).toBe("10");
   });
@@ -179,16 +182,23 @@ describe("les champs remis aux gabarits Word", () => {
   });
 
   it("le conjoint et son régime figurent dans l'acte", () => {
-    expect(donnees.CONJOINT_PRENOM_1).toBe("Paul");
-    expect(donnees.CONJOINT_NOM_1).toBe("Durand");
-    expect(donnees.REGIME_MATRIMONIAL_1).toBe("Séparation de biens");
+    // Les gabarits ne nomment le conjoint que du premier associé, sans indice.
+    expect(donnees.CONJOINT_DE).toBe("Madame Camille Durand");
+    expect(donnees.CONJOINT_NOM).toBe("Paul Durand");
+    expect(donnees.REGIME_MATRIMONIAL).toBe("Séparation de biens");
   });
 
   it("le dirigeant reprend l'état civil de l'associé désigné", () => {
     expect(donnees.GERANT_CIVILITE_NOM_PRENOM).toBe("Madame Camille Durand");
     expect(donnees.GERANT_EST_FEMME).toBe(true);
     expect(donnees.GERANT_LIEU_NAISSANCE).toBe("Lyon");
-    expect(donnees.REMUNERATION_DG).toBe("Fixe");
+    // La rémunération n'est pas un mot mais la phrase des statuts ; le choix brut
+    // reste disponible pour restaurer le formulaire.
+    expect(donnees.REMUNERATION_PRESIDENT_TYPE).toBe("Fixe");
+    // Ce brouillon est une SAS : c'est l'assemblée générale qui décide.
+    expect(donnees.REMUNERATION_PRESIDENT).toBe(
+      "La présidence exercera ses fonctions à titre de rémunération fixe dont le montant sera fixé par décision de l’assemblée générale."
+    );
   });
 
   it("la situation matrimoniale tombe au milieu d'une phrase, donc en minuscules", () => {
@@ -197,7 +207,7 @@ describe("les champs remis aux gabarits Word", () => {
 
   it("un champ vide s'écrit « - » : dans un acte, un blanc se lit comme un oubli", () => {
     const vide = donneesDeGabarit({});
-    expect(vide.SOCIETE_NOM).toBe("-");
+    expect(vide.NOM_SOCIETE).toBe("-");
     expect(vide.NATIONALITE).toBe("Française");
     expect(vide.SITUATION_MATRIMONIALE).toBe("célibataire");
   });
@@ -223,5 +233,159 @@ describe("les champs remis aux gabarits Word", () => {
     const beaucoup = donneesDeGabarit({ ...brouillon, associes: onze, partsTotales: 110 });
     expect(beaucoup.HAS_ASSOC_10).toBe(true);
     expect((beaucoup.ASSOCIES as unknown[]).length).toBe(10);
+  });
+});
+
+describe("les noms de champs sont ceux des gabarits Word", () => {
+  /**
+   * Ces noms ne se devinent pas : ils sont relevés dans les .docx. Une première
+   * version les avait tirés du JavaScript d'origine et en avait manqué la moitié -
+   * le nom de la société n'apparaissait alors dans aucun acte.
+   */
+  const brouillon: Brouillon = {
+    forme: "SASU",
+    denomination: "ATELIER MERIDIEN",
+    activite: "Conseil en design.\nFormation.",
+    adresse: "12 rue des Lilas",
+    codePostal: "69110",
+    ville: "Sainte-Foy-lès-Lyon",
+    capital: 10000,
+    partsTotales: 1000,
+    dateCloturePremierExercice: "2027-12-31",
+    dateDebutActivite: "2026-09-01",
+    banque: "Qonto",
+    optionFiscale: "IS",
+    associes: [
+      {
+        type: "physique",
+        personne: { civilite: "Madame", prenom: "Camille", nom: "Durand" },
+        parts: 1000,
+        versement: 10000,
+      },
+    ],
+    dirigeants: [{ associe: 0, remuneration: "Variable" }],
+  };
+
+  const d = donneesDeGabarit(brouillon, {
+    maintenant: new Date("2026-08-11T10:00:00"),
+    villeRcs: "Lyon",
+  });
+
+  it("la société porte les noms attendus par les gabarits", () => {
+    expect(d.NOM_SOCIETE).toBe("ATELIER MERIDIEN");
+    expect(d.NOM_SOCIETE_COMPLET).toBe("ATELIER MERIDIEN");
+    expect(d.ADRESSE_SIEGE).toBe("12 rue des Lilas, 69110 Sainte-Foy-lès-Lyon");
+    expect(d.SIEGE_SOCIAL).toBe("12 rue des Lilas, 69110 Sainte-Foy-lès-Lyon");
+    expect(d.VILLE_SOCIETE).toBe("Sainte-Foy-lès-Lyon");
+    expect(d.FORME_JURIDIQUE).toBe("SASU");
+  });
+
+  it("le RCS est celui du tribunal de commerce, pas de la commune", () => {
+    expect(d.RCS_VILLE).toBe("Lyon");
+  });
+
+  it("le capital porte ses quatre noms", () => {
+    expect(d.CAPITAL).toBe("10 000");
+    expect(d.CAPITAL_CHIFFRES).toBe("10 000");
+    expect(d.CAPITAL_FORMATE).toBe("10 000");
+    expect(d.CAPITAL_LETTRES).toBe("dix mille");
+  });
+
+  it("les parts sont nommées parts et actions selon le gabarit", () => {
+    expect(d.NB_PARTS).toBe("1 000");
+    expect(d.NOMBRE_ACTIONS).toBe("1 000");
+    expect(d.NOMBRE_ACTIONS_LETTRES).toBe("mille");
+    expect(d.VALEUR_NOMINALE_CHIFFRES).toBe("10");
+    expect(d.VALEUR_NOMINALE_UNITE).toBe("euros");
+  });
+
+  it("l'objet social est découpé ligne par ligne", () => {
+    expect(d.OBJET_SOCIAL_1).toBe("Conseil en design.");
+    expect(d.OBJET_SOCIAL_2).toBe("Formation.");
+    expect(d.OBJET_SOCIAL_3).toBe("");
+  });
+
+  it("la clôture s'écrit sans année, elle revient chaque an", () => {
+    expect(d.DATE_CLOTURE).toBe("31 décembre");
+    expect(d.ANNEE_PREMIER_EXERCICE).toBe("2027");
+    expect(d.DATE_DEBUT_ACTIVITE).toBe("1 septembre 2026");
+  });
+
+  it("la date de signature est celle qu'on lui donne, pas celle de l'horloge", () => {
+    expect(d.DATE_SIGNATURE).toBe("11 août 2026");
+    expect(d.DATE_SIGNATURE_COURTE).toBe("11/08/2026");
+  });
+
+  it("la banque choisie ouvre sa section, les autres restent fermées", () => {
+    expect(d.BANQUE_QONTO).toBe(true);
+    expect(d.BANQUE_SHINE).toBe(false);
+    expect(d.BANQUE_AUTRE).toBe(false);
+    expect(d.NOM_BANQUE).toBe("Qonto");
+  });
+
+  it("une forme unipersonnelle ouvre sa section et ferme l'autre", () => {
+    expect(d.IS_UNIPERSONNELLE).toBe(true);
+    expect(d.IS_PLURIPERSONNELLE).toBe(false);
+    expect(d.OPTION_IS).toBe(true);
+  });
+
+  it("le nom de famille s'écrit en capitales", () => {
+    expect(d.NOM).toBe("DURAND");
+    expect(d.PRENOM).toBe("Camille");
+    expect(d.CIVILITE).toBe("Madame");
+  });
+
+  it("la rémunération est une phrase, dont le décideur suit la forme", () => {
+    expect(d.REMUNERATION_PRESIDENT).toContain("rémunération variable");
+    expect(d.REMUNERATION_PRESIDENT).toContain("l’actionnaire unique");
+    expect(donneesDeGabarit({ ...brouillon, forme: "SARL" }).REMUNERATION_GERANT).toContain(
+      "l’assemblée des associés"
+    );
+    expect(donneesDeGabarit({ ...brouillon, forme: "SAS" }).REMUNERATION_PRESIDENT).toContain(
+      "l’assemblée générale"
+    );
+  });
+
+  it("sans directeur général, les trois rangs sont explicitement fermés", () => {
+    expect(d.HAS_DG).toBe(false);
+    expect(d.HAS_DG_1).toBe(false);
+    expect(d.HAS_DG_3).toBe(false);
+  });
+
+  it("un directeur général nommé ouvre son rang", () => {
+    const avecDg = donneesDeGabarit({
+      ...brouillon,
+      dirigeants: [{ associe: 0 }, { personne: { civilite: "Monsieur", prenom: "Paul", nom: "Martin" } }],
+    });
+    expect(avecDg.HAS_DG).toBe(true);
+    expect(avecDg.HAS_DG_1).toBe(true);
+    expect(avecDg.DG_1_NOM).toBe("MARTIN");
+    expect(avecDg.DG_1_PRENOM).toBe("Paul");
+    expect(avecDg.DG_1_EST_HOMME).toBe(true);
+  });
+
+  it("le statut d'occupation du siège est celui de l'attestation", () => {
+    expect(d.STATUT_OCCUPATION).toBe("propriétaire");
+    expect(d.DUREE).toBe("99");
+  });
+});
+
+describe("l'adresse du siège dans les actes", () => {
+  it("s'écrit en entier : la voie, le code postal et la commune", () => {
+    const d = donneesDeGabarit({
+      adresse: "12 rue des Lilas",
+      codePostal: "75011",
+      ville: "Paris",
+    });
+    // « Le siège social est fixé : 12 rue des Lilas » sans la ville serait rejeté.
+    expect(d.ADRESSE_SIEGE).toBe("12 rue des Lilas, 75011 Paris");
+    expect(d.SIEGE_SOCIAL).toBe("12 rue des Lilas, 75011 Paris");
+  });
+
+  it("se contente de ce qui est saisi", () => {
+    expect(donneesDeGabarit({ adresse: "12 rue des Lilas" }).ADRESSE_SIEGE).toBe(
+      "12 rue des Lilas"
+    );
+    expect(donneesDeGabarit({}).ADRESSE_SIEGE).toBe("-");
   });
 });
