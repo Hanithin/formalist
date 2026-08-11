@@ -14,6 +14,21 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+/**
+ * Où mène un dossier de la liste.
+ *
+ * Il n'existe pas de page de détail : cliquer un dossier rouvre le parcours là où
+ * il en est, comme le faisait la liste d'origine (« /creation.html?id= »). La
+ * destination suit le type - une modification ne se reprend pas dans le parcours de
+ * création. Le lien pointait vers /formalites/:id, qui n'a jamais existé et rendait
+ * un 404.
+ */
+function ouvrir(dossier: { id: number; type: string }): string {
+  if (dossier.type === "modification") return "/modification?dossier=" + dossier.id;
+  if (dossier.type === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + dossier.id;
+  return "/creation?dossier=" + dossier.id;
+}
+
 export default async function Formalites({
   searchParams,
 }: {
@@ -56,7 +71,7 @@ export default async function Formalites({
           <ul className={styles.liste}>
             {dossiers.map((d) => (
               <li key={d.id} className={styles.ligne}>
-                <Link href={"/formalites/" + d.id} className={styles.titre}>
+                <Link href={ouvrir(d)} className={styles.titre}>
                   {d.societe || "Sans nom"}
                 </Link>
                 <span className={styles.precision}>
