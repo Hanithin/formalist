@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { nomDeLOffre } from "@/domain/formalite/offres";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
@@ -107,6 +107,25 @@ function Cadenas() {
   );
 }
 
+/** Les flèches circulaires du bouton de régénération, reprises de creation.html. */
+function Rotation() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  );
+}
+
 /** L'icône du document, celle de la page d'origine pour un acte. */
 function Document() {
   return (
@@ -139,9 +158,26 @@ const DESCRIPTIONS: Record<string, string> = {
 
 export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
-  const [apercu, setApercu] = useState<{ nom: string; fichier: string } | null>(null);
+  /* La fenêtre d'aperçu ne retient que le nom de l'acte, pas son fichier.
+     L'original re-sollicitait un aperçu ouvert après une régénération (« If a preview
+     is currently open, re-fetch it with fresh data ») ; comme l'acte reproduit porte
+     un nouveau nom de stockage, déduire le fichier du nom à chaque rendu suffit à
+     obtenir le même comportement, et la fenêtre ne peut pas montrer une version
+     périmée. */
+  const [apercuDe, setApercuDe] = useState<string | null>(null);
+  /* L'échec de production se dit sous le bouton qui l'a déclenché. Au bas de la page,
+     sous la note à l'avocat, personne ne le lit. */
+  const [erreurActes, setErreurActes] = useState<string | null>(null);
+  const [confirme, setConfirme] = useState(false);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
+
+  // Les deux secondes de confirmation sur le bouton, puis retour à son état normal.
+  useEffect(() => {
+    if (!confirme) return;
+    const minuteur = setTimeout(() => setConfirme(false), 2000);
+    return () => clearTimeout(minuteur);
+  }, [confirme]);
 
   const associes = brouillon.associes ?? [];
 
@@ -156,7 +192,8 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
   const sansEmail = associes.filter((a) => nomDeLaPartie(a) && !a.personne?.email?.trim());
 
   function produire() {
-    setMessage(null);
+    setErreurActes(null);
+    setConfirme(false);
 
     demarrer(async () => {
       const reponse = await fetch("/api/formalites/documents", {
@@ -171,20 +208,17 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
       };
 
       if (!reponse.ok) {
-        setMessage({
-          ok: false,
-          texte: corps.etape
+        setErreurActes(
+          corps.etape
             ? "Le dossier est incomplet : reprenez à l'étape " + corps.etape + "."
-            : (corps.error ?? "La production des documents a été interrompue"),
-        });
+            : (corps.error ?? "La production des documents a été interrompue")
+        );
         return;
       }
 
-      setMessage({
-        ok: true,
-        texte:
-          (corps.documents?.length ?? 0) + " document(s) produits. Relisez-les avant signature.",
-      });
+      // Le succès se dit sur le bouton, comme dans l'original, et non par un
+      // paragraphe ajouté au bas de la page.
+      setConfirme(true);
       router.refresh();
     });
   }
@@ -217,6 +251,10 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
   }
 
   const dirigeant = personneDuDirigeant((brouillon.dirigeants ?? [])[0], associes);
+
+  // L'acte dont l'aperçu est ouvert, relu dans la liste courante : après une
+  // régénération, c'est le fichier reproduit que la fenêtre affiche.
+  const acteApercu = apercuDe ? actes.find((a) => a.nom === apercuDe) : undefined;
 
   return (
     <div className={styles.full}>
@@ -305,7 +343,7 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
                       type="button"
                       className={styles.genBtn}
                       disabled={!a.fichier}
-                      onClick={() => a.fichier && setApercu({ nom: a.nom, fichier: a.fichier })}
+                      onClick={() => a.fichier && setApercuDe(a.nom)}
                     >
                       <Oeil /> Visualiser
                     </button>
@@ -338,16 +376,33 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
           </div>
         )}
 
-        <div className={styles.actesEntete}>
+        <div className={styles.genRegenLigne}>
           <button
             type="button"
-            className={styles.actesBouton}
+            className={confirme ? `${styles.genRegen} ${styles.genRegenOk}` : styles.genRegen}
             onClick={produire}
-            disabled={enCours}
+            disabled={enCours || confirme}
           >
-            {actes.length > 0 ? "Régénérer les documents" : "Générer les documents"}
+            {confirme ? (
+              "Documents régénérés !"
+            ) : (
+              <>
+                <Rotation />
+                {enCours
+                  ? "Régénération…"
+                  : actes.length > 0
+                    ? "Régénérer les documents"
+                    : "Générer les documents"}
+              </>
+            )}
           </button>
         </div>
+
+        {erreurActes && (
+          <p className={styles.actesErreur} role="alert">
+            {erreurActes}
+          </p>
+        )}
       </div>
 
       {/* ---------- La signature ---------- */}
@@ -409,11 +464,11 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
         </p>
       )}
 
-      {apercu && (
+      {acteApercu?.fichier && (
         <Apercu
-          nom={apercu.nom}
-          fichier={apercu.fichier}
-          surFermeture={() => setApercu(null)}
+          nom={acteApercu.nom}
+          fichier={acteApercu.fichier}
+          surFermeture={() => setApercuDe(null)}
         />
       )}
     </div>

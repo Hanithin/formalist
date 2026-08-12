@@ -7,8 +7,7 @@ import { premiereEtapeIncomplete } from "@/domain/formalite/parcours";
 import { donneesDeGabarit } from "@/domain/formalite/gabarit";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { genererDocument } from "@/infrastructure/documents/generation";
-import { enregistrerDocumentProduit } from "@/infrastructure/documents/depot";
-import { nomDeStockage } from "@/lib/fichiers";
+import { remplacerDocumentsProduits } from "@/infrastructure/documents/depot";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
@@ -45,14 +44,17 @@ export const POST = route(async (requete: Request) => {
   const donnees = donneesDeGabarit(brouillon, {
     villeRcs: villeDuRcs(brouillon.codePostal, brouillon.ville),
   });
-  const produits = [];
+  // Tout est produit avant d'écrire quoi que ce soit : un gabarit qui échoue ne doit
+  // pas laisser le dossier avec la moitié d'un jeu d'actes.
+  const actes = aProduire.map((document) => ({
+    titre: document.titre,
+    contenu: genererDocument(document.gabarit, donnees),
+  }));
 
-  for (const document of aProduire) {
-    const contenu = genererDocument(document.gabarit, donnees);
-    const nom = nomDeStockage(".docx");
-    const enregistre = await enregistrerDocumentProduit(dossier, document.titre, nom, contenu);
-    produits.push({ id: enregistre.id, titre: document.titre });
-  }
+  const { produits, conserves } = await remplacerDocumentsProduits(dossier, actes);
 
-  return NextResponse.json({ ok: true, documents: produits }, { status: 201 });
+  return NextResponse.json(
+    { ok: true, documents: [...produits, ...conserves] },
+    { status: 201 }
+  );
 });

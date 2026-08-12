@@ -4,8 +4,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { ouvrirModification } from "@/infrastructure/db/depots/modifications";
 import { verifierModification, documentsModification } from "@/domain/formalite/modifications";
 import { genererDocument } from "@/infrastructure/documents/generation";
-import { enregistrerDocumentProduit } from "@/infrastructure/documents/depot";
-import { nomDeStockage } from "@/lib/fichiers";
+import { remplacerDocumentsProduits } from "@/infrastructure/documents/depot";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
@@ -43,13 +42,16 @@ export const POST = route(async (requete: Request) => {
     ),
   };
 
-  const produits = [];
-  for (const document of aProduire) {
-    const contenu = genererDocument(document.gabarit, donnees);
-    const nom = nomDeStockage(".docx");
-    const enregistre = await enregistrerDocumentProduit(dossier, document.titre, nom, contenu);
-    produits.push({ id: enregistre.id, titre: document.titre });
-  }
+  // Comme pour la création : régénérer remplace le jeu précédent au lieu de l'empiler.
+  const actes = aProduire.map((document) => ({
+    titre: document.titre,
+    contenu: genererDocument(document.gabarit, donnees),
+  }));
 
-  return NextResponse.json({ ok: true, documents: produits }, { status: 201 });
+  const { produits, conserves } = await remplacerDocumentsProduits(dossier, actes);
+
+  return NextResponse.json(
+    { ok: true, documents: [...produits, ...conserves] },
+    { status: 201 }
+  );
 });

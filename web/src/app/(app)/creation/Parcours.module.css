@@ -1148,6 +1148,72 @@
   border-radius: 16px;
 }
 
+/* ---------- Régénération des actes ----------
+   Le bouton de la page d'origine : un .btn-next renversé en blanc (background: #fff ;
+   color: #111 ; border: 2px solid #e0e0e0), centré sous la liste, avec l'icône de
+   flèches circulaires. La confirmation se fait sur le bouton lui-même - bordure verte
+   et libellé changé pendant deux secondes - et non dans une fenêtre : l'original n'en
+   ouvrait aucune, et son showToast n'a jamais existé autrement que derrière un
+   « typeof === 'function' ». */
+.genRegenLigne {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.genRegen {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 32px;
+  border: 2px solid #e0e0e0;
+  border-radius: 100px;
+  background: #fff;
+  color: #111;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.genRegen svg {
+  width: 16px;
+  height: 16px;
+}
+
+.genRegen:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.genRegen:disabled {
+  color: #999;
+  border-color: #ececec;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.actesErreur {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 13.5px;
+  color: #ef4444;
+  line-height: 1.5;
+}
+
+/* Les deux secondes de confirmation. */
+.genRegenOk {
+  border-color: #22c55e;
+}
+
+.genRegenOk:disabled {
+  color: #111;
+  border-color: #22c55e;
+}
+
 .actesEntete {
   display: flex;
   flex-wrap: wrap;
