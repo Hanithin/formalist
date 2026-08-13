@@ -91,7 +91,7 @@ test.describe("espace avocat", () => {
   test("liste les dossiers du cabinet", async ({ page }) => {
     await page.goto("/avocat");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Espace avocat");
-    await expect(page.getByRole("link", { name: "PARCOURS EN COURS" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "PARCOURS EN COURS", exact: true })).toBeVisible();
   });
 
   test("un filtre laisse exactement le nombre de dossiers qu'il annonce", async ({ page }) => {
@@ -117,7 +117,7 @@ test.describe("espace avocat", () => {
 
   test("le dossier montre les informations et ce qui manque encore", async ({ page }) => {
     await page.goto("/avocat");
-    await page.getByRole("link", { name: "PARCOURS EN COURS" }).click();
+    await page.getByRole("link", { name: "PARCOURS EN COURS", exact: true }).click();
     await page.waitForURL(/\/avocat\/\d+/);
 
     await expect(page.getByRole("heading", { name: "Informations du dossier" })).toBeVisible();
@@ -127,7 +127,7 @@ test.describe("espace avocat", () => {
 
   test("une note interne s'ajoute et s'affiche", async ({ page }) => {
     await page.goto("/avocat");
-    await page.getByRole("link", { name: "PARCOURS EN COURS" }).click();
+    await page.getByRole("link", { name: "PARCOURS EN COURS", exact: true }).click();
     await page.waitForURL(/\/avocat\/\d+/);
     await page.getByRole("link", { name: "Notes internes" }).click();
     await page.waitForURL(/onglet=notes/);
@@ -142,7 +142,7 @@ test.describe("espace avocat", () => {
 
   test("une pièce déposée peut être refusée avec son motif", async ({ page }) => {
     await page.goto("/avocat");
-    await page.getByRole("link", { name: "PARCOURS EN COURS" }).click();
+    await page.getByRole("link", { name: "PARCOURS EN COURS", exact: true }).click();
     await page.waitForURL(/\/avocat\/\d+/);
     await page.getByRole("link", { name: /^Pièces/ }).click();
     await page.waitForURL(/onglet=pieces/);

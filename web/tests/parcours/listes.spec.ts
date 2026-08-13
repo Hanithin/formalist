@@ -86,7 +86,8 @@ test.describe("contrats", () => {
 
   test("une liste vide invite à agir plutôt que de constater", async ({ page }) => {
     await page.goto("/contrats?filtre=en_validation");
-    await expect(page.getByText("Aucun contrat dans ce filtre")).toBeVisible();
+    // Le titre nomme le filtre concerné : « Aucun contrat dans « En validation » ».
+    await expect(page.getByText(/Aucun contrat dans/)).toBeVisible();
   });
 });
 
