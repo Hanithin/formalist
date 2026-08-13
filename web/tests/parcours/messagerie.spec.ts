@@ -225,3 +225,30 @@ test.describe("le côté des bulles dit qui parle", () => {
     await expect(fil.getByText("Maître Dupont").first()).toBeVisible();
   });
 });
+
+test("les icônes de la saisie sont visibles et alignées sur le champ", async ({ page }) => {
+  await ouvrirLeDossier(page);
+
+  const champ = await page.getByLabel("Votre message").boundingBox();
+
+  /*
+   * Les deux icônes ont une taille réelle.
+   *
+   * globals.css habille tout <button> d'un rembourrage de 11px sur 20px : sur un
+   * bouton de 34px, il ne restait aucune place et le trombone comme l'avion étaient
+   * rendus à zéro. Mesurer le SVG est le seul moyen de s'en apercevoir - le bouton,
+   * lui, avait bien sa taille.
+   */
+  for (const nom of ["Joindre un fichier", "Envoyer"]) {
+    const icone = page.getByRole("button", { name: nom }).locator("svg");
+    const cadre = await icone.boundingBox();
+    expect(cadre, nom).not.toBeNull();
+    expect(cadre!.width, nom + " : largeur").toBeGreaterThan(10);
+    expect(cadre!.height, nom + " : hauteur").toBeGreaterThan(10);
+
+    // Et elles sont sur la même ligne que le champ, à deux pixels près.
+    const centreIcone = cadre!.y + cadre!.height / 2;
+    const centreChamp = champ!.y + champ!.height / 2;
+    expect(Math.abs(centreIcone - centreChamp), nom + " : alignement").toBeLessThan(2);
+  }
+});

@@ -20,6 +20,34 @@
   height: 100vh;
 }
 
+/*
+ * Les boutons de cette page ne sont pas des boutons d'action.
+ *
+ * globals.css habille tout <button> comme une commande de formulaire : marge haute de
+ * 18px, rembourrage de 11px sur 20px, bordure, fond et graisse. Sur une ligne de
+ * conversation, une bulle ou une icône, cela ne va pas - la marge séparait les lignes
+ * de la liste par un blanc, et le rembourrage réduisait les icônes de 34px à rien,
+ * d'où un trombone et un avion invisibles.
+ *
+ * Ce retour à zéro passe avant les règles qui suivent : chacune redéclare ensuite le
+ * rembourrage qu'elle veut.
+ */
+.convItem,
+.wcv,
+.quickSubject,
+.chatBtnAttach,
+.chatBtnSend,
+.chatMsgReplyBtn,
+.chatMsgCta,
+.rcClose {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
 /* ---------- Liste des conversations ---------- */
 
 .convList {
@@ -716,8 +744,16 @@
   word-break: break-word;
 }
 
+/*
+ * La bulle du client, en gris ardoise plutôt qu'en noir.
+ *
+ * L'original écrivait #111, mais il ne montrait le fil qu'au client, qui y voyait
+ * ses propres messages au compte-gouttes. Ici les messages du client se suivent le
+ * long de la colonne, et une pile de noir plein est dure à l'œil. Le gris garde la
+ * hiérarchie - le côté sombre reste celui du client - sans peser sur la page.
+ */
 .chatMsgSent {
-  background: #111;
+  background: #2f3037;
   color: #fff;
   border-bottom-right-radius: 4px;
 }
@@ -1110,8 +1146,16 @@
   color: #fff;
 }
 
+/*
+ * Un bouton d'envoi vide reste lisible.
+ *
+ * globals.css estompe les boutons désactivés à 55%, ce qui effaçait l'avion sur son
+ * fond gris. L'état se lit déjà à la couleur du bouton - gris tant qu'il n'y a rien à
+ * envoyer, noir dès qu'on écrit -, comme dans l'original où il n'était pas désactivé.
+ */
 .chatBtnSend:disabled {
   cursor: not-allowed;
+  opacity: 1;
 }
 
 .chatBtnSend svg {
