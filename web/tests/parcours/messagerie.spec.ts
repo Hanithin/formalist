@@ -197,3 +197,31 @@ test.describe("bulle de messagerie", () => {
     await anonyme.close();
   });
 });
+
+test.describe("le côté des bulles dit qui parle", () => {
+  test.use({ storageState: "./tests/parcours/session-avocat.json" });
+
+  test("le client à droite et la plateforme à gauche, même vu par l'avocat", async ({ page }) => {
+    await page.goto("/messagerie");
+    await page.getByRole("button", { name: /PARCOURS EN COURS/ }).first().click();
+
+    const fil = page.getByRole("log");
+    const duClient = fil.getByText("Merci, je la dépose aujourd'hui.").first();
+    const duSite = fil.getByText("Bonjour, il manque une pièce d'identité lisible.").first();
+
+    const cadreClient = await duClient.boundingBox();
+    const cadreSite = await duSite.boundingBox();
+
+    /*
+     * Le côté ne suit pas qui regarde.
+     *
+     * Le second message est de l'avocat, donc de celui qui consulte ici : s'il était
+     * placé selon « est-ce moi », il passerait à droite et le fil se lirait à
+     * l'envers de ce que voit le client.
+     */
+    expect(cadreClient!.x).toBeGreaterThan(cadreSite!.x);
+
+    // Le nom n'est affiché que du côté de la plateforme : à droite, c'est le client.
+    await expect(fil.getByText("Maître Dupont").first()).toBeVisible();
+  });
+});

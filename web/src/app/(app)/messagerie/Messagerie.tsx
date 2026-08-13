@@ -42,6 +42,15 @@ export interface Fil {
   cle: string;
   genre: "dossier" | "support";
   dossierId: number | null;
+  /**
+   * Le client de la conversation.
+   *
+   * C'est lui qui parle à droite, la plateforme - avocat ou support - à gauche. Le
+   * côté dit donc qui parle, et non qui regarde : sinon un avocat ou un
+   * administrateur voyait tout le fil du même côté, et ne distinguait plus les
+   * demandes des réponses.
+   */
+  clientId: number;
   titre: string;
   sousTitre: string | null;
   forme: string | null;
@@ -66,7 +75,6 @@ interface Props {
   fils: Fil[];
   filActif: string;
   messagesInitiaux: MessageAffiche[];
-  moi: number;
 }
 
 /** Les classes de bulle par type, le CSS module n'acceptant pas de nom calculé. */
@@ -79,7 +87,7 @@ const CLASSES_DE_TYPE: Record<string, string | undefined> = {
   status_note: styles.kindStatusNote,
 };
 
-export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
+export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
   const [messages, setMessages] = useState(messagesInitiaux);
   const [recherche, setRecherche] = useState("");
   const [repondA, setRepondA] = useState<MessageAffiche | null>(null);
@@ -329,7 +337,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
                     </p>
 
                     {duJour.map(({ message: m }) => {
-                      const mien = m.expediteurId === moi;
+                      const duClient = m.expediteurId === actif.clientId;
                       const genre = presentation(m.type);
                       const type = m.type && m.type !== "text" ? m.type : null;
                       const cite = m.repondA ? parId.get(m.repondA) : undefined;
@@ -339,7 +347,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
                           key={m.id}
                           className={[
                             styles.chatMsgWrap,
-                            mien ? styles.chatMsgWrapSent : styles.chatMsgWrapReceived,
+                            duClient ? styles.chatMsgWrapSent : styles.chatMsgWrapReceived,
                           ].join(" ")}
                         >
                           {type && (
@@ -355,14 +363,14 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
                           <div
                             className={[
                               styles.chatMsg,
-                              mien ? styles.chatMsgSent : styles.chatMsgReceived,
+                              duClient ? styles.chatMsgSent : styles.chatMsgReceived,
                               type ? styles.chatMsgTypeE : "",
                               type ? (CLASSES_DE_TYPE[type] ?? "") : "",
                             ]
                               .filter(Boolean)
                               .join(" ")}
                           >
-                            {!mien && <div className={styles.chatMsgSender}>{m.expediteur}</div>}
+                            {!duClient && <div className={styles.chatMsgSender}>{m.expediteur}</div>}
 
                             {cite && (
                               <div className={styles.chatMsgQuote}>
@@ -384,7 +392,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
                             )}
 
                             {/* Le geste attendu, du côté de qui le reçoit. */}
-                            {type && !mien && genre.action === "dossier" && actif.dossierId && (
+                            {type && !duClient && genre.action === "dossier" && actif.dossierId && (
                               <a
                                 className={styles.chatMsgCta}
                                 href={"/creation?dossier=" + actif.dossierId}
@@ -393,7 +401,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
                                 {genre.libelleAction}
                               </a>
                             )}
-                            {type && !mien && genre.action === "piece" && (
+                            {type && !duClient && genre.action === "piece" && (
                               <button
                                 type="button"
                                 className={styles.chatMsgCta}

@@ -137,6 +137,8 @@ export async function conversations(utilisateur: UtilisateurConnecte) {
       const dernier = parDossier.get(d.id);
       return {
         dossierId: d.id,
+        // Le client du dossier : c'est lui qui parle à droite dans le fil.
+        clientId: d.user_id,
         societe: d.societe || "Sans nom",
         forme: d.forme,
         avocat: d.assigned_avocat_id ? (nomsDAvocat.get(d.assigned_avocat_id) ?? null) : null,
