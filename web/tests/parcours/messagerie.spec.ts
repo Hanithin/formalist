@@ -252,3 +252,77 @@ test("les icônes de la saisie sont visibles et alignées sur le champ", async (
     expect(Math.abs(centreIcone - centreChamp), nom + " : alignement").toBeLessThan(2);
   }
 });
+
+test("dans un fil vide, le conseil et son explication ne se collent pas", async ({ page }) => {
+  await page.goto("/messagerie");
+  await page.getByRole("button", { name: /PARCOURS IMMATRICULEE/ }).first().click();
+
+  const titre = page.getByText("Joignez vos pièces au fil");
+  const explication = page.getByText(/Elles restent rattachées au message/);
+  await expect(titre).toBeVisible();
+
+  /*
+   * Deux lignes, pas une.
+   *
+   * Ces deux textes sont des <span> : sans display: block, ils se suivaient sur la
+   * même ligne - « Joignez vos pièces au filElles restent rattachées… » - et leur
+   * marge verticale était ignorée. Seule la position rendue le révèle.
+   */
+  const cadreTitre = await titre.boundingBox();
+  const cadreTexte = await explication.boundingBox();
+  expect(cadreTexte!.y).toBeGreaterThanOrEqual(cadreTitre!.y + cadreTitre!.height - 2);
+});
+
+test.describe("flux temps réel", () => {
+  /*
+   * Le flux rend un état, pas une réponse JSON : il ne passe donc pas par
+   * l'enveloppe commune, et ses refus doivent être posés à la main. Un 500 sur un
+   * paramètre invalide faisait rouvrir le flux en boucle par le navigateur, qui
+   * traite une erreur de serveur comme passagère.
+   */
+  test("une conversation vide s'abonne depuis zéro", async ({ page, request }) => {
+    const { dossiers } = await (await request.get("/api/formalites")).json();
+    const dossier = dossiers[0].id;
+
+    // Un flux reste ouvert plusieurs minutes : on ne lit que les en-têtes, puis on
+    // coupe. Attendre le corps ferait expirer le test sur un flux qui fonctionne.
+    await page.goto("/messagerie");
+    const statut = await page.evaluate(async (adresse) => {
+      const arret = new AbortController();
+      const reponse = await fetch(adresse, { signal: arret.signal });
+      arret.abort();
+      return reponse.status;
+    }, "/api/messages/flux?dossier=" + dossier + "&depuis=0");
+
+    expect(statut).toBe(200);
+  });
+
+  test("un paramètre invalide est refusé, pas encaissé", async ({ request }) => {
+    const { dossiers } = await (await request.get("/api/formalites")).json();
+    const dossier = dossiers[0].id;
+
+    for (const depuis of ["-1", "abc"]) {
+      const reponse = await request.get(
+        "/api/messages/flux?dossier=" + dossier + "&depuis=" + depuis,
+        { timeout: 4000 }
+      );
+      expect(reponse.status(), "depuis=" + depuis).toBe(400);
+    }
+  });
+
+  test("le flux d'un dossier qu'on n'a pas est refusé", async ({ request }) => {
+    const reponse = await request.get("/api/messages/flux?dossier=999999&depuis=0", {
+      timeout: 4000,
+    });
+    expect(reponse.status()).toBe(403);
+  });
+
+  test("sans session, aucun flux", async ({ browser }) => {
+    const anonyme = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const reponse = await anonyme.request.get("/api/messages/flux?dossier=1&depuis=0", {
+      timeout: 4000,
+    });
+    expect(reponse.status()).toBe(401);
+    await anonyme.close();
+  });
+});

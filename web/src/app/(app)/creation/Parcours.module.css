@@ -79,7 +79,7 @@
       padding: 40px;
     }
 .formCard h2 {
-      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-family: var(--police-titre), var(--police-texte), sans-serif;
       font-size: 20px; font-weight: 600; margin-bottom: 4px;
     }
 .formCard .formDesc {
@@ -621,6 +621,7 @@
 }
 
 .resultatDetail {
+  display: block;
   margin-top: 1px;
   font-size: 12px;
   color: #888;
@@ -1881,6 +1882,7 @@
 }
 
 .donutLabel {
+  display: block;
   margin-top: 4px;
   font-size: 11px;
   color: #999;

@@ -28,7 +28,7 @@
       position: absolute; inset: 0; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
     }
-.singleHeroProgress .pctValue { font-size: 26px; font-weight: 700; color: #111; line-height: 1; font-family: 'Cal Sans', 'Inter', sans-serif; }
+.singleHeroProgress .pctValue { font-size: 26px; font-weight: 700; color: #111; line-height: 1; font-family: var(--police-titre), var(--police-texte), sans-serif; }
 .singleHeroProgress .pctLabel { font-size: 10px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: 0; }
 .singleHeroBody { flex: 1; min-width: 0; }
 .singleHeroEyebrow {
@@ -38,7 +38,7 @@
     }
 .singleHeroTitle {
       font-size: 24px; font-weight: 600; margin-bottom: 8px; color: #111;
-      font-family: 'Cal Sans', 'Inter', sans-serif; letter-spacing: 0;
+      font-family: var(--police-titre), var(--police-texte), sans-serif; letter-spacing: 0;
     }
 .singleHeroDesc { font-size: 14.5px; color: #666; margin-bottom: 20px; line-height: 1.5; }
 .singleHeroActions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -85,7 +85,7 @@
       display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
       padding: 24px 26px 16px;
     }
-.smTitle { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 20px; color: #111; }
+.smTitle { font-family: var(--police-titre), var(--police-texte), sans-serif; font-size: 20px; color: #111; }
 .smSub { font-size: 13.5px; color: #71717a; margin-top: 3px; }
 /* margin et padding à zéro : globals.css habille les boutons, ce que la page
    d'origine ne faisait pas. */
@@ -189,7 +189,7 @@
 .socTile.done .socTilePct svg { width: 20px; height: 20px; transform: none; }
 .socTileIdent { flex: 1; min-width: 0; }
 .socTileName {
-      font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 17px; color: #111;
+      font-family: var(--police-titre), var(--police-texte), sans-serif; font-size: 17px; color: #111;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 .socTileStep { font-size: 12.5px; color: #71717a; margin-top: 3px; }
@@ -226,7 +226,7 @@
       gap: 16px; margin-bottom: 18px;
     }
 .dashCardTitle {
-      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-family: var(--police-titre), var(--police-texte), sans-serif;
       font-size: 17px; font-weight: 600; color: #111;
     }
 .dashCardSub { font-size: 13.5px; color: #71717a; margin-top: 2px; }
@@ -277,10 +277,11 @@
 .actCols .actRow { align-items: flex-start; }
 @media (max-width: 900px) { .actCols { grid-template-columns: 1fr; } }
 .actNote {
+  display: block;
       font-size: 13px; color: #52525b; line-height: 1.45; margin-top: 3px;
       border-left: 2px solid #e4e4e7; padding-left: 10px;
     }
-.actTime { font-size: 12px; color: #a1a1aa; margin-top: 2px; }
+.actTime { display: block; font-size: 12px; color: #a1a1aa; margin-top: 2px; }
 @media (max-width: 900px) {
       .dashCols { grid-template-columns: 1fr; }
 }
@@ -337,7 +338,7 @@
       gap: 16px; margin: 8px 0 14px;
     }
 .dbSectionHead h2 {
-      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-family: var(--police-titre), var(--police-texte), sans-serif;
       font-size: 18px; font-weight: 600; color: #111;
       margin: 0;
     }
@@ -347,7 +348,7 @@
     }
 .roadmapTitle {
       font-size: 17px; font-weight: 600; color: #111; margin-bottom: 4px;
-      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-family: var(--police-titre), var(--police-texte), sans-serif;
     }
 .roadmapSubtitle { font-size: 13.5px; color: #888; margin-bottom: 20px; }
 .roadmapSteps { display: flex; flex-direction: column; gap: 10px; }
@@ -368,7 +369,7 @@
 .roadmapStepCheck svg { display: none; width: 12px; height: 12px; color: #fff; }
 .roadmapStepBody { flex: 1; min-width: 0; }
 .roadmapStepTitle { font-size: 14px; font-weight: 600; color: #111; }
-.roadmapStepDesc { font-size: 12.5px; color: #888; margin-top: 2px; }
+.roadmapStepDesc { display: block; font-size: 12.5px; color: #888; margin-top: 2px; }
 .roadmapStepCta {
       font-size: 12.5px; color: #4338ca; font-weight: 600;
       padding: 6px 12px; border: 1px solid #c7d2fe; background: #eef2ff;
@@ -454,7 +455,7 @@
     }
 .topbarLeft { min-width: 0; flex: 1; }
 .topbar h1 {
-      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-family: var(--police-titre), var(--police-texte), sans-serif;
       font-size: 24px;
       font-weight: 600;
       letter-spacing: 0;
@@ -547,6 +548,7 @@
     }
 .docIco svg { width: 14px; height: 14px; }
 .docName {
+  display: block;
       flex: 1; min-width: 0; font-size: 13.5px; color: #111;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }

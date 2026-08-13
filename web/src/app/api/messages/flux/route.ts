@@ -2,6 +2,7 @@ import { z } from "zod";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { messagesDepuis } from "@/infrastructure/db/depots/messages";
 import { validerParametres, schemas } from "@/lib/valider";
+import { reponseErreur } from "@/lib/reponses";
 import { journal } from "@/lib/journal";
 
 /**
@@ -20,16 +21,40 @@ import { journal } from "@/lib/journal";
 const PAS_MS = 2000;
 const DUREE_MAXIMALE_MS = 5 * 60 * 1000;
 
-const SCHEMA = z.object({ dossier: schemas.identifiant, depuis: schemas.identifiant.optional() });
+/*
+ * « depuis » peut valoir zéro.
+ *
+ * C'est le cas d'une conversation vide : le client demande tout depuis le début.
+ * L'exiger positif rendait un 400, et le navigateur rouvrait le flux en boucle sur
+ * chaque fil sans message.
+ */
+const SCHEMA = z.object({
+  dossier: schemas.identifiant,
+  depuis: z.coerce.number().int().nonnegative("Identifiant invalide").optional(),
+});
 
 export async function GET(requete: Request) {
-  const utilisateur = await exigerUtilisateur();
-  const { dossier, depuis } = validerParametres(SCHEMA, new URL(requete.url));
+  /*
+   * L'ouverture se refuse proprement.
+   *
+   * Cette route ne passe pas par route() : elle rend un flux, pas une réponse JSON.
+   * Sans ce filet, un paramètre invalide, une session absente ou un dossier interdit
+   * remontaient en erreur non traitée, donc en 500 - et le navigateur rouvrait le
+   * flux en boucle sur une erreur qu'il aurait dû considérer comme définitive.
+   */
+  let utilisateur, dossier: number, depuis: number | undefined;
+  try {
+    utilisateur = await exigerUtilisateur();
+    ({ dossier, depuis } = validerParametres(SCHEMA, new URL(requete.url)));
 
-  // Premier appel : on lève d'abord l'accès, pour refuser tout de suite plutôt
-  // que d'ouvrir un flux qui ne renverra jamais rien.
+    // On lève d'abord l'accès, pour refuser tout de suite plutôt que d'ouvrir un
+    // flux qui ne renverra jamais rien.
+    await messagesDepuis(utilisateur, dossier, depuis ?? 0);
+  } catch (e) {
+    return reponseErreur(e);
+  }
+
   let dernier = depuis ?? 0;
-  await messagesDepuis(utilisateur, dossier, dernier);
 
   const encodeur = new TextEncoder();
   const debut = Date.now();

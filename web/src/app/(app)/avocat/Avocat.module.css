@@ -8,7 +8,7 @@
  */
 
 .topbar { padding: 28px 48px 24px; background: transparent; display: flex; align-items: baseline; justify-content: space-between; }
-.topbar h1 { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; line-height: 1; }
+.topbar h1 { font-family: var(--police-titre), var(--police-texte), sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0; line-height: 1; }
 .topbarBack {
       display: none;
       align-items: center;
@@ -52,7 +52,7 @@
 .counterDot.blue { background: #3b82f6; }
 .counterDot.green { background: #22c55e; }
 .counterDot.red { background: #ef4444; }
-.counterValue { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 32px; font-weight: 600; }
+.counterValue { font-family: var(--police-titre), var(--police-texte), sans-serif; font-size: 32px; font-weight: 600; }
 /* FILTER TABS */
     .filterTabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
 .filterTab { padding: 8px 16px; font-size: 13px; border-radius: 100px; border: 1px solid #e5e5e5; background: #fff; color: #666; cursor: pointer; transition: all 0.2s; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; }
@@ -112,7 +112,7 @@
 .badge.avocatCreated { background: #fef3c7; color: #92400e; }
 /* DETAIL VIEW */
     .detailHeader { margin-bottom: 24px; }
-.detailHeader h2 { font-family: 'Cal Sans', 'Inter', sans-serif; font-size: 26px; font-weight: 600; margin-bottom: 6px; color: #111; letter-spacing: 0; }
+.detailHeader h2 { font-family: var(--police-titre), var(--police-texte), sans-serif; font-size: 26px; font-weight: 600; margin-bottom: 6px; color: #111; letter-spacing: 0; }
 .detailHeader p { font-size: 13.5px; color: #888; }
 .topbarBadges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 !important; }
 .detailBadges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
@@ -159,7 +159,7 @@
       padding: 16px 18px; margin-bottom: 12px;
     }
 .recapSideCard h3 {
-      font-family: 'Cal Sans', sans-serif; font-size: 14px; font-weight: 600; color: #111;
+      font-family: var(--police-titre), var(--police-texte), sans-serif; font-size: 14px; font-weight: 600; color: #111;
       margin: 0 0 12px; display: flex; align-items: center; gap: 8px; letter-spacing: 0;
     }
 .recapSideCard h3 svg { width: 14px; height: 14px; color: #888; }
@@ -168,7 +168,7 @@
 .recapSideRow .lbl { color: #888; flex: 1; }
 .recapSideRow .val { color: #111; font-weight: 500; }
 .recapTitleIcon {
-      font-family: 'Cal Sans', 'Inter', sans-serif;
+      font-family: var(--police-titre), var(--police-texte), sans-serif;
       font-size: 17px; font-weight: 600; color: #111;
       margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
       letter-spacing: 0;
@@ -215,8 +215,8 @@
 .auditLabel { font-size: 14px; color: #111; line-height: 1.4; }
 .auditLabel em { font-style: normal; color: #4338ca; font-weight: 500; }
 .auditDiff { margin-top: 8px; display: inline-flex; align-items: center; padding: 6px 12px; background: #fafafa; border: 1px solid #f0f0f2; border-radius: 8px; font-size: 13px; max-width: 100%; }
-.auditBefore { color: #dc2626; text-decoration: line-through; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.auditAfter { color: #059669; font-weight: 500; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auditBefore { display: block; color: #dc2626; text-decoration: line-through; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auditAfter { display: block; color: #059669; font-weight: 500; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .auditComment { margin-top: 6px; padding: 8px 12px; background: #fffbeb; border-left: 3px solid #f59e0b; font-size: 13px; color: #78350f; border-radius: 0 8px 8px 0; }
 .auditDate { margin-top: 6px; font-size: 12px; color: #999; }
 /* DOCUMENTS */
@@ -224,7 +224,7 @@
 .docIcon { width: 40px; height: 40px; border-radius: 10px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .docIcon svg { width: 20px; height: 20px; color: #666; }
 .docInfo { flex: 1; }
-.docName { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.docName { display: block; font-size: 14px; font-weight: 500; margin-bottom: 2px; }
 .docMeta { font-size: 12px; color: #999; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .docActions { display: flex; gap: 8px; }
 .badgeDoc { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }

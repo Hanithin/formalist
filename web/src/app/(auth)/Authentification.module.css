@@ -15,19 +15,13 @@
    plutôt que d'illustrer : c'est ce que l'utilisateur vient faire.
    ========================================================================== */
 
-@font-face {
-  font-family: 'Cal Sans';
-  src: url('/fonts/CalSans-SemiBold.otf') format('opentype');
-  font-weight: 600;
-  font-display: block;
-}
-
-@font-face {
-  font-family: 'Matter';
-  src: url('/fonts/Matter-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-display: block;
-}
+/*
+ * Les polices sont déclarées une fois pour tout le site, dans layout.tsx, et
+ * exposées par --police-titre et --police-texte. Deux @font-face vivaient ici, vers
+ * /fonts/CalSans-SemiBold.otf et /fonts/Matter-Regular.ttf : ce dossier n'existe pas
+ * dans public/, si bien qu'aucune des deux ne se chargeait et que les titres de ces
+ * pages retombaient sur la police système.
+ */
 
 :global(*), :global(*::before), :global(*::after) {
   margin: 0;
@@ -40,7 +34,7 @@
 }
 
 :global(body) {
-  font-family: 'Matter', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--police-texte), -apple-system, BlinkMacSystemFont, sans-serif;
   color: #111;
   background: #fff;
   -webkit-font-smoothing: antialiased;
@@ -123,7 +117,7 @@
 }
 
 .loginCard h1 {
-  font-family: 'Cal Sans', 'Inter', sans-serif;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 32px;
   font-weight: 600;
   letter-spacing: 0;
@@ -168,7 +162,7 @@
   padding: 12px 16px;
   border: 1px solid #e5e5e5;
   border-radius: 10px;
-  font-family: 'Matter', 'Inter', sans-serif;
+  font-family: var(--police-texte), sans-serif;
   font-size: 15px;
   color: #111;
   background: #fff;
@@ -233,7 +227,7 @@
   width: 100%;
   padding: 14px;
   border-radius: 100px;
-  font-family: 'Matter', 'Inter', sans-serif;
+  font-family: var(--police-texte), sans-serif;
   font-size: 15px;
   font-weight: 400;
   letter-spacing: 0;
@@ -262,7 +256,7 @@
   width: 100%;
   padding: 13px;
   border-radius: 100px;
-  font-family: 'Matter', 'Inter', sans-serif;
+  font-family: var(--police-texte), sans-serif;
   font-size: 15px;
   font-weight: 500;
   text-align: center;
@@ -366,7 +360,7 @@
 }
 
 .authRightTitle {
-  font-family: 'Cal Sans', 'Inter', sans-serif;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 30px;
   font-weight: 600;
   letter-spacing: 0;
@@ -597,6 +591,7 @@
 }
 
 .authDocName {
+  display: block;
   flex: 1;
   min-width: 0;
   color: #111;
