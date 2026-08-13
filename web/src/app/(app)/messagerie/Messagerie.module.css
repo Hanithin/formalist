@@ -6,14 +6,18 @@
  * des messages déborde au lieu de défiler et pousse la zone de saisie hors de l'écran.
  */
 
+/*
+ * La messagerie occupe toute la hauteur, bord à bord.
+ *
+ * L'original ne l'encadrait pas : ni bordure, ni rayon, ni marge. C'est une page qui
+ * se tient à l'écran, pas une carte posée dessus - le fil doit défiler seul, et la
+ * zone de saisie rester visible en bas.
+ */
 .msgContainer {
   flex: 1;
   display: flex;
   overflow: hidden;
-  height: calc(100vh - 48px);
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 16px;
+  height: 100vh;
 }
 
 /* ---------- Liste des conversations ---------- */
@@ -33,9 +37,9 @@
   flex-shrink: 0;
 }
 
-.convListHeader h2 {
+.convListHeader h1 {
   margin: 0 0 6px;
-  font-family: inherit;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 28px;
   font-weight: 600;
   letter-spacing: 0;
@@ -98,11 +102,13 @@
 }
 
 .convInfo {
+  display: block;
   flex: 1;
   min-width: 0;
 }
 
 .convName {
+  display: block;
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
@@ -112,6 +118,7 @@
 }
 
 .convPreview {
+  display: block;
   font-size: 12px;
   color: #999;
   white-space: nowrap;
@@ -247,7 +254,7 @@
 
 .welcomeTitle {
   margin: 0 0 8px;
-  font-family: inherit;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 24px;
   font-weight: 600;
   color: #111;
@@ -389,7 +396,7 @@
 
 .infoTitle {
   margin: 0;
-  font-family: inherit;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 22px;
   font-weight: 600;
   color: #111;
@@ -492,7 +499,7 @@
 
 .emptyChatTitle {
   margin: 0 0 8px;
-  font-family: inherit;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 20px;
   font-weight: 600;
   color: #111;

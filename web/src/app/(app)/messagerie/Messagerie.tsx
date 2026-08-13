@@ -236,7 +236,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
       {/* ---------- Les conversations ---------- */}
       <div className={styles.convList}>
         <div className={styles.convListHeader}>
-          <h2>Messagerie</h2>
+          <h1>Messagerie</h1>
           <div className={styles.convSearch}>
             <Loupe />
             <label htmlFor="recherche-conversation" className={styles.invisible}>
