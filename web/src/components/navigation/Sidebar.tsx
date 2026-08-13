@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { menuPour, entreeActive, SEPARATEUR } from "@/domain/navigation/menu";
 import { libelleCompteur, type ResumeColonne } from "@/domain/navigation/colonne";
 import { icone } from "@/domain/navigation/icones";
@@ -9,8 +13,8 @@ import { NouvelleFormalite } from "./NouvelleFormalite";
 import styles from "./Sidebar.module.css";
 
 interface Props {
-  chemin: string;
   utilisateur: { nom: string; email: string; roles: Role[] };
+  /** Le résumé au premier rendu ; la colonne le rafraîchit ensuite elle-même. */
   resume: ResumeColonne;
 }
 
@@ -24,7 +28,39 @@ function initiales(nom: string): string {
     .join("");
 }
 
-export function Sidebar({ chemin, utilisateur, resume }: Props) {
+/**
+ * La colonne de navigation.
+ *
+ * Elle est cliente pour deux raisons, toutes deux dues au fait qu'une disposition
+ * partagée n'est pas réexécutée quand on passe d'une de ses pages à une autre.
+ *
+ * L'entrée active se lisait dans un en-tête posé par le proxy : elle restait donc
+ * celle de la première page ouverte, et « Mes formalités » demeurait surligné après
+ * un clic sur « Tableau de bord ». Elle vient maintenant du chemin courant.
+ *
+ * Les compteurs, eux, restaient ceux du chargement initial - la colonne annonçait
+ * trente et un dossiers en cours quand la page en montrait vingt-huit. Ils sont
+ * redemandés à chaque changement de page, comme dans la version d'origine qui
+ * interrogeait l'API sur chacune de ses pages. La valeur du serveur sert d'amorce :
+ * rien ne clignote au premier rendu.
+ */
+export function Sidebar({ utilisateur, resume }: Props) {
+  const chemin = usePathname();
+  const [resumeCourant, setResumeCourant] = useState(resume);
+
+  useEffect(() => {
+    const abandon = new AbortController();
+
+    fetch("/api/colonne", { signal: abandon.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((frais: ResumeColonne | null) => {
+        if (frais) setResumeCourant(frais);
+      })
+      .catch(() => undefined);
+
+    return () => abandon.abort();
+  }, [chemin]);
+
   const menu = menuPour(utilisateur.roles);
   const active = entreeActive(chemin, menu);
   const estAdmin = utilisateur.roles.includes("admin");
@@ -46,8 +82,8 @@ export function Sidebar({ chemin, utilisateur, resume }: Props) {
       {/* Le bloc de contexte n'apparaît qu'une fois une société ouverte, comme à
           l'origine où il restait en display:none jusque-là. Avec une seule, il
           n'ouvre rien : il situe. Avec plusieurs, il mène à la liste. */}
-      {resume.societe && (
-        <Contexte nom={resume.societe} plusieurs={resume.plusieurs} />
+      {resumeCourant.societe && (
+        <Contexte nom={resumeCourant.societe} plusieurs={resumeCourant.plusieurs} />
       )}
 
       <NouvelleFormalite />
@@ -79,7 +115,7 @@ export function Sidebar({ chemin, utilisateur, resume }: Props) {
           }
 
           const estActive = lienNu === active;
-          const compteur = element.compteur ? libelleCompteur(element.compteur, resume) : null;
+          const compteur = element.compteur ? libelleCompteur(element.compteur, resumeCourant) : null;
 
           return (
             <Link

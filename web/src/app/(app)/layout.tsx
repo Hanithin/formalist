@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/navigation/Sidebar";
 import { Bulle } from "@/components/messagerie/Bulle";
@@ -21,8 +20,6 @@ export default async function DispositionApplication({ children }: { children: R
   const utilisateur = await utilisateurCourant();
   if (!utilisateur) redirect("/connexion");
 
-  const chemin = (await headers()).get("x-chemin") ?? "";
-
   // La société active et les deux compteurs de la colonne. La page d'origine les
   // demandait en JavaScript après l'affichage, et les gardait en sessionStorage
   // pour masquer le clignotement ; ici ils arrivent avec la page.
@@ -31,7 +28,6 @@ export default async function DispositionApplication({ children }: { children: R
   return (
     <div className={styles.page}>
       <Sidebar
-        chemin={chemin}
         utilisateur={{ nom: utilisateur.nom, email: utilisateur.email, roles: utilisateur.roles }}
         resume={resume}
       />

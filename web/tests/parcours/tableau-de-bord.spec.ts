@@ -220,3 +220,55 @@ test.describe("la fenêtre ne défile pas", () => {
     });
   }
 });
+
+test.describe("la colonne suit la page ouverte", () => {
+  /*
+   * Une disposition partagée n'est pas réexécutée quand on passe d'une de ses pages à
+   * une autre. L'entrée active se lisait dans un en-tête posé par le proxy : elle
+   * restait donc celle de la première page ouverte, et « Mes formalités » demeurait
+   * surligné après un clic sur « Tableau de bord ».
+   */
+  test("l'entrée surlignée change à la navigation", async ({ page }) => {
+    await page.goto("/formalites");
+    const colonne = page.getByRole("navigation", { name: "Navigation principale" });
+
+    await expect(colonne.getByRole("link", { name: /Mes formalités/ })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+
+    await colonne.getByRole("link", { name: "Tableau de bord" }).click();
+    await page.waitForURL(/\/tableau-de-bord/);
+
+    await expect(colonne.getByRole("link", { name: "Tableau de bord" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+    await expect(colonne.getByRole("link", { name: /Mes formalités/ })).not.toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  test("le compteur de la colonne suit ce que la page annonce", async ({ page }) => {
+    // Les compteurs restaient ceux du chargement initial : la colonne annonçait
+    // trente et un dossiers en cours quand la page en montrait vingt-huit.
+    await page.goto("/tableau-de-bord");
+    await page.getByRole("navigation", { name: "Navigation principale" })
+      .getByRole("link", { name: /Mes formalités/ })
+      .click();
+    await page.waitForURL(/\/formalites/);
+
+    const compteur = page
+      .getByRole("navigation", { name: "Navigation principale" })
+      .getByRole("link", { name: /Mes formalités/ });
+    const annonce = Number((await compteur.innerText()).match(/(\d+)/)?.[1]);
+
+    const filtreEnCours = page
+      .getByRole("navigation", { name: "Filtrer les formalités" })
+      .getByRole("link", { name: /En cours/ });
+    const surLaPage = Number((await filtreEnCours.innerText()).match(/(\d+)/)?.[1]);
+
+    expect(annonce).toBe(surLaPage);
+  });
+});

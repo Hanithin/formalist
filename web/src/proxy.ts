@@ -66,7 +66,6 @@ export default function proxy(requete: NextRequest) {
   const jeton = crypto.randomUUID().replace(/-/g, "");
 
   const entetes = new Headers(requete.headers);
-  entetes.set("x-chemin", pathname);
   // Next lit cet en-tête et appose le jeton sur les scripts qu'il produit.
   entetes.set("x-nonce", jeton);
 
