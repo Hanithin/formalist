@@ -1,63 +1,117 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { conversations, messagesDuDossier } from "@/infrastructure/db/depots/messages";
-import { Messagerie } from "./Messagerie";
-import { Vide } from "@/components/liste/Vide";
+import { messagesDe, nonLus as nonLusDuSupport } from "@/infrastructure/db/depots/support";
+import { Messagerie, type Fil, type MessageAffiche } from "./Messagerie";
 
 export const metadata: Metadata = {
   title: "Messagerie - Formalist",
   robots: { index: false, follow: false },
 };
 
+/**
+ * Les conversations, de deux origines.
+ *
+ * Un fil par dossier suivi par un avocat, et un fil avec le support : c'est le
+ * découpage de public/messagerie.html, dont la liste portait les sections « Avocat »
+ * et « Support ».
+ *
+ * Un dossier n'apparaît que s'il a un avocat ou des messages - la page d'origine
+ * posait déjà cette condition. Sans elle, la liste se remplit de dossiers à peine
+ * ouverts, sans nom et sans interlocuteur, où il n'y a personne à qui écrire.
+ */
 export default async function PageMessagerie({
   searchParams,
 }: {
-  searchParams: Promise<{ dossier?: string }>;
+  searchParams: Promise<{ dossier?: string; fil?: string }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const fils = await conversations(utilisateur);
+  const { dossier, fil } = await searchParams;
 
-  if (fils.length === 0) {
-    return (
-      <main>
-        <h1>Messagerie</h1>
-        {/* Un fil s'ouvre avec l'avocat d'un dossier : sans dossier, il n'y a
-            personne à qui écrire ici. Le support, lui, répond tout de suite -
-            c'est la porte à montrer, pas « créez une société ». */}
-        <Vide
-          icone="/messagerie"
-          titre="Aucune conversation"
-          texte="Un fil s'ouvre avec l'avocat en charge de votre dossier, dès qu'il en prend un. Pour une question sur la plateforme, le support répond sous 24 heures ouvrées."
-          action={{ libelle: "Écrire au support", lien: "/support" }}
-          secondaire={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
-        />
-      </main>
-    );
+  const [parDossier, messagesSupport, nonLusSupport] = await Promise.all([
+    conversations(utilisateur),
+    messagesDe(utilisateur),
+    nonLusDuSupport(utilisateur),
+  ]);
+
+  const dernierSupport = messagesSupport[messagesSupport.length - 1];
+
+  const fils: Fil[] = [
+    ...parDossier
+      .filter((c) => c.avocat !== null || c.dernierMessage !== null || c.nonLus > 0)
+      .map((c) => ({
+        cle: "dossier-" + c.dossierId,
+        genre: "dossier" as const,
+        dossierId: c.dossierId,
+        titre: c.societe,
+        sousTitre: c.avocat ?? "Avocat non assigné",
+        forme: c.forme,
+        dernierMessage: c.dernierMessage,
+        dernierDeMoi: c.dernierDeMoi,
+        dernierLe: c.dernierLe?.toISOString() ?? null,
+        nonLus: c.nonLus,
+      })),
+    {
+      cle: "support",
+      genre: "support" as const,
+      dossierId: null,
+      titre: "Support Formalist",
+      sousTitre: "Réponse sous quelques heures, du lundi au vendredi",
+      forme: null,
+      dernierMessage: dernierSupport?.contenu ?? null,
+      dernierDeMoi: dernierSupport ? dernierSupport.expediteurId === utilisateur.id : false,
+      dernierLe: dernierSupport?.envoyeLe?.toISOString() ?? null,
+      nonLus: nonLusSupport,
+    },
+  ];
+
+  /*
+   * Quelle conversation est ouverte.
+   *
+   * Rien dans l'adresse n'ouvre rien : l'écran d'accueil liste les conversations, et
+   * c'est celui de l'original. Un identifiant inventé ne doit pas non plus ouvrir la
+   * conversation de quelqu'un d'autre - il ne peut désigner qu'un fil de cette liste.
+   */
+  const demande = fil === "support" ? "support" : dossier ? "dossier-" + Number(dossier) : null;
+  const actif = fils.find((f) => f.cle === demande) ?? null;
+
+  let messages: MessageAffiche[] = [];
+  if (actif?.genre === "support") {
+    messages = messagesSupport.map((m) => ({
+      id: m.id,
+      expediteurId: m.expediteurId,
+      expediteur: m.expediteur,
+      contenu: m.contenu,
+      type: null,
+      fichier: m.fichier,
+      repondA: null,
+      // La colonne created_at du support accepte le nul : un message sans date se
+      // place à l'instant de la lecture plutôt que de faire tomber la page.
+      envoyeLe: (m.envoyeLe ?? new Date()).toISOString(),
+    }));
+  } else if (actif?.dossierId) {
+    const lignes = await messagesDuDossier(utilisateur, actif.dossierId);
+    messages = lignes.map((m) => ({
+      id: m.id,
+      expediteurId: m.expediteurId,
+      expediteur: m.expediteur,
+      contenu: m.contenu,
+      type: m.type,
+      fichier: m.fichier,
+      repondA: m.repondA,
+      envoyeLe: m.envoyeLe.toISOString(),
+    }));
   }
 
-  // Le dossier demandé, s'il fait partie des conversations visibles ; sinon le
-  // premier. Un identifiant inventé dans l'adresse ne doit rien ouvrir d'autre.
-  const { dossier } = await searchParams;
-  const demande = Number(dossier);
-  const choisi = fils.find((f) => f.dossierId === demande) ?? fils[0];
-
-  const messages = await messagesDuDossier(utilisateur, choisi.dossierId);
-
   return (
-    <main>
-      <h1>Messagerie</h1>
-      {/* La clé fait repartir le fil à zéro au changement de conversation :
-          réinitialiser dans un effet enchaînerait deux rendus. */}
-      <Messagerie
-        key={choisi.dossierId}
-        conversations={fils.map((f) => ({
-          ...f,
-          dernierLe: f.dernierLe?.toISOString() ?? null,
-        }))}
-        dossierActif={choisi.dossierId}
-        messagesInitiaux={messages.map((m) => ({ ...m, envoyeLe: m.envoyeLe.toISOString() }))}
-        moi={utilisateur.id}
-      />
-    </main>
+    // La clé fait repartir le fil à zéro au changement de conversation :
+    // réinitialiser dans un effet enchaînerait deux rendus.
+    <Messagerie
+      key={actif?.cle ?? "accueil"}
+      fils={fils}
+      filActif={actif?.cle ?? ""}
+      messagesInitiaux={messages}
+      moi={utilisateur.id}
+    />
   );
 }

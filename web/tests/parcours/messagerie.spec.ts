@@ -7,24 +7,63 @@ import { test, expect } from "@playwright/test";
  * demande de document non lue.
  */
 
-test("la conversation s'ouvre avec le champ de saisie prêt", async ({ page }) => {
+/**
+ * Le dossier d'exemple, ouvert par son adresse.
+ *
+ * Rien dans l'adresse n'ouvre plus rien : l'accueil liste les conversations, comme
+ * dans la page d'origine. Les tests désignent donc le fil qu'ils veulent.
+ */
+async function ouvrirLeDossier(page: import("@playwright/test").Page) {
   await page.goto("/messagerie");
+  await page.getByRole("button", { name: /PARCOURS EN COURS/ }).first().click();
+  await expect(page.getByLabel("Votre message")).toBeVisible();
+}
+
+test("l'accueil liste les conversations plutôt que d'en ouvrir une", async ({ page }) => {
+  await page.goto("/messagerie");
+
+  await expect(page.getByRole("heading", { name: "Choisissez une conversation" })).toBeVisible();
+  // Les deux origines de fil sont là : le dossier suivi, et le support.
+  await expect(page.getByRole("button", { name: /PARCOURS EN COURS/ }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Support Formalist/ }).first()).toBeVisible();
+});
+
+test("la liste se cherche par son nom", async ({ page }) => {
+  await page.goto("/messagerie");
+
+  const liste = page.getByRole("navigation", { name: "Conversations" });
+
+  await page.getByLabel("Rechercher une conversation").fill("support");
+  await expect(liste.getByRole("button", { name: /Support Formalist/ })).toBeVisible();
+  await expect(liste.getByRole("button", { name: /PARCOURS EN COURS/ })).toHaveCount(0);
+
+  // Une recherche sans résultat le dit, au lieu de laisser une colonne vide.
+  await page.getByLabel("Rechercher une conversation").fill("zzz introuvable");
+  await expect(page.getByText(/Aucune conversation ne correspond/)).toBeVisible();
+});
+
+test("la conversation s'ouvre avec le champ de saisie prêt", async ({ page }) => {
+  await ouvrirLeDossier(page);
 
   // Le champ est là d'emblée : rien à ouvrir pour écrire.
   await expect(page.getByLabel("Votre message")).toBeVisible();
-  await expect(page.getByText("PARCOURS EN COURS")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /PARCOURS EN COURS/ })).toBeVisible();
 });
 
 test("les messages existants sont affichés, avec leur intention", async ({ page }) => {
-  await page.goto("/messagerie");
+  await ouvrirLeDossier(page);
 
-  await expect(page.getByRole("log").getByText("il manque une pièce d'identité lisible")).toBeVisible();
-  // Une demande de document ne doit pas ressembler à un bavardage
-  await expect(page.getByText("Document demandé")).toBeVisible();
+  await expect(
+    page.getByRole("log").getByText("il manque une pièce d'identité lisible")
+  ).toBeVisible();
+  // Une demande de document ne doit pas ressembler à un bavardage.
+  await expect(page.getByText("Demande de pièce")).toBeVisible();
+  // Et elle propose le geste attendu, plutôt que de laisser deviner.
+  await expect(page.getByRole("button", { name: "Joindre le document" })).toBeVisible();
 });
 
 test("un message envoyé apparaît dans le fil", async ({ page }) => {
-  await page.goto("/messagerie");
+  await ouvrirLeDossier(page);
 
   const texte = "Message de parcours " + Date.now();
   await page.getByLabel("Votre message").fill(texte);
@@ -35,7 +74,7 @@ test("un message envoyé apparaît dans le fil", async ({ page }) => {
 });
 
 test("la touche Entrée envoie le message", async ({ page }) => {
-  await page.goto("/messagerie");
+  await ouvrirLeDossier(page);
 
   const texte = "Envoyé au clavier " + Date.now();
   await page.getByLabel("Votre message").fill(texte);
@@ -44,24 +83,57 @@ test("la touche Entrée envoie le message", async ({ page }) => {
   await expect(page.getByRole("log").getByText(texte)).toBeVisible();
 });
 
+test("répondre à un message le cite dans la bulle", async ({ page }) => {
+  await ouvrirLeDossier(page);
+
+  // Le bouton n'apparaît qu'au survol : on le désigne par son nom accessible.
+  await page.getByRole("button", { name: /^Répondre à/ }).first().click();
+  await expect(page.getByText("Répondre à", { exact: false }).first()).toBeVisible();
+
+  const texte = "Réponse citée " + Date.now();
+  await page.getByLabel("Votre message").fill(texte);
+  await page.getByRole("button", { name: "Envoyer" }).click();
+
+  const derniere = page.getByRole("log").getByText(texte);
+  await expect(derniere).toBeVisible();
+  // La citation reprend l'extrait du message auquel on répond.
+  await expect(page.getByRole("log").getByText(/il manque une pièce/).last()).toBeVisible();
+});
+
 test("le fil porte des séparateurs de journée lisibles", async ({ page }) => {
-  await page.goto("/messagerie");
+  await ouvrirLeDossier(page);
   await expect(page.getByRole("log").getByText("Aujourd'hui").first()).toBeVisible();
 });
 
 test("ouvrir la conversation marque les messages reçus comme lus", async ({ page }) => {
-  await page.goto("/messagerie");
-  await expect(page.getByRole("log").getByText("il manque une pièce")).toBeVisible();
+  await ouvrirLeDossier(page);
+  // .first() : un test précédent a répondu à ce message, dont la citation reprend
+  // le même texte dans une autre bulle.
+  await expect(page.getByRole("log").getByText("il manque une pièce").first()).toBeVisible();
 
-  // La pastille de non-lus disparaît au rechargement suivant
-  await page.reload();
-  await expect(page.locator('nav[aria-label="Conversations"] button[aria-current] span').last()).not.toHaveText("1");
+  // La pastille de non-lus disparaît au rechargement suivant.
+  await page.goto("/messagerie");
+  const liste = page.getByRole("navigation", { name: "Conversations" });
+  await expect(liste.getByLabel(/message non lu|messages non lus/)).toHaveCount(0);
 });
 
-test("un dossier inventé dans l'adresse n'ouvre rien d'autre", async ({ page }) => {
+test("le fil du support propose ses sujets fréquents", async ({ page }) => {
+  await page.goto("/messagerie?fil=support");
+
+  await expect(page.getByRole("heading", { name: "Support Formalist", level: 2 })).toBeVisible();
+  await expect(page.getByText("Sujets fréquents")).toBeVisible();
+
+  // Un sujet préremplit la saisie : devant un champ vide, on ne sait pas quoi demander.
+  await page.getByRole("button", { name: "Question sur ma facturation" }).click();
+  await expect(page.getByLabel("Votre message")).toHaveValue(/facturation/);
+});
+
+test("un dossier inventé dans l'adresse n'ouvre rien", async ({ page }) => {
   await page.goto("/messagerie?dossier=999999");
-  // Retombe sur la première conversation visible, pas sur celle demandée
-  await expect(page.getByText("PARCOURS EN COURS")).toBeVisible();
+
+  // Ni la conversation demandée, ni celle de quelqu'un d'autre par défaut.
+  await expect(page.getByRole("heading", { name: "Choisissez une conversation" })).toBeVisible();
+  await expect(page.getByLabel("Votre message")).toHaveCount(0);
 });
 
 test.describe("accès aux messages", () => {

@@ -27,6 +27,8 @@ export async function messagesDuDossier(utilisateur: UtilisateurConnecte, dossie
     contenu: m.content,
     type: m.kind,
     fichier: m.file_path,
+    // Le message auquel celui-ci répond : la bulle en cite un extrait.
+    repondA: m.reply_to_id,
     lu: !!m.read,
     envoyeLe: m.created_at,
   }));
@@ -36,9 +38,21 @@ export async function envoyerMessage(
   utilisateur: UtilisateurConnecte,
   dossierId: number,
   contenu: string,
-  type?: string
+  type?: string,
+  options: { repondA?: number | null; fichier?: string | null } = {}
 ) {
   await exigerDossier(utilisateur, dossierId);
+
+  // On ne cite que dans son propre fil : un identifiant venu de l'extérieur ne doit
+  // pas permettre de recopier un extrait du dossier de quelqu'un d'autre.
+  let repondA: number | null = null;
+  if (options.repondA) {
+    const cible = await prisma.messages.findUnique({
+      where: { id: options.repondA },
+      select: { formalite_id: true },
+    });
+    if (cible?.formalite_id === dossierId) repondA = options.repondA;
+  }
 
   const cree = await prisma.messages.create({
     data: {
@@ -46,6 +60,8 @@ export async function envoyerMessage(
       sender_id: utilisateur.id,
       content: contenu.slice(0, LONGUEUR_MAXIMALE),
       kind: typeValide(type),
+      reply_to_id: repondA,
+      file_path: options.fichier ?? null,
     },
   });
 
@@ -56,6 +72,7 @@ export async function envoyerMessage(
     contenu: cree.content,
     type: cree.kind,
     fichier: cree.file_path,
+    repondA: cree.reply_to_id,
     lu: false,
     envoyeLe: cree.created_at,
   };
@@ -101,6 +118,20 @@ export async function conversations(utilisateur: UtilisateurConnecte) {
   });
   const nonLusParDossier = new Map(compteurs.map((c) => [c.formalite_id, c._count._all]));
 
+  // Le nom de l'avocat en charge : c'est lui qu'on annonce sous le nom du dossier,
+  // et son absence qui dit qu'il n'y a encore personne à qui écrire.
+  const avocats = [...new Set(dossiers.map((d) => d.assigned_avocat_id).filter(Boolean))];
+  const nomsDAvocat = new Map(
+    avocats.length
+      ? (
+          await prisma.users.findMany({
+            where: { id: { in: avocats as number[] } },
+            select: { id: true, name: true },
+          })
+        ).map((u) => [u.id, u.name])
+      : []
+  );
+
   return dossiers
     .map((d) => {
       const dernier = parDossier.get(d.id);
@@ -108,8 +139,11 @@ export async function conversations(utilisateur: UtilisateurConnecte) {
         dossierId: d.id,
         societe: d.societe || "Sans nom",
         forme: d.forme,
+        avocat: d.assigned_avocat_id ? (nomsDAvocat.get(d.assigned_avocat_id) ?? null) : null,
         dernierMessage: dernier?.content ?? null,
         dernierAuteur: dernier?.users?.name ?? null,
+        // « Vous : » devant l'aperçu quand c'est soi qui a écrit en dernier.
+        dernierDeMoi: dernier ? dernier.sender_id === utilisateur.id : false,
         dernierLe: dernier?.created_at ?? null,
         nonLus: nonLusParDossier.get(d.id) ?? 0,
       };
@@ -158,6 +192,7 @@ export async function messagesDepuis(
     contenu: m.content,
     type: m.kind,
     fichier: m.file_path,
+    repondA: m.reply_to_id,
     envoyeLe: m.created_at,
   }));
 }

@@ -61,6 +61,28 @@ export async function deposerPiece(
 }
 
 /**
+ * Écrit une pièce jointe de message et rend son nom de stockage.
+ *
+ * Elle n'entre pas dans les documents du dossier : une pièce envoyée dans une
+ * conversation appartient à son message, et la faire apparaître dans les pièces à
+ * vérifier par l'avocat mêlerait un échange à une formalité. Le contrôle d'accès
+ * passe par le message lui-même - voir fichierLisible.
+ *
+ * Le contenu est vérifié comme tout dépôt : extension attendue, taille, et signature
+ * réelle du fichier. Un .pdf qui contient du HTML est refusé.
+ */
+export async function ecrirePieceJointe(fichier: File, formatsAcceptes?: string[]) {
+  const contenu = new Uint8Array(await fichier.arrayBuffer());
+  verifierDepot(fichier.name, contenu, formatsAcceptes);
+
+  const nom = nomDeStockage(path.extname(fichier.name).toLowerCase());
+  await mkdir(DEPOT, { recursive: true });
+  await writeFile(path.join(DEPOT, nom), contenu);
+
+  return nom;
+}
+
+/**
  * Remplace les documents produits par la plateforme.
  *
  * Régénérer ne doit pas empiler. La page d'origine ne pouvait pas empiler : elle ne

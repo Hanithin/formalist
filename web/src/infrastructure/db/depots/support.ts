@@ -57,7 +57,8 @@ export async function messagesDe(utilisateur: UtilisateurConnecte, clientId?: nu
 export async function ecrireAuSupport(
   utilisateur: UtilisateurConnecte,
   contenu: string,
-  clientId?: number
+  clientId?: number,
+  fichier?: string | null
 ) {
   const estAdmin = utilisateur.roles.includes("admin");
 
@@ -75,6 +76,7 @@ export async function ecrireAuSupport(
       user_id: cible,
       sender_id: utilisateur.id,
       content: contenu.slice(0, LONGUEUR_MAXIMALE),
+      file_path: fichier ?? null,
       read: false,
     },
   });
@@ -82,6 +84,7 @@ export async function ecrireAuSupport(
   return {
     id: message.id,
     contenu: message.content ?? "",
+    fichier: message.file_path,
     expediteurId: message.sender_id,
     expediteur: utilisateur.nom,
     duSupport: estAdmin,
