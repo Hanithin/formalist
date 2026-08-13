@@ -158,3 +158,37 @@ export function salutation(maintenant: Date = new Date()): string {
   if (heure < 18) return "Bonjour";
   return "Bonsoir";
 }
+
+/* ---------- Ce qu'on montre de ce qu'on attend ---------- */
+
+/** Une action, rattachée au dossier qui l'attend. */
+export interface ActionDeDossier extends ActionAttendue {
+  dossierId: number;
+  societe: string;
+}
+
+/** Cinq actions au plus sur l'accueil : au-delà, la carte devient une liste. */
+export const ATTENTES_MONTREES = 5;
+
+/**
+ * Les actions de tous les dossiers, les bloquantes d'abord.
+ *
+ * L'ordre compte dès qu'on n'en montre que cinq : une signature manquante ou une
+ * pièce refusée arrêtent le dossier, alors qu'une banque à choisir l'attend
+ * seulement. Les laisser dans l'ordre des dossiers pouvait cacher un blocage
+ * derrière « Voir tout ».
+ *
+ * À rang égal d'urgence, l'ordre des dossiers est conservé : il suit leur date de
+ * mise à jour, du plus récent au plus ancien.
+ */
+export function attentesOrdonnees(
+  societes: { id: number; societe: string; actions: ActionAttendue[] }[]
+): ActionDeDossier[] {
+  const toutes = societes.flatMap((s) =>
+    s.actions.map((a) => ({ ...a, dossierId: s.id, societe: s.societe }))
+  );
+
+  const urgentes = toutes.filter((a) => a.urgent);
+  const autres = toutes.filter((a) => !a.urgent);
+  return [...urgentes, ...autres];
+}

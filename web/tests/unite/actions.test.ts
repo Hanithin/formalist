@@ -6,6 +6,8 @@ import {
   etatTableauDeBord,
   salutation,
   type ContexteDossier,
+  ATTENTES_MONTREES,
+  attentesOrdonnees,
 } from "@/domain/formalite/actions";
 
 const base: ContexteDossier = {
@@ -158,5 +160,56 @@ describe("où en est le dossier, en une phrase", () => {
   it("un dossier terminé annonce son K-bis, pas une étape", () => {
     // Une vignette muette pousse à ouvrir le dossier pour rien.
     expect(prochaineEtape({ ...base, status: "terminee" })).toContain("K-bis");
+  });
+});
+
+describe("ce qu'on montre de ce qu'on attend", () => {
+  const action = (titre: string, urgent: boolean) => ({
+    titre,
+    precision: "peu importe",
+    bouton: "Agir",
+    lien: "/creation?dossier=1",
+    urgent,
+  });
+
+  it("cinq au plus sur l'accueil", () => {
+    expect(ATTENTES_MONTREES).toBe(5);
+  });
+
+  it("les bloquantes passent devant", () => {
+    /*
+     * L'ordre compte dès qu'on n'en montre que cinq : une signature manquante arrête
+     * le dossier, alors qu'une banque à choisir l'attend seulement. Sans ce tri, un
+     * blocage pouvait se cacher derrière « Voir tout ».
+     */
+    const ordonnees = attentesOrdonnees([
+      { id: 1, societe: "A", actions: [action("banque", false), action("pièce refusée", true)] },
+      { id: 2, societe: "B", actions: [action("signature", true)] },
+    ]);
+
+    expect(ordonnees.map((a) => a.titre)).toEqual(["pièce refusée", "signature", "banque"]);
+  });
+
+  it("chaque action garde le dossier qui l'attend", () => {
+    const ordonnees = attentesOrdonnees([
+      { id: 7, societe: "ATELIER MERIDIEN", actions: [action("banque", false)] },
+    ]);
+
+    expect(ordonnees[0].dossierId).toBe(7);
+    expect(ordonnees[0].societe).toBe("ATELIER MERIDIEN");
+  });
+
+  it("à urgence égale, l'ordre des dossiers est conservé", () => {
+    // Il suit leur date de mise à jour, du plus récent au plus ancien.
+    const ordonnees = attentesOrdonnees([
+      { id: 1, societe: "récent", actions: [action("a", false)] },
+      { id: 2, societe: "ancien", actions: [action("b", false)] },
+    ]);
+
+    expect(ordonnees.map((a) => a.societe)).toEqual(["récent", "ancien"]);
+  });
+
+  it("aucun dossier, aucune action", () => {
+    expect(attentesOrdonnees([])).toEqual([]);
   });
 });

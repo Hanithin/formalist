@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { accorder } from "@/domain/formalite/etapes";
+import { ATTENTES_MONTREES, attentesOrdonnees } from "@/domain/formalite/actions";
+import type { ActionAttendue } from "@/domain/formalite/actions";
+import { ToutesLesAttentes } from "./ToutesLesAttentes";
 import { dateRelative, phraseJournal, seSuffitAElleMeme } from "@/domain/formalite/journal";
 import type { EntreeJournal } from "@/domain/formalite/journal";
 import { Vide } from "@/components/liste/Vide";
@@ -15,18 +18,12 @@ import styles from "./TableauDeBord.module.css";
  * a un dossier ou plusieurs.
  */
 
-interface Action {
-  titre: string;
-  precision: string;
-  lien: string;
-  bouton: string;
-  urgent?: boolean;
-}
-
+/* Le type des actions est celui du domaine : le redéclarer ici l'avait fait
+   diverger - « urgent » y était devenu facultatif. */
 interface SocieteAvecActions {
   id: number;
   societe: string;
-  actions: Action[];
+  actions: ActionAttendue[];
 }
 
 export function Attentes({
@@ -37,6 +34,17 @@ export function Attentes({
   nbActions: number;
 }) {
   const plusieurs = societes.length > 1;
+
+  /*
+   * Cinq actions au plus, les bloquantes d'abord.
+   *
+   * La carte montrait tout : sur une trentaine de dossiers elle devenait une liste à
+   * faire défiler, et l'activité récente disparaissait sous elle. L'ordre compte dès
+   * qu'on tronque - une signature manquante ne doit pas se cacher derrière
+   * « Voir tout ».
+   */
+  const toutes = attentesOrdonnees(societes);
+  const montrees = toutes.slice(0, ATTENTES_MONTREES);
 
   return (
     <section className={styles.dashCard} aria-labelledby="ce-qu-on-attend">
@@ -57,6 +65,10 @@ export function Attentes({
                 : accorder(nbActions, "action à traiter", "actions à traiter")}
           </div>
         </div>
+
+        {toutes.length > ATTENTES_MONTREES && (
+          <ToutesLesAttentes actions={toutes} plusieurs={plusieurs} />
+        )}
       </div>
 
       {nbActions === 0 ? (
@@ -74,31 +86,29 @@ export function Attentes({
         />
       ) : (
         <div className={styles.todoList}>
-          {societes.flatMap((s) =>
-            s.actions.map((a, i) => (
-              <Link
-                key={s.id + "-" + i}
-                href={a.lien}
-                className={a.urgent ? `${styles.todo} ${styles.urgent}` : styles.todo}
-              >
-                <span className={styles.todoDot} />
-                <span className={styles.todoBody}>
-                  <span className={styles.todoTitle}>{a.titre}</span>
-                  <span className={styles.todoDesc}>
-                    {/* Le nom du dossier ne sert à rien quand il n'y en a qu'un. */}
-                    {plusieurs ? (
-                      <>
-                        <strong>{s.societe}</strong> · {a.precision}
-                      </>
-                    ) : (
-                      a.precision
-                    )}
-                  </span>
+          {montrees.map((a, i) => (
+            <Link
+              key={a.dossierId + "-" + i}
+              href={a.lien}
+              className={a.urgent ? `${styles.todo} ${styles.urgent}` : styles.todo}
+            >
+              <span className={styles.todoDot} />
+              <span className={styles.todoBody}>
+                <span className={styles.todoTitle}>{a.titre}</span>
+                <span className={styles.todoDesc}>
+                  {/* Le nom du dossier ne sert à rien quand il n'y en a qu'un. */}
+                  {plusieurs ? (
+                    <>
+                      <strong>{a.societe}</strong> · {a.precision}
+                    </>
+                  ) : (
+                    a.precision
+                  )}
                 </span>
-                <span className={styles.todoCta}>{a.bouton}</span>
-              </Link>
-            ))
-          )}
+              </span>
+              <span className={styles.todoCta}>{a.bouton}</span>
+            </Link>
+          ))}
         </div>
       )}
     </section>

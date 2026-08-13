@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { retirerDossiers } from "./nettoyage";
 
 /**
  * Le tableau de bord et l'espace avocat.
@@ -270,5 +271,63 @@ test.describe("la colonne suit la page ouverte", () => {
     const surLaPage = Number((await filtreEnCours.innerText()).match(/(\d+)/)?.[1]);
 
     expect(annonce).toBe(surLaPage);
+  });
+});
+
+test.describe("ce qu'on attend de vous", () => {
+  /** Les dossiers semés pour dépasser le seuil, retirés après la série. */
+  const semes: number[] = [];
+
+  test.afterAll(async () => {
+    if (semes.length > 0) await retirerDossiers(semes);
+  });
+
+  test("cinq actions au plus, le reste dans une fenêtre", async ({ page, request }) => {
+    /*
+     * Le jeu de données ne compte que quatre dossiers, donc moins de cinq actions.
+     * En semer quelques-uns rend le seuil observable sans dépendre de ce que les
+     * autres séries ont créé.
+     */
+    for (let i = 1; i <= 6; i++) {
+      const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+      semes.push(dossier);
+      await request.put("/api/formalites/brouillon", {
+        data: { dossier, modifications: { denomination: "ATTENTE ESSAI " + i, forme: "SASU" } },
+      });
+    }
+
+    await page.goto("/tableau-de-bord");
+
+    const carte = page.getByRole("region", { name: "Ce qu'on attend de vous" });
+    const lignes = carte.locator("a[href*='/creation'], a[href*='/signer'], a[href*='/documents']");
+
+    /*
+     * La carte montrait tout : sur une trentaine de dossiers elle devenait une liste
+     * à faire défiler, et l'activité récente disparaissait sous elle.
+     */
+    expect(await lignes.count()).toBe(5);
+
+    const voirTout = carte.getByRole("button", { name: /Voir tout/ });
+    await expect(voirTout).toBeVisible();
+
+    await voirTout.click();
+    const fenetre = page.getByRole("dialog", { name: "Tout ce qu'on attend de vous" });
+    await expect(fenetre).toBeVisible();
+
+    // Elle en montre plus que la carte.
+    const toutes = fenetre.locator("a[href*='/creation'], a[href*='/signer'], a[href*='/documents']");
+    expect(await toutes.count()).toBeGreaterThan(5);
+
+    await page.keyboard.press("Escape");
+    await expect(fenetre).not.toBeVisible();
+  });
+
+  test("une action bloquante n'est jamais cachée derrière la fenêtre", async ({ page }) => {
+    await page.goto("/tableau-de-bord");
+
+    // Le jeu de données comprend un document refusé, qui arrête son dossier : il doit
+    // figurer parmi les cinq, pas au fond de la liste.
+    const carte = page.getByRole("region", { name: "Ce qu'on attend de vous" });
+    await expect(carte.getByText("Un document à remplacer")).toBeVisible();
   });
 });
