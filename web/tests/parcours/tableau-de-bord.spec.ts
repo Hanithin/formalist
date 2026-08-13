@@ -9,9 +9,17 @@ import { retirerDossiers } from "./nettoyage";
  */
 
 test.describe("tableau de bord du client", () => {
-  test("accueille par son prénom et la date du jour", async ({ page }) => {
+  test("accueille par son prénom, avec une phrase du moment", async ({ page }) => {
     await page.goto("/tableau-de-bord");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Camille");
+    const titre = page.getByRole("heading", { level: 1 });
+
+    await expect(titre).toContainText("Camille");
+    /*
+     * La page d'origine ne se contentait pas de « Bonjour Prénom » : buildGreeting()
+     * ajoutait une phrase suivant le moment de la journée. Elle se reconnaît à sa
+     * virgule et à ce qui suit.
+     */
+    await expect(titre).toHaveText(/^(Bonjour|Bonsoir) Camille, .+/);
   });
 
   test("dit ce qu'on attend, avec la société concernée", async ({ page }) => {
@@ -223,6 +231,13 @@ test.describe("la fenêtre ne défile pas", () => {
 });
 
 test.describe("la colonne suit la page ouverte", () => {
+  /** Les dossiers ouverts par ce bloc, retirés après la série. */
+  const ouverts: number[] = [];
+
+  test.afterAll(async () => {
+    if (ouverts.length > 0) await retirerDossiers(ouverts);
+  });
+
   /*
    * Une disposition partagée n'est pas réexécutée quand on passe d'une de ses pages à
    * une autre. L'entrée active se lisait dans un en-tête posé par le proxy : elle
@@ -251,26 +266,35 @@ test.describe("la colonne suit la page ouverte", () => {
     );
   });
 
-  test("le compteur de la colonne suit ce que la page annonce", async ({ page }) => {
-    // Les compteurs restaient ceux du chargement initial : la colonne annonçait
-    // trente et un dossiers en cours quand la page en montrait vingt-huit.
+  test("le compteur de la colonne suit ce qui change", async ({ page, request }) => {
+    /*
+     * Les compteurs restaient ceux du chargement initial : la colonne annonçait trente
+     * et un dossiers en cours quand la page en montrait vingt-huit.
+     *
+     * Le test crée son propre dossier plutôt que de comparer deux lectures : sous
+     * exécution parallèle, une autre série peut en semer entre les deux, et la
+     * comparaison échouerait sur un mécanisme qui fonctionne.
+     */
+    const compteur = () =>
+      page
+        .getByRole("navigation", { name: "Navigation principale" })
+        .getByRole("link", { name: /Mes formalités/ });
+
     await page.goto("/tableau-de-bord");
-    await page.getByRole("navigation", { name: "Navigation principale" })
+    const avant = Number((await compteur().innerText()).match(/(\d+)/)?.[1] ?? 0);
+
+    const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+    ouverts.push(dossier);
+
+    await page
+      .getByRole("navigation", { name: "Navigation principale" })
       .getByRole("link", { name: /Mes formalités/ })
       .click();
     await page.waitForURL(/\/formalites/);
 
-    const compteur = page
-      .getByRole("navigation", { name: "Navigation principale" })
-      .getByRole("link", { name: /Mes formalités/ });
-    const annonce = Number((await compteur.innerText()).match(/(\d+)/)?.[1]);
-
-    const filtreEnCours = page
-      .getByRole("navigation", { name: "Filtrer les formalités" })
-      .getByRole("link", { name: /En cours/ });
-    const surLaPage = Number((await filtreEnCours.innerText()).match(/(\d+)/)?.[1]);
-
-    expect(annonce).toBe(surLaPage);
+    await expect
+      .poll(async () => Number((await compteur().innerText()).match(/(\d+)/)?.[1] ?? 0))
+      .toBeGreaterThan(avant);
   });
 });
 

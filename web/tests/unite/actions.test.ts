@@ -8,6 +8,7 @@ import {
   type ContexteDossier,
   ATTENTES_MONTREES,
   attentesOrdonnees,
+  phraseDAccueil,
 } from "@/domain/formalite/actions";
 
 const base: ContexteDossier = {
@@ -211,5 +212,67 @@ describe("ce qu'on montre de ce qu'on attend", () => {
 
   it("aucun dossier, aucune action", () => {
     expect(attentesOrdonnees([])).toEqual([]);
+  });
+});
+
+describe("la phrase d'accueil", () => {
+  const matin = new Date(2026, 7, 13, 9, 0);
+  const apresMidi = new Date(2026, 7, 13, 15, 0);
+  const soir = new Date(2026, 7, 13, 21, 0);
+  const nuit = new Date(2026, 7, 13, 3, 0);
+
+  it("le matin propose d'avancer", () => {
+    expect(phraseDAccueil("Hani", 3, matin, 0)).toBe(
+      "Bonjour Hani, prêt à avancer sur vos dossiers ?"
+    );
+  });
+
+  it("l'après-midi demande où l'on en est", () => {
+    expect(phraseDAccueil("Hani", 3, apresMidi, 0)).toBe(
+      "Bonjour Hani, comment avancent vos projets ?"
+    );
+    // Avec un seul dossier, la phrase se met au singulier.
+    expect(phraseDAccueil("Hani", 1, apresMidi, 0)).toBe(
+      "Bonjour Hani, comment avance votre projet ?"
+    );
+  });
+
+  it("le soir parle de terminer", () => {
+    expect(phraseDAccueil("Hani", 3, soir, 0)).toBe(
+      "Bonsoir Hani, encore un peu de travail ce soir ?"
+    );
+    // Le verbe s'accorde au nombre de dossiers.
+    expect(phraseDAccueil("Hani", 3, soir, 0.5)).toBe("Bonsoir Hani, vos dossiers vous attendent.");
+    expect(phraseDAccueil("Hani", 1, soir, 0.5)).toBe("Bonsoir Hani, votre dossier vous attend.");
+  });
+
+  it("un compte sans dossier reçoit un accueil, pas un rappel", () => {
+    expect(phraseDAccueil("Hani", 0, matin, 0)).toBe("Bonjour Hani, bienvenue sur Formalist !");
+    expect(phraseDAccueil("Hani", 0, soir, 0)).toBe("Bonsoir Hani, bienvenue sur Formalist !");
+  });
+
+  it("les bornes de la salutation sont celles de l'original", () => {
+    // Bonsoir de dix-huit heures à cinq heures, Bonjour ensuite : à cinq heures et
+    // demie on souhaitait le bonsoir.
+    expect(salutation(new Date(2026, 7, 13, 5, 30))).toBe("Bonjour");
+    expect(salutation(new Date(2026, 7, 13, 4, 59))).toBe("Bonsoir");
+    expect(salutation(new Date(2026, 7, 13, 18, 0))).toBe("Bonsoir");
+    expect(salutation(new Date(2026, 7, 13, 17, 59))).toBe("Bonjour");
+  });
+
+  it("la nuit reste au registre du soir", () => {
+    expect(phraseDAccueil("Hani", 2, nuit, 0)).toBe(
+      "Bonsoir Hani, encore un peu de travail ce soir ?"
+    );
+  });
+
+  it("les quatre variantes sont atteignables, et un tirage hors bornes ne casse rien", () => {
+    const phrases = new Set(
+      [0, 0.25, 0.5, 0.75].map((t) => phraseDAccueil("Hani", 2, matin, t))
+    );
+    expect(phrases.size).toBe(4);
+
+    expect(phraseDAccueil("Hani", 2, matin, 1)).toBeTruthy();
+    expect(phraseDAccueil("Hani", 2, matin, -1)).toBeTruthy();
   });
 });

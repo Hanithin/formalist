@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauDeBord, focusDuDossier } from "@/infrastructure/db/depots/tableau-de-bord";
-import { etatTableauDeBord, salutation } from "@/domain/formalite/actions";
+import { etatTableauDeBord, phraseDAccueil } from "@/domain/formalite/actions";
 import {
   avancement,
   accorder,
@@ -143,9 +143,9 @@ export default async function TableauDeBord() {
       {!accueil && (
         <header className={styles.topbar}>
           <div className={styles.topbarLeft}>
-            <h1>
-              {salutation()} {prenom}
-            </h1>
+            {/* La phrase suit le moment de la journée, comme buildGreeting() dans
+                la page d'origine. */}
+            <h1>{phraseDAccueil(prenom, societes.length)}</h1>
           </div>
           <div className={styles.topbarActions}>
             <span className={styles.topbarDate}>
@@ -156,7 +156,7 @@ export default async function TableauDeBord() {
       )}
 
       <div className={styles.content}>
-        {accueil && <Accueil salutation={salutation() + " " + prenom} />}
+        {accueil && <Accueil salutation={phraseDAccueil(prenom, 0)} />}
 
         {seul && (
           <>

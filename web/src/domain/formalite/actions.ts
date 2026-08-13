@@ -151,12 +151,74 @@ export function etatTableauDeBord(dossiers: { status: string | null }[]): EtatTa
   return dossiers.length === 1 ? "unique" : "plusieurs";
 }
 
-/** Salutation selon l'heure, comme le faisait la page d'origine. */
+/**
+ * Salutation selon l'heure.
+ *
+ * Les bornes sont celles de la page d'origine : « Bonsoir » de dix-huit heures à
+ * cinq heures du matin, « Bonjour » le reste du temps. Elles étaient à six heures
+ * ici, si bien qu'on souhaitait le bonsoir à cinq heures et demie.
+ */
 export function salutation(maintenant: Date = new Date()): string {
   const heure = maintenant.getHours();
-  if (heure < 6) return "Bonsoir";
-  if (heure < 18) return "Bonjour";
-  return "Bonsoir";
+  return heure >= 18 || heure < 5 ? "Bonsoir" : "Bonjour";
+}
+
+/**
+ * La phrase d'accueil, qui suit le moment de la journée.
+ *
+ * Reprise de buildGreeting() dans dashboard.html : « Bonjour Hani, prêt à avancer sur
+ * vos dossiers ? ». Le matin propose d'avancer, l'après-midi demande où l'on en est,
+ * le soir parle de terminer, et un compte sans dossier reçoit un accueil. La variante
+ * est tirée au hasard parmi quatre, pour que la page ne récite pas la même phrase à
+ * chaque visite.
+ *
+ * Le tirage est un paramètre : sans cela, la phrase ne se testerait pas.
+ */
+export function phraseDAccueil(
+  prenom: string,
+  nombreDeDossiers: number,
+  maintenant: Date = new Date(),
+  tirage: number = Math.random()
+): string {
+  const heure = maintenant.getHours();
+  const seul = nombreDeDossiers === 1;
+  const leDossier = seul ? "votre dossier" : "vos dossiers";
+  const attend = seul ? "vous attend" : "vous attendent";
+
+  let phrases: string[];
+  if (nombreDeDossiers === 0) {
+    phrases = [
+      "bienvenue sur Formalist !",
+      "ravi de vous accueillir.",
+      "prêt à lancer votre première société ?",
+      "on commence quand vous voulez.",
+    ];
+  } else if (heure >= 5 && heure < 12) {
+    phrases = [
+      "prêt à avancer sur " + leDossier + " ?",
+      "une belle journée pour entreprendre.",
+      "quoi de prévu ce matin ?",
+      "on démarre la journée en beauté.",
+    ];
+  } else if (heure >= 12 && heure < 18) {
+    phrases = [
+      seul ? "comment avance votre projet ?" : "comment avancent vos projets ?",
+      "besoin de finaliser un dossier ?",
+      "on continue sur notre lancée.",
+      "un bon après-midi pour avancer.",
+    ];
+  } else {
+    phrases = [
+      "encore un peu de travail ce soir ?",
+      "on termine la journée en beauté.",
+      leDossier + " " + attend + ".",
+      "une dernière vérification avant la fin de journée ?",
+    ];
+  }
+
+  // Un tirage hors bornes ne doit pas rendre une phrase absente.
+  const rang = Math.min(Math.max(Math.floor(tirage * phrases.length), 0), phrases.length - 1);
+  return salutation(maintenant) + " " + prenom + ", " + phrases[rang];
 }
 
 /* ---------- Ce qu'on montre de ce qu'on attend ---------- */
