@@ -169,6 +169,9 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
      sous la note à l'avocat, personne ne le lit. */
   const [erreurActes, setErreurActes] = useState<string | null>(null);
   const [confirme, setConfirme] = useState(false);
+  /* Les actes que la dernière production a reproduits : c'est ce que liste la
+     fenêtre de confirmation. Vide tant qu'il n'y a rien à annoncer. */
+  const [reproduits, setReproduits] = useState<string[] | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -204,7 +207,7 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
       const corps = (await reponse.json().catch(() => ({}))) as {
         error?: string;
         etape?: number;
-        documents?: unknown[];
+        documents?: { titre: string }[];
       };
 
       if (!reponse.ok) {
@@ -216,9 +219,11 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
         return;
       }
 
-      // Le succès se dit sur le bouton, comme dans l'original, et non par un
-      // paragraphe ajouté au bas de la page.
+      // Deux confirmations, l'une derrière l'autre : la fenêtre dit ce qui a été
+      // reproduit, et le bouton garde la trace verte de l'original quand elle est
+      // refermée.
       setConfirme(true);
+      setReproduits((corps.documents ?? []).map((d) => d.titre));
       router.refresh();
     });
   }
@@ -354,7 +359,8 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
                           "/api/fichier?nom=" +
                           encodeURIComponent(a.fichier) +
                           "&titre=" +
-                          encodeURIComponent(a.nom)
+                          encodeURIComponent(a.nom) +
+                          "&telecharger=1"
                         }
                         className={`${styles.genBtn} ${styles.genBtnPrimaire}`}
                       >
@@ -464,6 +470,10 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
         </p>
       )}
 
+      {reproduits && (
+        <Reproduits actes={reproduits} surFermeture={() => setReproduits(null)} />
+      )}
+
       {acteApercu?.fichier && (
         <Apercu
           nom={acteApercu.nom}
@@ -471,6 +481,62 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
           surFermeture={() => setApercuDe(null)}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * La fenêtre qui suit une production, et dit ce qu'elle a produit.
+ *
+ * Elle n'existait pas dans creation.html - la confirmation y tenait au bouton - mais
+ * régénérer sans rien voir laissait douter que quelque chose se soit passé, la liste
+ * se reconstruisant à l'identique. Elle nomme donc les actes reproduits.
+ */
+function Reproduits({ actes, surFermeture }: { actes: string[]; surFermeture: () => void }) {
+  useEffect(() => {
+    function auClavier(e: KeyboardEvent) {
+      if (e.key === "Escape") surFermeture();
+    }
+    document.addEventListener("keydown", auClavier);
+    return () => document.removeEventListener("keydown", auClavier);
+  }, [surFermeture]);
+
+  return (
+    <div className={styles.apercuVoile} onClick={surFermeture}>
+      <div
+        className={styles.reproduitsFenetre}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reproduits-titre"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className={styles.reproduitsCoche} aria-hidden="true">
+          <Coche />
+        </span>
+
+        <h3 className={styles.reproduitsTitre} id="reproduits-titre">
+          {actes.length > 1 ? "Documents régénérés" : "Document régénéré"}
+        </h3>
+
+        <p className={styles.reproduitsSous}>
+          {actes.length} document{actes.length > 1 ? "s" : ""} à relire avant signature.
+        </p>
+
+        <ul className={styles.reproduitsListe}>
+          {actes.map((titre) => (
+            <li key={titre}>{titre}</li>
+          ))}
+        </ul>
+
+        <button
+          type="button"
+          className={`${styles.genBtn} ${styles.genBtnPrimaire}`}
+          onClick={surFermeture}
+          autoFocus
+        >
+          Fermer
+        </button>
+      </div>
     </div>
   );
 }

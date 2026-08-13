@@ -3,6 +3,7 @@ import path from "node:path";
 import { prisma } from "@/infrastructure/db/client";
 import { exigerDossierModifiable } from "@/infrastructure/db/depots/dossiers";
 import { verifierDepot, nomDeStockage } from "@/lib/fichiers";
+import { convertirEnPdf, ConversionImpossible } from "./conversion";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "@/infrastructure/db/sessions";
 
@@ -71,6 +72,10 @@ export async function deposerPiece(
  * Un acte sorti de l'état « generated » n'est pas touché : un document signé ou
  * vérifié ne se remplace pas en silence, et il n'est pas reproduit non plus. Sans
  * cette réserve, régénérer après signature détruirait l'acte signé.
+ *
+ * Chaque acte est figé en PDF ici même : c'est ce fichier qu'on remet, et il ne
+ * dépend plus d'une conversion à chaque lecture. Le Word qui l'a produit reste
+ * stocké en source, la signature s'y apposant avant conversion.
  */
 export async function remplacerDocumentsProduits(
   dossierId: number,
@@ -88,12 +93,26 @@ export async function remplacerDocumentsProduits(
 
   // Les fichiers d'abord, la base ensuite : une ligne qui désigne un fichier absent
   // casse l'aperçu, alors qu'un fichier sans ligne n'est qu'un octet perdu.
-  const ecrits: { titre: string; nom: string }[] = [];
+  const ecrits: { titre: string; livre: string; source: string | null }[] = [];
   for (const acte of actes) {
     if (figes.has(acte.titre)) continue;
-    const nom = nomDeStockage(".docx");
-    await writeFile(path.join(DEPOT, nom), acte.contenu);
-    ecrits.push({ titre: acte.titre, nom });
+
+    const source = nomDeStockage(".docx");
+    await writeFile(path.join(DEPOT, source), acte.contenu);
+
+    try {
+      const pdf = await convertirEnPdf(acte.contenu);
+      const livre = nomDeStockage(".pdf");
+      await writeFile(path.join(DEPOT, livre), pdf);
+      ecrits.push({ titre: acte.titre, livre, source });
+    } catch (e) {
+      if (!(e instanceof ConversionImpossible)) throw e;
+      // LibreOffice indisponible : l'acte est enregistré en Word plutôt que perdu,
+      // et la remise le convertira à la demande. Mieux vaut un dossier complet dans
+      // le mauvais format qu'une génération qui échoue entièrement.
+      journal.warn({ acte: acte.titre }, "Acte figé en Word, conversion PDF indisponible");
+      ecrits.push({ titre: acte.titre, livre: source, source: null });
+    }
   }
 
   // Retrait et insertion dans la même transaction : un échec au milieu laisserait
@@ -110,8 +129,9 @@ export async function remplacerDocumentsProduits(
           data: {
             formalite_id: dossierId,
             name: ecrit.titre,
-            type: "docx",
-            file_path: ecrit.nom,
+            type: path.extname(ecrit.livre).slice(1),
+            file_path: ecrit.livre,
+            source_path: ecrit.source,
             uploaded_by: "system",
             status: "generated",
           },
@@ -122,13 +142,16 @@ export async function remplacerDocumentsProduits(
   });
 
   // Les fichiers du jeu précédent, une fois la base à jour. Un fichier qui résiste
-  // ne doit pas faire échouer une régénération réussie par ailleurs.
+  // ne doit pas faire échouer une régénération réussie par ailleurs. Le Word source
+  // part avec le PDF qu'il a produit : sans son acte, il ne sert plus à rien.
   for (const ancien of remplaces) {
-    if (!ancien.file_path) continue;
-    try {
-      await rm(path.join(DEPOT, ancien.file_path), { force: true });
-    } catch (e) {
-      journal.warn({ err: e, fichier: ancien.file_path }, "Ancien document non supprimé");
+    for (const chemin of [ancien.file_path, ancien.source_path]) {
+      if (!chemin) continue;
+      try {
+        await rm(path.join(DEPOT, chemin), { force: true });
+      } catch (e) {
+        journal.warn({ err: e, fichier: chemin }, "Ancien document non supprimé");
+      }
     }
   }
 

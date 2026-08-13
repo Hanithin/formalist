@@ -28,24 +28,27 @@ export const GET = route(async (requete: Request) => {
     return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 });
   }
 
-  if (path.extname(autorise).toLowerCase() !== ".docx") {
+  const extension = path.extname(autorise).toLowerCase();
+  if (extension !== ".docx" && extension !== ".pdf") {
     return NextResponse.json(
-      { error: "Seuls les documents Word se convertissent en PDF" },
+      { error: "Ce document ne s'affiche pas en PDF" },
       { status: 400 }
     );
   }
 
-  let docx: Buffer;
+  let contenu: Buffer;
   try {
-    docx = await readFile(path.join(DEPOT, autorise));
+    contenu = await readFile(path.join(DEPOT, autorise));
   } catch {
     return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 });
   }
 
   try {
-    // La conversion cache sur l'empreinte du contenu : rouvrir un aperçu ne
-    // relance pas LibreOffice.
-    const pdf = await convertirEnPdf(docx);
+    // Les actes sont figés en PDF à la génération : il n'y a plus rien à convertir,
+    // et l'aperçu s'ouvre sans dépendre de LibreOffice. La conversion reste là pour
+    // les actes produits avant ce changement, et elle cache sur l'empreinte du
+    // contenu - rouvrir un aperçu ne relance pas LibreOffice.
+    const pdf = extension === ".pdf" ? contenu : await convertirEnPdf(contenu);
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",

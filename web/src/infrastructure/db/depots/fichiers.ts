@@ -15,6 +15,24 @@ import type { UtilisateurConnecte } from "../sessions";
  * refusé : un fichier orphelin n'appartient à personne.
  */
 
+/**
+ * Ce fichier est-il un acte produit par la plateforme ?
+ *
+ * Les actes se remettent en PDF, les pièces déposées telles quelles : convertir ce
+ * qu'un client a remis changerait son document. Le marqueur est le déposant -
+ * « system » pour ce que la plateforme produit à partir des gabarits.
+ */
+export async function estActeProduit(nomFichier: string): Promise<boolean> {
+  const nom = path.basename(nomFichier || "");
+  if (!nom) return false;
+
+  const acte = await prisma.documents.findFirst({
+    where: { file_path: { endsWith: nom }, uploaded_by: "system" },
+    select: { id: true },
+  });
+  return acte !== null;
+}
+
 /** L'équipe de l'utilisateur, dans la forme attendue par les règles d'accès. */
 async function appartenanceDe(utilisateurId: number) {
   const membre = await prisma.team_members.findFirst({

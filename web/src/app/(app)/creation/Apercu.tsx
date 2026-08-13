@@ -87,7 +87,11 @@ export function Apercu({ nom, fichier, surFermeture }: Props) {
           <div className={styles.apercuGestes}>
             <a
               href={
-                "/api/fichier?nom=" + encodeURIComponent(fichier) + "&titre=" + encodeURIComponent(nom)
+                "/api/fichier?nom=" +
+                encodeURIComponent(fichier) +
+                "&titre=" +
+                encodeURIComponent(nom) +
+                "&telecharger=1"
               }
               className={`${styles.genBtn} ${styles.genBtnPrimaire}`}
             >

@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   SANS_CHAMP_OBLIGATOIRE,
@@ -526,6 +527,28 @@ export function Parcours({
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
+          )}
+
+          {/* La dernière étape n'a rien à continuer : elle ramenait au tableau de
+              bord, comme le #btnRetourDashboard de creation.html. */}
+          {etape.numero === etapes.length && (
+            <Link href="/tableau-de-bord" className={styles.btnNext}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="7" height="9" rx="1" />
+                <rect x="14" y="3" width="7" height="5" rx="1" />
+                <rect x="14" y="12" width="7" height="9" rx="1" />
+                <rect x="3" y="16" width="7" height="5" rx="1" />
+              </svg>
+              Retour au tableau de bord
+            </Link>
           )}
         </div>
       </section>

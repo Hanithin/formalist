@@ -69,7 +69,13 @@ export default async function Documents({
                   </span>
                   {d.fichier && (
                     <a
-                      href={"/api/fichier?nom=" + encodeURIComponent(d.fichier)}
+                      href={
+                        "/api/fichier?nom=" +
+                        encodeURIComponent(d.fichier) +
+                        "&titre=" +
+                        encodeURIComponent(d.nom) +
+                        "&telecharger=1"
+                      }
                       className={styles.action}
                     >
                       Télécharger

@@ -42,9 +42,20 @@ export const GET = route(async (requete: Request) => {
     return NextResponse.json({ error: "Aucune signature recueillie" }, { status: 400 });
   }
 
+  // La signature s'appose sur le Word : apposerSignature travaille sur le zip du
+  // document. Un acte est livré en PDF et garde son Word en source ; les actes
+  // produits avant ce changement n'ont que leur .docx dans file_path.
+  const aSigner = piece.source_path ?? piece.file_path;
+  if (path.extname(aSigner).toLowerCase() !== ".docx") {
+    return NextResponse.json(
+      { error: "Ce document n'a pas de version signable" },
+      { status: 400 }
+    );
+  }
+
   let contenu: Buffer;
   try {
-    contenu = await readFile(path.join(DEPOT, path.basename(piece.file_path)));
+    contenu = await readFile(path.join(DEPOT, path.basename(aSigner)));
   } catch {
     return NextResponse.json({ error: "Document introuvable" }, { status: 404 });
   }

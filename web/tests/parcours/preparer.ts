@@ -1,8 +1,11 @@
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../src/infrastructure/db/generated/client";
 import { hacher, jeton } from "../../src/lib/mots-de-passe";
+
+/** Le dépôt des fichiers, tel que le voit le serveur lancé depuis web/. */
+const DEPOT = path.join(process.cwd(), "..", "uploads");
 
 /**
  * Compte d'essai des parcours.
@@ -39,6 +42,20 @@ export default async function preparer() {
     await prisma.team_notes.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.audit_log.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.messages.deleteMany({ where: { formalites: { user_id: ancien.id } } });
+
+    // Les fichiers avant leurs lignes : une ligne supprimée sans son fichier laisse
+    // un octet que rien ne référence plus, et la série en produisait à chaque
+    // passage - de quoi remplir le disque de dépôt sans que personne le voie.
+    const anciensActes = await prisma.documents.findMany({
+      where: { formalites: { user_id: ancien.id } },
+      select: { file_path: true, source_path: true },
+    });
+    for (const acte of anciensActes) {
+      for (const chemin of [acte.file_path, acte.source_path]) {
+        if (chemin) await rm(path.join(DEPOT, path.basename(chemin)), { force: true });
+      }
+    }
+
     await prisma.documents.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     // Les essais créent des contrats et des déclarations à chaque série.
     await prisma.contrats.deleteMany({ where: { user_id: ancien.id } });

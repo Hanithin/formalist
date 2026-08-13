@@ -97,6 +97,8 @@ model documents {
   name             String
   type             String?
   file_path        String?
+  /// Word source d'un acte livré en PDF : la signature s'y appose avant conversion.
+  source_path      String?
   uploaded_by      String     @default("user")
   status           String     @default("generated")
   created_at       DateTime   @default(now()) @db.Timestamptz(6)

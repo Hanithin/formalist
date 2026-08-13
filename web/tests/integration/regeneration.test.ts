@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { rm, stat } from "node:fs/promises";
+import { readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/infrastructure/db/client";
 import { remplacerDocumentsProduits } from "@/infrastructure/documents/depot";
+import { conversionDisponible } from "@/infrastructure/documents/conversion";
+import { genererDocument } from "@/infrastructure/documents/generation";
 import { hacher } from "@/lib/mots-de-passe";
 
 /**
@@ -61,7 +63,10 @@ avecBase("régénération des actes", () => {
       where: { formalite_id: dossier },
       orderBy: { id: "asc" },
     });
-    for (const l of lignes) if (l.file_path) fichiers.add(l.file_path);
+    for (const l of lignes) {
+      if (l.file_path) fichiers.add(l.file_path);
+      if (l.source_path) fichiers.add(l.source_path);
+    }
     return lignes;
   }
 
@@ -133,6 +138,46 @@ avecBase("régénération des actes", () => {
     expect(await surLeDisque(premier.file_path!)).toBe(false);
     expect(await surLeDisque(second.file_path!)).toBe(true);
   });
+
+  it("l'acte est figé en PDF et garde son Word en source", async () => {
+    if (!(await conversionDisponible())) return; // LibreOffice absent : voir le repli plus bas
+
+    const dossier = await nouveauDossier();
+    const docx = genererDocument("sasu-statuts.docx", { NOM_SOCIETE: "ESSAI PDF FIGE" });
+
+    await remplacerDocumentsProduits(dossier, [
+      { titre: "Statuts constitutifs", contenu: docx },
+    ]);
+
+    const [acte] = await actesDu(dossier);
+
+    // C'est le PDF qu'on remet, et il ne dépend plus d'une conversion à la lecture.
+    expect(acte.file_path).toMatch(/\.pdf$/);
+    expect(await surLeDisque(acte.file_path!)).toBe(true);
+    const octets = await readFile(path.join(DEPOT, acte.file_path!));
+    expect(octets.subarray(0, 4).toString()).toBe("%PDF");
+
+    // Le Word reste : la signature s'y appose avant conversion.
+    expect(acte.source_path).toMatch(/\.docx$/);
+    expect(await surLeDisque(acte.source_path!)).toBe(true);
+  }, 90_000);
+
+  it("sans LibreOffice, l'acte est gardé en Word plutôt que perdu", async () => {
+    // Rien à vérifier ici quand la conversion marche : c'est le comportement en son
+    // absence qui compte, et LibreOffice convertit jusqu'au texte brut - on ne peut
+    // donc pas provoquer l'échec par le contenu.
+    if (await conversionDisponible()) return;
+
+    const dossier = await nouveauDossier();
+    await remplacerDocumentsProduits(dossier, [
+      { titre: "Statuts constitutifs", contenu: Buffer.from("acte") },
+    ]);
+
+    const [acte] = await actesDu(dossier);
+    expect(acte.file_path).toMatch(/\.docx$/);
+    expect(acte.source_path).toBeNull();
+    expect(await surLeDisque(acte.file_path!)).toBe(true);
+  }, 90_000);
 
   it("un acte signé survit et n'est pas reproduit", async () => {
     const dossier = await nouveauDossier();
