@@ -3,6 +3,7 @@ import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauDeBord, focusDuDossier } from "@/infrastructure/db/depots/tableau-de-bord";
 import { etatTableauDeBord, phraseDAccueil } from "@/domain/formalite/actions";
+import { dateEnTete } from "@/lib/dates";
 import {
   avancement,
   accorder,
@@ -149,7 +150,7 @@ export default async function TableauDeBord() {
           </div>
           <div className={styles.topbarActions}>
             <span className={styles.topbarDate}>
-              {new Intl.DateTimeFormat("fr-FR", { dateStyle: "full" }).format(new Date())}
+              {dateEnTete()}
             </span>
           </div>
         </header>

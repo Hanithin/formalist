@@ -132,3 +132,25 @@ describe("icônes de la navigation", () => {
     }
   });
 });
+
+describe("les fonctions annoncées mais pas ouvertes", () => {
+  it("sont grisées plutôt que menant à une page vide", () => {
+    const bientot = MENU.filter((e) => e !== SEPARATEUR && e.bientot).map((e) =>
+      e === SEPARATEUR ? "" : e.libelle
+    );
+
+    expect(bientot).toEqual([
+      "Créer mon auto-entreprise",
+      "Modifier ma société",
+      "Dépôt des comptes",
+      "Fermer ma société",
+    ]);
+  });
+
+  it("une entrée grisée n'est pas active, même sur son propre chemin", () => {
+    // Elle n'est pas un lien : rien ne doit la surligner.
+    const menu = menuPour(["user"]);
+    const entree = menu.find((e) => e !== SEPARATEUR && e.lien === "/modification");
+    expect(entree && entree !== SEPARATEUR && entree.bientot).toBe(true);
+  });
+});

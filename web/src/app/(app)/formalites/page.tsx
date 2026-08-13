@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { formalitesPourListe } from "@/infrastructure/db/depots/documents";
 import { filtreValide } from "@/domain/formalite/liste";
+import { dateEnTete } from "@/lib/dates";
 import { Liste } from "./Liste";
 import styles from "./Formalites.module.css";
 
@@ -9,12 +10,6 @@ export const metadata: Metadata = {
   title: "Mes formalités - Formalist",
   robots: { index: false, follow: false },
 };
-
-/** La date du jour, capitale initiale, comme l'écrivait la barre de titre d'origine. */
-function dateDuJour(): string {
-  const texte = new Intl.DateTimeFormat("fr-FR", { dateStyle: "full" }).format(new Date());
-  return texte.charAt(0).toUpperCase() + texte.slice(1);
-}
 
 /**
  * Mes formalités.
@@ -37,7 +32,7 @@ export default async function Formalites({
     <main className={styles.page}>
       <div className={styles.topbar}>
         <h1>Mes formalités</h1>
-        <span className={styles.topbarDate}>{dateDuJour()}</span>
+        <span className={styles.topbarDate}>{dateEnTete()}</span>
       </div>
 
       <div className={styles.content}>
