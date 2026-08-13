@@ -1,5 +1,6 @@
 import { prisma } from "../client";
 import { listerDossiers, exigerDossier } from "./dossiers";
+import type { DossierListe } from "@/domain/formalite/liste";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -74,6 +75,63 @@ export async function listerFormalites(utilisateur: UtilisateurConnecte, filtre 
   if (filtre === "tous") return dossiers;
   if (filtre === "terminee") return dossiers.filter((d) => d.status === "terminee");
   return dossiers.filter((d) => d.status !== "terminee");
+}
+
+/**
+ * Les formalités telles que la liste les affiche.
+ *
+ * Elle les charge toutes, sans filtrer : ses quatre filtres annoncent chacun leur
+ * décompte, et une liste déjà réduite ne permettrait pas de les calculer. La page
+ * d'origine faisait de même, tout tenant côté navigateur.
+ *
+ * Deux champs ne sont pas dans la table. La banque vient du brouillon - elle nomme
+ * l'étape en cours, « À déposer chez X » plutôt que « En attente du dépôt du
+ * capital » - et les messages non lus se comptent, pour la pastille rouge de la
+ * carte.
+ */
+export async function formalitesPourListe(
+  utilisateur: UtilisateurConnecte
+): Promise<DossierListe[]> {
+  const dossiers = await listerDossiers(utilisateur);
+  if (dossiers.length === 0) return [];
+
+  const nonLus = await prisma.messages.groupBy({
+    by: ["formalite_id"],
+    where: {
+      formalite_id: { in: dossiers.map((d) => d.id) },
+      sender_id: { not: utilisateur.id },
+      read: false,
+    },
+    _count: { _all: true },
+  });
+  const nonLusPar = new Map(nonLus.map((m) => [m.formalite_id, m._count._all]));
+
+  return dossiers.map((d) => ({
+    id: d.id,
+    type: d.type,
+    societe: d.societe,
+    forme: d.forme,
+    status: d.status,
+    phase: d.phase,
+    offre: d.offer,
+    banque: banqueDuBrouillon(d.data_json),
+    modifieLe: d.updated_at,
+    nonLus: nonLusPar.get(d.id) ?? 0,
+  }));
+}
+
+/** La banque choisie dans le brouillon, s'il en porte une de lisible. */
+function banqueDuBrouillon(dataJson: string | null): string | null {
+  if (!dataJson) return null;
+  try {
+    const brouillon: unknown = JSON.parse(dataJson);
+    if (!brouillon || typeof brouillon !== "object") return null;
+    const banque = (brouillon as { banque?: unknown }).banque;
+    return typeof banque === "string" && banque.trim() ? banque : null;
+  } catch {
+    // Un brouillon illisible ne doit pas retirer le dossier de la liste.
+    return null;
+  }
 }
 
 /** Les documents d'un dossier précis, après contrôle d'accès au dossier. */

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { retirerDossiers } from "./nettoyage";
 
 /**
  * Les trois listes portées : formalités, documents, contrats.
@@ -10,24 +11,64 @@ import { test, expect } from "@playwright/test";
 // La session est ouverte par preparer.ts et reprise par la configuration.
 
 test.describe("formalités", () => {
-  test("la liste montre les deux dossiers avec leur étape", async ({ page }) => {
-    await page.goto("/formalites");
-    await expect(page.getByText("PARCOURS EN COURS")).toBeVisible();
-    await expect(page.getByText("PARCOURS TERMINEE")).toBeVisible();
+  /**
+   * La liste pagine par six et se trie du plus récemment modifié au plus ancien : un
+   * dossier d'exemple n'est donc pas forcément sur la première page. Les tests le
+   * cherchent, comme le ferait quelqu'un devant l'écran.
+   */
+  async function chercher(page: import("@playwright/test").Page, nom: string) {
+    await page.getByLabel("Rechercher une formalité").fill(nom);
+  }
 
-    // Le libellé vient de la phase, pas d'un texte figé. Les essais de création
-    // ajoutent d'autres dossiers à la même étape : on vise celui-ci.
-    await expect(
-      page.locator("li", { hasText: "PARCOURS EN COURS" }).getByText("En attente de signature")
-    ).toBeVisible();
+  /** Les dossiers semés pour la pagination, retirés une fois la série passée. */
+  const pagines: number[] = [];
+
+  test.afterAll(async () => {
+    if (pagines.length > 0) await retirerDossiers(pagines);
+  });
+
+  test("la liste montre les dossiers avec leur étape", async ({ page }) => {
+    await page.goto("/formalites");
+    await chercher(page, "PARCOURS EN COURS");
+
+    const carte = page.locator("li", { hasText: "PARCOURS EN COURS" }).last();
+    await expect(carte.getByText("En attente de signature")).toBeVisible();
+    // La carte annonce aussi son avancement et sa forme.
+    await expect(carte.getByText(/% complété/)).toBeVisible();
+    await expect(carte.getByText("SASU")).toBeVisible();
+  });
+
+  test("les trois compteurs de tête résument la liste", async ({ page }) => {
+    await page.goto("/formalites");
+
+    // « Total » se dit aussi dans le sous-titre « n formalités au total » : on vise
+    // le libellé exact.
+    const compteurs = page.getByRole("list").first();
+    await expect(compteurs.getByText("En cours", { exact: true })).toBeVisible();
+    await expect(compteurs.getByText(/^Terminées?$/)).toBeVisible();
+    await expect(compteurs.getByText("Total", { exact: true })).toBeVisible();
+    // Le total est un nombre, pas un tiret : le jeu de données n'est pas vide.
+    await expect(compteurs.getByText(/formalités? au total/)).toBeVisible();
+  });
+
+  test("chaque filtre annonce son décompte", async ({ page }) => {
+    await page.goto("/formalites");
+    const filtres = page.getByRole("navigation", { name: "Filtrer les formalités" });
+
+    for (const libelle of ["Tous", "En cours", "En attente", "Terminées"]) {
+      await expect(filtres.getByRole("link", { name: new RegExp(libelle) })).toContainText(/\d/);
+    }
   });
 
   test("le filtre restreint la liste et se lit dans l'adresse", async ({ page }) => {
     await page.goto("/formalites");
-    await page.getByRole("link", { name: "Terminées" }).click();
+    await page
+      .getByRole("navigation", { name: "Filtrer les formalités" })
+      .getByRole("link", { name: /Terminées/ })
+      .click();
 
     await expect(page).toHaveURL(/filtre=terminee/);
-    await expect(page.getByText("PARCOURS TERMINEE")).toBeVisible();
+    await expect(page.getByText("PARCOURS TERMINEE").first()).toBeVisible();
     await expect(page.getByText("PARCOURS EN COURS")).toHaveCount(0);
   });
 
@@ -38,21 +79,55 @@ test.describe("formalités", () => {
 
   test("un filtre inventé ne casse pas la page", async ({ page }) => {
     await page.goto("/formalites?filtre=n-importe-quoi");
-    // Retombe sur « toutes » plutôt que sur une liste vide ou une erreur
-    await expect(page.getByText("PARCOURS EN COURS")).toBeVisible();
-    await expect(page.getByText("PARCOURS TERMINEE")).toBeVisible();
+    // Retombe sur « tous » plutôt que sur une liste vide ou une erreur
+    await expect(
+      page
+        .getByRole("navigation", { name: "Filtrer les formalités" })
+        .getByRole("link", { name: /Tous/ })
+    ).toHaveAttribute("aria-current", "page");
   });
 
-  test("le compte s'accorde selon le nombre", async ({ page }) => {
-    // Le jeu de données comprend deux dossiers terminés : le pluriel s'applique.
-    await page.goto("/formalites?filtre=terminee");
-    await expect(page.getByText(/^\d+ formalités$/)).toBeVisible();
+  test("la recherche filtre à la frappe", async ({ page }) => {
+    await page.goto("/formalites");
+    await chercher(page, "PARCOURS TERMINEE");
 
-    // Et le singulier reste sans s : c'est ce qui avait été relevé en revue.
-    await page.goto("/formalites?filtre=tous");
-    const compte = await page.getByText(/^\d+ formalités?$/).textContent();
-    const nombre = Number(compte!.split(" ")[0]);
-    expect(compte).toBe(nombre + (nombre <= 1 ? " formalité" : " formalités"));
+    await expect(page.getByText("PARCOURS TERMINEE").first()).toBeVisible();
+    await expect(page.getByText("PARCOURS EN COURS")).toHaveCount(0);
+
+    // Une recherche sans résultat le dit, au lieu de laisser la grille vide.
+    await chercher(page, "zzz introuvable");
+    await expect(page.getByText("Aucune formalité trouvée")).toBeVisible();
+  });
+
+  test("au-delà de six dossiers, la liste se pagine", async ({ page, request }) => {
+    /*
+     * Sept dossiers portant le même nom, cherchés ensemble.
+     *
+     * La pagination ne se vérifie qu'au-delà de six, et le jeu de données n'en compte
+     * que quatre. Les semer ici et restreindre la liste par la recherche rend le test
+     * indépendant de ce que les autres séries ont pu créer.
+     */
+    for (let i = 1; i <= 7; i++) {
+      const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+      pagines.push(dossier);
+      await request.put("/api/formalites/brouillon", {
+        data: { dossier, modifications: { denomination: "PAGINATION ESSAI " + i } },
+      });
+    }
+
+    await page.goto("/formalites");
+    await chercher(page, "PAGINATION ESSAI");
+
+    // Six cartes, pas sept : la septième est sur la page suivante.
+    await expect(page.getByRole("link", { name: /Reprendre/ })).toHaveCount(6);
+    await expect(page.getByText("1 à 6 sur 7")).toBeVisible();
+
+    await page.getByLabel("Page suivante").click();
+    await expect(page.getByRole("link", { name: /Reprendre/ })).toHaveCount(1);
+    await expect(page.getByText("7 à 7 sur 7")).toBeVisible();
+
+    // Une extrémité atteinte ne se clique pas.
+    await expect(page.getByLabel("Page suivante")).toBeDisabled();
   });
 });
 
