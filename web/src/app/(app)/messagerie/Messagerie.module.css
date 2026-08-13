@@ -15,9 +15,11 @@
  */
 .msgContainer {
   flex: 1;
+  /* La hauteur vient de la colonne, pas de la fenêtre : un jour où la colonne porte
+     un en-tête, 100vh déborderait. min-height: 0 permet au fil de défiler seul. */
+  min-height: 0;
   display: flex;
   overflow: hidden;
-  height: 100vh;
 }
 
 /*

@@ -196,3 +196,27 @@ test.describe("cloisonnement de l'espace avocat", () => {
     await anonyme.close();
   });
 });
+
+test.describe("la fenêtre ne défile pas", () => {
+  /*
+   * C'est la colonne de contenu qui défile, comme dans les pages d'origine où
+   * « .main » portait overflow-y: auto dans un corps à hauteur d'écran. La coquille
+   * se contentait d'un min-height : le document grandissait, la page défilait de
+   * quelques dizaines de pixels pour n'exposer qu'un bas de marge, et la barre
+   * latérale glissait avec.
+   */
+  for (const chemin of ["/tableau-de-bord", "/formalites", "/documents", "/messagerie"]) {
+    test("sur " + chemin, async ({ page }) => {
+      await page.goto(chemin);
+      await page.waitForLoadState("networkidle");
+
+      const mesures = await page.evaluate(() => ({
+        document: document.documentElement.scrollHeight,
+        fenetre: window.innerHeight,
+      }));
+
+      // Une tolérance d'un pixel : les arrondis de mise en page en valent bien un.
+      expect(mesures.document, chemin).toBeLessThanOrEqual(mesures.fenetre + 1);
+    });
+  }
+});
