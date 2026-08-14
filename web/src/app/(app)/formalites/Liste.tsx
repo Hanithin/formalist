@@ -14,6 +14,7 @@ import {
   statistiques,
   type DossierListe,
   type ValeurFiltre,
+  adresseDuDossier,
 } from "@/domain/formalite/liste";
 import { avancement, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
 import styles from "./Formalites.module.css";
@@ -54,9 +55,7 @@ export function Liste({ dossiers, filtre }: Props) {
 
   const visibles = useMemo(
     () =>
-      parModificationRecente(
-        dossiers.filter((d) => retenu(d, filtre) && correspond(d, recherche))
-      ),
+      parModificationRecente(dossiers.filter((d) => retenu(d, filtre) && correspond(d, recherche))),
     [dossiers, filtre, recherche]
   );
 
@@ -100,9 +99,7 @@ export function Liste({ dossiers, filtre }: Props) {
             <Link
               key={f.valeur}
               href={f.valeur === "tous" ? "/formalites" : "/formalites?filtre=" + f.valeur}
-              className={
-                f.valeur === filtre ? `${styles.pill} ${styles.pillActive}` : styles.pill
-              }
+              className={f.valeur === filtre ? `${styles.pill} ${styles.pillActive}` : styles.pill}
               aria-current={f.valeur === filtre ? "page" : undefined}
               onClick={() => setPage(1)}
             >
@@ -231,7 +228,11 @@ function Compteur({
   children: React.ReactNode;
 }) {
   return (
-    <li className={stat.valeur === null ? `${styles.statCard} ${styles.statCardVide}` : styles.statCard}>
+    <li
+      className={
+        stat.valeur === null ? `${styles.statCard} ${styles.statCardVide}` : styles.statCard
+      }
+    >
       <span className={`${styles.statCardIcon} ${teinte}`} aria-hidden="true">
         {children}
       </span>
@@ -249,12 +250,6 @@ function Compteur({
  * en est, comme le faisait la liste d'origine (« /creation.html?id= »). La destination
  * suit le type - une modification ne se reprend pas dans le parcours de création.
  */
-function ouvrir(dossier: DossierListe): string {
-  if (dossier.type === "modification") return "/modification?dossier=" + dossier.id;
-  if (dossier.type === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + dossier.id;
-  return "/creation?dossier=" + dossier.id;
-}
-
 function Carte({ dossier }: { dossier: DossierListe }) {
   const pourcentage = avancement(dossier.phase ?? 1, dossier.offre);
   const etat = libelleDossier({
@@ -265,13 +260,11 @@ function Carte({ dossier }: { dossier: DossierListe }) {
   const ton = tonDossier({ status: dossier.status, phase: dossier.phase });
 
   return (
-    <Link href={ouvrir(dossier)} className={styles.dossierCard}>
+    <Link href={adresseDuDossier(dossier)} className={styles.dossierCard}>
       <div className={styles.dossierCardHeader}>
         <span
           className={
-            dossier.forme
-              ? styles.typeBadge
-              : `${styles.typeBadge} ${styles.typeBadgeDefaut}`
+            dossier.forme ? styles.typeBadge : `${styles.typeBadge} ${styles.typeBadgeDefaut}`
           }
         >
           {dossier.forme || dossier.type || "Formalité"}
@@ -342,8 +335,7 @@ function Rien({
         <>
           <p className={styles.emptyStateTitle}>Aucune formalité</p>
           <p className={styles.emptyStateDesc}>
-            Vos créations, modifications et fermetures de société se suivent ici, étape par
-            étape.
+            Vos créations, modifications et fermetures de société se suivent ici, étape par étape.
           </p>
           <div className={styles.emptyStateActions}>
             <Link href="/creation?type=creation" className={`${styles.pill} ${styles.pillActive}`}>

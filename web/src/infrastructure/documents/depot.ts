@@ -1,7 +1,7 @@
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/infrastructure/db/client";
-import { exigerDossierModifiable } from "@/infrastructure/db/depots/dossiers";
+import { exigerDossierModifiable, lireDossier } from "@/infrastructure/db/depots/dossiers";
 import { verifierDepot, nomDeStockage } from "@/lib/fichiers";
 import { convertirEnPdf, ConversionImpossible } from "./conversion";
 import { journal } from "@/lib/journal";
@@ -104,6 +104,52 @@ export async function deposerPieceDeConsultation(
   });
 
   return { fichier: nom, nom: fichier.name };
+}
+
+/**
+ * Dépôt libre d'un document par le client, dans son coffre.
+ *
+ * Il se distingue de deposerPiece : celui-ci répond à une pièce attendue sur un
+ * dossier, avec un identifiant tiré de la liste des pièces exigées. Ici, le client
+ * range ce qu'il veut - un bail, une facture, un ancien Kbis - sans que la plateforme
+ * ait à le prévoir.
+ *
+ * Le rattachement à une société est facultatif et vérifié : le dossier doit lui être
+ * accessible, sinon le document rejoint ses dépôts personnels plutôt que d'afficher
+ * le nom d'une société qui n'est pas la sienne.
+ */
+export async function deposerAuCoffre(
+  utilisateur: UtilisateurConnecte,
+  fichier: File,
+  nom: string,
+  dossierId: number | null
+) {
+  let rattachement: number | null = null;
+  if (dossierId !== null) {
+    const dossier = await lireDossier(utilisateur, dossierId);
+    rattachement = dossier?.id ?? null;
+  }
+
+  const stocke = await ecrirePieceJointe(fichier);
+
+  // Registre d'abord : un fichier sur le disque sans propriétaire connu est
+  // exactement la situation qu'on veut rendre impossible.
+  await prisma.uploaded_files.create({
+    data: { filename: stocke, user_id: utilisateur.id, original_name: fichier.name },
+  });
+
+  const ligne = await prisma.user_documents.create({
+    data: {
+      user_id: utilisateur.id,
+      source_type: "upload",
+      source_id: rattachement,
+      name: nom.trim().slice(0, 200) || fichier.name,
+      file_path: stocke,
+      status: "actif",
+    },
+  });
+
+  return { id: ligne.id, nom: ligne.name, fichier: stocke, dossierId: rattachement };
 }
 
 /**

@@ -134,7 +134,12 @@ test.describe("formalités", () => {
 test.describe("documents", () => {
   test("un document rejeté annonce ce qu'il faut faire, avec le motif", async ({ page }) => {
     await page.goto("/documents");
-    await expect(page.getByText("À remplacer")).toBeVisible();
+    /*
+     * L'étiquette de la carte, et non la pastille du groupe : celui-ci annonce
+     * « 1 à remplacer » pour se signaler même replié, et un sélecteur par texte en
+     * trouverait deux.
+     */
+    await expect(page.getByText("À remplacer", { exact: true })).toBeVisible();
     await expect(page.getByText("Motif : Document illisible")).toBeVisible();
   });
 

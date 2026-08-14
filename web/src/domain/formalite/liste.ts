@@ -248,3 +248,18 @@ export function parModificationRecente<T extends { modifieLe: Date | null }>(dos
     (a, b) => (b.modifieLe?.getTime() ?? 0) - (a.modifieLe?.getTime() ?? 0)
   );
 }
+
+/**
+ * Où s'ouvre un dossier.
+ *
+ * Il n'existe pas de page « /formalites/<id> » : un dossier se reprend là où il se
+ * remplit, et le formulaire dépend de son type. La règle vivait dans la page de
+ * liste ; elle est ici parce que la bibliothèque de documents en a besoin aussi, et
+ * qu'une seconde copie finirait par diverger - la première version écrite en
+ * bibliothèque pointait vers une adresse qui n'existe pas.
+ */
+export function adresseDuDossier(dossier: { id: number; type: string | null }): string {
+  if (dossier.type === "modification") return "/modification?dossier=" + dossier.id;
+  if (dossier.type === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + dossier.id;
+  return "/creation?dossier=" + dossier.id;
+}

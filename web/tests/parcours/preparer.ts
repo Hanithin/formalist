@@ -39,6 +39,9 @@ export default async function preparer() {
     await prisma.lawyer_consultations.deleteMany({ where: { user_id: ancien.id } });
     await prisma.signature_requests.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.uploaded_files.deleteMany({ where: { user_id: ancien.id } });
+    // Le coffre personnel : les essais y déposent des documents depuis la
+    // bibliothèque, et une ligne restante empêche la suppression du compte.
+    await prisma.user_documents.deleteMany({ where: { user_id: ancien.id } });
     await prisma.team_notes.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.audit_log.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.messages.deleteMany({ where: { formalites: { user_id: ancien.id } } });

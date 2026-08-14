@@ -1,6 +1,7 @@
 import { prisma } from "../client";
 import { listerDossiers, exigerDossier } from "./dossiers";
 import type { DossierListe } from "@/domain/formalite/liste";
+import type { DocumentRange } from "@/domain/document/bibliotheque";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -17,7 +18,7 @@ import type { UtilisateurConnecte } from "../sessions";
  * de visibilité d'un document est celle de son dossier, et la dupliquer ici la
  * ferait diverger le jour où elle change.
  */
-export async function listerDocuments(utilisateur: UtilisateurConnecte, filtre = "tous") {
+export async function listerDocuments(utilisateur: UtilisateurConnecte) {
   const dossiers = await listerDossiers(utilisateur);
   const dossiersParId = new Map(dossiers.map((d) => [d.id, d]));
 
@@ -33,7 +34,19 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte, filtre =
     orderBy: { created_at: "desc" },
   });
 
-  const tout = [
+  /*
+   * Un document du coffre peut être rattaché à un dossier : c'est le cas de ce que le
+   * client dépose lui-même en désignant sa société. Le rattachement se lit dans
+   * source_id, et n'est retenu que si le dossier lui est accessible - sinon un
+   * identifiant recopié à la main ferait apparaître un nom de société qui n'est pas
+   * le sien.
+   */
+  const rattachement = (ligne: { source_type: string; source_id: number | null }) => {
+    if (ligne.source_type !== "upload" || ligne.source_id === null) return null;
+    return dossiersParId.get(ligne.source_id) ?? null;
+  };
+
+  const tout: DocumentRange[] = [
     ...documents.map((d) => ({
       id: "dossier-" + d.id,
       nom: d.name,
@@ -41,23 +54,35 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte, filtre =
       motifRejet: d.rejection_reason,
       origine: "entreprise" as const,
       societe: dossiersParId.get(d.formalite_id)?.societe ?? null,
+      societeId: d.formalite_id,
       fichier: d.file_path,
       creeLe: d.created_at,
+      contratId: null,
     })),
-    ...coffre.map((d) => ({
-      id: "coffre-" + d.id,
-      nom: d.name,
-      statut: d.status,
-      motifRejet: null,
-      origine: (d.source_type === "contrat" ? "contrat" : "upload") as "contrat" | "upload",
-      societe: null,
-      fichier: d.file_path,
-      creeLe: d.created_at,
-    })),
-  ].sort((a, b) => (b.creeLe?.getTime() ?? 0) - (a.creeLe?.getTime() ?? 0));
+    ...coffre.map((d) => {
+      const dossier = rattachement(d);
+      const contrat = d.source_type === "contrat";
 
-  return filtre === "tous" ? tout : tout.filter((d) => d.origine === filtre);
+      return {
+        id: "coffre-" + d.id,
+        nom: d.name,
+        statut: d.status,
+        motifRejet: null,
+        origine: (contrat ? "contrat" : "upload") as "contrat" | "upload",
+        societe: dossier?.societe ?? null,
+        societeId: dossier?.id ?? null,
+        fichier: d.file_path,
+        creeLe: d.created_at,
+        // Le fichier d'un contrat mène à son suivi : l'un est le résultat, l'autre
+        // le chantier, et on passe de l'un à l'autre.
+        contratId: contrat ? d.source_id : null,
+      };
+    }),
+  ];
+
+  return tout;
 }
+
 
 export async function listerContrats(utilisateur: UtilisateurConnecte, filtre = "tous") {
   const contrats = await prisma.contrats.findMany({
