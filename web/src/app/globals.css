@@ -247,7 +247,17 @@ button {
     border-color 0.15s;
 }
 
-button:hover:not(:disabled) {
+/*
+ * Le survol est écrit :where(:not(:disabled)) et non :not(:disabled).
+ *
+ * Les deux se comportent pareil, mais :not() compte dans la spécificité alors que
+ * :where() ne compte pas. Écrit sans :where, ce sélecteur vaut une classe de plus
+ * qu'un simple .maClasse:hover posé dans un module - et il gagnait donc contre lui.
+ * Le symptôme est discret : une pastille de filtre, une carte cliquable ou un onglet
+ * passaient au gris de formulaire au survol au lieu de leur couleur propre, et la
+ * règle de la page semblait ignorée sans qu'on voie pourquoi.
+ */
+button:hover:where(:not(:disabled)) {
   background: var(--surface-creuse);
   border-color: var(--trait-marque);
 }
@@ -258,7 +268,7 @@ button[type="submit"] {
   color: #fff;
 }
 
-button[type="submit"]:hover:not(:disabled) {
+button[type="submit"]:hover:where(:not(:disabled)) {
   background: #27272a;
   border-color: #27272a;
 }
