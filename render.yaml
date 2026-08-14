@@ -13,6 +13,12 @@ services:
         value: production
       - key: CORS_ORIGINS
         value: https://app.formalist.fr
+      # Adresse de l'application, distincte de celle du site vitrine : c'est vers
+      # elle que Stripe renvoie le client après paiement. NEXT_PUBLIC_SITE_URL ne
+      # convient pas, elle désigne formalist.fr pour le plan du site et les
+      # adresses canoniques.
+      - key: ADRESSE_APPLICATION
+        value: https://app.formalist.fr
       # Renseigner ces secrets dans le dashboard Render (Environment) :
       - key: GEMINI_API_KEY
         sync: false
@@ -27,6 +33,18 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: ADMIN_EMAIL
+        sync: false
+      # Paiement des consultations juridiques. La clé de production n'est acceptée
+      # qu'ici : hors production, le code refuse une clé sk_live_ pour qu'un
+      # lancement en développement ne touche pas le compte réel.
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      # Secret du point de terminaison à créer dans le tableau de bord Stripe, sur
+      # https://app.formalist.fr/api/paiement/webhook, abonné aux événements
+      # checkout.session.completed et checkout.session.expired. Le secret du
+      # tableau de bord et celui de « stripe listen » sont différents : celui-ci est
+      # le premier.
+      - key: STRIPE_WEBHOOK_SECRET
         sync: false
     disk:
       name: formalist-data
