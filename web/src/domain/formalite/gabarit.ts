@@ -136,6 +136,23 @@ export function phraseRemuneration(
   return "La rémunération de la " + fonction + " sera déterminée ultérieurement.";
 }
 
+/**
+ * « de dix euros », « d'un euro ».
+ *
+ * Les gabarits écrivaient « d’{{VALEUR_NOMINALE_LETTRES}} euro » : l'élision et le
+ * singulier y étaient figés, ce qui donnait « actions d’dix euro » dès que la valeur
+ * nominale dépassait un euro. L'élision et l'accord sont des règles de langue : ils
+ * se décident ici, où ils se testent, et non dans un document Word.
+ *
+ * L'élision ne vaut que devant « un » : les autres nombres commencent par une
+ * consonne, et « onze » comme « huit » la refusent - « de onze euros ».
+ */
+function phraseNominale(valeur: number): string {
+  const lettres = nombreEnFrancais(valeur);
+  const elide = /^une?\b/.test(lettres);
+  return (elide ? "d\u2019" : "de ") + lettres + " " + uniteNominale(valeur);
+}
+
 /** « euros », ou « centimes » quand une part vaut moins d'un euro. */
 function uniteNominale(valeur: number): string {
   if (valeur < 1) {
@@ -341,6 +358,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     VALEUR_NOMINALE_CHIFFRES: montant(nominale),
     VALEUR_NOMINALE_LETTRES: nombreEnFrancais(nominale),
     VALEUR_NOMINALE_UNITE: uniteNominale(nominale),
+    VALEUR_NOMINALE_PHRASE: phraseNominale(nominale),
 
     /* ---------- La forme, en conditions ---------- */
     IS_UNIPERSONNELLE: unique,

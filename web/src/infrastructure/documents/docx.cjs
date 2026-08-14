@@ -48,23 +48,55 @@ function loadAllTemplates() {
   return templates;
 }
 
-/** Enrich data with derived fields for DOCX rendering */
+/** Une civilité renseignée, par opposition au tiret qui marque une absence. */
+function civiliteRenseignee(valeur) {
+  const v = String(valeur == null ? "" : valeur).trim();
+  return v !== "" && v !== "-";
+}
+
+/** Homme, femme, ou ni l'un ni l'autre quand personne n'est désigné. */
+function genreDe(civilite) {
+  const v = String(civilite == null ? "" : civilite).toLowerCase();
+  return {
+    homme: /monsieur|\bmr\b|\bm\./.test(v),
+    femme: /madame|mademoiselle|\bmme\b|\bmlle\b/.test(v),
+  };
+}
+
+/**
+ * Complète les données pour le rendu.
+ *
+ * Cette fonction servait au serveur d'origine, dont les données ne portaient pas ces
+ * indicateurs. Le domaine les calcule désormais : elle ne les recouvre donc plus
+ * quand ils sont déjà là, sous peine de défaire un calcul juste.
+ *
+ * Deux règles y étaient fausses. « EST_FEMME = !EST_HOMME » rendait femme toute
+ * absence de personne, si bien qu'un dirigeant inexistant était déclaré au féminin ;
+ * les deux se lisent maintenant séparément sur la civilité. Et « HAS_DG_n » se
+ * déduisait de la présence d'une civilité, or le domaine y écrit un tiret pour les
+ * rangs vides : chaque société à gérant unique produisait une seconde déclaration de
+ * non-condamnation, vide, à destination du greffe.
+ */
 function enrichData(data) {
-  const civPres = (data.CIVILITE || data.CIVILITE_NOM_PRENOM || "").toString().toLowerCase();
-  data.EST_HOMME = civPres.indexOf("monsieur") >= 0 || civPres.indexOf("mr") >= 0;
-  data.EST_FEMME = !data.EST_HOMME;
+  const civPres = data.CIVILITE || data.CIVILITE_NOM_PRENOM || "";
+  const genrePres = genreDe(civPres);
+  if (typeof data.EST_HOMME !== "boolean") data.EST_HOMME = genrePres.homme;
+  if (typeof data.EST_FEMME !== "boolean") data.EST_FEMME = genrePres.femme;
 
   for (let n = 1; n <= 3; n++) {
     const prefix = "DG_" + n + "_";
-    if (data[prefix + "CIVILITE"] && !data["HAS_DG_" + n]) {
+    if (
+      typeof data["HAS_DG_" + n] !== "boolean" &&
+      civiliteRenseignee(data[prefix + "CIVILITE"])
+    ) {
       data["HAS_DG_" + n] = true;
     }
     if (data[prefix + "CIVILITE"] && !data[prefix + "CIVILITE_NOM_PRENOM"]) {
       data[prefix + "CIVILITE_NOM_PRENOM"] = ((data[prefix + "CIVILITE"] || "") + " " + (data[prefix + "NOM"] || "") + " " + (data[prefix + "PRENOM"] || "")).trim();
     }
-    const civDg = (data[prefix + "CIVILITE"] || "").toString().toLowerCase();
-    data[prefix + "EST_HOMME"] = civDg.indexOf("monsieur") >= 0 || civDg.indexOf("mr") >= 0;
-    data[prefix + "EST_FEMME"] = !data[prefix + "EST_HOMME"];
+    const genreDg = genreDe(data[prefix + "CIVILITE"]);
+    if (typeof data[prefix + "EST_HOMME"] !== "boolean") data[prefix + "EST_HOMME"] = genreDg.homme;
+    if (typeof data[prefix + "EST_FEMME"] !== "boolean") data[prefix + "EST_FEMME"] = genreDg.femme;
     if (!data[prefix + "NOM_PERE"]) data[prefix + "NOM_PERE"] = "-";
     if (!data[prefix + "NOM_MERE"]) data[prefix + "NOM_MERE"] = "-";
     if (!data[prefix + "NOM_JEUNE_FILLE"]) data[prefix + "NOM_JEUNE_FILLE"] = "-";
@@ -744,11 +776,26 @@ function generateDocxFromBuffer(buf, data) {
     const formeDescription = (cleanData.FORME_DESCRIPTION || 'société par actions simplifiée').trim();
     const capital = (cleanData.MONTANT || cleanData.CAPITAL || '').trim();
 
+    /*
+     * L'accord se fait sur le nom qui est écrit.
+     *
+     * Cette phrase était figée au masculin - « Je soussigné », « né le », « fils
+     * de » - alors qu'elle nomme juste avant « Madame X ». Une femme y était donc
+     * désignée au masculin, dans un acte destiné au greffe.
+     *
+     * Le genre se lit sur la civilité effectivement rendue, et non sur un indicateur
+     * séparé : ainsi la phrase ne peut pas se contredire elle-même.
+     */
+    const estFemme = /^\s*(madame|mademoiselle|mme)\b/i.test(civNomPrenom);
+    const jeSoussigne = estFemme ? 'Je soussignée, ' : 'Je soussigné, ';
+    const neLe = estFemme ? 'née le ' : 'né le ';
+    const enfantDe = estFemme ? 'fille de ' : 'fils de ';
+
     let finalText;
     if (isAttestationDomicile) {
       // Attestation de domiciliation: include "agissant en qualité de Président..." and "déclare domicilier..."
-      const parts = ['Je soussigné, ' + civNomPrenom + ','];
-      if (dateNaiss) parts.push('né le ' + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
+      const parts = [jeSoussigne + civNomPrenom + ','];
+      if (dateNaiss) parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
       if (nationalite) parts.push('de nationalité ' + nationalite + ',');
       if (adresse) parts.push('demeurant ' + adresse + ',');
       let agissant = 'agissant en qualité de Président de la société ' + nomSociete + ',';
@@ -761,14 +808,14 @@ function generateDocxFromBuffer(buf, data) {
       finalText = parts.join(' ');
     } else {
       // DNC-style sentence with parents
-      const parts = ['Je soussigné, ' + civNomPrenom + ','];
-      if (dateNaiss) parts.push('né le ' + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
+      const parts = [jeSoussigne + civNomPrenom + ','];
+      if (dateNaiss) parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
       if (nationalite) parts.push('de nationalité ' + nationalite + ',');
       if (nomPere || nomMere) {
         let parents = '';
-        if (nomPere) parents += 'fils de ' + nomPere;
+        if (nomPere) parents += enfantDe + nomPere;
         if (nomPere && nomMere) parents += ' et de ';
-        else if (nomMere) parents += 'fils de ';
+        else if (nomMere) parents += enfantDe;
         if (nomMere) {
           parents += nomMere;
           if (nomJeune) parents += ' née ' + nomJeune;
