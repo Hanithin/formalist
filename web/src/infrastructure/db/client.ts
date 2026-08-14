@@ -21,7 +21,24 @@ function creerClient(): PrismaClient {
   if (!url) throw new Error("DATABASE_URL manquante");
 
   return new PrismaClient({
-    adapter: new PrismaPg({ connectionString: url }),
+    /*
+     * La connexion parle en UTC, et ce n'est pas un détail de confort.
+     *
+     * Sans cette option, la session prend le fuseau du serveur - Europe/Paris en
+     * l'occurrence - et PostgreSQL renvoie ses timestamptz sous la forme
+     * « 2026-08-17 19:29:02.568+02 ». Le pilote reconstruit alors la date en
+     * ignorant le « +02 » : on obtient 19h29 UTC au lieu de 17h29 UTC, soit deux
+     * heures d'avance sur toutes les dates lues, une en hiver.
+     *
+     * Le décalage est silencieux et se voit mal, parce qu'il déplace tout ensemble :
+     * un rendez-vous, sa date affichée et son délai sont faux de la même quantité, et
+     * seule une comparaison avec la base le révèle. En UTC, PostgreSQL écrit « +00 »
+     * et la lecture est juste quel que soit le pilote.
+     *
+     * L'écriture n'était pas concernée : une Date part en ISO UTC et se range au bon
+     * instant quel que soit le fuseau de la session.
+     */
+    adapter: new PrismaPg({ connectionString: url, options: "-c timezone=UTC" }),
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 }
