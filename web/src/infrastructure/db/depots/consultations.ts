@@ -5,7 +5,6 @@ import {
   etatConsultation,
   etatAffiche,
   annulable,
-  enMinutes,
   type PlageHebdomadaire,
 } from "@/domain/consultation/creneaux";
 import {
@@ -16,6 +15,7 @@ import {
   RESERVATION_TENUE_MINUTES,
 } from "@/domain/consultation/paiement";
 import { lirePieces, ecrirePieces, type PieceJointe } from "@/domain/consultation/pieces";
+import { refusDePlage, messageDeRefus } from "@/domain/consultation/disponibilites";
 import { matiereValide, nomDeMatiere } from "@/domain/consultation/matieres";
 import { PRIX_HT_CENTIMES, DUREE_MINUTES } from "@/domain/consultation/offre";
 import { rembourser } from "@/infrastructure/paiement/stripe";
@@ -199,20 +199,25 @@ export async function ajouterPlage(
 ) {
   exigerAvocat(utilisateur);
 
-  const debut = enMinutes(plage.debut);
-  const fin = enMinutes(plage.fin);
+  /*
+   * Les plages déjà publiées sont relues pour vérifier le chevauchement, et cette
+   * vérification vit ici et non dans la page : un contrôle qui n'existe que dans le
+   * navigateur se contourne par un appel direct, et deux plages superposées produisent
+   * des créneaux en double qu'un client peut réserver deux fois.
+   */
+  const existantes = await prisma.avocat_availability.findMany({
+    where: { avocat_id: utilisateur.id, day_of_week: plage.jourSemaine },
+  });
 
-  // Une plage incohérente ne produirait aucun créneau, et l'avocat croirait
-  // avoir publié ses disponibilités.
-  if (debut === null || fin === null) {
-    throw new Interdit("Les heures doivent être au format 09:30");
-  }
-  if (fin <= debut) {
-    throw new Interdit("L'heure de fin doit suivre l'heure de début");
-  }
-  if (plage.dureeCreneauMinutes <= 0 || fin - debut < plage.dureeCreneauMinutes) {
-    throw new Interdit("La plage est trop courte pour un créneau de cette durée");
-  }
+  const refus = refusDePlage(plage, [
+    ...existantes.map((e) => ({
+      jourSemaine: e.day_of_week,
+      debut: e.start_time,
+      fin: e.end_time,
+      dureeCreneauMinutes: e.slot_duration_minutes,
+    })),
+  ]);
+  if (refus) throw new Interdit(messageDeRefus(refus));
 
   return prisma.avocat_availability.create({
     data: {

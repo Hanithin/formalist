@@ -5,13 +5,14 @@ import styles from "./Avocat.module.css";
  * La barre de l'espace avocat.
  *
  * La page d'origine en avait quatre entrées - dossiers, consultations,
- * disponibilités, historique - dont deux sont pour l'instant sans page ici. Elles
- * ne figurent pas : un onglet qui ne mène nulle part est pire que son absence.
+ * disponibilités, historique - dont l'historique n'a pas encore de page ici. Il ne
+ * figure pas : un onglet qui ne mène nulle part est pire que son absence.
  */
 
 const ENTREES: { cle: string; libelle: string; lien: string }[] = [
   { cle: "dossiers", libelle: "Dossiers", lien: "/avocat" },
   { cle: "consultations", libelle: "Consultations", lien: "/consultations" },
+  { cle: "disponibilites", libelle: "Mes disponibilités", lien: "/avocat/disponibilites" },
 ];
 
 export function SousNavigation({ actif, aVerifier }: { actif: string; aVerifier?: number }) {
