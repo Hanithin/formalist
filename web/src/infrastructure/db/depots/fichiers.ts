@@ -131,5 +131,26 @@ export async function fichierLisible(
     return nom;
   }
 
+  /*
+   * 7. Pièce joignée à une consultation : son client et l'avocat qui la donne.
+   *
+   * Le registre de dépôt (1) couvre déjà le client, puisque c'est lui qui a déposé.
+   * L'avocat, lui, n'a rien déposé et la consultation n'est rattachée à aucun
+   * dossier : sans cette règle il verrait le nom du document dans le panneau et
+   * recevrait un 404 en cliquant. Or c'est justement pour lui que le client le joint.
+   *
+   * Le nom est cherché dans le texte de la colonne, qui contient les noms de
+   * stockage : ils sont tirés au hasard sur seize octets, une collision avec le nom
+   * d'un autre fichier n'est pas un cas à traiter.
+   */
+  const consultation = await prisma.lawyer_consultations.findFirst({
+    where: {
+      documents_json: { contains: nom },
+      OR: [{ user_id: utilisateur.id }, { avocat_id: utilisateur.id }],
+    },
+    select: { id: true },
+  });
+  if (consultation) return nom;
+
   return null;
 }

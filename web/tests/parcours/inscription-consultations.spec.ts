@@ -65,21 +65,74 @@ test.describe("inscription", () => {
 });
 
 test.describe("consultations", () => {
-  test("la page propose un avocat et des créneaux", async ({ page }) => {
+  test("la page annonce l'offre et classe les consultations", async ({ page }) => {
     await page.goto("/consultations");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Consultation juridique");
-    await expect(page.getByLabel("Avocat")).toBeVisible();
 
-    // Les créneaux arrivent après un appel : on attend qu'ils s'affichent.
-    await expect(page.getByRole("group", { name: "Créneau" })).toBeVisible();
+    // Les quatre onglets annoncent chacun leur décompte.
+    await expect(page.getByRole("button", { name: /^Toutes/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^À venir/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Passées/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Annulées/ })).toBeVisible();
   });
 
-  test("réserver sans choisir de créneau est refusé", async ({ page }) => {
+  test("l'assistant mène de la matière au récapitulatif", async ({ page }) => {
     await page.goto("/consultations");
-    await page.getByLabel("Sujet").fill("Question sur mes statuts");
-    await page.getByRole("button", { name: /Réserver ce créneau/ }).click();
 
-    await expect(page.locator("form p[role=alert]")).toContainText("Choisissez un créneau");
+    // Le compte d'essai n'a pas de rendez-vous : c'est la carte d'appel qui ouvre
+    // l'assistant. S'il en avait un, le raccourci de l'écran vide ferait l'affaire.
+    await page.getByRole("button", { name: "Prendre rendez-vous" }).first().click();
+
+    /*
+     * Les gestes se font dans la fenêtre de l'assistant, pas sur la page : les mêmes
+     * matières figurent en raccourci sur l'écran vide, et un sélecteur global en
+     * trouverait deux.
+     */
+    const assistant = page.getByRole("dialog", { name: "Prendre rendez-vous" });
+    await expect(assistant.getByText("Choisissez votre matière")).toBeVisible();
+
+    await assistant.getByRole("button", { name: "Droit des sociétés" }).click();
+    await assistant.getByRole("button", { name: /Continuer/ }).click();
+
+    await expect(assistant.getByText("Avocat et créneau")).toBeVisible();
+    const avocat = assistant.getByRole("button", { name: /^Me\.|^Maître/ }).first();
+    if (!(await avocat.isVisible())) return; // aucun avocat n'a publié ses créneaux
+    await avocat.click();
+
+    // Les créneaux arrivent après un appel : on attend la première journée.
+    const journee = page.getByRole("button", { name: /créneaux?$/ }).first();
+    await expect(journee).toBeVisible();
+    await journee.click();
+
+    await page
+      .getByRole("button", { name: /^\d{2}h\d{2}$/ })
+      .first()
+      .click();
+    await page.getByRole("button", { name: /Continuer/ }).click();
+
+    await expect(page.getByText("Décrivez votre besoin")).toBeVisible();
+    await page
+      .getByLabel("Sujet de la consultation")
+      .fill("Je crée une SAS avec deux associés et je m'interroge sur le pacte d'associés.");
+    await page.getByRole("button", { name: /Continuer/ }).click();
+
+    // Le récapitulatif dit le prix hors taxes, la TVA, et le total réellement dû.
+    await expect(assistant.getByText("Récapitulatif")).toBeVisible();
+    await expect(assistant.getByText("99 € HT")).toBeVisible();
+    await expect(assistant.getByText("TVA 20 %")).toBeVisible();
+    await expect(assistant.getByRole("button", { name: /Payer 118,80 €/ })).toBeVisible();
+    // On s'arrête là : cliquer ouvrirait une session de paiement chez Stripe.
+  });
+
+  test("l'assistant refuse d'avancer sans matière", async ({ page }) => {
+    await page.goto("/consultations");
+    await page.getByRole("button", { name: "Prendre rendez-vous" }).first().click();
+    await page
+      .getByRole("dialog", { name: "Prendre rendez-vous" })
+      .getByRole("button", { name: /Continuer/ })
+      .click();
+
+    await expect(page.getByRole("status")).toContainText("Choisissez une matière");
   });
 
   test("un créneau déjà passé n'est jamais proposé", async ({ request }) => {
@@ -92,22 +145,36 @@ test.describe("consultations", () => {
     }
   });
 
-  test("réserver un créneau inventé est refusé", async ({ page, request }) => {
-    await page.goto("/consultations");
-    const avocat = await page.getByLabel("Avocat").inputValue();
-
+  test("réserver un créneau inventé est refusé", async ({ request }) => {
     const dansUnAn = new Date();
     dansUnAn.setFullYear(dansUnAn.getFullYear() + 1);
 
     const reponse = await request.post("/api/consultations", {
       data: {
-        avocat: Number(avocat),
+        avocat: 1,
         debut: dansUnAn.toISOString(),
-        sujet: "Créneau inventé",
+        matiere: "droit_societes",
+        description: "Un créneau inventé, qui doit être refusé avant tout paiement.",
       },
     });
-    // Le créneau est revérifié au moment de réserver.
+    // Le créneau est revérifié au moment de réserver, avant d'ouvrir un paiement :
+    // rien n'est encaissé pour un rendez-vous qui n'existe pas.
     expect(reponse.status()).toBe(409);
+  });
+
+  test("une demande sans description n'ouvre pas de paiement", async ({ request }) => {
+    const dansUnAn = new Date();
+    dansUnAn.setFullYear(dansUnAn.getFullYear() + 1);
+
+    const reponse = await request.post("/api/consultations", {
+      data: {
+        avocat: 1,
+        debut: dansUnAn.toISOString(),
+        matiere: "droit_societes",
+        description: "court",
+      },
+    });
+    expect(reponse.status()).toBe(400);
   });
 
   test.describe("sans session", () => {
@@ -116,6 +183,19 @@ test.describe("consultations", () => {
     test("rien n'est accessible", async ({ request }) => {
       expect((await request.get("/api/consultations")).status()).toBe(401);
       expect((await request.get("/api/consultations/creneaux?avocat=1")).status()).toBe(401);
+      expect((await request.post("/api/consultations/documents")).status()).toBe(401);
+    });
+
+    test("le webhook de paiement refuse un appel non signé", async ({ request }) => {
+      /*
+       * Cette route est publique par nécessité : Stripe n'a pas de session chez nous.
+       * Sa seule protection est la signature du corps, et sans elle elle doit refuser -
+       * sinon n'importe qui pourrait annoncer qu'une consultation est payée.
+       */
+      const reponse = await request.post("/api/paiement/webhook", {
+        data: { type: "checkout.session.completed" },
+      });
+      expect(reponse.status()).toBe(400);
     });
   });
 });

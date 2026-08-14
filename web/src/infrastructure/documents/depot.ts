@@ -83,6 +83,30 @@ export async function ecrirePieceJointe(fichier: File, formatsAcceptes?: string[
 }
 
 /**
+ * Écrit une pièce joignée à une consultation et rend de quoi l'afficher.
+ *
+ * Elle est déposée pendant l'assistant, donc avant que la consultation existe : sans
+ * inscription au registre, le fichier n'aurait aucun propriétaire et le client ne
+ * pourrait pas relire ce qu'il vient de joindre. L'inscription lui en donne un tout
+ * de suite ; l'avocat y accède ensuite par la consultation - voir fichierLisible.
+ *
+ * Aucun dossier n'est rattaché : une consultation n'est pas une formalité, et la
+ * pièce n'a pas à apparaître dans les documents d'un dossier.
+ */
+export async function deposerPieceDeConsultation(
+  utilisateur: UtilisateurConnecte,
+  fichier: File
+): Promise<{ fichier: string; nom: string }> {
+  const nom = await ecrirePieceJointe(fichier);
+
+  await prisma.uploaded_files.create({
+    data: { filename: nom, user_id: utilisateur.id, original_name: fichier.name },
+  });
+
+  return { fichier: nom, nom: fichier.name };
+}
+
+/**
  * Remplace les documents produits par la plateforme.
  *
  * Régénérer ne doit pas empiler. La page d'origine ne pouvait pas empiler : elle ne

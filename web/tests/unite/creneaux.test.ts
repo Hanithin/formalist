@@ -4,7 +4,9 @@ import {
   creneauxLibres,
   grouperParJournee,
   etatConsultation,
-  libelleConsultation,
+  etatAffiche,
+  libelleEtat,
+  libelleEtatDetaille,
   annulable,
   type PlageHebdomadaire,
 } from "@/domain/consultation/creneaux";
@@ -122,9 +124,30 @@ describe("état d'une consultation", () => {
     expect(etatConsultation(null)).toBe("demandee");
   });
 
-  it("chaque état a son mot", () => {
-    expect(libelleConsultation("demandee")).toContain("attente");
-    expect(libelleConsultation("confirmee")).toBe("Confirmé");
+  it("réservée mais sans lien de visio : le client attend encore", () => {
+    /*
+     * Le statut en base dit « confirmee » dès le paiement. Ce n'est pas ce que le
+     * client attend : il attend le lien que l'avocat envoie. Annoncer « confirmée »
+     * avant ce lien lui ferait croire qu'il n'a plus rien à recevoir.
+     */
+    expect(etatAffiche({ etat: "confirmee", lienVisio: null })).toBe("attente");
+    expect(etatAffiche({ etat: "confirmee", lienVisio: "https://visio.example/abc" })).toBe(
+      "confirmee"
+    );
+  });
+
+  it("une consultation faite ou annulée l'est, lien ou pas", () => {
+    expect(etatAffiche({ etat: "faite", lienVisio: null })).toBe("faite");
+    expect(etatAffiche({ etat: "annulee", lienVisio: "https://visio.example/abc" })).toBe(
+      "annulee"
+    );
+  });
+
+  it("chaque état a son mot, court en liste et explicite en détail", () => {
+    expect(libelleEtat("attente")).toBe("En attente");
+    expect(libelleEtatDetaille("attente")).toBe("En attente de confirmation");
+    expect(libelleEtat("confirmee")).toBe("Confirmée");
+    expect(libelleEtatDetaille("confirmee")).toContain("lien");
   });
 });
 

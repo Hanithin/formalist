@@ -1,181 +1,1634 @@
-.page {
-  padding: 32px 40px 60px;
-  max-width: 900px;
-}
-
-.page h1 {
-  margin: 0 0 6px;
-  font-family: var(--police-titre), sans-serif;
-  font-size: 28px;
-}
-
-.resume {
-  margin: 0 0 24px;
-  font-size: 14.5px;
-  color: #71717a;
-}
-
-.bloc {
-  margin-bottom: 32px;
-}
-
-.bloc h2 {
-  margin: 0 0 12px;
-  font-family: var(--police-titre), sans-serif;
-  font-size: 19px;
-}
-
-.formulaire {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-width: 620px;
-  padding: 24px;
-  background: #fff;
-  border: 1px solid #ececef;
-  border-radius: 14px;
-}
-
-.formulaire label {
-  margin-top: 12px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #3f3f46;
-}
-
-.formulaire select,
-.formulaire input[type="text"],
-.formulaire input:not([type]),
-.formulaire textarea {
-  padding: 11px 14px;
-  border: 1px solid #e5e5e7;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 15px;
-}
-
-.creneaux {
-  margin: 16px 0 0;
-  padding: 16px;
-  border: 1px solid #ececef;
-  border-radius: 12px;
-}
-
-.creneaux legend {
-  padding: 0 6px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #3f3f46;
-}
-
-.journee {
-  margin-bottom: 14px;
-}
-
-.jour {
-  margin: 0 0 6px;
-  font-size: 13px;
-  color: #71717a;
-  text-transform: capitalize;
-}
-
-.heures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* Le créneau choisi se distingue par le fond ET la bordure : la couleur seule
-   ne suffit pas à le signaler. */
-.heure,
-.heureChoisie {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 14px;
-  border: 1px solid #e5e5e7;
-  border-radius: 9px;
-  font-size: 14px;
-  cursor: pointer;
-  font-variant-numeric: tabular-nums;
-}
-
-.heure input,
-.heureChoisie input {
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-}
-
-.heure:hover {
-  border-color: #a1a1aa;
-}
-
-.heureChoisie {
-  background: #18181b;
-  border-color: #18181b;
-  color: #fff;
-}
-
-.heure:focus-within,
-.heureChoisie:focus-within {
-  outline: 2px solid #18181b;
-  outline-offset: 2px;
-}
-
-.formulaire button[type="submit"] {
-  align-self: flex-start;
-  margin-top: 18px;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 10px;
-  background: #18181b;
-  color: #fff;
-  font-family: inherit;
-  font-size: 14.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.rendezVous {
+/*
+ * La page de consultation juridique de public/consultations.html, portée sans
+ * changement de valeurs : la carte d'appel, le bandeau du prochain rendez-vous, les
+ * quatre onglets comptés, les cartes, le panneau de détail et l'assistant.
+ *
+ * Deux corrections apportées au passage, apprises sur les pages précédentes :
+ *
+ *   - les <button> ne sont pas des commandes de formulaire ici, et globals.css les
+ *     habille comme telles (marge haute de 18px, rembourrage, bordure) : d'où la
+ *     remise à zéro ci-dessous, avant les règles qui suivent ;
+ *   - 'Cal Sans' écrit en littéral ne se résout pas dans un module, la police étant
+ *     déclarée en variable : c'est var(--police-titre) partout.
+ *
+ * Les survols portent :not(:disabled), pour qu'un bouton hors service ne prenne pas
+ * la couleur du survol - « Retour » à la première étape, « Payer » pendant l'envoi.
+ * C'est en écrivant ces règles qu'est apparu un défaut plus général, corrigé dans
+ * globals.css : son survol de bouton y était plus spécifique que n'importe quel
+ * .classe:hover d'un module, et le gagnait donc.
+ */
+.tab,
+.carte,
+.videMatiere,
+.pFermer,
+.aFermer,
+.pBtn,
+.aBtn,
+.dfRetirer,
+.avisFermer,
+.matiereCarte,
+.avocatPastille,
+.calJour,
+.calCreneau,
+.hCta {
   margin: 0;
   padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  border: none;
+  background: none;
+  font-size: inherit;
+  font-weight: inherit;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
 }
 
-.rendezVous li {
+/* ---------- Gabarit ---------- */
+
+.page {
+  padding: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.topbar {
+  padding: 30px 48px 4px;
+  background: transparent;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.topbarDate {
+  font-size: 13px;
+  color: #999;
+}
+
+.sousTitre {
+  padding: 0 48px;
+  font-size: 14px;
+  color: #888;
+  margin: 0 0 28px;
+  max-width: 760px;
+}
+
+.content {
+  padding: 0 48px 60px;
+  flex: 1;
+}
+
+/* ---------- Carte d'appel ---------- */
+
+.heroCard {
   background: #fff;
   border: 1px solid #ececef;
-  border-radius: 12px;
+  color: #111;
+  border-radius: 16px;
+  padding: 26px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.quand {
-  font-size: 14.5px;
+.heroCard h2 {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 21px;
   font-weight: 600;
   color: #111;
 }
 
-.sujet,
-.avocat {
+.heroCard p {
+  font-size: 13.5px;
+  color: #888;
+  margin-top: 6px;
+  max-width: 520px;
+  line-height: 1.5;
+}
+
+.hCta {
+  padding: 12px 22px;
+  background: #111;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.hCta:hover:not(:disabled) {
+  background: #2a2a2c;
+  transform: translateY(-1px);
+}
+
+/* Ce qu'on veut savoir avant de cliquer : prix, durée, délai. */
+.hFacts {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.hFacts li {
+  position: relative;
+  padding-left: 18px;
   font-size: 13.5px;
   color: #52525b;
 }
 
-.rendezVous button {
-  padding: 7px 14px;
-  border: 1px solid #e5e5e7;
-  border-radius: 9px;
+.hFacts li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6d28d9;
+}
+
+.hFacts strong {
+  color: #111;
+  font-weight: 600;
+}
+
+/* ---------- Bandeau du prochain rendez-vous ---------- */
+
+.nextBanner {
   background: #fff;
-  font-family: inherit;
+  border: 1px solid #ececef;
+  border-radius: 16px;
+  padding: 22px 26px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.nextBanner:hover {
+  border-color: #d4d4d8;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.nbIc {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nbIc svg {
+  width: 22px;
+  height: 22px;
+}
+
+.nbBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.nbTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #888;
+  margin-bottom: 7px;
+}
+
+.nbTagLive {
+  color: #047857;
+}
+
+.pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.nbTitle {
+  display: block;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.25;
+}
+
+.nbMeta {
+  display: block;
+  font-size: 13.5px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.nbActions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.nbJoin {
+  padding: 10px 18px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.15s;
+}
+
+.nbJoin:hover {
+  background: #2a2a2c;
+}
+
+.nbLinkWait {
+  font-size: 12.5px;
+  color: #888;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nbLinkWait::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  animation: pulse 1.6s infinite;
+}
+
+/* ---------- Avis de paiement ---------- */
+
+/*
+ * L'original disait le résultat du paiement par alert(). Une fenêtre du navigateur
+ * bloque la page et se ferme sans laisser de trace : le message est ici dans la
+ * page, à l'endroit où le rendez-vous vient d'apparaître.
+ */
+.avis {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  border: 1px solid #ececef;
+  background: #fff;
+  color: #333;
+}
+
+.avisRegle {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.avisAttente {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.avisPoint {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.avisTexte {
+  flex: 1;
+  min-width: 0;
+}
+
+.avisFermer {
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.avisFermer:hover:not(:disabled) {
+  opacity: 1;
+}
+
+/* ---------- Onglets ---------- */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 100px;
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab:hover:not(:disabled) {
+  border-color: #999;
+}
+
+.tabActif {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.compte {
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.7;
+  padding: 1px 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 100px;
+}
+
+.tabActif .compte {
+  background: rgba(255, 255, 255, 0.18);
+  opacity: 1;
+}
+
+/* ---------- Mes consultations ---------- */
+
+.section {
+  margin-bottom: 36px;
+}
+
+.sectionTitre {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ct {
+  font-size: 12px;
+  color: #888;
+  font-family: var(--police-texte), sans-serif;
+  font-weight: 500;
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.carte {
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.15s;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+  margin: 0;
+}
+
+.carte:hover:not(:disabled) {
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.ic {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: #f3f4f6;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ic svg {
+  width: 20px;
+  height: 20px;
+}
+
+.carteFaite .ic {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.carteAnnulee .ic {
+  background: #f3f4f6;
+  color: #6b7280;
+  opacity: 0.8;
+}
+
+.carteAnnulee .titre {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.corps {
+  flex: 1;
+  min-width: 0;
+}
+
+.ligneTitre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.titre {
+  font-weight: 600;
+  color: #111;
+  font-size: 15.5px;
+}
+
+.puce {
+  background: #f3f4f6;
+  color: #555;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.sous {
+  font-size: 13px;
+  color: #888;
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sous svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.7;
+}
+
+.avecIcone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.droite {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.badge {
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.badgeAttente {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badgeConfirmee {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.badgeFaite {
+  background: #f3f4f6;
+  color: #555;
+}
+
+.badgeAnnulee {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.boutonRejoindre {
+  padding: 8px 14px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.boutonRejoindre:hover {
+  background: #2a2a2c;
+}
+
+.chevron {
+  color: #ccc;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* ---------- Écran vide ---------- */
+
+.vide {
+  padding: 60px 20px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 16px;
+}
+
+.videIc {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 14px;
+  background: #f3f4f6;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.videT {
+  display: block;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #555;
+}
+
+.videS {
+  display: block;
+  font-size: 13.5px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* Plutôt qu'un message seul : les matières les plus demandées, qui ouvrent
+   l'assistant avec le sujet déjà choisi. */
+.videMatieres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.videMatiere {
+  font-size: 13.5px;
+  color: #111;
+  background: #fff;
+  border: 1px solid #d4d4d8;
+  border-radius: 100px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.videMatiere:hover:not(:disabled) {
+  border-color: #6d28d9;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.videMatiereAutre {
+  color: #71717a;
+}
+
+.videCategorie {
+  padding: 40px 20px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #ececef;
+  border-radius: 16px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+}
+
+/* ---------- Panneau de détail ---------- */
+
+.voile {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 17, 17, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 400;
+}
+
+.panneau {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 520px;
+  max-width: 95vw;
+  background: #fff;
+  z-index: 401;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.1);
+  animation: entreePanneau 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes entreePanneau {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.pTete {
+  padding: 16px 22px;
+  border-bottom: 1px solid #f0f0f2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pTete h2 {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #888;
+}
+
+.pFermer {
+  cursor: pointer;
+  color: #888;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+}
+
+.pFermer:hover:not(:disabled) {
+  background: #f5f5f7;
+  color: #111;
+}
+
+.pCorps {
+  padding: 22px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.pHero {
+  margin-bottom: 22px;
+}
+
+.pHeroPuce {
+  display: inline-block;
+  background: #f5f3ff;
+  color: #6d28d9;
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  margin-bottom: 10px;
+}
+
+.pHero h3 {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+
+.pAvec {
+  display: block;
+  font-size: 14px;
+  color: #888;
+  margin-top: 6px;
+}
+
+.pEtat {
+  margin-top: 12px;
+}
+
+.pSection {
+  margin-bottom: 22px;
+}
+
+.pSectionTitre {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.pMetaCarte {
+  background: #fafafa;
+  border: 1px solid #f0f0f2;
+  border-radius: 12px;
+  padding: 4px 16px;
+}
+
+.pMetaLigne {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid #f0f0f2;
+  font-size: 13.5px;
+}
+
+.pMetaLigne:last-child {
+  border-bottom: none;
+}
+
+.k {
+  color: #888;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.k svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+}
+
+.v {
+  color: #111;
+  font-weight: 500;
+  text-align: right;
+}
+
+.pDesc {
+  background: #fafafa;
+  border: 1px solid #f0f0f2;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+.pDocs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pDoc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fafafa;
+  border: 1px solid #f0f0f2;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.15s;
+}
+
+.pDoc:hover {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+}
+
+.docIc {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.docNom {
+  flex: 1;
+  font-size: 13.5px;
+  color: #111;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Le panneau se terminait sur un grand vide : on y met ce qu'on se demande à ce
+   moment-là, comment ça va se passer et jusqu'à quand annuler. */
+.pAide {
+  margin-top: 24px;
+  padding: 18px 20px;
+  background: #fafafa;
+  border: 1px solid #f0f0f2;
+  border-radius: 14px;
+}
+
+.pAideTitre {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 10px;
+}
+
+.pEtapes {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.pEtapes li {
+  font-size: 13.5px;
+  color: #52525b;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+.pEtapes li::marker {
+  color: #a1a1aa;
+}
+
+.pEtapes strong {
+  color: #111;
+  font-weight: 600;
+}
+
+.pAideLien {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6d28d9;
+  text-decoration: underline;
+}
+
+.pAideLien:hover {
+  color: #5b21b6;
+}
+
+.pActions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 22px;
+  border-top: 1px solid #f0f0f2;
+}
+
+.pBtn {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-decoration: none;
+}
+
+.pBtnRejoindre {
+  background: #111;
+  color: #fff;
+  border: 1px solid #111;
+}
+
+.pBtnRejoindre:hover:not(:disabled) {
+  background: #000;
+}
+
+.pBtnAnnuler {
+  background: #fff;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.pBtnAnnuler:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.pBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/*
+ * Confirmation d'annulation dans le panneau, et non par confirm() : une fenêtre du
+ * navigateur ne peut rien dire du remboursement, alors que c'est la question qu'on
+ * se pose à ce moment-là.
+ */
+.pConfirmation {
+  padding: 16px 22px;
+  border-top: 1px solid #f0f0f2;
+  background: #fffbeb;
+}
+
+.pConfirmationTexte {
+  font-size: 13.5px;
+  color: #92400e;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.pConfirmationActions {
+  display: flex;
+  gap: 8px;
+}
+
+.pBtnGarder {
+  background: #fff;
+  color: #555;
+  border: 1px solid #e5e5e7;
+}
+
+.pBtnGarder:hover:not(:disabled) {
+  background: #f8f8f9;
+}
+
+/* ---------- Assistant ---------- */
+
+.voileAssistant {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 17, 17, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 40px 20px;
+}
+
+.assistant {
+  background: #fff;
+  border-radius: 20px;
+  width: 720px;
+  max-width: 100%;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.aTete {
+  padding: 22px 28px;
+  border-bottom: 1px solid #f0f0f2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.aTete h2 {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: #111;
+}
+
+.aFermer {
+  cursor: pointer;
+  color: #999;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+}
+
+.aFermer:hover:not(:disabled) {
+  background: #f5f5f7;
+  color: #111;
+}
+
+.aFermer svg {
+  width: 20px;
+  height: 20px;
+}
+
+.aProgres {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 28px;
+  border-bottom: 1px solid #f0f0f2;
+}
+
+.aEtape {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #f0f0f2;
+  transition: background 0.25s;
+}
+
+.aEtapeActive,
+.aEtapeFaite {
+  background: #6d28d9;
+}
+
+.aCorps {
+  padding: 28px;
+  min-height: 320px;
+}
+
+.aTitre {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 6px;
+}
+
+.aSous {
+  font-size: 14px;
+  color: #888;
+  margin: 0 0 22px;
+}
+
+.aChargement {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 14px;
+}
+
+.aPied {
+  padding: 18px 28px;
+  border-top: 1px solid #f0f0f2;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aBtn {
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.aBtnPrec {
+  background: #fff;
+  color: #555;
+  border: 1px solid #e5e5e7;
+}
+
+.aBtnPrec:hover:not(:disabled) {
+  background: #f8f8f9;
+}
+
+.aBtnPrec:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.aBtnSuiv {
+  background: #111;
+  color: #fff;
+  border: 1px solid #111;
+}
+
+.aBtnSuiv:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.aBtnSuiv:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #111;
+}
+
+.aBtnPayer {
+  background: #10b981;
+  color: #fff;
+  border: 1px solid #10b981;
+}
+
+.aBtnPayer:hover:not(:disabled) {
+  background: #047857;
+}
+
+.aBtnPayer:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- Étape 1 : la matière ---------- */
+
+.matiereGrille {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .matiereGrille {
+    grid-template-columns: 1fr;
+  }
+}
+
+.matiereCarte {
+  padding: 16px;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.matiereCarte:hover:not(:disabled) {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+}
+
+.matiereChoisie {
+  border-color: #6d28d9;
+  background: #f5f3ff;
+  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.12);
+}
+
+.matiereIc {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f5f3ff;
+  color: #6d28d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.matiereChoisie .matiereIc {
+  background: #6d28d9;
+  color: #fff;
+}
+
+.matiereIc svg {
+  width: 18px;
+  height: 18px;
+}
+
+.matiereNom {
+  font-weight: 600;
+  color: #111;
+  font-size: 14.5px;
+}
+
+/* ---------- Étape 2 : l'avocat et le créneau ---------- */
+
+.avocatListe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.avocatPastille {
+  padding: 14px 16px;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.avocatPastille:hover:not(:disabled) {
+  border-color: #c4b5fd;
+}
+
+.avocatChoisi {
+  border-color: #6d28d9;
+  background: #f5f3ff;
+}
+
+.av {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f5f3ff;
+  color: #6d28d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.avocatChoisi .av {
+  background: #6d28d9;
+  color: #fff;
+}
+
+.avNom {
+  display: block;
+  font-weight: 600;
+  color: #111;
+  font-size: 14.5px;
+}
+
+.avEmail {
+  display: block;
+  font-size: 12.5px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.calWrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 700px) {
+  .calWrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calJours {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.calJour {
+  padding: 11px 14px;
+  border: 1px solid #ececef;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.calJour:hover:not(:disabled) {
+  border-color: #c4b5fd;
+}
+
+.calJourChoisi {
+  background: #6d28d9;
+  color: #fff;
+  border-color: #6d28d9;
+}
+
+.dNom {
+  font-size: 13px;
+}
+
+.dCompte {
+  font-size: 11.5px;
+  opacity: 0.7;
+}
+
+.calJourChoisi .dCompte {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.calCreneaux {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  align-content: flex-start;
+}
+
+.calCreneau {
+  padding: 9px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  transition: all 0.15s;
+  background: #fff;
+}
+
+.calCreneau:hover:not(:disabled) {
+  border-color: #6d28d9;
+  color: #6d28d9;
+}
+
+.calCreneauChoisi {
+  background: #6d28d9;
+  color: #fff;
+  border-color: #6d28d9;
+}
+
+.calCreneauChoisi:hover:not(:disabled) {
+  color: #fff;
+}
+
+.calVide {
+  color: #888;
+  font-size: 13.5px;
+  padding: 14px;
+  text-align: center;
+}
+
+/* ---------- Étape 3 : la demande ---------- */
+
+.champLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.champTexte {
+  width: 100%;
+  max-width: none;
+  padding: 11px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.15s;
+  min-height: 140px;
+  resize: vertical;
+  margin: 0;
+}
+
+.champTexte:focus {
+  outline: none;
+  border-color: #6d28d9;
+  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.12);
+}
+
+.champErreur {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.blocPieces {
+  margin-top: 18px;
+}
+
+.depot {
+  border: 2px dashed #d4d4d8;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: block;
+  width: 100%;
+}
+
+.depot:hover {
+  border-color: #6d28d9;
+  background: #faf5ff;
+}
+
+.depot svg {
+  width: 28px;
+  height: 28px;
+  color: #888;
+  margin: 0 auto 8px;
+  display: block;
+}
+
+.depotT {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+}
+
+.depotS {
+  display: block;
+  font-size: 12.5px;
+  color: #888;
+  margin-top: 3px;
+}
+
+.depots {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.depotFichier {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f5f3ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.dfNom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #111;
+}
+
+.dfRetirer {
+  cursor: pointer;
+  color: #b91c1c;
+  padding: 2px;
+  display: flex;
+}
+
+/* ---------- Étape 4 : le récapitulatif ---------- */
+
+.recap {
+  background: #fafafa;
+  border: 1px solid #ececef;
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.recapLigne {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ececef;
+  font-size: 14px;
+}
+
+.recapLigne:last-child {
+  border-bottom: none;
+}
+
+.recapTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 22px;
+  background: #111;
+  color: #fff;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.recapLab {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.recapVal {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.recapMention {
+  font-size: 12.5px;
+  color: #888;
+  text-align: center;
+  margin: 0;
+}
+
+/* ---------- Avis de l'assistant ---------- */
+
+.aAvis {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #18181b;
+  border: 1px solid #3f3f46;
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+  z-index: 600;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: entreeAvis 0.2s ease;
+}
+
+@keyframes entreeAvis {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.aAvis svg {
+  color: #f87171;
+  flex-shrink: 0;
 }

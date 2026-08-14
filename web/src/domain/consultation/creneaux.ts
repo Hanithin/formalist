@@ -64,7 +64,9 @@ function estBloque(jour: Date, periodes: PeriodeBloquee[]): boolean {
   return periodes.some((p) => {
     const debutJour = new Date(jour);
     debutJour.setHours(0, 0, 0, 0);
-    return debutJour >= new Date(p.debut.toDateString()) && debutJour <= new Date(p.fin.toDateString());
+    return (
+      debutJour >= new Date(p.debut.toDateString()) && debutJour <= new Date(p.fin.toDateString())
+    );
   });
 }
 
@@ -151,15 +153,49 @@ export function etatConsultation(brut: string | null): EtatConsultation {
   return "demandee";
 }
 
-export function libelleConsultation(etat: EtatConsultation): string {
-  if (etat === "confirmee") return "Confirmé";
-  if (etat === "faite") return "Terminé";
-  if (etat === "annulee") return "Annulé";
+/**
+ * L'état tel que le client le voit.
+ *
+ * Il ne se déduit pas du seul statut en base. Une consultation réservée est
+ * « scheduled » dès le paiement, mais ce que le client attend à ce moment-là, c'est
+ * le lien de visio que l'avocat envoie en confirmant. Annoncer « confirmée » avant
+ * ce lien lui ferait croire qu'il n'a plus rien à attendre.
+ *
+ * C'est la règle de la page d'origine, qui jugeait sur la présence de meeting_link.
+ */
+export type EtatAffiche = "attente" | "confirmee" | "faite" | "annulee";
+
+export function etatAffiche(consultation: {
+  etat: EtatConsultation;
+  lienVisio: string | null;
+}): EtatAffiche {
+  if (consultation.etat === "annulee") return "annulee";
+  if (consultation.etat === "faite") return "faite";
+  return consultation.lienVisio ? "confirmee" : "attente";
+}
+
+/** Sur une carte de liste, où la place est comptée. */
+export function libelleEtat(etat: EtatAffiche): string {
+  if (etat === "confirmee") return "Confirmée";
+  if (etat === "faite") return "Terminée";
+  if (etat === "annulee") return "Annulée";
+  return "En attente";
+}
+
+/** Dans le panneau de détail, où l'on peut dire ce qu'on attend. */
+export function libelleEtatDetaille(etat: EtatAffiche): string {
+  if (etat === "confirmee") return "Confirmée - lien envoyé";
+  if (etat === "faite") return "Terminée";
+  if (etat === "annulee") return "Annulée";
   return "En attente de confirmation";
 }
 
 /** Un rendez-vous s'annule tant qu'il n'a pas eu lieu. */
-export function annulable(etat: EtatConsultation, debut: Date, maintenant: Date = new Date()): boolean {
+export function annulable(
+  etat: EtatConsultation,
+  debut: Date,
+  maintenant: Date = new Date()
+): boolean {
   if (etat === "faite" || etat === "annulee") return false;
   return debut.getTime() > maintenant.getTime();
 }

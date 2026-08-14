@@ -23,6 +23,7 @@
     "pizzip": "^3.2.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "stripe": "^22.5.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

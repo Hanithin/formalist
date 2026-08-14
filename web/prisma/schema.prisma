@@ -170,6 +170,7 @@ model lawyer_consultations {
   documents_json                              String?
   meeting_link                                String?
   payment_status                              String?   @default("pending")
+  payment_ref                                 String?
   accepted_at                                 DateTime? @db.Timestamptz(6)
   done_at                                     DateTime? @db.Timestamptz(6)
   rating                                      Int?

@@ -31,6 +31,10 @@ export const API_PUBLIQUES = [
   // Le lien d'invitation est cliqué depuis un email : il redirige vers la
   // connexion quand il n'y a pas de session, plutôt que de refuser sèchement.
   "/api/equipe/accepter",
+  // Stripe appelle depuis ses serveurs et n'a pas de session chez nous. Son
+  // authentification est la signature du corps, vérifiée avant toute lecture :
+  // sans elle, la route refuse. Voir api/paiement/webhook.
+  "/api/paiement/webhook",
 ] as const;
 
 /** Chemins techniques servis par le cadre, jamais porteurs de données. */

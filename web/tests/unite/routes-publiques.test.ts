@@ -22,6 +22,9 @@ const OUVERTURES_ATTENDUES = [
   "/api/contact",
   "/api/signature/signer",
   "/api/equipe/accepter",
+  // Stripe n'a pas de session chez nous : la signature du corps tient lieu
+  // d'authentification, et la route refuse sans elle.
+  "/api/paiement/webhook",
 ];
 
 describe("liste des adresses publiques", () => {
