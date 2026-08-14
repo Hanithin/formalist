@@ -90,6 +90,28 @@ describe("le rendu des gabarits", () => {
     }
   );
 
+  it.each(["sasu", "sas", "sarl", "sci"])(
+    "les actions de %s sont dites intégralement libérées, au pluriel",
+    (forme) => {
+      // L'accord se fait sur « actions » ou « parts ». La SAS et la SASU écrivaient
+      // « libérée » au singulier, là où la SARL et la SCI avaient la bonne forme.
+      const texte = texteDe(
+        genererDocument(forme + "-statuts.docx", donneesDeGabarit(brouillon("Monsieur", 1000, 100)))
+      );
+      expect(texte).toContain("de valeur nominale, intégralement libérées.");
+      expect(texte).not.toContain("de valeur nominale, intégralement libérée.");
+    }
+  );
+
+  it("la prime d'émission de la SARL reste au singulier", () => {
+    // « Toute prime éventuelle doit être intégralement libérée » : l'accord y est
+    // juste, il ne fallait pas le corriger avec les autres.
+    const texte = texteDe(
+      genererDocument("sarl-statuts.docx", donneesDeGabarit(brouillon("Monsieur", 1000, 100)))
+    );
+    expect(texte).toContain("prime éventuelle doit être intégralement libérée");
+  });
+
   it.each(["sci", "sarl"])(
     "une société à gérant unique ne produit pas de seconde déclaration vide",
     (forme) => {
