@@ -13,11 +13,13 @@ services:
         value: production
       - key: CORS_ORIGINS
         value: https://app.formalist.fr
-      # Adresse de l'application, distincte de celle du site vitrine : c'est vers
-      # elle que Stripe renvoie le client après paiement. NEXT_PUBLIC_SITE_URL ne
-      # convient pas, elle désigne formalist.fr pour le plan du site et les
-      # adresses canoniques.
-      - key: ADRESSE_APPLICATION
+      # Adresse de l'application, distincte de celle du site vitrine. Elle porte les
+      # liens envoyés par email - confirmation d'inscription, réinitialisation de
+      # mot de passe, invitation d'équipe - et le retour de paiement Stripe. Sans
+      # elle, sa valeur par défaut est http://localhost:3000 et ces liens sont
+      # inutilisables. NEXT_PUBLIC_SITE_URL ne convient pas : elle désigne
+      # formalist.fr, pour le plan du site et les adresses canoniques.
+      - key: APP_URL
         value: https://app.formalist.fr
       # Renseigner ces secrets dans le dashboard Render (Environment) :
       - key: GEMINI_API_KEY

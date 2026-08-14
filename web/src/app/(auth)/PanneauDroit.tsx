@@ -13,9 +13,7 @@ export function PanneauDroit() {
   return (
     <div className={styles.authRight} aria-hidden="true">
       <div className={styles.authRightContent}>
-        <h2 className={styles.authRightTitle}>
-          Créez et modifiez votre société, avec un avocat
-        </h2>
+        <h2 className={styles.authRightTitle}>Créez et modifiez votre société, avec un avocat</h2>
         <p className={styles.authRightSub}>
           Statuts, transfert de siège, changement de gérant : un avocat rédige et valide chaque
           acte. Signature et dépôt au greffe compris.

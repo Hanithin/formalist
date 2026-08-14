@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { FormulaireInscription } from "./FormulaireInscription";
+import { FormulaireDemande } from "./FormulaireDemande";
 import { PanneauDroit } from "../PanneauDroit";
 import styles from "../Authentification.module.css";
 
 export const metadata: Metadata = {
-  title: "Créer un compte - Formalist",
-  description:
-    "Créez votre compte Formalist et lancez la création de votre société, accompagné par des avocats.",
+  title: "Mot de passe oublié - Formalist",
+  robots: { index: false, follow: false },
 };
 
-export default function Inscription() {
+export default function MotDePasseOublie() {
   return (
     <div className={styles.authSplit}>
       <div className={styles.authLeft}>
@@ -26,29 +25,31 @@ export default function Inscription() {
               priority
             />
           </Link>
-          <Link href="/" className={styles.backLink}>
+          <Link href="/connexion" className={styles.backLink}>
             Retour
           </Link>
         </div>
 
         <div className={styles.authFormWrap}>
           <div className={styles.loginCard}>
-            <h1>Créer un compte</h1>
+            <h1>Mot de passe oublié</h1>
             <p className={styles.subtitle}>
-              Quelques minutes suffisent pour lancer la création de votre société.
+              Indiquez l&apos;adresse de votre compte : nous vous envoyons un lien pour en choisir
+              un nouveau. Il est valable une heure.
             </p>
 
-            <FormulaireInscription />
+            <FormulaireDemande />
 
-            <div className={styles.authOr}>Vous avez déjà un compte ?</div>
+            <div className={styles.authOr}>Vous vous en souvenez ?</div>
             <Link href="/connexion" className={styles.btnSecondary}>
-              Se connecter
+              Retour à la connexion
             </Link>
           </div>
         </div>
 
         <div className={styles.authFooter}>
-          Une question ? <a href="mailto:contact@formalist.fr">contact@formalist.fr</a>
+          Une question sur votre dossier ?{" "}
+          <a href="mailto:contact@formalist.fr">contact@formalist.fr</a>
         </div>
       </div>
 

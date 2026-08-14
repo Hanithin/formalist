@@ -35,6 +35,10 @@ export const API_PUBLIQUES = [
   // authentification est la signature du corps, vérifiée avant toute lecture :
   // sans elle, la route refuse. Voir api/paiement/webhook.
   "/api/paiement/webhook",
+  // Mot de passe oublié : par définition, on ne peut pas être connecté pour s'en
+  // servir. La demande ne dit jamais si l'adresse est connue, et la pose du nouveau
+  // mot de passe exige un jeton envoyé à l'adresse du compte.
+  "/api/auth/mot-de-passe-oublie",
 ] as const;
 
 /** Chemins techniques servis par le cadre, jamais porteurs de données. */
@@ -56,6 +60,10 @@ export function estPublic(chemin: string): boolean {
 
   // Le blog a des articles : /blog/mon-article est public comme /blog
   if (propre.startsWith("/blog/")) return true;
+
+  // Le lien de réinitialisation porte son jeton dans l'adresse :
+  // /mot-de-passe-oublie/abc… est public comme la page qui le demande.
+  if (propre.startsWith("/mot-de-passe-oublie/")) return true;
 
   // Page de signature : l'associé n'a pas de compte, son jeton est dans l'adresse.
   if (propre.startsWith("/signer/")) return true;

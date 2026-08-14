@@ -25,6 +25,8 @@ const OUVERTURES_ATTENDUES = [
   // Stripe n'a pas de session chez nous : la signature du corps tient lieu
   // d'authentification, et la route refuse sans elle.
   "/api/paiement/webhook",
+  // Mot de passe oublié : on ne peut pas être connecté pour s'en servir.
+  "/api/auth/mot-de-passe-oublie",
 ];
 
 describe("liste des adresses publiques", () => {
@@ -65,6 +67,13 @@ describe("protection par défaut", () => {
 describe("cas particuliers de chemins", () => {
   it("les articles du blog sont publics comme le blog", () => {
     expect(estPublic("/blog/creer-une-sarl")).toBe(true);
+  });
+
+  it("le lien de réinitialisation porte son jeton dans l'adresse", () => {
+    expect(estPublic("/mot-de-passe-oublie")).toBe(true);
+    expect(estPublic("/mot-de-passe-oublie/" + "a".repeat(64))).toBe(true);
+    // L'ouverture s'arrête là : elle ne déborde pas sur un chemin voisin.
+    expect(estPublic("/mot-de-passe-oublie-et-autre-chose")).toBe(false);
   });
 
   it("la barre finale ne change pas le verdict", () => {

@@ -23,18 +23,25 @@
  * pages retombaient sur la police système.
  */
 
-:global(*), :global(*::before), :global(*::after) {
+:global(*),
+:global(*::before),
+:global(*::after) {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-:global(html), :global(body) {
+:global(html),
+:global(body) {
   min-height: 100%;
 }
 
 :global(body) {
-  font-family: var(--police-texte), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    var(--police-texte),
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   color: #111;
   background: #fff;
   -webkit-font-smoothing: antialiased;
@@ -86,7 +93,9 @@
 .authFooter a {
   color: #111;
   border-bottom: 1px solid #c9c9cd;
-  transition: color 0.2s, border-color 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .authFooter a:hover {
@@ -157,6 +166,37 @@
   margin-bottom: 6px;
 }
 
+/*
+ * Le libellé et l'issue de secours sur une même ligne.
+ *
+ * Le lien « mot de passe oublié » se place au niveau du champ concerné, pas en bas de
+ * la carte : c'est en butant sur ce champ qu'on le cherche, et un lien qu'il faut
+ * chercher ailleurs donne l'impression qu'il n'existe pas - ce qui était le cas
+ * jusqu'ici.
+ */
+.labelLigne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.labelLigne label {
+  margin-bottom: 6px;
+}
+
+.lienOubli {
+  font-size: 12.5px;
+  color: #71717a;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.lienOubli:hover {
+  color: #111;
+  text-decoration: underline;
+}
+
 .formGroup input {
   width: 100%;
   padding: 12px 16px;
@@ -167,7 +207,9 @@
   color: #111;
   background: #fff;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .formGroup input::placeholder {
@@ -235,7 +277,10 @@
   color: #fff;
   border: none;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .btnLogin:hover:not(:disabled) {
@@ -264,7 +309,9 @@
   background: #fff;
   border: 1px solid #d4d4d8;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .btnSecondary:hover {
@@ -398,7 +445,9 @@
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 14px 44px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.04);
   opacity: 0;
 }
 
@@ -406,17 +455,23 @@
    de translation écraserait la rotation et les cartes se remettraient droites. */
 .authCard1 {
   --tilt: -2deg;
-  animation: authCardIn 0.6s ease-out 0.5s forwards, authHover 6s ease-in-out 1.1s infinite;
+  animation:
+    authCardIn 0.6s ease-out 0.5s forwards,
+    authHover 6s ease-in-out 1.1s infinite;
 }
 
 .authCard2 {
   --tilt: 1deg;
-  animation: authCardIn 0.6s ease-out 0.7s forwards, authHover 6s ease-in-out 1.3s infinite;
+  animation:
+    authCardIn 0.6s ease-out 0.7s forwards,
+    authHover 6s ease-in-out 1.3s infinite;
 }
 
 .authCard3 {
   --tilt: -1deg;
-  animation: authCardIn 0.6s ease-out 0.9s forwards, authHover 6s ease-in-out 1.5s infinite;
+  animation:
+    authCardIn 0.6s ease-out 0.9s forwards,
+    authHover 6s ease-in-out 1.5s infinite;
 }
 
 .authCardHead {
@@ -609,33 +664,65 @@
 /* ---------------------------------------------------------------- Animations */
 
 @keyframes authSlideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes authCardIn {
-  from { opacity: 0; transform: translateY(30px) rotate(var(--tilt, 0deg)); }
-  to   { opacity: 1; transform: translateY(0) rotate(var(--tilt, 0deg)); }
+  from {
+    opacity: 0;
+    transform: translateY(30px) rotate(var(--tilt, 0deg));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--tilt, 0deg));
+  }
 }
 
 @keyframes authHover {
-  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
-  50%      { transform: translateY(-6px) rotate(var(--tilt, 0deg)); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--tilt, 0deg));
+  }
+  50% {
+    transform: translateY(-6px) rotate(var(--tilt, 0deg));
+  }
 }
 
 @keyframes authGlow {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.75; }
-  50%      { transform: translate(-30px, 40px) scale(1.15); opacity: 1; }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate(-30px, 40px) scale(1.15);
+    opacity: 1;
+  }
 }
 
 @keyframes authPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.45); }
-  70%  { box-shadow: 0 0 0 7px rgba(124, 58, 237, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(124, 58, 237, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
 }
 
 @keyframes authFill {
-  to { width: 66%; }
+  to {
+    width: 66%;
+  }
 }
 
 /* ------------------------------------------------------------------ Réglages */

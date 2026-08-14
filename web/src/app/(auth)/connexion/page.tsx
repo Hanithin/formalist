@@ -27,12 +27,14 @@ export default async function Connexion({
       <div className={styles.authLeft}>
         <div className={styles.authTopbar}>
           <Link href="/" className={styles.logo}>
-            <Image src="/images/logo.png"
+            <Image
+              src="/images/logo.png"
               alt="Formalist"
               width={140}
               height={30}
               style={{ height: 30, width: "auto" }}
-              priority />
+              priority
+            />
           </Link>
           <Link href="/" className={styles.backLink}>
             Retour

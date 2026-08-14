@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import styles from "../Authentification.module.css";
 
 export function FormulaireConnexion() {
@@ -52,7 +53,14 @@ export function FormulaireConnexion() {
       </div>
 
       <div className={styles.formGroup}>
-        <label htmlFor="motDePasse">Mot de passe</label>
+        <div className={styles.labelLigne}>
+          <label htmlFor="motDePasse">Mot de passe</label>
+          {/* Le lien est ici, et non en bas de page : c'est au moment de buter sur ce
+              champ qu'on cherche cette issue. */}
+          <Link href="/mot-de-passe-oublie" className={styles.lienOubli}>
+            Mot de passe oublié ?
+          </Link>
+        </div>
         <input
           id="motDePasse"
           name="motDePasse"

@@ -1,4 +1,5 @@
 import { journal } from "@/lib/journal";
+import { adresseApplication } from "@/lib/site";
 
 /**
  * Envoi d'emails transactionnels, par Resend.
@@ -11,11 +12,6 @@ import { journal } from "@/lib/journal";
  * empêcher son inscription parce que l'email n'est pas parti en est un plus grand.
  */
 const RESEND = "https://api.resend.com/emails";
-
-export function adresseApplication(): string {
-  const brut = process.env.APP_URL ?? "http://localhost:3000";
-  return brut.replace(/\/+$/, "");
-}
 
 function echapper(texte: string): string {
   return String(texte ?? "")
@@ -113,6 +109,38 @@ export function emailDeVerification(prenom: string, adresse: string, jeton: stri
   });
 }
 
+/**
+ * Le lien de réinitialisation.
+ *
+ * Il mène à une page, non à une route qui agirait d'elle-même : ouvrir le lien ne
+ * doit rien changer, seul le formulaire qui suit change le mot de passe. Les
+ * antivirus et les aperçus de messagerie visitent les liens reçus, et un lien qui
+ * agit à l'ouverture serait consommé avant d'atteindre son destinataire.
+ *
+ * Le message dit aussi quoi faire si la demande ne vient pas de la personne : sans
+ * cela, recevoir ce mail sans l'avoir demandé est inquiétant et sans issue.
+ */
+export function emailDeReinitialisation(prenom: string, adresse: string, jeton: string) {
+  const lien = adresseApplication() + "/mot-de-passe-oublie/" + encodeURIComponent(jeton);
+
+  return envoyer({
+    destinataire: adresse,
+    sujet: "Réinitialisez votre mot de passe - Formalist",
+    html: gabarit(
+      "Nouveau mot de passe" + (prenom ? ", " + echapper(prenom) : ""),
+      "Vous avez demandé à changer votre mot de passe. Ce lien est valable une heure et ne fonctionne qu'une fois.<br><br>" +
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.",
+      "Choisir un nouveau mot de passe",
+      lien
+    ),
+    texte:
+      "Vous avez demandé à changer votre mot de passe sur Formalist.\n\n" +
+      "Ouvrez ce lien (valable une heure, utilisable une seule fois) :\n" +
+      lien +
+      "\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.",
+  });
+}
+
 export function emailInvitationEquipe(
   adresse: string,
   jeton: string,
@@ -134,6 +162,10 @@ export function emailInvitationEquipe(
       lien
     ),
     texte:
-      invitant + " vous invite à rejoindre " + equipe + " sur Formalist.\n\nLien (valable 7 jours) :\n" + lien,
+      invitant +
+      " vous invite à rejoindre " +
+      equipe +
+      " sur Formalist.\n\nLien (valable 7 jours) :\n" +
+      lien,
   });
 }
