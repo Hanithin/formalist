@@ -78,7 +78,9 @@ export default async function DossierAvocat({
   const { dossier, client, documents, notes, historique, donnees, nonLus } = vue;
 
   const demande = (await searchParams).onglet;
-  const onglet: Onglet = ONGLETS.includes(demande as Onglet) ? (demande as Onglet) : "recapitulatif";
+  const onglet: Onglet = ONGLETS.includes(demande as Onglet)
+    ? (demande as Onglet)
+    : "recapitulatif";
 
   const renseignes = CHAMPS.filter((c) => {
     const valeur = donnees[c.cle];
@@ -247,9 +249,7 @@ export default async function DossierAvocat({
                 <div
                   key={d.id}
                   className={
-                    d.rejection_reason
-                      ? `${styles.docCard} ${styles.docRejected}`
-                      : styles.docCard
+                    d.rejection_reason ? `${styles.docCard} ${styles.docRejected}` : styles.docCard
                   }
                 >
                   <div className={styles.docIcon}>
@@ -340,7 +340,9 @@ export default async function DossierAvocat({
                           <span className={styles.auditBefore}>{h.before_value}</span>
                         )}
                         {h.before_value && h.after_value && <span>&nbsp;→&nbsp;</span>}
-                        {h.after_value && <span className={styles.auditAfter}>{h.after_value}</span>}
+                        {h.after_value && (
+                          <span className={styles.auditAfter}>{h.after_value}</span>
+                        )}
                       </div>
                     )}
 

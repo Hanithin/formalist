@@ -3,7 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { dossiersDuCabinet } from "@/infrastructure/db/depots/avocat";
-import { comptes, dateCourte, depuis, estFiltre, etatCabinet, FILTRES, retenir } from "@/domain/formalite/avocat";
+import {
+  comptes,
+  dateCourte,
+  depuis,
+  estFiltre,
+  etatCabinet,
+  FILTRES,
+  retenir,
+} from "@/domain/formalite/avocat";
 import { SousNavigation } from "./SousNavigation";
 import { Vide } from "@/components/liste/Vide";
 import styles from "./Avocat.module.css";
@@ -68,6 +76,10 @@ export default async function EspaceAvocat({
           Cabinet
         </span>
       </div>
+
+      <p className={styles.introduction}>
+        Les dossiers confiés au cabinet, du premier envoi jusqu&apos;au Kbis.
+      </p>
 
       <SousNavigation actif="dossiers" aVerifier={nombres.verifier} />
 
@@ -159,44 +171,48 @@ export default async function EspaceAvocat({
                         <tr key={d.id}>
                           <td className={styles.ref}>{d.reference}</td>
                           <td>
-                            {/* Le lien porte le nom : une ligne entière cliquable
-                                ne s'atteint pas au clavier. */}
-                            <Link href={"/avocat/" + d.id}>
-                              <strong>{d.societe}</strong>
-                            </Link>
-                            {d.nonLus > 0 && (
-                              <>
-                                {" "}
-                                <span className={`${styles.badge} ${styles.unread}`}>{d.nonLus}</span>
-                              </>
-                            )}
-                            {d.monDossier && (
-                              <>
-                                {" "}
+                            {/*
+                              Le nom, sa forme et ses marques sur une seule ligne.
+                              La forme flottait auparavant sous le nom, sur sa propre
+                              ligne : elle allongeait chaque rangée d'un étage pour
+                              quatre lettres, et rien ne la rattachait visuellement à
+                              la société. En pastille, elle se lit comme ce qu'elle
+                              est, une qualification du nom qui précède.
+                            */}
+                            <span className={styles.societeCellule}>
+                              {/* Le lien porte le nom : une ligne entière cliquable
+                                  ne s'atteint pas au clavier. */}
+                              <Link href={"/avocat/" + d.id} className={styles.societeNom}>
+                                {d.societe}
+                              </Link>
+                              {d.forme && <span className={styles.forme}>{d.forme}</span>}
+                              {d.nonLus > 0 && (
+                                <span className={`${styles.badge} ${styles.unread}`}>
+                                  {d.nonLus}
+                                </span>
+                              )}
+                              {d.monDossier && (
                                 <span className={`${styles.badge} ${styles.purple}`}>
                                   Assigné à vous
                                 </span>
-                              </>
-                            )}
-                            {d.creePar === "avocat" && (
-                              <>
-                                {" "}
+                              )}
+                              {d.creePar === "avocat" && (
                                 <span className={`${styles.badge} ${styles.avocatCreated}`}>
                                   Avocat
                                 </span>
-                              </>
-                            )}
-                            <br />
-                            <span className={styles.sousTitre}>
-                              {d.forme}
-                              {d.capital
-                                ? " au capital de " + Number(d.capital).toLocaleString("fr-FR") + " €"
-                                : ""}
+                              )}
                             </span>
+                            {!!d.capital && d.capital > 0 && (
+                              <span className={styles.sousTitre}>
+                                Capital de {Number(d.capital).toLocaleString("fr-FR")} €
+                              </span>
+                            )}
                           </td>
                           <td>{type}</td>
                           <td>
-                            <span className={`${styles.badge} ${styles[d.offre ?? "starter"] ?? ""}`}>
+                            <span
+                              className={`${styles.badge} ${styles[d.offre ?? "starter"] ?? ""}`}
+                            >
                               {majuscule(d.offre ?? "starter")}
                             </span>
                             {d.payeCentimes > 0 && (

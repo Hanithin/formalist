@@ -72,17 +72,36 @@
   color: #999;
 }
 
+/*
+ * La phrase se lit au moins aussi grand que les onglets qu'elle surplombe.
+ *
+ * À 14px dans un gris clair, elle passait sous les libellés d'onglets - 14,5px et
+ * plus gras - juste en dessous : la hiérarchie s'inversait, et l'explication paraissait
+ * moins importante qu'un repère de navigation. C'est l'échelle de sous-titre déjà
+ * employée sur les pages de connexion.
+ */
 .sousTitre {
   padding: 0 48px;
-  font-size: 14px;
-  color: #888;
   margin: 0 0 28px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #52525b;
   max-width: 760px;
 }
 
 .content {
   padding: 0 48px 60px;
   flex: 1;
+}
+
+/*
+ * La barre d'onglets de l'espace avocat, quand c'est un avocat qui regarde.
+ *
+ * Aucune marge propre : elle porte les siennes, et en ajouter ici décalerait cette
+ * page par rapport aux deux autres onglets, qui se suivent d'un clic.
+ */
+.sousNavigation {
+  margin: 0;
 }
 
 /* ---------- Carte d'appel ---------- */
