@@ -8,7 +8,6 @@ import {
   type Conjoint,
   type PersonnePhysique,
 } from "@/domain/formalite/etat-civil";
-import { SANS_CHAMP_OBLIGATOIRE } from "@/domain/formalite/parcours";
 import { Adresse } from "./Adresse";
 import { Choix } from "./Choix";
 import { DateChoisie } from "./DateChoisie";
@@ -61,7 +60,7 @@ export function Champ({
 }) {
   return (
     <div className={pleineLargeur ? `${styles.field} ${styles.full}` : styles.field}>
-      <label htmlFor={id} className={requis && !SANS_CHAMP_OBLIGATOIRE ? styles.requis : undefined}>
+      <label htmlFor={id} className={requis ? styles.requis : undefined}>
         {libelle}
       </label>
       {children}

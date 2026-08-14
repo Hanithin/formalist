@@ -248,23 +248,6 @@ export interface Brouillon {
 
 const CODE_POSTAL = /^\d{5}$/;
 
-/**
- * Interrupteur d'essai : aucun champ obligatoire dans le parcours.
- *
- * Mis à 1 dans web/.env, il laisse traverser les sept étapes sans rien saisir -
- * pour parcourir l'enchaînement et voir les écrans. Rien n'est retiré : les règles
- * restent écrites juste dessous et reprennent dès que la variable disparaît.
- *
- * Trois effets à connaître pendant l'essai : l'avancement affiche 100 %, la phase
- * enregistrée sur le dossier passe au bout du parcours, et les actes se génèrent
- * même sur un dossier vide - ils sortiront alors remplis de tirets.
- *
- * NEXT_PUBLIC_ parce que la vérification tourne aussi dans le navigateur, à la
- * sortie de chaque étape. À ne pas laisser en production.
- */
-export const SANS_CHAMP_OBLIGATOIRE =
-  process.env.NEXT_PUBLIC_PARCOURS_SANS_VALIDATION === "1";
-
 /** Le nom d'un associé pour un message d'anomalie : son nom, ou son rang. */
 function designer(associe: Associe, rang: number): string {
   return nomDeLaPartie(associe) || "l'associé " + (rang + 1);
@@ -355,9 +338,6 @@ function verifierLesAssocies(brouillon: Brouillon): Anomalie[] {
 
 /** Ce qui manque à une étape donnée. Une liste vide vaut « étape complète ». */
 export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] {
-  // En mode d'essai, aucune étape ne retient : voir SANS_CHAMP_OBLIGATOIRE.
-  if (SANS_CHAMP_OBLIGATOIRE) return [];
-
   const anomalies: Anomalie[] = [];
 
   if (numero === 1) return verifierSociete(brouillon);

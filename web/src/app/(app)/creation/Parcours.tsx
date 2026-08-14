@@ -4,7 +4,6 @@ import { Fragment, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  SANS_CHAMP_OBLIGATOIRE,
   verifierEtape,
   avancementParcours,
   libellesDesAssocies,
@@ -76,7 +75,7 @@ function Champ({
     <div className={pleineLargeur ? `${styles.field} ${styles.full}` : styles.field}>
       {/* L'astérisque est posée par le style, pas écrite dans le libellé : dans
           le texte, elle ferait partie du nom du champ. */}
-      <label htmlFor={id} className={requis && !SANS_CHAMP_OBLIGATOIRE ? styles.requis : undefined}>
+      <label htmlFor={id} className={requis ? styles.requis : undefined}>
         {libelle}
       </label>
       {children}
