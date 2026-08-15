@@ -6,6 +6,7 @@ import { monteeEnOffrePermise } from "@/domain/formalite/transitions";
 import { Interdit } from "../utilisateur-courant";
 import { regle } from "@/domain/formalite/formes";
 import { journal } from "@/lib/journal";
+import { proposerAuxAvocats } from "./avocat";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -133,4 +134,58 @@ export async function changerDOffre(
   });
 
   return { offre };
+}
+
+/**
+ * Le client transmet son dossier à l'avocat.
+ *
+ * Ce geste n'existait nulle part : seul `changerEtatDossier` fait passer un dossier
+ * de « en cours » à « en attente de validation », et il exige d'être avocat. Le
+ * dossier restait donc en cours indéfiniment, quoi que le client fasse.
+ *
+ * Une fois transmis, il est proposé à tous les avocats : le premier qui l'accepte le
+ * prend. Un dossier déjà pris n'est pas reproposé.
+ */
+export async function transmettreALAvocat(utilisateur: UtilisateurConnecte, dossierId: number) {
+  const dossier = await exigerDossierModifiable(utilisateur, dossierId);
+
+  if (dossier.status !== "en_cours" && dossier.status !== "corrections_demandees") {
+    return { deja: true as const, etat: dossier.status };
+  }
+
+  // Un dossier incomplet ne se transmet pas : l'avocat relirait des blancs.
+  const brouillon = lireBrouillon(dossier.data_json);
+  const bloquante = premiereEtapeIncomplete(brouillon);
+  if (bloquante !== null && bloquante < 5) {
+    throw new DossierIncompletPourTransmission(bloquante);
+  }
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: {
+      status: "en_attente_validation",
+      phase: Math.max(dossier.phase ?? 1, 5),
+      updated_at: new Date(),
+    },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "user",
+      action: "dossier_transmis",
+      before_value: dossier.status,
+      after_value: "en_attente_validation",
+    },
+  });
+
+  const { proposes } = await proposerAuxAvocats(dossierId);
+  return { deja: false as const, proposes };
+}
+
+export class DossierIncompletPourTransmission extends Error {
+  constructor(readonly etape: number) {
+    super("Le dossier est incomplet");
+  }
 }

@@ -94,13 +94,27 @@ test.describe("tableau de bord du client", () => {
   });
 });
 
+/**
+ * Ouvre la page complète d'un dossier depuis la liste.
+ *
+ * Le clic sur le nom ouvre désormais un panneau de détail plutôt que de quitter la
+ * liste : la page complète se rejoint depuis ce panneau.
+ */
+async function ouvrirLeDossier(page: import("@playwright/test").Page, societe: string) {
+  await page.goto("/avocat");
+  await page.getByRole("button", { name: societe, exact: true }).click();
+  await page.getByRole("dialog").getByRole("link", { name: "Ouvrir le dossier" }).click();
+  await page.waitForURL(/\/avocat\/\d+/);
+}
+
 test.describe("espace avocat", () => {
   test.use({ storageState: "./tests/parcours/session-avocat.json" });
 
   test("liste les dossiers du cabinet", async ({ page }) => {
     await page.goto("/avocat");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Espace avocat");
-    await expect(page.getByRole("link", { name: "PARCOURS EN COURS", exact: true })).toBeVisible();
+    // Le nom de la société est un bouton depuis qu'il ouvre le panneau de détail.
+    await expect(page.getByRole("button", { name: "PARCOURS EN COURS", exact: true })).toBeVisible();
   });
 
   test("un filtre laisse exactement le nombre de dossiers qu'il annonce", async ({ page }) => {
@@ -110,7 +124,9 @@ test.describe("espace avocat", () => {
       await page.goto("/avocat?filtre=" + filtre);
 
       const actif = page.locator("nav[aria-label='Filtrer les dossiers'] a[aria-current='page']");
-      const annonce = Number((await actif.innerText()).match(/(\d+)\s*$/)?.[1]);
+      // Le compte est masqué quand il vaut zéro : un « 0 » à côté d'un filtre invite
+      // à cliquer sur du vide. Son absence vaut donc zéro.
+      const annonce = Number((await actif.innerText()).match(/(\d+)\s*$/)?.[1] ?? 0);
       const lignes = await page.locator("table tbody tr").count();
 
       expect(lignes, filtre).toBe(annonce);
@@ -125,9 +141,7 @@ test.describe("espace avocat", () => {
   });
 
   test("le dossier montre les informations et ce qui manque encore", async ({ page }) => {
-    await page.goto("/avocat");
-    await page.getByRole("link", { name: "PARCOURS EN COURS", exact: true }).click();
-    await page.waitForURL(/\/avocat\/\d+/);
+    await ouvrirLeDossier(page, "PARCOURS EN COURS");
 
     await expect(page.getByRole("heading", { name: "Informations du dossier" })).toBeVisible();
     // Le dossier d'essai est vide : tout doit être annoncé comme non renseigné.
@@ -135,9 +149,7 @@ test.describe("espace avocat", () => {
   });
 
   test("une note interne s'ajoute et s'affiche", async ({ page }) => {
-    await page.goto("/avocat");
-    await page.getByRole("link", { name: "PARCOURS EN COURS", exact: true }).click();
-    await page.waitForURL(/\/avocat\/\d+/);
+    await ouvrirLeDossier(page, "PARCOURS EN COURS");
     await page.getByRole("link", { name: "Notes internes" }).click();
     await page.waitForURL(/onglet=notes/);
 
@@ -150,9 +162,7 @@ test.describe("espace avocat", () => {
   });
 
   test("une pièce déposée peut être refusée avec son motif", async ({ page }) => {
-    await page.goto("/avocat");
-    await page.getByRole("link", { name: "PARCOURS EN COURS", exact: true }).click();
-    await page.waitForURL(/\/avocat\/\d+/);
+    await ouvrirLeDossier(page, "PARCOURS EN COURS");
     await page.getByRole("link", { name: /^Pièces/ }).click();
     await page.waitForURL(/onglet=pieces/);
 

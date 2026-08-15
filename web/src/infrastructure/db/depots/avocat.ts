@@ -1,11 +1,29 @@
 import { prisma } from "../client";
 import { Interdit } from "../utilisateur-courant";
+import { estPropose } from "@/domain/acces/regles";
 import { exigerDossier, listerDossiers } from "./dossiers";
+import { transitionPermise, libelleEtat } from "@/domain/formalite/transitions";
 import {
-  transitionPermise,
-  libelleEtat,
-  messageAuClient,
-} from "@/domain/formalite/transitions";
+  passageSousPhasePermis,
+  passageBloque,
+  libelleSousPhase,
+} from "@/domain/formalite/avocat";
+import {
+  correctionsDemandees,
+  dossierValide,
+  dossierRejete,
+  immatriculee,
+  documentRefuse,
+  documentValide,
+} from "@/domain/formalite/avis";
+import { prevenir } from "./avis";
+import { TYPE_RBE, TYPE_KBIS, typesDeposes } from "./suivi";
+import {
+  annonceAPublier,
+  attestationAttendue,
+  depotEnCours,
+  dossierAPrendre,
+} from "@/domain/formalite/avis";
 import { equipeDe } from "./equipe";
 import type { UtilisateurConnecte } from "../sessions";
 
@@ -26,7 +44,26 @@ function exigerAvocat(utilisateur: UtilisateurConnecte) {
 export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
   exigerAvocat(utilisateur);
 
-  const dossiers = await listerDossiers(utilisateur);
+  /*
+   * Les siens, et ceux qui attendent un avocat.
+   *
+   * Un dossier transmis que personne n'a pris est proposé à tous : il doit se voir,
+   * sinon la notification mène à une liste où il ne figure pas. Un dossier déjà pris
+   * disparaît de la vue des autres - il appartient à son avocat.
+   */
+  const [miens, proposes] = await Promise.all([
+    listerDossiers(utilisateur),
+    prisma.formalites.findMany({
+      where: {
+        assigned_avocat_id: null,
+        status: { notIn: ["en_cours", "terminee", "archive", "rejete"] },
+      },
+      orderBy: { updated_at: "desc" },
+    }),
+  ]);
+
+  const vus = new Set(miens.map((d) => d.id));
+  const dossiers = [...miens, ...proposes.filter((d) => !vus.has(d.id))];
   if (dossiers.length === 0) return [];
 
   const identifiants = dossiers.map((d) => d.id);
@@ -90,6 +127,20 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
     nonLus: messages.get(d.id) ?? 0,
     payeCentimes: paye.get(d.id) ?? 0,
     monDossier: d.assigned_avocat_id === utilisateur.id,
+    /*
+     * Proposé, et non simplement sans avocat.
+     *
+     * Un administrateur voit tous les dossiers : marquer « libre » tout ce qui n'a pas
+     * d'avocat faisait apparaître le bouton sur des brouillons que le client remplit
+     * encore, et sur des dossiers déjà immatriculés.
+     */
+    libre: estPropose({
+      id: d.id,
+      proprietaireId: d.user_id,
+      avocatAssigneId: d.assigned_avocat_id,
+      equipeId: d.team_id,
+      statut: d.status,
+    }),
   }));
 }
 
@@ -161,6 +212,15 @@ export async function ajouterNote(
   });
 }
 
+/** Le registre des bénéficiaires est facultatif : le message final ne le promet
+ *  que s'il a été déposé. */
+async function aLeRbe(dossierId: number): Promise<boolean> {
+  const compte = await prisma.documents.count({
+    where: { formalite_id: dossierId, type: TYPE_RBE, rejection_reason: null },
+  });
+  return compte > 0;
+}
+
 /**
  * Fait changer un dossier d'état.
  *
@@ -180,8 +240,11 @@ export async function changerEtatDossier(
 
   if (!transitionPermise(dossier.status, vers)) {
     throw new Interdit(
-      "Un dossier « " + libelleEtat(dossier.status) + " » ne peut pas passer à « " +
-        libelleEtat(vers) + " »"
+      "Un dossier « " +
+        libelleEtat(dossier.status) +
+        " » ne peut pas passer à « " +
+        libelleEtat(vers) +
+        " »"
     );
   }
 
@@ -194,17 +257,25 @@ export async function changerEtatDossier(
     },
   });
 
-  const message = messageAuClient(vers, dossier.societe || "votre société");
-  if (message) {
-    await prisma.notifications.create({
-      data: {
-        user_id: dossier.user_id,
-        type: "changement_etat",
-        content: message,
-        formalite_id: dossierId,
-      },
-    });
-  }
+  /*
+   * Le client est prévenu, cloche et courriel.
+   *
+   * L'ancien code écrivait une notification que rien ne lisait : quelqu'un dont
+   * l'avocat demandait des corrections ne l'apprenait qu'en revenant de lui-même.
+   */
+  const societe = dossier.societe || "votre société";
+  const avis =
+    vers === "corrections_demandees"
+      ? correctionsDemandees(societe)
+      : vers === "valide"
+        ? dossierValide(societe)
+        : vers === "rejete"
+          ? dossierRejete(societe)
+          : vers === "terminee"
+            ? immatriculee(societe, await aLeRbe(dossierId))
+            : null;
+
+  if (avis) await prevenir(dossier.user_id, dossierId, avis);
 
   await prisma.audit_log.create({
     data: {
@@ -304,7 +375,10 @@ export async function statuerSurDocument(
     data:
       decision === "valider"
         ? { status: "verified", rejection_reason: null, rejected_at: null }
-        : { rejection_reason: motif?.slice(0, 500) || "Document non conforme", rejected_at: new Date() },
+        : {
+            rejection_reason: motif?.slice(0, 500) || "Document non conforme",
+            rejected_at: new Date(),
+          },
   });
 
   await prisma.audit_log.create({
@@ -318,5 +392,234 @@ export async function statuerSurDocument(
     },
   });
 
+  /*
+   * Le client apprend le refus autrement qu'en revenant voir.
+   *
+   * C'est le seul avis qui appelle un geste immédiat de sa part : il part donc aussi
+   * par courriel, avec le motif, faute de quoi le dossier attend sans que personne ne
+   * sache qu'il attend.
+   */
+  const dossier = await prisma.formalites.findUnique({
+    where: { id: document.formalite_id },
+    select: { user_id: true, societe: true },
+  });
+
+  if (dossier) {
+    const societe = dossier.societe || "votre société";
+    await prevenir(
+      dossier.user_id,
+      document.formalite_id,
+      decision === "refuser"
+        ? documentRefuse(document.name, societe, misAJour.rejection_reason ?? "Document non conforme")
+        : documentValide(document.name, societe)
+    );
+  }
+
   return misAJour;
+}
+
+
+/**
+ * Fait avancer le travail du cabinet d'un cran.
+ *
+ * Les cinq pastilles - Transmis, Révision, Vérifié, Dépôt, KBIS - existaient dans
+ * l'écran et aucune ne s'allumait : aucune route n'écrivait jamais la colonne.
+ *
+ * Chaque passage prévient le client quand il le concerne. « Vérifié » est le moment
+ * où on lui demande de publier son annonce légale : c'est la seule démarche qui reste
+ * de son côté, et personne ne la lui demandait.
+ */
+export async function changerSousPhase(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  vers: string
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  if (dossier.business_sub_phase === vers) return { inchange: true as const };
+
+  if (!passageSousPhasePermis(dossier.business_sub_phase, vers)) {
+    throw new Interdit(
+      "Un dossier ne passe pas de « " +
+        (dossier.business_sub_phase ? libelleSousPhase(dossier.business_sub_phase) : "aucune étape") +
+        " » à « " +
+        libelleSousPhase(vers) +
+        " »"
+    );
+  }
+
+  const types = await typesDeposes(dossierId);
+  const refus = passageBloque(vers, types.has(TYPE_KBIS));
+  if (refus) throw new Interdit(refus);
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: { business_sub_phase: vers, updated_at: new Date() },
+  });
+
+  const societe = dossier.societe || "votre société";
+  const avis =
+    vers === "5c"
+      ? // Le dossier est vérifié : la publication de l'annonce revient au client.
+        annonceAPublier(societe)
+      : vers === "5b" && !types.has("depot-capital")
+        ? attestationAttendue(societe)
+        : vers === "5d"
+          ? depotEnCours(societe)
+          : null;
+
+  if (avis) await prevenir(dossier.user_id, dossierId, avis);
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: utilisateur.roles[0] ?? "avocat",
+      action: "sous_phase_" + vers,
+      before_value: dossier.business_sub_phase,
+      after_value: vers,
+    },
+  });
+
+  return { inchange: false as const, sousPhase: vers };
+}
+
+/**
+ * Dépose dans le dossier du client un document produit par le cabinet.
+ *
+ * Le Kbis et le registre des bénéficiaires n'avaient aucun chemin pour arriver : les
+ * deux seules routes de dépôt sont les pièces attendues du client et le coffre
+ * personnel, qui range dans les documents de celui qui dépose. Le message de fin
+ * promettait pourtant au client de les trouver dans ses documents.
+ */
+export const LIVRABLES = {
+  [TYPE_KBIS]: { titre: "Kbis", formats: [".pdf", ".jpg", ".jpeg", ".png"] },
+  [TYPE_RBE]: {
+    titre: "Registre des bénéficiaires effectifs",
+    formats: [".pdf", ".jpg", ".jpeg", ".png"],
+  },
+} as const;
+
+export function estLivrable(type: string): type is keyof typeof LIVRABLES {
+  return type in LIVRABLES;
+}
+
+/**
+ * Les avocats à prévenir qu'un dossier attend.
+ *
+ * Les comptes actifs ; s'il n'y en a aucun, tous. Un dossier qui n'atteint personne
+ * dort indéfiniment sans que quiconque le sache - mieux vaut prévenir un compte
+ * suspendu, qui ne fera rien, que de ne prévenir personne.
+ */
+export async function avocatsANotifier(): Promise<{ id: number }[]> {
+  const actifs = await prisma.users.findMany({
+    where: { role: "avocat", suspended: false },
+    select: { id: true },
+  });
+  if (actifs.length > 0) return actifs;
+
+  return prisma.users.findMany({ where: { role: "avocat" }, select: { id: true } });
+}
+
+/**
+ * Propose un dossier à tous les avocats.
+ *
+ * Rien n'est assigné : c'est une offre. Le premier qui l'accepte le prend, et les
+ * autres l'apprennent en essayant.
+ */
+export async function proposerAuxAvocats(dossierId: number) {
+  const dossier = await prisma.formalites.findUnique({
+    where: { id: dossierId },
+    select: { societe: true, forme: true, assigned_avocat_id: true },
+  });
+  // Un dossier déjà pris ne se propose pas : ce serait rappeler un travail fait.
+  if (!dossier || dossier.assigned_avocat_id !== null) return { proposes: 0 };
+
+  const avocats = await avocatsANotifier();
+  const avis = dossierAPrendre(dossier.societe || "Sans nom", dossier.forme);
+
+  for (const avocat of avocats) {
+    await prevenir(avocat.id, dossierId, avis);
+  }
+
+  return { proposes: avocats.length };
+}
+
+/** Levée quand un dossier a déjà trouvé son avocat. */
+export class DejaPris extends Error {
+  constructor(readonly avocat: string) {
+    super("Ce dossier a déjà été pris en charge par " + avocat);
+  }
+}
+
+/**
+ * Un avocat prend un dossier qui attendait.
+ *
+ * La prise est une mise à jour conditionnelle : elle ne s'applique qu'aux lignes dont
+ * l'avocat est encore nul. Lire puis écrire laisserait passer deux avocats qui
+ * cliquent dans la même seconde - chacun lirait « libre » avant que l'autre n'écrive,
+ * et le second effacerait le premier sans que personne ne le sache.
+ *
+ * C'est la base qui tranche, en une instruction.
+ */
+export async function prendreLeDossier(utilisateur: UtilisateurConnecte, dossierId: number) {
+  exigerAvocat(utilisateur);
+
+  /*
+   * Le dossier est chargé sans passer par exigerDossier.
+   *
+   * Une fois pris, il n'est plus proposé : le confrère arrivé trop tard n'a donc plus
+   * le droit de le lire, et recevrait « accès refusé » là où il faut lui dire que
+   * quelqu'un a été plus rapide. Le contrôle porte ici sur ce qui compte : être
+   * avocat, et que le dossier soit bien transmis.
+   */
+  const dossier = await prisma.formalites.findUnique({
+    where: { id: dossierId },
+    select: { id: true, status: true, assigned_avocat_id: true },
+  });
+  if (!dossier) throw new Interdit("Ce dossier n'existe pas ou ne vous est pas accessible");
+
+  // Tant que le client remplit, il n'y a rien à réviser.
+  if (dossier.status === "en_cours") {
+    throw new Interdit("Ce dossier n'a pas encore été transmis");
+  }
+
+  const { count } = await prisma.formalites.updateMany({
+    where: { id: dossierId, assigned_avocat_id: null },
+    data: { assigned_avocat_id: utilisateur.id, updated_at: new Date() },
+  });
+
+  if (count === 0) {
+    // Quelqu'un a été plus rapide - ou c'est déjà le nôtre.
+    const apres = await prisma.formalites.findUnique({
+      where: { id: dossierId },
+      select: { assigned_avocat_id: true },
+    });
+
+    if (apres?.assigned_avocat_id === utilisateur.id) {
+      return { deja: true as const, dossier: dossier.id };
+    }
+
+    const preneur = apres?.assigned_avocat_id
+      ? await prisma.users.findUnique({
+          where: { id: apres.assigned_avocat_id },
+          select: { name: true },
+        })
+      : null;
+
+    throw new DejaPris(preneur?.name ?? "un autre avocat");
+  }
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "dossier_pris",
+      after_value: utilisateur.nom,
+    },
+  });
+
+  return { deja: false as const, dossier: dossier.id };
 }

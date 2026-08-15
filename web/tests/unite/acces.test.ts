@@ -7,6 +7,8 @@ import {
   type Appartenance,
   type Dossier,
   type Utilisateur,
+  estPropose,
+  peutPrendre,
 } from "@/domain/acces/regles";
 
 const client: Utilisateur = { id: 10, roles: ["user"] };
@@ -108,5 +110,44 @@ describe("visibilité d'équipe", () => {
 
   it("un avocat hors cabinet ne voit pas tout pour autant", () => {
     expect(voitToutLEquipe(appartenance({ type: "client", role: "avocat" }))).toBe(false);
+  });
+});
+
+describe("un dossier proposé aux avocats", () => {
+  const avocat = { id: 7, roles: ["avocat" as const] };
+  const propose = {
+    id: 1,
+    proprietaireId: 99,
+    avocatAssigneId: null,
+    equipeId: null,
+    statut: "en_attente_validation",
+  };
+
+  it("se lit par tout avocat, pour qu'il décide de le prendre", () => {
+    // Sans cela, un avocat prévenu ouvrirait un dossier qu'il n'a pas le droit de lire.
+    expect(estPropose(propose)).toBe(true);
+    expect(peutLire(avocat, propose, null)).toBe(true);
+    expect(peutPrendre(avocat, propose)).toBe(true);
+  });
+
+  it("un brouillon que le client remplit encore n'est pas proposé", () => {
+    // Le proposer donnerait à voir des brouillons à tout le cabinet.
+    expect(estPropose({ ...propose, statut: "en_cours" })).toBe(false);
+    expect(peutLire(avocat, { ...propose, statut: "en_cours" }, null)).toBe(false);
+  });
+
+  it("un dossier déjà pris cesse d'être proposé", () => {
+    expect(estPropose({ ...propose, avocatAssigneId: 3 })).toBe(false);
+    expect(peutPrendre(avocat, { ...propose, avocatAssigneId: 3 })).toBe(false);
+  });
+
+  it("un dossier clos n'attend plus personne", () => {
+    for (const statut of ["terminee", "archive", "rejete"]) {
+      expect(estPropose({ ...propose, statut })).toBe(false);
+    }
+  });
+
+  it("un client ne prend pas un dossier proposé", () => {
+    expect(peutPrendre({ id: 5, roles: ["user"] }, propose)).toBe(false);
   });
 });

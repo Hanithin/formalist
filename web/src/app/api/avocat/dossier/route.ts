@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import { changerEtatDossier, assignerAvocat } from "@/infrastructure/db/depots/avocat";
+import {
+  changerEtatDossier,
+  changerSousPhase,
+  assignerAvocat,
+} from "@/infrastructure/db/depots/avocat";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
@@ -11,6 +15,7 @@ const SCHEMA = z.union([
     etat: z.string().trim().max(30),
     commentaire: z.string().trim().max(1000).optional(),
   }),
+  z.object({ dossier: schemas.identifiant, sousPhase: z.string().trim().max(4) }),
   z.object({ dossier: schemas.identifiant, avocat: schemas.identifiant }),
 ]);
 
@@ -21,6 +26,12 @@ export const PUT = route(async (requete: Request) => {
   if ("etat" in demande) {
     return NextResponse.json(
       await changerEtatDossier(utilisateur, demande.dossier, demande.etat, demande.commentaire)
+    );
+  }
+
+  if ("sousPhase" in demande) {
+    return NextResponse.json(
+      await changerSousPhase(utilisateur, demande.dossier, demande.sousPhase)
     );
   }
 

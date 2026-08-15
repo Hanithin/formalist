@@ -5,14 +5,20 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { dossiersDuCabinet } from "@/infrastructure/db/depots/avocat";
 import {
   comptes,
-  dateCourte,
-  depuis,
   estFiltre,
-  etatCabinet,
+  estTri,
+  correspond,
+  trier,
+  dansLaPeriode,
+  periodeIncoherente,
+  paginer,
   FILTRES,
   retenir,
 } from "@/domain/formalite/avocat";
 import { SousNavigation } from "./SousNavigation";
+import { Recherche } from "./Recherche";
+import { Tableau } from "./Tableau";
+import { Pagination } from "./Pagination";
 import { Vide } from "@/components/liste/Vide";
 import styles from "./Avocat.module.css";
 
@@ -21,27 +27,48 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** « 1 490 € » : les centimes n'apparaissent pas dans un tableau de suivi. */
-function montant(centimes: number): string {
-  return Math.round(centimes / 100).toLocaleString("fr-FR") + " €";
-}
+/**
+ * Un compteur du cabinet.
+ *
+ * Zéro s'écrit « - », en gris : le chiffre zéro se lit comme une valeur qu'on vient
+ * chercher, alors qu'il ne dit qu'une absence, et quatre zéros noirs en gros
+ * caractères se lisaient comme une alerte.
+ *
+ * Le tiret est lu « aucun » par les lecteurs d'écran, qui l'annonceraient sinon comme
+ * un signe de ponctuation.
+ */
+function Compteur({
+  teinte,
+  libelle,
+  valeur,
+}: {
+  teinte: "orange" | "blue" | "green" | "red";
+  libelle: string;
+  valeur: number;
+}) {
+  const vide = valeur === 0;
 
-function majuscule(mot: string): string {
-  return mot.charAt(0).toUpperCase() + mot.slice(1);
+  return (
+    <div className={vide ? `${styles.counterCard} ${styles.counterVide}` : styles.counterCard}>
+      <div className={styles.counterLabel}>
+        <span className={`${styles.counterDot} ${styles[teinte]}`} /> {libelle}
+      </div>
+      <div className={styles.counterValue}>{vide ? <span aria-label="aucun">-</span> : valeur}</div>
+    </div>
+  );
 }
-
-/** Le type est enregistré sans accent : il s'écrit correctement à l'affichage. */
-const TYPES: Record<string, string> = {
-  creation: "Création",
-  modification: "Modification",
-  fermeture: "Fermeture",
-  depot: "Dépôt des comptes",
-};
 
 export default async function EspaceAvocat({
   searchParams,
 }: {
-  searchParams: Promise<{ filtre?: string }>;
+  searchParams: Promise<{
+    filtre?: string;
+    q?: string;
+    tri?: string;
+    du?: string;
+    au?: string;
+    page?: string;
+  }>;
 }) {
   const utilisateur = await exigerUtilisateur();
 
@@ -51,9 +78,29 @@ export default async function EspaceAvocat({
   if (!utilisateur.roles.includes("avocat") && !utilisateur.roles.includes("admin")) notFound();
 
   const dossiers = await dossiersDuCabinet(utilisateur);
-  const filtre = estFiltre((await searchParams).filtre);
-  const retenus = retenir(dossiers, filtre);
+  const criteres = await searchParams;
+  const filtre = estFiltre(criteres.filtre);
   const nombres = comptes(dossiers);
+
+  /*
+   * Les critères s'appliquent dans cet ordre : filtre, recherche, période, tri, page.
+   *
+   * Les compteurs des onglets, eux, portent sur la liste entière : ils disent ce qui
+   * existe, non ce que la recherche en cours laisse voir.
+   */
+  const terme = criteres.q ?? "";
+  const periode = { du: criteres.du, au: criteres.au };
+  const tri = estTri(criteres.tri);
+  const incoherente = periodeIncoherente(periode);
+
+  const retenus = trier(
+    retenir(dossiers, filtre).filter(
+      (d) => correspond(d, terme) && (incoherente || dansLaPeriode(d, periode))
+    ),
+    tri
+  );
+
+  const tranche = paginer(retenus, Number(criteres.page) || 1);
 
   const nonLus = dossiers.reduce((n, d) => n + d.nonLus, 0);
 
@@ -94,30 +141,10 @@ export default async function EspaceAvocat({
         ) : (
           <>
             <div className={styles.counters}>
-              <div className={styles.counterCard}>
-                <div className={styles.counterLabel}>
-                  <span className={`${styles.counterDot} ${styles.orange}`} /> À vérifier
-                </div>
-                <div className={styles.counterValue}>{nombres.verifier}</div>
-              </div>
-              <div className={styles.counterCard}>
-                <div className={styles.counterLabel}>
-                  <span className={`${styles.counterDot} ${styles.blue}`} /> En cours
-                </div>
-                <div className={styles.counterValue}>{nombres.encours}</div>
-              </div>
-              <div className={styles.counterCard}>
-                <div className={styles.counterLabel}>
-                  <span className={`${styles.counterDot} ${styles.green}`} /> Terminées
-                </div>
-                <div className={styles.counterValue}>{nombres.termines}</div>
-              </div>
-              <div className={styles.counterCard}>
-                <div className={styles.counterLabel}>
-                  <span className={`${styles.counterDot} ${styles.red}`} /> Messages non lus
-                </div>
-                <div className={styles.counterValue}>{nonLus}</div>
-              </div>
+              <Compteur teinte="orange" libelle="À vérifier" valeur={nombres.verifier} />
+              <Compteur teinte="blue" libelle="En cours" valeur={nombres.encours} />
+              <Compteur teinte="green" libelle="Terminées" valeur={nombres.termines} />
+              <Compteur teinte="red" libelle="Messages non lus" valeur={nonLus} />
             </div>
 
             <nav className={styles.filterTabs} aria-label="Filtrer les dossiers">
@@ -131,120 +158,59 @@ export default async function EspaceAvocat({
                   aria-current={f.cle === filtre ? "page" : undefined}
                 >
                   {f.libelle}
-                  <span className={styles.filterCount}>{nombres[f.cle]}</span>
+                  {/* Un « 0 » à côté d'un filtre invite à cliquer sur du vide. */}
+                  {nombres[f.cle] > 0 && (
+                    <span className={styles.filterCount}>{nombres[f.cle]}</span>
+                  )}
                 </Link>
               ))}
             </nav>
+
+            <Recherche />
+
+            {incoherente && (
+              <p className={styles.avertissement} role="alert">
+                La fin de la période précède son début : la période n&apos;est pas appliquée.
+              </p>
+            )}
 
             {retenus.length === 0 ? (
               <Vide
                 ton="filtre"
                 icone="/recherche-entreprise"
                 titre="Aucun résultat"
-                texte="Aucun dossier ne correspond à ce filtre."
+                texte={
+                  terme
+                    ? "Aucun dossier ne correspond à « " + terme + " »."
+                    : "Aucun dossier ne correspond à ces critères."
+                }
                 action={{ libelle: "Voir tous les dossiers", lien: "/avocat" }}
               />
             ) : (
-              <div className={styles.tableWrap}>
-                <table className={styles.dossiersTable}>
-                  <thead>
-                    <tr>
-                      <th>Réf.</th>
-                      <th>Société</th>
-                      <th>Type</th>
-                      <th>Offre</th>
-                      <th>Phase</th>
-                      <th>Client</th>
-                      <th>Créée</th>
-                      <th>Modifiée</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {retenus.map((d) => {
-                      const etat = etatCabinet(d);
-                      const type =
-                        (TYPES[d.type] ?? majuscule(d.type)) +
-                        (d.sousType ? " (" + d.sousType.replace(/_/g, " ") + ")" : "");
+              <>
+                <Tableau
+                  lignes={tranche.visibles.map((d) => ({
+                    ...d,
+                    creeLe: d.creeLe.toISOString(),
+                    majLe: d.majLe.toISOString(),
+                  }))}
+                />
 
-                      return (
-                        <tr key={d.id}>
-                          <td className={styles.ref}>{d.reference}</td>
-                          <td>
-                            {/*
-                              Le nom, sa forme et ses marques sur une seule ligne.
-                              La forme flottait auparavant sous le nom, sur sa propre
-                              ligne : elle allongeait chaque rangée d'un étage pour
-                              quatre lettres, et rien ne la rattachait visuellement à
-                              la société. En pastille, elle se lit comme ce qu'elle
-                              est, une qualification du nom qui précède.
-                            */}
-                            <span className={styles.societeCellule}>
-                              {/* Le lien porte le nom : une ligne entière cliquable
-                                  ne s'atteint pas au clavier. */}
-                              <Link href={"/avocat/" + d.id} className={styles.societeNom}>
-                                {d.societe}
-                              </Link>
-                              {d.forme && <span className={styles.forme}>{d.forme}</span>}
-                              {d.nonLus > 0 && (
-                                <span className={`${styles.badge} ${styles.unread}`}>
-                                  {d.nonLus}
-                                </span>
-                              )}
-                              {d.monDossier && (
-                                <span className={`${styles.badge} ${styles.purple}`}>
-                                  Assigné à vous
-                                </span>
-                              )}
-                              {d.creePar === "avocat" && (
-                                <span className={`${styles.badge} ${styles.avocatCreated}`}>
-                                  Avocat
-                                </span>
-                              )}
-                            </span>
-                            {!!d.capital && d.capital > 0 && (
-                              <span className={styles.sousTitre}>
-                                Capital de {Number(d.capital).toLocaleString("fr-FR")} €
-                              </span>
-                            )}
-                          </td>
-                          <td>{type}</td>
-                          <td>
-                            <span
-                              className={`${styles.badge} ${styles[d.offre ?? "starter"] ?? ""}`}
-                            >
-                              {majuscule(d.offre ?? "starter")}
-                            </span>
-                            {d.payeCentimes > 0 && (
-                              <div className={styles.paye}>{montant(d.payeCentimes)} payés</div>
-                            )}
-                          </td>
-                          <td>
-                            <span className={`${styles.badge} ${styles[etat.teinte]}`}>
-                              {etat.libelle}
-                            </span>
-                          </td>
-                          <td>{d.client}</td>
-                          <td className={styles.quand}>{dateCourte(d.creeLe)}</td>
-                          <td className={styles.quand}>{depuis(d.majLe)}</td>
-                          <td style={{ textAlign: "right" }}>
-                            <svg
-                              className={styles.chevron}
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              aria-hidden="true"
-                            >
-                              <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                <Pagination
+                  page={tranche.page}
+                  pages={tranche.pages}
+                  premier={tranche.premier}
+                  dernier={tranche.dernier}
+                  total={tranche.total}
+                  criteres={{
+                    filtre: filtre === "tous" ? undefined : filtre,
+                    q: terme || undefined,
+                    tri: tri === "recent" ? undefined : tri,
+                    du: criteres.du,
+                    au: criteres.au,
+                  }}
+                />
+              </>
             )}
           </>
         )}

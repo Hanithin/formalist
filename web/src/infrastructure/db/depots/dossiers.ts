@@ -35,12 +35,15 @@ function versDossier(ligne: {
   user_id: number;
   assigned_avocat_id: number | null;
   team_id: number | null;
+  status?: string | null;
 }): Dossier {
   return {
     id: ligne.id,
     proprietaireId: ligne.user_id,
     avocatAssigneId: ligne.assigned_avocat_id,
     equipeId: ligne.team_id,
+    // Le statut sert à la seule règle des dossiers proposés aux avocats.
+    statut: ligne.status ?? null,
   };
 }
 
@@ -80,6 +83,41 @@ export async function exigerDossierModifiable(utilisateur: UtilisateurConnecte, 
 }
 
 /** Les dossiers visibles par cet utilisateur. */
+/**
+ * Les dossiers qui sont les siens, quel que soit son rôle.
+ *
+ * listerDossiers rend tout à un administrateur, ce qui est juste pour l'administration
+ * et faux partout ailleurs : dans une bibliothèque personnelle, cela mélange ses
+ * propres documents et ceux de tous les clients, et le choix d'une société devient une
+ * liste de trente dossiers dont on n'a jamais entendu parler.
+ *
+ * Un administrateur qui veut voir le dossier d'un client passe par l'administration ou
+ * l'espace avocat, où c'est annoncé.
+ */
+export async function mesDossiers(utilisateur: UtilisateurConnecte) {
+  const appartenance = await appartenanceDe(utilisateur.id);
+  const conditions: object[] = [
+    { user_id: utilisateur.id },
+    { assigned_avocat_id: utilisateur.id },
+  ];
+
+  if (
+    appartenance &&
+    peutLire(
+      utilisateur,
+      { id: 0, proprietaireId: -1, avocatAssigneId: null, equipeId: appartenance.equipeId },
+      appartenance
+    )
+  ) {
+    conditions.push({ team_id: appartenance.equipeId });
+  }
+
+  return prisma.formalites.findMany({
+    where: { OR: conditions },
+    orderBy: { updated_at: "desc" },
+  });
+}
+
 export async function listerDossiers(utilisateur: UtilisateurConnecte) {
   if (utilisateur.roles.includes("admin")) {
     return prisma.formalites.findMany({ orderBy: { updated_at: "desc" } });
@@ -92,11 +130,14 @@ export async function listerDossiers(utilisateur: UtilisateurConnecte) {
   ];
 
   // L'équipe n'élargit la vue que si le droit est accordé
-  if (appartenance && peutLire(
-    utilisateur,
-    { id: 0, proprietaireId: -1, avocatAssigneId: null, equipeId: appartenance.equipeId },
-    appartenance
-  )) {
+  if (
+    appartenance &&
+    peutLire(
+      utilisateur,
+      { id: 0, proprietaireId: -1, avocatAssigneId: null, equipeId: appartenance.equipeId },
+      appartenance
+    )
+  ) {
     conditions.push({ team_id: appartenance.equipeId });
   }
 

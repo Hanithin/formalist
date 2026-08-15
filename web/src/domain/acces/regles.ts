@@ -29,6 +29,13 @@ export interface Dossier {
   proprietaireId: number;
   avocatAssigneId: number | null;
   equipeId: number | null;
+  /**
+   * L'état du dossier, quand la règle en dépend.
+   *
+   * Une seule règle le regarde : celle des dossiers proposés aux avocats. Il reste
+   * facultatif pour ne pas obliger tous les appelants à le fournir.
+   */
+  statut?: string | null;
 }
 
 export function aLeRole(utilisateur: Utilisateur, role: Role): boolean {
@@ -47,6 +54,28 @@ export function voitToutLEquipe(appartenance: Appartenance | null): boolean {
   return appartenance.voitTousLesDossiers;
 }
 
+/**
+ * Un dossier transmis que personne n'a encore pris.
+ *
+ * Il est proposé à tous les avocats à la fois : chacun est prévenu, chacun peut
+ * l'ouvrir pour décider s'il le prend, et le premier qui l'accepte le prend. Sans
+ * cette règle, un avocat prévenu ouvrirait un dossier qu'il n'a pas le droit de lire.
+ *
+ * Trois conditions. Tant que le client remplit son dossier, rien n'est à réviser : le
+ * proposer donnerait à voir des brouillons à tout le cabinet. Un dossier déjà pris
+ * cesse d'être proposé - il appartient à son avocat. Et un dossier clos n'attend plus
+ * personne.
+ */
+const CLOS = new Set(["terminee", "archive", "rejete"]);
+
+export function estPropose(dossier: Dossier | null): boolean {
+  if (!dossier) return false;
+  if (dossier.avocatAssigneId !== null) return false;
+  if (!dossier.statut || dossier.statut === "en_cours") return false;
+  // Un dossier clos n'attend plus personne : proposer de le prendre n'a pas de sens.
+  return !CLOS.has(dossier.statut);
+}
+
 export function peutLire(
   utilisateur: Utilisateur,
   dossier: Dossier | null,
@@ -56,9 +85,21 @@ export function peutLire(
   if (aLeRole(utilisateur, "admin")) return true;
   if (dossier.proprietaireId === utilisateur.id) return true;
   if (dossier.avocatAssigneId === utilisateur.id) return true;
+  // Un dossier proposé se lit par tout avocat : c'est ce qui lui permet de décider.
+  if (aLeRole(utilisateur, "avocat") && estPropose(dossier)) return true;
 
   if (!appartenance || dossier.equipeId !== appartenance.equipeId) return false;
   return voitToutLEquipe(appartenance);
+}
+
+/**
+ * Peut-il prendre ce dossier en charge ?
+ *
+ * Lire un dossier proposé ne donne pas le droit de le modifier : c'est la prise qui
+ * l'assigne, et elle seule ouvre le reste.
+ */
+export function peutPrendre(utilisateur: Utilisateur, dossier: Dossier | null): boolean {
+  return aLeRole(utilisateur, "avocat") && estPropose(dossier);
 }
 
 /** Lire ne suffit pas : modifier demande un droit distinct. */

@@ -8,6 +8,8 @@ import { libelleEtat } from "@/domain/formalite/transitions";
 import { etatDocument } from "@/domain/document/statuts";
 import { Notes } from "./Notes";
 import { Verification } from "./Verification";
+import { Avancement } from "./Avancement";
+import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
 import { Vide } from "@/components/liste/Vide";
 import styles from "../Avocat.module.css";
 
@@ -28,11 +30,12 @@ const CHAMPS: { cle: string; libelle: string }[] = [
   { cle: "capitalLibere", libelle: "Capital libéré" },
 ];
 
-const ONGLETS = ["recapitulatif", "pieces", "notes", "journal"] as const;
+const ONGLETS = ["recapitulatif", "avancement", "pieces", "notes", "journal"] as const;
 type Onglet = (typeof ONGLETS)[number];
 
 const NOMS: Record<Onglet, string> = {
   recapitulatif: "Récapitulatif",
+  avancement: "Avancement",
   pieces: "Pièces",
   notes: "Notes internes",
   journal: "Journal",
@@ -96,6 +99,9 @@ export default async function DossierAvocat({
   });
 
   const aVerifier = documents.filter((d) => d.status === "uploaded").length;
+  // Un document refusé ne compte pas comme remis : il attend son remplacement.
+  const remis = (type: string) =>
+    documents.some((d) => d.type === type && !d.rejection_reason);
   const adresse = (o: Onglet) => "/avocat/" + dossier.id + "?onglet=" + o;
 
   return (
@@ -135,6 +141,15 @@ export default async function DossierAvocat({
             </Link>
           ))}
         </nav>
+
+        {onglet === "avancement" && (
+          <Avancement
+            dossierId={dossier.id}
+            sousPhase={dossier.business_sub_phase}
+            aLeKbis={remis(TYPE_KBIS)}
+            aLeRbe={remis(TYPE_RBE)}
+          />
+        )}
 
         {onglet === "recapitulatif" && (
           <div className={styles.recapGrid}>
