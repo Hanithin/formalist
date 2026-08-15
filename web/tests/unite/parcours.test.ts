@@ -287,10 +287,21 @@ describe("progression dans le parcours", () => {
     expect(etapeAccessible(-3, complet)).toBe(1);
   });
 
-  it("l'avancement se compte en étapes complètes", () => {
-    // Sur un brouillon vide, seules les pièces et les actes ne bloquent pas.
-    expect(avancementParcours({})).toBe(29);
+  it("un dossier vide est à zéro", () => {
+    /*
+     * Les pièces et les actes ne demandent rien à saisir : les compter au
+     * dénominateur affichait « 29 % renseigné » sur un dossier où rien n'avait été
+     * touché - un chiffre qui promet un travail déjà commencé.
+     */
+    expect(avancementParcours({})).toBe(0);
     expect(avancementParcours(complet)).toBe(100);
+  });
+
+  it("l'avancement progresse à chaque étape franchie", () => {
+    const vide = avancementParcours({});
+    const uneEtape = avancementParcours(societe);
+    expect(uneEtape).toBeGreaterThan(vide);
+    expect(uneEtape).toBeLessThan(100);
   });
 });
 

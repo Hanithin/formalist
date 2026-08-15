@@ -211,6 +211,19 @@ export interface Brouillon {
   codePostal?: string;
   ville?: string;
   modeDomiciliation?: ModeDomiciliation;
+  /**
+   * Le domiciliataire, quand le siège est chez une société de domiciliation.
+   *
+   * Le greffe ne se contente pas de l'adresse. Le domicilié « déclare le contrat de
+   * domiciliation au registre du commerce et des sociétés, avec l'indication du nom ou
+   * de la dénomination sociale et des références de l'immatriculation principale » du
+   * domiciliataire (obligations du domicilié, greffe du tribunal des activités
+   * économiques de Paris ; articles L.123-10 et R.123-166-1 du code de commerce). Et le
+   * domiciliataire « est titulaire d'un agrément dont les références sont mentionnées
+   * dans tous les contrats de domiciliation qu'il conclut » : sans ce numéro,
+   * l'attestation est refusée.
+   */
+  domiciliataire?: { denomination?: string; siren?: string; agrement?: string };
   capital?: number;
   /** Nom de la banque du dépôt. La clé de gabarit reste NOM_BANQUE. */
   banque?: Banque;
@@ -279,6 +292,50 @@ function verifierSociete(brouillon: Brouillon): Anomalie[] {
   // « Autre » ouvre la saisie : sans nom, l'attestation de dépôt reste en blanc.
   if (brouillon.banque === "Autre" && !brouillon.banqueAutre?.nom?.trim()) {
     anomalies.push({ champ: "banqueAutre.nom", message: "Indiquez le nom de la banque" });
+  }
+
+  anomalies.push(...verifierDomiciliation(brouillon));
+
+  return anomalies;
+}
+
+const SIREN = /^\d{9}$/;
+
+/**
+ * Ce que le greffe exige d'un siège chez une société de domiciliation.
+ *
+ * Trois informations, et elles ne sont pas de confort : la dénomination et les
+ * références d'immatriculation du domiciliataire sont déclarées au registre par le
+ * domicilié lui-même, et le numéro d'agrément préfectoral doit figurer au contrat -
+ * une attestation qui ne le porte pas est refusée. Les demander au moment où le mode
+ * est choisi évite de les découvrir au dépôt du dossier.
+ */
+function verifierDomiciliation(brouillon: Brouillon): Anomalie[] {
+  if (brouillon.modeDomiciliation !== "Société de domiciliation") return [];
+
+  const anomalies: Anomalie[] = [];
+  const chez = brouillon.domiciliataire ?? {};
+
+  if (!chez.denomination?.trim()) {
+    anomalies.push({
+      champ: "domiciliataire.denomination",
+      message: "Indiquez le nom de la société de domiciliation",
+    });
+  }
+
+  const siren = (chez.siren ?? "").replace(/\s/g, "");
+  if (!SIREN.test(siren)) {
+    anomalies.push({
+      champ: "domiciliataire.siren",
+      message: "Le SIREN de la société de domiciliation comporte neuf chiffres",
+    });
+  }
+
+  if (!chez.agrement?.trim()) {
+    anomalies.push({
+      champ: "domiciliataire.agrement",
+      message: "Indiquez le numéro d'agrément préfectoral, qui figure sur votre contrat",
+    });
   }
 
   return anomalies;
@@ -478,7 +535,25 @@ export function etapeAccessible(demandee: number, brouillon: Brouillon): number 
   return Math.min(Math.max(demandee, 1), bloquante);
 }
 
+/**
+ * L'avancement ne compte que ce qu'il y a à saisir.
+ *
+ * Deux étapes ne demandent rien : les pièces se vérifient à leur dépôt, les actes sont
+ * produits par le dossier. Les compter au dénominateur affichait « 29 % renseigné » sur
+ * un dossier entièrement vide - un chiffre qui promet un travail déjà commencé alors
+ * que rien ne l'est.
+ *
+ * Le dénominateur se déduit donc du parcours lui-même : une étape compte si un
+ * brouillon vide la déclare incomplète. Une étape ajoutée plus tard s'y range seule.
+ */
+function etapesASaisir(): Etape[] {
+  return ETAPES.filter((e) => verifierEtape(e.numero, {}).length > 0);
+}
+
 export function avancementParcours(brouillon: Brouillon): number {
-  const completes = ETAPES.filter((e) => verifierEtape(e.numero, brouillon).length === 0).length;
-  return Math.round((completes / ETAPES.length) * 100);
+  const aSaisir = etapesASaisir();
+  if (aSaisir.length === 0) return 100;
+
+  const faites = aSaisir.filter((e) => verifierEtape(e.numero, brouillon).length === 0).length;
+  return Math.round((faites / aSaisir.length) * 100);
 }

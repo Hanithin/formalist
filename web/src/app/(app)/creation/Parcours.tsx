@@ -15,6 +15,7 @@ import {
   type Brouillon,
   type Etape,
 } from "@/domain/formalite/parcours";
+import { valeursParDefaut, clotureDepuis } from "@/domain/formalite/valeurs-par-defaut";
 import { FORMES_PROPOSEES, FORMES, regle } from "@/domain/formalite/formes";
 import { Adresse, Ville } from "./Adresse";
 import { Choix } from "./Choix";
@@ -92,8 +93,24 @@ export function Parcours({
   piecesDeposees,
   actesProduits,
 }: Props) {
-  const [brouillon, setBrouillon] = useState(brouillonInitial);
+  /*
+   * Les réponses courantes sont écrites dès l'ouverture, pas à la génération : elles
+   * doivent se voir et se corriger. Le calcul a lieu une fois, à la première mise en
+   * état - le refaire à chaque rendu ramènerait la valeur d'origine sur un champ
+   * qu'on vient de vider.
+   */
+  const [brouillon, setBrouillon] = useState(() => ({
+    ...brouillonInitial,
+    ...valeursParDefaut(brouillonInitial, new Date()),
+  }));
   const [anomalies, setAnomalies] = useState<Record<string, string>>({});
+  /*
+   * Les champs que la personne a elle-même renseignés.
+   *
+   * La clôture du premier exercice se déduit de la date de début : elle doit suivre
+   * tant qu'on ne l'a pas fixée, et cesser de bouger dès qu'on l'a fixée.
+   */
+  const [touches, setTouches] = useState<Set<string>>(new Set());
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -120,6 +137,33 @@ export function Parcours({
       ...actuel,
       banqueAutre: { ...actuel.banqueAutre, [champ]: valeur },
     }));
+  }
+
+  function modifierDomiciliataire(champ: "denomination" | "siren" | "agrement", valeur: string) {
+    setBrouillon((actuel) => ({
+      ...actuel,
+      domiciliataire: { ...actuel.domiciliataire, [champ]: valeur },
+    }));
+  }
+
+  /** Un champ renseigné à la main ne se laisse plus recalculer. */
+  function marquerTouche(champ: string) {
+    setTouches((actuels) => (actuels.has(champ) ? actuels : new Set(actuels).add(champ)));
+  }
+
+  /**
+   * La date de début d'activité entraîne la clôture du premier exercice.
+   *
+   * Tant que la clôture n'a pas été fixée à la main, elle suit : sans cela, choisir un
+   * début en octobre laissait une clôture calculée sur la date du jour, c'est-à-dire
+   * fausse et écrite d'avance - le pire des deux.
+   */
+  function modifierDebutDActivite(iso: string) {
+    setBrouillon((actuel) => {
+      const suite = { ...actuel, dateDebutActivite: iso };
+      if (touches.has("dateCloturePremierExercice")) return suite;
+      return { ...suite, dateCloturePremierExercice: clotureDepuis(iso, new Date()) };
+    });
   }
 
   async function enregistrer(suite: number) {
@@ -150,12 +194,8 @@ export function Parcours({
    * actionnaires, et le pluriel n'apparaît qu'au deuxième. Les autres étapes
    * gardent le titre de leur description.
    */
-  const libellesAssocies = libellesDesAssocies(
-    brouillon.forme,
-    (brouillon.associes ?? []).length
-  );
-  const titreDe = (e: Etape) =>
-    e.identifiant === "associes" ? libellesAssocies.titre : e.titre;
+  const libellesAssocies = libellesDesAssocies(brouillon.forme, (brouillon.associes ?? []).length);
+  const titreDe = (e: Etape) => (e.identifiant === "associes" ? libellesAssocies.titre : e.titre);
   const descriptionDe = (e: Etape) =>
     e.identifiant === "associes" ? libellesAssocies.description : e.description;
   const libelleCourtDe = (e: Etape) =>
@@ -235,9 +275,7 @@ export function Parcours({
                   id="adresse"
                   valeur={brouillon.adresse ?? ""}
                   surChangement={(v) => modifier("adresse", v)}
-                  surCompletion={(codePostal, ville) =>
-                    modifierPlusieurs({ codePostal, ville })
-                  }
+                  surCompletion={(codePostal, ville) => modifierPlusieurs({ codePostal, ville })}
                   placeholder="Rechercher l'adresse..."
                 />
               </Champ>
@@ -269,6 +307,68 @@ export function Parcours({
                   surChangement={(v) => modifier("modeDomiciliation", v)}
                 />
               </Champ>
+
+              {/*
+               * Une société de domiciliation engage trois informations que le greffe
+               * exige : le domicilié déclare au registre la dénomination et
+               * l'immatriculation de son domiciliataire, et l'agrément préfectoral
+               * doit figurer au contrat - sans lui, l'attestation est refusée.
+               */}
+              {brouillon.modeDomiciliation === "Société de domiciliation" && (
+                <>
+                  <p className={styles.note} role="note">
+                    Ces informations figurent sur votre contrat de domiciliation. Le greffe les
+                    exige : l&apos;attestation est refusée sans le numéro d&apos;agrément.
+                  </p>
+
+                  <Champ
+                    id="domiciliataireNom"
+                    libelle="Nom de la société de domiciliation"
+                    requis
+                    anomalie={anomalies["domiciliataire.denomination"]}
+                  >
+                    <input
+                      id="domiciliataireNom"
+                      placeholder="Ex : SeDomicilier"
+                      value={brouillon.domiciliataire?.denomination ?? ""}
+                      onChange={(e) => modifierDomiciliataire("denomination", e.target.value)}
+                    />
+                  </Champ>
+
+                  <Champ
+                    id="domiciliataireSiren"
+                    libelle="SIREN de la société de domiciliation"
+                    requis
+                    anomalie={anomalies["domiciliataire.siren"]}
+                  >
+                    <input
+                      id="domiciliataireSiren"
+                      inputMode="numeric"
+                      maxLength={9}
+                      placeholder="9 chiffres"
+                      value={brouillon.domiciliataire?.siren ?? ""}
+                      onChange={(e) =>
+                        modifierDomiciliataire("siren", e.target.value.replace(/\D/g, ""))
+                      }
+                    />
+                  </Champ>
+
+                  <Champ
+                    id="domiciliataireAgrement"
+                    libelle="Numéro d'agrément préfectoral"
+                    requis
+                    pleineLargeur
+                    anomalie={anomalies["domiciliataire.agrement"]}
+                  >
+                    <input
+                      id="domiciliataireAgrement"
+                      placeholder="Ex : 2023 A 00123"
+                      value={brouillon.domiciliataire?.agrement ?? ""}
+                      onChange={(e) => modifierDomiciliataire("agrement", e.target.value)}
+                    />
+                  </Champ>
+                </>
+              )}
 
               {/* Le montant du capital est saisi ici, comme dans le parcours
                   d'origine ; sa répartition en parts vient à l'étape « Capital ». */}
@@ -353,18 +453,18 @@ export function Parcours({
                 <DateChoisie
                   id="dateDebutActivite"
                   valeur={brouillon.dateDebutActivite ?? ""}
-                  surChangement={(iso) => modifier("dateDebutActivite", iso)}
+                  surChangement={modifierDebutDActivite}
                 />
               </Champ>
 
-              <Champ
-                id="dateCloturePremierExercice"
-                libelle="Date de clôture de la première année"
-              >
+              <Champ id="dateCloturePremierExercice" libelle="Date de clôture de la première année">
                 <DateChoisie
                   id="dateCloturePremierExercice"
                   valeur={brouillon.dateCloturePremierExercice ?? ""}
-                  surChangement={(iso) => modifier("dateCloturePremierExercice", iso)}
+                  surChangement={(iso) => {
+                    marquerTouche("dateCloturePremierExercice");
+                    modifier("dateCloturePremierExercice", iso);
+                  }}
                 />
               </Champ>
 
@@ -554,4 +654,3 @@ export function Parcours({
     </>
   );
 }
-

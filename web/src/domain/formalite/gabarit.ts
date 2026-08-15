@@ -318,6 +318,13 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     // Le gabarit d'attestation de domicile suppose le siège occupé en propre.
     STATUT_OCCUPATION: "propriétaire",
     MODE_DOMICILIATION: brouillon.modeDomiciliation ?? "",
+    // Le domiciliataire, quand il y en a un : sa dénomination et son immatriculation
+    // sont déclarées au registre, son agrément est la mention qui rend le contrat
+    // recevable.
+    EST_DOMICILIE: brouillon.modeDomiciliation === "Société de domiciliation",
+    NOM_DOMICILIATAIRE: ou(brouillon.domiciliataire?.denomination),
+    SIREN_DOMICILIATAIRE: ou(brouillon.domiciliataire?.siren),
+    AGREMENT_DOMICILIATAIRE: ou(brouillon.domiciliataire?.agrement),
     DUREE: String(brouillon.dureeDeVie ?? 99),
     OPTION_FISCALE: brouillon.optionFiscale ?? "",
     OPTION_IS: brouillon.optionFiscale === "IS",

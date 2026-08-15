@@ -105,6 +105,16 @@ const BROUILLON = z.object({
   codePostal: z.string().trim().max(5).optional(),
   ville: z.string().trim().max(100).optional(),
   modeDomiciliation: z.enum(MODES_DOMICILIATION).optional(),
+  // Le domiciliataire, quand le siège est chez une société de domiciliation : sa
+  // dénomination et son immatriculation sont déclarées au registre par le domicilié,
+  // et son agrément préfectoral est la mention qui rend le contrat recevable.
+  domiciliataire: z
+    .object({
+      denomination: z.string().trim().max(150).optional(),
+      siren: z.string().trim().max(9).optional(),
+      agrement: z.string().trim().max(60).optional(),
+    })
+    .optional(),
   capital: z.number().nonnegative().optional(),
   capitalLibere: z.number().nonnegative().optional(),
   banque: z.enum(BANQUES).optional(),

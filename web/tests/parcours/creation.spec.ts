@@ -91,6 +91,58 @@ test("l'étape 1 refuse de passer tant qu'elle est incomplète", async ({ page }
   await expect(page.getByRole("heading", { level: 2 })).toContainText("Informations de la société");
 });
 
+test("les réponses courantes sont déjà écrites, et se relisent", async ({ page }) => {
+  /*
+   * Laissés vides, ces champs partaient vides dans les actes : des statuts sans
+   * durée, sans date de clôture, sans option fiscale. La réponse courante est écrite
+   * d'avance, en pleine vue et modifiable - pas appliquée en douce à la génération.
+   */
+  await ouvrirCreation(page);
+
+  await expect(page.getByLabel("Durée de vie (années)")).toHaveValue("99");
+  await expect(page.locator("#optionFiscale")).toHaveText("IS");
+  await expect(page.locator("#dateCloturePremierExercice")).toContainText("31 décembre");
+});
+
+test("une société de domiciliation demande ce que le greffe exige", async ({ page }) => {
+  /*
+   * Le domicilié déclare au registre la dénomination et l'immatriculation de son
+   * domiciliataire, et l'agrément préfectoral doit figurer au contrat : sans ce
+   * numéro, l'attestation est refusée. Les demander ici évite de le découvrir au
+   * dépôt du dossier.
+   */
+  await ouvrirCreation(page);
+  await choisir(page, "Mode de domiciliation", "Société de domiciliation");
+
+  await page.getByLabel("Nom de la société de domiciliation").fill("SEDOMICILIER");
+  await page.getByLabel("SIREN de la société de domiciliation").fill("1234");
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  await expect(page.getByText(/SIREN de la société de domiciliation comporte neuf/)).toBeVisible();
+  await expect(page.getByText(/numéro d'agrément préfectoral/)).toBeVisible();
+
+  // Et ce qui est saisi tient le rechargement : la route accepte le champ, qu'elle
+  // rejetterait s'il ne figurait pas dans son gabarit.
+  const adresse = page.url();
+  await page.getByLabel("SIREN de la société de domiciliation").fill("493242106");
+  await page.getByLabel("Numéro d'agrément préfectoral").fill("2023 A 00123");
+
+  // Les identifiants, non les libellés : « Nom de la société » désigne aussi celui
+  // de la société de domiciliation, qui est ouvert à cet instant.
+  await choisir(page, "Forme juridique", /^SASU/);
+  await page.locator("#denomination").fill("ESSAI DOMICILIATION");
+  await page.getByLabel("Objet social", { exact: true }).fill("Conseil");
+  await page.locator("#adresse").fill("1 rue de la Paix");
+  await page.locator("#codePostal").fill("75002");
+  await page.locator("#ville").fill("Paris");
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Actionnaire");
+
+  await page.goto(adresse);
+  await expect(page.getByLabel("Numéro d'agrément préfectoral")).toHaveValue("2023 A 00123");
+  await expect(page.getByLabel("SIREN de la société de domiciliation")).toHaveValue("493242106");
+});
+
 test("un code postal incomplet est signalé", async ({ page }) => {
   await ouvrirCreation(page);
   await page.getByLabel("Code postal").fill("750");
@@ -318,6 +370,53 @@ test.describe("pièces et documents", () => {
     // Le nom proposé est celui de l'acte, pas son empreinte de stockage.
     expect(fichier.headers()["content-disposition"]).toContain("attachment");
     expect((await fichier.body()).subarray(0, 4).toString()).toBe("%PDF");
+  });
+
+  test("l'attestation de dépôt re-date les actes du jour où la banque l'a délivrée", async ({
+    page,
+    request,
+  }) => {
+    /*
+     * La banque délivre l'attestation après le versement, et c'est ce jour-là qu'on
+     * signe les statuts. Les dater du jour de leur production donnerait des statuts
+     * signés avant que le capital n'existe.
+     */
+    const dossier = await dossierPret(page, request);
+    await request.post("/api/formalites/documents", { data: { dossier: Number(dossier) } });
+
+    const attestation = new FormData();
+    attestation.append("dossier", dossier);
+    attestation.append("piece", "depot-capital");
+    attestation.append(
+      "fichier",
+      new Blob([Buffer.from("%PDF-1.4\nattestation d'essai")], { type: "application/pdf" }),
+      "attestation.pdf"
+    );
+
+    const depot = await request.post("/api/formalites/pieces", { multipart: attestation });
+    expect(depot.status()).toBe(201);
+    // Le dépôt relance la production : sans cela, la date ne s'appliquerait qu'à la
+    // prochaine génération manuelle, que personne ne déclenche.
+    expect((await depot.json()).redates).toBe(true);
+
+    // Redéposer l'attestation - le premier fichier était illisible - ne repousse pas
+    // la date de signature des statuts : c'est la première qui compte.
+    const seconde = new FormData();
+    seconde.append("dossier", dossier);
+    seconde.append("piece", "depot-capital");
+    seconde.append(
+      "fichier",
+      new Blob([Buffer.from("%PDF-1.4\nseconde attestation")], { type: "application/pdf" }),
+      "attestation-2.pdf"
+    );
+    expect((await request.post("/api/formalites/pieces", { multipart: seconde })).status()).toBe(
+      201
+    );
+
+    // L'acte reste servi, et le jeu n'a pas doublé.
+    await page.goto("/creation?dossier=" + dossier + "&etape=7");
+    const lien = await page.locator('a[href*="/api/fichier"]').first().getAttribute("href");
+    expect((await request.get(lien!)).status()).toBe(200);
   });
 
   test("un dossier incomplet ne produit pas de documents troués", async ({ page, request }) => {
