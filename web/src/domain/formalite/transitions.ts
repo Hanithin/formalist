@@ -65,26 +65,6 @@ export function libelleEtat(etat: string): string {
   return estEtat(etat) ? libelles[etat] : etat;
 }
 
-/** Ce qu'on annonce au client à chaque changement. Un état sans message ne le notifie pas. */
-export function messageAuClient(vers: string, societe: string): string | null {
-  if (vers === "corrections_demandees") {
-    return "Votre avocat demande des corrections sur " + societe + ".";
-  }
-  if (vers === "valide") {
-    return "Votre dossier " + societe + " a été validé par l'avocat.";
-  }
-  if (vers === "rejete") {
-    return "Votre dossier " + societe + " a été refusé. Consultez le motif dans la messagerie.";
-  }
-  if (vers === "terminee") {
-    return (
-      "Votre société " + societe +
-      " est immatriculée. Le K-bis et le registre des bénéficiaires sont dans vos documents."
-    );
-  }
-  return null;
-}
-
 /**
  * Offres, de la plus légère à la plus complète.
  *

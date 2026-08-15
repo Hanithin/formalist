@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { menuPour, entreeActive, SEPARATEUR } from "@/domain/navigation/menu";
 import { libelleCompteur, type ResumeColonne } from "@/domain/navigation/colonne";
+import { libelleDuType } from "@/domain/formalite/liste";
 import { icone } from "@/domain/navigation/icones";
 import type { Role } from "@/domain/acces/regles";
+import { Cloche } from "./Cloche";
 import { Deconnexion } from "./Deconnexion";
 import { NouvelleFormalite } from "./NouvelleFormalite";
 import styles from "./Sidebar.module.css";
@@ -69,12 +71,14 @@ export function Sidebar({ utilisateur, resume }: Props) {
     <aside className={styles.colonne}>
       <div className={styles.entete}>
         <Link href="/tableau-de-bord" className={styles.logo}>
-          <Image src="/images/logo.png"
+          <Image
+            src="/images/logo.png"
             alt="Formalist"
             width={150}
             height={30}
             style={{ height: 30, width: "auto" }}
-            priority />
+            priority
+          />
         </Link>
         {estAdmin && <span className={styles.badgeAdmin}>Admin</span>}
       </div>
@@ -83,12 +87,16 @@ export function Sidebar({ utilisateur, resume }: Props) {
           l'origine où il restait en display:none jusque-là. Avec une seule, il
           n'ouvre rien : il situe. Avec plusieurs, il mène à la liste. */}
       {resumeCourant.societe && (
-        <Contexte nom={resumeCourant.societe} plusieurs={resumeCourant.plusieurs} />
+        <Contexte
+          nom={resumeCourant.societe}
+          type={resumeCourant.type}
+          plusieurs={resumeCourant.plusieurs}
+        />
       )}
 
       <NouvelleFormalite />
 
-      <nav className={styles.navigation} aria-label="Navigation principale">
+      <Navigation>
         {menu.map((element, i) => {
           if (element === SEPARATEUR) {
             return <hr key={"filet-" + i} className={styles.filet} />;
@@ -115,7 +123,9 @@ export function Sidebar({ utilisateur, resume }: Props) {
           }
 
           const estActive = lienNu === active;
-          const compteur = element.compteur ? libelleCompteur(element.compteur, resumeCourant) : null;
+          const compteur = element.compteur
+            ? libelleCompteur(element.compteur, resumeCourant)
+            : null;
 
           return (
             <Link
@@ -130,7 +140,7 @@ export function Sidebar({ utilisateur, resume }: Props) {
             </Link>
           );
         })}
-      </nav>
+      </Navigation>
 
       <div className={styles.pied}>
         <span className={styles.avatar} aria-hidden="true">
@@ -141,8 +151,22 @@ export function Sidebar({ utilisateur, resume }: Props) {
           <span className={styles.email}>{utilisateur.email}</span>
         </span>
 
-        <Link href="/parametres" className={styles.bouton} title="Paramètres" aria-label="Paramètres">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <Cloche />
+
+        <Link
+          href="/parametres"
+          className={styles.bouton}
+          title="Paramètres"
+          aria-label="Paramètres"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
           </svg>
@@ -154,25 +178,116 @@ export function Sidebar({ utilisateur, resume }: Props) {
   );
 }
 
-/** La société active : pastille, libellé, nom tronqué, chevron s'il y a un choix. */
-function Contexte({ nom, plusieurs }: { nom: string; plusieurs: boolean }) {
+/**
+ * Le dossier sur lequel on travaille.
+ *
+ * Trois choses ont changé ici. La pastille portait une maison, la même icône que
+ * « Créer une société » deux lignes plus bas : deux objets différents ne se
+ * distinguaient plus. Elle porte maintenant les initiales du nom - propres à chaque
+ * société, donc reconnaissables d'un coup d'œil, comme un avatar.
+ *
+ * « Société active » disait un état sans dire ce qu'on pouvait en faire. « Vous
+ * travaillez sur » nomme la situation, et le chevron - quand il y a le choix - dit
+ * qu'elle se change.
+ */
+/**
+ * L'enveloppe défilante de la navigation.
+ *
+ * Deux dégradés fondent les entrées coupées dans le fond de la colonne : une ligne
+ * tranchée net ressemble à un défaut d'affichage, alors qu'un fondu se lit comme
+ * « ça continue ». La flèche n'apparaît que s'il reste vraiment quelque chose à voir,
+ * et disparaît une fois le bas atteint - sinon elle inviterait à défiler une liste
+ * déjà entière.
+ */
+function Navigation({ children }: { children: ReactNode }) {
+  const zone = useRef<HTMLElement | null>(null);
+  const [reste, setReste] = useState(false);
+  const [avant, setAvant] = useState(false);
+
+  function mesurer(element: HTMLElement) {
+    // Deux pixels de tolérance : les arrondis de mise en page en valent bien un.
+    setReste(element.scrollHeight - element.scrollTop - element.clientHeight > 2);
+    setAvant(element.scrollTop > 2);
+  }
+
+  useEffect(() => {
+    const element = zone.current;
+    if (!element) return;
+
+    mesurer(element);
+    const observateur = new ResizeObserver(() => mesurer(element));
+    observateur.observe(element);
+    return () => observateur.disconnect();
+  }, []);
+
+  return (
+    <div
+      className={styles.enveloppeNavigation}
+      data-avant={avant ? "" : undefined}
+      data-apres={reste ? "" : undefined}
+    >
+      <nav
+        ref={zone}
+        className={styles.navigation}
+        aria-label="Navigation principale"
+        onScroll={(e) => mesurer(e.currentTarget)}
+      >
+        {children}
+      </nav>
+
+      {reste && (
+        <button
+          type="button"
+          className={styles.suite}
+          aria-label="Voir la suite du menu"
+          onClick={() =>
+            zone.current?.scrollBy({ top: zone.current.clientHeight * 0.7, behavior: "smooth" })
+          }
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Contexte({
+  nom,
+  type,
+  plusieurs,
+}: {
+  nom: string;
+  type: string | null;
+  plusieurs: boolean;
+}) {
+  /*
+   * Le nom seul ne dit pas ce qu'on fait de la société : « ATELIER MERIDIEN » se lit
+   * pareillement qu'on soit en train de la créer ou de la fermer. Le badge nomme la
+   * nature du dossier en cours.
+   */
+  const nature = libelleDuType(type);
+
   const dedans = (
     <>
       <span className={styles.ctxIcone} aria-hidden="true">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M3 21h18M5 21V7l7-4 7 4v14" />
-        </svg>
+        {initiales(nom) || "?"}
       </span>
 
       <span className={styles.ctxCorps}>
-        <span className={styles.ctxLibelle}>Société active</span>
+        <span className={styles.ctxEntete}>
+          <span className={styles.ctxLibelle}>Vous travaillez sur</span>
+          {nature && <span className={styles.ctxNature}>{nature}</span>}
+        </span>
         <span className={styles.ctxNom}>{nom}</span>
       </span>
 

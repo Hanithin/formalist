@@ -4,7 +4,6 @@ import {
   transitionPermise,
   etatsSuivants,
   libelleEtat,
-  messageAuClient,
   monteeEnOffrePermise,
   OFFRES,
 } from "@/domain/formalite/transitions";
@@ -51,23 +50,6 @@ describe("transitions d'état", () => {
 
   it("un état inconnu s'affiche tel quel plutôt que d'être masqué", () => {
     expect(libelleEtat("etat_futur")).toBe("etat_futur");
-  });
-});
-
-describe("message au client", () => {
-  it("les changements qui le concernent sont annoncés", () => {
-    expect(messageAuClient("corrections_demandees", "ATELIER")).toContain("corrections");
-    expect(messageAuClient("valide", "ATELIER")).toContain("validé");
-    expect(messageAuClient("terminee", "ATELIER")).toContain("immatriculée");
-  });
-
-  it("un refus renvoie vers le motif plutôt que de le taire", () => {
-    expect(messageAuClient("rejete", "ATELIER")).toContain("messagerie");
-  });
-
-  it("un retour en cours ne le dérange pas", () => {
-    expect(messageAuClient("en_cours", "ATELIER")).toBeNull();
-    expect(messageAuClient("en_attente_validation", "ATELIER")).toBeNull();
   });
 });
 

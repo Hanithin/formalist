@@ -1,0 +1,129 @@
+/*
+ * La cloche vit dans le pied de la colonne, à côté des paramètres.
+ *
+ * Son panneau s'ouvre vers le haut et vers la droite : la colonne est étroite et
+ * collée au bas de l'écran, un panneau contenu dans sa largeur serait illisible.
+ */
+.bloc {
+  position: relative;
+  display: flex;
+}
+
+.bouton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.bouton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.bouton svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Le compte déborde du bouton : c'est ce qui le fait voir sans l'agrandir. */
+.pastille {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  min-width: 15px;
+  padding: 0 3px;
+  border-radius: 100px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+/* Posé sur le document, aux coordonnées du bouton : la colonne le coupait net à sa
+   largeur, et ouvrir son écoulement laisserait échapper le reste de son contenu. */
+.panneau {
+  position: fixed;
+  z-index: 60;
+  width: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+}
+
+.tete {
+  padding: 14px 16px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.vide {
+  margin: 0;
+  padding: 0 16px 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #888;
+}
+
+.liste {
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+}
+
+.ligne {
+  border-top: 1px solid #f2f2f2;
+}
+
+.lien,
+.inerte {
+  display: block;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.lien:hover {
+  background: #fafafa;
+}
+
+.contenu {
+  display: block;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Ce qui n'a pas encore été lu se distingue par le poids, non par une couleur :
+   une pastille par ligne ferait clignoter tout le panneau. */
+.frais .contenu {
+  font-weight: 600;
+  color: #111;
+}
+
+.quand {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: #999;
+}

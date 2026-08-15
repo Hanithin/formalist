@@ -1,5 +1,6 @@
 import { journal } from "@/lib/journal";
 import { adresseApplication } from "@/lib/site";
+import type { Avis } from "@/domain/formalite/avis";
 
 /**
  * Envoi d'emails transactionnels, par Resend.
@@ -167,5 +168,37 @@ export function emailInvitationEquipe(
       equipe +
       " sur Formalist.\n\nLien (valable 7 jours) :\n" +
       lien,
+  });
+}
+
+/**
+ * Le courriel d'un avis sur un dossier.
+ *
+ * Le lien mène au tableau de bord, jamais à une route qui agirait d'elle-même : un
+ * message reçu doit se lire, non déclencher quoi que ce soit à l'ouverture.
+ *
+ * Le corps arrive en texte brut du domaine, avec ses retours à la ligne : ils sont
+ * traduits en paragraphes après échappement, pour que ni le texte ni sa mise en forme
+ * ne puissent porter de balise.
+ */
+export function emailDAvis(prenom: string, adresse: string, avis: Avis) {
+  if (!avis.sujet || !avis.corps) return Promise.resolve({ ok: true });
+
+  const lien = adresseApplication() + "/tableau-de-bord";
+  const corpsHtml = echapper(avis.corps)
+    .split(/\n{2,}/)
+    .map((p) => "<p style=\"margin:0 0 14px;\">" + p.replace(/\n/g, "<br>") + "</p>")
+    .join("");
+
+  return envoyer({
+    destinataire: adresse,
+    sujet: avis.sujet,
+    html: gabarit(
+      prenom ? "Bonjour " + echapper(prenom.split(" ")[0]) : "Bonjour",
+      corpsHtml,
+      avis.bouton ?? "Ouvrir mon dossier",
+      lien
+    ),
+    texte: avis.corps + "\n\n" + lien,
   });
 }

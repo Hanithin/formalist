@@ -1,0 +1,184 @@
+/**
+ * Ce qu'on dit au client, et par quel canal.
+ *
+ * Les notifications étaient écrites en base et lues nulle part : le client n'apprenait
+ * qu'en revenant de lui-même sur le site qu'on lui demandait des corrections. Écrire
+ * n'est pas prévenir.
+ *
+ * Deux canaux, et ils ne portent pas la même chose. La cloche recueille tout ce qui
+ * bouge : on la consulte quand on veut. Le courriel dérange, il est donc réservé à ce
+ * qui appelle un geste ou clôt le dossier. Un client qui reçoit un mail par
+ * changement de sous-phase finit par ne plus les ouvrir, y compris celui qui compte.
+ */
+
+export type GenreDAvis =
+  | "document_refuse"
+  | "document_valide"
+  | "corrections_demandees"
+  | "dossier_valide"
+  | "dossier_rejete"
+  | "annonce_a_publier"
+  | "attestation_attendue"
+  | "depot_en_cours"
+  | "immatriculee"
+  | "dossier_a_prendre";
+
+export interface Avis {
+  genre: GenreDAvis;
+  /** La ligne de la cloche : ce qui s'est passé, en une phrase. */
+  contenu: string;
+  /** L'objet du courriel, quand il y en a un. */
+  sujet?: string;
+  /** Le corps du courriel : ce qu'il faut faire, et pourquoi. */
+  corps?: string;
+  /** L'intitulé du bouton du courriel. */
+  bouton?: string;
+}
+
+/** Les genres qui justifient de déranger quelqu'un dans sa boîte aux lettres. */
+const PAR_COURRIEL = new Set<GenreDAvis>([
+  "document_refuse",
+  "corrections_demandees",
+  "dossier_rejete",
+  "annonce_a_publier",
+  "attestation_attendue",
+  "immatriculee",
+  "dossier_a_prendre",
+]);
+
+export function partParCourriel(genre: GenreDAvis): boolean {
+  return PAR_COURRIEL.has(genre);
+}
+
+/* ---------- Les avis, un par événement ---------- */
+
+export function documentRefuse(nom: string, societe: string, motif: string): Avis {
+  return {
+    genre: "document_refuse",
+    contenu: "L'avocat demande un nouveau document : " + nom + " (" + societe + ")",
+    sujet: "Un document est à remplacer - " + societe,
+    corps:
+      "L'avocat a relu « " +
+      nom +
+      " » et vous demande de le remplacer.\n\nMotif : " +
+      motif +
+      "\n\nDéposez le nouveau fichier depuis vos documents : l'avocat le vérifie ensuite, il n'y a rien d'autre à faire de votre côté.",
+    bouton: "Remplacer le document",
+  };
+}
+
+export function documentValide(nom: string, societe: string): Avis {
+  return {
+    genre: "document_valide",
+    contenu: "L'avocat a validé " + nom + " (" + societe + ")",
+  };
+}
+
+export function correctionsDemandees(societe: string): Avis {
+  return {
+    genre: "corrections_demandees",
+    contenu: "L'avocat demande des corrections sur " + societe,
+    sujet: "Des corrections sont demandées - " + societe,
+    corps:
+      "L'avocat a relu votre dossier et demande des corrections avant de pouvoir le déposer.\n\nLe détail est dans votre messagerie.",
+    bouton: "Voir le détail",
+  };
+}
+
+export function dossierValide(societe: string): Avis {
+  return {
+    genre: "dossier_valide",
+    contenu: "Votre dossier " + societe + " a été validé par l'avocat",
+  };
+}
+
+export function dossierRejete(societe: string): Avis {
+  return {
+    genre: "dossier_rejete",
+    contenu: "Votre dossier " + societe + " a été refusé",
+    sujet: "Votre dossier a été refusé - " + societe,
+    corps:
+      "L'avocat a refusé le dossier en l'état. Le motif est dans votre messagerie, et le dossier reste modifiable : une fois repris, il repart en vérification.",
+    bouton: "Consulter le motif",
+  };
+}
+
+/**
+ * L'annonce légale.
+ *
+ * C'est le message le plus utile du parcours, et celui qui manquait : personne ne
+ * disait au client qu'il devait publier, où, ni ce qu'on attendait en retour. Le texte
+ * à publier est préparé par l'avocat ; le client achète la parution et rend
+ * l'attestation que le journal lui envoie.
+ */
+export function annonceAPublier(societe: string): Avis {
+  return {
+    genre: "annonce_a_publier",
+    contenu: "À vous de jouer : publiez l'annonce légale de " + societe,
+    sujet: "Publiez votre annonce légale - " + societe,
+    corps:
+      "Votre dossier est vérifié. Il reste une démarche de votre côté : publier l'annonce légale de constitution.\n\n" +
+      "1. Le texte à publier est prêt, dans votre dossier.\n" +
+      "2. Choisissez un journal habilité de votre département et achetez la parution (environ 180 € HT).\n" +
+      "3. Le journal vous envoie une attestation de parution : déposez-la ici.\n\n" +
+      "Le greffe réclame cette attestation avec le dossier : sans elle, le dépôt ne peut pas se faire.",
+    bouton: "Déposer l'attestation",
+  };
+}
+
+export function attestationAttendue(societe: string): Avis {
+  return {
+    genre: "attestation_attendue",
+    contenu: "Déposez l'attestation de dépôt de capital de " + societe,
+    sujet: "Déposez votre attestation de dépôt de capital - " + societe,
+    corps:
+      "Votre banque vous remet une attestation après le versement du capital. Déposez-la dans votre dossier.\n\n" +
+      "Vos actes seront alors datés du jour où vous l'avez obtenue : c'est celui où vous les signez.",
+    bouton: "Déposer l'attestation",
+  };
+}
+
+export function depotEnCours(societe: string): Avis {
+  return {
+    genre: "depot_en_cours",
+    contenu: "Le dossier " + societe + " est déposé au guichet unique",
+  };
+}
+
+export function immatriculee(societe: string, avecRbe: boolean): Avis {
+  return {
+    genre: "immatriculee",
+    contenu: "Votre société " + societe + " est immatriculée",
+    sujet: "Votre société est immatriculée - " + societe,
+    corps:
+      "C'est fait : " +
+      societe +
+      " est immatriculée.\n\nVotre Kbis" +
+      (avecRbe ? " et le registre des bénéficiaires effectifs sont" : " est") +
+      " dans vos documents.",
+    bouton: "Voir mes documents",
+  };
+}
+
+/**
+ * Un dossier attend qu'un avocat le prenne.
+ *
+ * Il part à tous les avocats à la fois : le premier qui l'accepte le prend. Par
+ * courriel aussi - c'est un travail qui attend, et une cloche qu'on ne regarde pas
+ * laisserait le dossier en plan.
+ */
+export function dossierAPrendre(societe: string, forme: string | null): Avis {
+  const description = forme ? forme + " " + societe : societe;
+
+  return {
+    genre: "dossier_a_prendre",
+    contenu: "Un dossier attend un avocat : " + description,
+    sujet: "Un dossier attend un avocat - " + societe,
+    corps:
+      "Le dossier " +
+      description +
+      " vient d'être transmis et attend d'être révisé.\n\n" +
+      "Il est proposé à tous les avocats : le premier qui l'accepte le prend en charge.",
+    bouton: "Voir le dossier",
+  };
+}

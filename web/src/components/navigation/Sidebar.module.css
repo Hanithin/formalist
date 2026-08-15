@@ -84,22 +84,24 @@
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+/*
+ * Les initiales plutôt qu'un pictogramme : elles changent avec la société, donc elles
+ * se reconnaissent. La maison qui s'y trouvait était celle de « Créer une société »,
+ * deux lignes plus bas - deux objets différents portaient le même signe.
+ */
 .ctxIcone {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #fff;
-  color: #18181b;
-}
-
-.ctxIcone svg {
-  display: block;
-  width: 17px;
-  height: 17px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .ctxCorps {
@@ -107,22 +109,60 @@
   min-width: 0;
 }
 
+/*
+ * Le libellé et le badge partagent la première ligne.
+ *
+ * Placé en colonne à droite du bloc, le badge prenait sa largeur sur les deux lignes
+ * et tronquait le nom de la société - or c'est le nom qu'on vient lire. Sur la ligne
+ * du libellé, il occupe une place qui ne servait à rien.
+ */
+.ctxEntete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 1px;
+}
+
+/* En minuscules : une capitale d'imprimerie sur trois mots crie sans rien ajouter. */
 .ctxLibelle {
-  display: block;
-  font-size: 10.5px;
-  font-weight: 500;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
 }
 
 .ctxNom {
   display: block;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: #fff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/*
+ * La nature du dossier, en haut à droite du bloc.
+ *
+ * Alignée sur le haut plutôt que centrée : le badge appartient à l'en-tête du bloc,
+ * non à la ligne du nom, et centré il se lirait comme un attribut de la société -
+ * or « Fermeture » qualifie le dossier, pas l'entreprise.
+ *
+ * Un seul ton pour les quatre natures : c'est le mot qui informe, et quatre couleurs
+ * demanderaient d'apprendre un code pour lire ce qui est déjà écrit.
+ */
+.ctxNature {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  letter-spacing: 0;
 }
 
 .ctxChevron {
@@ -133,11 +173,94 @@
   opacity: 0.6;
 }
 
+/*
+ * La navigation défile, et ses bords le disent.
+ *
+ * Sans cela, une entrée coupée net en haut ou en bas ressemble à un défaut
+ * d'affichage : on ne sait pas s'il y a autre chose au-delà. Le dégradé fond la
+ * dernière ligne dans le fond de la colonne, ce qui se lit comme « ça continue ».
+ *
+ * L'enveloppe porte les dégradés ; c'est l'intérieur qui défile - un dégradé posé sur
+ * l'élément défilant partirait avec lui.
+ */
+.enveloppeNavigation {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/*
+ * Chaque dégradé ne se montre que du côté où il reste quelque chose à voir : posé en
+ * permanence, il donnerait à une colonne entière l'air d'être coupée, et estomperait
+ * la première entrée alors qu'elle est complète.
+ */
+.enveloppeNavigation[data-avant]::before,
+.enveloppeNavigation[data-apres]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 24px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.enveloppeNavigation[data-avant]::before {
+  top: 0;
+  background: linear-gradient(to bottom, #18181b, rgba(24, 24, 27, 0));
+}
+
+.enveloppeNavigation[data-apres]::after {
+  bottom: 0;
+  background: linear-gradient(to top, #18181b, rgba(24, 24, 27, 0));
+}
+
 .navigation {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 0 12px;
+  /* La barre de défilement du système sur un fond sombre : discrète, mais présente. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/*
+ * La flèche n'apparaît que s'il reste quelque chose à voir : affichée en permanence,
+ * elle inviterait à défiler une liste déjà entière.
+ */
+.suite {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.suite:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.suite svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Le filet de séparation, à la place des titres de rubrique : c'est ainsi que la
@@ -190,7 +313,9 @@
      à chaque entrée et étirait la colonne. */
   line-height: 1.2;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .lien {
@@ -250,7 +375,8 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  /* Resserré depuis l'arrivée de la cloche : trois boutons et une identité. */
+  gap: 8px;
   padding: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -291,7 +417,9 @@
   background: none;
   color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .bouton:hover:not(:disabled) {
@@ -304,10 +432,15 @@
   height: 16px;
 }
 
+/* Le nom se tronque comme l'adresse : trois boutons partagent maintenant la ligne,
+   et « Camille Parcours » passait sur deux lignes en poussant le pied vers le haut. */
 .nom {
   font-size: 15px;
   font-weight: 600;
   color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .email {
