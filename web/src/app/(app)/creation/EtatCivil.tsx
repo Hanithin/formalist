@@ -8,7 +8,7 @@ import {
   type Conjoint,
   type PersonnePhysique,
 } from "@/domain/formalite/etat-civil";
-import { Adresse } from "./Adresse";
+import { Adresse } from "@/components/formulaire/Adresse";
 import { Choix } from "./Choix";
 import { DateChoisie } from "./DateChoisie";
 import styles from "./Parcours.module.css";

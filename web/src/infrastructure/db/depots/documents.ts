@@ -151,6 +151,7 @@ export async function formalitesPourListe(
     societe: d.societe,
     forme: d.forme,
     status: d.status,
+    sousPhase: d.business_sub_phase,
     phase: d.phase,
     offre: d.offer,
     banque: banqueDuBrouillon(d.data_json),

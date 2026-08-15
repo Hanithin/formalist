@@ -32,20 +32,37 @@ export async function typesDeposes(dossierId: number): Promise<Set<string>> {
 
 export async function etatDuDossier(dossier: {
   id: number;
+  type?: string | null;
   forme: string | null;
   status: string | null;
   business_sub_phase: string | null;
+  data_json?: string | null;
 }): Promise<EtatDuDossier> {
   const types = await typesDeposes(dossier.id);
 
   return {
+    type: dossier.type ?? null,
     forme: dossier.forme,
     status: dossier.status,
     sousPhase: dossier.business_sub_phase,
     aLAttestationDeCapital: types.has(TYPE_ATTESTATION_CAPITAL),
     aLAnnoncePubliee: types.has(TYPE_ANNONCE_PUBLIEE),
     aLeKbis: types.has(TYPE_KBIS),
+    // Le règlement vit dans la déclaration : c'est lui qui met l'auto-entreprise en
+    // route, là où une société part sur une transmission.
+    paye: estPayee(dossier.data_json),
   };
+}
+
+/** Le dossier porte-t-il un règlement ? Une lecture prudente d'un JSON libre. */
+function estPayee(dataJson: string | null | undefined): boolean {
+  if (!dataJson) return false;
+  try {
+    const lu: unknown = JSON.parse(dataJson);
+    return !!lu && typeof lu === "object" && (lu as { paye?: unknown }).paye === true;
+  } catch {
+    return false;
+  }
 }
 
 /**

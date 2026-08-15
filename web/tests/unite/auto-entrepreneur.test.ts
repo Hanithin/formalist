@@ -37,6 +37,7 @@ const activite: Declaration = {
   descriptionActivite: "Conseil en design",
   dateDebut: "2026-09-01",
   lieuExercice: "À mon domicile",
+  reponseReglementation: "non",
 };
 
 const complete: Declaration = {
@@ -213,7 +214,13 @@ describe("les champs que le guichet exige", () => {
       dateDebut: "2026-09-01",
     };
     expect(verifierEtape(3, activite).map((a) => a.champ)).toContain("lieuExercice");
-    expect(verifierEtape(3, { ...activite, lieuExercice: "À mon domicile" })).toHaveLength(0);
+    expect(
+      verifierEtape(3, {
+        ...activite,
+        lieuExercice: "À mon domicile",
+        reponseReglementation: "non",
+      })
+    ).toHaveLength(0);
   });
 });
 
@@ -224,14 +231,33 @@ describe("les pièces justificatives", () => {
     expect(identifiants).toEqual(["identite-recto", "identite-verso", "domicile"]);
   });
 
-  it("une activité réglementée en demande une de plus", () => {
-    const pieces = piecesDeclaration({ activiteReglementee: true });
+  it("un métier reconnu dans la liste en demande une de plus", () => {
+    const pieces = piecesDeclaration({
+      reponseReglementation: "oui",
+      categorieReglementee: "coiffure",
+    });
     expect(pieces.map((p) => p.identifiant)).toContain("qualification");
-    expect(pieces.find((p) => p.identifiant === "qualification")?.description).toContain("Diplôme");
+
+    const qualification = pieces.find((p) => p.identifiant === "qualification");
+    // L'intitulé légal figure dans la demande : la personne reconnaît ce qu'elle a dit.
+    expect(qualification?.description).toContain("coiffure");
+    expect(qualification?.description).toContain("trois ans d'expérience");
+  });
+
+  it("un doute ne réclame pas de pièce, il réclame un avis", () => {
+    /*
+     * Exiger un diplôme à tort ferait renoncer quelqu'un qui n'en a pas besoin.
+     * « Je ne sais pas » est une réponse, et c'est l'avocat qui tranche.
+     */
+    const pieces = piecesDeclaration({ reponseReglementation: "incertain" });
+    expect(pieces.map((p) => p.identifiant)).not.toContain("qualification");
   });
 
   it("chacune dit ce qu'on attend et sous quel format", () => {
-    for (const piece of piecesDeclaration({ activiteReglementee: true })) {
+    for (const piece of piecesDeclaration({
+      reponseReglementation: "oui",
+      categorieReglementee: "batiment",
+    })) {
       expect(piece.description.length).toBeGreaterThan(20);
       expect(piece.formats).toContain(".pdf");
     }

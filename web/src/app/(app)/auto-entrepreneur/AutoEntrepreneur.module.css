@@ -404,3 +404,422 @@
   font-size: 12px;
   color: #999;
 }
+
+/*
+ * Votre métier est-il réglementé ?
+ *
+ * Une case à cocher demandait de trancher une question de droit qu'on ne connaît pas.
+ * La liste se lit, la personne y reconnaît son métier - ou dit qu'elle n'est pas sûre.
+ */
+.reglementation {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+}
+
+.reglementation legend {
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.reglementationTexte {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #52525b;
+}
+
+/* Les intitulés légaux, avec les métiers qu'ils recouvrent : « la mise en place des
+   réseaux utilisant les fluides » ne se reconnaît que par « plombier ». */
+.metiers {
+  margin: 0 0 20px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #fafafa;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.metiers li {
+  display: grid;
+  gap: 2px;
+}
+
+.metierIntitule {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #111;
+}
+
+.metierExemples {
+  font-size: 12.5px;
+  color: #71717a;
+}
+
+.reponses {
+  display: grid;
+  gap: 8px;
+}
+
+.reponse,
+.reponseChoisie {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.reponse:hover {
+  background: #fafafa;
+}
+
+.reponseChoisie {
+  border-color: #111;
+  background: #fafafa;
+}
+
+.reponse input,
+.reponseChoisie input {
+  width: auto;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.reponseLibelle {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.reponseTexte {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #71717a;
+}
+
+.precision {
+  margin-top: 16px;
+}
+
+.precision label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+/* ---------- Le récapitulatif ---------- */
+
+.recap {
+  display: grid;
+  gap: 28px;
+}
+
+.recap section h3 {
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+/* Une valeur absente se voit : un blanc se confond avec un champ qu'on n'a pas lu. */
+.absent {
+  color: #ccc;
+}
+
+/* ---------- L'offre ---------- */
+
+.offre {
+  display: grid;
+  gap: 20px;
+}
+
+.offreTete h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.offreDelai {
+  margin: 0;
+  font-size: 13.5px;
+  color: #71717a;
+}
+
+.prestations {
+  margin: 0;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fafafa;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.prestations li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.prestations svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #059669;
+}
+
+.prix {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.prixMontant {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.prixMention {
+  font-size: 13.5px;
+  color: #71717a;
+}
+
+.payer {
+  height: 52px;
+  margin: 0;
+  padding: 0 28px;
+  border: 1px solid #111;
+  border-radius: 10px;
+  background: #111;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0;
+}
+
+.payer:hover:not(:disabled) {
+  background: #333;
+}
+
+.payer:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Ce que le prix ne cache pas : la démarche est gratuite si on la fait soi-même. */
+.franchise {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #999;
+}
+
+.erreurPaiement {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fef3c7;
+  font-size: 13.5px;
+  color: #92400e;
+}
+
+.regle {
+  padding: 24px;
+  border-radius: 12px;
+  background: #f0fdf4;
+}
+
+.regle h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #059669;
+  letter-spacing: 0;
+}
+
+.regle p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #3f3f46;
+}
+
+/* Les frais administratifs, dits avant plutôt que facturés après. */
+.frais {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #3f3f46;
+}
+
+.frais strong {
+  font-weight: 600;
+  color: #059669;
+}
+
+/* ---------- L'annonce du paiement ---------- */
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 17, 17, 0.4);
+  animation: paraitre 0.2s ease;
+}
+
+.confirmation {
+  width: min(460px, 100%);
+  padding: 36px 32px 32px;
+  border-radius: 18px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  animation: monter 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.confirmation h2 {
+  margin: 20px 0 10px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.confirmation p {
+  margin: 0 0 12px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #52525b;
+}
+
+.confirmationDetail {
+  font-size: 13px !important;
+  color: #999 !important;
+}
+
+.confirmation .payer {
+  width: 100%;
+  margin-top: 12px;
+}
+
+/*
+ * Le cercle se trace, puis la coche s'inscrit.
+ *
+ * Un paiement est le moment où l'on doute le plus : un trait qui se dessine dit
+ * « c'est fait » mieux qu'une ligne de texte apparue sans transition. Le tracé passe
+ * par stroke-dashoffset, que le navigateur anime sans repeindre la mise en page.
+ */
+.marque {
+  display: inline-flex;
+}
+
+.marque svg {
+  width: 68px;
+  height: 68px;
+}
+
+.cercle {
+  stroke: #059669;
+  stroke-width: 3;
+  stroke-dasharray: 152;
+  stroke-dashoffset: 152;
+  animation: tracer 0.5s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.coche {
+  stroke: #059669;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: tracer 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.45s forwards;
+}
+
+@keyframes tracer {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes paraitre {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes monter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+/* Une animation ne doit jamais s'imposer à qui l'a refusée dans son système. */
+@media (prefers-reduced-motion: reduce) {
+  .voile,
+  .confirmation,
+  .cercle,
+  .coche {
+    animation: none;
+  }
+
+  .cercle,
+  .coche {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Un parcours réglé n'a plus de boutons : le dossier est chez l'avocat. */
+.actionsMuettes {
+  display: none;
+}
+
+/* Un abandon n'a rien à célébrer : son cercle se trace en gris, et sans coche. */
+.marqueNeutre .cercle {
+  stroke: #a1a1aa;
+}
+
+/* Le suivi se pose au-dessus du fil d'étapes, une fois la déclaration confiée. */
+.suivi {
+  margin-bottom: 28px;
+}

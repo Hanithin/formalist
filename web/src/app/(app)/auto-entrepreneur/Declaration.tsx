@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useTransition } from "react";
+import { Fragment, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   verifierEtape,
@@ -14,6 +14,24 @@ import {
   type Declaration as Donnees,
   type Etape,
 } from "@/domain/auto-entrepreneur/declaration";
+import {
+  ACTIVITES_REGLEMENTEES,
+  REPONSES,
+  activiteReglementee,
+  reponseValide,
+  type ReponseReglementation,
+} from "@/domain/auto-entrepreneur/reglementation";
+import {
+  INTITULE,
+  PRESTATIONS,
+  DELAI,
+  FRANCHISE,
+  FRAIS_ANNONCES,
+  FRAIS_AGENT_COMMERCIAL,
+  detailDuPrix,
+} from "@/domain/auto-entrepreneur/offre";
+import { Adresse, Ville } from "@/components/formulaire/Adresse";
+import { Pieces } from "@/components/formulaire/Pieces";
 import styles from "./AutoEntrepreneur.module.css";
 
 interface Props {
@@ -21,6 +39,12 @@ interface Props {
   etapes: Etape[];
   etapeCourante: number;
   declarationInitiale: Donnees;
+  /** Ce qui a déjà été remis, pour que les cartes le disent. */
+  piecesDeposees: { type: string | null; nom: string }[];
+  /** Vrai au retour de Stripe, le temps d'annoncer que c'est réglé. */
+  regleALInstant?: boolean;
+  /** Vrai quand on revient de Stripe sans avoir payé. */
+  paiementAnnule?: boolean;
 }
 
 /**
@@ -72,7 +96,15 @@ function Coche() {
   );
 }
 
-export function Declaration({ dossierId, etapes, etapeCourante, declarationInitiale }: Props) {
+export function Declaration({
+  dossierId,
+  etapes,
+  etapeCourante,
+  declarationInitiale,
+  piecesDeposees,
+  regleALInstant = false,
+  paiementAnnule = false,
+}: Props) {
   const [donnees, setDonnees] = useState(declarationInitiale);
   const [anomalies, setAnomalies] = useState<Record<string, string>>({});
   const [enCours, demarrer] = useTransition();
@@ -83,6 +115,17 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
 
   function modifier(champ: keyof Donnees, valeur: unknown) {
     setDonnees((actuelles) => ({ ...actuelles, [champ]: valeur }));
+  }
+
+  /**
+   * Plusieurs champs d'un coup.
+   *
+   * Choisir une adresse remplit la voie, le code postal et la ville : trois appels
+   * successifs à modifier() partiraient du même état et les deux derniers
+   * écraseraient le premier.
+   */
+  function modifierPlusieurs(valeurs: Partial<Donnees>) {
+    setDonnees((actuelles) => ({ ...actuelles, ...valeurs }));
   }
 
   function aller(suite: number) {
@@ -108,6 +151,12 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
 
   return (
     <div className={styles.parcours}>
+      {/* Le paiement mérite d'être annoncé : sans cela on revient sur l'offre qu'on
+          vient de régler, et on doute d'avoir payé. Un abandon aussi : revenir sur
+          l'offre sans un mot laisse craindre un débit. */}
+      {regleALInstant && <FinDePaiement dossierId={dossierId} issue="regle" />}
+      {paiementAnnule && !regleALInstant && <FinDePaiement dossierId={dossierId} issue="annule" />}
+
       {/*
         Le même fil que la création : horizontal, au-dessus du formulaire.
         En colonne à gauche, il volait un quart de la largeur à la saisie et ne
@@ -116,28 +165,41 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
         Les segments sont des frères des étapes, non leurs enfants : ce sont eux qui
         absorbent la largeur restante entre deux pastilles.
       */}
-      <nav className={styles.stepper} aria-label="Étapes du parcours">
-        {etapes.map((e, i) => {
-          const franchie = e.numero < etape.numero;
-          const courante = e.numero === etape.numero;
-          const ton = courante ? styles.active : franchie ? styles.done : "";
+      {/*
+        Le fil d'étapes disparaît sur un dossier confié.
+        
+        Il sert à parcourir un formulaire ; quand il n'y a plus rien à parcourir, il
+        n'est qu'un obstacle qui repousse le récapitulatif d'un écran vers le bas.
+      */}
+      {!donnees.paye && (
+        <nav className={styles.stepper} aria-label="Étapes du parcours">
+          {etapes.map((e, i) => {
+            const franchie = e.numero < etape.numero;
+            const courante = e.numero === etape.numero;
+            const ton = courante ? styles.active : franchie ? styles.done : "";
 
-          return (
-            <Fragment key={e.numero}>
-              <div className={`${styles.step} ${ton}`} aria-current={courante ? "step" : undefined}>
-                <span className={styles.stepCircle}>{franchie ? <Coche /> : e.numero}</span>
-                <span className={styles.stepLabel}>{e.libelleCourt}</span>
-              </div>
-              {i < etapes.length - 1 && (
-                <span
-                  className={franchie ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment}
-                  aria-hidden="true"
-                />
-              )}
-            </Fragment>
-          );
-        })}
-      </nav>
+            return (
+              <Fragment key={e.numero}>
+                <div
+                  className={`${styles.step} ${ton}`}
+                  aria-current={courante ? "step" : undefined}
+                >
+                  <span className={styles.stepCircle}>{franchie ? <Coche /> : e.numero}</span>
+                  <span className={styles.stepLabel}>{e.libelleCourt}</span>
+                </div>
+                {i < etapes.length - 1 && (
+                  <span
+                    className={
+                      franchie ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment
+                    }
+                    aria-hidden="true"
+                  />
+                )}
+              </Fragment>
+            );
+          })}
+        </nav>
+      )}
 
       <section className={styles.contenu}>
         <h2>{etape.titre}</h2>
@@ -253,10 +315,14 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               pleineLargeur
               anomalie={erreur("adresseVoie")}
             >
-              <input
+              {/* La Base Adresse Nationale remplit aussi le code postal et la ville :
+                  les recopier à la main est justement là où l'erreur se glisse. */}
+              <Adresse
                 id="adresseVoie"
-                value={donnees.adresseVoie ?? ""}
-                onChange={(e) => modifier("adresseVoie", e.target.value)}
+                valeur={donnees.adresseVoie ?? ""}
+                surChangement={(v) => modifier("adresseVoie", v)}
+                surCompletion={(codePostal, ville) => modifierPlusieurs({ codePostal, ville })}
+                placeholder="Rechercher l'adresse..."
               />
             </Champ>
 
@@ -284,10 +350,11 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
             </Champ>
 
             <Champ id="ville" libelle={<>Ville</>} anomalie={erreur("ville")}>
-              <input
+              <Ville
                 id="ville"
-                value={donnees.ville ?? ""}
-                onChange={(e) => modifier("ville", e.target.value)}
+                valeur={donnees.ville ?? ""}
+                surChangement={(v) => modifier("ville", v)}
+                surCompletion={(codePostal) => modifier("codePostal", codePostal)}
               />
             </Champ>
 
@@ -329,10 +396,14 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
                   pleineLargeur
                   anomalie={erreur("entrepriseVoie")}
                 >
-                  <input
+                  <Adresse
                     id="entrepriseVoie"
-                    value={donnees.entrepriseVoie ?? ""}
-                    onChange={(e) => modifier("entrepriseVoie", e.target.value)}
+                    valeur={donnees.entrepriseVoie ?? ""}
+                    surChangement={(v) => modifier("entrepriseVoie", v)}
+                    surCompletion={(entrepriseCodePostal, entrepriseVille) =>
+                      modifierPlusieurs({ entrepriseCodePostal, entrepriseVille })
+                    }
+                    placeholder="Rechercher l'adresse..."
                   />
                 </Champ>
 
@@ -369,10 +440,13 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
                   libelle={<>Ville de l&apos;activité</>}
                   anomalie={erreur("entrepriseVille")}
                 >
-                  <input
+                  <Ville
                     id="entrepriseVille"
-                    value={donnees.entrepriseVille ?? ""}
-                    onChange={(e) => modifier("entrepriseVille", e.target.value)}
+                    valeur={donnees.entrepriseVille ?? ""}
+                    surChangement={(v) => modifier("entrepriseVille", v)}
+                    surCompletion={(entrepriseCodePostal) =>
+                      modifier("entrepriseCodePostal", entrepriseCodePostal)
+                    }
                   />
                 </Champ>
               </>
@@ -467,23 +541,22 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               </select>
             </Champ>
 
-            {/* Coiffure, bâtiment, transport, restauration : le guichet réclame le
-                diplôme ou l'autorisation avant d'immatriculer. Mieux vaut le demander
-                ici que de le découvrir au dépôt. */}
-            <label className={styles.case}>
-              <input
-                type="checkbox"
-                checked={!!donnees.activiteReglementee}
-                onChange={(e) => modifier("activiteReglementee", e.target.checked)}
-              />
-              Mon activité est réglementée (diplôme ou autorisation exigés)
-            </label>
-            {donnees.activiteReglementee && (
-              <p className={styles.deduit}>
-                Un justificatif de qualification professionnelle ou l&apos;autorisation
-                d&apos;exercer vous sera demandé à l&apos;étape des pièces.
-              </p>
-            )}
+            <Reglementation
+              reponse={donnees.reponseReglementation}
+              categorie={donnees.categorieReglementee}
+              surReponse={(reponse) =>
+                modifierPlusieurs({
+                  reponseReglementation: reponse,
+                  // Changer d'avis efface le métier retenu : le garder ferait
+                  // réclamer une pièce au titre d'une réponse qu'on vient de retirer.
+                  categorieReglementee:
+                    reponse === "oui" ? donnees.categorieReglementee : undefined,
+                })
+              }
+              surCategorie={(categorie) => modifier("categorieReglementee", categorie)}
+              anomalieReponse={erreur("reponseReglementation")}
+              anomalieCategorie={erreur("categorieReglementee")}
+            />
           </div>
         )}
 
@@ -532,25 +605,17 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
         {etape.identifiant === "pieces" && (
           <div className={styles.pieces}>
             <p className={styles.deduit}>
-              Rassemblez-les avant de continuer. Le guichet refuse un dossier incomplet, et
-              c&apos;est le motif de refus le plus courant.
+              Déposez-les maintenant. Un dossier incomplet est le premier motif de refus au guichet,
+              et l&apos;avocat ne peut pas déposer sans elles.
             </p>
 
-            <ul className={styles.listePieces}>
-              {piecesDeclaration(donnees).map((piece) => (
-                <li key={piece.identifiant} className={styles.piece}>
-                  <span className={styles.pieceTitre}>{piece.titre}</span>
-                  <span className={styles.pieceTexte}>{piece.description}</span>
-                  <span className={styles.pieceFormats}>
-                    {piece.formats.join(", ")} - 10 Mo au plus
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <p className={styles.deduit}>
-              Le dépôt se fait depuis vos documents, une fois la déclaration enregistrée.
-            </p>
+            {/* Le même dépôt que la création de société : glisser-déposer, contrôle du
+                format à l'arrivée, et la carte passe au vert. */}
+            <Pieces
+              dossierId={dossierId}
+              pieces={piecesDeclaration(donnees)}
+              deposees={piecesDeposees}
+            />
           </div>
         )}
 
@@ -597,36 +662,20 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
           </div>
         )}
 
-        {etape.identifiant === "recapitulatif" && (
-          <dl className={styles.recapitulatif}>
-            <div>
-              <dt>Déclarant</dt>
-              <dd>
-                {donnees.prenoms} {donnees.nomUsage || donnees.nomNaissance}
-              </dd>
-            </div>
-            <div>
-              <dt>Activité</dt>
-              <dd>{regle?.libelle}</dd>
-            </div>
-            <div>
-              <dt>Régime</dt>
-              <dd>{regimeFiscalDe(donnees.natureActivite)}</dd>
-            </div>
-            <div>
-              <dt>Début</dt>
-              <dd>{donnees.dateDebut}</dd>
-            </div>
-          </dl>
+        {etape.identifiant === "recapitulatif" && <Recapitulatif donnees={donnees} />}
+
+        {etape.identifiant === "paiement" && (
+          <Paiement dossierId={dossierId} declaration={donnees} />
         )}
 
-        <div className={styles.actions}>
-          {etape.numero > 1 && (
+        {/* Une déclaration réglée ne se reprend plus : elle est chez l'avocat. */}
+        <div className={donnees.paye ? styles.actionsMuettes : styles.actions}>
+          {etape.numero > 1 && !donnees.paye && (
             <button type="button" onClick={() => aller(etape.numero - 1)} disabled={enCours}>
               Étape précédente
             </button>
           )}
-          {etape.numero < etapes.length && (
+          {etape.numero < etapes.length && !donnees.paye && (
             <button
               type="button"
               className={styles.principal}
@@ -638,6 +687,437 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+/**
+ * Votre métier est-il réglementé ?
+ *
+ * On ne demande plus de trancher : on montre la liste, et la personne reconnaît son
+ * métier - ou ne le reconnaît pas. La troisième réponse est la plus importante :
+ * « je ne sais pas » n'est pas une absence de réponse, c'est un dossier que l'avocat
+ * regardera. Sans elle, il ne reste que deux issues fausses - cocher à tort et
+ * réclamer un diplôme inutile, ou ne rien cocher et se faire refuser au guichet.
+ *
+ * La liste est celle de l'article L121-1 du code de l'artisanat. Elle ne couvre que
+ * l'artisanat : c'est dit, plutôt que laissé croire.
+ */
+function Reglementation({
+  reponse,
+  categorie,
+  surReponse,
+  surCategorie,
+  anomalieReponse,
+  anomalieCategorie,
+}: {
+  reponse?: string;
+  categorie?: string;
+  surReponse: (reponse: ReponseReglementation) => void;
+  surCategorie: (categorie: string) => void;
+  anomalieReponse?: string;
+  anomalieCategorie?: string;
+}) {
+  const choisie = reponseValide(reponse);
+
+  return (
+    <fieldset className={styles.reglementation}>
+      <legend>Votre métier demande-t-il une qualification ?</legend>
+      <p className={styles.reglementationTexte}>
+        Certaines activités ne peuvent s&apos;exercer qu&apos;avec un diplôme ou trois ans
+        d&apos;expérience. Reconnaissez-vous votre métier dans cette liste ?
+      </p>
+
+      <ul className={styles.metiers}>
+        {ACTIVITES_REGLEMENTEES.map((activite) => (
+          <li key={activite.code}>
+            <span className={styles.metierIntitule}>{activite.intitule}</span>
+            <span className={styles.metierExemples}>{activite.exemples.join(", ")}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className={styles.reponses}>
+        {REPONSES.map((r) => (
+          <label
+            key={r.valeur}
+            className={choisie === r.valeur ? styles.reponseChoisie : styles.reponse}
+          >
+            <input
+              type="radio"
+              name="reponseReglementation"
+              value={r.valeur}
+              checked={choisie === r.valeur}
+              onChange={() => surReponse(r.valeur)}
+            />
+            <span>
+              <span className={styles.reponseLibelle}>{r.libelle}</span>
+              <span className={styles.reponseTexte}>{r.explication}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+
+      {anomalieReponse && <p role="alert">{anomalieReponse}</p>}
+
+      {/* « Oui » engage une pièce : on ne sait laquelle qu'une fois le métier nommé. */}
+      {choisie === "oui" && (
+        <div className={styles.precision}>
+          <label htmlFor="categorieReglementee">Laquelle ?</label>
+          <select
+            id="categorieReglementee"
+            value={categorie ?? ""}
+            onChange={(e) => surCategorie(e.target.value)}
+          >
+            <option value="">Choisissez</option>
+            {ACTIVITES_REGLEMENTEES.map((activite) => (
+              <option key={activite.code} value={activite.code}>
+                {activite.exemples[0]} - {activite.intitule}
+              </option>
+            ))}
+          </select>
+          {anomalieCategorie && <p role="alert">{anomalieCategorie}</p>}
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+/** Une ligne du récapitulatif. Un champ vide s'affiche « - » plutôt que de manquer. */
+function Ligne({ intitule, valeur }: { intitule: string; valeur?: string | null }) {
+  return (
+    <div>
+      <dt>{intitule}</dt>
+      <dd>{valeur?.trim() ? valeur : <span className={styles.absent}>-</span>}</dd>
+    </div>
+  );
+}
+
+/** « 2026-09-01 » se lit « 1 septembre 2026 » : personne ne déclare en ISO. */
+function enFrancais(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const jour = new Date(iso + "T12:00:00");
+  if (Number.isNaN(jour.getTime())) return iso;
+  return jour.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+/**
+ * Le récapitulatif, complet.
+ *
+ * Il montrait quatre lignes sur une déclaration qui en compte trente : on ne pouvait
+ * pas relire ce qu'on s'apprêtait à déposer. Un récapitulatif qui cache la moitié de
+ * ce qu'il récapitule ne sert qu'à donner l'impression d'avoir vérifié.
+ */
+function Recapitulatif({ donnees }: { donnees: Donnees }) {
+  const activite = regleActivite(donnees.natureActivite);
+  const metier = activiteReglementee(donnees.categorieReglementee);
+  const reponse = REPONSES.find((r) => r.valeur === donnees.reponseReglementation);
+
+  const adresse = [
+    donnees.adresseVoie,
+    donnees.adresseComplement,
+    [donnees.codePostal, donnees.ville].filter(Boolean).join(" "),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const adresseActivite = donnees.adresseEntrepriseDistincte
+    ? [
+        donnees.entrepriseVoie,
+        donnees.entrepriseComplement,
+        [donnees.entrepriseCodePostal, donnees.entrepriseVille].filter(Boolean).join(" "),
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "Identique au domicile";
+
+  return (
+    <div className={styles.recap}>
+      <p className={styles.deduit}>
+        {donnees.paye
+          ? "Ce qui a été confié à l'avocat. Une correction se demande par la messagerie : le dossier ne se modifie plus depuis ici."
+          : "Relisez avant de confier votre dossier à un avocat. Chaque ligne se corrige en revenant à son étape."}
+      </p>
+
+      <section>
+        <h3>Identité</h3>
+        <dl className={styles.recapitulatif}>
+          <Ligne intitule="Civilité" valeur={donnees.civilite} />
+          <Ligne
+            intitule="Nom et prénoms"
+            valeur={[donnees.prenoms, donnees.nomUsage || donnees.nomNaissance]
+              .filter(Boolean)
+              .join(" ")}
+          />
+          {donnees.nomUsage && <Ligne intitule="Nom de naissance" valeur={donnees.nomNaissance} />}
+          <Ligne intitule="Né(e) le" valeur={enFrancais(donnees.dateNaissance)} />
+          <Ligne
+            intitule="Lieu de naissance"
+            valeur={[donnees.villeNaissance, donnees.paysNaissance].filter(Boolean).join(", ")}
+          />
+          <Ligne intitule="Nationalité" valeur={donnees.nationalite} />
+          <Ligne intitule="Sécurité sociale" valeur={donnees.numeroSecuriteSociale} />
+        </dl>
+      </section>
+
+      <section>
+        <h3>Adresse et situation</h3>
+        <dl className={styles.recapitulatif}>
+          <Ligne intitule="Domicile" valeur={adresse} />
+          <Ligne intitule="Adresse de l'activité" valeur={adresseActivite} />
+          <Ligne intitule="Situation matrimoniale" valeur={donnees.situationMatrimoniale} />
+        </dl>
+      </section>
+
+      <section>
+        <h3>Activité</h3>
+        <dl className={styles.recapitulatif}>
+          <Ligne intitule="Nature" valeur={activite?.libelle} />
+          <Ligne intitule="Description" valeur={donnees.descriptionActivite} />
+          <Ligne intitule="Début" valeur={enFrancais(donnees.dateDebut)} />
+          <Ligne intitule="Lieu d'exercice" valeur={donnees.lieuExercice} />
+          <Ligne intitule="Code APE souhaité" valeur={donnees.codeApe} />
+          <Ligne
+            intitule="Métier réglementé"
+            valeur={metier ? metier.exemples[0] : reponse?.libelle}
+          />
+        </dl>
+      </section>
+
+      <section>
+        <h3>Fiscalité et social</h3>
+        <dl className={styles.recapitulatif}>
+          <Ligne intitule="Régime d'imposition" valeur={regimeFiscalDe(donnees.natureActivite)} />
+          <Ligne
+            intitule="Plafond de chiffre d'affaires"
+            valeur={activite ? activite.plafond.toLocaleString("fr-FR") + " euros par an" : null}
+          />
+          <Ligne
+            intitule="Versement libératoire"
+            valeur={donnees.versementLiberatoire ? "Oui" : "Non"}
+          />
+          <Ligne intitule="ACRE demandée" valeur={donnees.acre ? "Oui" : "Non"} />
+        </dl>
+      </section>
+
+      <section>
+        <h3>Filiation</h3>
+        <dl className={styles.recapitulatif}>
+          <Ligne intitule="Mère" valeur={donnees.filiationMere} />
+          <Ligne intitule="Père" valeur={donnees.filiationPere} />
+        </dl>
+      </section>
+    </div>
+  );
+}
+
+/**
+ * Confier le dossier à un avocat.
+ *
+ * C'est la dernière étape, et la seule payante. Ce qui est vendu n'est pas la
+ * démarche - elle est gratuite sur le guichet de l'INPI, et le dire franchement vaut
+ * mieux que de le laisser découvrir - mais le fait qu'un avocat s'en charge et
+ * réponde de ce qu'il dépose.
+ *
+ * Une fois réglé, le dossier part chez les avocats et le client n'a plus rien à
+ * faire : il est prévenu à chaque étape, jusqu'au SIRET.
+ */
+function Paiement({ dossierId, declaration }: { dossierId: number; declaration: Donnees }) {
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const prix = detailDuPrix();
+
+  if (declaration.paye) {
+    return (
+      <div className={styles.regle}>
+        <h3>C&apos;est réglé, votre dossier est parti</h3>
+        <p>
+          Un avocat le prend en charge. Vous serez prévenu ici et par courriel à chaque étape,
+          jusqu&apos;à la réception de votre SIRET. Il n&apos;y a plus rien à faire de votre côté.
+        </p>
+      </div>
+    );
+  }
+
+  async function payer() {
+    setEnCours(true);
+    setErreur(null);
+
+    const reponse = await fetch("/api/auto-entrepreneur/paiement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dossier: dossierId }),
+    });
+
+    if (!reponse.ok) {
+      const donnees = await reponse.json().catch(() => ({}));
+      setErreur((donnees.error as string) ?? "Le paiement n'a pas pu s'ouvrir. Réessayez.");
+      setEnCours(false);
+      return;
+    }
+
+    // La page de paiement est chez Stripe : on quitte l'application.
+    const { adresse } = await reponse.json();
+    window.location.href = adresse;
+  }
+
+  return (
+    <div className={styles.offre}>
+      <div className={styles.offreTete}>
+        <h3>{INTITULE}</h3>
+        <p className={styles.offreDelai}>{DELAI}</p>
+      </div>
+
+      <ul className={styles.prestations}>
+        {PRESTATIONS.map((prestation) => (
+          <li key={prestation}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            {prestation}
+          </li>
+        ))}
+      </ul>
+
+      <div className={styles.prix}>
+        <span className={styles.prixMontant}>{prix.ht}</span>
+        <span className={styles.prixMention}>
+          hors taxes, soit {prix.ttc} TTC. Payable une fois.
+        </span>
+      </div>
+
+      {/* Les frais, dits avant plutôt que facturés après. */}
+      <p className={styles.frais}>
+        <strong>{FRAIS_ANNONCES}</strong>
+        <span>{FRAIS_AGENT_COMMERCIAL}</span>
+      </p>
+
+      {erreur && (
+        <p className={styles.erreurPaiement} role="alert">
+          {erreur}
+        </p>
+      )}
+
+      <button type="button" className={styles.payer} onClick={payer} disabled={enCours}>
+        {enCours ? "Ouverture du paiement…" : "Confier mon dossier à un avocat"}
+      </button>
+
+      <p className={styles.franchise}>{FRANCHISE}</p>
+    </div>
+  );
+}
+
+/**
+ * Ce qu'on dit au retour de Stripe, réglé ou non.
+ *
+ * Les deux issues méritent un mot. Réglé sans annonce, on revient sur l'offre qu'on
+ * vient de payer et on doute d'avoir payé ; abandonné sans annonce, on revient au même
+ * endroit et on craint d'avoir été débité quand même.
+ *
+ * Elle se ferme en nettoyant l'adresse : la référence de session n'a rien à faire dans
+ * une barre d'adresse qu'on recopie ou met en favori, et rouvrir la page ne doit pas
+ * rejouer l'annonce.
+ *
+ * L'animation n'est pas décorative. Un paiement est le moment où l'on doute le plus :
+ * un cercle qui se trace et une coche qui s'inscrit disent « c'est fait » mieux qu'une
+ * ligne de texte apparue sans transition. L'abandon, lui, n'a rien à célébrer : son
+ * cercle se trace sans coche.
+ */
+function FinDePaiement({ dossierId, issue }: { dossierId: number; issue: "regle" | "annule" }) {
+  const [ouverte, setOuverte] = useState(true);
+  const router = useRouter();
+
+  function fermer() {
+    setOuverte(false);
+
+    /*
+     * Réglé, on quitte le parcours pour la liste des formalités.
+     *
+     * Il n'y a plus rien à y faire, et c'est de là qu'on suit un dossier confié. Y
+     * rester renverrait vers l'offre qu'on vient de payer - le routeur ressert
+     * d'ailleurs la version en cache de cette adresse, celle d'avant le paiement.
+     */
+    if (issue === "regle") {
+      router.push("/formalites");
+      return;
+    }
+
+    /*
+     * Abandonné, on reste sur l'offre, l'adresse nettoyée du marqueur - sans quoi
+     * recharger rejouerait l'annonce. `refresh` relit la page côté serveur : sans
+     * lui, le routeur ressert la version qu'il a déjà en mémoire.
+     */
+    router.replace("/auto-entrepreneur?dossier=" + dossierId + "&etape=8");
+    router.refresh();
+  }
+
+  useEffect(() => {
+    function auClavier(e: KeyboardEvent) {
+      if (e.key === "Escape") fermer();
+    }
+    document.addEventListener("keydown", auClavier);
+    return () => document.removeEventListener("keydown", auClavier);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!ouverte) return null;
+
+  const regle = issue === "regle";
+
+  return (
+    <div className={styles.voile} onClick={fermer}>
+      <div
+        className={styles.confirmation}
+        role="dialog"
+        aria-modal="true"
+        aria-label={regle ? "Paiement confirmé" : "Paiement annulé"}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span
+          className={regle ? styles.marque : `${styles.marque} ${styles.marqueNeutre}`}
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 52 52">
+            <circle className={styles.cercle} cx="26" cy="26" r="24" fill="none" />
+            {regle && <path className={styles.coche} fill="none" d="M14 27l8 8 16-16" />}
+          </svg>
+        </span>
+
+        {regle ? (
+          <>
+            <h2>Paiement confirmé</h2>
+            <p>
+              Votre dossier part chez nos avocats. Le premier disponible le prend en charge, et vous
+              êtes prévenu ici et par courriel à chaque étape, jusqu&apos;à votre SIRET.
+            </p>
+            <p className={styles.confirmationDetail}>
+              Un reçu vous a été envoyé par courriel. Il n&apos;y a plus rien à faire de votre côté.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2>Paiement annulé</h2>
+            <p>
+              <strong>Rien n&apos;a été débité.</strong> Votre déclaration est intacte, telle que
+              vous l&apos;avez laissée.
+            </p>
+            <p className={styles.confirmationDetail}>
+              Vous pouvez la reprendre quand vous voulez : elle reste dans vos formalités.
+            </p>
+          </>
+        )}
+
+        <button type="button" className={styles.payer} onClick={fermer}>
+          {regle ? "Voir mon dossier" : "Revenir à l'offre"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -40,7 +40,10 @@ const DECLARATION = z
     codeApe: z.string().trim().max(10),
     dateDebut: z.string().trim().max(10),
     lieuExercice: z.string().trim().max(60),
-    activiteReglementee: z.boolean(),
+    // Trois valeurs seulement : « oui », « non », « je ne sais pas ». Le domaine en
+    // juge, la route se contente d'en borner la forme.
+    reponseReglementation: z.string().trim().max(12),
+    categorieReglementee: z.string().trim().max(20),
     versementLiberatoire: z.boolean(),
     acre: z.boolean(),
     filiationMere: z.string().trim().max(120),

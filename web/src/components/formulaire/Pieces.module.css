@@ -1,0 +1,146 @@
+/*
+ * Le dépôt des pièces justificatives, partagé.
+ *
+ * Il vivait dans le dossier de la création, dont il empruntait la feuille de style :
+ * l'auto-entreprise dépose aussi des pièces, et importer un composant d'un parcours
+ * dans un autre aurait fait dépendre le second des choix du premier.
+ */
+
+.docList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.docCard {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  border: 1.5px dashed #ddd;
+  border-radius: 14px;
+  background: transparent;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.docCard:hover {
+  border-color: #999;
+}
+
+/* Un fichier survole la carte : elle se resserre, pour dire qu'elle le recevra. */
+.docGlisse {
+  border-color: #111;
+  background: #f5f5f5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transform: scale(1.01);
+}
+
+.docDepose {
+  border-style: solid;
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.docHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.docIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #f5f5f5;
+  transition: background 0.2s;
+}
+
+.docIcone svg {
+  width: 20px;
+  height: 20px;
+  color: #999;
+}
+
+.docDepose .docIcone {
+  background: #dcfce7;
+}
+
+.docDepose .docIcone svg {
+  color: #22c55e;
+}
+
+.docInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.docTitre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.docRequis {
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #fef2f2;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.docDesc {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #999;
+  line-height: 1.5;
+}
+
+.docZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.docZone svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #999;
+}
+
+.docZone span {
+  font-size: 13px;
+  color: #999;
+}
+
+.docZone span strong {
+  color: #111;
+  font-weight: 500;
+}
+
+/* Le champ de fichier est masqué : c'est la zone entière qui le déclenche. */
+.docZone input[type="file"] {
+  display: none;
+}
+
+.docFormats {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #999;
+}

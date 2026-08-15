@@ -15,6 +15,8 @@ export interface DossierListe {
   forme: string | null;
   status: string | null;
   phase: number | null;
+  /** La sous-phase du cabinet : elle situe un dossier déjà confié. */
+  sousPhase?: string | null;
   offre: string | null;
   banque: string | null;
   modifieLe: Date | null;
@@ -285,6 +287,19 @@ export function parModificationRecente<T extends { modifieLe: Date | null }>(dos
  * qu'une seconde copie finirait par diverger - la première version écrite en
  * bibliothèque pointait vers une adresse qui n'existe pas.
  */
+/**
+ * Le geste que porte la carte d'un dossier.
+ *
+ * « Reprendre » sur un dossier déjà transmis est faux : il n'y a plus rien à
+ * reprendre, il est chez l'avocat. Ce qu'on vient y faire alors, c'est le suivre.
+ */
+export function gesteDuDossier(dossier: { status: string | null }): string {
+  if (dossier.status === "en_cours" || dossier.status === "corrections_demandees") {
+    return "Reprendre";
+  }
+  return "Suivre";
+}
+
 export function adresseDuDossier(dossier: { id: number; type: string | null }): string {
   if (dossier.type === "modification") return "/modification?dossier=" + dossier.id;
   if (dossier.type === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + dossier.id;

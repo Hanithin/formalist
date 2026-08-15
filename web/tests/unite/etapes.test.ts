@@ -8,6 +8,7 @@ import {
   accorder,
   nomEtape,
   etatCourt,
+  avancementDuDossier,
 } from "@/domain/formalite/etapes";
 
 describe("nombre d'étapes selon l'offre", () => {
@@ -128,5 +129,71 @@ describe("l'état affiché sur la pastille", () => {
 
   it("un dossier terminé le reste, même s'il porte encore une action", () => {
     expect(etatCourt({ status: "terminee", attendLeClient: true }).ton).toBe("done");
+  });
+});
+
+describe("l'avancement d'une auto-entreprise", () => {
+  const auto = (modifications: object = {}) => ({
+    type: "auto-entrepreneur",
+    status: "en_cours",
+    phase: 1,
+    banque: null,
+    ...modifications,
+  });
+
+  it("ne recule jamais", () => {
+    /*
+     * Les cinq phases d'une création de société annonçaient « 100 % complété » sur une
+     * déclaration remplie mais pas réglée, puis la faisaient reculer une fois payée :
+     * la phase 5 signifie « chez le cabinet », non « cinquième étape sur huit ».
+     */
+    const chemin = [
+      avancementDuDossier(auto({ phase: 1 })),
+      avancementDuDossier(auto({ phase: 7 })),
+      avancementDuDossier(auto({ status: "en_attente_validation", phase: 5, sousPhase: "5b" })),
+      avancementDuDossier(auto({ status: "valide", phase: 5, sousPhase: "5c" })),
+      avancementDuDossier(auto({ status: "valide", phase: 5, sousPhase: "5d" })),
+      avancementDuDossier(auto({ status: "terminee", phase: 5, sousPhase: "5e" })),
+    ];
+
+    for (let i = 1; i < chemin.length; i++) {
+      expect(chemin[i], "étape " + i).toBeGreaterThanOrEqual(chemin[i - 1]);
+    }
+    expect(chemin[chemin.length - 1]).toBe(100);
+  });
+
+  it("la déclaration vaut la première moitié du chemin", () => {
+    // Remplir n'est que la moitié du travail : l'avocat fait l'autre.
+    expect(avancementDuDossier(auto({ phase: 8 }))).toBe(50);
+    expect(avancementDuDossier(auto({ status: "en_attente_validation", sousPhase: "5a" }))).toBe(50);
+  });
+
+  it("une création de société garde son propre calcul", () => {
+    expect(avancementDuDossier({ type: "creation", status: "en_cours", phase: 5, banque: null, offre: "starter" })).toBe(
+      100
+    );
+  });
+});
+
+describe("le libellé d'une auto-entreprise", () => {
+  it("ne parle ni de capital ni de signature", () => {
+    // Elle n'en a pas : les phases d'une société annonçaient « En attente du dépôt du
+    // capital » sur un dossier sans capital.
+    const enCours = libelleDossier({
+      type: "auto-entrepreneur",
+      status: "en_cours",
+      phase: 1,
+      banque: null,
+    });
+    expect(enCours).toBe("À compléter");
+  });
+
+  it("suit ses propres états", () => {
+    const dire = (status: string) =>
+      libelleDossier({ type: "auto-entrepreneur", status, phase: 5, banque: null });
+
+    expect(dire("en_attente_validation")).toBe("Chez l'avocat");
+    expect(dire("corrections_demandees")).toBe("Corrections demandées");
+    expect(dire("terminee")).toBe("Immatriculée");
   });
 });

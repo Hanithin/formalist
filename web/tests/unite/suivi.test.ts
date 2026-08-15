@@ -152,3 +152,71 @@ describe("l'avancement", () => {
     expect(suite).toBeGreaterThan(debut);
   });
 });
+
+describe("le parcours d'une auto-entreprise", () => {
+  const auto = (modifications: Partial<EtatDuDossier> = {}): EtatDuDossier => ({
+    type: "auto-entrepreneur",
+    forme: "AE",
+    status: "en_cours",
+    sousPhase: null,
+    aLAttestationDeCapital: false,
+    aLAnnoncePubliee: false,
+    aLeKbis: false,
+    paye: false,
+    ...modifications,
+  });
+
+  it("n'a ni capital, ni annonce, ni Kbis", () => {
+    /*
+     * Une auto-entreprise ne dépose pas de capital, ne publie pas d'annonce et ne
+     * reçoit pas de Kbis : lui montrer ces étapes lui promettrait un chemin qui n'est
+     * pas le sien.
+     */
+    expect(etapesDuSuivi(auto()).map((e) => e.identifiant)).toEqual([
+      "confie",
+      "verification",
+      "guichet",
+      "siret",
+    ]);
+  });
+
+  it("elle se met en route au règlement", () => {
+    // Une société part sur une transmission ; une auto-entreprise, sur son paiement.
+    expect(etapeEnCours(auto())?.identifiant).toBe("confie");
+    expect(etapeEnCours(auto({ paye: true }))?.identifiant).toBe("verification");
+  });
+
+  it("tout est du côté de l'avocat : c'est ce qui est vendu", () => {
+    const etapes = etapesDuSuivi(auto({ paye: true }));
+    expect(etapes.every((e) => e.main === "avocat")).toBe(true);
+    expect(attenteDuClient(auto({ paye: true }))).toBeNull();
+  });
+
+  it("des corrections demandées rendent la main au client", () => {
+    // L'étape cesse d'être une attente pour devenir un geste.
+    const etat = auto({ paye: true, status: "corrections_demandees" });
+    const attente = attenteDuClient(etat);
+
+    expect(attente?.identifiant).toBe("verification");
+    expect(attente?.action).toBe("Voir ce qui est demandé");
+  });
+
+  it("le geste ne s'affiche que là où il y en a un", () => {
+    // « Voir ce qui est demandé » sur une étape que l'avocat traite n'appelle rien.
+    const verification = etapesDuSuivi(auto({ paye: true })).find(
+      (e) => e.identifiant === "verification"
+    );
+    expect(verification?.action).toBeUndefined();
+  });
+
+  it("elle s'achève sur le SIRET", () => {
+    const finie = auto({ paye: true, status: "terminee", sousPhase: "5e" });
+    expect(etapeEnCours(finie)).toBeNull();
+    expect(avancementDuSuivi(finie)).toBe(100);
+  });
+
+  it("sans type, on garde le parcours d'une société", () => {
+    // C'est le parcours d'origine : un dossier ancien ne doit pas changer de récit.
+    expect(etapesDuSuivi({ ...auto(), type: null }).map((e) => e.identifiant)).toContain("kbis");
+  });
+});

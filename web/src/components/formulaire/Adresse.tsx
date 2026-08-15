@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import styles from "./Parcours.module.css";
+import styles from "./Adresse.module.css";
 
 /**
  * Autocomplétion d'adresse sur la Base Adresse Nationale.

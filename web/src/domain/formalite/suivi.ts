@@ -19,6 +19,14 @@ import { regle } from "./formes";
 
 /** Ce qu'on sait d'un dossier pour situer son avancement. */
 export interface EtatDuDossier {
+  /**
+   * La nature du dossier : elle décide du parcours.
+   *
+   * Une auto-entreprise ne dépose pas de capital, ne publie pas d'annonce et ne reçoit
+   * pas de Kbis : lui montrer ces étapes lui promettrait un chemin qui n'est pas le
+   * sien. Absent, on suppose une création de société - c'est le parcours d'origine.
+   */
+  type?: string | null;
   forme: string | null;
   status: string | null;
   /** La sous-phase du cabinet : 5a transmis, 5b révision, 5c vérifié, 5d dépôt, 5e Kbis. */
@@ -26,6 +34,8 @@ export interface EtatDuDossier {
   aLAttestationDeCapital: boolean;
   aLAnnoncePubliee: boolean;
   aLeKbis: boolean;
+  /** L'auto-entreprise se confie en la réglant : c'est ce qui la met en route. */
+  paye?: boolean;
 }
 
 export type Main = "vous" | "avocat";
@@ -64,7 +74,8 @@ interface Definition {
   identifiant: string;
   titre: string;
   explication: string;
-  main: Main;
+  /** La main peut dépendre de l'état : des corrections la rendent au client. */
+  main: Main | ((etat: EtatDuDossier) => Main);
   action?: string;
   faite: (etat: EtatDuDossier) => boolean;
 }
@@ -121,6 +132,55 @@ const TOUTES: Definition[] = [
 ];
 
 /**
+ * Le parcours d'une auto-entreprise.
+ *
+ * Quatre étapes, et trois d'entre elles ne demandent rien : c'est ce qui est vendu.
+ * Ni attestation de dépôt de capital - une auto-entreprise n'a pas de capital - ni
+ * annonce légale, ni Kbis : l'INSEE délivre un SIRET, et le registre national tient
+ * lieu d'immatriculation.
+ *
+ * La vérification peut rendre la main au client : quand l'avocat demande des
+ * corrections, l'étape cesse d'être une attente pour devenir un geste.
+ */
+const AUTO_ENTREPRISE: Definition[] = [
+  {
+    identifiant: "confie",
+    titre: "Dossier confié à un avocat",
+    explication:
+      "Votre déclaration est réglée et partie chez nos avocats. Le premier disponible la prend en charge.",
+    main: "avocat",
+    faite: (e) => !!e.paye,
+  },
+  {
+    identifiant: "verification",
+    titre: "Vérification par l'avocat",
+    explication:
+      "L'avocat relit votre déclaration : le code APE, le régime, les plafonds et vos pièces. Il vous écrit si quelque chose doit être repris.",
+    main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
+    action: "Voir ce qui est demandé",
+    faite: (e) =>
+      e.status !== "corrections_demandees" &&
+      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+  },
+  {
+    identifiant: "guichet",
+    titre: "Dépôt au guichet unique",
+    explication:
+      "L'avocat dépose votre déclaration à l'INPI en votre nom. Comptez quelques jours ouvrés.",
+    main: "avocat",
+    faite: (e) => auMoins(e.sousPhase, "5d"),
+  },
+  {
+    identifiant: "siret",
+    titre: "SIRET délivré",
+    explication:
+      "L'INSEE vous attribue votre numéro SIRET, sous une à quatre semaines. Votre auto-entreprise existe.",
+    main: "avocat",
+    faite: (e) => auMoins(e.sousPhase, "5e") || e.status === "terminee",
+  },
+];
+
+/**
  * Les étapes du dossier, avec celle qui est en cours.
  *
  * Une seule étape est « en cours » : la première qui n'est pas faite. Les suivantes
@@ -129,7 +189,8 @@ const TOUTES: Definition[] = [
  * saisie qu'il vaut mieux voir.
  */
 export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
-  const retenues = TOUTES.filter(
+  const parcours = etat.type === "auto-entrepreneur" ? AUTO_ENTREPRISE : TOUTES;
+  const retenues = parcours.filter(
     (d) => d.identifiant !== "attestation" || attestationRequise(etat.forme)
   );
 
@@ -148,13 +209,16 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
       etatEtape = "a_venir";
     }
 
+    const main = typeof d.main === "function" ? d.main(etat) : d.main;
+
     return {
       identifiant: d.identifiant,
       titre: d.titre,
       explication: d.explication,
-      main: d.main,
+      main,
       etat: etatEtape,
-      action: d.action,
+      // Le geste ne s'affiche que là où il y en a un à faire.
+      action: main === "vous" ? d.action : undefined,
     };
   });
 }

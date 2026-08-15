@@ -12,6 +12,7 @@ import {
   libelleDuType,
   PAR_PAGE,
   type DossierListe,
+  gesteDuDossier,
 } from "@/domain/formalite/liste";
 
 const dossier = (p: Partial<DossierListe> = {}): DossierListe => ({
@@ -214,5 +215,20 @@ describe("la nature d'un dossier", () => {
 
   it("un type inconnu se rend tel quel, pour qu'il se voie", () => {
     expect(libelleDuType("transfert")).toBe("Transfert");
+  });
+});
+
+describe("le geste que porte une carte", () => {
+  it("« Reprendre » tant que le dossier est entre nos mains", () => {
+    expect(gesteDuDossier({ status: "en_cours" })).toBe("Reprendre");
+    // Des corrections demandées : la balle est revenue au client.
+    expect(gesteDuDossier({ status: "corrections_demandees" })).toBe("Reprendre");
+  });
+
+  it("« Suivre » dès qu'il est parti chez l'avocat", () => {
+    // « Reprendre » un dossier déjà transmis est faux : il n'y a plus rien à reprendre.
+    for (const status of ["en_attente_validation", "valide", "terminee"]) {
+      expect(gesteDuDossier({ status })).toBe("Suivre");
+    }
   });
 });

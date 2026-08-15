@@ -5,6 +5,8 @@ import { deposerPiece } from "@/infrastructure/documents/depot";
 import { produireLesActes, DossierIncomplet } from "@/infrastructure/documents/actes";
 import { TYPE_ATTESTATION_CAPITAL } from "@/infrastructure/db/depots/suivi";
 import { piecesAttendues } from "@/domain/formalite/documents";
+import { piecesDeclaration } from "@/domain/auto-entrepreneur/declaration";
+import { lireDeclaration } from "@/infrastructure/db/depots/auto-entrepreneur";
 import { DepotRefuse } from "@/lib/fichiers";
 import { route } from "@/lib/reponses";
 
@@ -23,10 +25,22 @@ export const POST = route(async (requete: Request) => {
     return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
   }
 
-  // La pièce doit être l'une de celles attendues pour cette forme : on
-  // n'accepte pas un identifiant libre, qui deviendrait un fourre-tout.
-  const { brouillon } = await ouvrirBrouillon(utilisateur, dossierId);
-  const attendue = piecesAttendues(brouillon.forme).find((p) => p.identifiant === identifiant);
+  /*
+   * La pièce doit être l'une de celles attendues pour ce dossier : on n'accepte pas un
+   * identifiant libre, qui deviendrait un fourre-tout.
+   *
+   * Les deux parcours n'attendent pas les mêmes. Une auto-entreprise rend le recto et
+   * le verso de sa pièce d'identité et, si son métier l'exige, sa qualification ; une
+   * société rend une attestation de dépôt de capital et une parution d'annonce. Lire
+   * la liste de la création pour un dossier d'auto-entreprise refusait tout dépôt.
+   */
+  const { dossier: ligne, brouillon } = await ouvrirBrouillon(utilisateur, dossierId);
+  const attendues =
+    ligne.type === "auto-entrepreneur"
+      ? piecesDeclaration(lireDeclaration(ligne.data_json))
+      : piecesAttendues(brouillon.forme);
+
+  const attendue = attendues.find((p) => p.identifiant === identifiant);
   if (!attendue) {
     return NextResponse.json({ error: "Cette pièce n'est pas attendue" }, { status: 400 });
   }
@@ -51,7 +65,7 @@ export const POST = route(async (requete: Request) => {
      * actes se produiront quand le reste sera là.
      */
     let redates = false;
-    if (attendue.identifiant === TYPE_ATTESTATION_CAPITAL) {
+    if (attendue.identifiant === TYPE_ATTESTATION_CAPITAL && ligne.type !== "auto-entrepreneur") {
       try {
         await produireLesActes(utilisateur, dossierId);
         redates = true;

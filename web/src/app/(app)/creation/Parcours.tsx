@@ -17,7 +17,7 @@ import {
 } from "@/domain/formalite/parcours";
 import { valeursParDefaut, clotureDepuis } from "@/domain/formalite/valeurs-par-defaut";
 import { FORMES_PROPOSEES, FORMES, regle } from "@/domain/formalite/formes";
-import { Adresse, Ville } from "./Adresse";
+import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { Choix } from "./Choix";
 import { DateChoisie } from "./DateChoisie";
 import { Associes } from "./Associes";
@@ -27,7 +27,7 @@ import { Dirigeants } from "./Dirigeants";
 import { Offres } from "./Offres";
 import { ObjetSocial } from "./ObjetSocial";
 import { piecesAttendues } from "@/domain/formalite/documents";
-import { Pieces } from "./Pieces";
+import { Pieces } from "@/components/formulaire/Pieces";
 import styles from "./Parcours.module.css";
 
 interface Props {

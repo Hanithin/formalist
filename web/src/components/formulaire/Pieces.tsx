@@ -2,8 +2,20 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { PieceAttendue } from "@/domain/formalite/documents";
-import styles from "./Parcours.module.css";
+/**
+ * Une pièce attendue, quel que soit le parcours.
+ *
+ * La création de société et l'auto-entreprise décrivent chacune les leurs, dans leur
+ * domaine. Le dépôt, lui, est le même geste : il n'a pas à connaître laquelle des deux
+ * l'appelle.
+ */
+export interface PieceAttendue {
+  identifiant: string;
+  titre: string;
+  description: string;
+  formats: string[];
+}
+import styles from "./Pieces.module.css";
 
 /**
  * Le dépôt des pièces justificatives.

@@ -9,6 +9,13 @@
  * année : ils sont déclarés ici, une fois, et non recopiés dans les écrans.
  */
 
+import {
+  reponseValide,
+  reponseIncomplete,
+  qualificationExigee,
+  activiteReglementee,
+} from "./reglementation";
+
 export type NatureActivite = "commerciale" | "artisanale" | "liberale";
 
 export interface RegleActivite {
@@ -102,6 +109,7 @@ export const ETAPES: Etape[] = [
     titre: "Récapitulatif",
     libelleCourt: "Récapitulatif",
   },
+  { numero: 8, identifiant: "paiement", titre: "Confier à un avocat", libelleCourt: "Paiement" },
 ];
 
 export interface Declaration {
@@ -140,13 +148,15 @@ export interface Declaration {
   dateDebut?: string;
   lieuExercice?: string;
   /**
-   * Une activité réglementée demande un justificatif de plus.
+   * Ce que la personne a répondu sur la réglementation de son métier.
    *
-   * Coiffure, bâtiment, transport, restauration... : le guichet réclame le diplôme
-   * ou l'autorisation avant d'immatriculer. On le demande ici plutôt que de le
-   * découvrir au dépôt.
+   * Trois valeurs : « oui », « non », « je ne sais pas ». Une case à cocher demandait
+   * de trancher une question de droit qu'on ne connaît pas - cochée à tort, elle
+   * réclame un diplôme inutile ; oubliée, elle fait refuser le dossier au guichet.
    */
-  activiteReglementee?: boolean;
+  reponseReglementation?: string;
+  /** La catégorie de l'article L121-1 reconnue, quand la réponse est « oui ». */
+  categorieReglementee?: string;
 
   versementLiberatoire?: boolean;
   acre?: boolean;
@@ -154,6 +164,11 @@ export interface Declaration {
   filiationMere?: string;
   filiationPere?: string;
   certifie?: boolean;
+
+  /* Étape 8 - la remise à l'avocat */
+  /** La référence de la session de paiement, posée à l'ouverture du règlement. */
+  paiementRef?: string;
+  paye?: boolean;
 }
 
 /**
@@ -308,6 +323,18 @@ export function verifierEtape(
     if (!declaration.lieuExercice) {
       anomalies.push({ champ: "lieuExercice", message: "Indiquez où vous exercez" });
     }
+    if (!reponseValide(declaration.reponseReglementation)) {
+      anomalies.push({
+        champ: "reponseReglementation",
+        message: "Dites-nous si votre métier figure dans la liste, ou que vous n'en êtes pas sûr",
+      });
+    }
+    if (reponseIncomplete(declaration.reponseReglementation, declaration.categorieReglementee)) {
+      anomalies.push({
+        champ: "categorieReglementee",
+        message: "Choisissez l'activité qui correspond à votre métier",
+      });
+    }
     return anomalies;
   }
 
@@ -407,12 +434,19 @@ export function piecesDeclaration(declaration: Declaration): PieceAttendue[] {
     },
   ];
 
-  if (declaration.activiteReglementee) {
+  /*
+   * Le justificatif n'est réclamé que si la personne a reconnu son métier dans la
+   * liste. Un doute ne demande pas de pièce : il demande un avis, et exiger un
+   * diplôme à tort ferait renoncer quelqu'un qui n'en a pas besoin.
+   */
+  if (qualificationExigee(declaration.reponseReglementation)) {
+    const activite = activiteReglementee(declaration.categorieReglementee);
     pieces.push({
       identifiant: "qualification",
-      titre: "Qualification professionnelle ou autorisation",
+      titre: "Qualification professionnelle",
       description:
-        "Diplôme, titre, attestation d'expérience ou autorisation d'exercer, selon ce que votre activité exige.",
+        (activite ? activite.intitule + " : " : "") +
+        "diplôme (CAP, BEP ou supérieur) inscrit au répertoire national, ou attestation de trois ans d'expérience dans le métier.",
       formats: images,
     });
   }

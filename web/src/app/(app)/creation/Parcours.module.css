@@ -416,70 +416,6 @@
    La liste de propositions est posée en absolu sous le champ : dans la grille du
    formulaire, un flux normal pousserait les champs suivants à chaque frappe. */
 
-.completion {
-  position: relative;
-}
-
-.propositions {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 20;
-  max-height: 260px;
-  overflow-y: auto;
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-  background: #fff;
-  border: 1px solid #ececef;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(17, 17, 17, 0.12);
-}
-
-.propositions li {
-  display: block;
-  padding: 0;
-  background: none;
-  border: none;
-}
-
-.proposition,
-.propositionActive {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  margin: 0;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  color: #111;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 400;
-  text-align: left;
-  cursor: pointer;
-}
-
-.propositionActive {
-  background: #f5f5f7;
-}
-
-.proposition:hover:not(:disabled) {
-  background: #f5f5f7;
-  border-color: transparent;
-}
-
-.propositionCode {
-  flex-shrink: 0;
-  font-size: 12.5px;
-  color: #71717a;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ============================
    Objet social rédigé par l'IA
    ============================
@@ -1863,144 +1799,25 @@
    Portage de .doc-upload-card de css/creation.css : bordure pointillée, resserrement
    au survol d'un fichier, et passage au vert une fois la pièce déposée. */
 
-.docList {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
-.docCard {
-  position: relative;
-  overflow: hidden;
-  padding: 24px;
-  border: 1.5px dashed #ddd;
-  border-radius: 14px;
-  background: transparent;
-  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
 
-.docCard:hover {
-  border-color: #999;
-}
 
-/* Un fichier survole la carte : elle se resserre, pour dire qu'elle le recevra. */
-.docGlisse {
-  border-color: #111;
-  background: #f5f5f5;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transform: scale(1.01);
-}
 
-.docDepose {
-  border-style: solid;
-  border-color: #22c55e;
-  background: #f0fdf4;
-}
 
-.docHeader {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
 
-.docIcone {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #f5f5f5;
-  transition: background 0.2s;
-}
 
-.docIcone svg {
-  width: 20px;
-  height: 20px;
-  color: #999;
-}
 
-.docDepose .docIcone {
-  background: #dcfce7;
-}
 
-.docDepose .docIcone svg {
-  color: #22c55e;
-}
 
-.docInfo {
-  flex: 1;
-  min-width: 0;
-}
 
-.docTitre {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #111;
-}
 
-.docRequis {
-  padding: 2px 8px;
-  border-radius: 100px;
-  background: #fef2f2;
-  color: #ef4444;
-  font-size: 11px;
-  font-weight: 600;
-}
 
-.docDesc {
-  margin: 0 0 12px;
-  font-size: 12px;
-  color: #999;
-  line-height: 1.5;
-}
 
-.docZone {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin: 0;
-  padding: 16px;
-  border-radius: 10px;
-  background: #f5f5f5;
-  font-weight: 400;
-  cursor: pointer;
-  transition: all 0.2s;
-}
 
-.docZone svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: #999;
-}
 
-.docZone span {
-  font-size: 13px;
-  color: #999;
-}
 
-.docZone span strong {
-  color: #111;
-  font-weight: 500;
-}
 
-/* Le champ de fichier est masqué : c'est la zone entière qui le déclenche. */
-.docZone input[type="file"] {
-  display: none;
-}
 
-.docFormats {
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: #999;
-}
 
 /* ============================
    Camembert de la répartition

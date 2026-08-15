@@ -15,8 +15,9 @@ import {
   type DossierListe,
   type ValeurFiltre,
   adresseDuDossier,
+  gesteDuDossier,
 } from "@/domain/formalite/liste";
-import { avancement, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
+import { avancementDuDossier, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
 import styles from "./Formalites.module.css";
 
 /**
@@ -251,8 +252,10 @@ function Compteur({
  * suit le type - une modification ne se reprend pas dans le parcours de création.
  */
 function Carte({ dossier }: { dossier: DossierListe }) {
-  const pourcentage = avancement(dossier.phase ?? 1, dossier.offre);
+  // Le type décide du vocabulaire : une auto-entreprise n'a ni capital ni signature.
+  const pourcentage = avancementDuDossier(dossier);
   const etat = libelleDossier({
+    type: dossier.type,
     status: dossier.status,
     phase: dossier.phase,
     banque: dossier.banque,
@@ -297,7 +300,7 @@ function Carte({ dossier }: { dossier: DossierListe }) {
       <div className={styles.dossierFooter}>
         <span className={styles.dossierDate}>{pourcentage}% complété</span>
         <span className={styles.dossierAction}>
-          Reprendre
+          {gesteDuDossier(dossier)}
           <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="2" aria-hidden="true">
             <polyline points="9 18 15 12 9 6" />
           </svg>
