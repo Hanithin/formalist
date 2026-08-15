@@ -12,12 +12,15 @@ import {
   aRemplacer,
   ouvertParDefaut,
   tronquer,
+  distinguer,
+  resoudreRejets,
   SEUIL_RECHERCHE,
   type DocumentRange,
   type GroupeDeDocuments,
 } from "@/domain/document/bibliotheque";
 import { FILTRES_DOCUMENTS, libelleFiltre } from "@/domain/document/statuts";
 import { formaterDate } from "@/lib/dates";
+import { Apercu } from "./Apercu";
 import styles from "./Documents.module.css";
 
 /** Ce qui traverse jusqu'au navigateur : les dates y sont des chaînes. */
@@ -179,19 +182,30 @@ export function Bibliotheque({
   const [filtre, setFiltre] = useState("tous");
   const [recherche, setRecherche] = useState("");
   const [fenetre, setFenetre] = useState(false);
+  const [apercu, setApercu] = useState<{ nom: string; fichier: string } | null>(null);
+  const [remplacement, setRemplacement] = useState<DocumentRange | null>(null);
+  const [avis, setAvis] = useState<string | null>(null);
+  /*
+   * La société du dernier dépôt, pour que son groupe s'ouvre.
+   *
+   * `undefined` tant que rien n'a été déposé : `null` désigne les dépôts personnels,
+   * qui sont un groupe comme un autre.
+   */
+  const [dernierDepot, setDernierDepot] = useState<number | null | undefined>(undefined);
 
   const ranges: DocumentRange[] = documents.map((d) => ({
     ...d,
     creeLe: d.creeLe ? new Date(d.creeLe) : null,
   }));
 
-  const comptes = comptesParFiltre(ranges);
-  const retenus = ranges.filter((d) => retenu(d, filtre) && correspond(d, recherche));
-  const groupes = grouper(retenus);
+  const resolus = resoudreRejets(ranges);
+  const comptes = comptesParFiltre(resolus);
+  const retenus = resolus.filter((d) => retenu(d, filtre) && correspond(d, recherche));
+  const groupes = distinguer(grouper(retenus));
 
   // La recherche n'apparaît qu'au-delà de quelques sociétés : un champ vide au-dessus
   // de deux blocs occupe la place sans rien rendre.
-  const avecRecherche = nombreDeSocietes(ranges) > SEUIL_RECHERCHE;
+  const avecRecherche = nombreDeSocietes(resolus) > SEUIL_RECHERCHE;
 
   return (
     <>
@@ -234,6 +248,21 @@ export function Bibliotheque({
         </button>
       </div>
 
+      {avis && (
+        <div className={styles.avis} role="status">
+          <span className={styles.avisPoint} />
+          <span className={styles.avisTexte}>{avis}</span>
+          <button
+            type="button"
+            className={styles.avisFermer}
+            onClick={() => setAvis(null)}
+            aria-label="Fermer ce message"
+          >
+            <Croix />
+          </button>
+        </div>
+      )}
+
       {retenus.length === 0 ? (
         <Vide
           total={ranges.length}
@@ -258,7 +287,10 @@ export function Bibliotheque({
               groupe={groupe}
               nombreDeGroupes={groupes.length}
               recherche={recherche}
+              dernierDepot={dernierDepot}
               lien={societes.find((s) => s.id === groupe.societeId)?.lien ?? null}
+              surApercu={setApercu}
+              surRemplacement={setRemplacement}
             />
           ))}
         </>
@@ -268,11 +300,31 @@ export function Bibliotheque({
         <FenetreDeDepot
           societes={societes}
           onFermer={() => setFenetre(false)}
-          onDepose={() => {
+          onDepose={(message, societeId) => {
             setFenetre(false);
+            setAvis(message);
+            setDernierDepot(societeId);
             router.refresh();
           }}
         />
+      )}
+
+      {remplacement && (
+        <FenetreDeDepot
+          societes={societes}
+          remplace={remplacement}
+          onFermer={() => setRemplacement(null)}
+          onDepose={(message, societeId) => {
+            setRemplacement(null);
+            setAvis(message);
+            setDernierDepot(societeId);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {apercu && (
+        <Apercu nom={apercu.nom} fichier={apercu.fichier} surFermeture={() => setApercu(null)} />
       )}
     </>
   );
@@ -290,14 +342,20 @@ function Groupe({
   groupe,
   nombreDeGroupes,
   recherche,
+  dernierDepot,
   lien,
+  surApercu,
+  surRemplacement,
 }: {
   groupe: GroupeDeDocuments;
   nombreDeGroupes: number;
   recherche: string;
+  dernierDepot: number | null | undefined;
   lien: string | null;
+  surApercu: (document: { nom: string; fichier: string }) => void;
+  surRemplacement: (document: DocumentRange) => void;
 }) {
-  const defaut = ouvertParDefaut(groupe, nombreDeGroupes, recherche);
+  const defaut = ouvertParDefaut(groupe, nombreDeGroupes, recherche, dernierDepot);
   const [ouvertParLeGeste, setOuvertParLeGeste] = useState<boolean | null>(null);
   const [tout, setTout] = useState(false);
 
@@ -308,7 +366,7 @@ function Groupe({
   const enAttente = groupe.documents.filter(aRemplacer).length;
 
   return (
-    <section className={styles.groupe}>
+    <section className={styles.groupe + (ouvert ? " " + styles.groupeOuvert : "")}>
       <div className={styles.groupeTete}>
         <button
           type="button"
@@ -320,12 +378,27 @@ function Groupe({
             <Chevron />
           </span>
           <span className={styles.groupeTitre}>{groupe.titre}</span>
+          {groupe.precision && <span className={styles.groupePrecision}>{groupe.precision}</span>}
           <span className={styles.groupeCompte}>
             {groupe.documents.length} document{groupe.documents.length > 1 ? "s" : ""}
           </span>
           {/* Ce qui bloque un dossier se voit même groupe replié. */}
           {enAttente > 0 && <span className={styles.groupeAttente}>{enAttente} à remplacer</span>}
         </button>
+
+        {/* Cinq actes se téléchargent un par un en cinq allers-retours : l'archive les
+            rend d'un coup, nommés. */}
+        {groupe.documents.some((d) => d.fichier) && (
+          <a
+            className={styles.groupeLien}
+            href={
+              "/api/documents/archive" +
+              (groupe.societeId === null ? "" : "?dossier=" + groupe.societeId)
+            }
+          >
+            Tout télécharger
+          </a>
+        )}
 
         {lien && (
           <Link className={styles.groupeLien} href={lien}>
@@ -337,17 +410,17 @@ function Groupe({
       {ouvert && (
         <div className={styles.liste}>
           {montres.map((d) => (
-            <Carte key={d.id} document={d} lien={lien} />
+            <Carte
+              key={d.id}
+              document={d}
+              surApercu={surApercu}
+              surRemplacement={surRemplacement}
+            />
           ))}
 
           {restants > 0 && (
             <button type="button" className={styles.voirPlus} onClick={() => setTout(true)}>
               Voir les {restants} autres documents
-            </button>
-          )}
-          {tout && groupe.documents.length > montres.length - 1 && restants === 0 && (
-            <button type="button" className={styles.voirPlus} onClick={() => setTout(false)}>
-              Réduire
             </button>
           )}
         </div>
@@ -356,7 +429,15 @@ function Groupe({
   );
 }
 
-function Carte({ document, lien }: { document: DocumentRange; lien: string | null }) {
+function Carte({
+  document,
+  surApercu,
+  surRemplacement,
+}: {
+  document: DocumentRange;
+  surApercu: (document: { nom: string; fichier: string }) => void;
+  surRemplacement: (document: DocumentRange) => void;
+}) {
   const attente = aRemplacer(document);
   // Un document refusé porte cette marque plutôt que son statut : c'est ce qu'on
   // doit en retenir.
@@ -369,13 +450,21 @@ function Carte({ document, lien }: { document: DocumentRange; lien: string | nul
       <span className={styles.corps}>
         <span className={styles.nom}>{document.nom}</span>
         <span className={styles.details}>
-          <span className={styles.etiquette + (attente ? " " + styles.etiquetteAttente : "")}>
-            {etiquette}
-          </span>
-          {document.creeLe && <span>{formaterDate(document.creeLe)}</span>}
           {/*
-            Le motif du refus se lit à côté du document, et non dans un écran
-            séparé : c'est lui qui dit quoi redéposer.
+            L'état et la date se rejoignent en une seule pastille - « Généré le 14 août
+            2026 » - sauf pour un document refusé : « À remplacer le 14 août » se lisait
+            comme une échéance, alors que c'est la date du dépôt refusé. Là, la pastille
+            ne porte que la demande, et la date reprend sa place à côté.
+          */}
+          <span className={styles.etiquette + (attente ? " " + styles.etiquetteAttente : "")}>
+            {attente
+              ? "À remplacer"
+              : etiquette + (document.creeLe ? " le " + formaterDate(document.creeLe) : "")}
+          </span>
+          {attente && document.creeLe && <span>Déposé le {formaterDate(document.creeLe)}</span>}
+          {/*
+            Le motif du refus se lit à côté du document, et non dans un écran séparé :
+            c'est lui qui dit quoi redéposer.
           */}
           {attente && document.motifRejet && (
             <span className={styles.motif}>Motif : {document.motifRejet}</span>
@@ -391,28 +480,33 @@ function Carte({ document, lien }: { document: DocumentRange; lien: string | nul
         )}
 
         {document.fichier ? (
-          <a
+          /*
+            Le clic ouvre l'aperçu plutôt que de lancer le téléchargement : cinq actes
+            portent des noms voisins, et vérifier qu'on tient le bon supposait de
+            télécharger, d'ouvrir, puis de jeter le fichier. Le téléchargement reste à
+            un clic, dans la fenêtre.
+          */
+          <button
+            type="button"
             className={styles.action + (attente ? "" : " " + styles.actionPrincipale)}
-            href={
-              "/api/fichier?nom=" +
-              encodeURIComponent(document.fichier) +
-              "&titre=" +
-              encodeURIComponent(document.nom) +
-              "&telecharger=1"
-            }
+            onClick={() => surApercu({ nom: document.nom, fichier: document.fichier! })}
           >
             Télécharger
-          </a>
+          </button>
         ) : (
           // Un document attendu mais pas encore fourni : le dire vaut mieux qu'un
           // bouton qui ne mènerait nulle part.
           <span className={styles.sansFichier}>Pas encore de fichier</span>
         )}
 
-        {attente && lien && (
-          <Link className={styles.action + " " + styles.actionPrincipale} href={lien}>
+        {attente && document.remplacable && (
+          <button
+            type="button"
+            className={styles.action + " " + styles.actionPrincipale}
+            onClick={() => surRemplacement(document)}
+          >
             Remplacer
-          </Link>
+          </button>
         )}
       </span>
     </div>
@@ -488,18 +582,35 @@ function Vide({
   );
 }
 
+/**
+ * Le dépôt d'un document, et son remplacement.
+ *
+ * Deux gestes, une seule fenêtre : dans les deux cas on choisit un fichier et on
+ * l'envoie. Le remplacement s'en distingue par ce qui est déjà décidé - la société et
+ * le nom viennent du document refusé, et le fichier part vers la pièce attendue du
+ * dossier plutôt qu'au coffre personnel.
+ *
+ * Le message de retour dit ce qui va se passer ensuite : un document remplacé repart
+ * en vérification, et ne pas le dire laisse croire que l'affaire est close.
+ */
 function FenetreDeDepot({
   societes,
+  remplace,
   onFermer,
   onDepose,
 }: {
   societes: SocieteProposee[];
+  remplace?: DocumentRange;
   onFermer: () => void;
-  onDepose: () => void;
+  onDepose: (message: string, societeId: number | null) => void;
 }) {
   const [fichier, setFichier] = useState<File | null>(null);
-  const [nom, setNom] = useState("");
-  const [dossier, setDossier] = useState("");
+  const [nom, setNom] = useState(remplace?.nom ?? "");
+  const [dossier, setDossier] = useState(
+    remplace?.societeId !== undefined && remplace?.societeId !== null
+      ? String(remplace.societeId)
+      : ""
+  );
   const [survol, setSurvol] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
@@ -523,17 +634,37 @@ function FenetreDeDepot({
     demarrer(async () => {
       const corps = new FormData();
       corps.append("fichier", fichier);
-      corps.append("nom", nom);
-      if (dossier) corps.append("dossier", dossier);
+
+      /*
+       * Un remplacement répond à une pièce attendue du dossier : il passe par la route
+       * des pièces, celle que suit déjà le formulaire de création. Un dépôt libre, lui,
+       * rejoint le coffre.
+       */
+      if (remplace?.type && remplace.societeId !== null) {
+        corps.append("dossier", String(remplace.societeId));
+        corps.append("piece", remplace.type);
+      } else {
+        corps.append("nom", nom);
+        if (dossier) corps.append("dossier", dossier);
+      }
+
+      const adresse = remplace?.type ? "/api/formalites/pieces" : "/api/documents";
 
       try {
-        const reponse = await fetch("/api/documents", { method: "POST", body: corps });
+        const reponse = await fetch(adresse, { method: "POST", body: corps });
         if (!reponse.ok) {
           const donnees = await reponse.json().catch(() => ({}));
           setErreur((donnees.error as string) ?? "Le dépôt n'a pas abouti.");
           return;
         }
-        onDepose();
+        onDepose(
+          remplace
+            ? "Document envoyé. L'avocat le vérifie et vous prévient : il n'y a rien d'autre à faire de votre côté."
+            : "Document déposé. Vous le retrouverez dans sa société.",
+          // Le groupe qui reçoit s'ouvre : sans quoi l'annonce désigne un document
+          // qu'on ne voit pas.
+          remplace ? remplace.societeId : dossier ? Number(dossier) : null
+        );
       } catch {
         setErreur("Le dépôt n'a pas abouti.");
       }
@@ -551,16 +682,24 @@ function FenetreDeDepot({
         className={styles.fenetre}
         role="dialog"
         aria-modal="true"
-        aria-label="Déposer un document"
+        aria-label={remplace ? "Remplacer le document" : "Déposer un document"}
       >
         <div className={styles.fenetreTete}>
-          <h2>Déposer un document</h2>
+          <h2>{remplace ? "Remplacer le document" : "Déposer un document"}</h2>
           <button type="button" className={styles.fermer} onClick={onFermer} aria-label="Fermer">
             <Croix />
           </button>
         </div>
 
         <div className={styles.fenetreCorps}>
+          {remplace && (
+            <p className={styles.rappel}>
+              <strong>{remplace.nom}</strong> a été refusé
+              {remplace.motifRejet ? " : " + remplace.motifRejet : ""}. Déposez la nouvelle version
+              ci-dessous.
+            </p>
+          )}
+
           <label
             className={styles.depotZone + (survol ? " " + styles.depotSurvol : "")}
             htmlFor="fichier"
@@ -590,7 +729,7 @@ function FenetreDeDepot({
             onChange={(e) => choisir(e.target.files)}
           />
 
-          <div>
+          <div hidden={!!remplace}>
             <label className={styles.champLabel} htmlFor="nomDocument">
               Nom du document
             </label>
@@ -605,7 +744,7 @@ function FenetreDeDepot({
             />
           </div>
 
-          <div>
+          <div hidden={!!remplace}>
             <label className={styles.champLabel} htmlFor="societe">
               Société concernée
             </label>
@@ -643,7 +782,7 @@ function FenetreDeDepot({
             onClick={envoyer}
             disabled={enCours}
           >
-            {enCours ? "Dépôt en cours" : "Déposer"}
+            {enCours ? "Envoi en cours" : remplace ? "Envoyer la nouvelle version" : "Déposer"}
           </button>
         </div>
       </div>

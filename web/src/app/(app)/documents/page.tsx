@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { listerDocuments } from "@/infrastructure/db/depots/documents";
-import { listerDossiers } from "@/infrastructure/db/depots/dossiers";
+import { mesDossiers } from "@/infrastructure/db/depots/dossiers";
 import { adresseDuDossier } from "@/domain/formalite/liste";
 import { dateEnTete } from "@/lib/dates";
 import { Bibliotheque, type DocumentAffiche } from "./Bibliotheque";
@@ -28,7 +28,7 @@ export default async function Documents() {
   const utilisateur = await exigerUtilisateur();
   const [documents, dossiers] = await Promise.all([
     listerDocuments(utilisateur),
-    listerDossiers(utilisateur),
+    mesDossiers(utilisateur),
   ]);
 
   const affiches: DocumentAffiche[] = documents.map((d) => ({

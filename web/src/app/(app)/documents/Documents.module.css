@@ -14,7 +14,8 @@
 .action,
 .depotZone,
 .groupeBouton,
-.voirPlus {
+.voirPlus,
+.avisFermer {
   margin: 0;
   padding: 0;
   border: none;
@@ -106,7 +107,14 @@
   border-color: #111;
 }
 
+/*
+ * Le fond est redit ici, et ce n'est pas une redondance : globals.css habille tout
+ * <button> au survol, et sa règle - un sélecteur d'élément plus une pseudo-classe -
+ * l'emporte sur une classe simple. Sans ce rappel, la pastille active passait au gris
+ * de formulaire en gardant son texte blanc : le libellé disparaissait sous le curseur.
+ */
 .pillActive:hover:not(:disabled) {
+  background: #111;
   color: #fff;
   border-color: #111;
 }
@@ -140,8 +148,11 @@
   border-radius: 100px;
   font-size: 14px;
   font-family: inherit;
-  /* globals.css borne les champs à 460px ; ici la largeur est celle de l'original. */
-  width: 280px;
+  /*
+   * globals.css borne les champs à 460px. 320 plutôt que 280 : à 280, le libellé
+   * « Rechercher une société, un document… » se coupait au milieu d'un mot.
+   */
+  width: 320px;
   max-width: none;
   margin: 0;
   background: #fff;
@@ -191,39 +202,65 @@
 
 /* ---------- Un groupe par société ---------- */
 
+/*
+ * Le groupe est une carte, et ses documents des lignes à l'intérieur.
+ *
+ * Ils étaient des cartes flottantes espacées de huit pixels, sous un titre de même
+ * graisse que leurs propres noms : l'œil ne voyait pas quatre blocs mais une suite de
+ * lignes dont certaines étaient plus grosses. Un cadre unique par société règle les
+ * deux à la fois - la hiérarchie se lit, et le bord droit cesse d'onduler.
+ */
 .groupe {
-  margin-bottom: 20px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 12px;
 }
 
 .groupeTete {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 12px;
+  padding: 0 20px 0 14px;
+  background: #fafafa;
+  border-bottom: 1px solid transparent;
+}
+
+/* Le trait n'apparaît qu'ouvert : fermé, il soulignerait une bande sans contenu. */
+.groupeOuvert .groupeTete {
+  border-bottom-color: #f0f0f2;
 }
 
 /*
- * Toute la tête est le bouton de repli, et non le seul chevron : une cible de
- * quatorze pixels se manque, alors que le titre et son compte se visent sans y
- * penser.
+ * Toute la bande est le bouton de repli, et non le seul chevron : une cible de
+ * quatorze pixels se manque, alors qu'un titre se vise sans y penser.
+ */
+/*
+ * Les éléments s'alignent sur leur ligne de base, non sur leur centre : le titre est
+ * en 15 px et le compte en 13 px, et un alignement centré les décalait l'un par
+ * rapport à l'autre. Le chevron, lui, n'a pas de ligne de base et se recentre à la
+ * main.
  */
 .groupeBouton {
+  flex: 1;
+  min-width: 0;
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
-  padding: 4px 0;
+  padding: 14px 0;
   cursor: pointer;
-  border-radius: 8px;
 }
 
-.groupeBouton:hover:not(:disabled) .groupeTitre {
-  text-decoration: underline;
+.groupeBouton .chevron {
+  align-self: center;
 }
 
 .chevron {
   display: flex;
   color: #a1a1aa;
   transition: transform 0.15s;
+  flex-shrink: 0;
 }
 
 .chevron svg {
@@ -238,9 +275,26 @@
 .groupeTitre {
   margin: 0;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La référence ne paraît que là où deux dossiers portent le même nom. */
+.groupePrecision {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11.5px;
+  color: #a1a1aa;
+  flex-shrink: 0;
+}
+
+.groupeCompte {
+  font-size: 13px;
+  color: #999;
+  flex-shrink: 0;
 }
 
 /* Ce qui bloque un dossier se voit même groupe replié. */
@@ -251,80 +305,64 @@
   color: #b45309;
   font-size: 11.5px;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
-.voirPlus {
-  align-self: flex-start;
-  margin-top: 2px;
-  padding: 9px 16px;
-  border-radius: 100px;
-  border: 1px solid #e5e5e5;
-  background: #fff;
+/* Le lien vit dans la bande, à côté de ce qu'il ouvre - et non au bout d'une ligne
+   vide, où rien ne le rattachait à sa société. */
+.groupeLien {
+  flex-shrink: 0;
   font-size: 13px;
   color: #52525b;
-  cursor: pointer;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 100px;
+  border: 1px solid #e5e5e7;
+  background: #fff;
   transition: all 0.15s;
 }
 
-.voirPlus:hover:not(:disabled) {
+.groupeLien:hover {
   border-color: #111;
   color: #111;
 }
 
-.groupeCompte {
-  font-size: 13px;
-  color: #999;
-}
-
-.groupeLien {
-  margin-left: auto;
-  font-size: 13px;
-  color: #6d28d9;
-  text-decoration: none;
-}
-
-.groupeLien:hover {
-  text-decoration: underline;
-}
+/* ---------- Une ligne par document ---------- */
 
 .liste {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
-
-/* ---------- Une carte par document ---------- */
 
 .carte {
   display: flex;
   align-items: center;
-  gap: 16px;
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 14px;
-  padding: 16px 20px;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  gap: 14px;
+  padding: 11px 20px;
+  border-top: 1px solid #f4f4f5;
+  transition: background 0.12s;
+}
+
+.carte:first-child {
+  border-top: none;
 }
 
 .carte:hover {
-  border-color: #d4d4d8;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  background: #fafafa;
 }
 
-/* Ce qui attend une action se voit avant d'être lu. */
-.carteAremplacer {
-  border-color: #fde68a;
-  background: #fffbeb;
-}
+/*
+ * Ce qui attend une action se reconnaît à son étiquette et à son bouton, sans filet ni
+ * aplat : la ligne reste une ligne, et l'œil n'est pas attiré par une décoration qui
+ * ne se clique pas.
+ */
 
 .icone {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background: #f4f4f5;
-  color: #52525b;
+  color: #71717a;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -332,8 +370,8 @@
 }
 
 .icone svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .carteAremplacer .icone {
@@ -344,25 +382,28 @@
 .corps {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .nom {
-  display: block;
-  font-size: 14.5px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: #111;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .details {
-  display: flex;
-  align-items: center;
+  display: inline-flex;
+  align-items: baseline;
   gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 5px;
   font-size: 12.5px;
-  color: #888;
+  color: #a1a1aa;
 }
 
 .motif {
@@ -370,14 +411,14 @@
 }
 
 .etiquette {
-  padding: 2px 9px;
-  border-radius: 6px;
+  padding: 3px 10px;
+  border-radius: 100px;
   background: #f4f4f5;
-  color: #52525b;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
+  color: #71717a;
+  font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .etiquetteAttente {
@@ -385,19 +426,22 @@
   color: #b45309;
 }
 
+/* Colonne de largeur fixe : sans elle, le bord droit ondule d'une ligne à l'autre. */
 .actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   flex-shrink: 0;
+  min-width: 180px;
 }
 
 .action {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  border-radius: 8px;
+  padding: 7px 14px;
+  border-radius: 100px;
   border: 1px solid #e5e5e7;
   background: #fff;
   font-size: 13px;
@@ -405,6 +449,7 @@
   color: #111;
   text-decoration: none;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s;
 }
 
@@ -427,7 +472,23 @@
 
 .sansFichier {
   font-size: 12.5px;
-  color: #a1a1aa;
+  color: #c4c4c8;
+  white-space: nowrap;
+}
+
+.voirPlus {
+  padding: 12px 20px;
+  border-top: 1px solid #f4f4f5;
+  font-size: 13px;
+  color: #52525b;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.voirPlus:hover:not(:disabled) {
+  background: #fafafa;
+  color: #111;
 }
 
 /* ---------- Écrans vides ---------- */
@@ -599,6 +660,19 @@
   text-overflow: ellipsis;
 }
 
+/* Ce que l'avocat a refusé, redit dans la fenêtre : on dépose en connaissance de
+   cause, sans avoir à retourner lire le motif derrière. */
+.rappel {
+  margin: 0;
+  padding: 12px 14px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #92400e;
+}
+
 .champLabel {
   display: block;
   font-size: 13px;
@@ -659,4 +733,103 @@
   .champRecherche {
     width: 100%;
   }
+}
+
+/* ---------- Aperçu ---------- */
+
+/*
+ * Plus large et plus haute que la fenêtre de dépôt : on y lit un document, pas un
+ * formulaire. Une page A4 lisible demande de la hauteur, et la borner à 90 % de
+ * l'écran garde le pied - donc le téléchargement - toujours atteignable.
+ */
+.apercuFenetre {
+  background: #fff;
+  border-radius: 16px;
+  width: 900px;
+  max-width: 100%;
+  height: 90vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.apercuGestes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.apercuCorps {
+  flex: 1;
+  min-height: 0;
+  background: #f4f4f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apercuCadre {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+.apercuMessage {
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #71717a;
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+/* ---------- Avis ---------- */
+
+/*
+ * Ce qui vient de se passer se dit dans la page, et non dans une fenêtre qui se ferme
+ * avant d'être lue : après un dépôt, on veut savoir que c'est parti et ce qu'il advient
+ * ensuite.
+ */
+.avis {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.avisPoint {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.avisTexte {
+  flex: 1;
+  min-width: 0;
+}
+
+.avisFermer {
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 2px;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.avisFermer:hover:not(:disabled) {
+  opacity: 1;
 }

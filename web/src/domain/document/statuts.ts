@@ -62,9 +62,16 @@ export interface Filtre {
   libelle: string;
 }
 
+/*
+ * Les libellés disent ce qui est compté.
+ *
+ * « Société 5 » se lisait comme cinq sociétés, alors que le nombre compte des
+ * documents : chaque pastille porte donc un mot qui désigne des documents, jamais leur
+ * provenance seule.
+ */
 export const FILTRES_DOCUMENTS: Filtre[] = [
   { valeur: "tous", libelle: "Tous" },
-  { valeur: "entreprise", libelle: "Société" },
+  { valeur: "entreprise", libelle: "Actes de société" },
   { valeur: "contrat", libelle: "Contrats" },
   { valeur: "upload", libelle: "Mes dépôts" },
 ];

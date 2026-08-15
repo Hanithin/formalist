@@ -1,7 +1,8 @@
 import { prisma } from "../client";
-import { listerDossiers, exigerDossier } from "./dossiers";
+import { mesDossiers, exigerDossier } from "./dossiers";
 import type { DossierListe } from "@/domain/formalite/liste";
 import type { DocumentRange } from "@/domain/document/bibliotheque";
+import { piecesAttendues } from "@/domain/formalite/documents";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -19,7 +20,7 @@ import type { UtilisateurConnecte } from "../sessions";
  * ferait diverger le jour où elle change.
  */
 export async function listerDocuments(utilisateur: UtilisateurConnecte) {
-  const dossiers = await listerDossiers(utilisateur);
+  const dossiers = await mesDossiers(utilisateur);
   const dossiersParId = new Map(dossiers.map((d) => [d.id, d]));
 
   const documents = dossiers.length
@@ -55,6 +56,11 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
       origine: "entreprise" as const,
       societe: dossiersParId.get(d.formalite_id)?.societe ?? null,
       societeId: d.formalite_id,
+      forme: dossiersParId.get(d.formalite_id)?.forme ?? null,
+      type: d.type,
+      remplacable: piecesAttendues(dossiersParId.get(d.formalite_id)?.forme).some(
+        (p) => p.identifiant === d.type
+      ),
       fichier: d.file_path,
       creeLe: d.created_at,
       contratId: null,
@@ -71,6 +77,10 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
         origine: (contrat ? "contrat" : "upload") as "contrat" | "upload",
         societe: dossier?.societe ?? null,
         societeId: dossier?.id ?? null,
+        forme: dossier?.forme ?? null,
+        // Un dépôt libre ne répond à aucune pièce attendue : il ne se remplace pas.
+        type: null,
+        remplacable: false,
         fichier: d.file_path,
         creeLe: d.created_at,
         // Le fichier d'un contrat mène à son suivi : l'un est le résultat, l'autre
@@ -83,12 +93,16 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
   return tout;
 }
 
-
+/**
+ * Les contrats visibles : les siens, et ceux dont on a la charge.
+ *
+ * Un administrateur ne voit pas ceux de toute la plateforme : cette page est la sienne,
+ * comme la bibliothèque de documents. La vue globale appartient à l'administration, où
+ * elle est annoncée.
+ */
 export async function listerContrats(utilisateur: UtilisateurConnecte, filtre = "tous") {
   const contrats = await prisma.contrats.findMany({
-    where: utilisateur.roles.includes("admin")
-      ? {}
-      : { OR: [{ user_id: utilisateur.id }, { assigned_avocat_id: utilisateur.id }] },
+    where: { OR: [{ user_id: utilisateur.id }, { assigned_avocat_id: utilisateur.id }] },
     orderBy: { updated_at: "desc" },
   });
 
@@ -96,7 +110,7 @@ export async function listerContrats(utilisateur: UtilisateurConnecte, filtre = 
 }
 
 export async function listerFormalites(utilisateur: UtilisateurConnecte, filtre = "tous") {
-  const dossiers = await listerDossiers(utilisateur);
+  const dossiers = await mesDossiers(utilisateur);
   if (filtre === "tous") return dossiers;
   if (filtre === "terminee") return dossiers.filter((d) => d.status === "terminee");
   return dossiers.filter((d) => d.status !== "terminee");
@@ -117,7 +131,7 @@ export async function listerFormalites(utilisateur: UtilisateurConnecte, filtre 
 export async function formalitesPourListe(
   utilisateur: UtilisateurConnecte
 ): Promise<DossierListe[]> {
-  const dossiers = await listerDossiers(utilisateur);
+  const dossiers = await mesDossiers(utilisateur);
   if (dossiers.length === 0) return [];
 
   const nonLus = await prisma.messages.groupBy({

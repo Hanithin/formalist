@@ -18,6 +18,19 @@ export interface DocumentRange {
   /** Nom de la société de rattachement ; nul pour un dépôt personnel. */
   societe: string | null;
   societeId: number | null;
+  /** SASU, SARL… ; elle précède le nom dans le titre du groupe. */
+  forme: string | null;
+  /** L'identifiant de la pièce attendue, pour pouvoir la remplacer. */
+  type: string | null;
+  /**
+   * Le document répond-il à une pièce que le dossier attend ?
+   *
+   * Sans cette réponse, l'interface proposait « Remplacer » pour tout document refusé,
+   * y compris ceux dont le type ne correspond à aucune pièce attendue : le dépôt était
+   * alors refusé par le serveur, et on se retrouvait devant un cul-de-sac après avoir
+   * choisi son fichier.
+   */
+  remplacable: boolean;
   fichier: string | null;
   creeLe: Date | null;
   /** Renseigné pour un fichier de contrat : il mène à son suivi. */
@@ -41,6 +54,37 @@ export const SEUIL_RECHERCHE = 3;
  */
 export function aRemplacer(document: { motifRejet: string | null }): boolean {
   return !!document.motifRejet;
+}
+
+/**
+ * Un rejet cesse de compter dès qu'une pièce plus récente le remplace.
+ *
+ * L'avocat rejette un fichier précis, et le motif reste sur cette ligne : c'est ce qui
+ * dit pourquoi il ne convenait pas. Mais une fois la nouvelle pièce déposée, laisser
+ * l'ancienne réclamer une action ferait croire que rien n'a été fait - on redéposerait
+ * indéfiniment le même document.
+ *
+ * La comparaison porte sur le dossier et le type de pièce : deux pièces d'identité du
+ * même dossier se succèdent, une pièce d'identité et une attestation ne se remplacent
+ * pas.
+ */
+export function resoudreRejets(documents: DocumentRange[]): DocumentRange[] {
+  const plusRecent = new Map<string, number>();
+
+  for (const d of documents) {
+    if (d.societeId === null || !d.type) continue;
+    const cle = d.societeId + "|" + d.type;
+    const quand = d.creeLe?.getTime() ?? 0;
+    plusRecent.set(cle, Math.max(plusRecent.get(cle) ?? 0, quand));
+  }
+
+  return documents.map((d) => {
+    if (!d.motifRejet || d.societeId === null || !d.type) return d;
+
+    const dernier = plusRecent.get(d.societeId + "|" + d.type) ?? 0;
+    const remplace = dernier > (d.creeLe?.getTime() ?? 0);
+    return remplace ? { ...d, motifRejet: null } : d;
+  });
 }
 
 /* ---------- Filtres ---------- */
@@ -79,12 +123,46 @@ export function correspond(document: DocumentRange, recherche: string): boolean 
   return aplati(document.nom).includes(terme) || aplati(document.societe ?? "").includes(terme);
 }
 
+/* ---------- L'ordre des actes ---------- */
+
+/**
+ * L'ordre dans lequel on cherche les actes d'une société.
+ *
+ * Il n'est ni alphabétique ni chronologique : les statuts viennent en premier parce
+ * que c'est la pièce qu'on redemande le plus souvent - une banque, un bailleur, un
+ * client la réclament -, puis le Kbis qui prouve l'existence, puis les actes de
+ * constitution dans l'ordre où on les lit. Le classement par date mettait en tête le
+ * dernier document produit, qui n'est presque jamais celui qu'on vient chercher.
+ *
+ * Ce qui n'est pas listé passe après, du plus récent au plus ancien.
+ */
+const ORDRE_DES_ACTES = [
+  "statuts",
+  "kbis",
+  "proces-verbal",
+  "pv ",
+  "liste des souscripteurs",
+  "declaration de non-condamnation",
+  "attestation de domiciliation",
+  "depot de capital",
+  "annonce legale",
+];
+
+export function rangDeLActe(nom: string): number {
+  const propre = aplati(nom);
+  const rang = ORDRE_DES_ACTES.findIndex((cle) => propre.startsWith(cle));
+  // Le reste ferme la marche, sans distinction entre ses éléments.
+  return rang === -1 ? ORDRE_DES_ACTES.length : rang;
+}
+
 /* ---------- Rangement ---------- */
 
 export interface GroupeDeDocuments {
   /** Nul pour le groupe des dépôts personnels. */
   societeId: number | null;
   titre: string;
+  /** Ce qui distingue deux groupes de même nom ; absent quand le nom suffit. */
+  precision?: string;
   documents: DocumentRange[];
 }
 
@@ -98,6 +176,25 @@ export const TITRE_SANS_SOCIETE = "Mes dépôts";
  * C'est la même mention que dans le tableau du cabinet.
  */
 export const TITRE_SANS_NOM = "Sans nom";
+
+/**
+ * « SASU ATELIER MERIDIEN » plutôt que « ATELIER MERIDIEN ».
+ *
+ * La forme fait partie de la dénomination : c'est ainsi qu'une société se désigne sur
+ * ses statuts et ses factures. Elle distingue aussi deux dossiers d'une même enseigne
+ * - une SASU et la SCI qui porte ses murs - sans avoir à ouvrir les deux.
+ *
+ * Elle n'est pas répétée quand le nom la porte déjà : certains clients saisissent
+ * « SASU Untel » dans le champ de dénomination.
+ */
+export function titreDeSociete(societe: string | null, forme: string | null): string {
+  const nom = (societe ?? "").trim();
+  const type = (forme ?? "").trim().toUpperCase();
+
+  if (!nom) return TITRE_SANS_NOM;
+  if (!type || aplati(nom).startsWith(aplati(type) + " ")) return nom;
+  return type + " " + nom;
+}
 
 /**
  * Range les documents par société.
@@ -117,7 +214,7 @@ export function grouper(documents: DocumentRange[]): GroupeDeDocuments[] {
       titre:
         document.societeId === null
           ? TITRE_SANS_SOCIETE
-          : document.societe?.trim() || TITRE_SANS_NOM,
+          : titreDeSociete(document.societe, document.forme),
       documents: [],
     };
     groupe.documents.push(document);
@@ -126,7 +223,14 @@ export function grouper(documents: DocumentRange[]): GroupeDeDocuments[] {
 
   for (const groupe of groupes.values()) {
     groupe.documents.sort((a, b) => {
+      // Ce qui bloque un dossier d'abord, puis l'ordre dans lequel on cherche un
+      // acte, puis le plus récent - qui ne départage que ce que rien d'autre ne
+      // sépare.
       if (aRemplacer(a) !== aRemplacer(b)) return aRemplacer(a) ? -1 : 1;
+
+      const rang = rangDeLActe(a.nom) - rangDeLActe(b.nom);
+      if (rang !== 0) return rang;
+
       return (b.creeLe?.getTime() ?? 0) - (a.creeLe?.getTime() ?? 0);
     });
   }
@@ -136,6 +240,32 @@ export function grouper(documents: DocumentRange[]): GroupeDeDocuments[] {
     if (b.societeId === null) return -1;
     return a.titre.localeCompare(b.titre, "fr");
   });
+}
+
+/**
+ * Distingue les groupes qui portent le même nom.
+ *
+ * Deux dossiers peuvent s'appeler pareil - deux créations pour la même enseigne, ou
+ * deux dossiers encore sans nom. À l'écran, deux blocs identiques ressemblent à un
+ * doublon, et on ne sait pas lequel ouvrir. Leur référence les sépare, et n'apparaît
+ * que là où elle sert : l'ajouter partout ajouterait du bruit à ce qui est déjà clair.
+ */
+export function distinguer(groupes: GroupeDeDocuments[]): GroupeDeDocuments[] {
+  const occurrences = new Map<string, number>();
+  for (const groupe of groupes) {
+    occurrences.set(groupe.titre, (occurrences.get(groupe.titre) ?? 0) + 1);
+  }
+
+  return groupes.map((groupe) =>
+    (occurrences.get(groupe.titre) ?? 0) > 1 && groupe.societeId !== null
+      ? { ...groupe, precision: reference(groupe.societeId) }
+      : groupe
+  );
+}
+
+/** La référence d'un dossier, telle que l'espace avocat l'écrit déjà : #0042. */
+export function reference(dossierId: number): string {
+  return "#" + String(dossierId).padStart(4, "0");
 }
 
 /** Le nombre de sociétés distinctes, qui décide de l'affichage de la recherche. */
@@ -160,17 +290,22 @@ export const GROUPES_OUVERTS = 3;
 /**
  * Un groupe s'ouvre-t-il de lui-même ?
  *
- * Trois règles, dans cet ordre. Une recherche en cours ouvre tout : on vient de
- * demander ces documents, les cacher derrière un clic serait absurde. Un groupe qui
- * contient un document à remplacer s'ouvre toujours : c'est ce qui bloque un dossier,
- * et le replier reviendrait à le cacher. Sinon, on n'ouvre que si les groupes sont peu
- * nombreux.
+ * Quatre règles, dans cet ordre. Le groupe qui vient de recevoir un dépôt s'ouvre :
+ * on annonce « vous le retrouverez dans sa société », et le document restait invisible
+ * derrière un groupe replié - l'annonce devenait fausse. Une recherche en cours ouvre
+ * tout : on vient de demander ces documents, les cacher derrière un clic serait
+ * absurde. Un groupe qui contient un document à remplacer s'ouvre toujours : c'est ce
+ * qui bloque un dossier, et le replier reviendrait à le cacher. Sinon, on n'ouvre que
+ * si les groupes sont peu nombreux.
  */
 export function ouvertParDefaut(
   groupe: GroupeDeDocuments,
   nombreDeGroupes: number,
-  recherche = ""
+  recherche = "",
+  /** La société du dernier dépôt ; `undefined` quand rien n'a été déposé. */
+  dernierDepot?: number | null
 ): boolean {
+  if (dernierDepot !== undefined && groupe.societeId === dernierDepot) return true;
   if (recherche.trim()) return true;
   if (groupe.documents.some(aRemplacer)) return true;
   return nombreDeGroupes <= GROUPES_OUVERTS;
@@ -191,4 +326,24 @@ export function tronquer<T>(documents: T[], tout: boolean): { montres: T[]; rest
     montres: documents.slice(0, DOCUMENTS_MONTRES),
     restants: documents.length - DOCUMENTS_MONTRES,
   };
+}
+
+/* ---------- Ce qui s'affiche dans le navigateur ---------- */
+
+/**
+ * Le format se prête-t-il à un aperçu ?
+ *
+ * Un PDF et une image s'affichent dans un cadre ; un Word se télécharge. Le savoir
+ * avant d'ouvrir la fenêtre évite d'y montrer un cadre vide, ou pire, de déclencher
+ * un téléchargement que personne n'a demandé.
+ *
+ * Les actes produits par la plateforme sont figés en PDF au moment de leur
+ * génération : ils tombent donc du bon côté.
+ */
+const FORMATS_AFFICHABLES = [".pdf", ".png", ".jpg", ".jpeg"];
+
+export function affichable(fichier: string | null): boolean {
+  if (!fichier) return false;
+  const point = fichier.lastIndexOf(".");
+  return point > 0 && FORMATS_AFFICHABLES.includes(fichier.slice(point).toLowerCase());
 }
