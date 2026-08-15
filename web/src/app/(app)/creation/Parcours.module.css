@@ -172,9 +172,17 @@
   color: #999;
   margin-bottom: 12px;
 }
+/*
+ * Deux colonnes de largeur égale, quoi qu'elles contiennent.
+ *
+ * `1fr` vaut `minmax(auto, 1fr)` : une valeur longue - « SASU - Société par actions
+ * simplifiée à associé unique. » - impose sa largeur minimale et pousse la colonne,
+ * qui n'est alors plus alignée avec celles du dessous. `minmax(0, 1fr)` autorise la
+ * colonne à être plus étroite que son contenu, et c'est au contenu de se tronquer.
+ */
 .formGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px 24px;
 }
 .formGrid .full {
@@ -1745,6 +1753,10 @@
 
 .cselectTrigger {
   width: 100%;
+  /* Le libellé retenu se tronque plutôt que d'élargir son champ. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin: 0;
   padding: 12px 16px;
   padding-right: 40px;

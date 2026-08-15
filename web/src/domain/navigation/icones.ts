@@ -8,7 +8,7 @@
  *
  * Une règle : deux entrées ne partagent jamais la même icône. Une icône répétée
  * ne distingue rien et fait lire le mot deux fois pour comprendre où l'on est -
- * « Créer une société » et « Créer mon auto-entreprise » portaient toutes deux la
+ * « Créer une société » et « Créer une auto-entreprise » portaient toutes deux la
  * maison.
  */
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   verifierEtape,
@@ -21,6 +21,55 @@ interface Props {
   etapes: Etape[];
   etapeCourante: number;
   declarationInitiale: Donnees;
+}
+
+/**
+ * Un champ : son libellé, sa saisie, et son refus juste dessous.
+ *
+ * C'est le bloc qui manquait pour poser deux champs côte à côte : les libellés et les
+ * saisies étaient des frères, et une grille les séparait en deux colonnes - le libellé
+ * à gauche, sa saisie à droite - au lieu d'apparier chaque champ. Le même composant
+ * existe pour la création de société, avec le même rôle.
+ */
+function Champ({
+  id,
+  libelle,
+  pleineLargeur = false,
+  anomalie,
+  children,
+}: {
+  id?: string;
+  /** Un nœud, non une chaîne : les libellés portent des apostrophes échappées. */
+  libelle: React.ReactNode;
+  /** Les textes longs et les listes de cases prennent toute la ligne. */
+  pleineLargeur?: boolean;
+  anomalie?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={pleineLargeur ? `${styles.champ} ${styles.pleineLargeur}` : styles.champ}>
+      <label htmlFor={id}>{libelle}</label>
+      {children}
+      {anomalie && <p role="alert">{anomalie}</p>}
+    </div>
+  );
+}
+
+/** La coche des étapes franchies. */
+function Coche() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
 }
 
 export function Declaration({ dossierId, etapes, etapeCourante, declarationInitiale }: Props) {
@@ -59,163 +108,209 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
 
   return (
     <div className={styles.parcours}>
-      <ol className={styles.etapes}>
-        {etapes.map((e) => (
-          <li
-            key={e.numero}
-            className={e.numero === etape.numero ? styles.etapeActive : styles.etape}
-            aria-current={e.numero === etape.numero ? "step" : undefined}
-          >
-            <span className={styles.numero}>{e.numero}</span>
-            {e.titre}
-          </li>
-        ))}
-      </ol>
+      {/*
+        Le même fil que la création : horizontal, au-dessus du formulaire.
+        En colonne à gauche, il volait un quart de la largeur à la saisie et ne
+        ressemblait à aucun autre parcours du site.
+
+        Les segments sont des frères des étapes, non leurs enfants : ce sont eux qui
+        absorbent la largeur restante entre deux pastilles.
+      */}
+      <nav className={styles.stepper} aria-label="Étapes du parcours">
+        {etapes.map((e, i) => {
+          const franchie = e.numero < etape.numero;
+          const courante = e.numero === etape.numero;
+          const ton = courante ? styles.active : franchie ? styles.done : "";
+
+          return (
+            <Fragment key={e.numero}>
+              <div className={`${styles.step} ${ton}`} aria-current={courante ? "step" : undefined}>
+                <span className={styles.stepCircle}>{franchie ? <Coche /> : e.numero}</span>
+                <span className={styles.stepLabel}>{e.libelleCourt}</span>
+              </div>
+              {i < etapes.length - 1 && (
+                <span
+                  className={franchie ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment}
+                  aria-hidden="true"
+                />
+              )}
+            </Fragment>
+          );
+        })}
+      </nav>
 
       <section className={styles.contenu}>
         <h2>{etape.titre}</h2>
 
         {etape.identifiant === "identite" && (
           <div className={styles.champs}>
-            <label htmlFor="civilite">Civilité</label>
-            <select
-              id="civilite"
-              value={donnees.civilite ?? ""}
-              onChange={(e) => modifier("civilite", e.target.value)}
-            >
-              <option value="">Choisissez</option>
-              <option value="Madame">Madame</option>
-              <option value="Monsieur">Monsieur</option>
-            </select>
-            {erreur("civilite") && <p role="alert">{erreur("civilite")}</p>}
+            <Champ id="civilite" libelle={<>Civilité</>} anomalie={erreur("civilite")}>
+              <select
+                id="civilite"
+                value={donnees.civilite ?? ""}
+                onChange={(e) => modifier("civilite", e.target.value)}
+              >
+                <option value="">Choisissez</option>
+                <option value="Madame">Madame</option>
+                <option value="Monsieur">Monsieur</option>
+              </select>
+            </Champ>
 
-            <label htmlFor="nomNaissance">Nom de naissance</label>
-            <input
+            <Champ
               id="nomNaissance"
-              value={donnees.nomNaissance ?? ""}
-              onChange={(e) => modifier("nomNaissance", e.target.value)}
-            />
-            {erreur("nomNaissance") && <p role="alert">{erreur("nomNaissance")}</p>}
+              libelle={<>Nom de naissance</>}
+              anomalie={erreur("nomNaissance")}
+            >
+              <input
+                id="nomNaissance"
+                value={donnees.nomNaissance ?? ""}
+                onChange={(e) => modifier("nomNaissance", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="nomUsage">Nom d&apos;usage (facultatif)</label>
-            <input
-              id="nomUsage"
-              value={donnees.nomUsage ?? ""}
-              onChange={(e) => modifier("nomUsage", e.target.value)}
-            />
+            <Champ id="nomUsage" libelle={<>Nom d&apos;usage (facultatif)</>}>
+              <input
+                id="nomUsage"
+                value={donnees.nomUsage ?? ""}
+                onChange={(e) => modifier("nomUsage", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="prenoms">Prénoms</label>
-            <input
-              id="prenoms"
-              value={donnees.prenoms ?? ""}
-              onChange={(e) => modifier("prenoms", e.target.value)}
-            />
-            {erreur("prenoms") && <p role="alert">{erreur("prenoms")}</p>}
+            <Champ id="prenoms" libelle={<>Prénoms</>} anomalie={erreur("prenoms")}>
+              <input
+                id="prenoms"
+                value={donnees.prenoms ?? ""}
+                onChange={(e) => modifier("prenoms", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="dateNaissance">Date de naissance</label>
-            <input
+            <Champ
               id="dateNaissance"
-              type="date"
-              value={donnees.dateNaissance ?? ""}
-              onChange={(e) => modifier("dateNaissance", e.target.value)}
-            />
-            {erreur("dateNaissance") && <p role="alert">{erreur("dateNaissance")}</p>}
+              libelle={<>Date de naissance</>}
+              anomalie={erreur("dateNaissance")}
+            >
+              <input
+                id="dateNaissance"
+                type="date"
+                value={donnees.dateNaissance ?? ""}
+                onChange={(e) => modifier("dateNaissance", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="villeNaissance">Ville de naissance</label>
-            <input
+            <Champ
               id="villeNaissance"
-              value={donnees.villeNaissance ?? ""}
-              onChange={(e) => modifier("villeNaissance", e.target.value)}
-            />
-            {erreur("villeNaissance") && <p role="alert">{erreur("villeNaissance")}</p>}
+              libelle={<>Ville de naissance</>}
+              anomalie={erreur("villeNaissance")}
+            >
+              <input
+                id="villeNaissance"
+                value={donnees.villeNaissance ?? ""}
+                onChange={(e) => modifier("villeNaissance", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="paysNaissance">Pays de naissance</label>
-            <input
-              id="paysNaissance"
-              value={donnees.paysNaissance ?? "France"}
-              onChange={(e) => modifier("paysNaissance", e.target.value)}
-            />
+            <Champ id="paysNaissance" libelle={<>Pays de naissance</>}>
+              <input
+                id="paysNaissance"
+                value={donnees.paysNaissance ?? "France"}
+                onChange={(e) => modifier("paysNaissance", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="nationalite">Nationalité</label>
-            <input
-              id="nationalite"
-              value={donnees.nationalite ?? ""}
-              onChange={(e) => modifier("nationalite", e.target.value)}
-            />
-            {erreur("nationalite") && <p role="alert">{erreur("nationalite")}</p>}
+            <Champ id="nationalite" libelle={<>Nationalité</>} anomalie={erreur("nationalite")}>
+              <input
+                id="nationalite"
+                value={donnees.nationalite ?? ""}
+                onChange={(e) => modifier("nationalite", e.target.value)}
+              />
+            </Champ>
 
             {/* Le guichet rattache l'auto-entreprise au régime social par ce numéro :
                 sans lui, la déclaration est rejetée. */}
-            <label htmlFor="numeroSecuriteSociale">Numéro de sécurité sociale</label>
-            <input
+            <Champ
               id="numeroSecuriteSociale"
-              inputMode="numeric"
-              placeholder="1 85 04 33 123 456 78"
-              value={donnees.numeroSecuriteSociale ?? ""}
-              onChange={(e) =>
-                modifier("numeroSecuriteSociale", e.target.value.replace(/[^\d\s]/g, ""))
-              }
-            />
-            {erreur("numeroSecuriteSociale") && (
-              <p role="alert">{erreur("numeroSecuriteSociale")}</p>
-            )}
+              libelle={<>Numéro de sécurité sociale</>}
+              anomalie={erreur("numeroSecuriteSociale")}
+            >
+              <input
+                id="numeroSecuriteSociale"
+                inputMode="numeric"
+                placeholder="1 85 04 33 123 456 78"
+                value={donnees.numeroSecuriteSociale ?? ""}
+                onChange={(e) =>
+                  modifier("numeroSecuriteSociale", e.target.value.replace(/[^\d\s]/g, ""))
+                }
+              />
+            </Champ>
           </div>
         )}
 
         {etape.identifiant === "adresse" && (
           <div className={styles.champs}>
-            <label htmlFor="adresseVoie">Adresse du domicile</label>
-            <input
+            <Champ
               id="adresseVoie"
-              value={donnees.adresseVoie ?? ""}
-              onChange={(e) => modifier("adresseVoie", e.target.value)}
-            />
-            {erreur("adresseVoie") && <p role="alert">{erreur("adresseVoie")}</p>}
+              libelle={<>Adresse du domicile</>}
+              pleineLargeur
+              anomalie={erreur("adresseVoie")}
+            >
+              <input
+                id="adresseVoie"
+                value={donnees.adresseVoie ?? ""}
+                onChange={(e) => modifier("adresseVoie", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="adresseComplement">Complément d&apos;adresse (facultatif)</label>
-            <input
+            <Champ
               id="adresseComplement"
-              placeholder="Bâtiment, étage, appartement"
-              value={donnees.adresseComplement ?? ""}
-              onChange={(e) => modifier("adresseComplement", e.target.value)}
-            />
+              libelle={<>Complément d&apos;adresse (facultatif)</>}
+              pleineLargeur
+            >
+              <input
+                id="adresseComplement"
+                placeholder="Bâtiment, étage, appartement"
+                value={donnees.adresseComplement ?? ""}
+                onChange={(e) => modifier("adresseComplement", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="codePostal">Code postal</label>
-            <input
-              id="codePostal"
-              inputMode="numeric"
-              maxLength={5}
-              value={donnees.codePostal ?? ""}
-              onChange={(e) => modifier("codePostal", e.target.value.replace(/\D/g, ""))}
-            />
-            {erreur("codePostal") && <p role="alert">{erreur("codePostal")}</p>}
+            <Champ id="codePostal" libelle={<>Code postal</>} anomalie={erreur("codePostal")}>
+              <input
+                id="codePostal"
+                inputMode="numeric"
+                maxLength={5}
+                value={donnees.codePostal ?? ""}
+                onChange={(e) => modifier("codePostal", e.target.value.replace(/\D/g, ""))}
+              />
+            </Champ>
 
-            <label htmlFor="ville">Ville</label>
-            <input
-              id="ville"
-              value={donnees.ville ?? ""}
-              onChange={(e) => modifier("ville", e.target.value)}
-            />
-            {erreur("ville") && <p role="alert">{erreur("ville")}</p>}
+            <Champ id="ville" libelle={<>Ville</>} anomalie={erreur("ville")}>
+              <input
+                id="ville"
+                value={donnees.ville ?? ""}
+                onChange={(e) => modifier("ville", e.target.value)}
+              />
+            </Champ>
 
             {/* Sous un régime communautaire, les biens de l'entreprise engagent aussi
                 le conjoint : la déclaration le demande. */}
-            <label htmlFor="situationMatrimoniale">Situation matrimoniale</label>
-            <select
+            <Champ
               id="situationMatrimoniale"
-              value={donnees.situationMatrimoniale ?? ""}
-              onChange={(e) => modifier("situationMatrimoniale", e.target.value)}
+              libelle={<>Situation matrimoniale</>}
+              anomalie={erreur("situationMatrimoniale")}
             >
-              <option value="">Choisissez</option>
-              {SITUATIONS.map((situation) => (
-                <option key={situation} value={situation}>
-                  {situation}
-                </option>
-              ))}
-            </select>
-            {erreur("situationMatrimoniale") && (
-              <p role="alert">{erreur("situationMatrimoniale")}</p>
-            )}
+              <select
+                id="situationMatrimoniale"
+                value={donnees.situationMatrimoniale ?? ""}
+                onChange={(e) => modifier("situationMatrimoniale", e.target.value)}
+              >
+                <option value="">Choisissez</option>
+                {SITUATIONS.map((situation) => (
+                  <option key={situation} value={situation}>
+                    {situation}
+                  </option>
+                ))}
+              </select>
+            </Champ>
 
             <label className={styles.case}>
               <input
@@ -228,44 +323,58 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
 
             {donnees.adresseEntrepriseDistincte && (
               <>
-                <label htmlFor="entrepriseVoie">Adresse de l&apos;activité</label>
-                <input
+                <Champ
                   id="entrepriseVoie"
-                  value={donnees.entrepriseVoie ?? ""}
-                  onChange={(e) => modifier("entrepriseVoie", e.target.value)}
-                />
-                {erreur("entrepriseVoie") && <p role="alert">{erreur("entrepriseVoie")}</p>}
+                  libelle={<>Adresse de l&apos;activité</>}
+                  pleineLargeur
+                  anomalie={erreur("entrepriseVoie")}
+                >
+                  <input
+                    id="entrepriseVoie"
+                    value={donnees.entrepriseVoie ?? ""}
+                    onChange={(e) => modifier("entrepriseVoie", e.target.value)}
+                  />
+                </Champ>
 
-                <label htmlFor="entrepriseComplement">
-                  Complément d&apos;adresse de l&apos;activité (facultatif)
-                </label>
-                <input
+                <Champ
                   id="entrepriseComplement"
-                  value={donnees.entrepriseComplement ?? ""}
-                  onChange={(e) => modifier("entrepriseComplement", e.target.value)}
-                />
+                  libelle={<>Complément d&apos;adresse de l&apos;activité (facultatif)</>}
+                  pleineLargeur
+                >
+                  <input
+                    id="entrepriseComplement"
+                    value={donnees.entrepriseComplement ?? ""}
+                    onChange={(e) => modifier("entrepriseComplement", e.target.value)}
+                  />
+                </Champ>
 
-                <label htmlFor="entrepriseCodePostal">Code postal de l&apos;activité</label>
-                <input
+                <Champ
                   id="entrepriseCodePostal"
-                  inputMode="numeric"
-                  maxLength={5}
-                  value={donnees.entrepriseCodePostal ?? ""}
-                  onChange={(e) =>
-                    modifier("entrepriseCodePostal", e.target.value.replace(/\D/g, ""))
-                  }
-                />
-                {erreur("entrepriseCodePostal") && (
-                  <p role="alert">{erreur("entrepriseCodePostal")}</p>
-                )}
+                  libelle={<>Code postal de l&apos;activité</>}
+                  anomalie={erreur("entrepriseCodePostal")}
+                >
+                  <input
+                    id="entrepriseCodePostal"
+                    inputMode="numeric"
+                    maxLength={5}
+                    value={donnees.entrepriseCodePostal ?? ""}
+                    onChange={(e) =>
+                      modifier("entrepriseCodePostal", e.target.value.replace(/\D/g, ""))
+                    }
+                  />
+                </Champ>
 
-                <label htmlFor="entrepriseVille">Ville de l&apos;activité</label>
-                <input
+                <Champ
                   id="entrepriseVille"
-                  value={donnees.entrepriseVille ?? ""}
-                  onChange={(e) => modifier("entrepriseVille", e.target.value)}
-                />
-                {erreur("entrepriseVille") && <p role="alert">{erreur("entrepriseVille")}</p>}
+                  libelle={<>Ville de l&apos;activité</>}
+                  anomalie={erreur("entrepriseVille")}
+                >
+                  <input
+                    id="entrepriseVille"
+                    value={donnees.entrepriseVille ?? ""}
+                    onChange={(e) => modifier("entrepriseVille", e.target.value)}
+                  />
+                </Champ>
               </>
             )}
           </div>
@@ -273,20 +382,24 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
 
         {etape.identifiant === "activite" && (
           <div className={styles.champs}>
-            <label htmlFor="natureActivite">Nature de l&apos;activité</label>
-            <select
+            <Champ
               id="natureActivite"
-              value={donnees.natureActivite ?? ""}
-              onChange={(e) => modifier("natureActivite", e.target.value)}
+              libelle={<>Nature de l&apos;activité</>}
+              anomalie={erreur("natureActivite")}
             >
-              <option value="">Choisissez</option>
-              {Object.values(ACTIVITES).map((a) => (
-                <option key={a.code} value={a.code}>
-                  {a.libelle}
-                </option>
-              ))}
-            </select>
-            {erreur("natureActivite") && <p role="alert">{erreur("natureActivite")}</p>}
+              <select
+                id="natureActivite"
+                value={donnees.natureActivite ?? ""}
+                onChange={(e) => modifier("natureActivite", e.target.value)}
+              >
+                <option value="">Choisissez</option>
+                {Object.values(ACTIVITES).map((a) => (
+                  <option key={a.code} value={a.code}>
+                    {a.libelle}
+                  </option>
+                ))}
+              </select>
+            </Champ>
 
             {regle && (
               <p className={styles.deduit}>
@@ -295,50 +408,64 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               </p>
             )}
 
-            <label htmlFor="descriptionActivite">Description de l&apos;activité</label>
-            <textarea
+            <Champ
               id="descriptionActivite"
-              rows={3}
-              value={donnees.descriptionActivite ?? ""}
-              onChange={(e) => modifier("descriptionActivite", e.target.value)}
-            />
-            {erreur("descriptionActivite") && <p role="alert">{erreur("descriptionActivite")}</p>}
+              libelle={<>Description de l&apos;activité</>}
+              pleineLargeur
+              anomalie={erreur("descriptionActivite")}
+            >
+              <textarea
+                id="descriptionActivite"
+                rows={3}
+                value={donnees.descriptionActivite ?? ""}
+                onChange={(e) => modifier("descriptionActivite", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="dateDebut">Date de début d&apos;activité</label>
-            <input
+            <Champ
               id="dateDebut"
-              type="date"
-              value={donnees.dateDebut ?? ""}
-              onChange={(e) => modifier("dateDebut", e.target.value)}
-            />
-            {erreur("dateDebut") && <p role="alert">{erreur("dateDebut")}</p>}
+              libelle={<>Date de début d&apos;activité</>}
+              anomalie={erreur("dateDebut")}
+            >
+              <input
+                id="dateDebut"
+                type="date"
+                value={donnees.dateDebut ?? ""}
+                onChange={(e) => modifier("dateDebut", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="codeApe">Code APE souhaité (facultatif)</label>
-            <input
-              id="codeApe"
-              placeholder="Ex : 6201Z"
-              value={donnees.codeApe ?? ""}
-              onChange={(e) => modifier("codeApe", e.target.value.toUpperCase())}
-            />
+            <Champ id="codeApe" libelle={<>Code APE souhaité (facultatif)</>}>
+              <input
+                id="codeApe"
+                placeholder="Ex : 6201Z"
+                value={donnees.codeApe ?? ""}
+                onChange={(e) => modifier("codeApe", e.target.value.toUpperCase())}
+              />
+            </Champ>
             <p className={styles.deduit}>
               L&apos;INSEE l&apos;attribue à partir de votre description. Le préciser ne
               l&apos;impose pas, mais évite un contresens sur une activité peu courante.
             </p>
 
-            <label htmlFor="lieuExercice">Lieu d&apos;exercice</label>
-            <select
+            <Champ
               id="lieuExercice"
-              value={donnees.lieuExercice ?? ""}
-              onChange={(e) => modifier("lieuExercice", e.target.value)}
+              libelle={<>Lieu d&apos;exercice</>}
+              anomalie={erreur("lieuExercice")}
             >
-              <option value="">Choisissez</option>
-              {LIEUX_EXERCICE.map((lieu) => (
-                <option key={lieu} value={lieu}>
-                  {lieu}
-                </option>
-              ))}
-            </select>
-            {erreur("lieuExercice") && <p role="alert">{erreur("lieuExercice")}</p>}
+              <select
+                id="lieuExercice"
+                value={donnees.lieuExercice ?? ""}
+                onChange={(e) => modifier("lieuExercice", e.target.value)}
+              >
+                <option value="">Choisissez</option>
+                {LIEUX_EXERCICE.map((lieu) => (
+                  <option key={lieu} value={lieu}>
+                    {lieu}
+                  </option>
+                ))}
+              </select>
+            </Champ>
 
             {/* Coiffure, bâtiment, transport, restauration : le guichet réclame le
                 diplôme ou l'autorisation avant d'immatriculer. Mieux vaut le demander
@@ -396,8 +523,8 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               professionnel du patrimoine personnel : il n'y a plus rien à choisir.
             */}
             <p className={styles.deduit}>
-              Votre patrimoine personnel est protégé de plein droit : depuis 2022, seuls
-              les biens utiles à votre activité répondent de vos dettes professionnelles.
+              Votre patrimoine personnel est protégé de plein droit : depuis 2022, seuls les biens
+              utiles à votre activité répondent de vos dettes professionnelles.
             </p>
           </div>
         )}
@@ -434,21 +561,29 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               des formalités.
             </p>
 
-            <label htmlFor="filiationMere">Nom et prénoms de la mère</label>
-            <input
+            <Champ
               id="filiationMere"
-              value={donnees.filiationMere ?? ""}
-              onChange={(e) => modifier("filiationMere", e.target.value)}
-            />
-            {erreur("filiationMere") && <p role="alert">{erreur("filiationMere")}</p>}
+              libelle={<>Nom et prénoms de la mère</>}
+              anomalie={erreur("filiationMere")}
+            >
+              <input
+                id="filiationMere"
+                value={donnees.filiationMere ?? ""}
+                onChange={(e) => modifier("filiationMere", e.target.value)}
+              />
+            </Champ>
 
-            <label htmlFor="filiationPere">Nom et prénoms du père</label>
-            <input
+            <Champ
               id="filiationPere"
-              value={donnees.filiationPere ?? ""}
-              onChange={(e) => modifier("filiationPere", e.target.value)}
-            />
-            {erreur("filiationPere") && <p role="alert">{erreur("filiationPere")}</p>}
+              libelle={<>Nom et prénoms du père</>}
+              anomalie={erreur("filiationPere")}
+            >
+              <input
+                id="filiationPere"
+                value={donnees.filiationPere ?? ""}
+                onChange={(e) => modifier("filiationPere", e.target.value)}
+              />
+            </Champ>
 
             <label className={styles.case}>
               <input

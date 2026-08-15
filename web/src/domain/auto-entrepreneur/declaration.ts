@@ -64,16 +64,44 @@ export interface Etape {
   numero: number;
   identifiant: string;
   titre: string;
+  /**
+   * Le mot du fil d'étapes.
+   *
+   * Il est court parce que sept libellés se partagent une ligne : « Options fiscales
+   * et sociales » et « Pièces justificatives » se chevauchaient. Ce sont ceux du
+   * formulaire d'origine, dont le fil portait déjà des mots d'un seul tenant.
+   */
+  libelleCourt: string;
 }
 
 export const ETAPES: Etape[] = [
-  { numero: 1, identifiant: "identite", titre: "Identité" },
-  { numero: 2, identifiant: "adresse", titre: "Adresse et situation" },
-  { numero: 3, identifiant: "activite", titre: "Activité" },
-  { numero: 4, identifiant: "options", titre: "Options fiscales et sociales" },
-  { numero: 5, identifiant: "pieces", titre: "Pièces justificatives" },
-  { numero: 6, identifiant: "filiation", titre: "Déclaration et filiation" },
-  { numero: 7, identifiant: "recapitulatif", titre: "Récapitulatif" },
+  { numero: 1, identifiant: "identite", titre: "Identité", libelleCourt: "Identité" },
+  { numero: 2, identifiant: "adresse", titre: "Adresse et situation", libelleCourt: "Adresse" },
+  { numero: 3, identifiant: "activite", titre: "Activité", libelleCourt: "Activité" },
+  {
+    numero: 4,
+    identifiant: "options",
+    titre: "Options fiscales et sociales",
+    libelleCourt: "Fiscalité",
+  },
+  {
+    numero: 5,
+    identifiant: "pieces",
+    titre: "Pièces justificatives",
+    libelleCourt: "Documents",
+  },
+  {
+    numero: 6,
+    identifiant: "filiation",
+    titre: "Déclaration et filiation",
+    libelleCourt: "Déclaration",
+  },
+  {
+    numero: 7,
+    identifiant: "recapitulatif",
+    titre: "Récapitulatif",
+    libelleCourt: "Récapitulatif",
+  },
 ];
 
 export interface Declaration {

@@ -342,7 +342,7 @@ function Rien({
               Créer une société
             </Link>
             <Link href="/auto-entrepreneur" className={styles.pill}>
-              Créer mon auto-entreprise
+              Créer une auto-entreprise
             </Link>
           </div>
         </>

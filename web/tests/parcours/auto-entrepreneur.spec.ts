@@ -241,3 +241,65 @@ test("l'option EIRL n'est pas reprise : le statut n'existe plus", async ({ page,
   await expect(page.getByText("EIRL")).toHaveCount(0);
   await expect(page.getByText(/patrimoine personnel est protégé/)).toBeVisible();
 });
+
+test("le parcours a le cadre de la création de société", async ({ page }) => {
+  /*
+   * Deux parcours du même site doivent se lire pareil : fil d'ariane, fil d'étapes
+   * horizontal, colonne centrée. Celui de l'auto-entreprise portait son fil en
+   * colonne à gauche et s'étalait sur toute la largeur.
+   */
+  await page.setViewportSize({ width: 1400, height: 900 });
+
+  const mesures: Record<string, { x: number; largeur: number }> = {};
+
+  for (const adresse of ["/creation", "/auto-entrepreneur"]) {
+    await page.goto(adresse);
+    const fil = page.getByRole("navigation", { name: "Étapes du parcours" });
+    await expect(fil).toBeVisible();
+
+    const cadre = (await fil.boundingBox())!;
+    mesures[adresse] = { x: Math.round(cadre.x), largeur: Math.round(cadre.width) };
+  }
+
+  expect(mesures["/auto-entrepreneur"]).toEqual(mesures["/creation"]);
+
+  // Et le fil d'ariane situe la page, comme sur la création.
+  await expect(page.getByRole("navigation", { name: "Fil d'ariane" })).toContainText(
+    "Créer une auto-entreprise"
+  );
+});
+
+test("les champs courts se posent deux par ligne", async ({ page }) => {
+  /*
+   * Sur une seule colonne, l'étape « Identité » descendait sur deux écrans pour neuf
+   * champs courts. Ce qui se lit long - une adresse, un texte libre - garde la ligne
+   * entière.
+   */
+  await page.setViewportSize({ width: 1400, height: 1000 });
+  await page.goto("/auto-entrepreneur");
+
+  const civilite = (await page.getByLabel("Civilité").boundingBox())!;
+  const nom = (await page.getByLabel("Nom de naissance").boundingBox())!;
+
+  // Deux champs courts partagent la ligne : même hauteur, l'un à droite de l'autre.
+  expect(Math.round(civilite.y)).toBe(Math.round(nom.y));
+  expect(nom.x).toBeGreaterThan(civilite.x + civilite.width);
+
+  // Et la case à cocher garde son texte à côté d'elle, non dans l'autre colonne.
+  await page.getByLabel("Civilité").selectOption("Madame");
+  await page.getByLabel("Nom de naissance").fill("Durand");
+  await page.getByLabel("Prénoms").fill("Camille");
+  await page.getByLabel("Date de naissance").fill("1990-04-12");
+  await page.getByLabel("Ville de naissance").fill("Bordeaux");
+  await page.getByLabel("Nationalité").fill("Française");
+  await page.getByLabel("Numéro de sécurité sociale").fill("290043312345678");
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  // Le libellé porte la case : on mesure le libellé lui-même, non son conteneur.
+  const etiquette = page.locator("label").filter({ hasText: /autre adresse/ });
+  await expect(etiquette).toBeVisible();
+
+  const boite = (await etiquette.boundingBox())!;
+  // Une seule ligne : la case et son texte tiennent ensemble, non dans deux colonnes.
+  expect(boite.height).toBeLessThan(60);
+});

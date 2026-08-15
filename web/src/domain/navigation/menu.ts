@@ -39,7 +39,7 @@ export const MENU: ElementMenu[] = [
   { libelle: "Tableau de bord", lien: "/tableau-de-bord" },
   { libelle: "Mes formalités", lien: "/formalites", compteur: "enCours" },
   { libelle: "Créer une société", lien: "/creation?type=creation" },
-  { libelle: "Créer mon auto-entreprise", lien: "/auto-entrepreneur" },
+  { libelle: "Créer une auto-entreprise", lien: "/auto-entrepreneur" },
   { libelle: "Modifier ma société", lien: "/modification", bientot: true },
   { libelle: "Dépôt des comptes", lien: "/depot-des-comptes", bientot: true },
   { libelle: "Fermer ma société", lien: "/fermeture", bientot: true },
