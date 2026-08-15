@@ -17,7 +17,14 @@
   background: #fff;
   color: #18181b;
   font-family: inherit;
-  font-size: 14.5px;
+  /*
+   * 15,5 px, comme les entrées de la colonne juste en dessous.
+   *
+   * À 14,5 px, le bouton principal était écrit plus petit que « Tableau de bord » ou
+   * « Documents » : l'action la plus importante de la colonne paraissait la plus
+   * secondaire. La graisse suffit à la distinguer.
+   */
+  font-size: 15.5px;
   font-weight: 600;
   text-align: center;
   text-decoration: none;

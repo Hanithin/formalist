@@ -12,6 +12,7 @@ import {
   etatCourt,
 } from "@/domain/formalite/etapes";
 import { nomsDEtapes } from "@/domain/formalite/etapes";
+import { libelleDuType } from "@/domain/formalite/liste";
 import { Accueil } from "./Accueil";
 import { Avancement, Anneau } from "./Avancement";
 import { Attentes, ActiviteRecente } from "./Blocs";
@@ -28,14 +29,6 @@ import styles from "./TableauDeBord.module.css";
 export const metadata: Metadata = {
   title: "Tableau de bord - Formalist",
   robots: { index: false, follow: false },
-};
-
-/** Le type est enregistré sans accent : il s'écrit correctement à l'affichage. */
-const TYPES: Record<string, string> = {
-  creation: "Création",
-  modification: "Modification",
-  fermeture: "Fermeture",
-  depot: "Dépôt des comptes",
 };
 
 function Chevron() {
@@ -175,7 +168,7 @@ export default async function TableauDeBord() {
 
               <div className={styles.singleHeroBody}>
                 <span className={styles.singleHeroEyebrow}>
-                  {seulTermine ? "Félicitations 🎉" : (TYPES[seul.type] ?? seul.type)}
+                  {seulTermine ? "Félicitations 🎉" : (libelleDuType(seul.type) ?? seul.type)}
                 </span>
 
                 <div className={styles.singleHeroTitle}>

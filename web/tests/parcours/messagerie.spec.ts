@@ -189,6 +189,37 @@ test.describe("bulle de messagerie", () => {
     await expect(panneau.getByText("PARCOURS EN COURS")).toBeVisible();
   });
 
+  test("elle porte le support, que la colonne compte déjà", async ({ request }) => {
+    /*
+     * La colonne comptait le support dans sa pastille, pas la bulle : un message du
+     * support faisait apparaître « 1 non lu » à gauche sans que rien n'y corresponde
+     * dans la bulle, et le fil à ouvrir pour l'éteindre n'y figurait pas.
+     */
+    const donnees = await (await request.get("/api/messages/non-lus")).json();
+    const fils = donnees.conversations as { dossierId: number | null; societe: string }[];
+    const support = fils.find((f) => f.dossierId === null);
+    expect(support?.societe).toBe("Support Formalist");
+  });
+
+  test.describe("vue par un administrateur", () => {
+    test.use({ storageState: "./tests/parcours/session-admin.json" });
+
+    test("elle ne compte que ses conversations, pas celles de tous les comptes", async ({
+      request,
+    }) => {
+      /*
+       * Un administrateur voit tous les dossiers de la plateforme. Compter leurs
+       * messages non lus rendait sa pastille indélébile : elle signalait des messages
+       * reçus dans les dossiers d'autres comptes, qu'il n'ouvre jamais.
+       */
+      const donnees = await (await request.get("/api/messages/non-lus")).json();
+      const fils = donnees.conversations as { societe: string; nonLus: number }[];
+
+      expect(fils.some((f) => f.societe === "PARCOURS EN COURS")).toBe(false);
+      expect(donnees.total).toBe(fils.reduce((somme, f) => somme + f.nonLus, 0));
+    });
+  });
+
   test("elle ne s'affiche pas pour un visiteur non connecté", async ({ browser }) => {
     const anonyme = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await anonyme.newPage();

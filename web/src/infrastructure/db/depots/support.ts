@@ -112,7 +112,11 @@ export async function nonLus(utilisateur: UtilisateurConnecte) {
  * Elle disparaît de la liste sans que rien ne soit effacé : les échanges restent
  * consultables, et une nouvelle question rouvre la conversation.
  */
-export async function archiver(utilisateur: UtilisateurConnecte, clientId: number, archivee = true) {
+export async function archiver(
+  utilisateur: UtilisateurConnecte,
+  clientId: number,
+  archivee = true
+) {
   if (!utilisateur.roles.includes("admin")) {
     throw new Interdit("Réservé aux administrateurs");
   }
@@ -140,7 +144,9 @@ export async function conversations(utilisateur: UtilisateurConnecte) {
 
   const derniers = await prisma.support_messages.findMany({
     orderBy: { created_at: "desc" },
-    include: { users_support_messages_user_idTousers: { select: { id: true, name: true, email: true } } },
+    include: {
+      users_support_messages_user_idTousers: { select: { id: true, name: true, email: true } },
+    },
   });
 
   const parClient = new Map<number, (typeof derniers)[number]>();

@@ -169,10 +169,11 @@ export async function assignerDepuisAdministration(
   exigerAdministrateur(utilisateur);
 
   const avocat = await prisma.users.findUnique({ where: { id: avocatId } });
-  if (!avocat || avocat.role !== "avocat") throw new ChangementRefuse({
-    champ: "avocat",
-    message: "Ce compte n'est pas un avocat",
-  });
+  if (!avocat || avocat.role !== "avocat")
+    throw new ChangementRefuse({
+      champ: "avocat",
+      message: "Ce compte n'est pas un avocat",
+    });
 
   await prisma.formalites.update({
     where: { id: dossierId },

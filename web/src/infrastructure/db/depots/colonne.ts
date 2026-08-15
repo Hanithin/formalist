@@ -1,5 +1,5 @@
 import { prisma } from "../client";
-import { listerDossiers } from "./dossiers";
+import { mesDossiers } from "./dossiers";
 import { nonLus as nonLusDuSupport } from "./support";
 import type { UtilisateurConnecte } from "../sessions";
 import { COLONNE_VIDE, type ResumeColonne } from "@/domain/navigation/colonne";
@@ -17,14 +17,22 @@ import { COLONNE_VIDE, type ResumeColonne } from "@/domain/navigation/colonne";
  * Deux requêtes, quel que soit le nombre de dossiers.
  */
 
-/** Les types de dossier qui désignent une société, au sens du bloc de contexte. */
-const TYPES_SOCIETE = new Set(["creation", "modification"]);
+/**
+ * Les types de dossier qui désignent une société, au sens du bloc de contexte.
+ *
+ * La fermeture et le dépôt des comptes en font partie : une société qu'on ferme reste
+ * celle sur laquelle on travaille, et l'écarter faisait disparaître le bloc de
+ * contexte de quelqu'un qui n'a que ce dossier-là.
+ */
+const TYPES_SOCIETE = new Set(["creation", "modification", "fermeture", "depot"]);
 
 /** Un dossier clos ne compte plus comme « en cours ». */
 const CLOS = new Set(["terminee", "archive"]);
 
 export async function resumeColonne(utilisateur: UtilisateurConnecte): Promise<ResumeColonne> {
-  const dossiers = await listerDossiers(utilisateur);
+  // Les siens, jamais ceux de toute la plateforme : le compteur d'un administrateur
+  // annonçait le travail de tous les comptes.
+  const dossiers = await mesDossiers(utilisateur);
   if (dossiers.length === 0) return { ...COLONNE_VIDE, nonLus: await nonLusDuSupport(utilisateur) };
 
   // Même définition que la colonne d'origine : un dossier de création ou de
@@ -47,8 +55,12 @@ export async function resumeColonne(utilisateur: UtilisateurConnecte): Promise<R
     nonLusDuSupport(utilisateur),
   ]);
 
+  // Le plus récemment touché : mesDossiers rend la liste par updated_at décroissant.
+  const enTete = societes[0];
+
   return {
-    societe: societes[0]?.societe ?? null,
+    societe: enTete?.societe ?? null,
+    type: enTete?.type ?? null,
     plusieurs: societes.length > 1,
     enCours,
     nonLus: messages + support,

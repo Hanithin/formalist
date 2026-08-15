@@ -118,7 +118,10 @@ export async function fichierLisible(
     where: { file_path: { endsWith: nom } },
     select: { user_id: true, assigned_avocat_id: true },
   });
-  if (contrat && (contrat.user_id === utilisateur.id || contrat.assigned_avocat_id === utilisateur.id)) {
+  if (
+    contrat &&
+    (contrat.user_id === utilisateur.id || contrat.assigned_avocat_id === utilisateur.id)
+  ) {
     return nom;
   }
 

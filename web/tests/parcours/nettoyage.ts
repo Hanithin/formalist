@@ -35,6 +35,9 @@ export async function retirerDossiers(ids: number[]) {
     }
 
     await client.signature_requests.deleteMany({ where: { formalite_id: { in: ids } } });
+    // Les avis rattachés au dossier : depuis qu'ils sont émis à chaque étape, ils
+    // retiennent la ligne par leur clé étrangère et faisaient échouer le nettoyage.
+    await client.notifications.deleteMany({ where: { formalite_id: { in: ids } } });
     await client.audit_log.deleteMany({ where: { formalite_id: { in: ids } } });
     await client.messages.deleteMany({ where: { formalite_id: { in: ids } } });
     await client.team_notes.deleteMany({ where: { formalite_id: { in: ids } } });

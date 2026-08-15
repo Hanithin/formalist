@@ -282,7 +282,10 @@ export async function marquerFait(utilisateur: UtilisateurConnecte, consultation
   const consultation = await prisma.lawyer_consultations.findUnique({
     where: { id: consultationId },
   });
-  if (!consultation || (consultation.avocat_id !== utilisateur.id && !utilisateur.roles.includes("admin"))) {
+  if (
+    !consultation ||
+    (consultation.avocat_id !== utilisateur.id && !utilisateur.roles.includes("admin"))
+  ) {
     throw new Interdit("Ce rendez-vous n'existe pas ou ne vous est pas accessible");
   }
 
@@ -315,10 +318,7 @@ export interface DemandeDeConsultation {
  * des disponibilités le temps que le client paie. Sans cela, deux clients
  * paieraient le même horaire et l'un des deux serait remboursé après coup.
  */
-export async function reserver(
-  utilisateur: UtilisateurConnecte,
-  demande: DemandeDeConsultation
-) {
+export async function reserver(utilisateur: UtilisateurConnecte, demande: DemandeDeConsultation) {
   const matiere = matiereValide(demande.matiere);
   if (!matiere) {
     throw new Interdit("Choisissez une matière juridique");

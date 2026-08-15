@@ -9,6 +9,7 @@ import {
   paginer,
   pageDe,
   parModificationRecente,
+  libelleDuType,
   PAR_PAGE,
   type DossierListe,
 } from "@/domain/formalite/liste";
@@ -193,5 +194,25 @@ describe("l'ordre de la liste", () => {
       dossier({ id: 2, modifieLe: new Date("2026-08-01T10:00:00Z") }),
     ]);
     expect(range.map((d) => d.id)).toEqual([2, 1]);
+  });
+});
+
+describe("la nature d'un dossier", () => {
+  it("s'écrit avec ses accents", () => {
+    // Le type est enregistré sans accent : « creation », « depot ».
+    expect(libelleDuType("creation")).toBe("Création");
+    expect(libelleDuType("depot")).toBe("Dépôt des comptes");
+    expect(libelleDuType("fermeture")).toBe("Fermeture");
+    expect(libelleDuType("modification")).toBe("Modification");
+  });
+
+  it("un dossier sans type n'affiche rien plutôt qu'un mot inventé", () => {
+    expect(libelleDuType(null)).toBeNull();
+    expect(libelleDuType("")).toBeNull();
+    expect(libelleDuType("   ")).toBeNull();
+  });
+
+  it("un type inconnu se rend tel quel, pour qu'il se voie", () => {
+    expect(libelleDuType("transfert")).toBe("Transfert");
   });
 });

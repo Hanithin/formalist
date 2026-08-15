@@ -425,6 +425,14 @@
   border-radius: 100px;
 }
 
+/* Même raison que sur la bibliothèque : sans ce rappel, l'onglet actif passe au gris
+   de formulaire au survol et son libellé blanc disparaît. */
+.tabActif:hover:not(:disabled) {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
 .tabActif .compte {
   background: rgba(255, 255, 255, 0.18);
   opacity: 1;

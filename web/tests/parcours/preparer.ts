@@ -60,6 +60,11 @@ export default async function preparer() {
     }
 
     await prisma.documents.deleteMany({ where: { formalites: { user_id: ancien.id } } });
+    // Les fichiers déposés retiennent aussi le dossier par leur clé étrangère.
+    await prisma.uploaded_files.deleteMany({ where: { formalites: { user_id: ancien.id } } });
+    // Les avis émis à chaque étape du dossier retiennent la ligne par leur clé
+    // étrangère : sans eux, la suppression du compte échoue.
+    await prisma.notifications.deleteMany({ where: { user_id: ancien.id } });
     // Les essais créent des contrats et des déclarations à chaque série.
     await prisma.contrats.deleteMany({ where: { user_id: ancien.id } });
     await prisma.formalites.deleteMany({ where: { user_id: ancien.id } });
@@ -141,7 +146,7 @@ export default async function preparer() {
     data: {
       formalite_id: enCours.id,
       name: "Pièce d'identité.pdf",
-      type: "pdf",
+      type: "identite",
       status: "uploaded",
       uploaded_by: "user",
       rejection_reason: "Document illisible",
@@ -297,10 +302,7 @@ export default async function preparer() {
       status: "pending",
     },
   });
-  await writeFile(
-    path.join(import.meta.dirname, "jeton-signature.txt"),
-    jetonSignature
-  );
+  await writeFile(path.join(import.meta.dirname, "jeton-signature.txt"), jetonSignature);
 
   // Un administrateur de plateforme, distinct de celui du dépôt : suspendre ou
   // rétrograder un vrai compte pendant les essais serait fâcheux.

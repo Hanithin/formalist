@@ -7,7 +7,8 @@ import { Vide } from "@/components/liste/Vide";
 import styles from "./Bulle.module.css";
 
 interface Apercu {
-  dossierId: number;
+  /** Nul pour le fil du support, qui n'est rattaché à aucun dossier. */
+  dossierId: number | null;
   societe: string;
   dernierMessage: string | null;
   nonLus: number;
@@ -71,8 +72,15 @@ export function Bulle() {
           ) : (
             <ul className={styles.liste}>
               {apercus.map((a) => (
-                <li key={a.dossierId}>
-                  <Link href={"/messagerie?dossier=" + a.dossierId} onClick={() => setOuverte(false)}>
+                <li key={a.dossierId ?? "support"}>
+                  <Link
+                    href={
+                      a.dossierId === null
+                        ? "/messagerie?fil=support"
+                        : "/messagerie?dossier=" + a.dossierId
+                    }
+                    onClick={() => setOuverte(false)}
+                  >
                     <span className={styles.societe}>{a.societe}</span>
                     <span className={styles.apercu}>{a.dernierMessage ?? "Aucun message"}</span>
                     {a.nonLus > 0 && <span className={styles.pastilleFil}>{a.nonLus}</span>}

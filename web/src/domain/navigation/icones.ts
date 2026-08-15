@@ -31,7 +31,16 @@ export const ICONES: Record<string, string> = {
     '<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'
   ),
   // Créer une société : le fronton, comme dans la page d'origine.
-  "/creation": icone_('<path d="M3 21h18M5 21V7l7-4 7 4v14"/>'),
+  /*
+   * Créer une société : un immeuble, non une maison.
+   *
+   * Le pignon triangulaire disait « habitation », et c'est justement ce qu'une société
+   * n'est pas. Un bâtiment à fenêtres se lit comme un siège social, et se distingue de
+   * la personne seule de l'auto-entreprise juste en dessous.
+   */
+  "/creation": icone_(
+    '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 012-2h6a2 2 0 012 2v16"/><path d="M15 9h4a2 2 0 012 2v10"/><path d="M9 7h2M9 11h2M9 15h2"/>'
+  ),
   // Auto-entreprise : une personne seule - c'est précisément ce qui la distingue
   // d'une société.
   "/auto-entrepreneur": icone_(
@@ -48,11 +57,20 @@ export const ICONES: Record<string, string> = {
       '<line x1="10" y1="13" x2="14" y2="13"/>'
   ),
   // Fermer ma société : la croix dans un cercle.
+  /*
+   * Fermer ma société : le volet qu'on baisse, non la croix.
+   *
+   * La croix dans un cercle est le signe universel de « supprimer » ou « annuler » -
+   * un geste destructeur et immédiat. Fermer une société est une formalité, longue et
+   * réversible jusqu'au bout : le rideau baissé le dit sans effrayer.
+   */
   "/fermeture": icone_(
-    '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
+    '<path d="M3 21h18"/><path d="M5 21V8h14v13"/><path d="M4 8l1.5-4h13L20 8"/><path d="M8 21v-4h8v4"/>'
   ),
   // Documents : le dossier.
-  "/documents": icone_('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'),
+  "/documents": icone_(
+    '<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'
+  ),
   // Contrats : la feuille écrite, comme dans la page d'origine.
   "/contrats": icone_(
     '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>' +
@@ -96,10 +114,10 @@ export const ICONES: Record<string, string> = {
   "/parametres": icone_(
     '<circle cx="12" cy="12" r="3"/>' +
       '<path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 ' +
-      '1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 ' +
-      '11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 ' +
-      '1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 ' +
-      '114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 ' +
+      "1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 " +
+      "11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 " +
+      "1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 " +
+      "114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 " +
       '00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>'
   ),
   // Aide : le point d'interrogation.

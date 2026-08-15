@@ -1,5 +1,5 @@
 import { prisma } from "../client";
-import { exigerDossier, listerDossiers } from "./dossiers";
+import { exigerDossier, mesDossiers } from "./dossiers";
 import { typeValide, LONGUEUR_MAXIMALE } from "@/domain/messagerie/messages";
 import type { UtilisateurConnecte } from "../sessions";
 
@@ -93,9 +93,14 @@ export async function marquerLus(utilisateur: UtilisateurConnecte, dossierId: nu
  * Les conversations visibles, une par dossier, avec le dernier message.
  *
  * Un dossier sans message apparaît quand même : il faut pouvoir écrire le premier.
+ *
+ * Les siens, jamais ceux de toute la plateforme. listerDossiers rendait tout à un
+ * administrateur : sa pastille comptait alors les messages reçus dans les dossiers de
+ * tous les comptes, qu'il ne lit jamais - elle revenait donc indéfiniment, et ne
+ * s'accordait pas avec celle de la colonne, qui compte déjà les siens.
  */
 export async function conversations(utilisateur: UtilisateurConnecte) {
-  const dossiers = await listerDossiers(utilisateur);
+  const dossiers = await mesDossiers(utilisateur);
   if (!dossiers.length) return [];
 
   const identifiants = dossiers.map((d) => d.id);
@@ -153,9 +158,13 @@ export async function conversations(utilisateur: UtilisateurConnecte) {
     .sort((a, b) => (b.dernierLe?.getTime() ?? 0) - (a.dernierLe?.getTime() ?? 0));
 }
 
-/** Total des messages non lus, pour la pastille de la colonne et de la bulle. */
+/**
+ * Total des messages non lus, pour la pastille de la colonne et de la bulle.
+ *
+ * Même périmètre que les conversations : ce qui se compte doit pouvoir se lire.
+ */
 export async function totalNonLus(utilisateur: UtilisateurConnecte): Promise<number> {
-  const dossiers = await listerDossiers(utilisateur);
+  const dossiers = await mesDossiers(utilisateur);
   if (!dossiers.length) return 0;
 
   return prisma.messages.count({

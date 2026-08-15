@@ -61,6 +61,35 @@ test.describe("parcours connecté", () => {
     expect(entrees[2]).toEqual(entrees[0]);
   });
 
+  test("le bloc de contexte dit la nature du dossier", async ({ page }) => {
+    // Un nom de société ne dit pas ce qu'on y fait : créer et fermer se lisent pareil.
+    await page.goto("/aide");
+    const contexte = page.locator("aside").getByText("Vous travaillez sur").locator("..");
+    await expect(contexte).toContainText(/Création|Modification|Fermeture|Dépôt des comptes/);
+  });
+
+  test("les fondus ne marquent que le côté où il reste à voir", async ({ page }) => {
+    /*
+     * Posés en permanence, ils donneraient à une colonne entière l'air d'être coupée
+     * et estomperaient la première entrée alors qu'elle est complète.
+     */
+    await page.setViewportSize({ width: 1280, height: 700 });
+    await page.goto("/aide");
+
+    const zone = page.getByRole("navigation", { name: "Navigation principale" });
+    const enveloppe = zone.locator("..");
+    const bords = () =>
+      enveloppe.evaluate((e) => ({
+        haut: e.hasAttribute("data-avant"),
+        bas: e.hasAttribute("data-apres"),
+      }));
+
+    expect(await bords()).toEqual({ haut: false, bas: true });
+
+    await zone.evaluate((n) => n.scrollTo({ top: n.scrollHeight }));
+    await expect.poll(bords).toEqual({ haut: true, bas: false });
+  });
+
   test("la page courante est marquée dans la navigation", async ({ page }) => {
     await page.goto("/aide");
     await expect(page.locator('[aria-current="page"]')).toHaveText("Aide & FAQ");

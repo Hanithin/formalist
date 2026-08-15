@@ -84,7 +84,10 @@ export async function tableauDeLEquipe(utilisateur: UtilisateurConnecte) {
   const membres = await membresDe(equipe.id);
   const moi = membres.find((m) => m.user_id === utilisateur.id);
 
-  const description: Equipe = { id: equipe.id, type: equipe.type === "cabinet" ? "cabinet" : "client" };
+  const description: Equipe = {
+    id: equipe.id,
+    type: equipe.type === "cabinet" ? "cabinet" : "client",
+  };
   const membreCourant: Membre | null = moi
     ? { utilisateurId: moi.user_id, role: moi.role as Membre["role"] }
     : null;
@@ -104,7 +107,10 @@ export async function exigerGestionDEquipe(utilisateur: UtilisateurConnecte) {
   const membres = await membresDe(equipe.id);
   const moi = membres.find((m) => m.user_id === utilisateur.id);
 
-  const description: Equipe = { id: equipe.id, type: equipe.type === "cabinet" ? "cabinet" : "client" };
+  const description: Equipe = {
+    id: equipe.id,
+    type: equipe.type === "cabinet" ? "cabinet" : "client",
+  };
   const membreCourant: Membre | null = moi
     ? { utilisateurId: moi.user_id, role: moi.role as Membre["role"] }
     : null;

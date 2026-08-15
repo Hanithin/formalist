@@ -21,6 +21,33 @@ export interface DossierListe {
   nonLus: number;
 }
 
+/* ---------- Le type d'un dossier ---------- */
+
+/**
+ * Les quatre natures de formalité, écrites pour être lues.
+ *
+ * Le type est enregistré sans accent - « creation », « depot » - et trois écrans en
+ * gardaient chacun leur propre table de correspondance. Elle vit ici : « Dépôt des
+ * comptes » ne s'écrit pas de trois façons selon la page qui l'affiche.
+ */
+const TYPES: Record<string, string> = {
+  creation: "Création",
+  modification: "Modification",
+  fermeture: "Fermeture",
+  depot: "Dépôt des comptes",
+  "auto-entrepreneur": "Auto-entrepreneur",
+};
+
+/**
+ * Un type inconnu se rend tel quel plutôt que vide : un dossier mal typé se voit,
+ * au lieu de passer pour un dossier sans nature.
+ */
+export function libelleDuType(type: string | null | undefined): string | null {
+  const brut = type?.trim();
+  if (!brut) return null;
+  return TYPES[brut] ?? brut.charAt(0).toUpperCase() + brut.slice(1);
+}
+
 /* ---------- Filtres ---------- */
 
 export const FILTRES = [

@@ -42,7 +42,8 @@ export function nouvelleAdresse(chemin: string, parametres: URLSearchParams): st
   const nouveaux = new URLSearchParams();
   for (const [cle, valeur] of parametres) {
     if (cle === "id") nouveaux.set("dossier", valeur);
-    else if (cle === "new" || cle === "embed") continue; // n'existent plus
+    else if (cle === "new" || cle === "embed")
+      continue; // n'existent plus
     else nouveaux.set(cle, valeur);
   }
 
