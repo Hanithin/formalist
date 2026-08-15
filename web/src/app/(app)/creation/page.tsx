@@ -6,6 +6,8 @@ import { ouvrirBrouillon, commencerFormalite } from "@/infrastructure/db/depots/
 import { documentsDuDossier } from "@/infrastructure/db/depots/documents";
 import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
+import { Suivi } from "@/components/formalite/Suivi";
+import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
 import styles from "./Parcours.module.css";
 
 export const metadata: Metadata = {
@@ -28,7 +30,7 @@ export default async function Creation({
     redirect("/creation?dossier=" + nouveau);
   }
 
-  const { brouillon } = await ouvrirBrouillon(utilisateur, Number(dossier));
+  const { dossier: ligne, brouillon } = await ouvrirBrouillon(utilisateur, Number(dossier));
   const documents = await documentsDuDossier(utilisateur, Number(dossier));
 
   // Les deux vivent dans la même table et se distinguent par leur statut :
@@ -37,6 +39,16 @@ export default async function Creation({
   const deposees = documents.filter((d) => d.status !== "generated");
   const actes = documents.filter((d) => d.status === "generated");
   const courante = etapeAccessible(Number(etape) || 1, brouillon);
+
+  /*
+   * Le suivi n'apparaît qu'une fois le dossier transmis.
+   *
+   * Tant qu'on le remplit, le fil des sept étapes dit déjà où on en est ; deux
+   * indicateurs d'avancement côte à côte se contrediraient. Après la transmission, en
+   * revanche, le formulaire ne dit plus rien de ce qui se passe.
+   */
+  const transmis = ligne.status !== "en_cours";
+  const etat = transmis ? await etatDuDossier(ligne) : null;
 
   return (
     <main className={styles.page}>
@@ -58,6 +70,12 @@ export default async function Creation({
 
       <div className={styles.content}>
         <h1 className={styles.titre}>Créer une société</h1>
+
+        {etat && (
+          <div className={styles.suivi}>
+            <Suivi etat={etat} lienAction={"/creation?dossier=" + dossier + "&etape=5"} />
+          </div>
+        )}
         <Parcours
           dossierId={Number(dossier)}
           etapes={ETAPES}

@@ -118,10 +118,26 @@ export function piecesAttendues(forme: string | null | undefined): PieceAttendue
     pieces.push({
       identifiant: "depot-capital",
       titre: "Attestation de dépôt de capital",
-      description: "Remise par la banque après le versement du capital libéré.",
+      description:
+        "Remise par la banque après le versement du capital libéré. Vos actes seront datés du jour où vous l'avez obtenue : c'est celui où vous les signez.",
       formats: [".pdf"],
     });
   }
+
+  /*
+   * L'attestation de parution.
+   *
+   * Le journal l'envoie après la publication de l'annonce légale, et le greffe la
+   * réclame avec le dossier. Elle n'était nulle part : le client n'avait aucun moyen
+   * de la rendre, et le dépôt refuse tout identifiant hors de cette liste.
+   */
+  pieces.push({
+    identifiant: "annonce-parution",
+    titre: "Attestation de parution de l'annonce légale",
+    description:
+      "Envoyée par le journal d'annonces légales après publication. L'avocat vous remet le texte à publier.",
+    formats: [".pdf", ".jpg", ".jpeg", ".png"],
+  });
 
   return pieces;
 }
