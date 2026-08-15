@@ -29,7 +29,9 @@ function lireValeurs(dataJson: string | null): Record<string, string | number> {
   if (!dataJson) return {};
   try {
     const analyse: unknown = JSON.parse(dataJson);
-    return analyse && typeof analyse === "object" ? (analyse as Record<string, string | number>) : {};
+    return analyse && typeof analyse === "object"
+      ? (analyse as Record<string, string | number>)
+      : {};
   } catch {
     return {};
   }
@@ -56,11 +58,7 @@ export async function exigerContrat(utilisateur: UtilisateurConnecte, id: number
   return contrat;
 }
 
-export async function creerContrat(
-  utilisateur: UtilisateurConnecte,
-  type: string,
-  titre: string
-) {
+export async function creerContrat(utilisateur: UtilisateurConnecte, type: string, titre: string) {
   const definition = definitionContrat(type);
   if (!definition) throw new ContratRefuse([{ champ: "type", message: "Type de contrat inconnu" }]);
 
@@ -105,7 +103,9 @@ export async function changerEtat(utilisateur: UtilisateurConnecte, id: number, 
   const contrat = await exigerContrat(utilisateur, id);
 
   if (!transitionPermise(contrat.status, vers)) {
-    throw new Interdit("Ce contrat ne peut pas passer de « " + contrat.status + " » à « " + vers + " »");
+    throw new Interdit(
+      "Ce contrat ne peut pas passer de « " + contrat.status + " » à « " + vers + " »"
+    );
   }
 
   // On ne génère pas un contrat troué : il partirait à la signature en l'état.

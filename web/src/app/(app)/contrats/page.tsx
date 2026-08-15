@@ -1,79 +1,66 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { listerContrats } from "@/infrastructure/db/depots/documents";
-import {
-  FILTRES_CONTRATS,
-  filtreValide,
-  libelleFiltre,
-  statutContrat,
-} from "@/domain/document/statuts";
-import { accorder } from "@/domain/formalite/etapes";
-import { Filtres } from "@/components/liste/Filtres";
-import { Etat } from "@/components/liste/Etat";
-import { Vide } from "@/components/liste/Vide";
-import styles from "@/components/liste/Liste.module.css";
+import { dateEnTete } from "@/lib/dates";
+import { Contrats, type ContratAffiche } from "./Contrats";
+import styles from "./Contrats.module.css";
 
 export const metadata: Metadata = {
   title: "Contrats - Formalist",
   robots: { index: false, follow: false },
 };
 
-export default async function Contrats({
-  searchParams,
-}: {
-  searchParams: Promise<{ filtre?: string }>;
-}) {
+/** Les valeurs saisies sont stockées en JSON ; une colonne illisible ne bloque rien. */
+function lireValeurs(json: string | null): Record<string, string> {
+  if (!json) return {};
+  try {
+    const brut: unknown = JSON.parse(json);
+    if (!brut || typeof brut !== "object" || Array.isArray(brut)) return {};
+    return Object.fromEntries(
+      Object.entries(brut as Record<string, unknown>).map(([cle, valeur]) => [
+        cle,
+        typeof valeur === "string" || typeof valeur === "number" ? String(valeur) : "",
+      ])
+    );
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Les contrats.
+ *
+ * Tout est chargé d'un coup : les quatre filtres annoncent chacun leur décompte, et le
+ * classement se fait sur place - c'est le choix des autres listes de l'application.
+ */
+export default async function PageContrats() {
   const utilisateur = await exigerUtilisateur();
-  const { filtre } = await searchParams;
-  const actif = filtreValide(FILTRES_CONTRATS, filtre);
-  const contrats = await listerContrats(utilisateur, actif);
+  const contrats = await listerContrats(utilisateur);
+
+  const affiches: ContratAffiche[] = contrats.map((c) => ({
+    id: c.id,
+    titre: c.titre,
+    type: c.type,
+    status: c.status,
+    fichier: c.file_path,
+    majLe: c.updated_at ? c.updated_at.toISOString() : null,
+    valeurs: lireValeurs(c.data_json),
+  }));
 
   return (
-    <main>
-      <h1>Contrats</h1>
+    <main className={styles.page}>
+      <div className={styles.topbar}>
+        <h1>Contrats</h1>
+        <span className={styles.topbarDate}>{dateEnTete()}</span>
+      </div>
+      <p className={styles.introduction}>
+        Vos contrats, de la rédaction à la signature. Vous remplissez quelques informations, un
+        avocat relit, et vous signez.
+      </p>
 
-      <Filtres filtres={FILTRES_CONTRATS} actif={actif} base="/contrats" />
-
-      {contrats.length === 0 ? (
-        actif === "tous" ? (
-          // La rédaction ne se lance pas encore depuis l'application : l'écran le
-          // dit et ouvre la seule porte qui marche, plutôt que de laisser une
-          // impasse sous un texte qui vante la prestation.
-          <Vide
-            icone="/contrats"
-            titre="Aucun contrat"
-            texte="Bail, CDI, prestation : vos contrats se préparent avec un avocat, puis se retrouvent ici pour relecture et signature."
-            action={{ libelle: "Prendre une consultation", lien: "/consultations" }}
-            secondaire={{ libelle: "Écrire au support", lien: "/support" }}
-          />
-        ) : (
-          <Vide
-            ton="filtre"
-            icone="/contrats"
-            titre={"Aucun contrat dans « " + libelleFiltre(FILTRES_CONTRATS, actif) + " »"}
-            texte="Vous en avez peut-être à un autre stade."
-            action={{ libelle: "Voir tous les contrats", lien: "/contrats" }}
-          />
-        )
-      ) : (
-        <>
-          <p className={styles.compte}>{accorder(contrats.length, "contrat", "contrats")}</p>
-          <ul className={styles.liste}>
-            {contrats.map((c) => {
-              const etat = statutContrat(c.status);
-              return (
-                <li key={c.id} className={styles.ligne}>
-                  <span className={styles.titre}>{c.titre}</span>
-                  <span className={styles.precision}>{c.type}</span>
-                  <span className={styles.etat}>
-                    <Etat libelle={etat.libelle} ton={etat.ton} />
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
+      <div className={styles.content}>
+        <Contrats contrats={affiches} />
+      </div>
     </main>
   );
 }

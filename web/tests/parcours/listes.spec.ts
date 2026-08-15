@@ -152,22 +152,30 @@ test.describe("documents", () => {
 });
 
 test.describe("contrats", () => {
-  test("la liste montre les deux contrats", async ({ page }) => {
+  test("la liste montre les contrats du compte", async ({ page }) => {
     await page.goto("/contrats");
     await expect(page.getByText("Accord de confidentialité")).toBeVisible();
     await expect(page.getByText("Conditions générales de vente")).toBeVisible();
   });
 
-  test("le filtre des signés ne garde que celui qui l'est", async ({ page }) => {
-    await page.goto("/contrats?filtre=signe");
+  test("les filtres se posent sur la page, non dans l'adresse", async ({ page }) => {
+    /*
+     * Ils étaient des liens vers /contrats?filtre=signe : la page rechargeait pour
+     * masquer des lignes déjà chargées, et le nom du filtre était l'état technique.
+     */
+    await page.goto("/contrats");
+    await page.getByRole("button", { name: /^Prêts/ }).click();
+
+    await expect(page).toHaveURL(/\/contrats$/);
     await expect(page.getByText("Conditions générales de vente")).toBeVisible();
     await expect(page.getByText("Accord de confidentialité")).toHaveCount(0);
   });
 
-  test("une liste vide invite à agir plutôt que de constater", async ({ page }) => {
-    await page.goto("/contrats?filtre=en_validation");
-    // Le titre nomme le filtre concerné : « Aucun contrat dans « En validation » ».
-    await expect(page.getByText(/Aucun contrat dans/)).toBeVisible();
+  test("un filtre sans contrat le dit plutôt que de laisser un vide", async ({ page }) => {
+    await page.goto("/contrats");
+    await page.getByRole("button", { name: /^En relecture/ }).click();
+
+    await expect(page.getByText("Rien dans cette catégorie")).toBeVisible();
   });
 });
 
