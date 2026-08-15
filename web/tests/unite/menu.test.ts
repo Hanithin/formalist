@@ -139,8 +139,8 @@ describe("les fonctions annoncées mais pas ouvertes", () => {
       e === SEPARATEUR ? "" : e.libelle
     );
 
+    // L'auto-entreprise n'y est plus : son formulaire est ouvert.
     expect(bientot).toEqual([
-      "Créer mon auto-entreprise",
       "Modifier ma société",
       "Dépôt des comptes",
       "Fermer ma société",

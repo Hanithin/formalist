@@ -7,7 +7,10 @@ import {
   regimeFiscalDe,
   regleActivite,
   ACTIVITES,
+  SITUATIONS,
+  LIEUX_EXERCICE,
   coutVersementLiberatoire,
+  piecesDeclaration,
   type Declaration as Donnees,
   type Etape,
 } from "@/domain/auto-entrepreneur/declaration";
@@ -118,6 +121,21 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
             />
             {erreur("dateNaissance") && <p role="alert">{erreur("dateNaissance")}</p>}
 
+            <label htmlFor="villeNaissance">Ville de naissance</label>
+            <input
+              id="villeNaissance"
+              value={donnees.villeNaissance ?? ""}
+              onChange={(e) => modifier("villeNaissance", e.target.value)}
+            />
+            {erreur("villeNaissance") && <p role="alert">{erreur("villeNaissance")}</p>}
+
+            <label htmlFor="paysNaissance">Pays de naissance</label>
+            <input
+              id="paysNaissance"
+              value={donnees.paysNaissance ?? "France"}
+              onChange={(e) => modifier("paysNaissance", e.target.value)}
+            />
+
             <label htmlFor="nationalite">Nationalité</label>
             <input
               id="nationalite"
@@ -125,6 +143,22 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               onChange={(e) => modifier("nationalite", e.target.value)}
             />
             {erreur("nationalite") && <p role="alert">{erreur("nationalite")}</p>}
+
+            {/* Le guichet rattache l'auto-entreprise au régime social par ce numéro :
+                sans lui, la déclaration est rejetée. */}
+            <label htmlFor="numeroSecuriteSociale">Numéro de sécurité sociale</label>
+            <input
+              id="numeroSecuriteSociale"
+              inputMode="numeric"
+              placeholder="1 85 04 33 123 456 78"
+              value={donnees.numeroSecuriteSociale ?? ""}
+              onChange={(e) =>
+                modifier("numeroSecuriteSociale", e.target.value.replace(/[^\d\s]/g, ""))
+              }
+            />
+            {erreur("numeroSecuriteSociale") && (
+              <p role="alert">{erreur("numeroSecuriteSociale")}</p>
+            )}
           </div>
         )}
 
@@ -137,6 +171,14 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               onChange={(e) => modifier("adresseVoie", e.target.value)}
             />
             {erreur("adresseVoie") && <p role="alert">{erreur("adresseVoie")}</p>}
+
+            <label htmlFor="adresseComplement">Complément d&apos;adresse (facultatif)</label>
+            <input
+              id="adresseComplement"
+              placeholder="Bâtiment, étage, appartement"
+              value={donnees.adresseComplement ?? ""}
+              onChange={(e) => modifier("adresseComplement", e.target.value)}
+            />
 
             <label htmlFor="codePostal">Code postal</label>
             <input
@@ -156,6 +198,25 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
             />
             {erreur("ville") && <p role="alert">{erreur("ville")}</p>}
 
+            {/* Sous un régime communautaire, les biens de l'entreprise engagent aussi
+                le conjoint : la déclaration le demande. */}
+            <label htmlFor="situationMatrimoniale">Situation matrimoniale</label>
+            <select
+              id="situationMatrimoniale"
+              value={donnees.situationMatrimoniale ?? ""}
+              onChange={(e) => modifier("situationMatrimoniale", e.target.value)}
+            >
+              <option value="">Choisissez</option>
+              {SITUATIONS.map((situation) => (
+                <option key={situation} value={situation}>
+                  {situation}
+                </option>
+              ))}
+            </select>
+            {erreur("situationMatrimoniale") && (
+              <p role="alert">{erreur("situationMatrimoniale")}</p>
+            )}
+
             <label className={styles.case}>
               <input
                 type="checkbox"
@@ -174,6 +235,15 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
                   onChange={(e) => modifier("entrepriseVoie", e.target.value)}
                 />
                 {erreur("entrepriseVoie") && <p role="alert">{erreur("entrepriseVoie")}</p>}
+
+                <label htmlFor="entrepriseComplement">
+                  Complément d&apos;adresse de l&apos;activité (facultatif)
+                </label>
+                <input
+                  id="entrepriseComplement"
+                  value={donnees.entrepriseComplement ?? ""}
+                  onChange={(e) => modifier("entrepriseComplement", e.target.value)}
+                />
 
                 <label htmlFor="entrepriseCodePostal">Code postal de l&apos;activité</label>
                 <input
@@ -242,6 +312,51 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               onChange={(e) => modifier("dateDebut", e.target.value)}
             />
             {erreur("dateDebut") && <p role="alert">{erreur("dateDebut")}</p>}
+
+            <label htmlFor="codeApe">Code APE souhaité (facultatif)</label>
+            <input
+              id="codeApe"
+              placeholder="Ex : 6201Z"
+              value={donnees.codeApe ?? ""}
+              onChange={(e) => modifier("codeApe", e.target.value.toUpperCase())}
+            />
+            <p className={styles.deduit}>
+              L&apos;INSEE l&apos;attribue à partir de votre description. Le préciser ne
+              l&apos;impose pas, mais évite un contresens sur une activité peu courante.
+            </p>
+
+            <label htmlFor="lieuExercice">Lieu d&apos;exercice</label>
+            <select
+              id="lieuExercice"
+              value={donnees.lieuExercice ?? ""}
+              onChange={(e) => modifier("lieuExercice", e.target.value)}
+            >
+              <option value="">Choisissez</option>
+              {LIEUX_EXERCICE.map((lieu) => (
+                <option key={lieu} value={lieu}>
+                  {lieu}
+                </option>
+              ))}
+            </select>
+            {erreur("lieuExercice") && <p role="alert">{erreur("lieuExercice")}</p>}
+
+            {/* Coiffure, bâtiment, transport, restauration : le guichet réclame le
+                diplôme ou l'autorisation avant d'immatriculer. Mieux vaut le demander
+                ici que de le découvrir au dépôt. */}
+            <label className={styles.case}>
+              <input
+                type="checkbox"
+                checked={!!donnees.activiteReglementee}
+                onChange={(e) => modifier("activiteReglementee", e.target.checked)}
+              />
+              Mon activité est réglementée (diplôme ou autorisation exigés)
+            </label>
+            {donnees.activiteReglementee && (
+              <p className={styles.deduit}>
+                Un justificatif de qualification professionnelle ou l&apos;autorisation
+                d&apos;exercer vous sera demandé à l&apos;étape des pièces.
+              </p>
+            )}
           </div>
         )}
 
@@ -273,22 +388,43 @@ export function Declaration({ dossierId, etapes, etapeCourante, declarationIniti
               Demander l&apos;ACRE, l&apos;exonération de début d&apos;activité
             </label>
 
-            <label className={styles.case}>
-              <input
-                type="checkbox"
-                checked={!!donnees.eirl}
-                onChange={(e) => modifier("eirl", e.target.checked)}
-              />
-              Affecter un patrimoine à l&apos;activité
-            </label>
+            {/*
+              L'option EIRL du formulaire d'origine n'est pas reprise : la loi du
+              14 février 2022 a supprimé ce statut, et sa création est impossible
+              depuis le 15 février 2022. Le statut unique d'entrepreneur individuel,
+              en vigueur depuis le 15 mai 2022, sépare de plein droit le patrimoine
+              professionnel du patrimoine personnel : il n'y a plus rien à choisir.
+            */}
+            <p className={styles.deduit}>
+              Votre patrimoine personnel est protégé de plein droit : depuis 2022, seuls
+              les biens utiles à votre activité répondent de vos dettes professionnelles.
+            </p>
           </div>
         )}
 
         {etape.identifiant === "pieces" && (
-          <p>
-            Le dépôt des pièces se fait depuis la page Documents de ce dossier : pièce
-            d&apos;identité et justificatif de domicile.
-          </p>
+          <div className={styles.pieces}>
+            <p className={styles.deduit}>
+              Rassemblez-les avant de continuer. Le guichet refuse un dossier incomplet, et
+              c&apos;est le motif de refus le plus courant.
+            </p>
+
+            <ul className={styles.listePieces}>
+              {piecesDeclaration(donnees).map((piece) => (
+                <li key={piece.identifiant} className={styles.piece}>
+                  <span className={styles.pieceTitre}>{piece.titre}</span>
+                  <span className={styles.pieceTexte}>{piece.description}</span>
+                  <span className={styles.pieceFormats}>
+                    {piece.formats.join(", ")} - 10 Mo au plus
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <p className={styles.deduit}>
+              Le dépôt se fait depuis vos documents, une fois la déclaration enregistrée.
+            </p>
+          </div>
         )}
 
         {etape.identifiant === "filiation" && (

@@ -78,19 +78,31 @@ export const ETAPES: Etape[] = [
 
 export interface Declaration {
   civilite?: string;
+  /**
+   * Le numéro de sécurité sociale.
+   *
+   * Le guichet unique l'exige : c'est lui qui rattache l'auto-entreprise au régime
+   * social de la personne. Sans lui, la déclaration est rejetée.
+   */
+  numeroSecuriteSociale?: string;
   nomNaissance?: string;
   nomUsage?: string;
   prenoms?: string;
   dateNaissance?: string;
+  villeNaissance?: string;
   paysNaissance?: string;
   nationalite?: string;
 
   adresseVoie?: string;
+  adresseComplement?: string;
   codePostal?: string;
   ville?: string;
+  /** Elle figure sur la déclaration : le régime matrimonial engage le conjoint. */
+  situationMatrimoniale?: string;
   /** L'entreprise est-elle domiciliée ailleurs qu'au domicile ? */
   adresseEntrepriseDistincte?: boolean;
   entrepriseVoie?: string;
+  entrepriseComplement?: string;
   entrepriseCodePostal?: string;
   entrepriseVille?: string;
 
@@ -98,15 +110,46 @@ export interface Declaration {
   descriptionActivite?: string;
   codeApe?: string;
   dateDebut?: string;
+  lieuExercice?: string;
+  /**
+   * Une activité réglementée demande un justificatif de plus.
+   *
+   * Coiffure, bâtiment, transport, restauration... : le guichet réclame le diplôme
+   * ou l'autorisation avant d'immatriculer. On le demande ici plutôt que de le
+   * découvrir au dépôt.
+   */
+  activiteReglementee?: boolean;
 
   versementLiberatoire?: boolean;
   acre?: boolean;
-  eirl?: boolean;
 
   filiationMere?: string;
   filiationPere?: string;
   certifie?: boolean;
 }
+
+/**
+ * Les situations matrimoniales, telles que la déclaration les demande.
+ *
+ * Le régime matrimonial n'est pas une curiosité administrative : sous un régime
+ * communautaire, les biens de l'entreprise engagent aussi le conjoint.
+ */
+export const SITUATIONS = [
+  "Célibataire",
+  "Marié(e)",
+  "Pacsé(e)",
+  "Divorcé(e)",
+  "Veuf(ve)",
+] as const;
+
+/** Où l'activité s'exerce, ce qui décide notamment de la taxe applicable. */
+export const LIEUX_EXERCICE = [
+  "À mon domicile",
+  "Chez mes clients",
+  "Dans un local dédié",
+  "Sur les marchés ou en ambulant",
+  "En ligne uniquement",
+] as const;
 
 export interface Anomalie {
   champ: string;
@@ -115,6 +158,17 @@ export interface Anomalie {
 
 const CODE_POSTAL = /^\d{5}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Le numéro de sécurité sociale : quinze chiffres, espaces tolérés.
+ *
+ * On vérifie la longueur, non la clé de contrôle : une clé fausse se corrige au
+ * guichet, tandis qu'un numéro tronqué est une faute de saisie qu'on peut attraper
+ * ici. Refuser sur un calcul mal reproduit ferait plus de mal que de bien.
+ */
+export function numeroSecuriteSocialeValide(brut: string | null | undefined): boolean {
+  return /^\d{15}$/.test((brut ?? "").replace(/\s/g, ""));
+}
 
 /** Âge minimum pour déclarer une activité en son nom propre. */
 const AGE_MINIMUM = 16;
@@ -163,8 +217,17 @@ export function verifierEtape(
         anomalies.push({ champ: "dateNaissance", message: "Cette date de naissance est invalide" });
       }
     }
+    if (!declaration.villeNaissance?.trim()) {
+      anomalies.push({ champ: "villeNaissance", message: "Indiquez votre ville de naissance" });
+    }
     if (!declaration.nationalite?.trim()) {
       anomalies.push({ champ: "nationalite", message: "Indiquez votre nationalité" });
+    }
+    if (!numeroSecuriteSocialeValide(declaration.numeroSecuriteSociale)) {
+      anomalies.push({
+        champ: "numeroSecuriteSociale",
+        message: "Le numéro de sécurité sociale comporte quinze chiffres",
+      });
     }
     return anomalies;
   }
@@ -178,6 +241,12 @@ export function verifierEtape(
     }
     if (!declaration.ville?.trim()) {
       anomalies.push({ champ: "ville", message: "Indiquez votre ville" });
+    }
+    if (!declaration.situationMatrimoniale) {
+      anomalies.push({
+        champ: "situationMatrimoniale",
+        message: "Indiquez votre situation matrimoniale",
+      });
     }
 
     // L'adresse de l'entreprise n'est demandée que si elle diffère du domicile.
@@ -207,6 +276,9 @@ export function verifierEtape(
     }
     if (!DATE.test(declaration.dateDebut ?? "")) {
       anomalies.push({ champ: "dateDebut", message: "Indiquez la date de début d'activité" });
+    }
+    if (!declaration.lieuExercice) {
+      anomalies.push({ champ: "lieuExercice", message: "Indiquez où vous exercez" });
     }
     return anomalies;
   }
@@ -261,4 +333,61 @@ export function depassePlafond(
 ): boolean {
   const regle = regleActivite(nature);
   return !!regle && chiffreAffaires > regle.plafond;
+}
+
+/* ---------- Les pièces justificatives ---------- */
+
+export interface PieceAttendue {
+  identifiant: string;
+  titre: string;
+  description: string;
+  formats: string[];
+}
+
+/**
+ * Ce que le guichet unique réclame.
+ *
+ * L'étape des pièces renvoyait vers une autre page sans dire lesquelles : on
+ * découvrait au dépôt qu'il fallait le recto et le verso de la pièce d'identité, et
+ * une activité réglementée voyait son dossier refusé faute d'un diplôme que personne
+ * ne lui avait demandé.
+ *
+ * La déclaration de non-condamnation n'y figure pas : elle est signée ici même, à
+ * l'étape suivante, et non déposée en fichier.
+ */
+export function piecesDeclaration(declaration: Declaration): PieceAttendue[] {
+  const images = [".pdf", ".jpg", ".jpeg", ".png"];
+
+  const pieces: PieceAttendue[] = [
+    {
+      identifiant: "identite-recto",
+      titre: "Pièce d'identité - recto",
+      description: "Carte nationale d'identité ou passeport, en cours de validité.",
+      formats: images,
+    },
+    {
+      identifiant: "identite-verso",
+      titre: "Pièce d'identité - verso",
+      description: "Le verso de la même pièce. Un passeport n'en a pas : redéposez la page d'identité.",
+      formats: images,
+    },
+    {
+      identifiant: "domicile",
+      titre: "Justificatif de domicile",
+      description: "Facture d'énergie, de téléphone ou quittance de loyer de moins de trois mois.",
+      formats: images,
+    },
+  ];
+
+  if (declaration.activiteReglementee) {
+    pieces.push({
+      identifiant: "qualification",
+      titre: "Qualification professionnelle ou autorisation",
+      description:
+        "Diplôme, titre, attestation d'expérience ou autorisation d'exercer, selon ce que votre activité exige.",
+      formats: images,
+    });
+  }
+
+  return pieces;
 }

@@ -204,3 +204,47 @@
   font-size: 15px;
   color: #111;
 }
+
+/*
+ * Les pièces attendues, énumérées.
+ *
+ * L'étape renvoyait vers une autre page sans dire lesquelles : on découvrait au dépôt
+ * qu'il fallait le recto et le verso, et le guichet refuse pour bien moins que ça.
+ */
+.pieces {
+  display: grid;
+  gap: 16px;
+}
+
+.listePieces {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.piece {
+  display: grid;
+  gap: 3px;
+  padding: 14px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.pieceTitre {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.pieceTexte {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #666;
+}
+
+.pieceFormats {
+  font-size: 12px;
+  color: #999;
+}

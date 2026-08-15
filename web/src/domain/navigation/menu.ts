@@ -39,7 +39,7 @@ export const MENU: ElementMenu[] = [
   { libelle: "Tableau de bord", lien: "/tableau-de-bord" },
   { libelle: "Mes formalités", lien: "/formalites", compteur: "enCours" },
   { libelle: "Créer une société", lien: "/creation?type=creation" },
-  { libelle: "Créer mon auto-entreprise", lien: "/auto-entrepreneur", bientot: true },
+  { libelle: "Créer mon auto-entreprise", lien: "/auto-entrepreneur" },
   { libelle: "Modifier ma société", lien: "/modification", bientot: true },
   { libelle: "Dépôt des comptes", lien: "/depot-des-comptes", bientot: true },
   { libelle: "Fermer ma société", lien: "/fermeture", bientot: true },
@@ -70,7 +70,9 @@ export function entreesDuMenu(menu: ElementMenu[]): EntreeMenu[] {
  * séparer le vide. On écarte donc les filets qui n'ont plus rien à séparer.
  */
 export function menuPour(roles: Role[]): ElementMenu[] {
-  const visibles = MENU.filter((e) => e === SEPARATEUR || !e.roles || e.roles.some((r) => roles.includes(r)));
+  const visibles = MENU.filter(
+    (e) => e === SEPARATEUR || !e.roles || e.roles.some((r) => roles.includes(r))
+  );
 
   return visibles.filter((element, i) => {
     if (element !== SEPARATEUR) return true;

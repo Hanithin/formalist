@@ -9,6 +9,8 @@ import {
   coutVersementLiberatoire,
   depassePlafond,
   type Declaration,
+  numeroSecuriteSocialeValide,
+  piecesDeclaration,
 } from "@/domain/auto-entrepreneur/declaration";
 
 const MAINTENANT = new Date("2026-08-10T12:00:00Z");
@@ -18,19 +20,23 @@ const identite: Declaration = {
   nomNaissance: "Durand",
   prenoms: "Camille",
   dateNaissance: "1990-04-12",
+  villeNaissance: "Bordeaux",
   nationalite: "Française",
+  numeroSecuriteSociale: "290043312345678",
 };
 
 const adresse: Declaration = {
   adresseVoie: "12 rue des Lilas",
   codePostal: "75011",
   ville: "Paris",
+  situationMatrimoniale: "Célibataire",
 };
 
 const activite: Declaration = {
   natureActivite: "liberale",
   descriptionActivite: "Conseil en design",
   dateDebut: "2026-09-01",
+  lieuExercice: "À mon domicile",
 };
 
 const complete: Declaration = {
@@ -159,5 +165,75 @@ describe("plafond du régime", () => {
   it("le plafond du commerce est plus élevé", () => {
     expect(depassePlafond("commerciale", 100_000)).toBe(false);
     expect(depassePlafond("artisanale", 100_000)).toBe(true);
+  });
+});
+
+describe("les champs que le guichet exige", () => {
+  const complete = {
+    civilite: "Madame",
+    nomNaissance: "Durand",
+    prenoms: "Camille",
+    dateNaissance: "1985-04-12",
+    villeNaissance: "Bordeaux",
+    nationalite: "Française",
+    numeroSecuriteSociale: "285043312345678",
+  };
+
+  it("le numéro de sécurité sociale est demandé, en quinze chiffres", () => {
+    // C'est lui qui rattache l'auto-entreprise au régime social de la personne.
+    expect(numeroSecuriteSocialeValide("2 85 04 33 123 456 78")).toBe(true);
+    expect(numeroSecuriteSocialeValide("285043312345678")).toBe(true);
+    expect(numeroSecuriteSocialeValide("28504331234")).toBe(false);
+    expect(numeroSecuriteSocialeValide(undefined)).toBe(false);
+
+    expect(verifierEtape(1, complete)).toHaveLength(0);
+    expect(verifierEtape(1, { ...complete, numeroSecuriteSociale: "123" })).toHaveLength(1);
+  });
+
+  it("la ville de naissance est exigée", () => {
+    // Elle figure sur l'acte de naissance et sur la déclaration.
+    const manque = verifierEtape(1, { ...complete, villeNaissance: "" });
+    expect(manque.map((a) => a.champ)).toContain("villeNaissance");
+  });
+
+  it("la situation matrimoniale est exigée", () => {
+    /*
+     * Sous un régime communautaire, les biens de l'entreprise engagent aussi le
+     * conjoint : ce n'est pas une curiosité administrative.
+     */
+    const adresse = { adresseVoie: "12 rue des Lilas", codePostal: "33000", ville: "Bordeaux" };
+    expect(verifierEtape(2, adresse).map((a) => a.champ)).toContain("situationMatrimoniale");
+    expect(verifierEtape(2, { ...adresse, situationMatrimoniale: "Marié(e)" })).toHaveLength(0);
+  });
+
+  it("le lieu d'exercice est exigé", () => {
+    const activite = {
+      natureActivite: "liberale",
+      descriptionActivite: "Conseil",
+      dateDebut: "2026-09-01",
+    };
+    expect(verifierEtape(3, activite).map((a) => a.champ)).toContain("lieuExercice");
+    expect(verifierEtape(3, { ...activite, lieuExercice: "À mon domicile" })).toHaveLength(0);
+  });
+});
+
+describe("les pièces justificatives", () => {
+  it("le recto et le verso sont deux pièces distinctes", () => {
+    // On découvrait au dépôt qu'il fallait les deux, et le guichet refuse pour ça.
+    const identifiants = piecesDeclaration({}).map((p) => p.identifiant);
+    expect(identifiants).toEqual(["identite-recto", "identite-verso", "domicile"]);
+  });
+
+  it("une activité réglementée en demande une de plus", () => {
+    const pieces = piecesDeclaration({ activiteReglementee: true });
+    expect(pieces.map((p) => p.identifiant)).toContain("qualification");
+    expect(pieces.find((p) => p.identifiant === "qualification")?.description).toContain("Diplôme");
+  });
+
+  it("chacune dit ce qu'on attend et sous quel format", () => {
+    for (const piece of piecesDeclaration({ activiteReglementee: true })) {
+      expect(piece.description.length).toBeGreaterThan(20);
+      expect(piece.formats).toContain(".pdf");
+    }
   });
 });
