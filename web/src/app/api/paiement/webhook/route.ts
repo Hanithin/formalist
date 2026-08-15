@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { confirmerPaiement } from "@/infrastructure/db/depots/consultations";
+import { confirmerLeReglement } from "@/infrastructure/db/depots/auto-entrepreneur";
 import { evenementDeStripe, encaissementDe } from "@/infrastructure/paiement/stripe";
 import { journal } from "@/lib/journal";
 import { route } from "@/lib/reponses";
@@ -26,6 +27,20 @@ export const POST = route(async (requete: Request) => {
   const encaissement = encaissementDe(evenement);
   if (!encaissement) {
     return NextResponse.json({ recu: true, traite: false });
+  }
+
+  /*
+   * Deux objets se règlent ici : une consultation et la création d'une auto-entreprise.
+   * Les métadonnées de la session disent lequel ; les confondre confirmerait la
+   * mauvaise chose.
+   */
+  if (encaissement.dossierId !== null) {
+    const resultat = await confirmerLeReglement(encaissement.reference, encaissement.dossierId);
+    journal.info(
+      { evenement: evenement.type, dossier: resultat.dossierId, paye: resultat.paye },
+      "Règlement de formalité traité"
+    );
+    return NextResponse.json({ recu: true, traite: true });
   }
 
   const resultat = await confirmerPaiement(encaissement);

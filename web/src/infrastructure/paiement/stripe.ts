@@ -63,7 +63,9 @@ export function paiementConfigure(): boolean {
 /* ---------- Ouvrir un paiement ---------- */
 
 export interface DemandeDePaiement {
-  consultationId: number;
+  /** La consultation réglée, ou le dossier quand c'est une formalité. */
+  consultationId?: number;
+  dossierId?: number;
   /** Ce qui est acheté, tel que le client le lira sur la page de Stripe. */
   intitule: string;
   /** Montant total encaissé, taxes comprises. */
@@ -87,10 +89,16 @@ export async function ouvrirPaiement(demande: DemandeDePaiement) {
   const session = await stripe().checkout.sessions.create({
     mode: "payment",
     customer_email: demande.email,
-    client_reference_id: String(demande.consultationId),
-    // La consultation est retrouvée par là au retour du webhook, qui ne reçoit que
-    // la session : sans ce lien, un encaissement ne saurait pas quoi confirmer.
-    metadata: { consultation: String(demande.consultationId) },
+    client_reference_id: String(demande.consultationId ?? demande.dossierId),
+    /*
+     * L'objet réglé est retrouvé par là au retour du webhook, qui ne reçoit que la
+     * session : sans ce lien, un encaissement ne saurait pas quoi confirmer. Les deux
+     * clés cohabitent - une consultation et un dossier n'ont rien à voir, et les
+     * confondre confirmerait la mauvaise chose.
+     */
+    metadata: demande.consultationId
+      ? { consultation: String(demande.consultationId) }
+      : { dossier: String(demande.dossierId) },
     line_items: [
       {
         quantity: 1,
@@ -119,18 +127,34 @@ export async function ouvrirPaiement(demande: DemandeDePaiement) {
 
 export interface Encaissement {
   reference: string;
+  /** L'un des deux est renseigné : une session règle une consultation ou un dossier. */
   consultationId: number | null;
+  dossierId: number | null;
   payee: boolean;
   expiree: boolean;
 }
 
+/** Un identifiant de métadonnée, ou null s'il n'en est pas un. */
+function identifiant(brut: string | null | undefined): number | null {
+  const nombre = Number(brut);
+  return Number.isInteger(nombre) && nombre > 0 ? nombre : null;
+}
+
 function lire(session: Stripe.Checkout.Session): Encaissement {
-  const brut = session.metadata?.consultation ?? session.client_reference_id;
-  const consultationId = Number(brut);
+  /*
+   * On ne retombe sur client_reference_id que pour une consultation : c'est ce que
+   * faisaient les sessions ouvertes avant que les dossiers ne se règlent aussi ici,
+   * et elles doivent continuer de se confirmer.
+   */
+  const dossierId = identifiant(session.metadata?.dossier);
+  const consultationId = dossierId
+    ? null
+    : identifiant(session.metadata?.consultation ?? session.client_reference_id);
 
   return {
     reference: session.id,
-    consultationId: Number.isInteger(consultationId) && consultationId > 0 ? consultationId : null,
+    consultationId,
+    dossierId,
     payee: session.payment_status === "paid",
     expiree: session.status === "expired",
   };
