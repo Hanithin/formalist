@@ -4,6 +4,7 @@ import { formalitesPourListe } from "@/infrastructure/db/depots/documents";
 import { filtreValide } from "@/domain/formalite/liste";
 import { dateEnTete } from "@/lib/dates";
 import { Liste } from "./Liste";
+import { NouvelleFormalite } from "@/components/navigation/NouvelleFormalite";
 import styles from "./Formalites.module.css";
 
 export const metadata: Metadata = {
@@ -32,7 +33,13 @@ export default async function Formalites({
     <main className={styles.page}>
       <div className={styles.topbar}>
         <h1>Mes formalités</h1>
-        <span className={styles.topbarDate}>{dateEnTete()}</span>
+
+        <div className={styles.topbarActions}>
+          <span className={styles.topbarDate}>{dateEnTete()}</span>
+          {/* On est venu ici pour en créer une : descendre chercher la colonne est
+              un détour que la page peut s'épargner. */}
+          <NouvelleFormalite libelle="Nouvelle formalité" apparence="page" />
+        </div>
       </div>
 
       <div className={styles.content}>

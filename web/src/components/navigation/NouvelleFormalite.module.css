@@ -272,3 +272,44 @@
     grid-template-columns: 1fr;
   }
 }
+
+/*
+ * Le même geste, posé dans une page plutôt qu'en tête de colonne.
+ *
+ * En colonne, le bouton est l'action principale et occupe toute la largeur. Dans une
+ * barre de titre, il partage la ligne avec la date : il se resserre, et sa hauteur
+ * s'aligne sur celle du texte qui l'accompagne.
+ */
+.actionPage {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 40px;
+  margin: 0;
+  padding: 0 18px;
+  border: 1px solid #111;
+  border-radius: 10px;
+  background: #111;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.actionPage:hover {
+  background: #333;
+  border-color: #333;
+}
+
+/* Le signe, un peu plus gros que le texte : c'est lui qu'on repère en premier. */
+.plus {
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
+}

@@ -31,8 +31,24 @@
   padding: 30px 48px 24px;
   background: transparent;
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
+  gap: 16px 24px;
+}
+
+/*
+ * La date et le bouton se partagent le côté droit.
+ *
+ * La date ne se coupe ni ne passe à la ligne, et l'écart est assez large pour que
+ * l'un ne semble jamais collé à l'autre. Sur écran étroit, c'est la barre entière qui
+ * passe à la ligne : mieux vaut deux lignes qu'un chevauchement.
+ */
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-shrink: 0;
 }
 
 .topbar h1 {
@@ -47,6 +63,7 @@
 .topbarDate {
   font-size: 13px;
   color: #999;
+  white-space: nowrap;
 }
 
 .content {

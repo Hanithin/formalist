@@ -68,21 +68,31 @@ export function etatInvitation(
   return "en_attente";
 }
 
+/** Le rôle qui donne la main sur l'équipe : avocat dans un cabinet, admin ailleurs. */
+export function roleDirigeant(equipe: Equipe): RoleEquipe {
+  return equipe.type === "cabinet" ? "avocat" : "admin";
+}
+
+export interface Verdict {
+  autorise: boolean;
+  raison?: string;
+}
+
 /**
- * Se retirer soi-même du dernier poste de direction laisserait l'équipe sans
- * personne pour inviter ou gérer les droits.
+ * L'équipe garderait-elle quelqu'un pour la gérer ?
+ *
+ * Une équipe sans dirigeant est une équipe close : plus personne n'y invite, n'y
+ * change un droit, n'y retire un membre. Il n'existe aucun geste dans l'application
+ * pour en sortir - il faudrait passer par la base.
+ *
+ * La question se pose de deux façons, et c'est le même calcul : retirer le dernier
+ * dirigeant, ou lui ôter son rôle. Le second chemin était ouvert.
  */
-export function peutRetirer(
-  equipe: Equipe,
-  membres: Membre[],
-  cible: Membre
-): { autorise: boolean; raison?: string } {
-  const roleDirigeant: RoleEquipe = equipe.type === "cabinet" ? "avocat" : "admin";
+function laDirectionSurvit(equipe: Equipe, membres: Membre[], cible: Membre): Verdict {
+  const dirigeant = roleDirigeant(equipe);
 
-  if (cible.role !== roleDirigeant) return { autorise: true };
-
-  const dirigeants = membres.filter((m) => m.role === roleDirigeant);
-  if (dirigeants.length > 1) return { autorise: true };
+  if (cible.role !== dirigeant) return { autorise: true };
+  if (membres.filter((m) => m.role === dirigeant).length > 1) return { autorise: true };
 
   return {
     autorise: false,
@@ -91,4 +101,30 @@ export function peutRetirer(
         ? "Le cabinet doit garder au moins un avocat"
         : "L'équipe doit garder au moins un administrateur",
   };
+}
+
+/**
+ * Se retirer soi-même du dernier poste de direction laisserait l'équipe sans
+ * personne pour inviter ou gérer les droits.
+ */
+export function peutRetirer(equipe: Equipe, membres: Membre[], cible: Membre): Verdict {
+  return laDirectionSurvit(equipe, membres, cible);
+}
+
+/**
+ * Changer le rôle d'un membre.
+ *
+ * Rendre quelqu'un dirigeant est toujours possible. Lui ôter ce rôle passe par la
+ * même garde qu'un retrait : c'en est un, du point de vue de l'équipe.
+ */
+export function peutChangerLeRole(
+  equipe: Equipe,
+  membres: Membre[],
+  cible: Membre,
+  nouveauRole: RoleEquipe
+): Verdict {
+  if (nouveauRole === cible.role) return { autorise: true };
+  if (nouveauRole === roleDirigeant(equipe)) return { autorise: true };
+
+  return laDirectionSurvit(equipe, membres, cible);
 }

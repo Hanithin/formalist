@@ -197,3 +197,58 @@ test.describe("accès aux fichiers", () => {
     await anonyme.close();
   });
 });
+
+test.describe("la fenêtre de nouvelle formalité", () => {
+  test("elle passe au-dessus de la page, et s'ouvre depuis la barre de titre", async ({ page }) => {
+    /*
+     * La colonne est en position:sticky, ce qui crée un contexte d'empilement : le
+     * z-index de la fenêtre y restait prisonnier, et les cartes de la page se
+     * peignaient par-dessus. Un portail la sort de ce contexte.
+     */
+    await page.setViewportSize({ width: 1400, height: 1000 });
+    await page.goto("/formalites");
+
+    // Le bouton de la barre de titre, en plus de celui de la colonne : on est venu
+    // ici pour en créer une.
+    const enTete = page.getByRole("button", { name: "Nouvelle formalité" });
+    await expect(enTete).toBeVisible();
+    await enTete.click();
+
+    const fenetre = page.getByRole("dialog", { name: "Nouvelle formalité" });
+    await expect(fenetre).toBeVisible();
+
+    // Ce qui est peint au centre de la fenêtre doit être la fenêtre, non une carte.
+    const cadre = (await fenetre.boundingBox())!;
+    const dessus = await page.evaluate(
+      ([x, y]) =>
+        !!document.elementFromPoint(x as number, y as number)?.closest("[role='dialog']"),
+      [cadre.x + cadre.width / 2, cadre.y + cadre.height / 2]
+    );
+    expect(dessus).toBe(true);
+
+    // Et elle mène toujours où il faut.
+    await fenetre.getByRole("link", { name: /Auto-entrepreneur/ }).click();
+    await page.waitForURL(/auto-entrepreneur/);
+  });
+
+  test("la date et le bouton ne se chevauchent à aucune largeur", async ({ page }) => {
+    /*
+     * La barre de titre pouvait se comprimer sous sa largeur utile : la date, alors
+     * rétrécie, débordait sous le bouton noir - le dernier chiffre de l'année passait
+     * dessous. Le bouton ne se comprime plus, la date ne se coupe plus, et c'est la
+     * barre entière qui passe à la ligne quand la place manque.
+     */
+    for (const largeur of [1500, 1280, 1000, 860, 760]) {
+      await page.setViewportSize({ width: largeur, height: 900 });
+      await page.goto("/formalites");
+
+      const ecart = await page.evaluate(() => {
+        const date = document.querySelector("[class*='topbarDate']")!;
+        const bouton = date.parentElement!.querySelector("button")!;
+        return bouton.getBoundingClientRect().left - date.getBoundingClientRect().right;
+      });
+
+      expect(ecart, largeur + "px").toBeGreaterThanOrEqual(16);
+    }
+  });
+});

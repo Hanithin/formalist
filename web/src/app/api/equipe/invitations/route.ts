@@ -4,6 +4,7 @@ import { prisma } from "@/infrastructure/db/client";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { exigerGestionDEquipe, EXPIRATION_INVITATION } from "@/infrastructure/db/depots/equipe";
 import { roleAccorde } from "@/domain/equipe/invitations";
+import { emailInvitationEquipe } from "@/infrastructure/mail/envoi";
 import { jeton } from "@/lib/mots-de-passe";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
@@ -46,7 +47,24 @@ export const POST = route(async (requete: Request) => {
     },
   });
 
-  // L'envoi de l'email arrive avec le portage de la messagerie ; l'invitation
-  // existe et son lien est valable dès maintenant.
-  return NextResponse.json({ ok: true, email: invitation.email, equipe: nom }, { status: 201 });
+  /*
+   * Le courriel part maintenant, et son échec ne défait rien.
+   *
+   * L'invitation existe en base, son lien est valable : refuser la création parce que
+   * Resend a répondu 500 obligerait à tout recommencer alors que le lien est copiable
+   * depuis la page. On renvoie donc l'issue de l'envoi plutôt que de la taire - une
+   * invitation dont l'email n'est pas parti n'est pas une invitation envoyée, et le
+   * dire permet de la renvoyer ou d'en copier le lien.
+   */
+  const envoi = await emailInvitationEquipe(
+    invitation.email,
+    invitation.token,
+    nom,
+    utilisateur.nom
+  );
+
+  return NextResponse.json(
+    { ok: true, email: invitation.email, equipe: nom, envoye: envoi.ok && !envoi.simule },
+    { status: 201 }
+  );
 });

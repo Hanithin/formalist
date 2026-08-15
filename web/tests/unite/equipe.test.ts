@@ -5,6 +5,8 @@ import {
   rolesProposables,
   etatInvitation,
   peutRetirer,
+  peutChangerLeRole,
+  roleDirigeant,
   type Equipe,
   type Membre,
 } from "@/domain/equipe/invitations";
@@ -110,5 +112,52 @@ describe("retrait d'un membre", () => {
     const verdict = peutRetirer(cabinet, membres, membre("avocat", 1));
     expect(verdict.autorise).toBe(false);
     expect(verdict.raison).toContain("au moins un avocat");
+  });
+});
+
+describe("changement de rôle", () => {
+  it("le rôle qui dirige dépend du type d'équipe", () => {
+    expect(roleDirigeant(equipeCliente)).toBe("admin");
+    expect(roleDirigeant(cabinet)).toBe("avocat");
+  });
+
+  it("promouvoir est toujours possible", () => {
+    const membres = [membre("admin", 1), membre("collaborateur", 2)];
+    expect(
+      peutChangerLeRole(equipeCliente, membres, membre("collaborateur", 2), "admin").autorise
+    ).toBe(true);
+  });
+
+  it("le dernier administrateur ne peut pas se rétrograder", () => {
+    /*
+     * C'était la porte laissée ouverte : le retrait était gardé, la rétrogradation
+     * non. Elle mène pourtant au même endroit - une équipe que plus personne ne gère,
+     * et dont aucun geste de l'application ne permet de sortir.
+     */
+    const membres = [membre("admin", 1), membre("collaborateur", 2)];
+    const verdict = peutChangerLeRole(equipeCliente, membres, membre("admin", 1), "collaborateur");
+
+    expect(verdict.autorise).toBe(false);
+    expect(verdict.raison).toContain("au moins un administrateur");
+  });
+
+  it("un administrateur parmi d'autres peut redevenir collaborateur", () => {
+    const membres = [membre("admin", 1), membre("admin", 2)];
+    expect(
+      peutChangerLeRole(equipeCliente, membres, membre("admin", 1), "collaborateur").autorise
+    ).toBe(true);
+  });
+
+  it("garder son rôle n'est pas un changement", () => {
+    const membres = [membre("admin", 1)];
+    expect(peutChangerLeRole(equipeCliente, membres, membre("admin", 1), "admin").autorise).toBe(
+      true
+    );
+  });
+
+  it("dans un cabinet, passer le dernier avocat administrateur ne suffit pas", () => {
+    // « Administrateur » ne dirige pas un cabinet : la responsabilité reste à l'avocat.
+    const membres = [membre("avocat", 1), membre("collaborateur", 2)];
+    expect(peutChangerLeRole(cabinet, membres, membre("avocat", 1), "admin").autorise).toBe(false);
   });
 });
