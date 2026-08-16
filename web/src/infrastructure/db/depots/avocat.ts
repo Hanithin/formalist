@@ -17,6 +17,7 @@ import {
   documentValide,
 } from "@/domain/formalite/avis";
 import { prevenir } from "./avis";
+import { LONGUEUR_MAXIMALE } from "@/domain/messagerie/messages";
 import { TYPE_RBE, TYPE_KBIS, typesDeposes } from "./suivi";
 import {
   annonceAPublier,
@@ -256,6 +257,25 @@ export async function changerEtatDossier(
       updated_at: new Date(),
     },
   });
+
+  /*
+   * Ce qui est demandé est écrit au dossier, non seulement au journal.
+   *
+   * Le motif saisi par l'avocat ne partait que dans le journal d'audit, que le client
+   * ne voit pas. Le courriel lui disait pourtant « le détail est dans votre
+   * messagerie », où rien n'était écrit : il apprenait qu'on lui demandait quelque
+   * chose sans jamais pouvoir savoir quoi.
+   */
+  if (vers === "corrections_demandees" && commentaire?.trim()) {
+    await prisma.messages.create({
+      data: {
+        formalite_id: dossierId,
+        sender_id: utilisateur.id,
+        content: commentaire.trim().slice(0, LONGUEUR_MAXIMALE),
+        kind: "correction_request",
+      },
+    });
+  }
 
   /*
    * Le client est prévenu, cloche et courriel.
@@ -622,4 +642,21 @@ export async function prendreLeDossier(utilisateur: UtilisateurConnecte, dossier
   });
 
   return { deja: false as const, dossier: dossier.id };
+}
+
+/**
+ * Ce que l'avocat a demandé de reprendre, en dernier lieu.
+ *
+ * Lu au journal plutôt qu'au fil : la trace y est écrite depuis toujours, et les
+ * dossiers d'avant portent leur demande là et nulle part ailleurs.
+ */
+export async function derniereDemandeDeCorrections(dossierId: number): Promise<string | null> {
+  const trace = await prisma.audit_log.findFirst({
+    where: { formalite_id: dossierId, action: "etat_corrections_demandees" },
+    orderBy: { created_at: "desc" },
+    select: { comment: true },
+  });
+
+  const demande = trace?.comment?.trim();
+  return demande ? demande : null;
 }

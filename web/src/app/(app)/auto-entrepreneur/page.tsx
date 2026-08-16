@@ -12,6 +12,7 @@ import { confirmerAuRetour } from "@/infrastructure/db/depots/auto-entrepreneur"
 import { Suivi } from "@/components/formalite/Suivi";
 import { documentsDuDossier } from "@/infrastructure/db/depots/documents";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
+import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import styles from "./AutoEntrepreneur.module.css";
 
 export const metadata: Metadata = {
@@ -109,7 +110,11 @@ export default async function AutoEntrepreneur({
         */}
         {declaration.paye && (
           <div className={styles.suivi}>
-            <Suivi etat={await etatDuDossier(ligne)} lienAction="/messagerie" />
+            <Suivi
+              etat={await etatDuDossier(ligne)}
+              demande={await derniereDemandeDeCorrections(ligne.id)}
+              lienAction={"/messagerie?dossier=" + ligne.id}
+            />
           </div>
         )}
         <Declaration

@@ -1,11 +1,24 @@
 import Link from "next/link";
-import { etapesDuSuivi, avancementDuSuivi, type EtatDuDossier } from "@/domain/formalite/suivi";
+import {
+  etapesDuSuivi,
+  etapeAMettreEnAvant,
+  avancementDuSuivi,
+  type EtatDuDossier,
+} from "@/domain/formalite/suivi";
 import styles from "./Suivi.module.css";
 
 interface Props {
   etat: EtatDuDossier;
   /** Où mène le geste attendu, quand il y en a un. */
   lienAction?: string;
+  /**
+   * Ce que l'avocat demande de reprendre, mot pour mot.
+   *
+   * « À vous de jouer » sans dire de quoi il s'agit renvoie à une devinette : le motif
+   * existait au journal d'audit, que le client ne voit pas, et l'écran se contentait
+   * d'un bouton qui menait au formulaire sans un mot d'explication.
+   */
+  demande?: string | null;
 }
 
 /**
@@ -19,9 +32,9 @@ interface Props {
  * du moment mise en avant avec son explication, et le geste attendu quand il est du
  * côté du client.
  */
-export function Suivi({ etat, lienAction }: Props) {
+export function Suivi({ etat, lienAction, demande }: Props) {
   const etapes = etapesDuSuivi(etat);
-  const courante = etapes.find((e) => e.etat === "en_cours");
+  const courante = etapeAMettreEnAvant(etat);
   const avancement = avancementDuSuivi(etat);
 
   return (
@@ -43,6 +56,13 @@ export function Suivi({ etat, lienAction }: Props) {
           </span>
           <p className={styles.focusTitre}>{courante.titre}</p>
           <p className={styles.focusTexte}>{courante.explication}</p>
+
+          {courante.main === "vous" && demande && (
+            <blockquote className={styles.demande}>
+              <span className={styles.demandeQui}>Ce que l&apos;avocat demande</span>
+              <span className={styles.demandeTexte}>{demande}</span>
+            </blockquote>
+          )}
 
           {courante.action && lienAction && (
             <Link href={lienAction} className={styles.action}>

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   etapesDuSuivi,
   etapeEnCours,
+  etapeAMettreEnAvant,
   attenteDuClient,
   avancementDuSuivi,
   attestationRequise,
@@ -218,5 +219,45 @@ describe("le parcours d'une auto-entreprise", () => {
   it("sans type, on garde le parcours d'une société", () => {
     // C'est le parcours d'origine : un dossier ancien ne doit pas changer de récit.
     expect(etapesDuSuivi({ ...auto(), type: null }).map((e) => e.identifiant)).toContain("kbis");
+  });
+});
+
+describe("un dossier renvoyé par l'avocat", () => {
+  const renvoye = etat({ status: "corrections_demandees", sousPhase: "5a" });
+
+  it("rend la main au client, y compris sur une création", () => {
+    /*
+     * La main restait à l'avocat en toutes circonstances sur le parcours de création :
+     * le client lisait « L'avocat s'en occupe » et attendait, alors que rien
+     * n'avancerait tant qu'il n'aurait pas repris ce qu'on lui demandait.
+     */
+    const verification = etapesDuSuivi(renvoye).find((e) => e.identifiant === "verification")!;
+    expect(verification.main).toBe("vous");
+    expect(verification.action).toBe("Voir ce qui est demandé");
+  });
+
+  it("la vérification n'est pas tenue pour faite", () => {
+    const verification = etapesDuSuivi(renvoye).find((e) => e.identifiant === "verification")!;
+    expect(verification.etat).not.toBe("faite");
+  });
+
+  it("passe devant ce qui restait à fournir", () => {
+    /*
+     * Une création sans attestation de capital mettait en avant « Attestation de dépôt
+     * de capital » alors que l'avocat venait de renvoyer le dossier : la demande à
+     * laquelle il fallait répondre n'apparaissait nulle part.
+     */
+    expect(etapeEnCours(renvoye)?.identifiant).toBe("attestation");
+    expect(etapeAMettreEnAvant(renvoye)?.identifiant).toBe("verification");
+  });
+
+  it("le rail garde sa vérité : l'attestation reste à fournir", () => {
+    const attestation = etapesDuSuivi(renvoye).find((e) => e.identifiant === "attestation")!;
+    expect(attestation.etat).toBe("en_cours");
+  });
+
+  it("hors renvoi, c'est l'étape en cours qu'on met en avant", () => {
+    const ordinaire = etat({ status: "en_attente_validation", sousPhase: "5a" });
+    expect(etapeAMettreEnAvant(ordinaire)?.identifiant).toBe(etapeEnCours(ordinaire)?.identifiant);
   });
 });

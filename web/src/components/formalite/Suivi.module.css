@@ -164,3 +164,35 @@
 .a_venir .nom {
   color: #bbb;
 }
+
+/*
+ * Ce que l'avocat demande, mot pour mot.
+ *
+ * « À vous de jouer » sans dire de quoi il s'agit renvoie à une devinette : le motif
+ * vivait au journal d'audit, que le client ne voit pas.
+ */
+.demande {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid #16a34a;
+  border-radius: 0 10px 10px 0;
+  background: #fff;
+}
+
+.demandeQui {
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.demandeTexte {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #27272a;
+  white-space: pre-wrap;
+}

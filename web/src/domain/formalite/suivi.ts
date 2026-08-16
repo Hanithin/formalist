@@ -102,8 +102,19 @@ const TOUTES: Definition[] = [
     titre: "Vérification par l'avocat",
     explication:
       "L'avocat relit vos actes et contrôle vos pièces. Il vous écrit si quelque chose doit être repris.",
-    main: "avocat",
-    faite: (e) => auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee",
+    /*
+     * La main revient au client quand l'avocat renvoie le dossier.
+     *
+     * Elle restait à l'avocat en toutes circonstances : le client dont le dossier
+     * était renvoyé lisait « L'avocat s'en occupe » et attendait, alors que rien
+     * n'avancerait tant qu'il n'aurait pas repris ce qu'on lui demandait. Les
+     * parcours d'auto-entreprise et de modification le disaient déjà.
+     */
+    main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
+    action: "Voir ce qui est demandé",
+    faite: (e) =>
+      e.status !== "corrections_demandees" &&
+      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
   },
   {
     identifiant: "annonce",
@@ -292,6 +303,28 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
 /** L'étape en cours, ou null quand tout est fait. */
 export function etapeEnCours(etat: EtatDuDossier): EtapeDeSuivi | null {
   return etapesDuSuivi(etat).find((e) => e.etat === "en_cours") ?? null;
+}
+
+/**
+ * L'étape à mettre en avant : celle qu'on vient lire.
+ *
+ * Un dossier renvoyé par l'avocat passe devant tout le reste. Sans cela, un dossier de
+ * création sans attestation de capital mettait en avant « Attestation de dépôt de
+ * capital » alors que l'avocat venait de renvoyer le dossier : la demande à laquelle
+ * il fallait répondre n'était nulle part, et le rail ne montrait rien de neuf.
+ *
+ * Le rail, lui, garde sa vérité : l'attestation reste à fournir, et s'y lit comme
+ * telle.
+ */
+export function etapeAMettreEnAvant(etat: EtatDuDossier): EtapeDeSuivi | null {
+  const etapes = etapesDuSuivi(etat);
+
+  if (etat.status === "corrections_demandees") {
+    const renvoi = etapes.find((e) => e.identifiant === "verification");
+    if (renvoi) return renvoi;
+  }
+
+  return etapes.find((e) => e.etat === "en_cours") ?? null;
 }
 
 /**

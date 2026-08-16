@@ -8,6 +8,7 @@ import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
 import { Suivi } from "@/components/formalite/Suivi";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
+import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import styles from "./Parcours.module.css";
 
 export const metadata: Metadata = {
@@ -31,6 +32,18 @@ export default async function Creation({
   }
 
   const { dossier: ligne, brouillon } = await ouvrirBrouillon(utilisateur, Number(dossier));
+
+  /*
+   * Chaque parcours a sa page.
+   *
+   * Rien n'empêchait d'ouvrir une modification ou une auto-entreprise ici : l'écran
+   * affichait alors le fil de la création - « Capital », « Associé », « Offres » -
+   * au-dessus d'un formulaire de création vide, pour un dossier qui n'en est pas un.
+   */
+  if (ligne.type === "modification") redirect("/modification?dossier=" + ligne.id);
+  if (ligne.type === "auto-entreprise" || ligne.type === "auto_entreprise") {
+    redirect("/auto-entrepreneur?dossier=" + ligne.id);
+  }
   const documents = await documentsDuDossier(utilisateur, Number(dossier));
 
   // Les deux vivent dans la même table et se distinguent par leur statut :
@@ -49,6 +62,16 @@ export default async function Creation({
    */
   const transmis = ligne.status !== "en_cours";
   const etat = transmis ? await etatDuDossier(ligne) : null;
+
+  /*
+   * Le formulaire ne s'affiche que si l'on peut encore y écrire.
+   *
+   * Une fois le dossier parti chez l'avocat, il restait affiché sous le suivi, vide et
+   * annonçant « 0% renseigné » : on croyait avoir tout perdu, et toute saisie y était
+   * de toute façon refusée par le serveur. Il revient quand l'avocat renvoie le
+   * dossier, puisque c'est là qu'on reprend ce qui est demandé.
+   */
+  const modifiable = ligne.status === "en_cours" || ligne.status === "corrections_demandees";
 
   return (
     <main className={styles.page}>
@@ -73,22 +96,48 @@ export default async function Creation({
 
         {etat && (
           <div className={styles.suivi}>
-            <Suivi etat={etat} lienAction={"/creation?dossier=" + dossier + "&etape=5"} />
+            <Suivi
+              etat={etat}
+              demande={await derniereDemandeDeCorrections(ligne.id)}
+              lienAction={"/messagerie?dossier=" + ligne.id}
+            />
           </div>
         )}
-        <Parcours
-          dossierId={Number(dossier)}
-          etapes={ETAPES}
-          etapeCourante={courante}
-          brouillonInitial={brouillon}
-          piecesDeposees={deposees.map((d) => ({ type: d.type, nom: d.name }))}
-          actesProduits={actes.map((d) => ({
-            id: d.id,
-            nom: d.name,
-            fichier: d.file_path,
-            statut: d.status,
-          }))}
-        />
+        {modifiable ? (
+          <Parcours
+            dossierId={Number(dossier)}
+            etapes={ETAPES}
+            etapeCourante={courante}
+            brouillonInitial={brouillon}
+            piecesDeposees={deposees.map((d) => ({ type: d.type, nom: d.name }))}
+            actesProduits={actes.map((d) => ({
+              id: d.id,
+              nom: d.name,
+              fichier: d.file_path,
+              statut: d.status,
+            }))}
+          />
+        ) : (
+          /*
+            Le dossier est chez l'avocat : il n'y a plus rien à remplir, et l'on dit où
+            retrouver ce qui le concerne plutôt que de laisser un formulaire vide.
+          */
+          <div className={styles.confie}>
+            <p className={styles.confieTexte}>
+              Votre dossier est entre les mains de l&apos;avocat. Vous n&apos;avez rien à
+              remplir : le suivi ci-dessus dit où il en est, et vous serez prévenu si
+              quelque chose doit être repris.
+            </p>
+            <div className={styles.confieLiens}>
+              <Link className={styles.confieLien} href={"/messagerie?dossier=" + ligne.id}>
+                Écrire à l&apos;avocat
+              </Link>
+              <Link className={styles.confieLien} href="/documents">
+                Voir mes documents
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
