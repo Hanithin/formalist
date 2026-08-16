@@ -40,6 +40,14 @@ export interface Modification {
   retouches?: Retouche[];
   /** Les statuts retouchés ont été produits et joints au dossier. */
   statutsAJour?: boolean;
+  /**
+   * Le cabinet a publié les avis.
+   *
+   * Une création attend l'attestation de parution que le client dépose ; ici c'est
+   * nous qui publions, et il n'y a personne pour déposer quoi que ce soit. La
+   * publication se déclare donc, et c'est elle qui fait avancer le suivi du client.
+   */
+  avisPublies?: boolean;
   paiementRef?: string;
   paye?: boolean;
 }

@@ -161,19 +161,30 @@ export function situer(mots: Mot[], cherche: string): Mot[] | null {
 }
 
 /**
- * Les zones à retoucher.
+ * Les zones à retoucher, et ce qui n'a pas été retrouvé.
  *
- * Une recherche introuvable n'est pas une erreur : les statuts peuvent formuler
- * autrement, ou la reconnaissance de caractères peut avoir mal lu. Elle est
- * simplement absente du résultat, et l'avocat pose la zone à la main. Rien n'est
- * appliqué sans qu'il l'ait vu.
+ * Une recherche infructueuse n'est pas une erreur : les statuts formulent librement,
+ * et une numérisation se lit mal. C'est en revanche une information capitale, et la
+ * première version la perdait - seules les zones trouvées étaient rendues. L'avocat
+ * croyait avoir tout remplacé, et un article restait à l'ancienne valeur dans un
+ * document qui part au greffe.
+ *
+ * Les introuvables reviennent donc avec le texte cherché, pour qu'il pose la zone
+ * lui-même. Rien n'est appliqué sans qu'il l'ait vu.
  */
-export function reperer(mots: Mot[], recherches: Recherche[]): Zone[] {
+export function reperage(
+  mots: Mot[],
+  recherches: Recherche[]
+): { zones: Zone[]; introuvables: Recherche[] } {
   const zones: Zone[] = [];
+  const introuvables: Recherche[] = [];
 
   for (const recherche of recherches) {
     const situes = situer(mots, recherche.cherche);
-    if (!situes || situes.length === 0) continue;
+    if (!situes || situes.length === 0) {
+      introuvables.push(recherche);
+      continue;
+    }
 
     const rectangles = rectanglesDe(situes);
     const taille = Math.min(...situes.map((m) => m.hauteur));
@@ -186,7 +197,22 @@ export function reperer(mots: Mot[], recherches: Recherche[]): Zone[] {
     });
   }
 
-  return zones;
+  /*
+   * Un repli trouvé rend son introuvable sans objet.
+   *
+   * Un transfert cherche l'adresse complète, puis la voie seule au cas où les statuts
+   * n'écrivent pas le code postal sur la même ligne. Si la seconde aboutit, signaler
+   * la première comme manquante ferait chercher un passage déjà couvert.
+   */
+  return {
+    zones,
+    introuvables: introuvables.filter((r) => !zones.some((z) => z.cle === r.cle)),
+  };
+}
+
+/** Les seules zones retrouvées, quand l'appelant n'a que faire du reste. */
+export function reperer(mots: Mot[], recherches: Recherche[]): Zone[] {
+  return reperage(mots, recherches).zones;
 }
 
 /* ------------------------------------------------------- Quoi chercher, où */

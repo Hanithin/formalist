@@ -183,9 +183,9 @@ const AUTO_ENTREPRISE: Definition[] = [
 /**
  * Le parcours d'une modification.
  *
- * Ni capital ni Kbis : la société existe déjà. Ce qui la distingue tient à l'annonce
- * légale, seule étape qui revient au client - il choisit son support, la paie et nous
- * remet l'attestation de parution. Le reste est du côté de l'avocat.
+ * Ni capital ni Kbis : la société existe déjà. Et rien n'y revient au client une fois
+ * le dossier réglé - c'est ce qui est vendu. La publication de l'avis, comptée dans
+ * les frais avancés, est faite par le cabinet.
  */
 const MODIFICATION: Definition[] = [
   {
@@ -210,10 +210,17 @@ const MODIFICATION: Definition[] = [
   {
     identifiant: "annonce",
     titre: "Publication de l'annonce légale",
+    /*
+     * C'est le cabinet qui publie, non le client.
+     *
+     * Une création laisse le client choisir son support et déposer l'attestation ;
+     * une modification est vendue tout compris, l'avis étant compté dans les frais
+     * avancés. Lui réclamer une attestation reviendrait à lui faire faire ce qu'il a
+     * payé pour ne pas faire.
+     */
     explication:
-      "L'avis paraît dans un support habilité. Déposez l'attestation de parution : le greffe l'exige au dossier.",
-    main: "vous",
-    action: "Déposer l'attestation de parution",
+      "Nous publions l'avis dans un support habilité, dans le département du siège. Vous n'avez rien à faire.",
+    main: "avocat",
     faite: (e) => e.aLAnnoncePubliee,
   },
   {

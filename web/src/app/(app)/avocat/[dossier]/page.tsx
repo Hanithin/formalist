@@ -7,6 +7,13 @@ import { etatCabinet } from "@/domain/formalite/avocat";
 import { libelleEtat } from "@/domain/formalite/transitions";
 import { etatDocument } from "@/domain/document/statuts";
 import { Notes } from "./Notes";
+import { Travail } from "./Travail";
+import { Statuts } from "./Statuts";
+import { Annonce } from "./Annonce";
+import { travailDuCabinet, type TypeDeDossier } from "@/domain/formalite/cabinet";
+import { statutsAMettreAJour } from "@/domain/modification/formalites";
+import { publicationsAPrevoir } from "@/domain/modification/formalites";
+import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { Verification } from "./Verification";
 import { Avancement } from "./Avancement";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
@@ -34,11 +41,23 @@ const CHAMPS: { cle: string; libelle: string }[] = [
   { cle: "capitalLibere", libelle: "Capital libéré" },
 ];
 
-const ONGLETS = ["recapitulatif", "avancement", "pieces", "notes", "journal"] as const;
+const ONGLETS = [
+  "travail",
+  "recapitulatif",
+  "statuts",
+  "annonce",
+  "avancement",
+  "pieces",
+  "notes",
+  "journal",
+] as const;
 type Onglet = (typeof ONGLETS)[number];
 
 const NOMS: Record<Onglet, string> = {
+  travail: "À faire",
   recapitulatif: "Récapitulatif",
+  statuts: "Statuts",
+  annonce: "Annonce légale",
   avancement: "Avancement",
   pieces: "Pièces",
   notes: "Notes internes",
@@ -85,9 +104,13 @@ export default async function DossierAvocat({
   const { dossier, client, documents, notes, historique, donnees, nonLus } = vue;
 
   const demande = (await searchParams).onglet;
-  const onglet: Onglet = ONGLETS.includes(demande as Onglet)
-    ? (demande as Onglet)
-    : "recapitulatif";
+  /*
+   * On ouvre sur ce qu'il reste à faire, non sur le récapitulatif.
+   *
+   * L'avocat qui vient de prendre un dossier veut savoir par où commencer, non relire
+   * une fiche. Le récapitulatif est à un clic.
+   */
+  const onglet: Onglet = ONGLETS.includes(demande as Onglet) ? (demande as Onglet) : "travail";
 
   /*
    * Une modification ne se range pas comme une création.
@@ -119,6 +142,55 @@ export default async function DossierAvocat({
   const remis = (type: string) =>
     documents.some((d) => d.type === type && !d.rejection_reason);
   const adresse = (o: Onglet) => "/avocat/" + dossier.id + "?onglet=" + o;
+
+  /*
+   * Ce qu'il reste à faire, déduit de l'état du dossier.
+   *
+   * Le type décide du vocabulaire et des tâches : une modification met les statuts à
+   * jour et publie un avis, une création attend un Kbis. Le déduire ici plutôt que de
+   * semer des conditions dans l'écran garde les deux parcours lisibles.
+   */
+  const type: TypeDeDossier =
+    dossier.type === "modification"
+      ? "modification"
+      : dossier.type === "auto-entrepreneur"
+        ? "auto-entrepreneur"
+        : "creation";
+
+  const codes = sectionsModification ? ((donnees.codes as string[]) ?? []) : [];
+  const societeDuDossier = (donnees.societe ?? {}) as {
+    codePostal?: string | null;
+    ville?: string | null;
+  };
+  const valeursDuDossier = (donnees.valeurs ?? {}) as Record<string, string | number | undefined>;
+
+  const taches = travailDuCabinet({
+    type,
+    status: dossier.status,
+    sousPhase: dossier.business_sub_phase,
+    piecesAVerifier: aVerifier,
+    actesProduits: documents.some((d) => d.uploaded_by === "system" && d.status === "generated"),
+    statutsAuDossier: documents.some((d) => d.name === "Statuts en vigueur"),
+    statutsAJour: donnees.statutsAJour === true,
+    avisAPublier:
+      type === "modification"
+        ? publicationsAPrevoir({
+            codes,
+            ressortActuel: villeDuRcs(societeDuDossier.codePostal, societeDuDossier.ville),
+            ressortNouveau: villeDuRcs(
+              typeof valeursDuDossier.nouveauCodePostal === "string"
+                ? valeursDuDossier.nouveauCodePostal
+                : "",
+              typeof valeursDuDossier.nouvelleVille === "string"
+                ? valeursDuDossier.nouvelleVille
+                : ""
+            ),
+          }).length
+        : 0,
+    avisPublies: donnees.avisPublies === true,
+    finalRemis: remis(TYPE_KBIS),
+    statutsConcernes: statutsAMettreAJour(codes),
+  });
 
   return (
     <main className={styles.page}>
@@ -166,6 +238,34 @@ export default async function DossierAvocat({
             aLeRbe={remis(TYPE_RBE)}
           />
         )}
+
+        {onglet === "travail" && (
+          <Travail
+            dossier={dossier.id}
+            taches={taches}
+            peutProduireLesActes={type === "modification"}
+          />
+        )}
+
+        {onglet === "statuts" &&
+          (type === "modification" ? (
+            <Statuts dossier={dossier.id} />
+          ) : (
+            <Vide
+              ton="encart"
+              texte="La retouche des statuts ne concerne que les modifications de société."
+            />
+          ))}
+
+        {onglet === "annonce" &&
+          (type === "modification" ? (
+            <Annonce dossier={dossier.id} />
+          ) : (
+            <Vide
+              ton="encart"
+              texte="Sur ce dossier, l'annonce légale est publiée par le client."
+            />
+          ))}
 
         {onglet === "recapitulatif" && (
           <div className={styles.recapGrid}>

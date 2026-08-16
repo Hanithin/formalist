@@ -46,12 +46,28 @@ export async function etatDuDossier(dossier: {
     status: dossier.status,
     sousPhase: dossier.business_sub_phase,
     aLAttestationDeCapital: types.has(TYPE_ATTESTATION_CAPITAL),
-    aLAnnoncePubliee: types.has(TYPE_ANNONCE_PUBLIEE),
+    /*
+     * Sur une modification, c'est le cabinet qui publie : il n'y a pas d'attestation
+     * de parution déposée, seulement une publication déclarée. Ne lire que les
+     * documents laisserait l'étape en attente indéfiniment, sur un dossier avancé.
+     */
+    aLAnnoncePubliee: types.has(TYPE_ANNONCE_PUBLIEE) || avisDeclares(dossier.data_json),
     aLeKbis: types.has(TYPE_KBIS),
     // Le règlement vit dans la déclaration : c'est lui qui met l'auto-entreprise en
     // route, là où une société part sur une transmission.
     paye: estPayee(dossier.data_json),
   };
+}
+
+/** Le cabinet a-t-il déclaré la publication ? Une lecture prudente d'un JSON libre. */
+function avisDeclares(dataJson: string | null | undefined): boolean {
+  if (!dataJson) return false;
+  try {
+    const lu: unknown = JSON.parse(dataJson);
+    return !!lu && typeof lu === "object" && (lu as { avisPublies?: unknown }).avisPublies === true;
+  } catch {
+    return false;
+  }
 }
 
 /** Le dossier porte-t-il un règlement ? Une lecture prudente d'un JSON libre. */

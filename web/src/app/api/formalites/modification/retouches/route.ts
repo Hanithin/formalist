@@ -12,7 +12,7 @@ import {
   StatutsIllisibles,
 } from "@/infrastructure/documents/statuts";
 import {
-  reperer,
+  reperage,
   recherchesPour,
   retouchesProposees,
   RetoucheInvalide,
@@ -52,13 +52,19 @@ export const GET = route(async (requete: Request) => {
 
   try {
     const lecture = await lireLesStatuts(statuts);
-    const zones = reperer(
+    const { zones, introuvables } = reperage(
       lecture.mots,
       recherchesPour(modification.codes, modification.valeurs, modification.societe)
     );
 
     return NextResponse.json({
       pages: lecture.pages,
+      /*
+       * Ce qui n'a pas été retrouvé compte autant que ce qui l'a été : sans cette
+       * liste, l'avocat croit avoir tout remplacé et un article reste à l'ancienne
+       * valeur dans un document qui part au greffe.
+       */
+      introuvables,
       // Une lecture par reconnaissance de caractères est approximative : l'écran le
       // dit, pour que l'avocat vérifie au lieu de faire confiance.
       reconnus: lecture.reconnus,

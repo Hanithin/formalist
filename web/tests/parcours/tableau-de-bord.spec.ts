@@ -143,6 +143,15 @@ test.describe("espace avocat", () => {
   test("le dossier montre les informations et ce qui manque encore", async ({ page }) => {
     await ouvrirLeDossier(page, "PARCOURS EN COURS");
 
+    /*
+     * Le dossier s'ouvre désormais sur ce qu'il reste à faire : l'avocat qui vient de
+     * le prendre veut savoir par où commencer, non relire une fiche. Le récapitulatif
+     * est à un clic.
+     */
+    await expect(page.getByRole("heading", { name: /choses à faire|chose à faire|Tout est fait/ })).toBeVisible();
+    await page.getByRole("link", { name: "Récapitulatif" }).click();
+    await page.waitForURL(/onglet=recapitulatif/);
+
     await expect(page.getByRole("heading", { name: "Informations du dossier" })).toBeVisible();
     // Le dossier d'essai est vide : tout doit être annoncé comme non renseigné.
     await expect(page.getByText(/Pas encore renseigné par le client/)).toBeVisible();

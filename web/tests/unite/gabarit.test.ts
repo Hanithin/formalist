@@ -45,7 +45,10 @@ describe("montants en toutes lettres", () => {
 describe("dates en français", () => {
   it("une date ISO devient lisible", () => {
     expect(dateEnFrancais("2026-08-10")).toBe("10 août 2026");
-    expect(dateEnFrancais("1990-01-01")).toBe("1 janvier 1990");
+    // Le premier du mois s'écrit « 1er » : « Fait le 1 janvier » dans un acte
+    // déposé au greffe se lit comme une négligence sur le reste du document.
+    expect(dateEnFrancais("1990-01-01")).toBe("1er janvier 1990");
+    expect(dateEnFrancais("1990-01-02")).toBe("2 janvier 1990");
   });
 
   it("une entrée absente ou illisible passe sans casser l'acte", () => {
@@ -308,7 +311,7 @@ describe("les noms de champs sont ceux des gabarits Word", () => {
   it("la clôture s'écrit sans année, elle revient chaque an", () => {
     expect(d.DATE_CLOTURE).toBe("31 décembre");
     expect(d.ANNEE_PREMIER_EXERCICE).toBe("2027");
-    expect(d.DATE_DEBUT_ACTIVITE).toBe("1 septembre 2026");
+    expect(d.DATE_DEBUT_ACTIVITE).toBe("1er septembre 2026");
   });
 
   it("la date de signature est celle qu'on lui donne, pas celle de l'horloge", () => {

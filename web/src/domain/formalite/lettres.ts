@@ -89,7 +89,13 @@ export function nombreEnFrancais(valeur: number): string {
   return tranche(euros);
 }
 
-/** « 2026-08-10 » donne « 10 août 2026 ». Une entrée illisible est rendue telle quelle. */
+/**
+ * « 2026-08-10 » donne « 10 août 2026 ». Une entrée illisible est rendue telle quelle.
+ *
+ * Le premier du mois s'écrit « 1er ». « Fait le 1 septembre » dans un acte déposé au
+ * greffe ou dans un avis publié se remarque, et se lit comme une négligence sur le
+ * reste du document.
+ */
 export function dateEnFrancais(iso: string | null | undefined): string {
   // Une date absente s'écrit « - » comme n'importe quel champ vide d'un acte.
   if (!iso?.trim()) return "-";
@@ -99,5 +105,6 @@ export function dateEnFrancais(iso: string | null | undefined): string {
   const rang = parseInt(mois, 10);
   if (!MOIS[rang - 1]) return iso;
 
-  return parseInt(jour, 10) + " " + MOIS[rang - 1] + " " + annee;
+  const quantieme = parseInt(jour, 10);
+  return (quantieme === 1 ? "1er" : String(quantieme)) + " " + MOIS[rang - 1] + " " + annee;
 }
