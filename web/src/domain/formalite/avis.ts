@@ -11,6 +11,8 @@
  * changement de sous-phase finit par ne plus les ouvrir, y compris celui qui compte.
  */
 
+import { adresseDuDossier } from "./liste";
+
 export type GenreDAvis =
   | "document_refuse"
   | "document_valide"
@@ -23,6 +25,15 @@ export type GenreDAvis =
   | "immatriculee"
   | "dossier_a_prendre";
 
+/**
+ * Où mène le bouton du courriel.
+ *
+ * Nommée, non écrite en dur : le domaine sait ce qu'il attend - le fil, les documents,
+ * le dossier - mais l'adresse d'un dossier dépend de son type, que seule la couche
+ * d'accès connaît.
+ */
+export type DestinationDAvis = "dossier" | "messagerie" | "documents" | "avocat";
+
 export interface Avis {
   genre: GenreDAvis;
   /** La ligne de la cloche : ce qui s'est passé, en une phrase. */
@@ -33,6 +44,14 @@ export interface Avis {
   corps?: string;
   /** L'intitulé du bouton du courriel. */
   bouton?: string;
+  /**
+   * Où le bouton conduit.
+   *
+   * Tous menaient au tableau de bord, quel que soit leur libellé : on cliquait
+   * « Consulter le motif » et l'on arrivait sur l'accueil, à charge de retrouver son
+   * dossier. Un bouton qui ne tient pas ce qu'il annonce vaut moins qu'un lien nu.
+   */
+  destination?: DestinationDAvis;
 }
 
 /** Les genres qui justifient de déranger quelqu'un dans sa boîte aux lettres. */
@@ -52,6 +71,7 @@ export function partParCourriel(genre: GenreDAvis): boolean {
 
 /* ---------- Les avis, un par événement ---------- */
 
+
 export function documentRefuse(nom: string, societe: string, motif: string): Avis {
   return {
     genre: "document_refuse",
@@ -64,6 +84,7 @@ export function documentRefuse(nom: string, societe: string, motif: string): Avi
       motif +
       "\n\nDéposez le nouveau fichier depuis vos documents : l'avocat le vérifie ensuite, il n'y a rien d'autre à faire de votre côté.",
     bouton: "Remplacer le document",
+    destination: "documents",
   };
 }
 
@@ -82,6 +103,7 @@ export function correctionsDemandees(societe: string): Avis {
     corps:
       "L'avocat a relu votre dossier et demande des corrections avant de pouvoir le déposer.\n\nLe détail est dans votre messagerie.",
     bouton: "Voir le détail",
+    destination: "messagerie",
   };
 }
 
@@ -100,6 +122,7 @@ export function dossierRejete(societe: string): Avis {
     corps:
       "L'avocat a refusé le dossier en l'état. Le motif est dans votre messagerie, et le dossier reste modifiable : une fois repris, il repart en vérification.",
     bouton: "Consulter le motif",
+    destination: "messagerie",
   };
 }
 
@@ -123,6 +146,7 @@ export function annonceAPublier(societe: string): Avis {
       "3. Le journal vous envoie une attestation de parution : déposez-la ici.\n\n" +
       "Le greffe réclame cette attestation avec le dossier : sans elle, le dépôt ne peut pas se faire.",
     bouton: "Déposer l'attestation",
+    destination: "dossier",
   };
 }
 
@@ -135,6 +159,7 @@ export function attestationAttendue(societe: string): Avis {
       "Votre banque vous remet une attestation après le versement du capital. Déposez-la dans votre dossier.\n\n" +
       "Vos actes seront alors datés du jour où vous l'avez obtenue : c'est celui où vous les signez.",
     bouton: "Déposer l'attestation",
+    destination: "dossier",
   };
 }
 
@@ -157,6 +182,7 @@ export function immatriculee(societe: string, avecRbe: boolean): Avis {
       (avecRbe ? " et le registre des bénéficiaires effectifs sont" : " est") +
       " dans vos documents.",
     bouton: "Voir mes documents",
+    destination: "documents",
   };
 }
 
@@ -180,5 +206,32 @@ export function dossierAPrendre(societe: string, forme: string | null): Avis {
       " vient d'être transmis et attend d'être révisé.\n\n" +
       "Il est proposé à tous les avocats : le premier qui l'accepte le prend en charge.",
     bouton: "Voir le dossier",
+    destination: "avocat",
   };
+}
+
+/**
+ * Le chemin où mène le bouton d'un avis.
+ *
+ * Sans dossier - ou sans destination - on retombe sur le tableau de bord : c'est la
+ * seule page qui a du sens quand on ne sait pas de quoi il s'agit.
+ */
+export function cheminDeLAvis(
+  avis: Avis,
+  dossier: { id: number; type: string | null } | null
+): string {
+  if (!dossier) return "/tableau-de-bord";
+
+  switch (avis.destination) {
+    case "messagerie":
+      return "/messagerie?dossier=" + dossier.id;
+    case "documents":
+      return "/documents";
+    case "avocat":
+      return "/avocat/" + dossier.id;
+    case "dossier":
+      return adresseDuDossier(dossier);
+    default:
+      return "/tableau-de-bord";
+  }
 }

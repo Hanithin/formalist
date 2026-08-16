@@ -74,6 +74,21 @@ test.describe("l'avocat demande des corrections", () => {
       expect(messages[0].content).toBe(MOTIF);
       expect(messages[0].kind).toBe("correction_request");
     });
+
+    test("le motif d'un refus y arrive aussi", async ({ request }) => {
+      /*
+       * L'avis d'un refus dit « le motif est dans votre messagerie » : il n'y était pas
+       * davantage que celui d'une demande de corrections.
+       */
+      const refuse = await dossierEnVerification();
+      const reponse = await request.put("/api/avocat/dossier", {
+        data: { dossier: refuse, etat: "rejete", commentaire: "Objet social non conforme." },
+      });
+      expect(reponse.status()).toBe(200);
+
+      const messages = await prisma.messages.findMany({ where: { formalite_id: refuse } });
+      expect(messages.map((m) => m.content)).toEqual(["Objet social non conforme."]);
+    });
   });
 
   test.describe("côté client", () => {

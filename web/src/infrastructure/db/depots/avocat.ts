@@ -259,14 +259,14 @@ export async function changerEtatDossier(
   });
 
   /*
-   * Ce qui est demandé est écrit au dossier, non seulement au journal.
+   * Ce qui est demandé - ou reproché - est écrit au dossier, non seulement au journal.
    *
    * Le motif saisi par l'avocat ne partait que dans le journal d'audit, que le client
    * ne voit pas. Le courriel lui disait pourtant « le détail est dans votre
    * messagerie », où rien n'était écrit : il apprenait qu'on lui demandait quelque
    * chose sans jamais pouvoir savoir quoi.
    */
-  if (vers === "corrections_demandees" && commentaire?.trim()) {
+  if ((vers === "corrections_demandees" || vers === "rejete") && commentaire?.trim()) {
     await prisma.messages.create({
       data: {
         formalite_id: dossierId,

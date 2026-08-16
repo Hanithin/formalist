@@ -1,4 +1,5 @@
 import { prisma } from "../client";
+import { cheminDeLAvis } from "@/domain/formalite/avis";
 import { partParCourriel, type Avis } from "@/domain/formalite/avis";
 import { emailDAvis } from "@/infrastructure/mail/envoi";
 import type { UtilisateurConnecte } from "../sessions";
@@ -33,7 +34,21 @@ export async function prevenir(destinataireId: number, dossierId: number | null,
   });
   if (!destinataire?.email) return;
 
-  await emailDAvis(destinataire.name ?? "", destinataire.email, avis);
+  /*
+   * Le bouton mène là où il dit.
+   *
+   * Tous pointaient vers le tableau de bord, quel que soit leur libellé : on cliquait
+   * « Consulter le motif » et l'on arrivait sur l'accueil, à charge de retrouver son
+   * dossier. Le type de la formalité décide de son adresse, d'où cette lecture.
+   */
+  const dossier = dossierId
+    ? await prisma.formalites.findUnique({
+        where: { id: dossierId },
+        select: { id: true, type: true },
+      })
+    : null;
+
+  await emailDAvis(destinataire.name ?? "", destinataire.email, avis, cheminDeLAvis(avis, dossier));
 }
 
 /** Les avis d'une personne, les plus récents d'abord. */

@@ -181,10 +181,11 @@ export function emailInvitationEquipe(
  * traduits en paragraphes après échappement, pour que ni le texte ni sa mise en forme
  * ne puissent porter de balise.
  */
-export function emailDAvis(prenom: string, adresse: string, avis: Avis) {
+export function emailDAvis(prenom: string, adresse: string, avis: Avis, chemin?: string) {
   if (!avis.sujet || !avis.corps) return Promise.resolve({ ok: true });
 
-  const lien = adresseApplication() + "/tableau-de-bord";
+  // Le tableau de bord n'est plus qu'un repli : chaque avis dit où il conduit.
+  const lien = adresseApplication() + (chemin ?? "/tableau-de-bord");
   const corpsHtml = echapper(avis.corps)
     .split(/\n{2,}/)
     .map((p) => "<p style=\"margin:0 0 14px;\">" + p.replace(/\n/g, "<br>") + "</p>")
