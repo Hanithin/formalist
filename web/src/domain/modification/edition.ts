@@ -358,7 +358,14 @@ export function recherchesPour(
  * traitements de texte par défaut sur un acte. Écrire la nouvelle valeur en sans
  * serif à côté de l'ancienne se voit immédiatement, et fait douter du document.
  */
-export type Police = "serif" | "sans" | "mono" | "garamond" | "lato";
+export type Police =
+  | "serif"
+  | "sans"
+  | "mono"
+  | "garamond"
+  | "lato"
+  | "calibri"
+  | "georgia";
 
 /*
  * Les trois premières sont les polices standard du format PDF : elles ne pèsent rien
@@ -367,17 +374,33 @@ export type Police = "serif" | "sans" | "mono" | "garamond" | "lato";
  * mais une autre police.
  */
 export const POLICES: { valeur: Police; libelle: string; embarquee?: boolean }[] = [
-  { valeur: "serif", libelle: "Serif (Times)" },
-  { valeur: "sans", libelle: "Sans serif (Helvetica)" },
-  { valeur: "mono", libelle: "Chasse fixe (Courier)" },
+  { valeur: "serif", libelle: "Times New Roman" },
+  { valeur: "sans", libelle: "Arial" },
+  { valeur: "georgia", libelle: "Georgia", embarquee: true },
+  { valeur: "calibri", libelle: "Calibri", embarquee: true },
   { valeur: "garamond", libelle: "EB Garamond", embarquee: true },
   { valeur: "lato", libelle: "Lato", embarquee: true },
+  { valeur: "mono", libelle: "Courier" },
 ];
 
-/** Les familles à embarquer, et le nom de leurs fichiers. */
+/**
+ * Les familles à embarquer, et le nom de leurs fichiers.
+ *
+ * Calibri et Georgia appartiennent à Microsoft et ne se redistribuent pas. On emploie
+ * leurs équivalents libres métriquement compatibles - Carlito et Gelasio - qui ont
+ * exactement les mêmes chasses : un texte composé dans l'une occupe le même espace
+ * que dans l'autre, au point près. C'est la substitution que fait LibreOffice depuis
+ * toujours, et c'est ce qui compte pour un acte dont on retouche un passage au milieu
+ * d'un texte existant.
+ *
+ * Times New Roman et Arial n'y figurent pas : le format PDF garantit Times et
+ * Helvetica, qui leur sont métriquement identiques et ne pèsent rien.
+ */
 export const POLICES_EMBARQUEES: Record<string, string> = {
   garamond: "EBGaramond",
   lato: "Lato",
+  calibri: "Carlito",
+  georgia: "Gelasio",
 };
 
 /** Où le texte se pose dans son cadre. */
@@ -419,7 +442,13 @@ export function retouchesProposees(zones: Zone[]): Retouche[] {
       // Le passage replié sur deux lignes ne reçoit le nouveau texte que sur la
       // première : le reste est couvert, sans quoi le texte serait écrit deux fois.
       texte: rang === 0 ? zone.propose : "",
-      taille: zone.taille,
+      /*
+       * Arrondie au dixième.
+       *
+       * La taille vient de la hauteur mesurée des mots, qui tombe sur des flottants :
+       * le champ affichait « 14.400000000000006 », qu'on ne peut ni lire ni corriger.
+       */
+      taille: Math.round(zone.taille * 10) / 10,
       police: "serif",
       gras: false,
       italique: false,

@@ -640,16 +640,31 @@ test("la barre de mise en forme se règle vraiment", async ({ page, request }) =
   const barre = page.locator("[data-mise-en-forme]");
   await expect(barre).toBeVisible();
 
-  // Les cinq polices, dont les deux embarquées dans le document.
+  // Les polices proposées, dont celles qui voyagent dans le document.
   const polices = await barre.locator("select option").allTextContents();
-  expect(polices).toContain("EB Garamond");
-  expect(polices).toContain("Lato");
+  for (const attendue of ["Times New Roman", "Arial", "Georgia", "Calibri", "EB Garamond", "Lato"]) {
+    expect(polices, attendue).toContain(attendue);
+  }
 
-  const avant = await page.evaluate(
+  const avantTaille = await page.evaluate(
     () => getComputedStyle(document.querySelector("div[class*='repereOuvert']")!).fontSize
   );
 
-  await barre.locator("input[type=number]").fill("22");
+  /*
+   * Le champ de taille se laisse écrire.
+   *
+   * Borner à chaque frappe le rendait inutilisable : taper « 2 » en route vers « 22 »
+   * le ramenait aussitôt au minimum, et l'effacer pour recommencer était impossible -
+   * une valeur vide vaut zéro, donc le minimum.
+   */
+  const champTaille = barre.locator("input[aria-label='Taille du texte']");
+  await champTaille.fill("");
+  expect(await champTaille.inputValue()).toBe("");
+  await champTaille.type("2");
+  expect(await champTaille.inputValue()).toBe("2");
+  await champTaille.type("2");
+  expect(await champTaille.inputValue()).toBe("22");
+
   await barre.locator("select").selectOption("garamond");
 
   const apres = await page.evaluate(() => {
@@ -658,9 +673,149 @@ test("la barre de mise en forme se règle vraiment", async ({ page, request }) =
     return { taille: style.fontSize, famille: style.fontFamily };
   });
 
-  expect(apres.taille).not.toBe(avant);
+  // La taille tapée est bien celle qui s'affiche, et la police a suivi.
+  expect(apres.taille).not.toBe(avantTaille);
   expect(apres.famille).toContain("EB Garamond");
 
   // Régler n'a pas fermé la saisie : on continue d'écrire sans recliquer.
   await expect(page.locator("input[class*='repereSaisie']")).toBeVisible();
+});
+
+test("un clic dehors referme le cadre et sa barre", async ({ page, request }) => {
+  /*
+   * La fermeture ne tenait qu'au blur de la saisie : dès qu'on avait touché la barre -
+   * le champ de taille, le sélecteur de police - le curseur n'était plus dans le
+   * texte, et cliquer ailleurs ne refermait plus rien. Le cadre restait ouvert
+   * indéfiniment, sa barre posée par-dessus la page.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["denomination"],
+      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
+    },
+  });
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 700, size: 16, font: police });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/modification?dossier=" + dossier + "&etape=6");
+  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.getByRole("button", { name: "Mise en forme" }).click();
+
+  const barre = page.locator("[data-mise-en-forme]");
+  await expect(barre).toBeVisible();
+
+  // On règle quelque chose : le curseur quitte le texte pour la barre.
+  await barre.locator("input[aria-label='Taille du texte']").fill("14");
+  await expect(barre).toBeVisible();
+
+  // Puis on clique ailleurs sur la page : tout se referme.
+  await page.mouse.click(boite.x, boite.y + 320);
+
+  await expect(barre).toHaveCount(0);
+  await expect(page.locator("div[class*='repereOuvert']")).toHaveCount(0);
+  // Et le texte réglé est resté.
+  await expect(page.locator("div[class*='repere']").first()).toContainText("ESSAI GROUPE");
+});
+
+test("les poignées montrent ce qui se saisit", async ({ page, request }) => {
+  /*
+   * Un bord vert sans dessin ne dit pas qu'il se tire : on le prend pour une bordure.
+   * Chaque poignée porte donc sa flèche - croix pour déplacer, horizontale pour la
+   * largeur, verticale pour la hauteur - et elles ne se recouvrent pas : le bouton de
+   * mise en forme, posé sur l'angle, masquait la plus utile des trois.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["denomination"],
+      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
+    },
+  });
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 700, size: 16, font: police });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/modification?dossier=" + dossier + "&etape=6");
+  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+
+  const reperes = await page.evaluate(() => {
+    const cadre = document.querySelector("div[class*='repereOuvert']") as HTMLElement;
+    const nomme = (e: Element) => e.className.replace(/Modification-module__\w+__/g, "");
+    const boites = [...cadre.querySelectorAll("span")]
+      .filter((e) => /poignee|borddroit|bordbas|coin/.test(nomme(e)))
+      .map((e) => ({ nom: nomme(e), boite: e.getBoundingClientRect() }));
+
+    const appel = cadre.querySelector("button[aria-label='Mise en forme']")!.getBoundingClientRect();
+    return {
+      noms: boites.map((b) => b.nom),
+      // Chaque poignée occupe une vraie surface, et aucune ne se cache sous le bouton.
+      surfaces: boites.map((b) => Math.round(b.boite.width * b.boite.height)),
+      chevauchements: boites.filter(
+        (b) =>
+          b.boite.left < appel.right &&
+          b.boite.right > appel.left &&
+          b.boite.top < appel.bottom &&
+          b.boite.bottom > appel.top
+      ).length,
+    };
+  });
+
+  // Déplacement, largeur, hauteur.
+  expect(reperes.noms).toHaveLength(3);
+  for (const surface of reperes.surfaces) expect(surface).toBeGreaterThan(200);
+  expect(reperes.chevauchements).toBe(0);
 });

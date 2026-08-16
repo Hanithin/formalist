@@ -44,6 +44,71 @@ interface Props {
   surChangement: (retouches: Retouche[]) => void;
 }
 
+/** Bornes de la taille du texte : sous six points on ne lit plus, au-delà on déborde. */
+const TAILLE_MINIMALE = 6;
+const TAILLE_MAXIMALE = 40;
+
+/**
+ * Le champ de taille, qui se laisse écrire.
+ *
+ * Borner à chaque frappe rendait le champ inutilisable : taper « 2 » en route vers
+ * « 22 » le ramenait aussitôt à 6, et l'effacer pour recommencer était impossible -
+ * une valeur vide vaut zéro, donc six. Le champ garde donc sa propre chaîne pendant
+ * qu'on écrit, ne remonte que ce qui tient dans les bornes, et se remet d'aplomb
+ * quand on le quitte.
+ */
+function ChampTaille({
+  valeur,
+  surChangement,
+}: {
+  valeur: number;
+  surChangement: (taille: number) => void;
+}) {
+  /*
+   * La chaîne en cours de frappe, distincte de la valeur du cadre.
+   *
+   * Elle n'a pas à se resynchroniser : la barre vit dans le cadre ouvert, et changer
+   * de cadre la démonte. Le champ repart donc de la bonne valeur à chaque ouverture.
+   */
+  const [saisie, setSaisie] = useState(String(Math.round(valeur * 10) / 10));
+
+  function ecrire(texte: string) {
+    setSaisie(texte);
+
+    const lu = Number(texte.replace(",", "."));
+    // Hors bornes ou illisible : on laisse écrire sans rien remonter. La valeur du
+    // cadre ne bouge que pour une taille qui a un sens.
+    if (!texte.trim() || !Number.isFinite(lu)) return;
+    if (lu < TAILLE_MINIMALE || lu > TAILLE_MAXIMALE) return;
+    surChangement(Math.round(lu * 10) / 10);
+  }
+
+  function remettreDAplomb() {
+    const lu = Number(saisie.replace(",", "."));
+    const retenue = Number.isFinite(lu)
+      ? Math.min(TAILLE_MAXIMALE, Math.max(TAILLE_MINIMALE, lu))
+      : valeur;
+
+    const arrondie = Math.round(retenue * 10) / 10;
+    setSaisie(String(arrondie));
+    if (arrondie !== valeur) surChangement(arrondie);
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      aria-label="Taille du texte"
+      value={saisie}
+      onChange={(e) => ecrire(e.target.value)}
+      onBlur={remettreDAplomb}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+    />
+  );
+}
+
 /**
  * Les réglages d'un cadre.
  *
@@ -84,17 +149,7 @@ function MiseEnForme({
         ))}
       </select>
 
-      <input
-        type="number"
-        aria-label="Taille du texte"
-        min={6}
-        max={40}
-        step={0.5}
-        value={retouche.taille}
-        onChange={(e) =>
-          surChangement({ taille: Math.min(40, Math.max(6, Number(e.target.value))) })
-        }
-      />
+      <ChampTaille valeur={retouche.taille} surChangement={(taille) => surChangement({ taille })} />
 
       <span className={styles.formeSeparateur} aria-hidden="true" />
 
@@ -184,10 +239,13 @@ function MiseEnForme({
 /** Les familles, telles que le navigateur les rend, au plus près du PDF produit. */
 const FAMILLES: Record<Police, string> = {
   serif: '"Times New Roman", Times, serif',
-  sans: "Helvetica, Arial, sans-serif",
+  sans: "Arial, Helvetica, sans-serif",
   mono: "Courier, monospace",
   garamond: '"EB Garamond", "Times New Roman", serif',
   lato: "Lato, Helvetica, Arial, sans-serif",
+  // Les équivalents libres d'abord : ce sont eux qui iront dans le document.
+  calibri: "Carlito, Calibri, Helvetica, sans-serif",
+  georgia: "Gelasio, Georgia, serif",
 };
 
 export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangement }: Props) {
@@ -297,6 +355,30 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
     setChoisie(index);
     if (index === null) setFormeOuverte(false);
   }
+
+  /*
+   * Un clic dehors referme le cadre et sa barre.
+   *
+   * La fermeture ne tenait qu'au blur de la saisie : dès qu'on avait touché la barre
+   * - le champ de taille, le sélecteur de police - le curseur n'était plus dans le
+   * texte, et cliquer ailleurs ne refermait plus rien. Le cadre restait ouvert
+   * indéfiniment, sa barre par-dessus la page.
+   */
+  useEffect(() => {
+    if (choisie === null) return;
+
+    function auClic(evenement: PointerEvent) {
+      const cible = evenement.target as HTMLElement | null;
+      if (cible?.closest?.("[data-cadre-ouvert], [data-mise-en-forme]")) return;
+      setChoisie(null);
+      setFormeOuverte(false);
+    }
+
+    // À la phase de capture : un cadre qui se referme au clic ne doit pas empêcher ce
+    // même clic d'ouvrir le cadre suivant.
+    document.addEventListener("pointerdown", auClic, true);
+    return () => document.removeEventListener("pointerdown", auClic, true);
+  }, [choisie]);
 
   function modifier(index: number, changement: Partial<Retouche>) {
     surChangement(retouches.map((r, i) => (i === index ? { ...r, ...changement } : r)));
@@ -533,27 +615,53 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                     : ("left" as const),
             };
 
+            /*
+              Les poignées portent leur flèche.
+              Un bord vert sans dessin ne dit pas qu'il se tire : on le prend pour une
+              bordure. La flèche horizontale annonce la largeur, la verticale la
+              hauteur, la diagonale les deux, et la croix le déplacement.
+            */
             const poignees = (
               <>
-                {/* Les bords se tirent : la largeur, la hauteur, ou les deux. */}
                 <span
                   className={styles.borddroit}
                   onPointerDown={(e) => commencerGeste(e, index, "largeur")}
-                  title="Régler la largeur"
+                  title="Tirez pour élargir"
                   aria-hidden="true"
-                />
+                >
+                  <svg viewBox="0 0 24 24" className={styles.flecheBord}>
+                    <path d="M8 8 L4 12 L8 16 M16 8 L20 12 L16 16 M5 12 H19" />
+                  </svg>
+                </span>
+
                 <span
                   className={styles.bordbas}
                   onPointerDown={(e) => commencerGeste(e, index, "hauteur")}
-                  title="Régler la hauteur"
+                  title="Tirez pour changer la hauteur"
                   aria-hidden="true"
-                />
-                <span
-                  className={styles.coin}
-                  onPointerDown={(e) => commencerGeste(e, index, "coin")}
-                  title="Régler la taille"
-                  aria-hidden="true"
-                />
+                >
+                  <svg viewBox="0 0 24 24" className={styles.flecheBord}>
+                    <path d="M8 8 L12 4 L16 8 M8 16 L12 20 L16 16 M12 5 V19" />
+                  </svg>
+                </span>
+
+                {/*
+                  Le coin ne s'affiche que si le cadre est assez haut pour le porter.
+                  Sur un cadre de vingt pixels, les trois pastilles se chevauchent et
+                  celle de la largeur devient inatteignable - or c'est la plus utile.
+                */}
+                {retouche.hauteur * echelle >= 34 && (
+                  <span
+                    className={styles.coin}
+                    onPointerDown={(e) => commencerGeste(e, index, "coin")}
+                    title="Tirez pour régler la taille"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 24 24" className={styles.flecheCoin}>
+                      <path d="M9 21 H21 V9 M21 21 L11 11" />
+                    </svg>
+                  </span>
+                )}
               </>
             );
 
@@ -610,7 +718,7 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
             }
 
             return (
-              <div key={index} className={styles.repereOuvert} style={style}>
+              <div key={index} className={styles.repereOuvert} style={style} data-cadre-ouvert>
                 {/*
                   La poignée déplace, le reste du cadre se laisse écrire. Sans elle,
                   cliquer pour poser le curseur déplacerait le cadre.
@@ -618,23 +726,26 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                 <span
                   className={styles.poignee}
                   onPointerDown={(e) => commencerGeste(e, index, "deplacer")}
-                  title="Déplacer"
+                  title="Tirez pour déplacer le cadre"
                   aria-hidden="true"
-                />
+                >
+                  <svg viewBox="0 0 24 24" className={styles.flechePoignee}>
+                    <path d="M12 3 L9 6 M12 3 L15 6 M12 3 V21 M12 21 L9 18 M12 21 L15 18 M3 12 L6 9 M3 12 L6 15 M3 12 H21 M21 12 L18 9 M21 12 L18 15" />
+                  </svg>
+                </span>
                 <input
                   ref={saisie}
                   className={styles.repereSaisie}
                   style={{ textAlign: style.textAlign, textDecoration: style.textDecoration }}
                   value={retouche.texte}
                   onChange={(e) => modifier(index, { texte: e.target.value })}
-                  onBlur={(e) => {
-                    // Cliquer dans le panneau de mise en forme n'est pas en sortir.
-                    const suite = e.relatedTarget as HTMLElement | null;
-                    if (suite?.closest?.("[data-mise-en-forme]")) return;
-                    ouvrir(null);
-                  }}
+                  /*
+                    La fermeture est décidée par le clic dehors, non par le blur : on
+                    peut donc passer de la saisie à la barre et revenir sans que le
+                    cadre se referme entre les deux.
+                  */
                   onKeyDown={(e) => {
-                    if (e.key === "Escape" || e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Escape" || e.key === "Enter") ouvrir(null);
                   }}
                 />
 
