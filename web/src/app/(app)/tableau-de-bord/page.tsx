@@ -22,6 +22,8 @@ import {
   Interlocuteur,
   FeuilleDeRoute,
 } from "./Focus";
+import { citation } from "@/domain/messagerie/messages";
+import { adresseDuDossier } from "@/domain/formalite/liste";
 import { ActionPrioritaire, type Priorite } from "./ActionPrioritaire";
 import { ToutesLesSocietes, type Ligne } from "./ToutesLesSocietes";
 import styles from "./TableauDeBord.module.css";
@@ -78,12 +80,33 @@ export default async function TableauDeBord() {
   const nonLus = societes.reduce((total, s) => total + s.nonLus, 0);
   if (nonLus > 0) {
     const avecMessages = societes.find((s) => s.nonLus > 0)!;
+    const dernier = avecMessages.dernierMessage;
+
+    /*
+     * Dire qui écrit, et ce qu'il écrit.
+     *
+     * « 1 nouveau message - Sur PARCOURS EN COURS » ne dit ni de qui il vient ni de
+     * quoi il s'agit : il faut ouvrir pour l'apprendre, et l'on ouvre donc toujours,
+     * même quand cela pouvait attendre. Le nom de l'expéditeur et les premiers mots
+     * suffisent presque toujours à trancher.
+     */
+    const correction = dernier?.genre === "correction_request";
+    const autres = nonLus - 1;
+
     priorites.push({
       icone: "message",
-      titre: accorder(nonLus, "nouveau message", "nouveaux messages"),
-      precision: "Sur " + avecMessages.societe,
+      titre: !dernier
+        ? accorder(nonLus, "nouveau message", "nouveaux messages")
+        : correction
+          ? dernier.auteur + " vous demande une correction"
+          : dernier.auteur + " vous a écrit",
+      societe: avecMessages.societe,
+      precision: dernier
+        ? citation(dernier.extrait) + (autres > 0 ? " (+" + autres + " autre" + (autres > 1 ? "s" : "") + ")" : "")
+        : accorder(nonLus, "message non lu", "messages non lus"),
+      ton: correction ? "action" : "info",
       lien: "/messagerie?dossier=" + avecMessages.id,
-      bouton: "Consulter",
+      bouton: correction ? "Voir ce qui est demandé" : "Lire le message",
     });
   } else {
     for (const s of societes.filter((s) => s.attendLeClient)) {
@@ -102,9 +125,16 @@ export default async function TableauDeBord() {
   // Les trois dossiers les plus récents ; le reste se consulte dans la fenêtre.
   const recentes = societes.slice(0, 3);
 
-  // Le dossier s'ouvre là où on le reprend : dans le parcours de création, pas
-  // sur une page de détail.
-  const dossier = (id: number) => "/creation?dossier=" + id;
+  /*
+   * Le dossier s'ouvre là où on le reprend, à l'adresse que son type commande.
+   *
+   * Toutes les lignes menaient au parcours de création : une modification ou une
+   * auto-entreprise ouverte depuis l'accueil arrivait sur le formulaire d'une société
+   * à créer.
+   */
+  const parIdentifiant = new Map(societes.map((s) => [s.id, s.type ?? null]));
+  const dossier = (id: number) =>
+    adresseDuDossier({ id, type: parIdentifiant.get(id) ?? null });
 
   const lignes: Ligne[] = societes.map((s) => {
     const termine = s.status === "terminee";
@@ -268,8 +298,17 @@ export default async function TableauDeBord() {
                         termine={termine}
                       />
 
+                      {/*
+                        Le nom prend toute la ligne.
+                        L'état l'accompagnait sur la même rangée : « SAS ESSAI MODIF »
+                        se réduisait à « SAS ESSAI MOD… » pour lui laisser la place,
+                        et l'étape passait à la ligne faute de largeur. L'état descend
+                        près du bouton, où il annonce le geste plutôt que le titre.
+                      */}
                       <div className={styles.socTileIdent}>
-                        <div className={styles.socTileName}>{nomComplet(s)}</div>
+                        <div className={styles.socTileName} title={nomComplet(s)}>
+                          {nomComplet(s)}
+                        </div>
                         <div className={styles.socTileStep}>
                           {termine
                             ? "Immatriculée"
@@ -281,16 +320,15 @@ export default async function TableauDeBord() {
                               nomEtape(s.etapeAffichee, s.offre)}
                         </div>
                       </div>
-
-                      <span className={`${styles.socTileStatus} ${ton}`}>{etat.libelle}</span>
                     </div>
 
                     <div className={styles.socTileNext}>{s.prochaineEtape}</div>
 
                     <div className={styles.socTileFoot}>
+                      <span className={`${styles.socTileStatus} ${ton}`}>{etat.libelle}</span>
                       {s.nonLus > 0 && (
                         <span className={styles.socTileUnread}>
-                          {accorder(s.nonLus, "message", "messages")}
+                          {accorder(s.nonLus, "message non lu", "messages non lus")}
                         </span>
                       )}
                       <Link href={dossier(s.id)} className={styles.socTileBtn}>

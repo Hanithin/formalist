@@ -1,5 +1,5 @@
 import { prisma } from "../client";
-import { listerDossiers, exigerDossier } from "./dossiers";
+import { mesDossiers, exigerDossier } from "./dossiers";
 import { actionsAttendues, prochaineEtape, type ContexteDossier } from "@/domain/formalite/actions";
 import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
 import type { EntreeJournal } from "@/domain/formalite/journal";
@@ -38,12 +38,25 @@ function lireBrouillon(dataJson: string | null): Brouillon & Record<string, unkn
 }
 
 export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
-  const dossiers = await listerDossiers(utilisateur);
+  /*
+   * Les siens, jamais ceux de toute la plateforme.
+   *
+   * listerDossiers rend tout à un administrateur : son accueil annonçait « Vos
+   * sociétés » avec les soixante-dix-neuf dossiers des clients, et « Maître Dupont
+   * vous a écrit » pour un message reçu dans le dossier de quelqu'un d'autre. Le lien
+   * menait alors à une messagerie où ce fil n'existe pas - elle ne montre que les
+   * siens - et l'écran restait vide.
+   *
+   * Un administrateur qui veut voir le dossier d'un client passe par l'administration
+   * ou l'espace avocat, où c'est annoncé. La bibliothèque de documents et la
+   * messagerie posaient déjà cette règle.
+   */
+  const dossiers = await mesDossiers(utilisateur);
   if (dossiers.length === 0) return { dossiers: [], societes: [], activite: [] };
 
   const identifiants = dossiers.map((d) => d.id);
 
-  const [rejetes, signatures, nonLus, journal] = await Promise.all([
+  const [rejetes, signatures, nonLus, derniers, journal] = await Promise.all([
     prisma.documents.groupBy({
       by: ["formalite_id"],
       where: { formalite_id: { in: identifiants }, rejection_reason: { not: null } },
@@ -64,6 +77,29 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       },
       _count: { _all: true },
     }),
+    /*
+     * Le dernier message reçu, non seulement leur nombre.
+     *
+     * « 1 nouveau message » ne dit ni qui écrit ni de quoi il s'agit : on ouvre pour
+     * l'apprendre. Le nom de l'expéditeur et les premiers mots suffisent le plus
+     * souvent à savoir si cela presse.
+     */
+    prisma.messages.findMany({
+      where: {
+        formalite_id: { in: identifiants },
+        read: false,
+        sender_id: { not: utilisateur.id },
+      },
+      orderBy: { created_at: "desc" },
+      select: {
+        formalite_id: true,
+        content: true,
+        kind: true,
+        created_at: true,
+        users: { select: { name: true } },
+      },
+      take: 40,
+    }),
     // Le fil d'activité, en une requête plutôt qu'un appel par dossier comme le
     // faisait la page d'origine.
     prisma.audit_log.findMany({
@@ -76,6 +112,10 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
 
   const rejetesPar = new Map(rejetes.map((r) => [r.formalite_id, r._count._all]));
   const nonLusPar = new Map(nonLus.map((m) => [m.formalite_id, m._count._all]));
+
+  // Le plus récent par dossier : la requête les rend déjà du plus récent au plus ancien.
+  const dernierPar = new Map<number, (typeof derniers)[number]>();
+  for (const m of derniers) if (!dernierPar.has(m.formalite_id)) dernierPar.set(m.formalite_id, m);
 
   const signaturesPar = new Map<number, { total: number; enAttente: number }>();
   for (const s of signatures) {
@@ -119,6 +159,16 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       etapeAffichee: Math.max(d.phase ?? 1, contexte.informationsCompletes ? 2 : 1),
       offre: d.offer,
       nonLus: nonLusPar.get(d.id) ?? 0,
+      dernierMessage: (() => {
+        const m = dernierPar.get(d.id);
+        return m
+          ? {
+              auteur: m.users?.name ?? "Le cabinet",
+              extrait: m.content,
+              genre: m.kind ?? "text",
+            }
+          : null;
+      })(),
       majLe: d.updated_at,
       attendLeClient: actions.length > 0,
       prochaineEtape: prochaineEtape(contexte),

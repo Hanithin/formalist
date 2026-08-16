@@ -15,6 +15,14 @@ import { COMPTE } from "./preparer";
 
 const MOTIF = "Le justificatif de domicile date de plus de trois mois. Merci d'en joindre un récent.";
 
+/*
+ * Un essai à la fois dans ce fichier.
+ *
+ * Plusieurs posent des messages non lus sur le même compte, et le bandeau d'accueil
+ * n'en montre qu'un : menés de front, chacun vérifiait celui d'un autre.
+ */
+test.describe.configure({ mode: "serial" });
+
 const semes: number[] = [];
 
 test.afterAll(async () => {
@@ -202,5 +210,105 @@ test.describe("une modification réglée", () => {
     await expect(page).toHaveURL(new RegExp("/modification\\?dossier=" + reglee.id));
     await expect(page.getByRole("heading", { name: "Où en est votre dossier" })).toBeVisible();
     await expect(page.getByText(/réglée et suivie par le cabinet/)).toBeVisible();
+  });
+});
+
+test.describe("le bandeau d'accueil", () => {
+  /*
+   * L'un après l'autre : les deux essais posent un message non lu sur le même dossier,
+   * et le bandeau n'en montre qu'un. Menés de front, chacun lisait celui de l'autre.
+   */
+  test.describe.configure({ mode: "serial" });
+
+  /*
+   * « 1 nouveau message - Sur PARCOURS EN COURS » ne disait ni de qui il venait ni de
+   * quoi il s'agissait : il fallait ouvrir pour l'apprendre, donc on ouvrait toujours,
+   * même quand cela pouvait attendre.
+   */
+  async function messageRecu(genre: string, contenu: string) {
+    const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
+    const avocat = await prisma.users.findFirstOrThrow({
+      where: { email: { startsWith: "avocat-parcours" } },
+    });
+    const dossier = await prisma.formalites.findFirstOrThrow({
+      where: { user_id: client.id, societe: "PARCOURS EN COURS" },
+    });
+    const message = await prisma.messages.create({
+      data: { formalite_id: dossier.id, sender_id: avocat.id, kind: genre, content: contenu },
+    });
+
+    /*
+     * Le bandeau ne montre qu'un message, le premier non lu du compte.
+     *
+     * Les autres essais du fichier en laissent sur leurs propres dossiers : sans les
+     * marquer lus, on vérifiait le leur au lieu du nôtre.
+     */
+    await prisma.messages.updateMany({
+      where: { id: { not: message.id }, read: false, formalites: { user_id: client.id } },
+      data: { read: true },
+    });
+
+    return message;
+  }
+
+  test("dit qui écrit, sur quel dossier, et ce qu'il écrit", async ({ page }) => {
+    const message = await messageRecu(
+      "correction_request",
+      "Le justificatif de domicile date de plus de trois mois."
+    );
+
+    try {
+      await page.goto("/tableau-de-bord");
+      await expect(page.getByText(/vous demande une correction/)).toBeVisible();
+      await expect(page.getByText("PARCOURS EN COURS").first()).toBeVisible();
+      await expect(page.getByText(/justificatif de domicile/).first()).toBeVisible();
+      await expect(page.getByRole("link", { name: /Voir ce qui est demandé/ })).toBeVisible();
+    } finally {
+      await prisma.messages.delete({ where: { id: message.id } });
+    }
+  });
+
+  test("un simple message ne s'annonce pas comme une urgence", async ({ page }) => {
+    // L'ambre est la couleur d'un geste attendu : tout la portait, donc plus rien ne
+    // ressortait.
+    const message = await messageRecu("text", "Bonjour, je prends votre dossier en main.");
+
+    try {
+      await page.goto("/tableau-de-bord");
+      await expect(page.getByText(/vous a écrit/)).toBeVisible();
+      await expect(page.getByRole("link", { name: /Lire le message/ })).toBeVisible();
+
+      const fond = await page
+        .locator("[class*='topAction']")
+        .first()
+        .evaluate((n) => getComputedStyle(n).backgroundImage);
+      expect(fond).toBe("none");
+    } finally {
+      await prisma.messages.delete({ where: { id: message.id } });
+    }
+  });
+});
+
+test.describe("l'accueil d'un administrateur", () => {
+  test.use({ storageState: "./tests/parcours/session-admin.json" });
+
+  test("ne compte que ses dossiers, pas ceux de la plateforme", async ({ page }) => {
+    /*
+     * listerDossiers rend tout à un administrateur : son accueil annonçait « Vos
+     * sociétés » avec les dossiers de tous les clients, et « Maître Dupont vous a
+     * écrit » pour un message reçu chez quelqu'un d'autre. Le lien menait alors à une
+     * messagerie où ce fil n'existe pas - elle ne montre que les siens - et l'écran
+     * restait vide. La bibliothèque de documents et la messagerie posaient déjà la
+     * règle ; l'accueil était le dernier à ne pas la suivre.
+     */
+    const enBase = await prisma.formalites.count();
+    expect(enBase).toBeGreaterThan(3);
+
+    await page.goto("/tableau-de-bord");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+    // Aucun dossier d'un autre compte ne s'affiche sous « Vos sociétés ».
+    await expect(page.getByText("PARCOURS EN COURS")).toHaveCount(0);
+    await expect(page.getByText("PARCOURS IMMATRICULEE")).toHaveCount(0);
   });
 });

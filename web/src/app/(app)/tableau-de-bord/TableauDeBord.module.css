@@ -171,6 +171,40 @@
     }
 .socTile:hover { border-color: #d4d4d8; box-shadow: 0 3px 14px rgba(0,0,0,0.05); }
 .socTile.action { border-color: #fde68a; }
+
+/*
+ * Un dossier abouti se voit d'un coup d'œil.
+ *
+ * Seul l'anneau était vert, dans une carte blanche comme les autres : il fallait
+ * regarder le petit cercle pour savoir. La carte entière porte la couleur, assez
+ * pâle pour ne pas crier.
+ */
+.socTile.done {
+  border-color: #d7f0dd;
+  background: #fbfefc;
+}
+.socTile.done:hover { border-color: #a7dfb8; }
+
+/*
+ * Terminé : une pastille pleine, non un anneau à 100 %.
+ *
+ * Un cercle vert épais autour d'une coche verte fait deux fois le même signe, et le
+ * trait ouvert laisse croire qu'il reste un morceau à parcourir.
+ */
+.socTile.done .socTileRing circle:global(.bg) { stroke: transparent; }
+.socTile.done .socTileRing circle:global(.fg) { stroke: transparent; }
+.socTile.done .socTileRing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #dcfce7;
+}
+.socTile.done .socTileRing svg { display: none; }
+.socTile.done .socTilePct { position: static; }
+.socTile.done .socTilePct svg { width: 24px; height: 24px; color: #15803d; }
 .socTileHead { display: flex; align-items: center; gap: 14px; }
 .socTileRing { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
 .socTileRing svg { width: 64px; height: 64px; transform: rotate(-90deg); }
@@ -189,25 +223,65 @@
 .socTile.done .socTilePct svg { width: 20px; height: 20px; transform: none; }
 .socTileIdent { flex: 1; min-width: 0; }
 .socTileName {
-      font-family: var(--police-titre), var(--police-texte), sans-serif; font-size: 17px; color: #111;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-.socTileStep { font-size: 12.5px; color: #71717a; margin-top: 3px; }
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 16.5px;
+  color: #111;
+  letter-spacing: 0;
+  /* Le nom occupe la ligne entière : rien ne se dispute plus la place avec lui. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* L'étape tient sur une ligne : coupée, elle se lisait « Étape 1 sur 5 · » puis rien. */
+.socTileStep {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: #71717a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .socTileStatus {
-      font-size: 11.5px; font-weight: 600; border-radius: 100px; padding: 4px 10px;
-      white-space: nowrap; flex-shrink: 0; align-self: flex-start;
-      background: #f4f4f5; color: #52525b;
-    }
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 4px 11px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0;
+  background: #f4f4f5;
+  color: #52525b;
+}
 .socTileStatus.action { background: #fef3c7; color: #92400e; }
 .socTileStatus.done { background: #dcfce7; color: #15803d; }
+/*
+ * Ce qu'il reste à faire, en texte plein.
+ *
+ * Encadré de gris, il formait une troisième boîte dans une carte qui en comptait déjà
+ * deux : la phrase la plus utile avait l'air d'une note en marge.
+ */
 .socTileNext {
-      font-size: 13.5px; color: #3f3f46; line-height: 1.5;
-      background: #fafafa; border-radius: 10px; padding: 12px 14px;
-    }
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #52525b;
+}
 /* margin-top: auto - les vignettes d'une même rangée ont la hauteur de la plus
    haute ; sans cela leurs boutons s'arrêtent à des hauteurs différentes. */
-.socTileFoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; }
-.socTileUnread { font-size: 12.5px; font-weight: 600; color: #dc2626; }
+.socTileFoot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid #f2f2f4;
+}
+.socTileUnread {
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  white-space: nowrap;
+}
 .socTileBtn {
       margin-left: auto; font-size: 13.5px; font-weight: 500; color: #fff; background: #111;
       border-radius: 100px; padding: 9px 18px; text-decoration: none; transition: background 0.15s;
@@ -256,10 +330,12 @@
 .todoTitle { display: block; font-size: 14.5px; font-weight: 500; color: #111; }
 .todoDesc { display: block; font-size: 13px; color: #71717a; margin-top: 2px; }
 .todoCta {
+      min-width: 132px; justify-content: center;
       font-size: 13px; font-weight: 500; color: #111; white-space: nowrap;
       border: 1px solid #d4d4d8; border-radius: 100px; padding: 7px 14px;
     }
-.todo:hover .todoCta { border-color: #111; }
+.todo:hover .todoCta {
+      min-width: 132px; justify-content: center; border-color: #111; }
 /* Activité */
     .actList { display: flex; flex-direction: column; gap: 2px; }
 .actRow { display: flex; gap: 12px; padding: 9px 0; }
@@ -301,7 +377,41 @@
 .topActionIcon svg { width: 22px; height: 22px; color: #111; }
 .topActionBody { flex: 1; min-width: 0; }
 .topActionTitle { font-size: 15px; font-weight: 600; color: #111; }
-.topActionDesc { font-size: 13px; color: #78350f; margin-top: 2px; }
+.topActionDesc {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 3px;
+  font-size: 13px;
+  color: #78350f;
+}
+
+/* Le nom du dossier, détaché : c'est ce qu'on cherche des yeux avant de lire. */
+.topActionSociete {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.07);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+/*
+ * Le ton d'un simple message.
+ *
+ * L'ambre annonce un geste attendu. Un message de l'avocat le portait aussi : tout
+ * s'alarmait de la même façon, donc plus rien ne ressortait.
+ */
+.topActionInfo {
+  background: #fff;
+  border-color: #e8e8ea;
+}
+.topActionInfo .topActionDesc { color: #71717a; }
+.topActionInfo .topActionIcon { background: #f4f4f5; }
+.topActionInfo .topActionSociete { background: #f4f4f5; color: #3f3f46; }
 .topActionBtn {
       flex-shrink: 0; padding: 10px 18px; background: #111; color: #fff;
       border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none;

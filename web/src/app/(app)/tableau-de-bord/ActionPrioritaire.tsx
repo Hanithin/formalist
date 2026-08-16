@@ -16,6 +16,15 @@ export interface Priorite {
   icone: "message" | "attente" | "document";
   titre: string;
   precision: string;
+  /** Le dossier concerné, nommé à part : c'est ce qu'on cherche des yeux. */
+  societe?: string;
+  /**
+   * Le ton du bandeau.
+   *
+   * L'ambre est la couleur d'un geste attendu. Un simple message de l'avocat le
+   * portait aussi : tout s'alarmait de la même façon, donc plus rien ne ressortait.
+   */
+  ton?: "action" | "info";
   lien: string;
   bouton: string;
 }
@@ -61,7 +70,11 @@ export function ActionPrioritaire({ priorites }: { priorites: Priorite[] }) {
   const plusieurs = priorites.length > 1;
 
   return (
-    <div className={styles.topAction}>
+    <div
+      className={
+        courante.ton === "info" ? `${styles.topAction} ${styles.topActionInfo}` : styles.topAction
+      }
+    >
       <div className={styles.topActionIcon}>
         <svg
           viewBox="0 0 24 24"
@@ -78,7 +91,10 @@ export function ActionPrioritaire({ priorites }: { priorites: Priorite[] }) {
 
       <div className={styles.topActionBody}>
         <div className={styles.topActionTitle}>{courante.titre}</div>
-        <div className={styles.topActionDesc}>{courante.precision}</div>
+        <div className={styles.topActionDesc}>
+          {courante.societe && <span className={styles.topActionSociete}>{courante.societe}</span>}
+          {courante.precision}
+        </div>
       </div>
 
       {plusieurs && (
