@@ -352,7 +352,7 @@ export default async function preparer() {
   // Deux comptes réservés aux essais de rôle : plusieurs tests les modifient en
   // parallèle, et partager une cible les faisait se marcher dessus.
   const cibles: Record<string, number> = {};
-  for (const suffixe of ["role-a", "role-b"]) {
+  for (const suffixe of ["role-a", "role-b", "activite"]) {
     const e = hacher("MotDePasseCible2026!");
     const cible = await prisma.users.upsert({
       where: { email: "cible-" + suffixe + "@exemple.test" },
@@ -378,6 +378,7 @@ export default async function preparer() {
       admin: administrateur.id,
       cibleA: cibles["role-a"],
       cibleB: cibles["role-b"],
+      cibleActivite: cibles["activite"],
     })
   );
 

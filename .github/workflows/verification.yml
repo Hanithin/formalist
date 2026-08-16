@@ -42,8 +42,26 @@ jobs:
 
       - run: npm ci
 
-      - name: Appliquer le schéma
-        run: psql "$DATABASE_URL" -f ../migrations/001_schema_initial.sql
+      # Les mêmes qu'en production (voir le Dockerfile) : la retouche des statuts lit
+      # la couche texte du PDF avec pdftotext et retombe sur tesseract quand il n'y en
+      # a pas. Sans eux, quatorze tests de lecture échouaient ici et nulle part
+      # ailleurs - la vérification était rouge en permanence, donc plus lue.
+      - name: Outils de lecture des PDF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            poppler-utils tesseract-ocr tesseract-ocr-fra
+
+      # Toutes les migrations, dans l'ordre, non le seul schéma initial : les colonnes
+      # ajoutées depuis manquaient à la base de la vérification, et les parcours
+      # échouaient sur « column documents.source_path does not exist ».
+      - name: Appliquer les migrations
+        run: |
+          set -e
+          for fichier in $(ls ../migrations/*.sql | sort); do
+            echo "-> $fichier"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$fichier"
+          done
 
       - name: Générer le client Prisma
         run: npx prisma generate

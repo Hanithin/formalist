@@ -251,7 +251,24 @@ export async function changerLesRoles(
   exigerAdministrateur(utilisateur);
 
   const administrateurs = await prisma.users.count({ where: { role: "admin" } });
-  const verdict = verifierChangementDeRoles(demandes, cibleId, utilisateur.id, administrateurs);
+  const cible = await prisma.users.findUnique({
+    where: { id: cibleId },
+    select: { role: true, roles: true },
+  });
+  if (!cible) throw new ChangementRefuse({ champ: "compte", message: "Compte introuvable" });
+
+  // Le rôle principal ne suffit pas : un compte peut porter « admin » dans sa liste
+  // sans l'avoir pour rôle principal.
+  const cibleEstAdministrateur =
+    cible.role === "admin" || (cible.roles ?? "").includes("admin");
+
+  const verdict = verifierChangementDeRoles(
+    demandes,
+    cibleId,
+    utilisateur.id,
+    administrateurs,
+    cibleEstAdministrateur
+  );
   if (!verdict.ok) throw new ChangementRefuse(verdict.anomalie);
 
   const { roles, principal } = verdict.changement;

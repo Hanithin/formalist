@@ -47,12 +47,14 @@ export function rolePrincipal(roles: Role[]): Role {
  * @param cibleId compte dont on change les rôles
  * @param administrateurId compte qui fait le changement
  * @param nombreAdministrateurs administrateurs actuellement en place
+ * @param cibleEstAdministrateur la cible est administrateur aujourd'hui
  */
 export function verifierChangementDeRoles(
   demandes: unknown,
   cibleId: number,
   administrateurId: number,
-  nombreAdministrateurs: number
+  nombreAdministrateurs: number,
+  cibleEstAdministrateur = false
 ): { ok: true; changement: ChangementDeRoles } | { ok: false; anomalie: Anomalie } {
   const roles = normaliserRoles(demandes);
 
@@ -72,9 +74,17 @@ export function verifierChangementDeRoles(
     };
   }
 
-  // Retirer le dernier administrateur laisserait la plateforme sans personne
-  // pour accorder des rôles, y compris pour réparer l'erreur.
-  if (!roles.includes("admin") && nombreAdministrateurs <= 1) {
+  /*
+   * Retirer le dernier administrateur laisserait la plateforme sans personne pour
+   * accorder des rôles, y compris pour réparer l'erreur.
+   *
+   * La règle ne vaut que si la cible est elle-même administrateur. Sans cette
+   * condition, elle se déclenchait sur n'importe quel compte dès qu'il n'y avait
+   * qu'un administrateur - c'est-à-dire la situation ordinaire d'une plateforme
+   * naissante : nommer un avocat était refusé au motif qu'on rétrogradait le dernier
+   * administrateur, alors qu'on ne touchait pas à lui.
+   */
+  if (cibleEstAdministrateur && !roles.includes("admin") && nombreAdministrateurs <= 1) {
     return {
       ok: false,
       anomalie: {

@@ -66,13 +66,25 @@ describe("changement de rôles", () => {
   });
 
   it("le dernier administrateur de la plateforme ne peut pas être rétrogradé", () => {
-    const verdict = verifierChangementDeRoles(["user"], AUTRE, ADMIN, 1);
+    // La cible est administrateur : c'est bien lui qu'on rétrograde.
+    const verdict = verifierChangementDeRoles(["user"], AUTRE, ADMIN, 1, true);
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) expect(verdict.anomalie.message).toContain("au moins un administrateur");
   });
 
   it("avec plusieurs administrateurs, en rétrograder un passe", () => {
-    expect(verifierChangementDeRoles(["user"], AUTRE, ADMIN, 2).ok).toBe(true);
+    expect(verifierChangementDeRoles(["user"], AUTRE, ADMIN, 2, true).ok).toBe(true);
+  });
+
+  it("avec un seul administrateur, nommer un avocat reste possible", () => {
+    /*
+     * La situation ordinaire d'une plateforme naissante. La règle du dernier
+     * administrateur se déclenchait sur n'importe quel compte : nommer un avocat était
+     * refusé au motif qu'on rétrogradait le dernier administrateur, alors qu'on ne
+     * touchait pas à lui - et personne ne pouvait plus accorder aucun rôle.
+     */
+    expect(verifierChangementDeRoles(["user", "avocat"], AUTRE, ADMIN, 1).ok).toBe(true);
+    expect(verifierChangementDeRoles(["user"], AUTRE, ADMIN, 1).ok).toBe(true);
   });
 });
 

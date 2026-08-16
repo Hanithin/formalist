@@ -98,8 +98,25 @@ test.describe("prise d'un dossier", () => {
     test("un dossier déjà pris par un confrère est refusé, en le nommant", async ({ request }) => {
       const dossier = await dossierEnAttente("DEJA PRIS " + Date.now());
 
-      const autre = await prisma.users.findFirstOrThrow({
-        where: { email: "h.madfai@sterpeak.com" },
+      /*
+       * Un confrère créé pour l'occasion, non un compte trouvé en base.
+       *
+       * Le test visait une adresse réelle du développeur : sur une base neuve - celle
+       * de la vérification automatique - elle n'existe pas, et le test échouait sans
+       * rien dire du code. Un essai ne doit rien devoir aux données d'une machine.
+       */
+      const autre = await prisma.users.upsert({
+        where: { email: "confrere-parcours@exemple.test" },
+        update: {},
+        create: {
+          email: "confrere-parcours@exemple.test",
+          password_hash: "x",
+          salt: "x",
+          name: "Maître Confrère",
+          role: "avocat",
+          roles: JSON.stringify(["user", "avocat"]),
+          email_verified: true,
+        },
       });
       await prisma.formalites.update({
         where: { id: dossier.id },

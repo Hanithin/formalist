@@ -815,14 +815,21 @@ export function Editeur({
   /** Ajoute un cadre au centre de la page, pour ce que rien n'a repéré. */
   function ajouter() {
     if (!dimensions) return;
+    /*
+     * Un cadre modeste, qu'on agrandit s'il le faut.
+     *
+     * La moitié de la largeur de page couvrait la ligne entière et une partie de la
+     * clause voisine : on ne pouvait pas juger du placement avant de l'avoir rétréci.
+     * Trop petit se corrige en tirant un bord ; trop grand cache ce qu'on vise.
+     */
     surChangement([
       ...retouches,
       {
         page,
         x: dimensions.largeur * 0.15,
         y: dimensions.hauteur * 0.45,
-        largeur: dimensions.largeur * 0.55,
-        hauteur: 14,
+        largeur: Math.min(220, dimensions.largeur * 0.35),
+        hauteur: 18,
         texte: "",
         taille: 11,
         police: "serif",
@@ -1304,7 +1311,7 @@ export function Editeur({
                     title="Supprimer ce cadre"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M4 7 H20 M10 4 H14 M9 7 V19 a1 1 0 0 0 1 1 h4 a1 1 0 0 0 1 -1 V7 M11.5 10 V17 M14.5 10 V17" />
+                      <path d="M4 7h16M10 7V5h4v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />
                     </svg>
                   </button>
                 </span>

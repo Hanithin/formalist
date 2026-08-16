@@ -14,6 +14,7 @@ function comptes() {
     client: number;
     avocat: number;
     admin: number;
+    cibleActivite: number;
   };
 }
 
@@ -70,7 +71,23 @@ test.describe("administrateur", () => {
     await expect(dossiers.getByText(/·\s*(Immatriculée|En cours|Validé)/).first()).toBeVisible();
   });
 
-  test("l'activité montre les actions tracées, y compris hors dossier", async ({ page }) => {
+  test("l'activité montre les actions tracées, y compris hors dossier", async ({
+    page,
+    request,
+  }) => {
+    /*
+     * Le test produit lui-même l'action qu'il vérifie.
+     *
+     * Il se contentait de lire le journal, et passait grâce à ce qu'y avaient laissé
+     * les autres essais. Sur une base neuve - celle de la vérification automatique -
+     * le journal est vide et il échouait, sans rien dire du code.
+     */
+    const { cibleActivite } = comptes();
+    const trace = await request.put("/api/administration/roles", {
+      data: { compte: cibleActivite, roles: ["user", "avocat"] },
+    });
+    expect(trace.status()).toBe(200);
+
     await page.goto("/administration/dossiers");
     // Les changements de rôle sont tracés sans dossier : ils doivent apparaître.
     const activite = page.locator("section", { hasText: "Activité récente" });

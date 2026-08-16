@@ -136,6 +136,22 @@ export function Statuts({ dossier }: { dossier: number }) {
     if (!page) return;
 
     const sousLArticle = manque.article;
+    const taille = sousLArticle ? Math.round(sousLArticle.hauteur * 8) / 10 : 11;
+
+    /*
+     * Un cadre à la mesure de son texte, non de la page.
+     *
+     * La moitié de la largeur pour « 99 années » couvrait la ligne entière et une
+     * partie de la clause voisine : on croyait le cadre mal posé, et il fallait le
+     * rétrécir avant même de pouvoir juger. La largeur suit donc le texte proposé,
+     * avec une marge pour ce qu'on y ajoutera, et la hauteur laisse respirer la ligne.
+     */
+    const largeur = Math.min(
+      page.largeur * 0.5,
+      Math.max(90, manque.recherche.propose.length * taille * 0.58 + 16)
+    );
+    const hauteur = Math.max(18, Math.round(taille * 1.6));
+
     setRetouches((precedentes) => [
       ...precedentes,
       {
@@ -143,12 +159,12 @@ export function Statuts({ dossier }: { dossier: number }) {
         page: page.numero,
         x: sousLArticle ? sousLArticle.x : page.largeur * 0.15,
         y: sousLArticle
-          ? Math.min(page.hauteur - 20, sousLArticle.y + sousLArticle.hauteur * 1.6)
+          ? Math.min(page.hauteur - hauteur, sousLArticle.y + sousLArticle.hauteur * 1.6)
           : page.hauteur * 0.45,
-        largeur: page.largeur * 0.55,
-        hauteur: sousLArticle ? sousLArticle.hauteur : 14,
+        largeur,
+        hauteur,
         texte: manque.recherche.propose,
-        taille: sousLArticle ? Math.round(sousLArticle.hauteur * 8) / 10 : 11,
+        taille,
       },
     ]);
   }
