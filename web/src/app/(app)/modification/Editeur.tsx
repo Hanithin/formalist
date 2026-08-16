@@ -399,7 +399,15 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                   key={index}
                   role="button"
                   tabIndex={0}
-                  className={styles.repere}
+                  /*
+                    Rempli, le cadre montre le résultat : fond blanc, comme dans le
+                    document. Vide, il reste transparent pour qu'on vérifie qu'il vise
+                    le bon passage. Un cadre rempli et transparent superposait le
+                    nouveau texte à l'ancien, et les deux devenaient illisibles.
+                  */
+                  className={
+                    retouche.texte ? `${styles.repere} ${styles.repereRempli}` : styles.repere
+                  }
                   style={style}
                   onPointerDown={(e) => commencerGeste(e, index, "deplacer")}
                   onClick={() => {

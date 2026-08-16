@@ -1243,6 +1243,15 @@
      pour écrire dedans. */
   cursor: grab;
   touch-action: none;
+  /*
+   * La hauteur de ligne, explicitement.
+   *
+   * `font: inherit` fait hériter aussi le line-height, et le conteneur de la page est
+   * à 0 pour supprimer l'espace sous l'image. Le texte du cadre fermé était donc
+   * rendu sur zéro pixel : présent dans le document, invisible à l'écran. On croyait
+   * avoir perdu ce qu'on venait de taper.
+   */
+  line-height: 1.15;
   line-height: 1.1;
   overflow: hidden;
   text-align: left;
@@ -1261,6 +1270,7 @@
 
 .repereTexte {
   display: block;
+  line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -1269,6 +1279,7 @@
 .repereOuvert {
   position: absolute;
   box-sizing: border-box;
+  line-height: 1.15;
   display: flex;
   align-items: stretch;
   border: 3px solid #16a34a;
@@ -2080,6 +2091,21 @@
 .repere:hover .coin,
 .repereOuvert .coin {
   opacity: 1;
+}
+
+/*
+ * Rempli, le cadre montre ce que donnera le document : fond blanc, texte noir.
+ *
+ * Laisser le fond transparent superposait le nouveau texte à l'ancien, et les deux
+ * devenaient illisibles.
+ */
+.repereRempli {
+  background: #fff;
+}
+
+.repereRempli:hover {
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
 }
 
 /*

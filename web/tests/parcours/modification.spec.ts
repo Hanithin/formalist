@@ -512,3 +512,79 @@ test("un associé peut être une société, et l'acte la désigne comme telle", 
   expect(associe.denomination).toBe("ACME HOLDING");
   expect(associe.representant).toBe("Monsieur Jean DUPONT");
 });
+
+test("le texte écrit dans un cadre s'affiche vraiment une fois refermé", async ({ page, request }) => {
+  /*
+   * Il ne s'affichait pas. Le cadre déclare « font: inherit », ce qui lui faisait
+   * hériter aussi le line-height du conteneur de la page - mis à zéro pour supprimer
+   * l'espace sous l'image. Le texte était rendu sur zéro pixel : présent dans le
+   * document, invisible à l'écran, et l'on croyait avoir perdu ce qu'on venait de
+   * taper.
+   *
+   * On mesure donc ce qui est peint, non ce que contient le nœud : textContent était
+   * juste tout du long, et c'est ce qui a fait passer le défaut inaperçu.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["denomination"],
+      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
+    },
+  });
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 740, size: 16, font: police });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/modification?dossier=" + dossier + "&etape=6");
+  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
+
+  // Les cadres se posent sur l'image en pourcentages : tant qu'elle n'a pas sa
+  // hauteur, ils sont ailleurs et le clic tombe à côté.
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const cadre = page.locator("div[class*='repere']").first();
+  const boite = (await cadre.boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+
+  const saisie = page.locator("input[class*='repereSaisie']");
+  await saisie.fill("NOUVEAU NOM");
+  await page.mouse.click(300, 950);
+
+  const rendu = await page.evaluate(() => {
+    const boite = document.querySelector("div[class*='repere']") as HTMLElement;
+    const texte = boite?.querySelector("span[class*='repereTexte']") as HTMLElement;
+    return {
+      contenu: texte?.textContent,
+      hauteur: texte?.getBoundingClientRect().height ?? 0,
+      fond: boite ? getComputedStyle(boite).backgroundColor : "",
+    };
+  });
+
+  expect(rendu.contenu).toBe("NOUVEAU NOM");
+  // Le texte occupe une vraie place à l'écran.
+  expect(rendu.hauteur).toBeGreaterThan(6);
+  // Et le cadre rempli montre le résultat : fond blanc, comme dans le document.
+  expect(rendu.fond).toBe("rgb(255, 255, 255)");
+});
