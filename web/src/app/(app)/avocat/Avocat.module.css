@@ -17,11 +17,12 @@
  * sous-titre d'une dizaine de pixels vers le bas.
  */
 .topbar {
-  padding: 30px 48px 4px;
+  padding: 30px 48px 6px;
   background: transparent;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
 }
 .topbar h1 {
   font-family: var(--police-titre), var(--police-texte), sans-serif;
@@ -63,25 +64,43 @@
 .topbarBack {
   display: none;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
   background: #fff;
   border: 1px solid #e5e5e7;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
-  color: #333;
+  color: #444;
   cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
   transition:
     border-color 0.15s,
     color 0.15s,
+    transform 0.15s,
     box-shadow 0.15s;
   line-height: 1;
 }
 .topbarBack:hover {
   color: #111;
-  border-color: #111;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-color: #d4d4d8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+.topbarBack:active {
+  transform: translateY(1px);
+}
+
+/* La flèche recule au survol : le geste du retour, dit par le bouton lui-même. */
+.topbarBackFleche {
+  display: inline-flex;
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+.topbarBack:hover .topbarBackFleche {
+  transform: translateX(-2px);
 }
 .avSubnavBtn {
   display: inline-flex;
@@ -496,6 +515,9 @@
 .detailBadge.phase {
   background: #fef3c7;
   color: #92400e;
+}
+.detailBadge.muted {
+  background: #fff;
 }
 .detailBadge.typeCreation {
   background: #ecfdf5;
@@ -1019,9 +1041,44 @@
   gap: 14px;
   min-width: 0;
 }
+
+/*
+ * Les badges se centrent sur le titre.
+ *
+ * Ils portaient la marge basse de leur usage en tête de fiche, où ils surmontent un
+ * texte. Dans une rangée centrée, cette marge les remontait de dix points : le titre
+ * et ses badges paraissaient sur deux lignes mal calées.
+ */
+.topbarTitre .detailBadges {
+  margin-bottom: 0;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Une même forme pour les trois : seule la couleur les distingue. */
+.topbarTitre .detailBadge {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* Un état en cours : le point le dit avant qu'on ait lu le mot. */
+.topbarTitre .detailBadge.phase::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .topbarBack {
   display: inline-flex;
   margin: 0;
+  text-decoration: none;
 }
 .dossiersTable td a {
   color: inherit;

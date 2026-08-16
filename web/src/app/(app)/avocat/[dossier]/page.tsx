@@ -206,7 +206,10 @@ export default async function DossierAvocat({
           </div>
         </div>
         <Link href="/avocat" className={styles.topbarBack}>
-          ← Tous les dossiers
+          <span className={styles.topbarBackFleche} aria-hidden="true">
+            ←
+          </span>
+          Tous les dossiers
         </Link>
       </div>
 

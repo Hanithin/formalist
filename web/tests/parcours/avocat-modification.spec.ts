@@ -443,3 +443,32 @@ test("l'historique dit qui a fait quoi, et on revient dessus", async ({ page, re
   );
   expect(refait.pagesRetirees).toEqual([2]);
 });
+
+test("la barre du dossier est alignée, et le retour n'est pas souligné", async ({ page }) => {
+  /*
+   * Les badges portaient la marge basse de leur usage en tête de fiche : dans une
+   * rangée centrée, elle les remontait de dix points et la barre paraissait de
+   * travers. Le lien de retour, lui, gardait le souligné du navigateur dans un bouton.
+   */
+  const dossier = await dossierDeModification();
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/avocat/" + dossier);
+
+  const titre = (await page.locator("h1").first().boundingBox())!;
+  const badges = (await page.locator("[class*='detailBadges']").first().boundingBox())!;
+  const retour = page.getByRole("link", { name: /Tous les dossiers/ });
+  const boite = (await retour.boundingBox())!;
+
+  const milieu = (b: { y: number; height: number }) => b.y + b.height / 2;
+  expect(Math.abs(milieu(titre) - milieu(badges))).toBeLessThan(2);
+  expect(Math.abs(milieu(titre) - milieu(boite))).toBeLessThan(2);
+
+  const souligne = await retour.evaluate((n) => getComputedStyle(n).textDecorationLine);
+  expect(souligne).toBe("none");
+
+  // Les trois badges ont la même hauteur : c'est la couleur qui les distingue, non la forme.
+  const hauteurs = await page
+    .locator("[class*='detailBadges'] > span")
+    .evaluateAll((noeuds) => noeuds.map((n) => Math.round(n.getBoundingClientRect().height)));
+  expect(new Set(hauteurs).size).toBe(1);
+});

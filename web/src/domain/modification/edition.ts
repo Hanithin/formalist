@@ -74,6 +74,8 @@ export interface Rectangle {
 }
 
 export interface Zone extends Recherche {
+  /** Le rang de l'occurrence, à partir de 1 : une valeur figure souvent partout. */
+  occurrence: number;
   /** Un rectangle par ligne : un passage peut se replier sur deux lignes. */
   rectangles: Rectangle[];
   /** Le texte réellement trouvé, tel qu'il figure dans le document. */
@@ -152,8 +154,23 @@ function rectanglesDe(mots: Mot[]): Rectangle[] {
  * échouerait là où l'œil ne voit aucune différence.
  */
 export function situer(mots: Mot[], cherche: string): Mot[] | null {
+  return situerToutes(mots, cherche)[0] ?? null;
+}
+
+/** Au-delà, on cesse de chercher : un document n'a pas cent fois la même clause. */
+const OCCURRENCES_MAX = 80;
+
+/**
+ * Tous les passages qui disent la même chose, non le premier.
+ *
+ * Une dénomination figure en en-tête de chaque page, à l'article qui la fixe, et au
+ * pied de signature - vingt fois dans des statuts de vingt pages. N'en couvrir qu'un
+ * seul laissait l'ancien nom partout ailleurs, dans un document qui part au greffe,
+ * pendant que l'écran annonçait « posé » et que l'avocat croyait avoir fini.
+ */
+export function situerToutes(mots: Mot[], cherche: string): Mot[][] {
   const attendus = jetons(cherche);
-  if (attendus.length === 0) return null;
+  if (attendus.length === 0) return [];
 
   // Chaque mot du document peut porter plusieurs jetons : « 12, » en donne un,
   // « 75002 Paris » n'arrive pas, mais « L'article » en donne deux.
@@ -161,6 +178,8 @@ export function situer(mots: Mot[], cherche: string): Mot[] | null {
   for (const mot of mots) {
     for (const jeton of jetons(mot.texte)) aplati.push({ jeton, mot });
   }
+
+  const trouves: Mot[][] = [];
 
   for (let debut = 0; debut + attendus.length <= aplati.length; debut++) {
     let concorde = true;
@@ -177,10 +196,15 @@ export function situer(mots: Mot[], cherche: string): Mot[] | null {
       const mot = aplati[debut + i].mot;
       if (!retenus.includes(mot)) retenus.push(mot);
     }
-    return retenus;
+    trouves.push(retenus);
+    if (trouves.length >= OCCURRENCES_MAX) break;
+
+    // On reprend après le passage trouvé : sans quoi « ans ans ans » rendrait des
+    // occurrences qui se chevauchent, et deux cadres se poseraient l'un sur l'autre.
+    debut += attendus.length - 1;
   }
 
-  return null;
+  return trouves;
 }
 
 /**
@@ -203,23 +227,30 @@ export function reperage(
   const manques: Recherche[] = [];
 
   for (const recherche of recherches) {
-    // Chaque formulation est essayée : un acte écrit « 23 ans » ou « 23 années ».
+    /*
+     * Chaque formulation est essayée, et l'on garde la première qui donne quelque
+     * chose - avec toutes ses occurrences. Réunir les formulations couvrirait deux
+     * fois le même passage quand l'une est contenue dans l'autre : l'adresse complète
+     * et la voie seule désignent les mêmes mots.
+     */
     const essais = [recherche.cherche, ...(recherche.variantes ?? [])];
-    const situes = essais.map((essai) => situer(mots, essai)).find((t) => t && t.length > 0);
+    const situes = essais
+      .map((essai) => situerToutes(mots, essai))
+      .find((trouves) => trouves.length > 0);
 
-    if (!situes) {
+    if (!situes || situes.length === 0) {
       manques.push(recherche);
       continue;
     }
 
-    const rectangles = rectanglesDe(situes);
-    const taille = Math.min(...situes.map((m) => m.hauteur));
-
-    zones.push({
-      ...recherche,
-      rectangles,
-      trouve: situes.map((m) => m.texte).join(" "),
-      taille,
+    situes.forEach((occurrence, rang) => {
+      zones.push({
+        ...recherche,
+        occurrence: rang + 1,
+        rectangles: rectanglesDe(occurrence),
+        trouve: occurrence.map((m) => m.texte).join(" "),
+        taille: Math.min(...occurrence.map((m) => m.hauteur)),
+      });
     });
   }
 
@@ -367,9 +398,16 @@ export function recherchesPour(
         cle: "prorogation",
         article: article("prorogation"),
         cherche: ancienne + " années",
-        // Un acte écrit l'une ou l'autre : les chercher séparément annonçait deux
-        // manques pour un seul changement.
-        variantes: [ancienne + " ans", ancienne],
+        /*
+         * Un acte écrit l'une ou l'autre : les chercher séparément annonçait deux
+         * manques pour un seul changement.
+         *
+         * Le nombre seul n'y figure pas. Il concordait avec n'importe quel « 99 » du
+         * document - un numéro d'article, un montant - et depuis qu'on couvre toutes
+         * les occurrences, cela poserait des rectangles blancs sur des clauses
+         * étrangères à la durée. L'ancre mène à l'article quand aucune forme ne sort.
+         */
+        variantes: [ancienne + " ans"],
         ancre: ["durée"],
         propose: nouvelle + " années",
       });
@@ -468,6 +506,15 @@ export interface Fragment {
 }
 
 export interface Retouche {
+  /**
+   * Le changement que ce cadre sert, quand il en sert un.
+   *
+   * Sans elle, le suivi rattachait un cadre à son changement en comparant les textes :
+   * la correspondance cassait au premier mot écrit, et le panneau affichait « retouche
+   * libre » pour la dénomination qu'on venait de saisir. Absente, le cadre est libre -
+   * posé à la main, il ne répond d'aucun changement demandé.
+   */
+  cle?: string;
   page: number;
   x: number;
   y: number;
@@ -525,6 +572,7 @@ export function texteDe(retouche: Retouche): string {
 export function retouchesProposees(zones: Zone[]): Retouche[] {
   return zones.flatMap((zone) =>
     zone.rectangles.map((rectangle, rang) => ({
+      cle: zone.cle,
       page: rectangle.page,
       x: rectangle.x,
       y: rectangle.y,
