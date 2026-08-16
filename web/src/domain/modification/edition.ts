@@ -37,8 +37,31 @@ export interface Recherche {
   article: string;
   /** Le texte à retrouver dans les statuts. */
   cherche: string;
+  /**
+   * Les autres formulations à essayer.
+   *
+   * « 23 ans » et « 23 années » désignent la même durée, et un acte emploie l'une ou
+   * l'autre. Les chercher séparément produisait deux lignes introuvables pour un seul
+   * changement : le panneau annonçait trois manques là où il n'y en avait qu'un.
+   */
+  variantes?: string[];
+  /**
+   * Les mots qui nomment l'article visé.
+   *
+   * Quand la valeur ne se retrouve pas - les statuts l'écrivent en toutes lettres, ou
+   * la reconnaissance de caractères l'a mal lue - on sait au moins mener l'avocat à
+   * l'article. « Introuvable » sans rien d'autre l'oblige à parcourir vingt pages.
+   */
+  ancre?: string[];
   /** Ce qu'il faudrait écrire à la place. */
   propose: string;
+}
+
+/** Une recherche qui n'a pas abouti, et ce qu'on sait quand même. */
+export interface Introuvable {
+  recherche: Recherche;
+  /** L'article a été localisé : de quoi y mener, et y poser le cadre. */
+  article?: Rectangle;
 }
 
 /** Un rectangle à couvrir, sur une ligne. */
@@ -175,14 +198,17 @@ export function situer(mots: Mot[], cherche: string): Mot[] | null {
 export function reperage(
   mots: Mot[],
   recherches: Recherche[]
-): { zones: Zone[]; introuvables: Recherche[] } {
+): { zones: Zone[]; introuvables: Introuvable[] } {
   const zones: Zone[] = [];
-  const introuvables: Recherche[] = [];
+  const manques: Recherche[] = [];
 
   for (const recherche of recherches) {
-    const situes = situer(mots, recherche.cherche);
-    if (!situes || situes.length === 0) {
-      introuvables.push(recherche);
+    // Chaque formulation est essayée : un acte écrit « 23 ans » ou « 23 années ».
+    const essais = [recherche.cherche, ...(recherche.variantes ?? [])];
+    const situes = essais.map((essai) => situer(mots, essai)).find((t) => t && t.length > 0);
+
+    if (!situes) {
+      manques.push(recherche);
       continue;
     }
 
@@ -198,16 +224,32 @@ export function reperage(
   }
 
   /*
-   * Un repli trouvé rend son introuvable sans objet.
+   * Un repli trouvé rend son manque sans objet.
    *
    * Un transfert cherche l'adresse complète, puis la voie seule au cas où les statuts
    * n'écrivent pas le code postal sur la même ligne. Si la seconde aboutit, signaler
-   * la première comme manquante ferait chercher un passage déjà couvert.
+   * la première ferait chercher un passage déjà couvert.
    */
-  return {
-    zones,
-    introuvables: introuvables.filter((r) => !zones.some((z) => z.cle === r.cle)),
-  };
+  const introuvables = manques
+    .filter((r) => !zones.some((z) => z.cle === r.cle))
+    .map((recherche) => ({ recherche, article: situerLArticle(mots, recherche.ancre) }));
+
+  return { zones, introuvables };
+}
+
+/**
+ * Où se trouve l'article visé, à défaut de la valeur.
+ *
+ * On cherche son intitulé - « DURÉE », « DÉNOMINATION SOCIALE » - qui figure en tête
+ * de l'article dans tous les statuts. C'est ce qui permet de mener l'avocat au bon
+ * endroit même quand la valeur y est écrite autrement qu'on ne l'attendait.
+ */
+export function situerLArticle(mots: Mot[], ancre: string[] | undefined): Rectangle | undefined {
+  for (const intitule of ancre ?? []) {
+    const situes = situer(mots, intitule);
+    if (situes && situes.length > 0) return rectanglesDe(situes)[0];
+  }
+  return undefined;
 }
 
 /** Les seules zones retrouvées, quand l'appelant n'a que faire du reste. */
@@ -262,18 +304,12 @@ export function recherchesPour(
         cle: "transfert_siege",
         article: article("transfert_siege"),
         cherche: ancienne,
+        // La rue seule, au cas où les statuts n'écrivent pas le code postal sur la
+        // même ligne que la voie. C'est fréquent, et la recherche complète échoue.
+        variantes: [texte(societe.adresse)].filter(Boolean),
+        ancre: ["siège social", "siege social"],
         propose: nouvelle,
       });
-      // La rue seule, au cas où les statuts n'écrivent pas le code postal sur la
-      // même ligne que la voie. C'est fréquent, et la recherche complète échoue.
-      if (texte(societe.adresse)) {
-        recherches.push({
-          cle: "transfert_siege",
-          article: article("transfert_siege"),
-          cherche: texte(societe.adresse),
-          propose: texte(valeurs.nouvelleAdresse),
-        });
-      }
     }
   }
 
@@ -285,6 +321,7 @@ export function recherchesPour(
         cle: "denomination",
         article: article("denomination"),
         cherche: ancienne,
+        ancre: ["dénomination sociale", "denomination sociale", "dénomination"],
         propose: nouvelle,
       });
     }
@@ -298,6 +335,7 @@ export function recherchesPour(
         cle: "objet_social",
         article: article("objet_social"),
         cherche: ancien,
+        ancre: ["objet social", "objet"],
         propose: nouveau,
       });
     }
@@ -316,6 +354,7 @@ export function recherchesPour(
       cle: code,
       article: article(code),
       cherche: ancien,
+      ancre: ["capital social", "capital"],
       propose: nouveau,
     });
   }
@@ -327,13 +366,11 @@ export function recherchesPour(
       recherches.push({
         cle: "prorogation",
         article: article("prorogation"),
-        cherche: ancienne + " ans",
-        propose: nouvelle + " ans",
-      });
-      recherches.push({
-        cle: "prorogation",
-        article: article("prorogation"),
         cherche: ancienne + " années",
+        // Un acte écrit l'une ou l'autre : les chercher séparément annonçait deux
+        // manques pour un seul changement.
+        variantes: [ancienne + " ans", ancienne],
+        ancre: ["durée"],
         propose: nouvelle + " années",
       });
     }

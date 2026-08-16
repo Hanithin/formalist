@@ -334,11 +334,11 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   await page.reload();
 
   /*
-   * On attend la liste des remplacements, non le cadre : celui-ci se pose sur l'image
-   * de la page, qui met un instant à être rendue, et un cadre posé sur une image de
-   * hauteur nulle n'est pas encore visible.
+   * On attend la liste du panneau, non le cadre : celui-ci se pose sur l'image de la
+   * page, qui met un instant à être rendue, et un cadre posé sur une image de hauteur
+   * nulle n'est pas encore visible.
    */
-  await expect(page.locator("[class*='remplacement']").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("[class*='editeurZone']").first()).toBeVisible({ timeout: 30_000 });
 
   const textes = await page.locator("div[class*='repere']").allTextContents();
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");

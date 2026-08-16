@@ -1332,10 +1332,18 @@
 
 /* ---------- L'éditeur de statuts ---------- */
 
+/*
+ * La page à gauche, tout le reste à droite.
+ *
+ * Le panneau est un peu plus large qu'avant : il porte désormais le compte, la
+ * commande de production et la liste entière des remplacements, qui occupaient un
+ * pavé au-dessus de la page. La page - le seul endroit où l'on travaille - passait
+ * alors sous la ligne de flottaison.
+ */
 .editeur {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
   align-items: start;
 }
 
@@ -1474,10 +1482,13 @@
 
 .editeurPanneau {
   position: sticky;
-  top: 24px;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   padding: 18px;
   border: 1px solid #e5e5e7;
-  border-radius: 12px;
+  border-radius: 14px;
+  background: #fff;
 }
 
 .editeurTitre {
@@ -1487,10 +1498,12 @@
 }
 
 .editeurAide {
-  margin: 0 0 16px;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: #71717a;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid #f2f2f4;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a1a1aa;
 }
 
 .editeurListe {
@@ -1503,8 +1516,10 @@
 }
 
 .editeurZone {
+  display: block;
   width: 100%;
-  padding: 10px 12px;
+  margin: 0;
+  padding: 11px 13px;
   border: 1px solid #e5e5e7;
   border-radius: 10px;
   background: #fff;
@@ -1512,6 +1527,85 @@
   font-size: 13px;
   text-align: left;
   cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.editeurZone:hover {
+  border-color: #c9c9cc;
+}
+
+/* La tête d'une ligne : l'article visé, et où il se trouve. */
+.editeurZoneTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.editeurZonePage {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: #a1a1aa;
+}
+
+/*
+ * Ce que le repérage n'a pas trouvé.
+ *
+ * La couleur suffit à le distinguer d'un cadre posé : c'est la seule chose qui reste
+ * à faire dans la liste.
+ */
+.editeurZoneManquante {
+  border-color: #fde9c8;
+  background: #fffbeb;
+  cursor: default;
+}
+
+.editeurZoneManquante:hover {
+  border-color: #fde9c8;
+}
+
+.editeurZoneAPlacer {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b45309;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.editeurPlacer {
+  margin: 10px 0 0;
+  padding: 7px 12px;
+  border: 1px solid #d4a24c;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #78350f;
+  cursor: pointer;
+}
+
+.editeurPlacer:hover {
+  background: #fef6e4;
+}
+
+.editeurAjouter {
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px dashed #d4d4d8;
+  border-radius: 10px;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: #52525b;
+  cursor: pointer;
+}
+
+.editeurAjouter:hover {
+  border-color: #111;
+  color: #111;
 }
 
 .editeurZoneChoisie {
@@ -2464,4 +2558,14 @@
 .formeDanger:hover {
   background: #fef2f2;
   color: #7f1d1d;
+}
+
+/* Ce qui a été cherché : dire pourquoi on n'a pas trouvé vaut mieux que « introuvable ». */
+.editeurZoneCherche {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #a1a1aa;
+  overflow-wrap: anywhere;
 }

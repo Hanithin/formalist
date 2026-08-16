@@ -4,6 +4,7 @@ import {
   normaliser,
   situer,
   reperer,
+  reperage,
   recherchesPour,
   retouchesProposees,
   verifierRetouche,
@@ -180,9 +181,15 @@ describe("ce qu'on cherche dans les statuts", () => {
     );
   });
 
-  it("une prorogation cherche les deux façons d'écrire une durée", () => {
+  it("une prorogation essaie les deux façons d'écrire une durée", () => {
+    /*
+     * Elles désignent la même durée : deux recherches distinctes annonçaient deux
+     * manques pour un seul changement, et le panneau comptait faux.
+     */
     const recherches = recherchesPour(["prorogation"], { dureeActuelle: 50, nouvelleDuree: 99 }, societe);
-    expect(recherches.map((r) => r.cherche)).toEqual(["50 ans", "50 années"]);
+    expect(recherches).toHaveLength(1);
+    expect(recherches[0].cherche).toBe("50 années");
+    expect(recherches[0].variantes).toContain("50 ans");
   });
 });
 
@@ -495,5 +502,68 @@ describe("le style appliqué à une partie du texte", () => {
     expect(fragmentsDe({ ...commun, texte: "Tout en gras", gras: true })).toEqual([
       { texte: "Tout en gras", gras: true, italique: undefined, souligne: undefined },
     ]);
+  });
+});
+
+describe("ce que le repérage ne trouve pas", () => {
+  const mots: Mot[] = [
+    { page: 1, texte: "ARTICLE", x: 60, y: 100, largeur: 40, hauteur: 10 },
+    { page: 1, texte: "5", x: 105, y: 100, largeur: 8, hauteur: 10 },
+    { page: 1, texte: "DURÉE", x: 118, y: 100, largeur: 30, hauteur: 10 },
+    { page: 1, texte: "La", x: 60, y: 120, largeur: 12, hauteur: 10 },
+    { page: 1, texte: "durée", x: 75, y: 120, largeur: 26, hauteur: 10 },
+    { page: 1, texte: "est", x: 104, y: 120, largeur: 14, hauteur: 10 },
+    { page: 1, texte: "de", x: 121, y: 120, largeur: 12, hauteur: 10 },
+    { page: 1, texte: "vingt-trois", x: 136, y: 120, largeur: 50, hauteur: 10 },
+    { page: 1, texte: "années", x: 189, y: 120, largeur: 32, hauteur: 10 },
+  ];
+
+  const prorogation = recherchesPour(
+    ["prorogation"],
+    { dureeActuelle: 23, nouvelleDuree: 99 },
+    {}
+  );
+
+  it("les formulations d'un même changement tiennent en une seule recherche", () => {
+    /*
+     * « 23 ans » et « 23 années » désignent la même durée. Les chercher séparément
+     * annonçait deux manques pour un seul changement, et le panneau comptait faux.
+     */
+    expect(prorogation).toHaveLength(1);
+    expect(prorogation[0].variantes).toContain("23 ans");
+  });
+
+  it("à défaut de la valeur, l'article est localisé", () => {
+    /*
+     * Les statuts écrivent « vingt-trois années » : la valeur ne se retrouve pas. Dire
+     * « introuvable » sans rien d'autre oblige à parcourir vingt pages ; on sait au
+     * moins mener à l'article.
+     */
+    const { zones, introuvables } = reperage(mots, prorogation);
+
+    expect(zones).toHaveLength(0);
+    expect(introuvables).toHaveLength(1);
+    expect(introuvables[0].article).toBeDefined();
+    expect(introuvables[0].article!.page).toBe(1);
+  });
+
+  it("sans article reconnaissable, on le dit sans prétendre le situer", () => {
+    const { introuvables } = reperage(
+      [{ page: 1, texte: "Néant", x: 60, y: 100, largeur: 30, hauteur: 10 }],
+      prorogation
+    );
+    expect(introuvables[0].article).toBeUndefined();
+  });
+
+  it("une valeur retrouvée ne laisse aucun manque", () => {
+    const avecLaValeur: Mot[] = [
+      ...mots,
+      { page: 1, texte: "23", x: 60, y: 140, largeur: 14, hauteur: 10 },
+      { page: 1, texte: "années", x: 78, y: 140, largeur: 32, hauteur: 10 },
+    ];
+    const { zones, introuvables } = reperage(avecLaValeur, prorogation);
+
+    expect(zones).toHaveLength(1);
+    expect(introuvables).toHaveLength(0);
   });
 });

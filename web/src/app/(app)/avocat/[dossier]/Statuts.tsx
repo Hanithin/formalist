@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Editeur } from "@/app/(app)/modification/Editeur";
-import type { Recherche, Retouche, Zone } from "@/domain/modification/edition";
+import type { Introuvable, Retouche, Zone } from "@/domain/modification/edition";
 import styles from "../Avocat.module.css";
 
 /**
@@ -21,7 +21,7 @@ import styles from "../Avocat.module.css";
 interface Lecture {
   pages: { numero: number; largeur: number; hauteur: number }[];
   zones: Zone[];
-  introuvables: Recherche[];
+  introuvables: Introuvable[];
   retouches: Retouche[];
   reconnus: boolean;
 }
@@ -105,21 +105,31 @@ export function Statuts({ dossier }: { dossier: number }) {
     };
   }, [dossier]);
 
-  /** Pose une zone au milieu de la première page, pour ce que rien n'a repéré. */
-  function placer(recherche: Recherche) {
-    const page = lecture?.pages[0];
+  /**
+   * Pose un cadre pour ce que le repérage n'a pas trouvé.
+   *
+   * Sous l'article quand on a su le localiser - c'est là que la valeur se trouve, même
+   * écrite autrement - au milieu de la page sinon.
+   */
+  function placer(manque: Introuvable) {
+    const page = manque.article
+      ? lecture?.pages.find((p) => p.numero === manque.article!.page)
+      : lecture?.pages[0];
     if (!page) return;
 
+    const sousLArticle = manque.article;
     setRetouches((precedentes) => [
       ...precedentes,
       {
         page: page.numero,
-        x: page.largeur * 0.15,
-        y: page.hauteur * 0.45,
+        x: sousLArticle ? sousLArticle.x : page.largeur * 0.15,
+        y: sousLArticle
+          ? Math.min(page.hauteur - 20, sousLArticle.y + sousLArticle.hauteur * 1.6)
+          : page.hauteur * 0.45,
         largeur: page.largeur * 0.55,
-        hauteur: 14,
-        texte: recherche.propose,
-        taille: 11,
+        hauteur: sousLArticle ? sousLArticle.hauteur : 14,
+        texte: manque.recherche.propose,
+        taille: sousLArticle ? Math.round(sousLArticle.hauteur * 8) / 10 : 11,
       },
     ]);
   }
@@ -183,88 +193,20 @@ export function Statuts({ dossier }: { dossier: number }) {
 
   if (!lecture) return <p className={styles.tacheExplication}>Lecture des statuts…</p>;
 
-  const attendus = [
-    ...lecture.zones.map((z) => ({ recherche: z as Recherche, trouve: z.trouve, place: true })),
-    ...lecture.introuvables.map((r) => ({ recherche: r, trouve: null, place: false })),
-  ];
+  const attendus = [...lecture.zones, ...lecture.introuvables];
   const restants = lecture.introuvables.filter(
-    (r) => !retouches.some((t) => t.texte === r.propose)
+    (m) => !retouches.some((t) => t.texte === m.recherche.propose)
   );
+  const poses = attendus.length - restants.length;
 
   return (
-    <div className={styles.travail}>
-      <div className={styles.travailTete}>
-        <h2 className={styles.titre}>
-          {attendus.length - restants.length} remplacement
-          {attendus.length - restants.length > 1 ? "s" : ""} sur {attendus.length}
-        </h2>
-        <button
-          type="button"
-          className={styles.travailPrincipal}
-          onClick={() => (restants.length > 0 ? setConfirmation(true) : appliquer())}
-          disabled={enCours || retouches.length === 0}
-        >
-          {enCours ? "Application" : "Produire les statuts à jour"}
-        </button>
-      </div>
-
-      {lecture.reconnus && (
-        <p className={styles.tacheBlocage}>
-          Ces statuts ont été lus par reconnaissance de caractères : le document déposé
-          n&apos;a pas de couche texte. Vérifiez chaque emplacement avant d&apos;appliquer.
-        </p>
-      )}
-
+    <>
       {/*
-        Ce qu'il faut remplacer, y compris ce qui n'a pas été retrouvé.
-        C'est cette seconde moitié qui manquait, et sans laquelle on croit avoir tout
-        couvert.
+        La page à gauche, tout le reste à droite.
+        Le compte, la liste des remplacements et l'avertissement occupaient un pavé
+        au-dessus : la page des statuts - le seul endroit où l'on travaille - passait
+        sous la ligne de flottaison, et deux panneaux disaient la même chose.
       */}
-      <ul className={styles.remplacements}>
-        {attendus.map((attendu, rang) => (
-          <li
-            key={rang}
-            className={
-              attendu.place
-                ? `${styles.remplacement} ${styles.remplacementPose}`
-                : retouches.some((t) => t.texte === attendu.recherche.propose)
-                  ? `${styles.remplacement} ${styles.remplacementPose}`
-                  : `${styles.remplacement} ${styles.remplacementAPlacer}`
-            }
-          >
-            <div>
-              <span className={styles.remplacementArticle}>{attendu.recherche.article}</span>
-              <span className={styles.remplacementAvant}>
-                {attendu.trouve ?? attendu.recherche.cherche}
-              </span>
-              <span className={styles.remplacementApres}>{attendu.recherche.propose}</span>
-            </div>
-
-            {attendu.place || retouches.some((t) => t.texte === attendu.recherche.propose) ? (
-              <span className={styles.remplacementEtat}>Posé</span>
-            ) : (
-              <button
-                type="button"
-                className={styles.travailSecondaire}
-                onClick={() => placer(attendu.recherche)}
-              >
-                Placer à la main
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      {restants.length > 0 && (
-        <p className={styles.tacheBlocage}>
-          {restants.length === 1
-            ? "Un passage n'a pas été retrouvé dans le document"
-            : restants.length + " passages n'ont pas été retrouvés dans le document"}{" "}
-          : les statuts le formulent peut-être autrement. Cherchez-le à l&apos;écran et
-          posez la zone vous-même.
-        </p>
-      )}
-
       <Editeur
         dossier={dossier}
         pages={lecture.pages}
@@ -272,23 +214,42 @@ export function Statuts({ dossier }: { dossier: number }) {
         retouches={retouches}
         reconnus={lecture.reconnus}
         surChangement={setRetouches}
+        introuvables={restants}
+        surPlacer={placer}
+        entete={
+          <div className={styles.statutsTete}>
+            <div>
+              <span className={styles.statutsCompte}>
+                {poses} sur {attendus.length}
+              </span>
+              <span className={styles.statutsMention}>
+                {attendus.length === 1 ? "remplacement posé" : "remplacements posés"}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className={styles.travailPrincipal}
+              onClick={() => (restants.length > 0 ? setConfirmation(true) : appliquer())}
+              disabled={enCours || retouches.length === 0}
+            >
+              {enCours ? "Application" : "Produire les statuts à jour"}
+            </button>
+
+            {retour && (
+              <p className={styles.travailRetour} role="status">
+                {retour}
+              </p>
+            )}
+            {refus && (
+              <p className={styles.travailRefus} role="alert">
+                {refus}
+              </p>
+            )}
+          </div>
+        }
       />
 
-      {retour && (
-        <p className={styles.travailRetour} role="status">
-          {retour}
-        </p>
-      )}
-      {refus && (
-        <p className={styles.travailRefus} role="alert">
-          {refus}
-        </p>
-      )}
-
-      {/*
-        On ne bloque pas : les statuts peuvent formuler autrement, et l'avocat sait
-        lire son document. On ne laisse pas passer en silence non plus.
-      */}
       {confirmation && (
         <div className={styles.confirmationBloc} role="alertdialog">
           <p>
@@ -316,6 +277,6 @@ export function Statuts({ dossier }: { dossier: number }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ALIGNEMENTS,
   POLICES,
   fragmentsDe,
   type Alignement,
+  type Introuvable,
   type Fragment,
   type Police,
   type Retouche,
@@ -44,6 +45,11 @@ interface Props {
   retouches: Retouche[];
   reconnus: boolean;
   surChangement: (retouches: Retouche[]) => void;
+  /** Ce que le repérage n'a pas trouvé : à poser à la main. */
+  introuvables?: Introuvable[];
+  surPlacer?: (introuvable: Introuvable) => void;
+  /** En tête du panneau : le compte et la commande de production. */
+  entete?: ReactNode;
 }
 
 /**
@@ -455,7 +461,17 @@ const FAMILLES: Record<Police, string> = {
   georgia: "Gelasio, Georgia, serif",
 };
 
-export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangement }: Props) {
+export function Editeur({
+  dossier,
+  pages,
+  zones,
+  retouches,
+  reconnus,
+  surChangement,
+  introuvables = [],
+  surPlacer,
+  entete,
+}: Props) {
   /*
    * Le placement se conserve au fil de la saisie.
    *
@@ -1027,14 +1043,9 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
 
       </div>
 
-      {/* ---------- Le panneau ---------- */}
+      {/* ---------- Le panneau : tout ce qui n'est pas la page ---------- */}
       <div className={styles.editeurPanneau}>
-        <h3 className={styles.editeurTitre}>Ce qui change dans les statuts</h3>
-        <p className={styles.editeurAide}>
-          Les cadres verts marquent les passages à remplacer. Cliquez dedans pour écrire ;
-          la poignée à gauche les déplace. Dans le document produit, le fond du cadre est
-          blanc et couvre l&apos;ancienne valeur.
-        </p>
+        {entete}
 
         {reconnus && (
           <p className={styles.reconnu}>
@@ -1043,11 +1054,17 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
           </p>
         )}
 
+        {/*
+          Une seule liste, non deux.
+          Les cadres posés et les passages introuvables se lisaient dans deux endroits
+          différents, l'un au-dessus de la page et l'autre à côté : on ne savait pas
+          lequel faisait foi.
+        */}
         <ul className={styles.editeurListe}>
           {retouches.map((retouche, index) => {
             const zone = zones.find((z) => z.propose === retouche.texte);
             return (
-              <li key={index}>
+              <li key={"pose-" + index}>
                 <button
                   type="button"
                   className={
@@ -1060,8 +1077,11 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                     ouvrir(index);
                   }}
                 >
-                  <span className={styles.editeurZoneArticle}>
-                    {zone?.article || "Retouche"} - page {retouche.page}
+                  <span className={styles.editeurZoneTete}>
+                    <span className={styles.editeurZoneArticle}>
+                      {zone?.article || "Retouche libre"}
+                    </span>
+                    <span className={styles.editeurZonePage}>page {retouche.page}</span>
                   </span>
                   {zone?.trouve && <span className={styles.editeurZoneAvant}>{zone.trouve}</span>}
                   <span className={styles.editeurZoneApres}>
@@ -1071,11 +1091,57 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
               </li>
             );
           })}
+
+          {introuvables.map((manque, rang) => (
+            <li key={"manque-" + rang}>
+              <div className={`${styles.editeurZone} ${styles.editeurZoneManquante}`}>
+                <span className={styles.editeurZoneTete}>
+                  <span className={styles.editeurZoneArticle}>{manque.recherche.article}</span>
+                  <span className={styles.editeurZoneAPlacer}>
+                    {manque.article ? "article trouvé" : "à situer"}
+                  </span>
+                </span>
+
+                {/*
+                  Dire ce qui a été cherché, et non « introuvable » tout court.
+                  Les statuts écrivent souvent la valeur autrement - en toutes lettres,
+                  ou avec une autre formulation - et savoir ce qu'on a cherché permet
+                  de comprendre pourquoi on ne l'a pas trouvé.
+                */}
+                <span className={styles.editeurZoneCherche}>
+                  Cherché : « {manque.recherche.cherche} »
+                  {manque.recherche.variantes?.length
+                    ? ", et " + manque.recherche.variantes.length + " autre" +
+                      (manque.recherche.variantes.length > 1 ? "s formulations" : " formulation")
+                    : ""}
+                </span>
+                <span className={styles.editeurZoneApres}>{manque.recherche.propose}</span>
+
+                {surPlacer && (
+                  <button
+                    type="button"
+                    className={styles.editeurPlacer}
+                    onClick={() => surPlacer(manque)}
+                  >
+                    {manque.article
+                      ? "Aller à l'article, page " + manque.article.page
+                      : "Poser un cadre sur cette page"}
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
         </ul>
 
-        <button type="button" className={styles.editeurZone} onClick={ajouter}>
-          Ajouter un cadre sur cette page
+        <button type="button" className={styles.editeurAjouter} onClick={ajouter}>
+          + Cadre libre sur la page {page}
         </button>
+
+        <p className={styles.editeurAide}>
+          Cliquez dans un cadre vert pour écrire. La poignée de gauche le déplace, les
+          carrés de la bordure le redimensionnent. Dans le document, son fond est blanc et
+          couvre l&apos;ancienne valeur.
+        </p>
       </div>
     </div>
   );
