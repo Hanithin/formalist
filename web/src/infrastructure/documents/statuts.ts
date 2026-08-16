@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { journal } from "@/lib/journal";
 import {
   verifierRetouche,
+  fragmentsDe,
   POLICES_EMBARQUEES,
   type Mot,
   type Retouche,
@@ -388,10 +389,36 @@ export async function appliquerLesRetouches(
         color: rgb(1, 1, 1),
       });
 
-      const texte = lisibleParLaPolice(retouche.texte);
-      if (!texte) continue;
+      /*
+       * Le texte se dessine morceau par morceau.
+       *
+       * Chacun peut avoir son gras, son italique, son souligné - et dans un PDF ce
+       * sont autant de polices différentes. On mesure donc chaque morceau, on avance
+       * l'abscisse d'autant, et l'on souligne ce qui doit l'être.
+       */
+      const morceaux: { texte: string; fonte: Awaited<ReturnType<typeof policeDe>>; largeur: number; souligne: boolean }[] = [];
 
-      const fonte = await policeDe(retouche);
+      for (const fragment of fragmentsDe(retouche)) {
+        const lisible = lisibleParLaPolice(fragment.texte);
+        if (!lisible) continue;
+
+        const fonte = await policeDe({
+          ...retouche,
+          gras: fragment.gras,
+          italique: fragment.italique,
+        });
+        morceaux.push({
+          texte: lisible,
+          fonte,
+          largeur: fonte.widthOfTextAtSize(lisible, retouche.taille),
+          souligne: fragment.souligne === true,
+        });
+      }
+
+      if (morceaux.length === 0) continue;
+
+      const texte = morceaux.map((m) => m.texte).join("");
+      const fonte = morceaux[0].fonte;
       // La ligne de base se pose au bas du rectangle, remontée du jambage.
       const ligneDeBase = height - retouche.y - retouche.hauteur + retouche.taille * 0.2;
 
@@ -402,7 +429,7 @@ export async function appliquerLesRetouches(
        * demande donc de mesurer le texte dans sa police et sa taille, puis de poser
        * l'origine en conséquence.
        */
-      const largeurDuTexte = fonte.widthOfTextAtSize(texte, retouche.taille);
+      const largeurDuTexte = morceaux.reduce((total, m) => total + m.largeur, 0);
       const reste = Math.max(0, retouche.largeur - largeurDuTexte);
       const decalage =
         retouche.alignement === "centre"
@@ -411,28 +438,33 @@ export async function appliquerLesRetouches(
             ? reste
             : 0;
 
-      page.drawText(texte, {
-        x: retouche.x + decalage,
-        y: ligneDeBase,
-        size: retouche.taille,
-        font: fonte,
-        color: rgb(0, 0, 0),
-      });
-
-      /*
-       * Le souligné se trace : aucune police standard n'en porte.
-       *
-       * Le trait suit la largeur réelle du texte, non celle du cadre - souligner un
-       * cadre de trois cents points pour un mot de quarante se verrait.
-       */
-      if (retouche.souligne) {
-        const bas = ligneDeBase - retouche.taille * 0.12;
-        page.drawLine({
-          start: { x: retouche.x + decalage, y: bas },
-          end: { x: retouche.x + decalage + largeurDuTexte, y: bas },
-          thickness: Math.max(0.5, retouche.taille * 0.06),
+      let abscisse = retouche.x + decalage;
+      for (const morceau of morceaux) {
+        page.drawText(morceau.texte, {
+          x: abscisse,
+          y: ligneDeBase,
+          size: retouche.taille,
+          font: morceau.fonte,
           color: rgb(0, 0, 0),
         });
+
+        /*
+         * Le souligné se trace : aucune police standard n'en porte.
+         *
+         * Le trait suit le morceau souligné, non le cadre entier - souligner trois
+         * cents points pour un mot de quarante se verrait.
+         */
+        if (morceau.souligne) {
+          const bas = ligneDeBase - retouche.taille * 0.12;
+          page.drawLine({
+            start: { x: abscisse, y: bas },
+            end: { x: abscisse + morceau.largeur, y: bas },
+            thickness: Math.max(0.5, retouche.taille * 0.06),
+            color: rgb(0, 0, 0),
+          });
+        }
+
+        abscisse += morceau.largeur;
       }
     }
   }
@@ -475,6 +507,10 @@ async function imagesDesPages(pdf: Buffer, numeros: number[]): Promise<Map<numbe
  * espaces fines ni les tirets longs qu'un traitement de texte insère. Un caractère
  * inconnu fait échouer tout l'écrit de pdf-lib : mieux vaut le remplacer que perdre
  * la retouche entière.
+ *
+ * Les espaces de bord sont gardés. Les couper collait les morceaux d'un texte
+ * découpé : « Premier » suivi de « Second » en gras s'écrivait « PremierSecond »
+ * dans le document, alors que l'écran montrait bien l'espace.
  */
 export function lisibleParLaPolice(texte: string): string {
   return texte
@@ -485,6 +521,5 @@ export function lisibleParLaPolice(texte: string): string {
     .replace(/…/g, "...")
     // Ce qui reste hors du latin-1 étendu ne s'écrira pas : on l'ôte plutôt que de
     // faire échouer la retouche.
-    .replace(/[^ -ÿŒœŸ]/g, "")
-    .trim();
+    .replace(/[^ -ÿŒœŸ]/g, "");
 }

@@ -7,6 +7,7 @@ import {
   recherchesPour,
   retouchesProposees,
   verifierRetouche,
+  fragmentsDe,
   RetoucheInvalide,
   type Mot,
 } from "@/domain/modification/edition";
@@ -434,4 +435,65 @@ describe("les polices embarquées", () => {
     ]);
     expect((await lireLesStatuts(produit)).mots.map((m) => m.texte).join(" ")).toContain("Repli");
   }, 120_000);
+});
+
+describe("le style appliqué à une partie du texte", () => {
+  const commun = { page: 1, x: 60, y: 300, largeur: 320, hauteur: 14, taille: 11 };
+
+  it("un seul mot en gras change le document", async () => {
+    /*
+     * Une retouche portait un style unique : mettre un mot en gras demandait de poser
+     * un second cadre à côté, en devinant où finissait le premier. Le texte se découpe
+     * donc en morceaux, et chacun a sa police dans le PDF - le gras n'y est pas un
+     * réglage.
+     */
+    const statuts = await statutsDEssai();
+
+    const ordinaire = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Atelier Nouveau Monde" },
+    ]);
+    const partiel = await appliquerLesRetouches(statuts, [
+      {
+        ...commun,
+        texte: "Atelier Nouveau Monde",
+        fragments: [
+          { texte: "Atelier Nouveau " },
+          { texte: "Monde", gras: true },
+        ],
+      },
+    ]);
+
+    expect(ordinaire.equals(partiel)).toBe(false);
+
+    // Le texte reste entier et dans l'ordre.
+    const relu = (await lireLesStatuts(partiel)).mots.map((m) => m.texte).join(" ");
+    expect(relu).toContain("Atelier");
+    expect(relu).toContain("Monde");
+  }, 180_000);
+
+  it("les morceaux se suivent sans se chevaucher", async () => {
+    // Chaque morceau avance l'abscisse de sa propre largeur : mal mesuré, le second
+    // s'écrirait par-dessus le premier.
+    const statuts = await statutsDEssai();
+    const produit = await appliquerLesRetouches(statuts, [
+      {
+        ...commun,
+        texte: "Premier Second",
+        fragments: [{ texte: "Premier " }, { texte: "Second", gras: true }],
+      },
+    ]);
+
+    const mots = (await lireLesStatuts(produit)).mots;
+    const premier = mots.find((m) => m.texte.includes("Premier"))!;
+    const second = mots.find((m) => m.texte.includes("Second"))!;
+
+    expect(second.x).toBeGreaterThan(premier.x + premier.largeur - 2);
+  }, 180_000);
+
+  it("sans découpage, le style du cadre s'applique à tout", () => {
+    // Les dossiers ouverts avant le découpage doivent continuer de se lire.
+    expect(fragmentsDe({ ...commun, texte: "Tout en gras", gras: true })).toEqual([
+      { texte: "Tout en gras", gras: true, italique: undefined, souligne: undefined },
+    ]);
+  });
 });

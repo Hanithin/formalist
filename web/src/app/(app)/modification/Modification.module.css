@@ -1423,21 +1423,27 @@
   overflow: visible;
 }
 
+/*
+ * Le champ modifiable en place.
+ *
+ * Il porte la police, la taille et l'alignement du cadre : ce qu'on tape est ce qui
+ * sera écrit. Le gras, l'italique et le souligné, eux, vivent dans le texte lui-même
+ * - c'est ce qui permet de n'en mettre qu'un mot.
+ */
 .repereSaisie {
   flex: 1;
   min-width: 0;
   width: 100%;
   max-width: none;
-  height: 100%;
   margin: 0;
   padding: 0 2px;
   border: none;
   background: none;
   color: #111;
-  /* La saisie porte la police, la taille et le style du cadre : ce qu'on tape est ce
-     qui sera écrit. */
   font: inherit;
-  line-height: 1.1;
+  line-height: 1.15;
+  white-space: pre;
+  overflow: hidden;
 }
 
 .repereSaisie:focus {
@@ -1455,7 +1461,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
+  width: 16px;
   background: #16a34a;
   cursor: move;
   border-radius: 1px 0 0 1px;
@@ -2138,49 +2144,49 @@
 }
 
 /*
- * Le bord droit s'élargit en une pastille au survol.
+ * Les poignées sont de petits carrés posés sur la bordure.
  *
- * Un bord vert sans dessin ne dit pas qu'il se tire : on le prend pour une bordure.
- * La flèche l'annonce, et la pastille donne de quoi l'attraper sur un cadre haut de
- * quelques pixels.
+ * Trois grosses pastilles flottant autour d'un cadre d'une ligne se lisaient comme un
+ * désordre, chacune tirant l'œil autant que le texte. Un carré de neuf pixels sur le
+ * trait est la convention de tout éditeur : il se voit, il se vise, il ne domine rien.
  */
 .borddroit {
   top: 50%;
-  right: -11px;
-  width: 22px;
-  height: 22px;
-  margin-top: -11px;
-  border-radius: 50%;
+  right: -5px;
+  margin-top: -5px;
   cursor: ew-resize;
 }
 
 .bordbas {
   left: 50%;
-  bottom: -11px;
-  width: 22px;
-  height: 22px;
-  margin-left: -11px;
-  border-radius: 50%;
+  bottom: -5px;
+  margin-left: -5px;
   cursor: ns-resize;
 }
 
 .coin {
-  right: -11px;
-  bottom: -11px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  right: -5px;
+  bottom: -5px;
   cursor: nwse-resize;
 }
 
-/* Les trois pastilles ne se montrent qu'au survol : elles encombreraient la page. */
 .borddroit,
 .bordbas,
 .coin {
+  width: 10px;
+  height: 10px;
   opacity: 0;
+  border-radius: 2px;
+  background: #fff;
+  border: 2px solid #16a34a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+  transition: opacity 0.12s, transform 0.12s, background 0.12s;
+}
+
+.borddroit:hover,
+.bordbas:hover,
+.coin:hover {
   background: #16a34a;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
-  transition: opacity 0.12s, transform 0.12s;
 }
 
 .repere:hover .borddroit,
@@ -2192,35 +2198,30 @@
   opacity: 1;
 }
 
-.borddroit:hover,
-.bordbas:hover,
-.coin:hover {
-  transform: scale(1.15);
+/*
+ * Les flèches vivent dans la poignée de déplacement seulement.
+ *
+ * Dans un carré de dix pixels, un dessin devient une tache. Ce sont le curseur - les
+ * doubles flèches du système - et l'infobulle qui disent ce que fait chaque bord.
+ */
+.flecheBord,
+.flecheCoin {
+  display: none;
 }
 
-.flecheBord,
-.flecheCoin,
 .flechePoignee {
-  width: 14px;
-  height: 14px;
   fill: none;
   stroke: #fff;
-  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
   pointer-events: none;
 }
 
-.flecheCoin {
-  width: 13px;
-  height: 13px;
-}
-
 /* La croix de déplacement, dans la poignée de gauche du cadre ouvert. */
 .flechePoignee {
-  width: 12px;
-  height: 12px;
-  stroke-width: 2;
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.2;
 }
 
 /*
@@ -2259,43 +2260,45 @@
  * statuts et se lisaient alors qu'on ne s'en servait pas. Ils s'appellent maintenant,
  * au bord du cadre qu'ils règlent.
  */
+/*
+ * Le bouton de mise en forme, posé au-dessus et aligné sur le bord gauche.
+ *
+ * Flottant au-dessus de l'angle droit, il se lisait comme un élément de plus dans un
+ * ensemble déjà chargé, et il recouvrait la poignée de largeur. Aligné à gauche sur
+ * la poignée de déplacement, il forme une colonne avec elle au lieu de flotter.
+ */
 .appelForme {
   position: absolute;
-  /*
-   * Au-dessus du cadre, non sur son coin.
-   *
-   * Posé sur l'angle, il recouvrait la poignée de largeur - la plus utile des trois -
-   * qui devenait inatteignable sur un cadre d'une ligne.
-   */
-  bottom: calc(100% + 6px);
-  right: 0;
+  bottom: calc(100% + 5px);
+  left: 0;
   z-index: 3;
-  width: 26px;
-  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
   margin: 0;
-  padding: 0;
-  border: 2px solid #16a34a;
-  border-radius: 50%;
-  background: #fff;
+  padding: 0 9px;
+  border: 1px solid #16a34a;
+  border-radius: 100px;
+  background: #16a34a;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
-  color: #15803d;
+  color: #fff;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
 .appelForme:hover {
-  background: #16a34a;
-  color: #fff;
+  background: #15803d;
+  border-color: #15803d;
 }
 
 /* La barre elle-même, posée au-dessus du cadre. */
 .forme {
   position: absolute;
-  bottom: calc(100% + 38px);
+  bottom: calc(100% + 33px);
   left: 0;
   z-index: 4;
   display: flex;

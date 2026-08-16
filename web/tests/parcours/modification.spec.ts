@@ -568,7 +568,7 @@ test("le texte écrit dans un cadre s'affiche vraiment une fois refermé", async
   const boite = (await cadre.boundingBox())!;
   await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
 
-  const saisie = page.locator("input[class*='repereSaisie']");
+  const saisie = page.getByRole("textbox", { name: "Texte du cadre" });
   await saisie.fill("NOUVEAU NOM");
   await page.mouse.click(300, 950);
 
@@ -678,7 +678,7 @@ test("la barre de mise en forme se règle vraiment", async ({ page, request }) =
   expect(apres.famille).toContain("EB Garamond");
 
   // Régler n'a pas fermé la saisie : on continue d'écrire sans recliquer.
-  await expect(page.locator("input[class*='repereSaisie']")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Texte du cadre" })).toBeVisible();
 });
 
 test("un clic dehors referme le cadre et sa barre", async ({ page, request }) => {
@@ -816,6 +816,11 @@ test("les poignées montrent ce qui se saisit", async ({ page, request }) => {
 
   // Déplacement, largeur, hauteur.
   expect(reperes.noms).toHaveLength(3);
-  for (const surface of reperes.surfaces) expect(surface).toBeGreaterThan(200);
+  /*
+   * Chacune garde une surface où l'on peut viser. Dix pixels de côté : de grosses
+   * pastilles autour d'un cadre d'une ligne se lisaient comme un désordre, chacune
+   * tirant l'œil autant que le texte.
+   */
+  for (const surface of reperes.surfaces) expect(surface).toBeGreaterThanOrEqual(96);
   expect(reperes.chevauchements).toBe(0);
 });

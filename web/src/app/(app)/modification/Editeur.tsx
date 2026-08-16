@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import {
   ALIGNEMENTS,
   POLICES,
+  fragmentsDe,
   type Alignement,
+  type Fragment,
   type Police,
   type Retouche,
   type Zone,
@@ -43,6 +45,144 @@ interface Props {
   reconnus: boolean;
   surChangement: (retouches: Retouche[]) => void;
 }
+
+/**
+ * Les morceaux lus dans le champ.
+ *
+ * On parcourt les nœuds de texte et l'on relève, pour chacun, ce que ses parents lui
+ * appliquent. Lire le HTML produit par le navigateur plutôt que le fabriquer soi-même
+ * évite d'avoir à réimplémenter la découpe d'une sélection à cheval sur trois balises,
+ * qui est exactement ce que le navigateur sait faire.
+ */
+function lireLesMorceaux(racine: HTMLElement): Fragment[] {
+  const morceaux: Fragment[] = [];
+  const parcours = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT);
+
+  let noeud = parcours.nextNode();
+  while (noeud) {
+    const texte = noeud.textContent ?? "";
+    if (texte) {
+      let gras = false;
+      let italique = false;
+      let souligne = false;
+
+      let parent = noeud.parentElement;
+      while (parent && parent !== racine.parentElement) {
+        const nom = parent.tagName;
+        const style = parent.style;
+        if (nom === "B" || nom === "STRONG" || Number(style.fontWeight) >= 600 || style.fontWeight === "bold") {
+          gras = true;
+        }
+        if (nom === "I" || nom === "EM" || style.fontStyle === "italic") italique = true;
+        if (nom === "U" || style.textDecorationLine?.includes("underline")) souligne = true;
+        parent = parent.parentElement;
+      }
+
+      const precedent = morceaux[morceaux.length - 1];
+      // Deux morceaux de même style se recollent : le navigateur découpe volontiers
+      // là où rien ne change, et un acte n'a pas à porter cinquante fragments.
+      if (
+        precedent &&
+        !!precedent.gras === gras &&
+        !!precedent.italique === italique &&
+        !!precedent.souligne === souligne
+      ) {
+        precedent.texte += texte;
+      } else {
+        morceaux.push({ texte, gras, italique, souligne });
+      }
+    }
+    noeud = parcours.nextNode();
+  }
+
+  return morceaux;
+}
+
+/** Le HTML d'une retouche, tel que le champ le rend. */
+function htmlDesMorceaux(retouche: Retouche): string {
+  return fragmentsDe(retouche)
+    .map((f) => {
+      const echappe = f.texte
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      let rendu = echappe;
+      if (f.souligne) rendu = "<u>" + rendu + "</u>";
+      if (f.italique) rendu = "<i>" + rendu + "</i>";
+      if (f.gras) rendu = "<b>" + rendu + "</b>";
+      return rendu;
+    })
+    .join("");
+}
+
+/**
+ * Le champ de saisie, où la sélection porte le style.
+ *
+ * Un champ ordinaire ne connaît qu'un style pour tout son contenu : mettre un seul mot
+ * en gras demandait de poser un second cadre à côté, en devinant où finissait le
+ * premier. Ici le contenu est modifiable en place, et les commandes de mise en forme
+ * s'appliquent à ce qui est sélectionné.
+ *
+ * Le contenu n'est posé qu'à l'ouverture : le réécrire à chaque frappe replacerait le
+ * curseur au début.
+ */
+const SaisieRiche = forwardRef<
+  HTMLDivElement,
+  {
+    retouche: Retouche;
+    alignement: "left" | "center" | "right";
+    surChangement: (changement: Partial<Retouche>) => void;
+    surSortie: () => void;
+  }
+>(function SaisieRiche({ retouche, alignement, surChangement, surSortie }, ref) {
+  const champ = useRef<HTMLDivElement | null>(null);
+  /*
+   * Le contenu de départ, figé à l'ouverture.
+   *
+   * Le réécrire à chaque frappe replacerait le curseur au début du champ. Il est donc
+   * calculé une fois, à la première construction du composant - qui est remonté à
+   * chaque cadre ouvert, ce qui suffit à le tenir à jour.
+   */
+  const [depart] = useState(() => htmlDesMorceaux(retouche));
+
+  function relever() {
+    const element = champ.current;
+    if (!element) return;
+
+    const morceaux = lireLesMorceaux(element);
+    surChangement({
+      fragments: morceaux,
+      texte: morceaux.map((m) => m.texte).join(""),
+    });
+  }
+
+  return (
+    <div
+      ref={(element) => {
+        champ.current = element;
+        if (typeof ref === "function") ref(element);
+        else if (ref) ref.current = element;
+      }}
+      className={styles.repereSaisie}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label="Texte du cadre"
+      style={{ textAlign: alignement }}
+      onInput={relever}
+      onBlur={relever}
+      onKeyDown={(e) => {
+        // Entrée valide, Échap referme : un cadre tient sur une ligne.
+        if (e.key === "Enter" || e.key === "Escape") {
+          e.preventDefault();
+          relever();
+          surSortie();
+        }
+      }}
+      dangerouslySetInnerHTML={{ __html: depart }}
+    />
+  );
+});
 
 /** Bornes de la taille du texte : sous six points on ne lit plus, au-delà on déborde. */
 const TAILLE_MINIMALE = 6;
@@ -118,10 +258,15 @@ function ChampTaille({
  */
 function MiseEnForme({
   retouche,
+  styleDuCurseur,
+  surStyle,
   surChangement,
   surRetrait,
 }: {
   retouche: Retouche;
+  /** Ce que porte le texte sélectionné, non le cadre. */
+  styleDuCurseur: { gras: boolean; italique: boolean; souligne: boolean };
+  surStyle: (commande: "bold" | "italic" | "underline") => void;
   surChangement: (changement: Partial<Retouche>) => void;
   surRetrait: () => void;
 }) {
@@ -155,10 +300,12 @@ function MiseEnForme({
 
       <button
         type="button"
-        className={retouche.gras ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton}
+        className={
+          styleDuCurseur.gras ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
+        }
         onMouseDown={garderLeFocus}
-        onClick={() => surChangement({ gras: !retouche.gras })}
-        aria-pressed={retouche.gras ?? false}
+        onClick={() => surStyle("bold")}
+        aria-pressed={styleDuCurseur.gras}
         title="Gras"
       >
         <strong>G</strong>
@@ -167,11 +314,11 @@ function MiseEnForme({
       <button
         type="button"
         className={
-          retouche.italique ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
+          styleDuCurseur.italique ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
         }
         onMouseDown={garderLeFocus}
-        onClick={() => surChangement({ italique: !retouche.italique })}
-        aria-pressed={retouche.italique ?? false}
+        onClick={() => surStyle("italic")}
+        aria-pressed={styleDuCurseur.italique}
         title="Italique"
       >
         <em>I</em>
@@ -180,11 +327,11 @@ function MiseEnForme({
       <button
         type="button"
         className={
-          retouche.souligne ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
+          styleDuCurseur.souligne ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
         }
         onMouseDown={garderLeFocus}
-        onClick={() => surChangement({ souligne: !retouche.souligne })}
-        aria-pressed={retouche.souligne ?? false}
+        onClick={() => surStyle("underline")}
+        aria-pressed={styleDuCurseur.souligne}
         title="Souligné"
       >
         <u>S</u>
@@ -282,7 +429,7 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
   const [choisie, setChoisie] = useState<number | null>(null);
   const [toutesLesPages, setToutesLesPages] = useState(false);
   const cadre = useRef<HTMLDivElement>(null);
-  const saisie = useRef<HTMLInputElement>(null);
+  const saisie = useRef<HTMLDivElement>(null);
   /*
    * Le geste en cours : déplacer, ou tirer un bord.
    *
@@ -322,6 +469,54 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
    * du cadre qu'ils règlent.
    */
   const [formeOuverte, setFormeOuverte] = useState(false);
+  /*
+   * Ce que porte la sélection courante.
+   *
+   * Les boutons doivent montrer l'état du texte sélectionné, non celui du cadre : on
+   * ne saurait pas, sinon, si le mot sous le curseur est déjà en gras.
+   */
+  const [styleDuCurseur, setStyleDuCurseur] = useState({
+    gras: false,
+    italique: false,
+    souligne: false,
+  });
+
+  useEffect(() => {
+    if (choisie === null) return;
+
+    function relever() {
+      try {
+        setStyleDuCurseur({
+          gras: document.queryCommandState("bold"),
+          italique: document.queryCommandState("italic"),
+          souligne: document.queryCommandState("underline"),
+        });
+      } catch {
+        // Le navigateur peut refuser hors d'un champ modifiable : sans importance.
+      }
+    }
+
+    document.addEventListener("selectionchange", relever);
+    return () => document.removeEventListener("selectionchange", relever);
+  }, [choisie]);
+
+  /**
+   * Applique un style au texte sélectionné.
+   *
+   * On laisse le navigateur découper la sélection - à cheval sur trois balises, c'est
+   * exactement ce qu'il sait faire - puis on relit le champ pour en tirer les
+   * morceaux. Réimplémenter cette découpe soi-même serait long et fragile.
+   */
+  function appliquerAuTexte(commande: "bold" | "italic" | "underline", index: number) {
+    const champ = saisie.current;
+    if (!champ) return;
+
+    champ.focus();
+    document.execCommand(commande);
+
+    const morceaux = lireLesMorceaux(champ);
+    modifier(index, { fragments: morceaux, texte: morceaux.map((m) => m.texte).join("") });
+  }
 
   const dimensions = pages.find((p) => p.numero === page) ?? pages[0];
 
@@ -733,20 +928,12 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                     <path d="M12 3 L9 6 M12 3 L15 6 M12 3 V21 M12 21 L9 18 M12 21 L15 18 M3 12 L6 9 M3 12 L6 15 M3 12 H21 M21 12 L18 9 M21 12 L18 15" />
                   </svg>
                 </span>
-                <input
+                <SaisieRiche
                   ref={saisie}
-                  className={styles.repereSaisie}
-                  style={{ textAlign: style.textAlign, textDecoration: style.textDecoration }}
-                  value={retouche.texte}
-                  onChange={(e) => modifier(index, { texte: e.target.value })}
-                  /*
-                    La fermeture est décidée par le clic dehors, non par le blur : on
-                    peut donc passer de la saisie à la barre et revenir sans que le
-                    cadre se referme entre les deux.
-                  */
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape" || e.key === "Enter") ouvrir(null);
-                  }}
+                  retouche={retouche}
+                  alignement={style.textAlign}
+                  surChangement={(changement) => modifier(index, changement)}
+                  surSortie={() => ouvrir(null)}
                 />
 
                 {/* L'icône appelle les réglages, au bord du cadre qu'ils règlent. */}
@@ -765,6 +952,8 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                 {formeOuverte && (
                   <MiseEnForme
                     retouche={retouche}
+                    styleDuCurseur={styleDuCurseur}
+                    surStyle={(commande) => appliquerAuTexte(commande, index)}
                     surChangement={(changement) => modifier(index, changement)}
                     surRetrait={() => retirer(index)}
                   />

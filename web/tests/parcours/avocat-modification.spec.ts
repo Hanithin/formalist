@@ -325,7 +325,7 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   await page.mouse.down();
   await page.mouse.up();
 
-  const saisie = page.locator("input[class*='repereSaisie']");
+  const saisie = page.getByRole("textbox", { name: "Texte du cadre" });
   await saisie.fill("5 avenue Victor Hugo, 69003 Lyon");
   await page.mouse.click(200, 950);
 

@@ -98,6 +98,18 @@ const RETOUCHE = z.object({
   italique: z.boolean().optional(),
   souligne: z.boolean().optional(),
   alignement: z.enum(["gauche", "centre", "droite"]).optional(),
+  // Le texte découpé, quand il porte plusieurs mises en forme.
+  fragments: z
+    .array(
+      z.object({
+        texte: z.string().max(2000),
+        gras: z.boolean().optional(),
+        italique: z.boolean().optional(),
+        souligne: z.boolean().optional(),
+      })
+    )
+    .max(200)
+    .optional(),
 });
 
 const APPLICATION = z.object({

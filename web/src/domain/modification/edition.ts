@@ -412,6 +412,24 @@ export const ALIGNEMENTS: { valeur: Alignement; libelle: string }[] = [
   { valeur: "droite", libelle: "Aligner à droite" },
 ];
 
+/**
+ * Un morceau de texte et sa mise en forme.
+ *
+ * Une retouche portait un style unique : mettre un seul mot en gras demandait de
+ * poser un second cadre à côté, à la main, en devinant où finissait le premier. Le
+ * texte se découpe donc en morceaux, chacun avec son gras, son italique et son
+ * souligné.
+ *
+ * La police et la taille restent celles du cadre : dans un acte, on met un mot en
+ * gras, on ne change pas de police au milieu d'une phrase.
+ */
+export interface Fragment {
+  texte: string;
+  gras?: boolean;
+  italique?: boolean;
+  souligne?: boolean;
+}
+
 export interface Retouche {
   page: number;
   x: number;
@@ -428,6 +446,42 @@ export interface Retouche {
   souligne?: boolean;
   /** À gauche par défaut, comme le texte courant d'un acte. */
   alignement?: Alignement;
+  /**
+   * Le texte découpé, quand il porte plusieurs mises en forme.
+   *
+   * Absent, c'est le texte entier au style du cadre - la forme d'origine, que les
+   * dossiers ouverts avant gardent.
+   */
+  fragments?: Fragment[];
+}
+
+/**
+ * Les morceaux d'une retouche, quelle que soit sa forme.
+ *
+ * Sans découpage, le texte entier au style du cadre. C'est ce qui permet au reste du
+ * code de ne connaître qu'une seule façon de lire une retouche.
+ */
+export function fragmentsDe(retouche: Retouche): Fragment[] {
+  const decoupes = (retouche.fragments ?? []).filter((f) => f.texte.length > 0);
+  if (decoupes.length > 0) return decoupes;
+
+  return retouche.texte
+    ? [
+        {
+          texte: retouche.texte,
+          gras: retouche.gras,
+          italique: retouche.italique,
+          souligne: retouche.souligne,
+        },
+      ]
+    : [];
+}
+
+/** Le texte entier d'une retouche, sans sa mise en forme. */
+export function texteDe(retouche: Retouche): string {
+  return retouche.fragments?.length
+    ? retouche.fragments.map((f) => f.texte).join("")
+    : retouche.texte;
 }
 
 /** Les retouches proposées à partir des zones repérées. */
