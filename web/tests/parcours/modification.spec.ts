@@ -588,3 +588,79 @@ test("le texte écrit dans un cadre s'affiche vraiment une fois refermé", async
   // Et le cadre rempli montre le résultat : fond blanc, comme dans le document.
   expect(rendu.fond).toBe("rgb(255, 255, 255)");
 });
+
+test("la barre de mise en forme se règle vraiment", async ({ page, request }) => {
+  /*
+   * Le champ de taille et le sélecteur de police étaient inertes : la barre entière
+   * empêchait le comportement par défaut du clic pour garder le curseur dans le
+   * texte, ce qui empêchait aussi de les atteindre. Seuls les boutons ont besoin de
+   * refuser le focus.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["denomination"],
+      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
+    },
+  });
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 700, size: 16, font: police });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/modification?dossier=" + dossier + "&etape=6");
+  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.getByRole("button", { name: "Mise en forme" }).click();
+
+  const barre = page.locator("[data-mise-en-forme]");
+  await expect(barre).toBeVisible();
+
+  // Les cinq polices, dont les deux embarquées dans le document.
+  const polices = await barre.locator("select option").allTextContents();
+  expect(polices).toContain("EB Garamond");
+  expect(polices).toContain("Lato");
+
+  const avant = await page.evaluate(
+    () => getComputedStyle(document.querySelector("div[class*='repereOuvert']")!).fontSize
+  );
+
+  await barre.locator("input[type=number]").fill("22");
+  await barre.locator("select").selectOption("garamond");
+
+  const apres = await page.evaluate(() => {
+    const cadre = document.querySelector("div[class*='repereOuvert']") as HTMLElement;
+    const style = getComputedStyle(cadre);
+    return { taille: style.fontSize, famille: style.fontFamily };
+  });
+
+  expect(apres.taille).not.toBe(avant);
+  expect(apres.famille).toContain("EB Garamond");
+
+  // Régler n'a pas fermé la saisie : on continue d'écrire sans recliquer.
+  await expect(page.locator("input[class*='repereSaisie']")).toBeVisible();
+});

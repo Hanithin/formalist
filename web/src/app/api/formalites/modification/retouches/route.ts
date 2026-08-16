@@ -91,7 +91,7 @@ const RETOUCHE = z.object({
   hauteur: z.number().min(1).max(2000),
   texte: z.string().max(2000),
   taille: z.number().min(1).max(72),
-  police: z.enum(["serif", "sans", "mono"]).optional(),
+  police: z.enum(["serif", "sans", "mono", "garamond", "lato"]).optional(),
   gras: z.boolean().optional(),
   italique: z.boolean().optional(),
   souligne: z.boolean().optional(),

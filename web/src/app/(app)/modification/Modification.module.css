@@ -1,4 +1,74 @@
 /*
+ * Les polices embarquées, pour que l'aperçu ressemble au document.
+ *
+ * Les mêmes fichiers servent au navigateur et au PDF : une seule copie, et l'écran
+ * ne peut pas montrer une composition que le document n'aura pas.
+ */
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/polices/EBGaramond-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/polices/EBGaramond-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/polices/EBGaramond-italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/polices/EBGaramond-bolditalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lato";
+  src: url("/polices/Lato-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lato";
+  src: url("/polices/Lato-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lato";
+  src: url("/polices/Lato-italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lato";
+  src: url("/polices/Lato-bolditalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/*
  * Le parcours de modification.
  *
  * Même cadre que la création et l'auto-entreprise : colonne centrée, fil d'ariane

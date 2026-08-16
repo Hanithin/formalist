@@ -395,3 +395,43 @@ describe("le souligné et l'alignement", () => {
     expect(c).toBeLessThanOrEqual(commun.x + commun.largeur);
   }, 180_000);
 });
+
+describe("les polices embarquées", () => {
+  it("EB Garamond voyage dans le document", async () => {
+    /*
+     * Un PDF n'a que quatorze polices garanties ; toute autre doit être embarquée.
+     * Sans cela, le sélecteur proposerait un choix sans effet sur le document.
+     */
+    const statuts = await statutsDEssai();
+    const commun = { page: 1, x: 60, y: 300, largeur: 300, hauteur: 14, taille: 11 };
+
+    const standard = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Texte temoin", police: "serif" as const },
+    ]);
+    const garamond = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Texte temoin", police: "garamond" as const },
+    ]);
+
+    // La police embarquée alourdit le document : c'est le signe qu'elle y est.
+    expect(garamond.byteLength).toBeGreaterThan(standard.byteLength);
+    expect((await lireLesStatuts(garamond)).mots.map((m) => m.texte).join(" ")).toContain("temoin");
+  }, 180_000);
+
+  it("une police inconnue retombe sur le serif au lieu d'échouer", async () => {
+    // Mieux vaut un acte composé autrement que pas d'acte du tout.
+    const statuts = await statutsDEssai();
+    const produit = await appliquerLesRetouches(statuts, [
+      {
+        page: 1,
+        x: 60,
+        y: 300,
+        largeur: 300,
+        hauteur: 14,
+        taille: 11,
+        texte: "Repli serif",
+        police: "inconnue" as never,
+      },
+    ]);
+    expect((await lireLesStatuts(produit)).mots.map((m) => m.texte).join(" ")).toContain("Repli");
+  }, 120_000);
+});

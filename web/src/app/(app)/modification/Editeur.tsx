@@ -60,11 +60,18 @@ function MiseEnForme({
   surChangement: (changement: Partial<Retouche>) => void;
   surRetrait: () => void;
 }) {
-  /* Empêcher le défaut du pointeur garde le curseur dans la saisie. */
+  /*
+   * Les boutons gardent le curseur dans le texte, les champs le prennent.
+   *
+   * Empêcher le défaut du pointeur sur toute la barre empêchait aussi de cliquer dans
+   * le champ de taille et d'ouvrir le sélecteur de police : ils devenaient inertes.
+   * Seuls les boutons refusent le focus - ils n'en ont pas besoin, et le rendre
+   * ensuite au texte demanderait de le retrouver.
+   */
   const garderLeFocus = (e: React.MouseEvent) => e.preventDefault();
 
   return (
-    <div className={styles.forme} data-mise-en-forme onMouseDown={garderLeFocus}>
+    <div className={styles.forme} data-mise-en-forme>
       <select
         aria-label="Police"
         value={retouche.police ?? "serif"}
@@ -94,6 +101,7 @@ function MiseEnForme({
       <button
         type="button"
         className={retouche.gras ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton}
+        onMouseDown={garderLeFocus}
         onClick={() => surChangement({ gras: !retouche.gras })}
         aria-pressed={retouche.gras ?? false}
         title="Gras"
@@ -106,6 +114,7 @@ function MiseEnForme({
         className={
           retouche.italique ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
         }
+        onMouseDown={garderLeFocus}
         onClick={() => surChangement({ italique: !retouche.italique })}
         aria-pressed={retouche.italique ?? false}
         title="Italique"
@@ -118,6 +127,7 @@ function MiseEnForme({
         className={
           retouche.souligne ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
         }
+        onMouseDown={garderLeFocus}
         onClick={() => surChangement({ souligne: !retouche.souligne })}
         aria-pressed={retouche.souligne ?? false}
         title="Souligné"
@@ -136,6 +146,7 @@ function MiseEnForme({
               ? `${styles.formeBouton} ${styles.formeActif}`
               : styles.formeBouton
           }
+          onMouseDown={garderLeFocus}
           onClick={() => surChangement({ alignement: a.valeur as Alignement })}
           aria-pressed={(retouche.alignement ?? "gauche") === a.valeur}
           title={a.libelle}
@@ -160,6 +171,7 @@ function MiseEnForme({
       <button
         type="button"
         className={`${styles.formeBouton} ${styles.formeDanger}`}
+        onMouseDown={garderLeFocus}
         onClick={surRetrait}
         title="Retirer ce cadre"
       >
@@ -174,6 +186,8 @@ const FAMILLES: Record<Police, string> = {
   serif: '"Times New Roman", Times, serif',
   sans: "Helvetica, Arial, sans-serif",
   mono: "Courier, monospace",
+  garamond: '"EB Garamond", "Times New Roman", serif',
+  lato: "Lato, Helvetica, Arial, sans-serif",
 };
 
 export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangement }: Props) {

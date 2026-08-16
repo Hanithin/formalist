@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { journal } from "@/lib/journal";
-import { verifierRetouche, type Mot, type Retouche } from "@/domain/modification/edition";
+import {
+  verifierRetouche,
+  POLICES_EMBARQUEES,
+  type Mot,
+  type Retouche,
+} from "@/domain/modification/edition";
 
 /**
  * Lire et retoucher un PDF de statuts.
@@ -289,6 +294,38 @@ export async function appliquerLesRetouches(
    * l'italique ne s'obtiennent pas par un réglage mais par une police distincte -
    * c'est ainsi que le PDF fonctionne.
    */
+  /*
+   * Les familles embarquées.
+   *
+   * Un PDF n'a que quatorze polices garanties ; toute autre doit voyager dans le
+   * document. fontkit lit le fichier, pdf-lib l'embarque - et il en faut un par
+   * variante, le gras d'une police n'étant pas un réglage mais une autre police.
+   *
+   * Le fichier absent n'interrompt pas la production : on retombe sur le serif
+   * standard. Mieux vaut un acte composé autrement que pas d'acte du tout.
+   */
+  const dossierDesPolices = join(process.cwd(), "public", "polices");
+  let fontkitCharge = false;
+
+  async function embarquerLeFichier(famille: string, rang: number) {
+    const nom = POLICES_EMBARQUEES[famille];
+    if (!nom) return null;
+
+    const variante = ["regular", "bold", "italic", "bolditalic"][rang];
+    try {
+      const contenu = await readFile(join(dossierDesPolices, nom + "-" + variante + ".ttf"));
+      if (!fontkitCharge) {
+        const fontkit = (await import("@pdf-lib/fontkit")).default;
+        produit.registerFontkit(fontkit);
+        fontkitCharge = true;
+      }
+      return await produit.embedFont(contenu, { subset: true });
+    } catch (e) {
+      journal.warn({ err: e, famille, variante }, "Police embarquée introuvable, serif employé");
+      return null;
+    }
+  }
+
   const familles = {
     serif: [StandardFonts.TimesRoman, StandardFonts.TimesRomanBold, StandardFonts.TimesRomanItalic, StandardFonts.TimesRomanBoldItalic],
     sans: [StandardFonts.Helvetica, StandardFonts.HelveticaBold, StandardFonts.HelveticaOblique, StandardFonts.HelveticaBoldOblique],
@@ -303,10 +340,20 @@ export async function appliquerLesRetouches(
   }
 
   /** La variante correspondant au gras et à l'italique demandés. */
-  function policeDe(retouche: Retouche) {
+  async function policeDe(retouche: Retouche) {
     const famille = retouche.police ?? "serif";
     const rang = (retouche.gras ? 1 : 0) + (retouche.italique ? 2 : 0);
-    return embarquees.get(famille + ":" + rang) ?? embarquees.get("serif:0")!;
+
+    const deja = embarquees.get(famille + ":" + rang);
+    if (deja) return deja;
+
+    const embarquee = await embarquerLeFichier(famille, rang);
+    if (embarquee) {
+      embarquees.set(famille + ":" + rang, embarquee);
+      return embarquee;
+    }
+
+    return embarquees.get("serif:" + rang) ?? embarquees.get("serif:0")!;
   }
 
   for (let index = 0; index < origine.getPageCount(); index++) {
@@ -344,7 +391,7 @@ export async function appliquerLesRetouches(
       const texte = lisibleParLaPolice(retouche.texte);
       if (!texte) continue;
 
-      const fonte = policeDe(retouche);
+      const fonte = await policeDe(retouche);
       // La ligne de base se pose au bas du rectangle, remontée du jambage.
       const ligneDeBase = height - retouche.y - retouche.hauteur + retouche.taille * 0.2;
 

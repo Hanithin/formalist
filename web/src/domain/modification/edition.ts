@@ -358,13 +358,27 @@ export function recherchesPour(
  * traitements de texte par défaut sur un acte. Écrire la nouvelle valeur en sans
  * serif à côté de l'ancienne se voit immédiatement, et fait douter du document.
  */
-export type Police = "serif" | "sans" | "mono";
+export type Police = "serif" | "sans" | "mono" | "garamond" | "lato";
 
-export const POLICES: { valeur: Police; libelle: string }[] = [
-  { valeur: "serif", libelle: "Serif" },
-  { valeur: "sans", libelle: "Sans serif" },
-  { valeur: "mono", libelle: "Chasse fixe" },
+/*
+ * Les trois premières sont les polices standard du format PDF : elles ne pèsent rien
+ * et sont présentes partout. Les deux suivantes sont embarquées dans le document -
+ * quatre fichiers chacune, le gras et l'italique d'une police n'étant pas un réglage
+ * mais une autre police.
+ */
+export const POLICES: { valeur: Police; libelle: string; embarquee?: boolean }[] = [
+  { valeur: "serif", libelle: "Serif (Times)" },
+  { valeur: "sans", libelle: "Sans serif (Helvetica)" },
+  { valeur: "mono", libelle: "Chasse fixe (Courier)" },
+  { valeur: "garamond", libelle: "EB Garamond", embarquee: true },
+  { valeur: "lato", libelle: "Lato", embarquee: true },
 ];
+
+/** Les familles à embarquer, et le nom de leurs fichiers. */
+export const POLICES_EMBARQUEES: Record<string, string> = {
+  garamond: "EBGaramond",
+  lato: "Lato",
+};
 
 /** Où le texte se pose dans son cadre. */
 export type Alignement = "gauche" | "centre" | "droite";
