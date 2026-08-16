@@ -2187,6 +2187,45 @@
   stroke-linejoin: round;
 }
 
+/*
+ * Le champ du numéro de page.
+ *
+ * Il porte ses propres mesures : la règle générale des champs applique onze pixels de
+ * remplissage et une largeur pleine, qui en feraient une barre au milieu de la phrase.
+ */
+.navNumero {
+  box-sizing: content-box;
+  width: auto;
+  min-width: 1.2em;
+  max-width: 3em;
+  margin: 0 1px;
+  padding: 2px 5px;
+  /* Un contour discret au repos : sans lui, rien ne dit que le numéro s'écrit. */
+  border: 1px solid #ececef;
+  border-radius: 6px;
+  background: #fafafa;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  color: inherit;
+  text-align: center;
+  box-shadow: none;
+  cursor: text;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.navNumero:hover {
+  border-color: #e5e5e7;
+  background: #fafafa;
+}
+.navNumero:focus {
+  outline: none;
+  border-color: #111;
+  background: #fff;
+  box-shadow: none;
+}
+
 .navPosition {
   padding: 0 6px;
   font-size: 13px;

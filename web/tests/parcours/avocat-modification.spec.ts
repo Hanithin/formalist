@@ -553,13 +553,16 @@ test("le suivi compte les changements, non les cadres", async ({ page, request }
 
   // Les deux occurrences sont vues, non la première seule.
   await expect(page.getByText("2 sur 2 emplacements couverts")).toBeVisible();
-  await expect(page.getByText("0 sur 1")).toBeVisible();
+  // L'écran s'ouvre sur le travail à faire, non sur un zéro.
+  await expect(page.getByText("changement à vérifier")).toBeVisible();
+  await expect(page.getByText("0 sur", { exact: false })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Emplacement 1 sur 2/ })).toBeVisible();
 
   // On parcourt les emplacements : le second est sur une autre page.
   await page.getByRole("button", { name: "Emplacement suivant" }).click();
   await expect(page.getByRole("button", { name: /Emplacement 2 sur 2 - page 3/ })).toBeVisible();
-  await expect(page.getByText("Page 3 sur 3")).toBeVisible();
+  // Le numéro se lit dans son champ, depuis qu'il s'écrit.
+  await expect(page.getByRole("textbox", { name: "Numéro de page" })).toHaveValue("3");
 
   // Le cadre y est supprimé : l'emplacement redevient découvert, et le dit.
   // La corbeille est au bord du cadre : plus besoin d'ouvrir les réglages pour l'atteindre.
@@ -590,7 +593,7 @@ test("le suivi compte les changements, non les cadres", async ({ page, request }
   await expect(async () => {
     expect((await ligne.boundingBox())!.width).toBeLessThan(large / 2);
   }).toPass({ timeout: 5_000 });
-  await expect(page.getByText("1 sur 1")).toBeVisible();
+  await expect(page.getByText("Tout est vérifié")).toBeVisible();
   await page.waitForTimeout(1600);
 
   const enregistre = JSON.parse(
@@ -638,4 +641,50 @@ test("poser un cadre libre s'atteint sans faire défiler", async ({ page, reques
   await expect(page.getByText("Cadres libres")).toHaveCount(0);
   await poser.click();
   await expect(page.getByText("Cadres libres")).toBeVisible();
+});
+
+test("le numéro de page s'écrit, au lieu de cliquer vingt fois", async ({ page, request }) => {
+  /*
+   * Sur vingt-trois pages, atteindre la dix-septième demandait seize clics sur la
+   * flèche. Le numéro se saisit, et une valeur hors bornes ne mène nulle part plutôt
+   * que d'emmener au hasard.
+   */
+  const dossier = await dossierANommer();
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: await statutsAvecDeuxOccurrences(),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+
+  const numero = page.getByRole("textbox", { name: "Numéro de page" });
+  await expect(numero).toHaveValue("1");
+
+  await numero.fill("3");
+  await numero.press("Enter");
+  await expect(numero).toHaveValue("3");
+  await expect(page.getByRole("img", { name: "Page 3 des statuts" })).toBeVisible();
+
+  // Au-delà du document, on ne bouge pas : le champ revient à la page courante.
+  await numero.fill("99");
+  await numero.press("Enter");
+  await expect(numero).toHaveValue("3");
+
+  /*
+   * Échap abandonne la frappe.
+   *
+   * Quitter le champ navigue, et la sortie lisait l'état du rendu courant : Échap
+   * emmenait à la page qu'on venait justement d'abandonner.
+   */
+  await numero.fill("1");
+  await numero.press("Escape");
+  await expect(numero).toHaveValue("3");
+  await expect(page.getByRole("img", { name: "Page 3 des statuts" })).toBeVisible();
 });

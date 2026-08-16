@@ -323,13 +323,41 @@ export function Statuts({ dossier }: { dossier: number }) {
         surReprise={reprendre}
         entete={
           <div className={styles.statutsTete}>
-            <div>
-              <span className={styles.statutsCompte}>
-                {confirmes} sur {changements.length}
-              </span>
-              <span className={styles.statutsMention}>
-                {changements.length === 1 ? "changement confirmé" : "changements confirmés"}
-              </span>
+            {/*
+              Ce qui reste, non ce qui manque.
+              « 0 sur 2 changements confirmés » ouvrait l'écran sur un zéro : le même
+              fait se dit en annonçant le travail à faire, et le décompte ne paraît
+              qu'une fois qu'il a commencé.
+            */}
+            <div className={styles.statutsPhrase}>
+              {confirmes === 0 ? (
+                <>
+                  <span className={styles.statutsCompte}>{changements.length}</span>
+                  <span className={styles.statutsMention}>
+                    {changements.length === 1
+                      ? "changement à vérifier"
+                      : "changements à vérifier"}
+                  </span>
+                </>
+              ) : confirmes === changements.length ? (
+                <>
+                  <span className={styles.statutsCompte}>Tout est vérifié</span>
+                  <span className={styles.statutsMention}>
+                    {changements.length === 1
+                      ? "le changement est confirmé"
+                      : "les " + changements.length + " changements sont confirmés"}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className={styles.statutsCompte}>
+                    {confirmes} sur {changements.length}
+                  </span>
+                  <span className={styles.statutsMention}>
+                    {changements.length === 1 ? "changement confirmé" : "changements confirmés"}
+                  </span>
+                </>
+              )}
             </div>
 
             <button

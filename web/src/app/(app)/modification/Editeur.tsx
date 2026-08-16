@@ -559,6 +559,10 @@ export function Editeur({
   const [toutesLesPages, setToutesLesPages] = useState(false);
   /** Où l'on en est dans le parcours des emplacements, changement par changement. */
   const [curseurs, setCurseurs] = useState<Record<string, number>>({});
+  /** Le numéro en cours de frappe, tant qu'il n'est pas validé. */
+  const [numeroSaisi, setNumeroSaisi] = useState<string | null>(null);
+  /** Échap vient de renoncer : la sortie du champ ne doit pas naviguer. */
+  const abandon = useRef(false);
   const cadre = useRef<HTMLDivElement>(null);
   const saisie = useRef<HTMLDivElement>(null);
   /*
@@ -966,8 +970,66 @@ export function Editeur({
               </svg>
             </button>
 
+            {/*
+              Le numéro s'écrit.
+              Sur vingt-trois pages, atteindre la dix-septième demandait seize clics
+              sur la flèche : le champ y mène directement, et les flèches restent pour
+              avancer d'une page.
+            */}
             <span className={styles.navPosition}>
-              Page <strong>{page}</strong> sur {pages.length}
+              Page{" "}
+              <input
+                className={styles.navNumero}
+                type="text"
+                inputMode="numeric"
+                value={numeroSaisi ?? String(page)}
+                aria-label="Numéro de page"
+                title="Écrivez un numéro de page"
+                size={String(pages.length).length}
+                onChange={(e) => setNumeroSaisi(e.target.value.replace(/[^0-9]/g, ""))}
+                onFocus={(e) => e.currentTarget.select()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                  if (e.key === "Escape") {
+                    /*
+                     * Le renoncement passe par une référence, non par l'état.
+                     *
+                     * Quitter le champ déclenche la navigation, et le gestionnaire de
+                     * sortie lit l'état du rendu courant : vider la saisie ici ne
+                     * l'atteignait pas à temps, et Échap emmenait à la page qu'on
+                     * venait justement d'abandonner.
+                     */
+                    abandon.current = true;
+                    setNumeroSaisi(null);
+                    e.currentTarget.blur();
+                  }
+                }}
+                onBlur={() => {
+                  if (abandon.current) {
+                    abandon.current = false;
+                    setNumeroSaisi(null);
+                    return;
+                  }
+
+                  /*
+                   * On ne juge la saisie qu'en la quittant.
+                   *
+                   * Ramener le nombre dans les bornes à chaque frappe empêchait
+                   * d'écrire « 12 » sur un document de neuf pages : le « 1 » sautait à
+                   * 9 avant qu'on ait tapé le second chiffre. Une saisie vide ou hors
+                   * bornes revient simplement à la page courante.
+                   */
+                  const demande = Number(numeroSaisi);
+                  setNumeroSaisi(null);
+                  if (Number.isInteger(demande) && demande >= 1 && demande <= pages.length) {
+                    allerA(demande);
+                  }
+                }}
+              />{" "}
+              sur {pages.length}
             </span>
 
             <button

@@ -2043,20 +2043,31 @@
   border-bottom: 1px solid #f2f2f4;
 }
 
+/*
+ * Le compte et ce qu'il compte, sur une ligne.
+ *
+ * Le nombre occupait sa propre ligne, en gros, au-dessus de son libellé : deux lignes
+ * pour une phrase de quatre mots, et le chiffre se lisait seul avant qu'on sache de
+ * quoi il parle.
+ */
+.statutsPhrase {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
 .statutsCompte {
-  display: block;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 0;
-  line-height: 1.1;
+  line-height: 1.15;
   color: #111;
 }
 
 .statutsMention {
-  display: block;
-  margin-top: 2px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: #71717a;
 }
 
