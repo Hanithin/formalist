@@ -35,6 +35,52 @@ export function Statuts({ dossier }: { dossier: number }) {
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
+  /** Recharge la lecture après un dépôt : le document vient de changer. */
+  function relire() {
+    demarrer(async () => {
+      const reponse = await fetch("/api/formalites/modification/retouches?dossier=" + dossier);
+      const corps = await reponse.json().catch(() => ({}));
+      if (!reponse.ok) {
+        setRefus(corps.error ?? "Les statuts n'ont pas pu être lus");
+        return;
+      }
+      setRefus(null);
+      setLecture(corps as Lecture);
+      setRetouches(corps.retouches ?? []);
+    });
+  }
+
+  /**
+   * Le dépôt des statuts par le cabinet.
+   *
+   * Une fois le dossier réglé, le client est renvoyé vers ses formalités : il ne peut
+   * plus rien y déposer. Sans ce bouton, un dossier arrivé sans statuts restait
+   * bloqué - ni le client ni l'avocat ne pouvaient les mettre au dossier, et l'écran
+   * se contentait de dire qu'ils manquaient.
+   */
+  function deposer(fichier: File) {
+    setRefus(null);
+    demarrer(async () => {
+      const corps = new FormData();
+      corps.append("dossier", String(dossier));
+      corps.append("fichier", fichier);
+
+      const reponse = await fetch("/api/formalites/modification/statuts/depot", {
+        method: "POST",
+        body: corps,
+      });
+      const retour = await reponse.json().catch(() => ({}));
+
+      if (!reponse.ok) {
+        setRefus(retour.error ?? "Le dépôt a été refusé");
+        return;
+      }
+      setRetour("Statuts reçus. Les passages à remplacer sont repérés ci-dessous.");
+      relire();
+      router.refresh();
+    });
+  }
+
   useEffect(() => {
     let vivant = true;
     (async () => {
@@ -101,9 +147,37 @@ export function Statuts({ dossier }: { dossier: number }) {
 
   if (refus && !lecture) {
     return (
-      <p className={styles.travailRefus} role="alert">
-        {refus}
-      </p>
+      <div className={styles.travail}>
+        <p className={styles.travailRefus} role="alert">
+          {refus}
+        </p>
+
+        {/*
+          Le client ne peut plus rien déposer une fois le dossier réglé : c'est donc
+          au cabinet de le faire, avec ce que le client lui a envoyé.
+        */}
+        <div className={styles.depotStatuts}>
+          <p className={styles.tacheExplication}>
+            Déposez les statuts en vigueur, au format PDF. Vous pouvez les demander au
+            client par message, ou les reprendre au registre national.
+          </p>
+          <input
+            type="file"
+            accept=".pdf"
+            disabled={enCours}
+            onChange={(e) => {
+              const fichier = e.target.files?.[0];
+              if (fichier) deposer(fichier);
+            }}
+          />
+        </div>
+
+        {retour && (
+          <p className={styles.travailRetour} role="status">
+            {retour}
+          </p>
+        )}
+      </div>
     );
   }
 

@@ -231,3 +231,41 @@ test("un dossier de création ne montre ni statuts ni annonce à retoucher", asy
   await page.goto("/avocat/" + creation.id + "?onglet=annonce");
   await expect(page.getByText(/publiée par le client/)).toBeVisible();
 });
+
+test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {
+  /*
+   * Une fois le dossier réglé, le client est renvoyé vers ses formalités : il ne peut
+   * plus rien y déposer. Sans ce dépôt côté cabinet, un dossier arrivé sans statuts
+   * restait bloqué - personne ne pouvait les y mettre, et l'écran se contentait de
+   * dire qu'ils manquaient.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const dossier = await dossierDeModification();
+
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await expect(page.getByRole("alert").filter({ hasText: /statuts/i })).toBeVisible();
+
+  const document = await PDFDocument.create();
+  const police = await document.embedFont(StandardFonts.Helvetica);
+  document
+    .addPage([595, 842])
+    .drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+      x: 60,
+      y: 700,
+      size: 11,
+      font: police,
+    });
+
+  await page.setInputFiles('input[type="file"]', {
+    name: "statuts.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from(await document.save()),
+  });
+
+  await expect(page.getByRole("status")).toContainText("Statuts reçus", { timeout: 30_000 });
+
+  const depose = await prisma.documents.count({
+    where: { formalite_id: dossier, name: "Statuts en vigueur" },
+  });
+  expect(depose).toBe(1);
+});
