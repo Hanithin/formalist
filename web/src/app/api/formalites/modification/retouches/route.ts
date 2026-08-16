@@ -74,25 +74,32 @@ export const GET = route(async (requete: Request) => {
      * L'auteur est le repérage, non l'avocat : il n'a rien fait à ce stade.
      */
     const proposees = retouchesProposees(zones);
+    const deja = modification.retouches ?? [];
+    const depart = deja.length > 0 ? deja : proposees;
+
     let historique = modification.historique ?? [];
     let position = modification.positionHistorique ?? historique.length - 1;
 
-    if (historique.length === 0 && !modification.retouches?.length && proposees.length > 0) {
-      const depart = inscrire([], -1, {
-        retouches: proposees,
+    if (historique.length === 0 && depart.length > 0) {
+      const premiere = inscrire([], -1, {
+        retouches: depart,
         pagesRetirees: modification.pagesRetirees ?? [],
         quand: new Date().toISOString(),
-        qui: "Repérage automatique",
+        qui: deja.length > 0 ? "État repris" : "Repérage automatique",
         libelle:
-          proposees.length === 1 ? "1 passage repéré" : proposees.length + " passages repérés",
+          deja.length > 0
+            ? "État du dossier à l'ouverture du suivi"
+            : proposees.length === 1
+              ? "1 passage repéré"
+              : proposees.length + " passages repérés",
       });
       await completerModification(utilisateur, dossierId, {
-        retouches: proposees,
-        historique: depart.historique,
-        positionHistorique: depart.position,
+        retouches: depart,
+        historique: premiere.historique,
+        positionHistorique: premiere.position,
       });
-      historique = depart.historique;
-      position = depart.position;
+      historique = premiere.historique;
+      position = premiere.position;
     }
 
     return NextResponse.json({
@@ -112,7 +119,7 @@ export const GET = route(async (requete: Request) => {
       zones,
       // Les retouches déjà validées l'emportent sur la proposition : reprendre
       // l'écran ne doit pas défaire un ajustement fait à la main.
-      retouches: modification.retouches?.length ? modification.retouches : proposees,
+      retouches: depart,
     });
   } catch (e) {
     if (e instanceof StatutsIllisibles) {

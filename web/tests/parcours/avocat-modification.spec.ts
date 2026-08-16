@@ -391,6 +391,9 @@ test("l'historique dit qui a fait quoi, et on revient dessus", async ({ page, re
     { timeout: 30_000 }
   );
 
+  // Le suivi s'atteint avant d'avoir rien fait : sinon on ne le découvre jamais.
+  await expect(page.getByRole("button", { name: "Historique" })).toBeVisible();
+
   // Premier geste : on écrit dans le cadre repéré, pour avoir un état où revenir.
   const cadre = page.locator("div[class*='repere']").first();
   await expect(cadre).toBeVisible({ timeout: 30_000 });

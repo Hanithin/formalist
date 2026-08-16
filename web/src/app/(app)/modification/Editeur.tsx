@@ -924,7 +924,7 @@ export function Editeur({
           )}
 
           <div className={styles.accesCommandes}>
-            {surReprise && historique.length > 0 && (
+            {surReprise && (
               <span className={styles.historiqueCommandes}>
                 <button
                   type="button"
@@ -1239,6 +1239,13 @@ export function Editeur({
                 Fermer
               </button>
             </div>
+
+            {historique.length === 0 && (
+              <p className={styles.editeurAide}>
+                Rien n&apos;est encore inscrit. Chaque geste - un cadre posé, un texte
+                réécrit, une page écartée - apparaîtra ici, avec son heure et son auteur.
+              </p>
+            )}
 
             <ol className={styles.historiqueListe}>
               {[...historique].reverse().map((etape, rangInverse) => {
