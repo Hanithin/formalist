@@ -627,7 +627,7 @@ test("poser un cadre libre s'atteint sans faire défiler", async ({ page, reques
   await page.setViewportSize({ width: 1600, height: 700 });
   await page.goto("/avocat/" + dossier + "?onglet=statuts");
 
-  const poser = page.getByRole("button", { name: /Cadre libre/ });
+  const poser = page.getByRole("button", { name: /Ajouter un cadre libre/ });
   await expect(poser).toBeVisible();
 
   // Dans la fenêtre, sans défiler : c'est tout l'objet du déplacement.

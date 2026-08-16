@@ -1473,9 +1473,9 @@ export function Editeur({
           type="button"
           className={styles.accesAjouter}
           onClick={ajouter}
-          title={"Poser un cadre libre sur la page " + page}
+          title={"Poser un cadre là où le repérage n'a rien trouvé, sur la page " + page}
         >
-          <span aria-hidden="true">+</span> Cadre libre sur la page {page}
+          <span aria-hidden="true">+</span> Ajouter un cadre libre sur la page {page}
         </button>
 
         {entete}
