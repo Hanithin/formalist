@@ -269,3 +269,77 @@ test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {
   });
   expect(depose).toBe(1);
 });
+
+test("le placement des cadres survit à un rechargement", async ({ page, request }) => {
+  /*
+   * Les retouches ne vivaient qu'en mémoire jusqu'au clic sur « Appliquer » : un
+   * rafraîchissement, un onglet fermé, un retour en arrière, et tout le travail de
+   * placement disparaissait sans un mot.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+
+  /*
+   * On attend que l'image de la page soit rendue avant de viser.
+   *
+   * Les cadres se posent dessus en pourcentages : tant qu'elle n'a pas sa hauteur,
+   * ils sont ailleurs, et le clic tombe à côté.
+   */
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  // Le cadre lui-même, non le texte qu'il contient : c'est lui qui porte la boîte.
+  const cadre = page.locator("div[class*='repere']").first();
+  await expect(cadre).toBeVisible({ timeout: 30_000 });
+
+  const boite = (await cadre.boundingBox())!;
+  await page.mouse.move(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.mouse.down();
+  await page.mouse.up();
+
+  const saisie = page.locator("input[class*='repereSaisie']");
+  await saisie.fill("5 avenue Victor Hugo, 69003 Lyon");
+  await page.mouse.click(200, 950);
+
+  // Le temps de repos de l'enregistrement, puis un rechargement complet.
+  await page.waitForTimeout(1600);
+  await page.reload();
+
+  /*
+   * On attend la liste des remplacements, non le cadre : celui-ci se pose sur l'image
+   * de la page, qui met un instant à être rendue, et un cadre posé sur une image de
+   * hauteur nulle n'est pas encore visible.
+   */
+  await expect(page.locator("[class*='remplacement']").first()).toBeVisible({ timeout: 30_000 });
+
+  const textes = await page.locator("div[class*='repere']").allTextContents();
+  expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
+});

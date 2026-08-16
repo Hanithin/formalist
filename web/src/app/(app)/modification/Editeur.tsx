@@ -45,6 +45,35 @@ const FAMILLES: Record<Police, string> = {
 };
 
 export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangement }: Props) {
+  /*
+   * Le placement se conserve au fil de la saisie.
+   *
+   * Les retouches ne vivaient qu'en mémoire jusqu'au clic sur « Appliquer » : un
+   * rafraîchissement, un onglet fermé, un retour en arrière, et tout le travail
+   * disparaissait sans un mot. On enregistre après une seconde de repos - à chaque
+   * frappe, ce serait une requête par lettre.
+   */
+  const premierRendu = useRef(true);
+  useEffect(() => {
+    if (premierRendu.current) {
+      premierRendu.current = false;
+      return;
+    }
+
+    const minuteur = setTimeout(() => {
+      fetch("/api/formalites/modification/retouches", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, retouches }),
+      }).catch(() => {
+        // Un enregistrement manqué n'interrompt pas le travail : la prochaine frappe
+        // le retentera, et « Appliquer » envoie de toute façon l'état complet.
+      });
+    }, 1000);
+
+    return () => clearTimeout(minuteur);
+  }, [dossier, retouches]);
+
   const [page, setPage] = useState(retouches[0]?.page ?? pages[0]?.numero ?? 1);
   const [choisie, setChoisie] = useState<number | null>(null);
   const [toutesLesPages, setToutesLesPages] = useState(false);
@@ -72,6 +101,15 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
    * l'échelle réelle du moment.
    */
   const [echelle, setEchelle] = useState(1);
+  /*
+   * Le clic est laissé au navigateur.
+   *
+   * Distinguer soi-même un clic d'un glissement au pointerup marchait mal : la
+   * capture du pointeur, les re-rendus et les pointercancel font perdre l'événement.
+   * Le navigateur, lui, sait déjà le faire ; il suffit d'écarter le clic qui suit un
+   * vrai déplacement.
+   */
+  const aGlisse = useRef(false);
 
   const dimensions = pages.find((p) => p.numero === page) ?? pages[0];
 
@@ -173,8 +211,9 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
   function relacher() {
     const encours = geste.current;
     geste.current = null;
-    // Saisir le cadre sans le bouger, c'est vouloir écrire dedans.
-    if (encours && encours.mode === "deplacer" && !encours.bouge) setChoisie(encours.index);
+    // Un glissement n'est pas un clic : on retient qu'il y en a eu un, le temps que
+    // le navigateur décide s'il émet un clic derrière.
+    aGlisse.current = !!encours?.bouge;
   }
 
   /** Ajoute un cadre au centre de la page, pour ce que rien n'a repéré. */
@@ -363,6 +402,13 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                   className={styles.repere}
                   style={style}
                   onPointerDown={(e) => commencerGeste(e, index, "deplacer")}
+                  onClick={() => {
+                    if (aGlisse.current) {
+                      aGlisse.current = false;
+                      return;
+                    }
+                    setChoisie(index);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -371,7 +417,15 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                   }}
                   title="Tirez pour déplacer, cliquez pour écrire"
                 >
-                  <span className={styles.repereTexte}>{retouche.texte}</span>
+                  <span
+                    className={
+                      retouche.texte
+                        ? styles.repereTexte
+                        : `${styles.repereTexte} ${styles.repereVide}`
+                    }
+                  >
+                    {retouche.texte || "Cliquez pour écrire"}
+                  </span>
                   {poignees}
                 </div>
               );

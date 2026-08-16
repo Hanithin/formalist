@@ -2081,3 +2081,15 @@
 .repereOuvert .coin {
   opacity: 1;
 }
+
+/*
+ * Un cadre sans texte le dit.
+ *
+ * Vide, il laissait voir la page au travers et donnait à croire que ce qu'on venait
+ * d'y taper avait disparu.
+ */
+.repereVide {
+  color: #15803d;
+  font-style: italic;
+  opacity: 0.75;
+}

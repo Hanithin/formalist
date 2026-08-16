@@ -101,6 +101,22 @@ const APPLICATION = z.object({
   retouches: z.array(RETOUCHE).max(200),
 });
 
+/**
+ * Le brouillon des retouches, conservé au fil de la saisie.
+ *
+ * Elles ne vivaient qu'en mémoire jusqu'au clic sur « Appliquer » : un
+ * rafraîchissement, un onglet fermé, un retour en arrière, et tout le travail de
+ * placement était perdu sans un mot. On les enregistre donc au fil de l'eau, sans
+ * produire de document - produire à chaque frappe ferait un PDF par lettre.
+ */
+export const PUT = route(async (requete: Request) => {
+  const utilisateur = await exigerUtilisateur();
+  const { dossier: dossierId, retouches } = await validerCorps(APPLICATION, requete);
+
+  await completerModification(utilisateur, dossierId, { retouches });
+  return NextResponse.json({ ok: true, retouches: retouches.length });
+});
+
 export const POST = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
   const { dossier: dossierId, retouches } = await validerCorps(APPLICATION, requete);
