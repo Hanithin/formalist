@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../../src/infrastructure/db/client";
+import { COMPTE } from "./preparer";
 
 /**
  * Le parcours de l'avocat sur une modification.
@@ -48,16 +49,16 @@ const DONNEES = {
 const semes: number[] = [];
 
 async function dossierDeModification(sousPhase = "5a") {
-  const client = await prisma.users.findFirstOrThrow({
-    where: { email: { contains: "parcours" }, NOT: { email: { contains: "avocat" } } },
-  });
+  // Le compte exact : « admin-parcours@exemple.test » contient lui aussi « parcours »,
+  // et la recherche approchante rendait tantôt l'un, tantôt l'autre.
+  const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
   /*
    * Le dossier est assigné : c'est l'état d'un dossier que l'avocat vient d'accepter.
    * Sans assignation il peut le lire, non y écrire - et produire les actes échouerait
    * sans que le test dise pourquoi.
    */
   const avocat = await prisma.users.findFirstOrThrow({
-    where: { email: { contains: "avocat" } },
+    where: { email: { startsWith: "avocat-parcours" } },
   });
 
   const dossier = await prisma.formalites.create({
@@ -168,10 +169,12 @@ test("un dossier incomplet refuse la production, en disant ce qui manque", async
    * Un acte à trous part au greffe en l'état. Le refus arrive ici, sur l'écran de
    * l'avocat, plutôt que des semaines plus tard par courrier du greffe.
    */
-  const client = await prisma.users.findFirstOrThrow({
-    where: { email: { contains: "parcours" }, NOT: { email: { contains: "avocat" } } },
+  // Le compte exact : « admin-parcours@exemple.test » contient lui aussi « parcours »,
+  // et la recherche approchante rendait tantôt l'un, tantôt l'autre.
+  const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
+  const avocat = await prisma.users.findFirstOrThrow({
+    where: { email: { startsWith: "avocat-parcours" } },
   });
-  const avocat = await prisma.users.findFirstOrThrow({ where: { email: { contains: "avocat" } } });
   const troue = await prisma.formalites.create({
     data: {
       user_id: client.id,
@@ -208,8 +211,10 @@ test("sans statuts au dossier, l'onglet le dit au lieu de planter", async ({ pag
 test("un dossier de création ne montre ni statuts ni annonce à retoucher", async ({ page }) => {
   // Ces deux écrans ne concernent que les modifications : le dire vaut mieux qu'un
   // écran vide où l'on cherche ce qui manque.
-  const client = await prisma.users.findFirstOrThrow({ where: { email: { contains: "parcours" } } });
-  const avocat = await prisma.users.findFirstOrThrow({ where: { email: { contains: "avocat" } } });
+  const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
+  const avocat = await prisma.users.findFirstOrThrow({
+    where: { email: { startsWith: "avocat-parcours" } },
+  });
   const creation = await prisma.formalites.create({
     data: {
       user_id: client.id,
@@ -493,10 +498,12 @@ async function statutsAvecDeuxOccurrences() {
 }
 
 async function dossierANommer() {
-  const client = await prisma.users.findFirstOrThrow({
-    where: { email: { contains: "parcours" }, NOT: { email: { contains: "avocat" } } },
+  // Le compte exact : « admin-parcours@exemple.test » contient lui aussi « parcours »,
+  // et la recherche approchante rendait tantôt l'un, tantôt l'autre.
+  const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
+  const avocat = await prisma.users.findFirstOrThrow({
+    where: { email: { startsWith: "avocat-parcours" } },
   });
-  const avocat = await prisma.users.findFirstOrThrow({ where: { email: { contains: "avocat" } } });
 
   const dossier = await prisma.formalites.create({
     data: {

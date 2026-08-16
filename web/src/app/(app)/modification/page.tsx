@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { ouvrirModification, confirmerAuRetour } from "@/infrastructure/db/depots/modifications";
 import { Parcours, type EtatDuDossier } from "./Parcours";
 import { Commencer } from "./Commencer";
+import { Suivi } from "@/components/formalite/Suivi";
+import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
+import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import styles from "./Modification.module.css";
 
 export const metadata: Metadata = {
@@ -62,11 +64,58 @@ export default async function Modification({
     issue = "annule";
   }
 
-  const { modification } = await ouvrirModification(utilisateur, dossierId);
+  const { modification, dossier: ligne } = await ouvrirModification(utilisateur, dossierId);
 
-  // Un dossier réglé n'a plus rien à faire dans le parcours de saisie : son suivi vit
-  // dans « Mes formalités ».
-  if (modification.paye && !issue) redirect("/formalites");
+  /*
+   * Un dossier réglé n'a plus rien à saisir, mais il a tout à suivre.
+   *
+   * Il renvoyait à « Mes formalités », d'où l'on venait justement de cliquer sur sa
+   * carte : le clic ne faisait rien du tout, et le client n'avait aucun endroit où
+   * voir où en était sa modification ni ce que l'avocat lui demandait.
+   */
+  if (modification.paye && !issue) {
+    const etat = await etatDuDossier(ligne);
+
+    return (
+      <main className={styles.page}>
+        <div className={styles.topbar}>
+          <Link href="/formalites">Mes formalités</Link>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          <span>{modification.societe.denomination || "Modifier ma société"}</span>
+        </div>
+
+        <div className={styles.content}>
+          <h1 className={styles.titre}>
+            {modification.societe.denomination || "Modifier ma société"}
+          </h1>
+
+          <Suivi
+            etat={etat}
+            demande={await derniereDemandeDeCorrections(dossierId)}
+            lienAction={"/messagerie?dossier=" + dossierId}
+          />
+
+          <div className={styles.confie}>
+            <p className={styles.confieTexte}>
+              Votre modification est réglée et suivie par le cabinet. Vous n&apos;avez rien
+              à remplir : l&apos;avancement ci-dessus dit où elle en est, et vous serez
+              prévenu si quelque chose doit être repris.
+            </p>
+            <div className={styles.confieLiens}>
+              <Link className={styles.confieLien} href={"/messagerie?dossier=" + dossierId}>
+                Écrire à l&apos;avocat
+              </Link>
+              <Link className={styles.confieLien} href="/documents">
+                Voir mes documents
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const initial: EtatDuDossier = {
     codes: modification.codes,

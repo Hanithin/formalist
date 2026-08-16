@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../../src/infrastructure/db/client";
 import { retirerDossiers } from "./nettoyage";
+import { COMPTE } from "./preparer";
 
 /**
  * Ce que l'avocat demande de reprendre, vu du client.
@@ -21,10 +22,18 @@ test.afterAll(async () => {
 });
 
 async function dossierEnVerification() {
-  const client = await prisma.users.findFirstOrThrow({
-    where: { email: { contains: "parcours" }, NOT: { email: { contains: "avocat" } } },
+  /*
+   * Le compte exact, non le premier qui contient « parcours ».
+   *
+   * L'administrateur d'essai s'appelle « admin-parcours@exemple.test » : la recherche
+   * approchante rendait tantôt l'un, tantôt l'autre, et le dossier appartenait alors à
+   * quelqu'un que la session ne connaît pas. L'écran refusait de l'ouvrir, sans que
+   * rien n'explique pourquoi.
+   */
+  const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
+  const avocat = await prisma.users.findFirstOrThrow({
+    where: { email: { startsWith: "avocat-parcours" } },
   });
-  const avocat = await prisma.users.findFirstOrThrow({ where: { email: { contains: "avocat" } } });
 
   const dossier = await prisma.formalites.create({
     data: {
@@ -125,9 +134,7 @@ test.describe("un dossier parti chez l'avocat", () => {
      * « Associé », « Offres » - au-dessus d'un formulaire de création vide, pour un
      * dossier qui n'en est pas un.
      */
-    const client = await prisma.users.findFirstOrThrow({
-      where: { email: { contains: "parcours" }, NOT: { email: { contains: "avocat" } } },
-    });
+    const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
     const autre = await prisma.formalites.create({
       data: {
         user_id: client.id,
@@ -143,5 +150,42 @@ test.describe("un dossier parti chez l'avocat", () => {
 
     await page.goto("/creation?dossier=" + autre.id);
     await expect(page).toHaveURL(new RegExp("/modification\\?dossier=" + autre.id));
+  });
+});
+
+test.describe("une modification réglée", () => {
+  test("s'ouvre sur son suivi, au lieu de renvoyer d'où l'on vient", async ({ page }) => {
+    /*
+     * La carte de « Mes formalités » mène au parcours de modification, qui renvoyait à
+     * « Mes formalités » dès que le dossier était réglé : le clic ne faisait rien du
+     * tout, et le client n'avait aucun endroit où voir où en était sa modification.
+     */
+    const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
+    const reglee = await prisma.formalites.create({
+      data: {
+        user_id: client.id,
+        type: "modification",
+        forme: "SAS",
+        societe: "MODIF REGLEE",
+        status: "en_attente_validation",
+        phase: 5,
+        business_sub_phase: "5a",
+        data_json: JSON.stringify({
+          codes: ["denomination"],
+          societe: { denomination: "MODIF REGLEE" },
+          valeurs: { nouvelleDenomination: "AUTRE NOM" },
+          paye: true,
+        }),
+      },
+    });
+    semes.push(reglee.id);
+
+    await page.goto("/formalites");
+    await page.getByLabel("Rechercher une formalité").fill("MODIF REGLEE");
+    await page.getByRole("list", { name: "Formalités" }).getByText("MODIF REGLEE").click();
+
+    await expect(page).toHaveURL(new RegExp("/modification\\?dossier=" + reglee.id));
+    await expect(page.getByRole("heading", { name: "Où en est votre dossier" })).toBeVisible();
+    await expect(page.getByText(/réglée et suivie par le cabinet/)).toBeVisible();
   });
 });
