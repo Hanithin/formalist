@@ -59,6 +59,7 @@ export const GET = route(async (requete: Request) => {
 
     return NextResponse.json({
       pages: lecture.pages,
+      pagesRetirees: modification.pagesRetirees ?? [],
       /*
        * Ce qui n'a pas été retrouvé compte autant que ce qui l'a été : sans cette
        * liste, l'avocat croit avoir tout remplacé et un article reste à l'ancienne
@@ -115,6 +116,8 @@ const RETOUCHE = z.object({
 const APPLICATION = z.object({
   dossier: schemas.identifiant,
   retouches: z.array(RETOUCHE).max(200),
+  /** Les pages écartées du document produit. L'original les garde. */
+  pagesRetirees: z.array(z.number().int().min(1).max(60)).max(60).optional(),
 });
 
 /**
@@ -127,15 +130,21 @@ const APPLICATION = z.object({
  */
 export const PUT = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
-  const { dossier: dossierId, retouches } = await validerCorps(APPLICATION, requete);
+  const { dossier: dossierId, retouches, pagesRetirees = [] } = await validerCorps(
+    APPLICATION,
+    requete
+  );
 
-  await completerModification(utilisateur, dossierId, { retouches });
+  await completerModification(utilisateur, dossierId, { retouches, pagesRetirees });
   return NextResponse.json({ ok: true, retouches: retouches.length });
 });
 
 export const POST = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
-  const { dossier: dossierId, retouches } = await validerCorps(APPLICATION, requete);
+  const { dossier: dossierId, retouches, pagesRetirees = [] } = await validerCorps(
+    APPLICATION,
+    requete
+  );
 
   await ouvrirModification(utilisateur, dossierId);
 
@@ -145,9 +154,20 @@ export const POST = route(async (requete: Request) => {
   }
 
   try {
-    const produit = await appliquerLesRetouches(statuts, retouches);
+    /*
+     * Les statuts en vigueur ne sont jamais touchés.
+     *
+     * La retouche part d'eux et produit un second document : le dossier porte donc
+     * toujours l'original et la version à jour, et l'on peut recommencer autant de
+     * fois qu'il faut sans jamais perdre le point de départ.
+     */
+    const produit = await appliquerLesRetouches(statuts, retouches, pagesRetirees);
     await deposerPdfProduit(dossierId, TITRE_A_JOUR, produit);
-    await completerModification(utilisateur, dossierId, { retouches, statutsAJour: true });
+    await completerModification(utilisateur, dossierId, {
+      retouches,
+      pagesRetirees,
+      statutsAJour: true,
+    });
 
     return NextResponse.json({ ok: true, retouches: retouches.length }, { status: 201 });
   } catch (e) {

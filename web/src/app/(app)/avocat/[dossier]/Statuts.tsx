@@ -20,6 +20,7 @@ import styles from "../Avocat.module.css";
 
 interface Lecture {
   pages: { numero: number; largeur: number; hauteur: number }[];
+  pagesRetirees: number[];
   zones: Zone[];
   introuvables: Introuvable[];
   retouches: Retouche[];
@@ -29,6 +30,7 @@ interface Lecture {
 export function Statuts({ dossier }: { dossier: number }) {
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [retouches, setRetouches] = useState<Retouche[]>([]);
+  const [pagesRetirees, setPagesRetirees] = useState<number[]>([]);
   const [refus, setRefus] = useState<string | null>(null);
   const [retour, setRetour] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState(false);
@@ -47,6 +49,7 @@ export function Statuts({ dossier }: { dossier: number }) {
       setRefus(null);
       setLecture(corps as Lecture);
       setRetouches(corps.retouches ?? []);
+      setPagesRetirees(corps.pagesRetirees ?? []);
     });
   }
 
@@ -95,6 +98,7 @@ export function Statuts({ dossier }: { dossier: number }) {
         }
         setLecture(corps as Lecture);
         setRetouches(corps.retouches ?? []);
+        setPagesRetirees(corps.pagesRetirees ?? []);
       } catch {
         if (vivant) setRefus("Les statuts n'ont pas pu être lus");
       }
@@ -141,7 +145,7 @@ export function Statuts({ dossier }: { dossier: number }) {
       const reponse = await fetch("/api/formalites/modification/retouches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier, retouches }),
+        body: JSON.stringify({ dossier, retouches, pagesRetirees }),
       });
       const corps = await reponse.json().catch(() => ({}));
 
@@ -216,6 +220,8 @@ export function Statuts({ dossier }: { dossier: number }) {
         surChangement={setRetouches}
         introuvables={restants}
         surPlacer={placer}
+        pagesRetirees={pagesRetirees}
+        surRetraitDePage={setPagesRetirees}
         entete={
           <div className={styles.statutsTete}>
             <div>
@@ -235,6 +241,31 @@ export function Statuts({ dossier }: { dossier: number }) {
             >
               {enCours ? "Application" : "Produire les statuts à jour"}
             </button>
+
+            {/*
+              Les deux versions, toujours au dossier.
+              La retouche part des statuts en vigueur et produit un second document :
+              l'original ne bouge jamais, et l'on peut recommencer sans l'avoir perdu.
+            */}
+            <div className={styles.versions}>
+              <a
+                className={styles.version}
+                href={"/api/formalites/modification/page?dossier=" + dossier + "&page=1"}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Statuts en vigueur
+                <span className={styles.versionMention}>l&apos;original, jamais modifié</span>
+              </a>
+
+              {pagesRetirees.length > 0 && (
+                <span className={styles.versionMention}>
+                  {pagesRetirees.length === 1
+                    ? "1 page écartée du document produit"
+                    : pagesRetirees.length + " pages écartées du document produit"}
+                </span>
+              )}
+            </div>
 
             {retour && (
               <p className={styles.travailRetour} role="status">

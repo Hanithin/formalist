@@ -50,6 +50,9 @@ interface Props {
   surPlacer?: (introuvable: Introuvable) => void;
   /** En tête du panneau : le compte et la commande de production. */
   entete?: ReactNode;
+  /** Les pages écartées du document produit ; l'original les garde. */
+  pagesRetirees?: number[];
+  surRetraitDePage?: (pages: number[]) => void;
 }
 
 /**
@@ -471,6 +474,8 @@ export function Editeur({
   introuvables = [],
   surPlacer,
   entete,
+  pagesRetirees = [],
+  surRetraitDePage,
 }: Props) {
   /*
    * Le placement se conserve au fil de la saisie.
@@ -635,6 +640,29 @@ export function Editeur({
    * texte, et cliquer ailleurs ne refermait plus rien. Le cadre restait ouvert
    * indéfiniment, sa barre par-dessus la page.
    */
+  /*
+   * Les flèches du clavier feuillettent, sauf quand on écrit dans un cadre.
+   *
+   * Vingt-trois pages se parcourent mal à la souris, et l'avocat a les mains sur le
+   * clavier - il vient de taper le texte du cadre précédent.
+   */
+  useEffect(() => {
+    function auClavier(evenement: KeyboardEvent) {
+      const cible = evenement.target as HTMLElement | null;
+      if (cible?.closest?.("[contenteditable], input, select, textarea")) return;
+      if (evenement.key !== "ArrowLeft" && evenement.key !== "ArrowRight") return;
+
+      evenement.preventDefault();
+      setPage((courante) => {
+        const suite = courante + (evenement.key === "ArrowRight" ? 1 : -1);
+        return suite >= 1 && suite <= pages.length ? suite : courante;
+      });
+    }
+
+    document.addEventListener("keydown", auClavier);
+    return () => document.removeEventListener("keydown", auClavier);
+  }, [pages.length]);
+
   useEffect(() => {
     if (choisie === null) return;
 
@@ -753,6 +781,15 @@ export function Editeur({
     ouvrir(retouches.length);
   }
 
+  const retiree = pagesRetirees.includes(page);
+
+  /** Va à une page, en refermant le cadre ouvert : on change de contexte. */
+  function allerA(numero: number) {
+    if (numero < 1 || numero > pages.length) return;
+    setPage(numero);
+    ouvrir(null);
+  }
+
   if (!dimensions) return null;
 
   const surCettePage = retouches
@@ -782,73 +819,122 @@ export function Editeur({
   return (
     <div className={styles.editeur}>
       <div>
-        {/* ---------- L'accès rapide ---------- */}
+        {/* ---------- La navigation ---------- */}
         <div className={styles.acces}>
-          {aModifier.length > 0 ? (
-            <>
-              <span className={styles.accesTitre}>
-                {aModifier.length === 1
-                  ? "1 page à modifier"
-                  : aModifier.length + " pages à modifier"}
-              </span>
-              <div className={styles.accesPages}>
-                {aModifier.map((p) => (
-                  <button
-                    key={p.page}
-                    type="button"
-                    className={
-                      p.page === page
-                        ? `${styles.accesPage} ${styles.accesPageActive}`
-                        : styles.accesPage
-                    }
-                    onClick={() => {
-                      setPage(p.page);
-                      setChoisie(null);
-                    }}
-                  >
-                    <span className={styles.accesNumero}>Page {p.page}</span>
-                    <span className={styles.accesArticle}>
-                      {p.articles.length > 0 ? p.articles.join(", ") : "Retouche libre"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <span className={styles.accesTitre}>Aucun cadre posé pour le moment</span>
+          <div className={styles.navigation}>
+            <button
+              type="button"
+              className={styles.navFleche}
+              onClick={() => allerA(page - 1)}
+              disabled={page <= 1}
+              aria-label="Page précédente"
+              title="Page précédente"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 5 L8 12 L15 19" />
+              </svg>
+            </button>
+
+            <span className={styles.navPosition}>
+              Page <strong>{page}</strong> sur {pages.length}
+            </span>
+
+            <button
+              type="button"
+              className={styles.navFleche}
+              onClick={() => allerA(page + 1)}
+              disabled={page >= pages.length}
+              aria-label="Page suivante"
+              title="Page suivante"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 5 L16 12 L9 19" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Les pages qui portent une retouche, pour y aller d'un clic. */}
+          {aModifier.length > 0 && (
+            <div className={styles.accesPages}>
+              {aModifier.map((p) => (
+                <button
+                  key={p.page}
+                  type="button"
+                  className={
+                    p.page === page
+                      ? `${styles.accesPage} ${styles.accesPageActive}`
+                      : styles.accesPage
+                  }
+                  onClick={() => allerA(p.page)}
+                  title={p.articles.length > 0 ? p.articles.join(", ") : "Retouche libre"}
+                >
+                  {p.page}
+                </button>
+              ))}
+            </div>
           )}
 
-          <button
-            type="button"
-            className={styles.accesToutes}
-            onClick={() => setToutesLesPages((ouvert) => !ouvert)}
-            aria-expanded={toutesLesPages}
-          >
-            {toutesLesPages ? "Masquer les autres pages" : "Voir les " + pages.length + " pages"}
-          </button>
+          <div className={styles.accesCommandes}>
+            {surRetraitDePage && (
+              <button
+                type="button"
+                className={
+                  retiree ? `${styles.accesToutes} ${styles.accesRetablir}` : styles.accesToutes
+                }
+                onClick={() =>
+                  surRetraitDePage(
+                    retiree
+                      ? pagesRetirees.filter((p) => p !== page)
+                      : [...pagesRetirees, page].sort((a, b) => a - b)
+                  )
+                }
+              >
+                {retiree ? "Remettre cette page" : "Retirer cette page"}
+              </button>
+            )}
+
+            <button
+              type="button"
+              className={styles.accesToutes}
+              onClick={() => setToutesLesPages((ouvert) => !ouvert)}
+              aria-expanded={toutesLesPages}
+            >
+              {toutesLesPages ? "Masquer la liste" : "Toutes les pages"}
+            </button>
+          </div>
         </div>
 
         {toutesLesPages && (
           <div className={styles.editeurPages}>
-            {pages.map((p) => (
-              <button
-                key={p.numero}
-                type="button"
-                className={
-                  p.numero === page
-                    ? `${styles.editeurPageNum} ${styles.editeurPageActive}`
-                    : styles.editeurPageNum
-                }
-                onClick={() => {
-                  setPage(p.numero);
-                  ouvrir(null);
-                }}
-              >
-                {p.numero}
-                {retouches.some((r) => r.page === p.numero) ? " •" : ""}
-              </button>
-            ))}
+            {pages.map((p) => {
+              const marques = [
+                retouches.some((r) => r.page === p.numero) ? styles.editeurPageMarquee : "",
+                pagesRetirees.includes(p.numero) ? styles.editeurPageRetiree : "",
+                p.numero === page ? styles.editeurPageActive : "",
+              ].filter(Boolean);
+
+              return (
+                <button
+                  key={p.numero}
+                  type="button"
+                  className={[styles.editeurPageNum, ...marques].join(" ")}
+                  onClick={() => allerA(p.numero)}
+                  title={
+                    pagesRetirees.includes(p.numero) ? "Écartée du document produit" : undefined
+                  }
+                >
+                  {p.numero}
+                </button>
+              );
+            })}
           </div>
+        )}
+
+        {retiree && (
+          <p className={styles.pageRetiree}>
+            Cette page ne figurera pas dans les statuts à jour. Elle reste dans les
+            statuts en vigueur, qui ne sont jamais modifiés.
+          </p>
         )}
 
         {/* ---------- La page ---------- */}

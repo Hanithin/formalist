@@ -2007,3 +2007,41 @@
   justify-content: center;
   width: 100%;
 }
+
+/* ---------- Les deux versions du document ---------- */
+
+/*
+ * L'original et la version à jour coexistent toujours.
+ *
+ * La retouche part des statuts en vigueur et produit un second document : le point de
+ * départ ne se perd jamais, et l'on peut recommencer autant de fois qu'il faut.
+ */
+.versions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.version {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  text-decoration: none;
+  transition: border-color 0.12s;
+}
+
+.version:hover {
+  border-color: #111;
+}
+
+.versionMention {
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: #a1a1aa;
+}

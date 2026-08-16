@@ -168,11 +168,14 @@ describe("ce qu'on cherche dans les statuts", () => {
       nouvelleVille: "Lyon",
     }, societe);
 
+    expect(recherches).toHaveLength(1);
     expect(recherches[0].cherche).toBe("12 rue de la Paix, 75002 Paris");
     expect(recherches[0].propose).toBe("5 avenue Victor Hugo, 69003 Lyon");
     // Et un repli sur la voie seule, les statuts n'écrivant pas toujours le code
     // postal sur la même ligne.
-    expect(recherches[1].cherche).toBe("12 rue de la Paix");
+    expect(recherches[0].variantes).toContain("12 rue de la Paix");
+    // À défaut de la valeur, on saura au moins mener à l'article.
+    expect(recherches[0].ancre).toContain("siège social");
   });
 
   it("un changement de dirigeant ne touche pas aux statuts", () => {
@@ -566,4 +569,40 @@ describe("ce que le repérage ne trouve pas", () => {
     expect(zones).toHaveLength(1);
     expect(introuvables).toHaveLength(0);
   });
+});
+
+describe("les pages écartées", () => {
+  it("ne figurent pas dans le document produit", async () => {
+    /*
+     * Des statuts déposés portent parfois une page de garde du greffe ou un bordereau
+     * que le dépôt suivant n'a pas à reprendre.
+     */
+    const statuts = await statutsDEssai();
+    const avant = await lireLesStatuts(statuts);
+    expect(avant.pages).toHaveLength(2);
+
+    const produit = await appliquerLesRetouches(statuts, [], [2]);
+    const apres = await lireLesStatuts(produit);
+
+    expect(apres.pages).toHaveLength(1);
+    // C'est bien la seconde qui est partie.
+    expect(apres.mots.map((m) => m.texte).join(" ")).not.toContain("DISSOLUTION");
+  }, 120_000);
+
+  it("l'original les garde", async () => {
+    // La retouche part des statuts en vigueur et produit un second document : le point
+    // de départ ne se perd jamais.
+    const statuts = await statutsDEssai();
+    await appliquerLesRetouches(statuts, [], [1]);
+
+    const original = await lireLesStatuts(statuts);
+    expect(original.pages).toHaveLength(2);
+  }, 120_000);
+
+  it("un retrait sans retouche produit quand même un document", async () => {
+    // Écarter une page est une modification à part entière, même sans rien réécrire.
+    const statuts = await statutsDEssai();
+    const produit = await appliquerLesRetouches(statuts, [], [1]);
+    expect(produit.equals(statuts)).toBe(false);
+  }, 120_000);
 });

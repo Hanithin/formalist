@@ -266,7 +266,8 @@ export async function pageEnImage(pdf: Buffer, numero: number): Promise<Buffer> 
  */
 export async function appliquerLesRetouches(
   pdf: Buffer,
-  retouches: Retouche[]
+  retouches: Retouche[],
+  pagesRetirees: number[] = []
 ): Promise<Buffer> {
   const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
 
@@ -274,7 +275,8 @@ export async function appliquerLesRetouches(
     throw new StatutsIllisibles("Ce document n'est pas un PDF lisible");
   });
 
-  if (retouches.length === 0) return pdf;
+  const ecartees = new Set(pagesRetirees);
+  if (retouches.length === 0 && ecartees.size === 0) return pdf;
 
   const pagesRetouchees = new Set(retouches.map((r) => r.page));
   for (const numero of pagesRetouchees) {
@@ -359,6 +361,9 @@ export async function appliquerLesRetouches(
 
   for (let index = 0; index < origine.getPageCount(); index++) {
     const numero = index + 1;
+
+    // Une page écartée ne figure pas dans le document produit ; l'original la garde.
+    if (ecartees.has(numero)) continue;
 
     if (!pagesRetouchees.has(numero)) {
       const [copiee] = await produit.copyPages(origine, [index]);

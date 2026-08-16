@@ -38,6 +38,13 @@ export interface Modification {
   assemblee: { date?: string | null; associes?: AssociePresent[] };
   statuts?: StatutsDuDossier;
   retouches?: Retouche[];
+  /**
+   * Les pages écartées des statuts à jour.
+   *
+   * Des statuts déposés portent parfois une page de garde du greffe, un bordereau ou
+   * une page blanche que le dépôt suivant n'a pas à reprendre.
+   */
+  pagesRetirees?: number[];
   /** Les statuts retouchés ont été produits et joints au dossier. */
   statutsAJour?: boolean;
   /**
