@@ -829,7 +829,14 @@ export function Editeur({
         x: dimensions.largeur * 0.15,
         y: dimensions.hauteur * 0.45,
         largeur: Math.min(220, dimensions.largeur * 0.35),
-        hauteur: 18,
+        /*
+         * Assez haut pour qu'on y écrive.
+         *
+         * Un cadre à la hauteur exacte d'une ligne serre le texte contre ses bords :
+         * on ne voit plus ce qu'on tape, et le curseur touche le trait. La hauteur se
+         * réduit ensuite en tirant un bord, si la place manque.
+         */
+        hauteur: 26,
         texte: "",
         taille: 11,
         police: "serif",

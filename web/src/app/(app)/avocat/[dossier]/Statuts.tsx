@@ -150,7 +150,13 @@ export function Statuts({ dossier }: { dossier: number }) {
       page.largeur * 0.5,
       Math.max(90, manque.recherche.propose.length * taille * 0.58 + 16)
     );
-    const hauteur = Math.max(18, Math.round(taille * 1.6));
+    /*
+     * De quoi écrire à l'aise, sans mordre sur la ligne voisine.
+     *
+     * La hauteur vient de la ligne mesurée dans l'acte : la doubler couvrirait la
+     * clause du dessus d'un rectangle blanc, dans un document qui part au greffe.
+     */
+    const hauteur = Math.max(22, Math.round(taille * 1.8));
 
     setRetouches((precedentes) => [
       ...precedentes,
