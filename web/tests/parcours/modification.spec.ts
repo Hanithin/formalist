@@ -824,3 +824,62 @@ test("les poignées montrent ce qui se saisit", async ({ page, request }) => {
   for (const surface of reperes.surfaces) expect(surface).toBeGreaterThanOrEqual(96);
   expect(reperes.chevauchements).toBe(0);
 });
+
+test("la taille se règle aussi à la flèche", async ({ page, request }) => {
+  /*
+   * Changer d'un point demandait d'effacer pour retaper, dans un champ large comme un
+   * nom de police pour y écrire deux chiffres.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["denomination"],
+      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
+    },
+  });
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 700, size: 16, font: police });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/modification?dossier=" + dossier + "&etape=6");
+  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.getByRole("button", { name: "Mise en forme" }).click();
+
+  const champ = page.locator("[data-mise-en-forme] input[aria-label='Taille du texte']");
+  const depart = Number(await champ.inputValue());
+
+  await page.getByRole("button", { name: "Agrandir le texte" }).click();
+  expect(Number(await champ.inputValue())).toBe(depart + 1);
+
+  await page.getByRole("button", { name: "Réduire le texte" }).click();
+  expect(Number(await champ.inputValue())).toBe(depart);
+
+  // Le geste de suppression se nomme : « Retirer » ne disait pas quoi.
+  await expect(page.getByRole("button", { name: "Supprimer ce cadre" })).toBeVisible();
+});

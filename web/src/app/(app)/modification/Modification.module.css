@@ -2270,7 +2270,7 @@
 .appelForme {
   position: absolute;
   bottom: calc(100% + 5px);
-  left: 0;
+  right: 0;
   z-index: 3;
   display: inline-flex;
   align-items: center;
@@ -2331,9 +2331,7 @@
   background: #fff;
 }
 
-.forme input[type="number"] {
-  width: 64px;
-}
+
 
 .formeBouton {
   display: inline-flex;
@@ -2372,6 +2370,84 @@
   width: 15px;
   height: 15px;
   fill: currentColor;
+  flex-shrink: 0;
+}
+
+/*
+ * Le champ de taille et ses deux flèches, groupés.
+ *
+ * Le champ occupait la largeur d'un nom de police pour y écrire deux chiffres, et
+ * changer d'un point demandait de tout effacer pour retaper.
+ */
+.taille {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.forme .taille input {
+  width: 42px;
+  border: none;
+  border-radius: 0;
+  padding: 5px 6px;
+  text-align: center;
+}
+
+.forme .taille input:focus {
+  outline: none;
+}
+
+.tailleFleches {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #ececef;
+}
+
+.tailleFleche {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: #fafafa;
+  color: #52525b;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.tailleFleche + .tailleFleche {
+  border-top: 1px solid #ececef;
+}
+
+.tailleFleche:hover {
+  background: #111;
+  color: #fff;
+}
+
+.tailleFleche svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Le mot de la commande de suppression : lu par les lecteurs d'écran, non affiché. */
+.formeMot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .formeSeparateur {
@@ -2383,7 +2459,6 @@
 
 .formeDanger {
   color: #b91c1c;
-  font-size: 12.5px;
 }
 
 .formeDanger:hover {

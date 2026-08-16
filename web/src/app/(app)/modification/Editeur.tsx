@@ -234,18 +234,63 @@ function ChampTaille({
     if (arrondie !== valeur) surChangement(arrondie);
   }
 
+  /** Un cran de plus ou de moins, sans avoir à effacer pour retaper. */
+  function decaler(pas: number) {
+    const lu = Number(saisie.replace(",", ".")) || valeur;
+    const suite = Math.min(TAILLE_MAXIMALE, Math.max(TAILLE_MINIMALE, Math.round((lu + pas) * 10) / 10));
+    setSaisie(String(suite));
+    surChangement(suite);
+  }
+
   return (
-    <input
-      type="text"
-      inputMode="decimal"
-      aria-label="Taille du texte"
-      value={saisie}
-      onChange={(e) => ecrire(e.target.value)}
-      onBlur={remettreDAplomb}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-      }}
-    />
+    <span className={styles.taille}>
+      <input
+        type="text"
+        inputMode="decimal"
+        aria-label="Taille du texte"
+        value={saisie}
+        onChange={(e) => ecrire(e.target.value)}
+        onBlur={remettreDAplomb}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            decaler(1);
+          }
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            decaler(-1);
+          }
+        }}
+      />
+
+      <span className={styles.tailleFleches}>
+        <button
+          type="button"
+          className={styles.tailleFleche}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => decaler(1)}
+          aria-label="Agrandir le texte"
+          title="Agrandir"
+        >
+          <svg viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M2 8 L6 4 L10 8" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className={styles.tailleFleche}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => decaler(-1)}
+          aria-label="Réduire le texte"
+          title="Réduire"
+        >
+          <svg viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M2 4 L6 8 L10 4" />
+          </svg>
+        </button>
+      </span>
+    </span>
   );
 }
 
@@ -370,14 +415,29 @@ function MiseEnForme({
 
       <span className={styles.formeSeparateur} aria-hidden="true" />
 
+      {/*
+        « Retirer » ne disait pas quoi : le texte ? la mise en forme ? Le cadre est
+        nommé, et la corbeille se lit sans le mot.
+      */}
       <button
         type="button"
         className={`${styles.formeBouton} ${styles.formeDanger}`}
         onMouseDown={garderLeFocus}
         onClick={surRetrait}
-        title="Retirer ce cadre"
+        title="Supprimer ce cadre"
+        aria-label="Supprimer ce cadre"
       >
-        Retirer
+        <svg viewBox="0 0 24 24" className={styles.formeIcone} aria-hidden="true">
+          <path
+            d="M4 7h16M10 7V5h4v2M6 7l1 13h10l1-13M10 11v6M14 11v6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span className={styles.formeMot}>Supprimer le cadre</span>
       </button>
     </div>
   );
