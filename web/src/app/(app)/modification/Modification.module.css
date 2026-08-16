@@ -1596,13 +1596,15 @@
   color: #111;
 }
 
-/* Dans la rangée d'actions de page : visible sans défiler, et à sa place. */
+/* En tête de colonne : visible sans défiler, et à portée du regard qui suit le suivi. */
 .accesAjouter {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  margin: 0;
-  padding: 6px 12px;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 9px 12px;
   border: 1px dashed #b8b8bf;
   border-radius: 8px;
   background: #fff;
