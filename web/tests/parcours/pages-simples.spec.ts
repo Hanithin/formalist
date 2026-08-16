@@ -152,3 +152,23 @@ test.describe("déconnexion", () => {
     await expect(page).toHaveURL(/\/connexion/);
   });
 });
+
+test("les listes affichées en ligne le restent", async ({ page }) => {
+  /*
+   * globals.css met toute liste de `main` en colonne. Une classe de module qui
+   * redéclare `display: flex` sans direction n'emporte que `display` : la colonne
+   * passe, et la liste se dresse. Trois listes en ont souffert, dont la frise du
+   * tableau de bord signalée en production.
+   */
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/consultations");
+
+  const ordonnees = await page.evaluate(() =>
+    [...document.querySelectorAll("[class*='hFacts'] > li")].map((e) =>
+      Math.round(e.getBoundingClientRect().y)
+    )
+  );
+
+  expect(ordonnees.length).toBeGreaterThan(1);
+  expect(Math.max(...ordonnees) - Math.min(...ordonnees)).toBeLessThan(4);
+});

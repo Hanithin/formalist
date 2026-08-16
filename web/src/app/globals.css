@@ -311,7 +311,13 @@ button:disabled {
 
 /* ---------- Listes ----------
    Une liste de contenu devient une pile de cartes ; les listes de navigation et
-   de formulaire gardent leur mise en forme propre. */
+   de formulaire gardent leur mise en forme propre.
+
+   Attention : `flex-direction: column` s'applique à toute liste de `main`, et une
+   classe qui redéclare `display: flex` sans direction ne la neutralise pas - elle
+   n'emporte que `display`. Une liste qui doit se lire en ligne écrit donc
+   `flex-direction: row` explicitement. Deux fils d'étapes ont été dressés à la
+   verticale par cet oubli, dont un en production. */
 
 main ul,
 main ol {

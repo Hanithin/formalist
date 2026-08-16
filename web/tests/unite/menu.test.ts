@@ -139,18 +139,22 @@ describe("les fonctions annoncées mais pas ouvertes", () => {
       e === SEPARATEUR ? "" : e.libelle
     );
 
-    // L'auto-entreprise n'y est plus : son formulaire est ouvert.
-    expect(bientot).toEqual([
-      "Modifier ma société",
-      "Dépôt des comptes",
-      "Fermer ma société",
-    ]);
+    // L'auto-entreprise et la modification n'y sont plus : leurs parcours sont ouverts.
+    expect(bientot).toEqual(["Dépôt des comptes", "Fermer ma société"]);
   });
 
   it("une entrée grisée n'est pas active, même sur son propre chemin", () => {
     // Elle n'est pas un lien : rien ne doit la surligner.
     const menu = menuPour(["user"]);
-    const entree = menu.find((e) => e !== SEPARATEUR && e.lien === "/modification");
+    const entree = menu.find((e) => e !== SEPARATEUR && e.lien === "/fermeture");
     expect(entree && entree !== SEPARATEUR && entree.bientot).toBe(true);
+  });
+
+  it("la modification est ouverte, et mène à son parcours", () => {
+    // Le badge est tombé avec la mise en service du parcours : le laisser aurait
+    // grisé une page qui fonctionne.
+    const menu = menuPour(["user"]);
+    const entree = menu.find((e) => e !== SEPARATEUR && e.lien === "/modification");
+    expect(entree && entree !== SEPARATEUR && entree.bientot).toBeUndefined();
   });
 });

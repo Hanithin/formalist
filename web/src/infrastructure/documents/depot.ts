@@ -252,3 +252,69 @@ export async function remplacerDocumentsProduits(
     conserves: conserves.map((d) => ({ id: d.id, titre: d.name })),
   };
 }
+
+/**
+ * Enregistre un PDF déjà constitué comme document du dossier.
+ *
+ * remplacerDocumentsProduits part d'un Word et le convertit ; ici le PDF existe
+ * déjà - il vient du registre national, ou de la retouche des statuts. Le convertir
+ * n'aurait aucun sens, et le passer par un gabarit non plus.
+ *
+ * Un document du même titre est remplacé plutôt que doublé : reprendre la retouche
+ * doit corriger les statuts à jour, non en accumuler quatre versions dont le greffe
+ * recevrait la mauvaise.
+ */
+export async function deposerPdfProduit(dossierId: number, titre: string, pdf: Buffer) {
+  await mkdir(DEPOT, { recursive: true });
+
+  const nom = nomDeStockage(".pdf");
+  await writeFile(path.join(DEPOT, nom), pdf);
+
+  const anciens = await prisma.documents.findMany({
+    where: { formalite_id: dossierId, name: titre, uploaded_by: "system" },
+  });
+
+  const document = await prisma.$transaction(async (tx) => {
+    if (anciens.length > 0) {
+      await tx.documents.deleteMany({ where: { id: { in: anciens.map((d) => d.id) } } });
+    }
+    return tx.documents.create({
+      data: {
+        formalite_id: dossierId,
+        name: titre,
+        type: "pdf",
+        file_path: nom,
+        uploaded_by: "system",
+        status: "generated",
+      },
+    });
+  });
+
+  for (const ancien of anciens) {
+    if (!ancien.file_path) continue;
+    try {
+      await rm(path.join(DEPOT, ancien.file_path), { force: true });
+    } catch (e) {
+      journal.warn({ err: e, fichier: ancien.file_path }, "Ancien document non supprimé");
+    }
+  }
+
+  return { id: document.id, titre: document.name };
+}
+
+/** Le contenu d'un document produit, pour le relire et le retoucher. */
+export async function lireDocumentProduit(dossierId: number, titre: string): Promise<Buffer | null> {
+  const document = await prisma.documents.findFirst({
+    where: { formalite_id: dossierId, name: titre },
+    orderBy: { created_at: "desc" },
+  });
+  if (!document?.file_path) return null;
+
+  const { readFile } = await import("node:fs/promises");
+  try {
+    return await readFile(path.join(DEPOT, document.file_path));
+  } catch (e) {
+    journal.error({ err: e, document: document.id }, "Document introuvable sur le disque");
+    return null;
+  }
+}

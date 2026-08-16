@@ -154,10 +154,17 @@
   transform: translateY(-1px);
 }
 
-/* Ce qu'on veut savoir avant de cliquer : prix, durée, délai. */
+/*
+ * Ce qu'on veut savoir avant de cliquer : prix, durée, délai.
+ *
+ * `flex-direction: row` n'est pas une redite : globals.css met toute liste de `main`
+ * en colonne, et une classe qui déclare `display: flex` sans direction n'emporte que
+ * `display`. Les trois repères s'empilaient au lieu de tenir sur une ligne.
+ */
 .hFacts {
   list-style: none;
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   gap: 8px 20px;
   margin: 14px 0 0;

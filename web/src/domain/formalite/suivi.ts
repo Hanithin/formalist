@@ -181,6 +181,60 @@ const AUTO_ENTREPRISE: Definition[] = [
 ];
 
 /**
+ * Le parcours d'une modification.
+ *
+ * Ni capital ni Kbis : la société existe déjà. Ce qui la distingue tient à l'annonce
+ * légale, seule étape qui revient au client - il choisit son support, la paie et nous
+ * remet l'attestation de parution. Le reste est du côté de l'avocat.
+ */
+const MODIFICATION: Definition[] = [
+  {
+    identifiant: "confie",
+    titre: "Dossier confié à un avocat",
+    explication:
+      "Votre modification est réglée et partie chez nos avocats. Le premier disponible la prend en charge.",
+    main: "avocat",
+    faite: (e) => !!e.paye,
+  },
+  {
+    identifiant: "verification",
+    titre: "Vérification par l'avocat",
+    explication:
+      "L'avocat relit le procès-verbal, les statuts à jour et vos justificatifs. Il vous écrit si quelque chose doit être repris.",
+    main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
+    action: "Voir ce qui est demandé",
+    faite: (e) =>
+      e.status !== "corrections_demandees" &&
+      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+  },
+  {
+    identifiant: "annonce",
+    titre: "Publication de l'annonce légale",
+    explication:
+      "L'avis paraît dans un support habilité. Déposez l'attestation de parution : le greffe l'exige au dossier.",
+    main: "vous",
+    action: "Déposer l'attestation de parution",
+    faite: (e) => e.aLAnnoncePubliee,
+  },
+  {
+    identifiant: "guichet",
+    titre: "Dépôt au guichet unique",
+    explication:
+      "L'avocat dépose la modification à l'INPI en votre nom, avec les statuts à jour. Comptez trois à sept jours ouvrés.",
+    main: "avocat",
+    faite: (e) => auMoins(e.sousPhase, "5d"),
+  },
+  {
+    identifiant: "extrait",
+    titre: "Extrait à jour",
+    explication:
+      "Le greffe inscrit la modification et délivre un nouvel extrait. Il vous est remis dès sa réception.",
+    main: "avocat",
+    faite: (e) => e.aLeKbis || e.status === "terminee",
+  },
+];
+
+/**
  * Les étapes du dossier, avec celle qui est en cours.
  *
  * Une seule étape est « en cours » : la première qui n'est pas faite. Les suivantes
@@ -189,7 +243,12 @@ const AUTO_ENTREPRISE: Definition[] = [
  * saisie qu'il vaut mieux voir.
  */
 export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
-  const parcours = etat.type === "auto-entrepreneur" ? AUTO_ENTREPRISE : TOUTES;
+  const parcours =
+    etat.type === "auto-entrepreneur"
+      ? AUTO_ENTREPRISE
+      : etat.type === "modification"
+        ? MODIFICATION
+        : TOUTES;
   const retenues = parcours.filter(
     (d) => d.identifiant !== "attestation" || attestationRequise(etat.forme)
   );

@@ -1,61 +1,111 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import { societesModifiables, ouvrirModification } from "@/infrastructure/db/depots/modifications";
-import { MODIFICATIONS, definitionModification } from "@/domain/formalite/modifications";
-import { Vide } from "@/components/liste/Vide";
-import { ChoixModification } from "./ChoixModification";
-import { FormulaireModification } from "./FormulaireModification";
+import {
+  ouvrirModification,
+  societesConnues,
+  confirmerAuRetour,
+} from "@/infrastructure/db/depots/modifications";
+import { Parcours, type EtatDuDossier } from "./Parcours";
+import { Commencer } from "./Commencer";
+import styles from "./Modification.module.css";
 
 export const metadata: Metadata = {
   title: "Modifier ma société - Formalist",
   robots: { index: false, follow: false },
 };
 
+/**
+ * Le parcours de modification.
+ *
+ * Sans dossier en cours, la page en ouvre un : la société se choisit à la première
+ * étape, par recherche au registre. C'est ce qui permet de modifier une société créée
+ * ailleurs - c'est-à-dire la plupart d'entre elles.
+ */
 export default async function Modification({
   searchParams,
 }: {
-  searchParams: Promise<{ dossier?: string }>;
+  searchParams: Promise<{ dossier?: string; etape?: string; session?: string; paiement?: string }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { dossier } = await searchParams;
+  const { dossier, etape, session, paiement } = await searchParams;
 
-  // Une modification en cours : on reprend là où elle en était.
-  if (dossier) {
-    const { brouillon } = await ouvrirModification(utilisateur, Number(dossier));
-    const definition = definitionModification(brouillon.typeModification ?? "");
+  if (!dossier) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.topbar}>
+          <Link href="/formalites">Mes formalités</Link>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          <span>Modifier ma société</span>
+        </div>
 
-    if (definition) {
-      return (
-        <main>
-          <h1>{definition.libelle}</h1>
-          <p>{brouillon.denomination}</p>
-          <FormulaireModification
-            dossierId={Number(dossier)}
-            champs={definition.champs}
-            valeurs={brouillon.valeurs ?? {}}
-          />
-        </main>
-      );
-    }
+        <div className={styles.content}>
+          <h1 className={styles.titre}>Modifier ma société</h1>
+          <Commencer societes={await societesConnues(utilisateur)} />
+        </div>
+      </main>
+    );
   }
 
-  const societes = await societesModifiables(utilisateur);
+  const dossierId = Number(dossier);
+
+  /*
+   * Le retour de paiement est relu ici, avant tout affichage.
+   *
+   * Sans cela, le client revient de sa banque sur la page du devis, sans savoir si
+   * quelque chose a été débité - et paie une seconde fois.
+   */
+  let issue: "regle" | "annule" | undefined;
+  if (session) {
+    const { paye } = await confirmerAuRetour(utilisateur, dossierId, session);
+    if (paye) issue = "regle";
+  } else if (paiement === "annule") {
+    issue = "annule";
+  }
+
+  const { modification } = await ouvrirModification(utilisateur, dossierId);
+
+  // Un dossier réglé n'a plus rien à faire dans le parcours de saisie : son suivi vit
+  // dans « Mes formalités ».
+  if (modification.paye && !issue) redirect("/formalites");
+
+  const initial: EtatDuDossier = {
+    codes: modification.codes,
+    societe: modification.societe,
+    valeurs: modification.valeurs,
+    assemblee: modification.assemblee,
+    statuts: modification.statuts,
+    retouches: modification.retouches,
+    statutsAJour: modification.statutsAJour,
+    paye: modification.paye,
+  };
+
+  const demandee = Number(etape);
+  const etapeInitiale = Number.isInteger(demandee) && demandee >= 1 && demandee <= 7 ? demandee : 1;
 
   return (
-    <main>
-      <h1>Modifier ma société</h1>
+    <main className={styles.page}>
+      <div className={styles.topbar}>
+        <Link href="/formalites">Mes formalités</Link>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        <span>{modification.societe.denomination || "Modifier ma société"}</span>
+      </div>
 
-      {societes.length === 0 ? (
-        <Vide
-          icone="/modification"
-          titre="Aucune société à modifier"
-          texte="Une modification porte sur une société déjà immatriculée : changement de siège, de dénomination ou de dirigeant. Créez-en une d'abord."
-          action={{ libelle: "Créer une société", lien: "/creation?type=creation" }}
-          secondaire={{ libelle: "Voir mes formalités", lien: "/formalites" }}
+      <div className={styles.content}>
+        <h1 className={styles.titre}>Modifier ma société</h1>
+        <Parcours
+          dossier={dossierId}
+          initial={initial}
+          societesConnues={await societesConnues(utilisateur)}
+          etapeInitiale={etapeInitiale}
+          issueDuPaiement={issue}
         />
-      ) : (
-        <ChoixModification societes={societes} modifications={MODIFICATIONS} />
-      )}
+      </div>
     </main>
   );
 }

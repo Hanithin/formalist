@@ -499,8 +499,16 @@
 
 /* ---------- Frise des phases ---------- */
 
+/*
+ * La frise se lit de gauche à droite.
+ *
+ * `flex-direction: row` n'est pas une redite : globals.css met toute liste de
+ * `main` en colonne, et une classe qui déclare `display: flex` sans direction
+ * hérite de cette colonne. C'est ce qui a dressé la frise à la verticale en
+ * production, alors que rien dans cette feuille ne le demandait.
+ */
 .journey {
-      display: flex; align-items: flex-start; gap: 4px;
+      display: flex; flex-direction: row; align-items: flex-start; gap: 4px;
       margin: 0; padding: 0; list-style: none;
     }
 .jnStep {

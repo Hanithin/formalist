@@ -252,3 +252,28 @@ test.describe("la fenêtre de nouvelle formalité", () => {
     }
   });
 });
+
+test("la frise du tableau de bord se lit en ligne", async ({ page }) => {
+  /*
+   * Même piège que le fil du parcours : la frise est un <ol>, globals.css met les
+   * listes de `main` en colonne, et `.journey` déclarait `display: flex` sans
+   * direction. Les étapes se dressaient à la verticale - le défaut signalé en
+   * production, invisible à la relecture du composant.
+   */
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/tableau-de-bord");
+
+  const etapes = await page.evaluate(() =>
+    [...document.querySelectorAll("[class*='journey'] > *")].map((e) => {
+      const boite = e.getBoundingClientRect();
+      return { x: Math.round(boite.x), y: Math.round(boite.y) };
+    })
+  );
+
+  test.skip(etapes.length < 2, "Aucun dossier en cours : la frise n'est pas affichée");
+
+  for (let i = 1; i < etapes.length; i++) {
+    expect(etapes[i].x, "étape " + (i + 1)).toBeGreaterThan(etapes[i - 1].x);
+    expect(Math.abs(etapes[i].y - etapes[0].y), "étape " + (i + 1)).toBeLessThan(4);
+  }
+});
