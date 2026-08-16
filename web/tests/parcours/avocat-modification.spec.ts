@@ -567,13 +567,29 @@ test("le suivi compte les changements, non les cadres", async ({ page, request }
   await expect(page.getByText("1 sur 2 emplacements couverts")).toBeVisible();
   const decouvert = page.locator("[class*='decouvert']").first();
   await expect(decouvert).toBeVisible();
+  // Le repère dit le geste à faire, non ce qui manque.
+  await expect(decouvert).toContainText("poser ici");
 
   // Un clic dessus le recouvre : l'ancienne valeur ne peut pas rester par oubli.
   await decouvert.click();
   await expect(page.getByText("2 sur 2 emplacements couverts")).toBeVisible();
 
-  // La coche est celle de l'avocat, et elle est enregistrée au dossier.
-  await page.getByRole("checkbox").first().check();
+  // La coche est ronde et carrée d'aplomb : la règle générale des champs l'étirait.
+  const coche = page.getByRole("checkbox").first();
+  const forme = (await coche.boundingBox())!;
+  expect(Math.abs(forme.width - forme.height)).toBeLessThan(1);
+
+  /*
+   * Elle est celle de l'avocat, et elle est enregistrée au dossier. Une fois cochée,
+   * la ligne se replie en pastille : le geste est passé, il n'a plus à occuper la
+   * place d'un appel à l'action.
+   */
+  const ligne = page.locator("label:has([type=checkbox])").first();
+  const large = (await ligne.boundingBox())!.width;
+  await coche.check();
+  await expect(async () => {
+    expect((await ligne.boundingBox())!.width).toBeLessThan(large / 2);
+  }).toPass({ timeout: 5_000 });
   await expect(page.getByText("1 sur 1")).toBeVisible();
   await page.waitForTimeout(1600);
 

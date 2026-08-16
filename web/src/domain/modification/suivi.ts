@@ -171,9 +171,15 @@ export function nonConfirmes(suivi: ChangementSuivi[]): ChangementSuivi[] {
   return suivi.filter((c) => !c.confirme);
 }
 
+/*
+ * Ce que dit chaque état, tourné vers le geste à faire.
+ *
+ * « Aucun cadre posé » décrit un manque ; « à placer » dit quoi faire. C'est le même
+ * fait, mais l'un fait chercher ce qui ne va pas et l'autre fait avancer.
+ */
 export const ETATS: Record<EtatDeChangement, { libelle: string; mention: string }> = {
-  a_placer: { libelle: "À placer", mention: "aucun cadre posé" },
-  partiel: { libelle: "En cours", mention: "des emplacements restent découverts" },
-  couvert: { libelle: "Couvert", mention: "à vérifier puis cocher" },
-  confirme: { libelle: "Fait", mention: "confirmé par le cabinet" },
+  a_placer: { libelle: "À placer", mention: "posez le cadre sur le passage" },
+  partiel: { libelle: "En cours", mention: "il reste des emplacements à couvrir" },
+  couvert: { libelle: "Couvert", mention: "relisez, puis cochez" },
+  confirme: { libelle: "Fait", mention: "vérifié par le cabinet" },
 };

@@ -1147,10 +1147,10 @@ export function Editeur({
                 width: (emplacement.largeur / dimensions.largeur) * 100 + "%",
                 height: (emplacement.hauteur / dimensions.hauteur) * 100 + "%",
               }}
-              title={titre + " : passage repéré, aucun cadre ne le couvre"}
+              title={titre + " : cliquez pour poser le cadre ici"}
               onClick={() => couvrir(emplacement, propose)}
             >
-              <span className={styles.decouvertMot}>à couvrir</span>
+              <span className={styles.decouvertMot}>poser ici</span>
             </button>
           ))}
 
@@ -1489,20 +1489,16 @@ export function Editeur({
                 ) : (
                   <div className={styles.suiviManque}>
                     {/*
-                      Dire ce qui a été cherché, et non « introuvable » tout court.
-                      Les statuts écrivent souvent la valeur autrement, et savoir ce
-                      qu'on a cherché permet de comprendre pourquoi on ne l'a pas trouvé.
+                      L'action d'abord, l'explication ensuite.
+                      « Rien trouvé pour X. À poser à la main. » disait un échec avant
+                      de dire quoi faire, et donnait à un cas ordinaire - les statuts
+                      formulent librement - l'air d'un incident.
                     */}
                     <p className={styles.suiviCherche}>
-                      Rien trouvé pour « {manque?.recherche.cherche ?? changement.ancien} »
-                      {manque?.recherche.variantes?.length
-                        ? ", ni " +
-                          manque.recherche.variantes.length +
-                          (manque.recherche.variantes.length > 1
-                            ? " autres formulations"
-                            : " autre formulation")
-                        : ""}
-                      . À poser à la main.
+                      <strong className={styles.suiviAction}>Placez le cadre vous-même</strong>{" "}
+                      : ces statuts écrivent la valeur autrement que
+                      « {manque?.recherche.cherche ?? changement.ancien} »
+                      {manque?.recherche.variantes?.length ? " ou ses variantes" : ""}.
                     </p>
 
                     {surPlacer && manque && (
@@ -1534,7 +1530,7 @@ export function Editeur({
                       onChange={(e) => surVerifier(changement.cle, e.target.checked)}
                     />
                     <span className={styles.suiviCocheMot}>
-                      {changement.confirme ? "Fait, vérifié par le cabinet" : "Marquer comme fait"}
+                      {changement.confirme ? "Fait" : "Marquer comme fait"}
                     </span>
                   </label>
                 )}

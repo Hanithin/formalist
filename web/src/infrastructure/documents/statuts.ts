@@ -422,8 +422,6 @@ export async function appliquerLesRetouches(
 
       if (morceaux.length === 0) continue;
 
-      const texte = morceaux.map((m) => m.texte).join("");
-      const fonte = morceaux[0].fonte;
       // La ligne de base se pose au bas du rectangle, remontée du jambage.
       const ligneDeBase = height - retouche.y - retouche.hauteur + retouche.taille * 0.2;
 
