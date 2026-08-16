@@ -94,7 +94,8 @@ export default async function Modification({
           <Suivi
             etat={etat}
             demande={await derniereDemandeDeCorrections(dossierId)}
-            lienAction={"/messagerie?dossier=" + dossierId}
+            lienAction={"/modification?dossier=" + dossierId}
+            lienMessagerie={"/messagerie?dossier=" + dossierId}
           />
 
           <div className={styles.confie}>

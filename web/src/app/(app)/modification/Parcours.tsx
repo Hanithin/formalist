@@ -241,10 +241,17 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
       <Frise etape={etape} atteinte={atteinte} surChoix={aller} />
 
       <div className={styles.contenu}>
-        <p className={styles.avancement}>
-          Étape {etape} sur {ETAPES.length}
-        </p>
-        <h2>{ETAPES[etape - 1].titre}</h2>
+        {/*
+          Le rang de l'étape en pastille, à droite du titre.
+          Posé au-dessus en petit gris, il se lisait avant le titre alors qu'il ne le
+          qualifie que d'un cran, et repoussait le titre d'une ligne sur tous les écrans.
+        */}
+        <div className={styles.etapeTete}>
+          <h2 className={styles.etapeTitre}>{ETAPES[etape - 1].titre}</h2>
+          <span className={styles.avancement}>
+            Étape {etape} sur {ETAPES.length}
+          </span>
+        </div>
 
         {etape === 1 && (
           <EtapeSociete

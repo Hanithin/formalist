@@ -9,8 +9,16 @@ import styles from "./Suivi.module.css";
 
 interface Props {
   etat: EtatDuDossier;
-  /** Où mène le geste attendu, quand il y en a un. */
+  /**
+   * Où mène le geste attendu.
+   *
+   * Deux destinations, car les gestes ne sont pas de même nature : « Déposer
+   * l'attestation » se fait dans le dossier, « Voir ce qui est demandé » dans le fil.
+   * Un lien unique envoyait le premier vers une conversation où il n'y a rien à
+   * déposer.
+   */
   lienAction?: string;
+  lienMessagerie?: string;
   /**
    * Ce que l'avocat demande de reprendre, mot pour mot.
    *
@@ -32,7 +40,7 @@ interface Props {
  * du moment mise en avant avec son explication, et le geste attendu quand il est du
  * côté du client.
  */
-export function Suivi({ etat, lienAction, demande }: Props) {
+export function Suivi({ etat, lienAction, lienMessagerie, demande }: Props) {
   const etapes = etapesDuSuivi(etat);
   const courante = etapeAMettreEnAvant(etat);
   const avancement = avancementDuSuivi(etat);
@@ -57,18 +65,28 @@ export function Suivi({ etat, lienAction, demande }: Props) {
           <p className={styles.focusTitre}>{courante.titre}</p>
           <p className={styles.focusTexte}>{courante.explication}</p>
 
-          {courante.main === "vous" && demande && (
+          {/*
+            La demande ne s'affiche que si elle est en cours.
+            Elle se montrait dès que la main était au client : un dossier renvoyé en
+            mars, corrigé depuis, affichait encore ce motif sous « Attestation de
+            dépôt de capital ».
+          */}
+          {etat.status === "corrections_demandees" && demande && (
             <blockquote className={styles.demande}>
               <span className={styles.demandeQui}>Ce que l&apos;avocat demande</span>
               <span className={styles.demandeTexte}>{demande}</span>
             </blockquote>
           )}
 
-          {courante.action && lienAction && (
-            <Link href={lienAction} className={styles.action}>
-              {courante.action}
-            </Link>
-          )}
+          {courante.action &&
+            (courante.ou === "messagerie" ? lienMessagerie : lienAction) && (
+              <Link
+                href={(courante.ou === "messagerie" ? lienMessagerie : lienAction) as string}
+                className={styles.action}
+              >
+                {courante.action}
+              </Link>
+            )}
         </div>
       )}
 

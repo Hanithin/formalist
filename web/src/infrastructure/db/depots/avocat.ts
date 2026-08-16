@@ -17,7 +17,7 @@ import {
   documentValide,
 } from "@/domain/formalite/avis";
 import { prevenir } from "./avis";
-import { LONGUEUR_MAXIMALE } from "@/domain/messagerie/messages";
+import { LONGUEUR_COMMENTAIRE } from "@/domain/formalite/avocat";
 import { TYPE_RBE, TYPE_KBIS, typesDeposes } from "./suivi";
 import {
   annonceAPublier,
@@ -271,8 +271,16 @@ export async function changerEtatDossier(
       data: {
         formalite_id: dossierId,
         sender_id: utilisateur.id,
-        content: commentaire.trim().slice(0, LONGUEUR_MAXIMALE),
-        kind: "correction_request",
+        /*
+         * La même longueur que la trace du journal.
+         *
+         * Le suivi lit le motif au journal, borné à mille signes ; le fil le montrait
+         * en entier. Les deux ne disaient pas la même chose du même geste, et le
+         * rattrapage ne reconnaissait plus le message qu'il venait de poser.
+         */
+        content: commentaire.trim().slice(0, LONGUEUR_COMMENTAIRE),
+        // Un refus n'est pas une demande de corrections : le fil l'annonce comme tel.
+        kind: vers === "rejete" ? "rejection" : "correction_request",
       },
     });
   }
@@ -305,7 +313,7 @@ export async function changerEtatDossier(
       action: "etat_" + vers,
       before_value: dossier.status,
       after_value: vers,
-      comment: commentaire?.slice(0, 1000) ?? null,
+      comment: commentaire?.slice(0, LONGUEUR_COMMENTAIRE) ?? null,
     },
   });
 

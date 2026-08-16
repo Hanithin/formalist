@@ -50,6 +50,8 @@ export interface EtapeDeSuivi {
   etat: EtatEtape;
   /** Le geste attendu, quand il est du côté du client. */
   action?: string;
+  /** Où ce geste se fait : dans le dossier, ou dans le fil. */
+  ou: "dossier" | "messagerie";
 }
 
 /** Les sous-phases, dans l'ordre : elles se comparent. */
@@ -77,6 +79,14 @@ interface Definition {
   /** La main peut dépendre de l'état : des corrections la rendent au client. */
   main: Main | ((etat: EtatDuDossier) => Main);
   action?: string;
+  /**
+   * Où mène le geste attendu.
+   *
+   * « Déposer l'attestation » se fait dans le dossier, « Voir ce qui est demandé »
+   * dans le fil. Un lien unique pour toutes les étapes envoyait le premier vers une
+   * conversation où il n'y a rien à déposer.
+   */
+  ou?: "dossier" | "messagerie";
   faite: (etat: EtatDuDossier) => boolean;
 }
 
@@ -112,6 +122,7 @@ const TOUTES: Definition[] = [
      */
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
     action: "Voir ce qui est demandé",
+    ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
       (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
@@ -169,6 +180,7 @@ const AUTO_ENTREPRISE: Definition[] = [
       "L'avocat relit votre déclaration : le code APE, le régime, les plafonds et vos pièces. Il vous écrit si quelque chose doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
     action: "Voir ce qui est demandé",
+    ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
       (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
@@ -214,6 +226,7 @@ const MODIFICATION: Definition[] = [
       "L'avocat relit le procès-verbal, les statuts à jour et vos justificatifs. Il vous écrit si quelque chose doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
     action: "Voir ce qui est demandé",
+    ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
       (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
@@ -296,6 +309,7 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
       etat: etatEtape,
       // Le geste ne s'affiche que là où il y en a un à faire.
       action: main === "vous" ? d.action : undefined,
+      ou: d.ou ?? "dossier",
     };
   });
 }

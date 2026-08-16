@@ -11,26 +11,35 @@
 --
 -- Les messages reprennent la date du geste, non celle de la migration : un motif de
 -- mars ne doit pas remonter en tête du fil comme s'il venait d'arriver.
+--
+-- Et ils arrivent lus, sauf sur les dossiers encore en attente d'être repris. Non lus,
+-- ils auraient pris le bandeau d'accueil de chaque client - « Maître X vous demande
+-- une correction » pour un dossier immatriculé depuis six mois - et ce bandeau, qui ne
+-- montre qu'une chose à la fois, aurait masqué le geste réellement attendu.
+--
+-- DISTINCT ON dédoublonne à l'intérieur même de l'insertion : NOT EXISTS ne voit que
+-- l'état d'avant la requête, et deux renvois au motif identique passeraient tous deux.
 
 INSERT INTO messages (formalite_id, sender_id, content, kind, read, created_at)
-SELECT
+SELECT DISTINCT ON (a.formalite_id, btrim(a.comment))
   a.formalite_id,
   a.actor_id,
   btrim(a.comment),
-  'correction_request',
-  FALSE,
+  CASE WHEN a.action = 'etat_rejete' THEN 'rejection' ELSE 'correction_request' END,
+  f.status NOT IN ('corrections_demandees', 'rejete'),
   a.created_at
 FROM audit_log a
-WHERE a.formalite_id IS NOT NULL
-  AND a.actor_id IS NOT NULL
+JOIN formalites f ON f.id = a.formalite_id
+WHERE a.actor_id IS NOT NULL
   AND a.action IN ('etat_corrections_demandees', 'etat_rejete')
   AND a.comment IS NOT NULL
   AND btrim(a.comment) <> ''
-  -- Ni deux fois le même motif, ni celui qu'une exécution précédente a déjà posé.
+  -- Ni celui qu'une exécution précédente a déjà posé, ni celui que le code a écrit.
   AND NOT EXISTS (
     SELECT 1
     FROM messages m
     WHERE m.formalite_id = a.formalite_id
-      AND m.kind = 'correction_request'
+      AND m.kind IN ('correction_request', 'rejection')
       AND m.content = btrim(a.comment)
-  );
+  )
+ORDER BY a.formalite_id, btrim(a.comment), a.created_at DESC;

@@ -91,7 +91,14 @@ export default async function TableauDeBord() {
      * suffisent presque toujours à trancher.
      */
     const correction = dernier?.genre === "correction_request";
-    const autres = nonLus - 1;
+    const refus = dernier?.genre === "rejection";
+    /*
+     * Les autres messages de ce dossier, non ceux de tous.
+     *
+     * Le bandeau nomme un dossier et y mène : compter le total annonçait « +3 autres »
+     * pour un fil qui n'en contenait aucun.
+     */
+    const autres = avecMessages.nonLus - 1;
 
     priorites.push({
       icone: "message",
@@ -99,14 +106,16 @@ export default async function TableauDeBord() {
         ? accorder(nonLus, "nouveau message", "nouveaux messages")
         : correction
           ? dernier.auteur + " vous demande une correction"
-          : dernier.auteur + " vous a écrit",
+          : refus
+            ? dernier.auteur + " a refusé le dossier"
+            : dernier.auteur + " vous a écrit",
       societe: avecMessages.societe,
       precision: dernier
         ? citation(dernier.extrait) + (autres > 0 ? " (+" + autres + " autre" + (autres > 1 ? "s" : "") + ")" : "")
         : accorder(nonLus, "message non lu", "messages non lus"),
-      ton: correction ? "action" : "info",
+      ton: correction || refus ? "action" : "info",
       lien: "/messagerie?dossier=" + avecMessages.id,
-      bouton: correction ? "Voir ce qui est demandé" : "Lire le message",
+      bouton: correction ? "Voir ce qui est demandé" : refus ? "Voir le motif" : "Lire le message",
     });
   } else {
     for (const s of societes.filter((s) => s.attendLeClient)) {

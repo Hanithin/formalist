@@ -123,22 +123,7 @@ test.describe("l'avocat demande des corrections", () => {
 });
 
 test.describe("un dossier parti chez l'avocat", () => {
-  test("ne montre plus de formulaire à remplir", async ({ page }) => {
-    /*
-     * Le formulaire des sept étapes restait affiché sous le suivi, vide et annonçant
-     * « 0% renseigné », sur un dossier que le serveur refuse de toute façon de laisser
-     * modifier : on croyait avoir tout perdu.
-     */
-    const parti = await dossierEnVerification();
-    await page.goto("/creation?dossier=" + parti);
-
-    await expect(page.getByRole("heading", { name: "Où en est votre dossier" })).toBeVisible();
-    await expect(page.getByText("0% renseigné")).toHaveCount(0);
-    await expect(page.getByText("Informations de la société")).toHaveCount(0);
-    await expect(page.getByText(/entre les mains de l'avocat/)).toBeVisible();
-  });
-
-  test("le formulaire revient quand l'avocat renvoie le dossier", async ({ page }) => {
+  test("le formulaire est là quand l'avocat renvoie le dossier", async ({ page }) => {
     // C'est là qu'on reprend ce qui est demandé : sans lui, rien à corriger.
     const renvoye = await dossierEnVerification();
     await prisma.formalites.update({
@@ -149,6 +134,44 @@ test.describe("un dossier parti chez l'avocat", () => {
     await page.goto("/creation?dossier=" + renvoye);
     await expect(page.getByText("Informations de la société")).toBeVisible();
     await expect(page.getByText("À vous de jouer")).toBeVisible();
+  });
+
+  test("une auto-entreprise ouverte ici mène à sa propre page", async ({ page }) => {
+    /*
+     * La garde comparait le type à « auto-entreprise » quand la valeur stockée est
+     * « auto-entrepreneur » : elle ne se déclenchait jamais, et le dossier s'ouvrait
+     * sur le fil de la création - « Capital », « Associé », « Offres ».
+     */
+    const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
+    const auto = await prisma.formalites.create({
+      data: {
+        user_id: client.id,
+        type: "auto-entrepreneur",
+        forme: "AE",
+        societe: "AUTO EGAREE",
+        status: "en_cours",
+        phase: 1,
+        data_json: "{}",
+      },
+    });
+    semes.push(auto.id);
+
+    await page.goto("/creation?dossier=" + auto.id);
+    await expect(page).toHaveURL(new RegExp("/auto-entrepreneur\\?dossier=" + auto.id));
+  });
+
+  test("le formulaire reste accessible une fois le dossier chez l'avocat", async ({ page }) => {
+    /*
+     * Le masquer paraissait juste - il n'y a plus d'informations à saisir - mais c'est
+     * par lui que le client dépose l'attestation de dépôt de capital et celle de
+     * parution, que le suivi et les courriels lui réclament précisément à ce
+     * moment-là. Le serveur, lui, n'a jamais refusé ces dépôts.
+     */
+    const parti = await dossierEnVerification();
+    await page.goto("/creation?dossier=" + parti);
+
+    await expect(page.getByRole("heading", { name: "Où en est votre dossier" })).toBeVisible();
+    await expect(page.getByText("Informations de la société")).toBeVisible();
   });
 
   test("une modification ouverte ici mène à sa propre page", async ({ page }) => {

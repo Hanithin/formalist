@@ -331,10 +331,31 @@
   padding: 40px;
 }
 
+/* Le titre à gauche, le rang de l'étape à droite : deux informations, une ligne. */
+.etapeTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.etapeTitre {
+  margin: 0;
+  min-width: 0;
+}
+
 .avancement {
-  margin: 0 0 6px;
-  font-size: 12.5px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 5px 12px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  font-size: 12px;
+  font-weight: 600;
   color: #71717a;
+  white-space: nowrap;
+  letter-spacing: 0;
 }
 
 .description {
@@ -2070,25 +2091,6 @@
 }
 
 /* Ce que couvre le parcours, dit en liste courte sur l'écran d'entrée. */
-.entreeListe {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 4px 20px;
-  margin: 0 0 24px;
-  padding: 0 0 0 18px;
-  list-style: disc;
-}
-
-.entreeListe li {
-  display: list-item;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #3f3f46;
-}
-
 /*
  * Un associé est-il une personne ou une société ?
  *
@@ -3314,4 +3316,150 @@
 .confieLien:hover {
   border-color: #111;
   color: #111;
+}
+
+/* ---------- L'écran d'entrée ---------- */
+
+/*
+ * Trois temps séparés par un trait, plutôt qu'un pavé de texte suivi de puces.
+ *
+ * La présentation tenait dans une carte unique : deux paragraphes de même gris, une
+ * liste en puces sur trois colonnes qui se lisait comme une table des matières, et un
+ * bouton posé loin en bas à droite. Rien n'y hiérarchisait ce qu'on achète, ce qui est
+ * couvert, et ce que ça coûte.
+ */
+.entree {
+  border: 1px solid #e8e8ea;
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.entreeTete {
+  padding: 32px 34px 26px;
+}
+
+.entreeTitre {
+  margin: 0 0 10px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.entreeTexte {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #52525b;
+}
+
+.entreeBloc {
+  padding: 24px 34px 26px;
+  border-top: 1px solid #f2f2f4;
+  background: #fcfcfd;
+}
+
+.entreeSousTitre {
+  margin: 0 0 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+/* Des pastilles, non des puces : on les parcourt sans lire ligne à ligne. */
+.entreeListe {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entreePastille {
+  padding: 7px 13px;
+  border: 1px solid #e8e8ea;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 13px;
+  color: #3f3f46;
+  white-space: nowrap;
+}
+
+.entreeNote {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #8a8a92;
+}
+
+.entreeRefus {
+  margin: 0;
+  padding: 14px 34px;
+  border-top: 1px solid #fee2e2;
+  background: #fef2f2;
+  font-size: 13.5px;
+  color: #b91c1c;
+}
+
+/* Le prix se tient près du bouton : c'est là qu'on décide. */
+.entreePied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 34px;
+  border-top: 1px solid #f2f2f4;
+}
+
+.entreePrix {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.entreeMontant {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.entreeMention {
+  max-width: 46ch;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8a8a92;
+}
+
+.entreeBouton {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 12px 26px;
+  border: 1px solid #18181b;
+  border-radius: 100px;
+  background: #18181b;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.entreeBouton:hover:not(:disabled) {
+  background: #000;
+}
+
+.entreeBouton:disabled {
+  opacity: 0.6;
+  cursor: default;
 }

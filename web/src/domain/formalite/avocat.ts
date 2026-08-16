@@ -286,3 +286,11 @@ export function paginer<T>(dossiers: T[], pageDemandee: number): Tranche<T> {
     total: dossiers.length,
   };
 }
+
+/**
+ * La longueur d'un motif de renvoi, une seule fois.
+ *
+ * Le journal le bornait à mille signes et le fil le laissait entier : le suivi, qui
+ * lit le journal, montrait un texte tronqué là où la messagerie le montrait complet.
+ */
+export const LONGUEUR_COMMENTAIRE = 1000;

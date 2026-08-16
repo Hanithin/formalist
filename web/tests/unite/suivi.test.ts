@@ -261,3 +261,27 @@ describe("un dossier renvoyé par l'avocat", () => {
     expect(etapeAMettreEnAvant(ordinaire)?.identifiant).toBe(etapeEnCours(ordinaire)?.identifiant);
   });
 });
+
+describe("où mène le geste attendu", () => {
+  it("le renvoi mène au fil, le dépôt d'une pièce au dossier", () => {
+    /*
+     * Un lien unique pour toutes les étapes envoyait « Déposer l'attestation » vers
+     * une conversation, où il n'y a rien à déposer.
+     */
+    const renvoye = etat({ status: "corrections_demandees", sousPhase: "5a" });
+    expect(etapeAMettreEnAvant(renvoye)?.ou).toBe("messagerie");
+
+    const attend = etat({ status: "en_attente_validation", sousPhase: "5a" });
+    const attestation = etapesDuSuivi(attend).find((e) => e.identifiant === "attestation")!;
+    expect(attestation.action).toBe("Déposer l'attestation");
+    expect(attestation.ou).toBe("dossier");
+  });
+
+  it("aucune étape n'oublie de dire où elle mène", () => {
+    for (const type of [null, "modification", "auto-entrepreneur"]) {
+      for (const e of etapesDuSuivi(etat({ type, status: "en_attente_validation" }))) {
+        expect(e.ou, e.identifiant).toMatch(/^(dossier|messagerie)$/);
+      }
+    }
+  });
+});

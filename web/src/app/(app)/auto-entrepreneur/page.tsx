@@ -113,7 +113,8 @@ export default async function AutoEntrepreneur({
             <Suivi
               etat={await etatDuDossier(ligne)}
               demande={await derniereDemandeDeCorrections(ligne.id)}
-              lienAction={"/messagerie?dossier=" + ligne.id}
+              lienAction={"/auto-entrepreneur?dossier=" + ligne.id}
+              lienMessagerie={"/messagerie?dossier=" + ligne.id}
             />
           </div>
         )}

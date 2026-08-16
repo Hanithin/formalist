@@ -90,7 +90,14 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
         read: false,
         sender_id: { not: utilisateur.id },
       },
-      orderBy: { created_at: "desc" },
+      /*
+       * Un par dossier, non les quarante plus récents du compte.
+       *
+       * Trié sur l'ensemble puis tronqué, un dossier bavard prenait toute la place et
+       * les autres se retrouvaient sans dernier message - donc sans rien à dire.
+       */
+      distinct: ["formalite_id"],
+      orderBy: [{ formalite_id: "asc" }, { created_at: "desc" }],
       select: {
         formalite_id: true,
         content: true,
@@ -98,7 +105,6 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
         created_at: true,
         users: { select: { name: true } },
       },
-      take: 40,
     }),
     // Le fil d'activité, en une requête plutôt qu'un appel par dossier comme le
     // faisait la page d'origine.
@@ -113,9 +119,8 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
   const rejetesPar = new Map(rejetes.map((r) => [r.formalite_id, r._count._all]));
   const nonLusPar = new Map(nonLus.map((m) => [m.formalite_id, m._count._all]));
 
-  // Le plus récent par dossier : la requête les rend déjà du plus récent au plus ancien.
-  const dernierPar = new Map<number, (typeof derniers)[number]>();
-  for (const m of derniers) if (!dernierPar.has(m.formalite_id)) dernierPar.set(m.formalite_id, m);
+  // La requête en rend déjà un seul par dossier, le plus récent.
+  const dernierPar = new Map(derniers.map((m) => [m.formalite_id, m]));
 
   const signaturesPar = new Map<number, { total: number; enAttente: number }>();
   for (const s of signatures) {
