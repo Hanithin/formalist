@@ -116,6 +116,13 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
    * encore eu le temps de le remplir.
    */
   const [manquesVus, setManquesVus] = useState<string[]>([]);
+  /*
+   * L'étape la plus loin qu'on ait atteinte.
+   *
+   * Le fil ne renvoie qu'en arrière ou là où l'on est déjà allé : sauter à une étape
+   * jamais vue enjamberait les contrôles qui gardent les précédentes.
+   */
+  const [atteinte, setAtteinte] = useState(etapeInitiale);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -208,6 +215,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
       }
 
       setEtape(vers);
+      setAtteinte((loin) => Math.max(loin, vers));
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
@@ -218,7 +226,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
     <div className={styles.parcours}>
       {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} dossier={dossier} />}
 
-      <Frise etape={etape} />
+      <Frise etape={etape} atteinte={atteinte} surChoix={aller} />
 
       <div className={styles.contenu}>
         <p className={styles.avancement}>
@@ -300,7 +308,15 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
 
 /* -------------------------------------------------------------- Le fil */
 
-function Frise({ etape }: { etape: number }) {
+function Frise({
+  etape,
+  atteinte,
+  surChoix,
+}: {
+  etape: number;
+  atteinte: number;
+  surChoix: (vers: number) => void;
+}) {
   return (
     <ol className={styles.stepper}>
       {ETAPES.map((e, rang) => (
@@ -308,31 +324,44 @@ function Frise({ etape }: { etape: number }) {
           {rang > 0 && (
             <span
               className={
-                e.numero <= etape ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment
+                e.numero <= atteinte ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment
               }
               aria-hidden="true"
             />
           )}
-          <span
-            className={
-              e.numero === etape
-                ? `${styles.step} ${styles.active}`
-                : e.numero < etape
-                  ? `${styles.step} ${styles.done}`
-                  : styles.step
-            }
-          >
-            <span className={styles.stepCircle}>
-              {e.numero < etape ? (
-                <svg viewBox="0 0 24 24" {...TRAITS} aria-hidden="true">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                e.numero
-              )}
+          {/*
+            Une étape déjà atteinte se rouvre d'un clic.
+            Celles qu'on n'a pas encore vues ne sont pas des liens : y sauter
+            enjamberait les contrôles qui gardent les précédentes.
+          */}
+          {e.numero <= atteinte ? (
+            <button
+              type="button"
+              className={
+                e.numero === etape
+                  ? `${styles.step} ${styles.stepBouton} ${styles.active}`
+                  : `${styles.step} ${styles.stepBouton} ${styles.done}`
+              }
+              onClick={() => surChoix(e.numero)}
+              aria-current={e.numero === etape ? "step" : undefined}
+            >
+              <span className={styles.stepCircle}>
+                {e.numero !== etape ? (
+                  <svg viewBox="0 0 24 24" {...TRAITS} aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  e.numero
+                )}
+              </span>
+              <span className={styles.stepLabel}>{e.court}</span>
+            </button>
+          ) : (
+            <span className={styles.step}>
+              <span className={styles.stepCircle}>{e.numero}</span>
+              <span className={styles.stepLabel}>{e.court}</span>
             </span>
-            <span className={styles.stepLabel}>{e.court}</span>
-          </span>
+          )}
         </li>
       ))}
     </ol>

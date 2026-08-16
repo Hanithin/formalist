@@ -249,27 +249,21 @@ test("le fil d'étapes se lit en ligne, jamais en colonne", async ({ page, reque
   }
 });
 
-test("les changements se cochent dès l'écran d'entrée, et plusieurs à la fois", async ({ page }) => {
+test("l'écran d'entrée présente, il ne demande rien", async ({ page }) => {
   /*
-   * Ils y étaient en cartes inertes : elles avaient tout l'air de cases à cocher et
-   * n'en étaient pas. On cliquait, rien ne se passait.
+   * Il faisait cocher les changements, que l'étape 2 reposait ensuite : on répondait
+   * deux fois à la même question, et la seconde pour rien. L'ordre est celui du
+   * travail réel - la société d'abord, ce qu'on y change ensuite.
    */
   await page.goto("/modification");
 
-  await page.getByText("Transfert de siège social").click();
-  await page.getByText("Changement de dénomination").click();
-  await expect(page.getByText("2 modifications sélectionnées")).toBeVisible();
-
-  // Un second clic décoche : la sélection se corrige sans repartir de zéro.
-  await page.getByText("Transfert de siège social").click();
-  await expect(page.getByText("1 modification sélectionnée")).toBeVisible();
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Commencer" }).click();
   await page.waitForURL(/\/modification\?dossier=\d+/);
 
-  // La sélection a suivi le dossier plutôt que d'être reperdue en changeant d'écran.
-  await page.goto(page.url() + "&etape=2");
-  await expect(page.getByRole("checkbox", { name: /Changement de dénomination/ })).toBeChecked();
+  // On arrive sur la société, non sur les changements.
+  await expect(page.getByRole("heading", { name: "La société" })).toBeVisible();
 });
 
 test("plusieurs changements se cochent aussi à l'étape 2", async ({ page, request }) => {
@@ -361,11 +355,12 @@ test("les refus ne s'affichent qu'après une tentative", async ({ page, request 
   await expect(carte.getByRole("alert").first()).toBeVisible();
 });
 
-test("les cartes d'une même ligne ont la même hauteur", async ({ page }) => {
+test("les cartes d'une même ligne ont la même hauteur", async ({ page, request }) => {
   // « Changement de dirigeant » a la description la plus longue : sa carte dépassait
   // sa voisine, et la grille se lisait de travers.
+  const dossier = await ouvrirUnDossier(request);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/modification");
+  await page.goto("/modification?dossier=" + dossier + "&etape=2");
 
   const hauteurs = await page.evaluate(() =>
     [...document.querySelectorAll("label[class*='changement']")].map((e) =>
@@ -409,4 +404,25 @@ test("choisir une adresse remplit la voie, le code postal et la ville", async ({
 
   const voie = await adresse.inputValue();
   expect(attendu.toLowerCase()).toContain(voie.toLowerCase().slice(0, 12));
+});
+
+test("le fil ramène aux étapes déjà passées, et ne saute pas en avant", async ({ page, request }) => {
+  /*
+   * Corriger une saisie ne doit pas demander de repasser par « Retour » cinq fois.
+   * En revanche, sauter à une étape jamais vue enjamberait les contrôles qui gardent
+   * les précédentes.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: { dossier, societe: SOCIETE, codes: ["denomination"] },
+  });
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=2");
+
+  // L'étape 1 est derrière : elle se rouvre d'un clic.
+  await page.getByRole("button", { name: /Société/ }).click();
+  await expect(page.getByRole("heading", { name: "La société" })).toBeVisible();
+
+  // Les étapes jamais atteintes ne sont pas des boutons.
+  await expect(page.getByRole("button", { name: /Règlement/ })).toHaveCount(0);
 });

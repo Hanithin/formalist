@@ -1645,3 +1645,53 @@
     order: -1;
   }
 }
+
+/*
+ * Une étape du fil, cliquable.
+ *
+ * globals.css habille les <button> en commandes de formulaire : sans cette remise à
+ * zéro, chaque pastille du fil porterait une bordure, un rembourrage et une marge
+ * haute, et le fil se disloquerait.
+ */
+.stepBouton {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.stepBouton:hover .stepCircle {
+  border-color: #111;
+}
+
+.stepBouton:hover .stepLabel {
+  color: #111;
+}
+
+.stepBouton:focus-visible .stepCircle {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
+/* Ce que couvre le parcours, dit en liste courte sur l'écran d'entrée. */
+.entreeListe {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 4px 20px;
+  margin: 0 0 24px;
+  padding: 0 0 0 18px;
+  list-style: disc;
+}
+
+.entreeListe li {
+  display: list-item;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #3f3f46;
+}
