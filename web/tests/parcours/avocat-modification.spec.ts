@@ -602,3 +602,40 @@ test("le suivi compte les changements, non les cadres", async ({ page, request }
   await page.getByRole("button", { name: "Historique" }).click();
   await expect(page.getByText("Dénomination : confirmé")).toBeVisible();
 });
+
+test("poser un cadre libre s'atteint sans faire défiler", async ({ page, request }) => {
+  /*
+   * La commande vivait tout en bas du panneau, sous les cartes de suivi et sous les
+   * cadres déjà libres : il fallait faire défiler pour la trouver, alors qu'elle sert
+   * dès qu'un passage manque au repérage.
+   */
+  const dossier = await dossierANommer();
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: await statutsAvecDeuxOccurrences(),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1600, height: 700 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+
+  const poser = page.getByRole("button", { name: /Cadre libre/ });
+  await expect(poser).toBeVisible();
+
+  // Dans la fenêtre, sans défiler : c'est tout l'objet du déplacement.
+  const boite = (await poser.boundingBox())!;
+  expect(boite.y).toBeLessThan(700);
+
+  /*
+   * On juge le résultat au panneau, non au nombre de cadres sur la page : un cadre
+   * ouvert pour la saisie porte des éléments de plus, et le compte ne veut rien dire.
+   */
+  await expect(page.getByText("Cadres libres")).toHaveCount(0);
+  await poser.click();
+  await expect(page.getByText("Cadres libres")).toBeVisible();
+});

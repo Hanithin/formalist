@@ -1006,6 +1006,22 @@ export function Editeur({
           )}
 
           <div className={styles.accesCommandes}>
+            {/*
+              Poser un cadre là où rien n'a été repéré.
+              La commande vivait tout en bas du panneau, sous les cartes et sous les
+              cadres déjà libres : il fallait faire défiler pour la trouver, alors
+              qu'elle sert dès qu'un passage manque au repérage. Elle rejoint donc les
+              autres actions de page, à côté de celles qui portent sur la même page.
+            */}
+            <button
+              type="button"
+              className={styles.accesAjouter}
+              onClick={ajouter}
+              title={"Poser un cadre libre sur la page " + page}
+            >
+              <span aria-hidden="true">+</span> Cadre libre
+            </button>
+
             {surReprise && (
               <span className={styles.historiqueCommandes}>
                 <button
@@ -1583,10 +1599,6 @@ export function Editeur({
             </ul>
           </div>
         )}
-
-        <button type="button" className={styles.editeurAjouter} onClick={ajouter}>
-          + Cadre libre sur la page {page}
-        </button>
 
         <p className={styles.editeurAide}>
           Cliquez dans un cadre vert pour écrire. La poignée de gauche le déplace, les
