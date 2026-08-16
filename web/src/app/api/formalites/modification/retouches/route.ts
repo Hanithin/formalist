@@ -94,6 +94,8 @@ const RETOUCHE = z.object({
   police: z.enum(["serif", "sans", "mono"]).optional(),
   gras: z.boolean().optional(),
   italique: z.boolean().optional(),
+  souligne: z.boolean().optional(),
+  alignement: z.enum(["gauche", "centre", "droite"]).optional(),
 });
 
 const APPLICATION = z.object({

@@ -366,6 +366,15 @@ export const POLICES: { valeur: Police; libelle: string }[] = [
   { valeur: "mono", libelle: "Chasse fixe" },
 ];
 
+/** Où le texte se pose dans son cadre. */
+export type Alignement = "gauche" | "centre" | "droite";
+
+export const ALIGNEMENTS: { valeur: Alignement; libelle: string }[] = [
+  { valeur: "gauche", libelle: "Aligner à gauche" },
+  { valeur: "centre", libelle: "Centrer" },
+  { valeur: "droite", libelle: "Aligner à droite" },
+];
+
 export interface Retouche {
   page: number;
   x: number;
@@ -379,6 +388,9 @@ export interface Retouche {
   police?: Police;
   gras?: boolean;
   italique?: boolean;
+  souligne?: boolean;
+  /** À gauche par défaut, comme le texte courant d'un acte. */
+  alignement?: Alignement;
 }
 
 /** Les retouches proposées à partir des zones repérées. */

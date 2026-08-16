@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { POLICES, type Police, type Retouche, type Zone } from "@/domain/modification/edition";
+import {
+  ALIGNEMENTS,
+  POLICES,
+  type Alignement,
+  type Police,
+  type Retouche,
+  type Zone,
+} from "@/domain/modification/edition";
 import styles from "./Modification.module.css";
 
 /**
@@ -35,6 +42,131 @@ interface Props {
   retouches: Retouche[];
   reconnus: boolean;
   surChangement: (retouches: Retouche[]) => void;
+}
+
+/**
+ * Les réglages d'un cadre.
+ *
+ * Posé au bord de celui qu'il règle, et non sous la page : on voit l'effet là où on
+ * le produit. Chaque commande garde le curseur dans le texte - un réglage qui ferme
+ * la saisie oblige à recliquer pour continuer d'écrire.
+ */
+function MiseEnForme({
+  retouche,
+  surChangement,
+  surRetrait,
+}: {
+  retouche: Retouche;
+  surChangement: (changement: Partial<Retouche>) => void;
+  surRetrait: () => void;
+}) {
+  /* Empêcher le défaut du pointeur garde le curseur dans la saisie. */
+  const garderLeFocus = (e: React.MouseEvent) => e.preventDefault();
+
+  return (
+    <div className={styles.forme} data-mise-en-forme onMouseDown={garderLeFocus}>
+      <select
+        aria-label="Police"
+        value={retouche.police ?? "serif"}
+        onChange={(e) => surChangement({ police: e.target.value as Police })}
+      >
+        {POLICES.map((p) => (
+          <option key={p.valeur} value={p.valeur}>
+            {p.libelle}
+          </option>
+        ))}
+      </select>
+
+      <input
+        type="number"
+        aria-label="Taille du texte"
+        min={6}
+        max={40}
+        step={0.5}
+        value={retouche.taille}
+        onChange={(e) =>
+          surChangement({ taille: Math.min(40, Math.max(6, Number(e.target.value))) })
+        }
+      />
+
+      <span className={styles.formeSeparateur} aria-hidden="true" />
+
+      <button
+        type="button"
+        className={retouche.gras ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton}
+        onClick={() => surChangement({ gras: !retouche.gras })}
+        aria-pressed={retouche.gras ?? false}
+        title="Gras"
+      >
+        <strong>G</strong>
+      </button>
+
+      <button
+        type="button"
+        className={
+          retouche.italique ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
+        }
+        onClick={() => surChangement({ italique: !retouche.italique })}
+        aria-pressed={retouche.italique ?? false}
+        title="Italique"
+      >
+        <em>I</em>
+      </button>
+
+      <button
+        type="button"
+        className={
+          retouche.souligne ? `${styles.formeBouton} ${styles.formeActif}` : styles.formeBouton
+        }
+        onClick={() => surChangement({ souligne: !retouche.souligne })}
+        aria-pressed={retouche.souligne ?? false}
+        title="Souligné"
+      >
+        <u>S</u>
+      </button>
+
+      <span className={styles.formeSeparateur} aria-hidden="true" />
+
+      {ALIGNEMENTS.map((a) => (
+        <button
+          key={a.valeur}
+          type="button"
+          className={
+            (retouche.alignement ?? "gauche") === a.valeur
+              ? `${styles.formeBouton} ${styles.formeActif}`
+              : styles.formeBouton
+          }
+          onClick={() => surChangement({ alignement: a.valeur as Alignement })}
+          aria-pressed={(retouche.alignement ?? "gauche") === a.valeur}
+          title={a.libelle}
+          aria-label={a.libelle}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.formeIcone}>
+            <rect x="3" y="5" width="18" height="2" rx="1" />
+            <rect
+              x={a.valeur === "gauche" ? 3 : a.valeur === "centre" ? 6 : 9}
+              y="11"
+              width="12"
+              height="2"
+              rx="1"
+            />
+            <rect x="3" y="17" width="18" height="2" rx="1" />
+          </svg>
+        </button>
+      ))}
+
+      <span className={styles.formeSeparateur} aria-hidden="true" />
+
+      <button
+        type="button"
+        className={`${styles.formeBouton} ${styles.formeDanger}`}
+        onClick={surRetrait}
+        title="Retirer ce cadre"
+      >
+        Retirer
+      </button>
+    </div>
+  );
 }
 
 /** Les familles, telles que le navigateur les rend, au plus près du PDF produit. */
@@ -110,6 +242,14 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
    * vrai déplacement.
    */
   const aGlisse = useRef(false);
+  /*
+   * La mise en forme s'ouvre à la demande.
+   *
+   * Six réglages posés en permanence sous la page prennent la place de deux lignes de
+   * statuts et se lisent alors qu'on ne s'en sert pas. Une icône les appelle, au bord
+   * du cadre qu'ils règlent.
+   */
+  const [formeOuverte, setFormeOuverte] = useState(false);
 
   const dimensions = pages.find((p) => p.numero === page) ?? pages[0];
 
@@ -133,13 +273,24 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
     if (choisie !== null) saisie.current?.focus();
   }, [choisie]);
 
+  /**
+   * Refermer un cadre referme ses réglages.
+   *
+   * Les deux se posent dans le même geste plutôt que dans un effet : un setState
+   * appelé depuis un effet provoque un second rendu pour rien.
+   */
+  function ouvrir(index: number | null) {
+    setChoisie(index);
+    if (index === null) setFormeOuverte(false);
+  }
+
   function modifier(index: number, changement: Partial<Retouche>) {
     surChangement(retouches.map((r, i) => (i === index ? { ...r, ...changement } : r)));
   }
 
   function retirer(index: number) {
     surChangement(retouches.filter((_, i) => i !== index));
-    setChoisie(null);
+    ouvrir(null);
   }
 
   /** Le point cliqué, ramené en points PDF. */
@@ -232,7 +383,7 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
         police: "serif",
       },
     ]);
-    setChoisie(retouches.length);
+    ouvrir(retouches.length);
   }
 
   if (!dimensions) return null;
@@ -240,8 +391,6 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
   const surCettePage = retouches
     .map((retouche, index) => ({ retouche, index }))
     .filter(({ retouche }) => retouche.page === page);
-
-  const active = choisie !== null ? retouches[choisie] : null;
 
   /*
    * Les pages qui portent une retouche, avec l'article qu'elles visent.
@@ -325,7 +474,7 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                 }
                 onClick={() => {
                   setPage(p.numero);
-                  setChoisie(null);
+                  ouvrir(null);
                 }}
               >
                 {p.numero}
@@ -361,6 +510,13 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
               fontFamily: FAMILLES[retouche.police ?? "serif"],
               fontWeight: retouche.gras ? 700 : 400,
               fontStyle: retouche.italique ? "italic" : "normal",
+              textDecoration: retouche.souligne ? "underline" : "none",
+              textAlign:
+                retouche.alignement === "centre"
+                  ? ("center" as const)
+                  : retouche.alignement === "droite"
+                    ? ("right" as const)
+                    : ("left" as const),
             };
 
             const poignees = (
@@ -415,12 +571,12 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                       aGlisse.current = false;
                       return;
                     }
-                    setChoisie(index);
+                    ouvrir(index);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      setChoisie(index);
+                      ouvrir(index);
                     }
                   }}
                   title="Tirez pour déplacer, cliquez pour écrire"
@@ -454,79 +610,47 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                 <input
                   ref={saisie}
                   className={styles.repereSaisie}
+                  style={{ textAlign: style.textAlign, textDecoration: style.textDecoration }}
                   value={retouche.texte}
                   onChange={(e) => modifier(index, { texte: e.target.value })}
-                  onBlur={() => setChoisie(null)}
+                  onBlur={(e) => {
+                    // Cliquer dans le panneau de mise en forme n'est pas en sortir.
+                    const suite = e.relatedTarget as HTMLElement | null;
+                    if (suite?.closest?.("[data-mise-en-forme]")) return;
+                    ouvrir(null);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Escape" || e.key === "Enter") e.currentTarget.blur();
                   }}
                 />
+
+                {/* L'icône appelle les réglages, au bord du cadre qu'ils règlent. */}
+                <button
+                  type="button"
+                  className={styles.appelForme}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setFormeOuverte((ouvert) => !ouvert)}
+                  aria-expanded={formeOuverte}
+                  aria-label="Mise en forme"
+                  title="Mise en forme"
+                >
+                  Aa
+                </button>
+
+                {formeOuverte && (
+                  <MiseEnForme
+                    retouche={retouche}
+                    surChangement={(changement) => modifier(index, changement)}
+                    surRetrait={() => retirer(index)}
+                  />
+                )}
+
                 {poignees}
               </div>
             );
           })}
         </div>
 
-        {/* ---------- La mise en forme ---------- */}
-        {active && choisie !== null && (
-          <div className={styles.miseEnForme}>
-            <select
-              aria-label="Police"
-              value={active.police ?? "serif"}
-              onChange={(e) => modifier(choisie, { police: e.target.value as Police })}
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              {POLICES.map((p) => (
-                <option key={p.valeur} value={p.valeur}>
-                  {p.libelle}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              aria-label="Taille du texte"
-              min={6}
-              max={30}
-              step={0.5}
-              value={active.taille}
-              onChange={(e) =>
-                modifier(choisie, { taille: Math.min(30, Math.max(6, Number(e.target.value))) })
-              }
-            />
-
-            <button
-              type="button"
-              className={active.gras ? `${styles.style} ${styles.styleActif}` : styles.style}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => modifier(choisie, { gras: !active.gras })}
-              aria-pressed={active.gras ?? false}
-              title="Gras"
-            >
-              <strong>G</strong>
-            </button>
-
-            <button
-              type="button"
-              className={active.italique ? `${styles.style} ${styles.styleActif}` : styles.style}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => modifier(choisie, { italique: !active.italique })}
-              aria-pressed={active.italique ?? false}
-              title="Italique"
-            >
-              <em>I</em>
-            </button>
-
-            <button
-              type="button"
-              className={`${styles.style} ${styles.styleDanger}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => retirer(choisie)}
-            >
-              Retirer
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ---------- Le panneau ---------- */}
@@ -559,7 +683,7 @@ export function Editeur({ dossier, pages, zones, retouches, reconnus, surChangem
                   }
                   onClick={() => {
                     setPage(retouche.page);
-                    setChoisie(index);
+                    ouvrir(index);
                   }}
                 >
                   <span className={styles.editeurZoneArticle}>

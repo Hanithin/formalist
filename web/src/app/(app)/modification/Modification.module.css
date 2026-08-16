@@ -1897,70 +1897,6 @@
   color: #111;
 }
 
-/* ---------- La mise en forme du cadre ouvert ---------- */
-
-.miseEnForme {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border: 1px solid #e5e5e7;
-  border-radius: 12px;
-  background: #fff;
-}
-
-.miseEnForme select,
-.miseEnForme input {
-  width: auto;
-  max-width: none;
-  margin: 0;
-  padding: 7px 10px;
-  border: 1px solid #e5e5e7;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 13px;
-}
-
-.miseEnForme input[type="number"] {
-  width: 78px;
-}
-
-.style {
-  min-width: 34px;
-  margin: 0;
-  padding: 7px 10px;
-  border: 1px solid #e5e5e7;
-  border-radius: 8px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 13px;
-  color: #3f3f46;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.style:hover {
-  border-color: #c9c9cc;
-  color: #111;
-}
-
-.styleActif {
-  background: #111;
-  border-color: #111;
-  color: #fff;
-}
-
-.styleDanger {
-  margin-left: auto;
-  color: #b91c1c;
-}
-
-.styleDanger:hover {
-  border-color: #b91c1c;
-  color: #7f1d1d;
-}
 
 /*
  * La carte s'élargit le temps de la retouche.
@@ -2118,4 +2054,136 @@
   color: #15803d;
   font-style: italic;
   opacity: 0.75;
+}
+
+/* ---------- Les réglages du cadre ---------- */
+
+/*
+ * L'icône qui appelle la mise en forme.
+ *
+ * Six réglages posés en permanence sous la page prenaient la place de deux lignes de
+ * statuts et se lisaient alors qu'on ne s'en servait pas. Ils s'appellent maintenant,
+ * au bord du cadre qu'ils règlent.
+ */
+.appelForme {
+  position: absolute;
+  top: -13px;
+  right: -13px;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #16a34a;
+  border-radius: 50%;
+  background: #fff;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #15803d;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.appelForme:hover {
+  background: #16a34a;
+  color: #fff;
+}
+
+/* La barre elle-même, posée au-dessus du cadre. */
+.forme {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  /* La barre ne suit pas la police du cadre : ses commandes se lisent, elles ne
+     s'impriment pas. */
+  font: initial;
+  font-family: var(--police-texte), sans-serif;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.forme select,
+.forme input {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: #18181b;
+  background: #fff;
+}
+
+.forme input[type="number"] {
+  width: 64px;
+}
+
+.formeBouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: #3f3f46;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.formeBouton:hover {
+  background: #f4f4f5;
+  color: #111;
+}
+
+.formeActif {
+  background: #111;
+  color: #fff;
+}
+
+.formeActif:hover {
+  background: #111;
+  color: #fff;
+}
+
+.formeIcone {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.formeSeparateur {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: #ececef;
+}
+
+.formeDanger {
+  color: #b91c1c;
+  font-size: 12.5px;
+}
+
+.formeDanger:hover {
+  background: #fef2f2;
+  color: #7f1d1d;
 }

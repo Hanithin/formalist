@@ -347,3 +347,51 @@ describe("la mise en forme d'une retouche", () => {
     expect(relu.mots.map((m) => m.texte).join(" ")).toContain("police");
   }, 120_000);
 });
+
+describe("le souligné et l'alignement", () => {
+  const commun = { page: 1, x: 60, y: 300, largeur: 300, hauteur: 14, taille: 11 };
+
+  it("le souligné trace un trait, il ne se déclare pas", async () => {
+    /*
+     * Aucune police standard ne porte de souligné : il faut le dessiner. Sans cela,
+     * cocher « souligné » n'aurait aucun effet sur le document alors que l'écran
+     * l'afficherait.
+     */
+    const statuts = await statutsDEssai();
+
+    const sans = await appliquerLesRetouches(statuts, [{ ...commun, texte: "Texte temoin" }]);
+    const avec = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Texte temoin", souligne: true },
+    ]);
+
+    expect(sans.equals(avec)).toBe(false);
+    expect((await lireLesStatuts(avec)).mots.map((m) => m.texte).join(" ")).toContain("temoin");
+  }, 120_000);
+
+  it("centrer déplace vraiment le texte", async () => {
+    // Un PDF ne connaît pas de « texte centré » : il connaît une abscisse. Centrer
+    // demande de mesurer le texte, puis de poser l'origine en conséquence.
+    const statuts = await statutsDEssai();
+
+    const gauche = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Repere", alignement: "gauche" as const },
+    ]);
+    const centre = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Repere", alignement: "centre" as const },
+    ]);
+    const droite = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Repere", alignement: "droite" as const },
+    ]);
+
+    const abscisse = async (pdf: Buffer) => {
+      const lu = await lireLesStatuts(pdf);
+      return lu.mots.find((m) => m.texte.includes("Repere"))!.x;
+    };
+
+    const [a, b, c] = [await abscisse(gauche), await abscisse(centre), await abscisse(droite)];
+    expect(b).toBeGreaterThan(a);
+    expect(c).toBeGreaterThan(b);
+    // Et le texte reste dans son cadre.
+    expect(c).toBeLessThanOrEqual(commun.x + commun.largeur);
+  }, 180_000);
+});

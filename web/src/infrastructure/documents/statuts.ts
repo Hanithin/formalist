@@ -344,14 +344,49 @@ export async function appliquerLesRetouches(
       const texte = lisibleParLaPolice(retouche.texte);
       if (!texte) continue;
 
+      const fonte = policeDe(retouche);
+      // La ligne de base se pose au bas du rectangle, remontée du jambage.
+      const ligneDeBase = height - retouche.y - retouche.hauteur + retouche.taille * 0.2;
+
+      /*
+       * L'alignement se calcule, il ne se déclare pas.
+       *
+       * Un PDF ne connaît pas de « texte centré » : il connaît une abscisse. Centrer
+       * demande donc de mesurer le texte dans sa police et sa taille, puis de poser
+       * l'origine en conséquence.
+       */
+      const largeurDuTexte = fonte.widthOfTextAtSize(texte, retouche.taille);
+      const reste = Math.max(0, retouche.largeur - largeurDuTexte);
+      const decalage =
+        retouche.alignement === "centre"
+          ? reste / 2
+          : retouche.alignement === "droite"
+            ? reste
+            : 0;
+
       page.drawText(texte, {
-        x: retouche.x,
-        // La ligne de base se pose au bas du rectangle, remontée du jambage.
-        y: height - retouche.y - retouche.hauteur + retouche.taille * 0.2,
+        x: retouche.x + decalage,
+        y: ligneDeBase,
         size: retouche.taille,
-        font: policeDe(retouche),
+        font: fonte,
         color: rgb(0, 0, 0),
       });
+
+      /*
+       * Le souligné se trace : aucune police standard n'en porte.
+       *
+       * Le trait suit la largeur réelle du texte, non celle du cadre - souligner un
+       * cadre de trois cents points pour un mot de quarante se verrait.
+       */
+      if (retouche.souligne) {
+        const bas = ligneDeBase - retouche.taille * 0.12;
+        page.drawLine({
+          start: { x: retouche.x + decalage, y: bas },
+          end: { x: retouche.x + decalage + largeurDuTexte, y: bas },
+          thickness: Math.max(0.5, retouche.taille * 0.06),
+          color: rgb(0, 0, 0),
+        });
+      }
     }
   }
 
