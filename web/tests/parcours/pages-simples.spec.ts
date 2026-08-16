@@ -48,12 +48,19 @@ test.describe("parcours connecté", () => {
     const entrees: string[][] = [];
     for (const chemin of ["/aide", "/parametres", "/equipe"]) {
       await page.goto(chemin);
-      entrees.push(
-        await page
-          .getByRole("navigation", { name: "Navigation principale" })
-          .getByRole("link")
-          .allInnerTexts()
-      );
+      const textes = await page
+        .getByRole("navigation", { name: "Navigation principale" })
+        .getByRole("link")
+        .allInnerTexts();
+
+      /*
+       * Sans les nombres.
+       *
+       * « Mes formalités / 52 en cours » porte un compteur que les autres essais font
+       * bouger pendant qu'on lit les trois pages : la comparaison échouait sur un
+       * dossier créé entre deux chargements, ce qui ne dit rien de la colonne.
+       */
+      entrees.push(textes.map((t) => t.replace(/\d+/g, "").trim()));
     }
 
     // C'est tout l'objet de l'étape : une seule colonne, pas vingt et une copies.

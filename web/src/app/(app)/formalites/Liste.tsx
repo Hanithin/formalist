@@ -140,7 +140,7 @@ export function Liste({ dossiers, filtre }: Props) {
         <Rien filtre={filtre} recherche={recherche} aucunDossier={dossiers.length === 0} />
       ) : (
         <>
-          <ul className={styles.dossiersGrid}>
+          <ul className={styles.dossiersGrid} aria-label="Formalités">
             {affiches.map((d) => (
               <li key={d.id}>
                 <Carte dossier={d} />

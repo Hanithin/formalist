@@ -20,6 +20,17 @@ test.describe("formalités", () => {
     await page.getByLabel("Rechercher une formalité").fill(nom);
   }
 
+  /**
+   * La liste seule, non la page entière.
+   *
+   * La colonne de gauche nomme le dossier sur lequel on travaille : chercher un nom
+   * dans toute la page le trouvait là, hors de la liste, et l'absence attendue
+   * échouait selon le dossier que les autres essais avaient laissé en cours.
+   */
+  function liste(page: import("@playwright/test").Page) {
+    return page.getByRole("list", { name: "Formalités" });
+  }
+
   /** Les dossiers semés pour la pagination, retirés une fois la série passée. */
   const pagines: number[] = [];
 
@@ -68,13 +79,13 @@ test.describe("formalités", () => {
       .click();
 
     await expect(page).toHaveURL(/filtre=terminee/);
-    await expect(page.getByText("PARCOURS TERMINEE").first()).toBeVisible();
-    await expect(page.getByText("PARCOURS EN COURS")).toHaveCount(0);
+    await expect(liste(page).getByText("PARCOURS TERMINEE").first()).toBeVisible();
+    await expect(liste(page).getByText("PARCOURS EN COURS")).toHaveCount(0);
   });
 
   test("le filtre survit à un rechargement, donc se partage", async ({ page }) => {
     await page.goto("/formalites?filtre=terminee");
-    await expect(page.getByText("PARCOURS EN COURS")).toHaveCount(0);
+    await expect(liste(page).getByText("PARCOURS EN COURS")).toHaveCount(0);
   });
 
   test("un filtre inventé ne casse pas la page", async ({ page }) => {
@@ -91,8 +102,8 @@ test.describe("formalités", () => {
     await page.goto("/formalites");
     await chercher(page, "PARCOURS TERMINEE");
 
-    await expect(page.getByText("PARCOURS TERMINEE").first()).toBeVisible();
-    await expect(page.getByText("PARCOURS EN COURS")).toHaveCount(0);
+    await expect(liste(page).getByText("PARCOURS TERMINEE").first()).toBeVisible();
+    await expect(liste(page).getByText("PARCOURS EN COURS")).toHaveCount(0);
 
     // Une recherche sans résultat le dit, au lieu de laisser la grille vide.
     await chercher(page, "zzz introuvable");
