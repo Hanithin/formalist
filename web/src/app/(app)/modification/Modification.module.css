@@ -3463,3 +3463,21 @@
   opacity: 0.6;
   cursor: default;
 }
+
+/*
+ * Ce qui manque encore, et les refus du serveur.
+ *
+ * Le message se rendait sans habillage : un texte rouge nu au milieu du formulaire,
+ * qu'on prenait pour une note. Et il ne changeait plus une fois écrit - on remplissait
+ * les champs qu'il nommait, il continuait de les citer.
+ */
+.manques {
+  margin: 20px 0 0;
+  padding: 13px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #b91c1c;
+}

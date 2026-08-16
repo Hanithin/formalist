@@ -128,6 +128,8 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
    * encore eu le temps de le remplir.
    */
   const [manquesVus, setManquesVus] = useState<string[]>([]);
+  /** Une tentative d'avancer a été refusée : on montre ce qui manque, et on suit. */
+  const [tentative, setTentative] = useState(false);
   /*
    * L'étape la plus loin qu'on ait atteinte.
    *
@@ -181,6 +183,9 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
     return [];
   }
 
+  /** Ce qui manque à l'étape courante, recalculé à chaque rendu. */
+  const manquesCourants = manquesDe(etape);
+
   /** Enregistre puis avance : l'étape suivante lit ce que le serveur a retenu. */
   function aller(vers: number) {
     setErreur(null);
@@ -195,17 +200,20 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
     if (vers > etape) {
       const manques = manquesDe(etape);
       if (manques.length > 0) {
+        /*
+         * Ce qui manque se recalcule à chaque frappe, il ne se fige pas.
+         *
+         * Le message était écrit une fois dans l'état : on remplissait les champs
+         * qu'il nommait, et il continuait d'annoncer « il reste 5 champs » en les
+         * citant tous - y compris ceux qu'on venait de renseigner sous ses yeux.
+         */
         setManquesVus(manques.map((m) => m.champ));
-        setErreur(
-          manques.length === 1
-            ? manques[0].message
-            : "Il reste " + manques.length + " champs à renseigner : " +
-              manques.map((m) => m.message).join(", ")
-        );
+        setTentative(true);
         return;
       }
     }
     setManquesVus([]);
+    setTentative(false);
 
     demarrer(async () => {
       const reponse = await fetch("/api/formalites/modification", {
@@ -289,7 +297,26 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
           />
         )}
 
-        {erreur && <p role="alert">{erreur}</p>}
+        {/*
+          Deux messages de nature différente : ce qui manque, qui se recalcule, et le
+          refus du serveur, qui ne bouge pas tant qu'on ne réessaie pas.
+        */}
+        {tentative && manquesCourants.length > 0 && (
+          <p className={styles.manques} role="alert">
+            {manquesCourants.length === 1
+              ? manquesCourants[0].message
+              : "Il reste " +
+                manquesCourants.length +
+                " champs à renseigner : " +
+                manquesCourants.map((m) => m.message).join(", ")}
+          </p>
+        )}
+
+        {erreur && (
+          <p className={styles.manques} role="alert">
+            {erreur}
+          </p>
+        )}
 
         <div className={styles.actions}>
           {etape > 1 && (

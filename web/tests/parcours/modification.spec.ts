@@ -889,3 +889,29 @@ test("la taille se règle aussi à la flèche", async ({ page, request }) => {
   await expect(corbeille).toBeVisible();
   await expect(page.locator("[data-mise-en-forme]").getByRole("button", { name: "Supprimer ce cadre" })).toHaveCount(0);
 });
+
+test("le message de ce qui manque suit ce qu'on remplit", async ({ page, request }) => {
+  /*
+   * Il était écrit une fois dans l'état : on remplissait les champs qu'il nommait, et
+   * il continuait d'annoncer « Il reste 5 champs à renseigner » en les citant tous -
+   * y compris ceux qu'on venait de renseigner sous ses yeux.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await page.goto("/modification?dossier=" + dossier + "&etape=1");
+
+  await page.getByRole("button", { name: "Continuer" }).click();
+  // Le récapitulatif, non les refus posés sous chaque champ.
+  const alerte = page.locator("[class*='manques']");
+  await expect(alerte).toContainText("Il reste 5 champs");
+
+  // Un champ rempli, un de moins annoncé.
+  await page.getByLabel("Dénomination sociale").fill("ESSAI VIVANT");
+  await expect(alerte).toContainText("Il reste 4 champs");
+  await expect(alerte).not.toContainText("La dénomination est requise");
+
+  await page.getByLabel("SIREN", { exact: true }).fill("899979934");
+  await page.getByLabel("Adresse du siège").fill("12 rue des Lilas");
+  await page.getByLabel("Code postal").fill("75011");
+  await expect(alerte).toContainText("La forme juridique est requise");
+  await expect(alerte).not.toContainText("Il reste");
+});
