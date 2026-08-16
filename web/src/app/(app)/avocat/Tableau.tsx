@@ -203,8 +203,15 @@ function Panneau({ dossier, surFermeture }: { dossier: Ligne; surFermeture: () =
       return;
     }
 
+    /*
+     * On emmène l'avocat sur le dossier qu'il vient de prendre.
+     *
+     * Le panneau se fermait sur la liste : le dossier était accepté, et rien ne
+     * disait où aller pour le réviser. Le lien « Ouvrir le dossier » disparaissait
+     * avec le panneau.
+     */
     surFermeture();
-    router.refresh();
+    router.push("/avocat/" + dossier.id);
   }
 
   return (

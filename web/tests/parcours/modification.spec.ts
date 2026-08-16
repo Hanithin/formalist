@@ -296,3 +296,117 @@ test("l'écran d'entrée ne liste plus les sociétés du compte", async ({ page 
   await page.goto("/modification");
   await expect(page.getByText(/Vos sociétés chez Formalist/)).toHaveCount(0);
 });
+
+test("le prix et le règlement se voient sans descendre", async ({ page, request }) => {
+  /*
+   * Le bouton se trouvait sous le récapitulatif entier, à plus de deux mille pixels
+   * du haut : il fallait descendre pour connaître le prix, puis remonter pour
+   * vérifier ce qu'on payait.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {
+        nouvelleAdresse: "5 avenue Victor Hugo",
+        nouvelleVille: "Lyon",
+        nouveauCodePostal: "69003",
+        dateEffetTransfert: "2026-09-15",
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/modification?dossier=" + dossier + "&etape=7");
+
+  const bouton = page.getByRole("button", { name: /Régler et confier/ });
+  await expect(bouton).toBeInViewport();
+
+  const cadre = (await bouton.boundingBox())!;
+  expect(cadre.y).toBeLessThan(800);
+});
+
+test("une étape incomplète ne laisse pas passer à la suivante", async ({ page, request }) => {
+  /*
+   * Chaque étape retient ce qui lui manque, plutôt que de tout reprocher au
+   * récapitulatif : y arriver avec six champs vides oblige à redescendre les
+   * chercher un par un.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await page.goto("/modification?dossier=" + dossier + "&etape=1");
+
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page.getByRole("alert").first()).toContainText(/requis/);
+  // On est resté sur place.
+  await expect(page.getByText("Étape 1 sur 7")).toBeVisible();
+});
+
+test("les refus ne s'affichent qu'après une tentative", async ({ page, request }) => {
+  // Marquer en rouge un formulaire qu'on vient d'ouvrir met la faute sur celui qui
+  // n'a pas encore eu le temps de le remplir.
+  const dossier = await ouvrirUnDossier(request);
+  await page.goto("/modification?dossier=" + dossier + "&etape=1");
+
+  /*
+   * Les refus du formulaire, non tous les role="alert" de la page : le signaleur de
+   * navigation de Next en est un, vide, et il apparaît après le rendu.
+   */
+  const carte = page.locator("[class*='contenu']").first();
+  await expect(carte.getByRole("alert")).toHaveCount(0);
+
+  // Après une tentative, ils sont là.
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(carte.getByRole("alert").first()).toBeVisible();
+});
+
+test("les cartes d'une même ligne ont la même hauteur", async ({ page }) => {
+  // « Changement de dirigeant » a la description la plus longue : sa carte dépassait
+  // sa voisine, et la grille se lisait de travers.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/modification");
+
+  const hauteurs = await page.evaluate(() =>
+    [...document.querySelectorAll("label[class*='changement']")].map((e) =>
+      Math.round(e.getBoundingClientRect().height)
+    )
+  );
+
+  expect(hauteurs).toHaveLength(8);
+  for (let i = 0; i < hauteurs.length; i += 2) {
+    expect(hauteurs[i], "ligne " + (i / 2 + 1)).toBe(hauteurs[i + 1]);
+  }
+});
+
+test("choisir une adresse remplit la voie, le code postal et la ville", async ({ page, request }) => {
+  /*
+   * Les deux rappels de l'autocomplétion - la voie, puis le code postal et la ville -
+   * partent dans le même cycle. Construits à partir de l'état du rendu, le second
+   * écrasait le premier : la ville et le code postal s'affichaient, la rue restait
+   * celle qu'on avait tapée à moitié.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: { dossier, societe: SOCIETE, codes: ["transfert_siege"] },
+  });
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=3");
+
+  const adresse = page.getByLabel("Nouvelle adresse");
+  await adresse.click();
+  await adresse.pressSequentially("12 rue de la Répu", { delay: 30 });
+
+  const proposition = page.getByRole("option").first();
+  await proposition.waitFor({ timeout: 10_000 });
+  const attendu = (await proposition.textContent()) ?? "";
+  await proposition.click();
+
+  // La voie est bien celle de la proposition, pas la saisie interrompue.
+  await expect(adresse).not.toHaveValue("12 rue de la Répu");
+  await expect(page.getByLabel("Nouveau code postal")).not.toHaveValue("");
+  await expect(page.getByLabel("Nouvelle ville")).not.toHaveValue("");
+
+  const voie = await adresse.inputValue();
+  expect(attendu.toLowerCase()).toContain(voie.toLowerCase().slice(0, 12));
+});

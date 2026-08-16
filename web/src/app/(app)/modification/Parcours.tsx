@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Adresse } from "@/components/formulaire/Adresse";
 import { Editeur } from "./Editeur";
@@ -50,6 +50,9 @@ const ETAPES = [
 ];
 
 const FORMES = ["SAS", "SASU", "SARL", "EURL", "SCI", "SA", "SNC"];
+
+/** Les champs que l'étape « La société » porte : ils s'y corrigent, et nulle part ailleurs. */
+const CHAMPS_DE_SOCIETE = ["denomination", "forme", "siren", "adresse", "codePostal", "ville"];
 
 interface Associe {
   civilite?: string | null;
@@ -105,6 +108,14 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
   const [etape, setEtape] = useState(etapeInitiale);
   const [etat, setEtat] = useState<EtatDuDossier>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
+  /*
+   * Les champs signalés au dernier refus d'avancer.
+   *
+   * Les refus ne s'affichent pas avant qu'on ait essayé de continuer : marquer en
+   * rouge un formulaire qu'on vient d'ouvrir met la faute sur celui qui n'a pas
+   * encore eu le temps de le remplir.
+   */
+  const [manquesVus, setManquesVus] = useState<string[]>([]);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -118,9 +129,65 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
     setEtat((precedent) => ({ ...precedent, ...changement }));
   }
 
+  /*
+   * Deux écritures dans le même cycle doivent se cumuler, non se remplacer.
+   *
+   * Choisir une adresse dans la liste déclenche deux rappels coup sur coup : la voie,
+   * puis le code postal et la ville. Construits l'un et l'autre à partir de l'état de
+   * ce rendu, le second écrasait le premier - la ville et le code postal
+   * s'affichaient, la rue restait celle qu'on avait tapée à moitié.
+   */
+  function majValeurs(maj: (valeurs: Valeurs) => Valeurs) {
+    setEtat((precedent) => ({ ...precedent, valeurs: maj(precedent.valeurs) }));
+  }
+
+  function majSociete(maj: (societe: EtatDuDossier["societe"]) => EtatDuDossier["societe"]) {
+    setEtat((precedent) => ({ ...precedent, societe: maj(precedent.societe) }));
+  }
+
+  /**
+   * Ce qui manque pour quitter cette étape.
+   *
+   * On ne bloque qu'en avançant : revenir en arrière pour corriger doit rester
+   * possible, sans quoi un dossier incomplet enfermerait celui qui le remplit.
+   */
+  function manquesDe(etape: number): { champ: string; message: string }[] {
+    if (etape === 1) return anomaliesSociete;
+    if (etape === 2) {
+      return etat.codes.length === 0
+        ? [{ champ: "codes", message: "Choisissez au moins une modification" }]
+        : [];
+    }
+    if (etape === 3) return anomalies;
+    return [];
+  }
+
   /** Enregistre puis avance : l'étape suivante lit ce que le serveur a retenu. */
   function aller(vers: number) {
     setErreur(null);
+
+    /*
+     * Rien ne part vers l'avant tant que l'étape n'est pas complète.
+     *
+     * C'est ce qui garantit qu'on arrive au règlement avec un dossier entier : sans
+     * cela, il faut redescendre chercher le champ manquant parmi trente, cinq écrans
+     * en arrière, puis remonter.
+     */
+    if (vers > etape) {
+      const manques = manquesDe(etape);
+      if (manques.length > 0) {
+        setManquesVus(manques.map((m) => m.champ));
+        setErreur(
+          manques.length === 1
+            ? manques[0].message
+            : "Il reste " + manques.length + " champs à renseigner : " +
+              manques.map((m) => m.message).join(", ")
+        );
+        return;
+      }
+    }
+    setManquesVus([]);
+
     demarrer(async () => {
       const reponse = await fetch("/api/formalites/modification", {
         method: "PUT",
@@ -159,11 +226,24 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
         </p>
         <h2>{ETAPES[etape - 1].titre}</h2>
 
-        {etape === 1 && <EtapeSociete etat={etat} anomalies={anomaliesSociete} changer={changer} />}
+        {etape === 1 && (
+          <EtapeSociete
+            etat={etat}
+            anomalies={anomaliesSociete.filter((a) => manquesVus.includes(a.champ))}
+            changer={changer}
+            majSociete={majSociete}
+          />
+        )}
 
         {etape === 2 && <EtapeChangements etat={etat} changer={changer} />}
 
-        {etape === 3 && <EtapeDetails etat={etat} anomalies={anomalies} changer={changer} />}
+        {etape === 3 && (
+          <EtapeDetails
+            etat={etat}
+            anomalies={anomalies.filter((a) => manquesVus.includes(a.champ))}
+            majValeurs={majValeurs}
+          />
+        )}
 
         {etape === 4 && <EtapeAssemblee etat={etat} changer={changer} />}
 
@@ -171,7 +251,14 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
 
         {etape === 6 && <EtapeActes dossier={dossier} etat={etat} changer={changer} />}
 
-        {etape === 7 && <EtapeReglement dossier={dossier} etat={etat} anomalies={anomalies} />}
+        {etape === 7 && (
+          <EtapeReglement
+            dossier={dossier}
+            etat={etat}
+            anomalies={[...anomaliesSociete, ...anomalies]}
+            surCorrection={(champ) => aller(CHAMPS_DE_SOCIETE.includes(champ) ? 1 : 3)}
+          />
+        )}
 
         {erreur && <p role="alert">{erreur}</p>}
 
@@ -186,7 +273,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
               type="button"
               className={styles.principal}
               onClick={() => aller(etape + 1)}
-              disabled={enCours || (etape === 2 && etat.codes.length === 0)}
+              disabled={enCours}
             >
               {enCours ? "Enregistrement" : "Continuer"}
             </button>
@@ -279,10 +366,12 @@ function EtapeSociete({
   etat,
   anomalies,
   changer,
+  majSociete,
 }: {
   etat: EtatDuDossier;
   anomalies: { champ: string; message: string }[];
   changer: (c: Partial<EtatDuDossier>) => void;
+  majSociete: (maj: (societe: EtatDuDossier["societe"]) => EtatDuDossier["societe"]) => void;
 }) {
   const [terme, setTerme] = useState("");
   const [resultats, setResultats] = useState<ResultatRecherche[]>([]);
@@ -470,9 +559,9 @@ function EtapeSociete({
           <Adresse
             id="societe-adresse"
             valeur={etat.societe.adresse ?? ""}
-            surChangement={(voie) => changer({ societe: { ...etat.societe, adresse: voie } })}
+            surChangement={(voie) => majSociete((societe) => ({ ...societe, adresse: voie }))}
             surCompletion={(codePostal, ville) =>
-              changer({ societe: { ...etat.societe, codePostal, ville } })
+              majSociete((societe) => ({ ...societe, codePostal, ville }))
             }
           />
           {refus("adresse") && <p role="alert">{refus("adresse")}</p>}
@@ -633,14 +722,14 @@ function Devis({ chiffrage }: { chiffrage: ReturnType<typeof devis> }) {
 function EtapeDetails({
   etat,
   anomalies,
-  changer,
+  majValeurs,
 }: {
   etat: EtatDuDossier;
   anomalies: { champ: string; message: string }[];
-  changer: (c: Partial<EtatDuDossier>) => void;
+  majValeurs: (maj: (valeurs: Valeurs) => Valeurs) => void;
 }) {
   function valeur(identifiant: string, v: string | number) {
-    changer({ valeurs: { ...etat.valeurs, [identifiant]: v } });
+    majValeurs((valeurs) => ({ ...valeurs, [identifiant]: v }));
   }
 
   if (etat.codes.length === 0) {
@@ -666,20 +755,22 @@ function EtapeDetails({
                   valeur={etat.valeurs[champ.identifiant]}
                   refus={anomalies.find((a) => a.champ === champ.identifiant)?.message}
                   surChangement={valeur}
-                  surAdresse={(voie, complements) => {
-                    const suite: Valeurs = { ...etat.valeurs };
-                    // Une complétion ne renvoie que le code postal et la ville : la
-                    // voie reste celle qui vient d'être posée par surChangement.
-                    if (voie) suite[champ.identifiant] = voie;
+                  surAdresse={(voie, complements) =>
+                    majValeurs((valeurs) => {
+                      const suite: Valeurs = { ...valeurs };
+                      // Une complétion ne porte que le code postal et la ville : la
+                      // voie vient du rappel précédent, dans le même cycle.
+                      if (voie) suite[champ.identifiant] = voie;
 
-                    // L'adresse du nouveau siège remplit aussi ses deux compagnons :
-                    // les retaper serait la meilleure façon d'y glisser un écart.
-                    if (champ.identifiant === "nouvelleAdresse" && complements) {
-                      if (complements.codePostal) suite.nouveauCodePostal = complements.codePostal;
-                      if (complements.ville) suite.nouvelleVille = complements.ville;
-                    }
-                    changer({ valeurs: suite });
-                  }}
+                      // L'adresse du nouveau siège remplit aussi ses deux compagnons :
+                      // les retaper serait la meilleure façon d'y glisser un écart.
+                      if (champ.identifiant === "nouvelleAdresse" && complements) {
+                        if (complements.codePostal) suite.nouveauCodePostal = complements.codePostal;
+                        if (complements.ville) suite.nouvelleVille = complements.ville;
+                      }
+                      return suite;
+                    })
+                  }
                 />
               ))}
           </div>
@@ -1246,33 +1337,41 @@ function EtapeActes({
 
 /* -------------------------------------------------------- 7. Le règlement */
 
+/**
+ * Le récapitulatif et le règlement.
+ *
+ * Deux colonnes : ce qu'on a saisi à gauche, ce qu'on doit payer à droite. Le prix
+ * et le bouton restent en vue pendant qu'on relit - la version précédente les posait
+ * sous le récapitulatif, à deux mille pixels du haut, et il fallait descendre
+ * jusqu'au bas de la page pour savoir combien on allait payer.
+ */
 function EtapeReglement({
   dossier,
   etat,
   anomalies,
+  surCorrection,
 }: {
   dossier: number;
   etat: EtatDuDossier;
   anomalies: { champ: string; message: string }[];
+  /** Ramène à l'étape où se saisit le champ manquant. */
+  surCorrection: (champ: string) => void;
 }) {
   const [refus, setRefus] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
 
+  const ressortActuel = etat.societe.ville ?? "";
+  const ressortNouveau =
+    typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "";
+
   const chiffrage = devis({
     codes: etat.codes,
-    ressortActuel: etat.societe.ville ?? "",
-    ressortNouveau:
-      typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
+    ressortActuel,
+    ressortNouveau,
     depotDesStatuts: statutsAMettreAJour(etat.codes),
   });
 
-  const publications = publicationsAPrevoir({
-    codes: etat.codes,
-    ressortActuel: etat.societe.ville ?? "",
-    ressortNouveau:
-      typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
-  });
-
+  const publications = publicationsAPrevoir({ codes: etat.codes, ressortActuel, ressortNouveau });
   const pieces = piecesAFournir(etat.codes, etat.valeurs);
 
   function payer() {
@@ -1307,111 +1406,222 @@ function EtapeReglement({
   }
 
   return (
-    <>
-      <section className={styles.recap}>
-        <h3>Ce que vous changez</h3>
-        <ul className={styles.devisLignes}>
-          {definitions(etat.codes).map((d) => (
-            <li key={d.code} className={styles.devisLigne}>
-              <span className={styles.devisLibelle}>{d.libelle}</span>
-            </li>
-          ))}
-        </ul>
+    <div className={styles.reglement}>
+      <div className={styles.recapColonne}>
+        <Bloc titre="Ce que vous changez">
+          <ul className={styles.puces}>
+            {definitions(etat.codes).map((d) => (
+              <li key={d.code}>{d.libelle}</li>
+            ))}
+          </ul>
+        </Bloc>
 
-        <h3>La société</h3>
-        <ul className={styles.devisLignes}>
-          <li className={styles.devisLigne}>
-            <span className={styles.devisLibelle}>Dénomination</span>
-            <span className={styles.devisMontant}>{etat.societe.denomination}</span>
-          </li>
-          <li className={styles.devisLigne}>
-            <span className={styles.devisLibelle}>SIREN</span>
-            <span className={styles.devisMontant}>{etat.societe.siren}</span>
-          </li>
-          <li className={styles.devisLigne}>
-            <span className={styles.devisLibelle}>Siège</span>
-            <span className={styles.devisMontant}>
-              {etat.societe.adresse}, {etat.societe.codePostal} {etat.societe.ville}
-            </span>
-          </li>
-        </ul>
+        <Bloc titre="La société">
+          <dl className={styles.faits}>
+            <Fait libelle="Dénomination" valeur={etat.societe.denomination} />
+            <Fait libelle="Forme" valeur={etat.societe.forme} />
+            <Fait libelle="SIREN" valeur={etat.societe.siren} />
+            <Fait
+              libelle="Siège"
+              valeur={[etat.societe.adresse, etat.societe.codePostal, etat.societe.ville]
+                .filter(Boolean)
+                .join(" ")}
+            />
+          </dl>
+        </Bloc>
 
-        <h3>Les statuts</h3>
-        <p className={styles.description}>
-          {etat.statuts
-            ? etat.statuts.source === "inpi"
-              ? "Repris au registre national" +
-                (etat.statuts.deposeLe ? ", dépôt du " + jourFrancais(etat.statuts.deposeLe) : "") +
-                (etat.statutsAJour ? ", retouchés et joints au dossier." : ".")
-              : "Déposés par vos soins" + (etat.statutsAJour ? ", retouchés et joints." : ".")
-            : "Non renseignés : l'avocat vous les demandera."}
-        </p>
+        {definitions(etat.codes).map((definition) => {
+          const remplis = definition.champs
+            .filter((champ) => champVisible(champ, etat.valeurs))
+            .filter((champ) => {
+              const valeur = etat.valeurs[champ.identifiant];
+              return typeof valeur === "number" || (typeof valeur === "string" && valeur.trim());
+            });
+          if (remplis.length === 0) return null;
 
-        <h3>Publication</h3>
-        <ul className={styles.devisLignes}>
-          {publications.map((p, rang) => (
-            <li key={rang} className={styles.devisLigne}>
-              <span className={styles.devisLibelle}>{p.ressort}</span>
-              <span className={styles.devisPrecision}>{p.motif}</span>
-            </li>
-          ))}
-          {publications.length === 0 && (
-            <li className={styles.devisLigne}>
-              <span className={styles.devisLibelle}>
-                Aucune annonce légale n&apos;est requise pour ce changement.
-              </span>
-            </li>
+          return (
+            <Bloc key={definition.code} titre={definition.libelle}>
+              <dl className={styles.faits}>
+                {remplis.map((champ) => (
+                  <Fait
+                    key={champ.identifiant}
+                    libelle={champ.libelle}
+                    valeur={
+                      champ.type === "date"
+                        ? jourFrancais(String(etat.valeurs[champ.identifiant]))
+                        : String(etat.valeurs[champ.identifiant])
+                    }
+                  />
+                ))}
+              </dl>
+            </Bloc>
+          );
+        })}
+
+        <Bloc titre="Les statuts">
+          <p className={styles.faitTexte}>
+            {etat.statuts
+              ? etat.statuts.source === "inpi"
+                ? "Repris au registre national" +
+                  (etat.statuts.deposeLe
+                    ? ", dépôt du " + jourFrancais(etat.statuts.deposeLe)
+                    : "") +
+                  (etat.statutsAJour ? ", retouchés et joints au dossier." : ".")
+                : "Déposés par vos soins" + (etat.statutsAJour ? ", retouchés et joints." : ".")
+              : "Non renseignés : l'avocat vous les demandera."}
+          </p>
+        </Bloc>
+
+        <Bloc titre="Publication">
+          {publications.length === 0 ? (
+            <p className={styles.faitTexte}>
+              Aucune annonce légale n&apos;est requise pour ce changement.
+            </p>
+          ) : (
+            <dl className={styles.faits}>
+              {publications.map((p, rang) => (
+                <Fait key={rang} libelle={p.ressort} valeur={p.motif} />
+              ))}
+            </dl>
           )}
-        </ul>
+        </Bloc>
 
         {pieces.length > 0 && (
-          <>
-            <h3>Justificatifs à fournir</h3>
-            <ul className={styles.devisLignes}>
+          <Bloc titre="Justificatifs à fournir">
+            <ul className={styles.puces}>
               {pieces.map((piece) => (
-                <li key={piece.identifiant} className={styles.devisLigne}>
-                  <span className={styles.devisLibelle}>
-                    {piece.titre}
-                    <span className={styles.devisPrecision}>{piece.explication}</span>
-                  </span>
+                <li key={piece.identifiant}>
+                  {piece.titre}
+                  <span className={styles.faitPrecision}>{piece.explication}</span>
                 </li>
               ))}
             </ul>
-          </>
+          </Bloc>
         )}
-      </section>
-
-      <h3>Ce que comprend la prestation</h3>
-      <ul className={styles.prestations}>
-        {PRESTATIONS.map((p) => (
-          <li key={p}>{p}</li>
-        ))}
-      </ul>
-
-      <Devis chiffrage={chiffrage} />
-
-      {anomalies.length > 0 && (
-        <p role="alert">
-          Il manque{" "}
-          {anomalies.length === 1 ? "une information" : anomalies.length + " informations"} avant de
-          pouvoir régler : {anomalies.map((a) => a.message).join(", ")}.
-        </p>
-      )}
-
-      <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.principal}
-          onClick={payer}
-          disabled={enCours || anomalies.length > 0}
-        >
-          {enCours ? "Ouverture du paiement" : "Régler " + montantLisible(chiffrage.totalTTC)}
-        </button>
       </div>
 
-      <p className={styles.description}>{DELAI}</p>
-      {refus && <p role="alert">{refus}</p>}
-    </>
+      {/*
+        Le bloc de règlement reste en vue pendant qu'on relit le récapitulatif.
+        C'est la seule action de l'écran : la placer sous plusieurs écrans de texte
+        obligeait à descendre pour connaître le prix, puis à remonter pour vérifier.
+      */}
+      <aside className={styles.paiementColonne}>
+        <div className={styles.paiementCarte}>
+          <span className={styles.paiementLibelle}>À régler aujourd&apos;hui</span>
+          <span className={styles.paiementMontant}>{montantLisible(chiffrage.totalTTC)}</span>
+          <span className={styles.paiementDetail}>
+            {montantLisible(chiffrage.honorairesHT)} HT d&apos;honoraires,{" "}
+            {montantLisible(chiffrage.fraisTTC)} de frais avancés
+          </span>
+
+          {/*
+            Un dossier incomplet n'arrive normalement pas jusqu'ici : chaque étape
+            refuse d'avancer tant qu'il lui manque quelque chose. Ce bloc est le
+            filet - un dossier ouvert avant cette règle, ou repris par son adresse.
+          */}
+          {anomalies.length > 0 ? (
+            <>
+              <p className={styles.paiementManque}>
+                {anomalies.length === 1
+                  ? "Une information manque : "
+                  : anomalies.length + " informations manquent : "}
+                {anomalies.map((a) => a.message).join(", ")}.
+              </p>
+              <button
+                type="button"
+                className={styles.paiementBouton}
+                onClick={() => surCorrection(anomalies[0].champ)}
+              >
+                Corriger
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className={styles.paiementBouton}
+              onClick={payer}
+              disabled={enCours}
+            >
+              {enCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
+            </button>
+          )}
+
+          <p className={styles.paiementDelai}>{DELAI}</p>
+          {refus && (
+            <p className={styles.paiementManque} role="alert">
+              {refus}
+            </p>
+          )}
+        </div>
+
+        <ul className={styles.prestationsCompactes}>
+          {PRESTATIONS.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ul>
+
+        <details className={styles.detailPrix}>
+          <summary>Le détail du prix</summary>
+          <dl className={styles.faits}>
+            {chiffrage.honoraires.map((ligne, rang) => (
+              <Fait
+                key={"h" + rang}
+                libelle={ligne.libelle}
+                valeur={montantLisible(ligne.centimes) + " HT"}
+              />
+            ))}
+            {chiffrage.frais.map((ligne, rang) => (
+              <Fait
+                key={"f" + rang}
+                libelle={ligne.libelle}
+                valeur={montantLisible(ligne.centimes) + (ligne.horsTaxes ? " HT" : " TTC")}
+                precision={ligne.precision}
+              />
+            ))}
+          </dl>
+        </details>
+      </aside>
+
+    </div>
+  );
+}
+
+/** Un bloc du récapitulatif : un titre, et ce qu'il contient. */
+function Bloc({ titre, children }: { titre: string; children: ReactNode }) {
+  return (
+    <section className={styles.bloc}>
+      <h3 className={styles.blocTitre}>{titre}</h3>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * Un fait du récapitulatif.
+ *
+ * Une définition, non une carte : la version précédente réutilisait les lignes du
+ * devis, que globals.css habille en cartes bordées. Quinze faits faisaient quinze
+ * cartes pleine largeur, et le récapitulatif tenait sur trois écrans.
+ */
+function Fait({
+  libelle,
+  valeur,
+  precision,
+}: {
+  libelle: string;
+  valeur?: string | null;
+  precision?: string;
+}) {
+  if (!valeur?.trim()) return null;
+
+  return (
+    <div className={styles.fait}>
+      <dt>{libelle}</dt>
+      <dd>
+        {valeur}
+        {precision && <span className={styles.faitPrecision}>{precision}</span>}
+      </dd>
+    </div>
   );
 }
 

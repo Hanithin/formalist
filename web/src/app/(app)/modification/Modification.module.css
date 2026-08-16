@@ -904,6 +904,25 @@
 }
 
 /*
+ * Chaque carte occupe toute la hauteur de sa ligne.
+ *
+ * Une description qui tient sur deux lignes rendait sa carte plus haute que sa
+ * voisine, et la grille se lisait de travers. La ligne de la grille s'étire déjà à
+ * la plus haute ; encore faut-il que la carte remplisse la case qu'on lui donne.
+ */
+.changements > li {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.changements > li > .changement {
+  flex: 1;
+}
+
+/*
  * Une carte cochable.
  *
  * La case native est masquée mais reste focalisable : la carte entière est la cible
@@ -1375,4 +1394,254 @@
   align-self: center;
   font-size: 13.5px;
   color: #71717a;
+}
+
+/* ================= Récapitulatif et règlement ================= */
+
+/*
+ * Deux colonnes : ce qu'on a saisi, ce qu'on doit payer.
+ *
+ * Le prix et le bouton restaient sous le récapitulatif, à deux mille pixels du haut :
+ * il fallait descendre jusqu'au bas de la page pour savoir combien on allait payer,
+ * puis remonter pour vérifier ce qu'on payait.
+ */
+.reglement {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 32px;
+  /* Le titre de l'étape est juste au-dessus : sans cet écart, il touche le premier
+     sous-titre et les deux se lisent comme un seul bloc. */
+  margin-top: 22px;
+  align-items: start;
+}
+
+.recapColonne {
+  min-width: 0;
+}
+
+.bloc + .bloc {
+  margin-top: 24px;
+}
+
+.blocTitre {
+  margin: 0 0 10px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+/*
+ * Les faits se lisent en définitions, non en cartes.
+ *
+ * Ils empruntaient les lignes du devis, que globals.css habille en cartes bordées :
+ * quinze faits faisaient quinze cartes pleine largeur, et le récapitulatif tenait sur
+ * trois écrans pour dire quinze mots.
+ */
+.faits {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
+  gap: 0;
+  margin: 0;
+}
+
+.fait {
+  display: contents;
+}
+
+.fait dt {
+  padding: 7px 12px 7px 0;
+  border-bottom: 1px solid #f2f2f4;
+  font-size: 13.5px;
+  color: #71717a;
+}
+
+.fait dd {
+  margin: 0;
+  padding: 7px 0;
+  border-bottom: 1px solid #f2f2f4;
+  font-size: 13.5px;
+  color: #18181b;
+  overflow-wrap: anywhere;
+}
+
+.faitPrecision {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #a1a1aa;
+}
+
+.faitTexte {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #52525b;
+}
+
+/* Une liste courte : des puces, pas des cartes. */
+.puces {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0 0 0 18px;
+  list-style: disc;
+}
+
+.puces li {
+  display: list-item;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #18181b;
+}
+
+/* ---------- La colonne de règlement ---------- */
+
+.paiementColonne {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.paiementCarte {
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid #111;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.paiementLibelle {
+  font-size: 13px;
+  color: #71717a;
+}
+
+.paiementMontant {
+  margin-top: 4px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.1;
+  color: #111;
+}
+
+.paiementDetail {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #71717a;
+}
+
+.paiementBouton {
+  margin: 18px 0 0;
+  padding: 13px 18px;
+  border: 1px solid #111;
+  border-radius: 10px;
+  background: #111;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.paiementBouton:hover {
+  background: #333;
+  border-color: #333;
+}
+
+.paiementBouton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.paiementManque {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #fde9c8;
+  background: #fffbeb;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #78350f;
+}
+
+.paiementDelai {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #a1a1aa;
+}
+
+.prestationsCompactes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prestationsCompactes li {
+  position: relative;
+  padding: 0 0 0 20px;
+  border: none;
+  background: none;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #52525b;
+}
+
+/* La coche est dessinée en CSS : une icône par ligne alourdirait le rendu pour rien. */
+.prestationsCompactes li::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 4px;
+  width: 5px;
+  height: 9px;
+  border: solid #15803d;
+  border-width: 0 1.8px 1.8px 0;
+  transform: rotate(45deg);
+}
+
+.detailPrix {
+  padding: 14px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+}
+
+.detailPrix summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3f3f46;
+  cursor: pointer;
+}
+
+.detailPrix .faits {
+  margin-top: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 980px) {
+  /* Sur écran étroit, le règlement passe au-dessus : c'est l'action de l'écran. */
+  .reglement {
+    grid-template-columns: 1fr;
+  }
+
+  .paiementColonne {
+    position: static;
+    order: -1;
+  }
 }

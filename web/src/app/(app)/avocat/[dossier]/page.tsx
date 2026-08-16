@@ -11,6 +11,10 @@ import { Verification } from "./Verification";
 import { Avancement } from "./Avancement";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
 import { Vide } from "@/components/liste/Vide";
+import {
+  estUneModification,
+  recapitulatifDeModification,
+} from "@/domain/modification/recapitulatif";
 import styles from "../Avocat.module.css";
 
 export const metadata: Metadata = {
@@ -85,6 +89,18 @@ export default async function DossierAvocat({
     ? (demande as Onglet)
     : "recapitulatif";
 
+  /*
+   * Une modification ne se range pas comme une création.
+   *
+   * Elle porte la société, les changements décidés et leurs valeurs dans des
+   * sous-objets, là où une création écrit ses champs à la racine. Chercher les uns
+   * dans l'autre faisait annoncer « le client n'a encore rien renseigné » sur un
+   * dossier réglé et complet - au moment précis où l'avocat l'ouvre pour le réviser.
+   */
+  const sectionsModification = estUneModification(donnees)
+    ? recapitulatifDeModification(donnees)
+    : null;
+
   const renseignes = CHAMPS.filter((c) => {
     const valeur = donnees[c.cle];
     return valeur !== undefined && valeur !== null && String(valeur).trim() !== "";
@@ -155,33 +171,49 @@ export default async function DossierAvocat({
           <div className={styles.recapGrid}>
             <div className={styles.recapGridLeft}>
               <div className={styles.recapCard}>
-                <div className={styles.recapSection}>
-                  {/* Un titre de section reste un titre : la page d'origine le posait
-                      en div, invisible à la navigation par titres. */}
-                  <h2 className={styles.recapTitle}>Informations du dossier</h2>
-
-                  {renseignes.map((c) => (
-                    <div key={c.cle} className={styles.recapRow}>
-                      <span className={styles.recapLabel}>{c.libelle}</span>
-                      <span className={styles.recapValue}>{String(donnees[c.cle])}</span>
+                {sectionsModification ? (
+                  sectionsModification.map((section) => (
+                    <div key={section.titre} className={styles.recapSection}>
+                      <h2 className={styles.recapTitle}>{section.titre}</h2>
+                      {section.faits.map((fait, rang) => (
+                        <div key={rang} className={styles.recapRow}>
+                          <span className={styles.recapLabel}>{fait.libelle}</span>
+                          <span className={styles.recapValue}>{fait.valeur}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  <>
+                    <div className={styles.recapSection}>
+                      {/* Un titre de section reste un titre : la page d'origine le posait
+                          en div, invisible à la navigation par titres. */}
+                      <h2 className={styles.recapTitle}>Informations du dossier</h2>
 
-                  {renseignes.length === 0 && (
-                    <Vide ton="encart" texte="Le client n'a encore rien renseigné." />
-                  )}
-                </div>
+                      {renseignes.map((c) => (
+                        <div key={c.cle} className={styles.recapRow}>
+                          <span className={styles.recapLabel}>{c.libelle}</span>
+                          <span className={styles.recapValue}>{String(donnees[c.cle])}</span>
+                        </div>
+                      ))}
 
-                {manquants.length > 0 && (
-                  <div className={styles.recapSection}>
-                    <h2 className={styles.recapTitle}>Pas encore renseigné par le client</h2>
-                    {manquants.map((c) => (
-                      <div key={c.cle} className={styles.recapRow}>
-                        <span className={styles.recapLabel}>{c.libelle}</span>
-                        <span className={styles.recapValue}>-</span>
+                      {renseignes.length === 0 && (
+                        <Vide ton="encart" texte="Le client n'a encore rien renseigné." />
+                      )}
+                    </div>
+
+                    {manquants.length > 0 && (
+                      <div className={styles.recapSection}>
+                        <h2 className={styles.recapTitle}>Pas encore renseigné par le client</h2>
+                        {manquants.map((c) => (
+                          <div key={c.cle} className={styles.recapRow}>
+                            <span className={styles.recapLabel}>{c.libelle}</span>
+                            <span className={styles.recapValue}>-</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

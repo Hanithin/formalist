@@ -289,9 +289,16 @@ test.describe("le panneau de détail", () => {
     const panneau = page.getByRole("dialog");
     await panneau.getByRole("button", { name: "Accepter la révision" }).click();
 
-    // Une fois pris, il n'est plus proposé : le bouton disparaît.
+    /*
+     * Accepter mène au dossier.
+     *
+     * Le panneau se refermait sur la liste : le dossier était pris, et rien ne disait
+     * où aller pour le réviser - le lien « Ouvrir le dossier » disparaissait avec le
+     * panneau.
+     */
     await expect(panneau).toHaveCount(0);
-    await expect(page.getByText("Assigné à vous").first()).toBeVisible();
+    await page.waitForURL(new RegExp("/avocat/" + dossier.id));
+    await expect(page.getByRole("heading", { name: new RegExp(dossier.societe, "i") })).toBeVisible();
 
     const apres = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier.id } });
     expect(apres.assigned_avocat_id).not.toBeNull();
