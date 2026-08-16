@@ -339,20 +339,22 @@ function ChampTaille({
  * Posé au bord de celui qu'il règle, et non sous la page : on voit l'effet là où on
  * le produit. Chaque commande garde le curseur dans le texte - un réglage qui ferme
  * la saisie oblige à recliquer pour continuer d'écrire.
+ *
+ * La suppression n'y figure pas : elle vit au bord du cadre, à côté des réglages.
+ * Enfouie ici, défaire un cadre posé au mauvais endroit demandait trois gestes, dont
+ * deux sans rapport.
  */
 function MiseEnForme({
   retouche,
   styleDuCurseur,
   surStyle,
   surChangement,
-  surRetrait,
 }: {
   retouche: Retouche;
   /** Ce que porte le texte sélectionné, non le cadre. */
   styleDuCurseur: { gras: boolean; italique: boolean; souligne: boolean };
   surStyle: (commande: "bold" | "italic" | "underline") => void;
   surChangement: (changement: Partial<Retouche>) => void;
-  surRetrait: () => void;
 }) {
   /*
    * Les boutons gardent le curseur dans le texte, les champs le prennent.
@@ -452,32 +454,6 @@ function MiseEnForme({
         </button>
       ))}
 
-      <span className={styles.formeSeparateur} aria-hidden="true" />
-
-      {/*
-        « Retirer » ne disait pas quoi : le texte ? la mise en forme ? Le cadre est
-        nommé, et la corbeille se lit sans le mot.
-      */}
-      <button
-        type="button"
-        className={`${styles.formeBouton} ${styles.formeDanger}`}
-        onMouseDown={garderLeFocus}
-        onClick={surRetrait}
-        title="Supprimer ce cadre"
-        aria-label="Supprimer ce cadre"
-      >
-        <svg viewBox="0 0 24 24" className={styles.formeIcone} aria-hidden="true">
-          <path
-            d="M4 7h16M10 7V5h4v2M6 7l1 13h10l1-13M10 11v6M14 11v6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <span className={styles.formeMot}>Supprimer le cadre</span>
-      </button>
     </div>
   );
 }
@@ -1300,18 +1276,38 @@ export function Editeur({
                   surSortie={() => ouvrir(null)}
                 />
 
-                {/* L'icône appelle les réglages, au bord du cadre qu'ils règlent. */}
-                <button
-                  type="button"
-                  className={styles.appelForme}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setFormeOuverte((ouvert) => !ouvert)}
-                  aria-expanded={formeOuverte}
-                  aria-label="Mise en forme"
-                  title="Mise en forme"
-                >
-                  Aa
-                </button>
+                {/*
+                  Les deux commandes du cadre, au bord du cadre qu'elles servent.
+                  Supprimer n'était atteignable qu'en ouvrant la barre de mise en
+                  forme : trois gestes, dont deux sans rapport, pour défaire un cadre
+                  posé au mauvais endroit.
+                */}
+                <span className={styles.appels}>
+                  <button
+                    type="button"
+                    className={styles.appelForme}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setFormeOuverte((ouvert) => !ouvert)}
+                    aria-expanded={formeOuverte}
+                    aria-label="Mise en forme"
+                    title="Mise en forme"
+                  >
+                    Aa
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.appelRetrait}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => retirer(index)}
+                    aria-label="Supprimer ce cadre"
+                    title="Supprimer ce cadre"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 7 H20 M10 4 H14 M9 7 V19 a1 1 0 0 0 1 1 h4 a1 1 0 0 0 1 -1 V7 M11.5 10 V17 M14.5 10 V17" />
+                    </svg>
+                  </button>
+                </span>
 
                 {formeOuverte && (
                   <MiseEnForme
@@ -1319,7 +1315,6 @@ export function Editeur({
                     styleDuCurseur={styleDuCurseur}
                     surStyle={(commande) => appliquerAuTexte(commande, index)}
                     surChangement={(changement) => modifier(index, changement)}
-                    surRetrait={() => retirer(index)}
                   />
                 )}
 

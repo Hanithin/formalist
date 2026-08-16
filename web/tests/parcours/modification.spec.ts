@@ -880,6 +880,12 @@ test("la taille se règle aussi à la flèche", async ({ page, request }) => {
   await page.getByRole("button", { name: "Réduire le texte" }).click();
   expect(Number(await champ.inputValue())).toBe(depart);
 
-  // Le geste de suppression se nomme : « Retirer » ne disait pas quoi.
-  await expect(page.getByRole("button", { name: "Supprimer ce cadre" })).toBeVisible();
+  /*
+   * La suppression est au bord du cadre, non dans les réglages : enfouie ici, défaire
+   * un cadre posé au mauvais endroit demandait trois gestes, dont deux sans rapport.
+   */
+  const corbeille = page.getByRole("button", { name: "Supprimer ce cadre" });
+  await expect(corbeille).toHaveCount(1);
+  await expect(corbeille).toBeVisible();
+  await expect(page.locator("[data-mise-en-forme]").getByRole("button", { name: "Supprimer ce cadre" })).toHaveCount(0);
 });

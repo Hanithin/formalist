@@ -562,7 +562,7 @@ test("le suivi compte les changements, non les cadres", async ({ page, request }
   await expect(page.getByText("Page 3 sur 3")).toBeVisible();
 
   // Le cadre y est supprimé : l'emplacement redevient découvert, et le dit.
-  await page.getByRole("button", { name: "Mise en forme" }).click();
+  // La corbeille est au bord du cadre : plus besoin d'ouvrir les réglages pour l'atteindre.
   await page.getByRole("button", { name: "Supprimer ce cadre" }).click();
   await expect(page.getByText("1 sur 2 emplacements couverts")).toBeVisible();
   const decouvert = page.locator("[class*='decouvert']").first();

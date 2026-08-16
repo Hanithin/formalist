@@ -2454,11 +2454,18 @@
  * ensemble déjà chargé, et il recouvrait la poignée de largeur. Aligné à gauche sur
  * la poignée de déplacement, il forme une colonne avec elle au lieu de flotter.
  */
-.appelForme {
+/* Les commandes du cadre, groupées au-dessus de son coin droit. */
+.appels {
   position: absolute;
   bottom: calc(100% + 5px);
   right: 0;
   z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.appelForme {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -2480,6 +2487,47 @@
 .appelForme:hover {
   background: #15803d;
   border-color: #15803d;
+}
+
+/*
+ * La corbeille, à côté des réglages.
+ *
+ * Elle reste sobre au repos et ne rougit qu'au survol : un rouge permanent à deux
+ * pixels du texte qu'on écrit attire l'œil sur la commande la plus destructrice de
+ * l'écran, et se clique par erreur.
+ */
+.appelRetrait {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+.appelRetrait svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: #71717a;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.12s;
+}
+.appelRetrait:hover {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+.appelRetrait:hover svg {
+  stroke: #dc2626;
 }
 
 /* La barre elle-même, posée au-dessus du cadre. */
