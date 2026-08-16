@@ -261,3 +261,68 @@ describe("le numérotage des résolutions", () => {
     expect(texte).not.toContain("RÉSOLUTION UNIQUE");
   });
 });
+
+describe("un associé personne morale", () => {
+  it("est désigné comme un acte le désigne, non par un prénom", () => {
+    /*
+     * Une SCI détenue par une holding, une SAS dont un fonds est associé : le
+     * procès-verbal doit nommer la société par sa forme, son capital, son siège et son
+     * numéro, et dire qui la représente. Un acte qui écrirait « Monsieur HOLDING » se
+     * ferait refuser.
+     */
+    const texte = texteDu(
+      genererDocument(
+        gabaritProcesVerbal("SAS"),
+        donneesDuGabarit({
+          societe: SOCIETE,
+          assemblee: {
+            date: "2026-08-10",
+            associes: [
+              {
+                nature: "morale",
+                denomination: "ACME HOLDING",
+                forme: "Société par actions simplifiée",
+                capital: 50000,
+                siege: "3 rue de la Bourse, 75002 Paris",
+                siren: "552100554",
+                representant: "Monsieur Jean DUPONT",
+                qualiteRepresentant: "Président",
+                parts: 1000,
+              },
+            ],
+          },
+          codes: ["denomination"],
+          valeurs: { nouvelleDenomination: "ACME GROUPE" },
+        })
+      )
+    );
+
+    expect(texte).toContain("La société ACME HOLDING");
+    expect(texte).toContain("au capital de 50 000 euros");
+    expect(texte).toContain("dont le siège est 3 rue de la Bourse");
+    expect(texte).toContain("sous le numéro 552100554");
+    expect(texte).toContain("représentée par Monsieur Jean DUPONT en sa qualité de président");
+  });
+
+  it("une personne physique garde sa forme d'avant", () => {
+    // L'ancien format n'a pas de « nature » : il doit continuer de se lire.
+    const texte = produire(["denomination"], { nouvelleDenomination: "ACME GROUPE" });
+    expect(texte).toContain("Monsieur Jean DUPONT");
+  });
+
+  it("une société sans dénomination ne produit pas une phrase à trous", () => {
+    const texte = texteDu(
+      genererDocument(
+        gabaritProcesVerbal("SAS"),
+        donneesDuGabarit({
+          societe: SOCIETE,
+          assemblee: { date: "2026-08-10", associes: [{ nature: "morale", parts: 10 }] },
+          codes: ["denomination"],
+          valeurs: { nouvelleDenomination: "ACME GROUPE" },
+        })
+      )
+    );
+    expect(texte).not.toContain("La société ,");
+    expect(texte).not.toContain("dont le siège est ,");
+  });
+});

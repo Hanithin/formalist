@@ -55,10 +55,21 @@ const FORMES = ["SAS", "SASU", "SARL", "EURL", "SCI", "SA", "SNC"];
 const CHAMPS_DE_SOCIETE = ["denomination", "forme", "siren", "adresse", "codePostal", "ville"];
 
 interface Associe {
+  /** Personne physique par défaut : c'est le cas courant, et l'ancien format. */
+  nature?: "physique" | "morale" | null;
+  parts?: number | null;
+
   civilite?: string | null;
   prenom?: string | null;
   nom?: string | null;
-  parts?: number | null;
+
+  denomination?: string | null;
+  forme?: string | null;
+  siren?: string | null;
+  siege?: string | null;
+  capital?: number | null;
+  representant?: string | null;
+  qualiteRepresentant?: string | null;
 }
 
 export interface EtatDuDossier {
@@ -390,6 +401,111 @@ const FORMES_JURIDIQUES: Record<string, string> = {
   "6532": "SCI",
   "5202": "SNC",
 };
+
+/**
+ * La recherche au registre, partagée.
+ *
+ * La société du dossier et les associés personnes morales se cherchent au même
+ * endroit : l'annuaire public des entreprises, gratuit et sans clé. Recopier une
+ * dénomination, un SIREN et un siège à la main dans un acte est exactement là où
+ * l'erreur se glisse, et elle se paie au greffe.
+ */
+function RechercheAuRegistre({
+  id,
+  libelle = "Chercher la société au registre",
+  surSelection,
+}: {
+  id: string;
+  libelle?: string;
+  surSelection: (societe: {
+    denomination: string;
+    forme: string;
+    siren: string;
+    siege: string;
+  }) => void;
+}) {
+  const [terme, setTerme] = useState("");
+  const [resultats, setResultats] = useState<ResultatRecherche[]>([]);
+  const [ouvert, setOuvert] = useState(false);
+  const frappe = useRef(false);
+
+  useEffect(() => {
+    if (!frappe.current) return;
+    frappe.current = false;
+    if (terme.trim().length < 3) return;
+
+    const abandon = new AbortController();
+    const minuteur = setTimeout(async () => {
+      try {
+        const reponse = await fetch(
+          "https://recherche-entreprises.api.gouv.fr/search?q=" +
+            encodeURIComponent(terme.trim()) +
+            "&per_page=6&page=1",
+          { signal: abandon.signal }
+        );
+        if (!reponse.ok) return;
+        const donnees = (await reponse.json()) as { results?: ResultatRecherche[] };
+        setResultats(donnees.results ?? []);
+        setOuvert(true);
+      } catch {
+        // Annuaire injoignable : les champs restent saisissables à la main.
+      }
+    }, 280);
+
+    return () => {
+      clearTimeout(minuteur);
+      abandon.abort();
+    };
+  }, [terme]);
+
+  function retenir(resultat: ResultatRecherche) {
+    const nom = resultat.nom_complet ?? resultat.nom_raison_sociale ?? "";
+    const siege = resultat.siege ?? {};
+
+    setTerme(nom);
+    setOuvert(false);
+    setResultats([]);
+
+    surSelection({
+      denomination: nom,
+      forme: FORMES_JURIDIQUES[resultat.nature_juridique ?? ""] ?? "",
+      siren: resultat.siren ?? "",
+      siege: [siege.adresse, siege.code_postal, siege.libelle_commune].filter(Boolean).join(" "),
+    });
+  }
+
+  return (
+    <div className={styles.recherche}>
+      <label htmlFor={id}>{libelle}</label>
+      <input
+        id={id}
+        value={terme}
+        autoComplete="off"
+        placeholder="Nom ou SIREN"
+        onChange={(e) => {
+          frappe.current = true;
+          setTerme(e.target.value);
+        }}
+        onBlur={() => setTimeout(() => setOuvert(false), 150)}
+      />
+
+      {ouvert && resultats.length > 0 && (
+        <ul className={styles.resultats}>
+          {resultats.map((r) => (
+            <li key={r.siren}>
+              <button type="button" className={styles.resultat} onMouseDown={() => retenir(r)}>
+                <span className={styles.resultatNom}>{r.nom_complet ?? r.nom_raison_sociale}</span>
+                <span className={styles.resultatDetail}>
+                  {r.siren} - {r.siege?.libelle_commune ?? ""}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function EtapeSociete({
   etat,
@@ -928,50 +1044,177 @@ function EtapeAssemblee({
       {associes.map((associe, rang) => (
         <fieldset key={rang} className={styles.personne}>
           <legend>Associé {rang + 1}</legend>
-          <div className={styles.champs}>
-            <div className={styles.champ}>
-              <label htmlFor={"associe-civilite-" + rang}>Civilité</label>
-              <select
-                id={"associe-civilite-" + rang}
-                value={associe.civilite ?? ""}
-                onChange={(e) => modifierAssocie(rang, { civilite: e.target.value })}
-              >
-                <option value="">Choisir</option>
-                <option value="Monsieur">Monsieur</option>
-                <option value="Madame">Madame</option>
-              </select>
-            </div>
-            <div className={styles.champ}>
-              <label htmlFor={"associe-parts-" + rang}>Parts détenues</label>
-              <input
-                id={"associe-parts-" + rang}
-                type="number"
-                min={0}
-                value={associe.parts ?? ""}
-                onChange={(e) =>
-                  modifierAssocie(rang, {
-                    parts: e.target.value === "" ? null : Number(e.target.value),
-                  })
+
+          {/*
+            Un associé peut être une société : une SCI détenue par une holding, une
+            SAS dont un fonds est associé. L'acte doit alors la désigner par sa forme,
+            son capital, son siège et son numéro, non par un prénom.
+          */}
+          <div className={styles.natures}>
+            {(["physique", "morale"] as const).map((nature) => (
+              <label
+                key={nature}
+                className={
+                  (associe.nature ?? "physique") === nature
+                    ? `${styles.nature} ${styles.natureChoisie}`
+                    : styles.nature
                 }
-              />
-            </div>
-            <div className={styles.champ}>
-              <label htmlFor={"associe-prenom-" + rang}>Prénom</label>
-              <input
-                id={"associe-prenom-" + rang}
-                value={associe.prenom ?? ""}
-                onChange={(e) => modifierAssocie(rang, { prenom: e.target.value })}
-              />
-            </div>
-            <div className={styles.champ}>
-              <label htmlFor={"associe-nom-" + rang}>Nom</label>
-              <input
-                id={"associe-nom-" + rang}
-                value={associe.nom ?? ""}
-                onChange={(e) => modifierAssocie(rang, { nom: e.target.value })}
-              />
-            </div>
+              >
+                <input
+                  type="radio"
+                  name={"nature-" + rang}
+                  checked={(associe.nature ?? "physique") === nature}
+                  onChange={() => modifierAssocie(rang, { nature })}
+                />
+                {nature === "physique" ? "Une personne" : "Une société"}
+              </label>
+            ))}
           </div>
+
+          {(associe.nature ?? "physique") === "morale" ? (
+            <>
+              <RechercheAuRegistre
+                id={"associe-recherche-" + rang}
+                surSelection={(trouvee) => modifierAssocie(rang, trouvee)}
+              />
+
+              <div className={styles.champs}>
+                <div className={styles.champ}>
+                  <label htmlFor={"associe-denomination-" + rang}>Dénomination</label>
+                  <input
+                    id={"associe-denomination-" + rang}
+                    value={associe.denomination ?? ""}
+                    onChange={(e) => modifierAssocie(rang, { denomination: e.target.value })}
+                  />
+                </div>
+                <div className={styles.champ}>
+                  <label htmlFor={"associe-parts-" + rang}>Parts détenues</label>
+                  <input
+                    id={"associe-parts-" + rang}
+                    type="number"
+                    min={0}
+                    value={associe.parts ?? ""}
+                    onChange={(e) =>
+                      modifierAssocie(rang, {
+                        parts: e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div className={styles.champ}>
+                  <label htmlFor={"associe-forme-" + rang}>Forme juridique</label>
+                  <select
+                    id={"associe-forme-" + rang}
+                    value={associe.forme ?? ""}
+                    onChange={(e) => modifierAssocie(rang, { forme: e.target.value })}
+                  >
+                    <option value="">Choisir</option>
+                    {FORMES.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.champ}>
+                  <label htmlFor={"associe-siren-" + rang}>SIREN</label>
+                  <input
+                    id={"associe-siren-" + rang}
+                    inputMode="numeric"
+                    value={associe.siren ?? ""}
+                    onChange={(e) => modifierAssocie(rang, { siren: e.target.value })}
+                  />
+                </div>
+                <div className={styles.champ}>
+                  <label htmlFor={"associe-capital-" + rang}>Capital, en euros</label>
+                  <input
+                    id={"associe-capital-" + rang}
+                    type="number"
+                    min={0}
+                    value={associe.capital ?? ""}
+                    onChange={(e) =>
+                      modifierAssocie(rang, {
+                        capital: e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                  <label htmlFor={"associe-siege-" + rang}>Siège social</label>
+                  <input
+                    id={"associe-siege-" + rang}
+                    value={associe.siege ?? ""}
+                    onChange={(e) => modifierAssocie(rang, { siege: e.target.value })}
+                  />
+                </div>
+                <div className={styles.champ}>
+                  <label htmlFor={"associe-representant-" + rang}>Représentée par</label>
+                  <input
+                    id={"associe-representant-" + rang}
+                    placeholder="Monsieur Jean DUPONT"
+                    value={associe.representant ?? ""}
+                    onChange={(e) => modifierAssocie(rang, { representant: e.target.value })}
+                  />
+                </div>
+                <div className={styles.champ}>
+                  <label htmlFor={"associe-qualite-" + rang}>En qualité de</label>
+                  <input
+                    id={"associe-qualite-" + rang}
+                    placeholder="Président"
+                    value={associe.qualiteRepresentant ?? ""}
+                    onChange={(e) =>
+                      modifierAssocie(rang, { qualiteRepresentant: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className={styles.champs}>
+              <div className={styles.champ}>
+                <label htmlFor={"associe-civilite-" + rang}>Civilité</label>
+                <select
+                  id={"associe-civilite-" + rang}
+                  value={associe.civilite ?? ""}
+                  onChange={(e) => modifierAssocie(rang, { civilite: e.target.value })}
+                >
+                  <option value="">Choisir</option>
+                  <option value="Monsieur">Monsieur</option>
+                  <option value="Madame">Madame</option>
+                </select>
+              </div>
+              <div className={styles.champ}>
+                <label htmlFor={"associe-parts-" + rang}>Parts détenues</label>
+                <input
+                  id={"associe-parts-" + rang}
+                  type="number"
+                  min={0}
+                  value={associe.parts ?? ""}
+                  onChange={(e) =>
+                    modifierAssocie(rang, {
+                      parts: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className={styles.champ}>
+                <label htmlFor={"associe-prenom-" + rang}>Prénom</label>
+                <input
+                  id={"associe-prenom-" + rang}
+                  value={associe.prenom ?? ""}
+                  onChange={(e) => modifierAssocie(rang, { prenom: e.target.value })}
+                />
+              </div>
+              <div className={styles.champ}>
+                <label htmlFor={"associe-nom-" + rang}>Nom</label>
+                <input
+                  id={"associe-nom-" + rang}
+                  value={associe.nom ?? ""}
+                  onChange={(e) => modifierAssocie(rang, { nom: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
         </fieldset>
       ))}
 

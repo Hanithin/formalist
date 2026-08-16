@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { verifierDepot, signatureValide, extensionDe, nomDeStockage } from "@/lib/fichiers";
+import { verifierDepot, signatureValide, extensionDe, nomDeStockage, DepotRefuse } from "@/lib/fichiers";
 
 const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31]);
 const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
@@ -60,5 +60,22 @@ describe("nom de stockage", () => {
   it("l'extension est lue sans tenir compte de la casse", () => {
     expect(extensionDe("Document.PDF")).toBe(".pdf");
     expect(extensionDe("sans-extension")).toBe("");
+  });
+});
+
+describe("la forme des extensions attendues", () => {
+  it("« pdf » vaut « .pdf »", () => {
+    /*
+     * La convention est la forme pointée, mais les deux se lisent pareil dans une
+     * liste de chaînes : écrire « pdf » refusait tout dépôt, avec un message qui
+     * annonçait pourtant « Formats attendus : pdf ». C'est arrivé sur les statuts.
+     */
+    expect(verifierDepot("statuts.pdf", pdf, ["pdf"])).toBe(".pdf");
+    expect(verifierDepot("statuts.pdf", pdf, [".pdf"])).toBe(".pdf");
+  });
+
+  it("la souplesse sur le point n'ouvre rien d'autre", () => {
+    const texte = new Uint8Array([0x62, 0x6f, 0x6e]);
+    expect(() => verifierDepot("note.txt", texte, ["pdf"])).toThrow(DepotRefuse);
   });
 });

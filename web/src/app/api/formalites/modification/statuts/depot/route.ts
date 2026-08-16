@@ -35,7 +35,7 @@ export const POST = route(async (requete: Request) => {
 
   const contenu = Buffer.from(await fichier.arrayBuffer());
   try {
-    verifierDepot(fichier.name, contenu, ["pdf"]);
+    verifierDepot(fichier.name, contenu, [".pdf"]);
   } catch (e) {
     if (e instanceof DepotRefuse) {
       return NextResponse.json({ error: e.message }, { status: 400 });

@@ -49,17 +49,28 @@ export class DepotRefuse extends Error {
   }
 }
 
+/**
+ * Les extensions attendues, ramenées à la forme pointée.
+ *
+ * La convention est « .pdf » ; écrire « pdf » refusait tous les dépôts, avec un
+ * message qui listait pourtant « pdf ». C'est arrivé sur le dépôt des statuts, et
+ * rien ne le signalait avant l'essai : la liste étant une simple suite de chaînes,
+ * les deux formes se lisent pareil. On accepte donc les deux.
+ */
+function pointees(extensions: string[]): string[] {
+  return extensions.map((e) => (e.startsWith(".") ? e.toLowerCase() : "." + e.toLowerCase()));
+}
+
 export function verifierDepot(
   nom: string,
   contenu: Uint8Array,
   extensionsAutorisees: string[] = EXTENSIONS_ACCEPTEES
 ): string {
   const extension = extensionDe(nom);
+  const attendues = pointees(extensionsAutorisees);
 
-  if (!extensionsAutorisees.includes(extension)) {
-    throw new DepotRefuse(
-      "Format non accepté. Formats attendus : " + extensionsAutorisees.join(", ")
-    );
+  if (!attendues.includes(extension)) {
+    throw new DepotRefuse("Format non accepté. Formats attendus : " + attendues.join(", "));
   }
   if (contenu.length === 0) {
     throw new DepotRefuse("Le fichier est vide");

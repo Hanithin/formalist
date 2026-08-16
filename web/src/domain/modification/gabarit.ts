@@ -39,11 +39,32 @@ export interface SocieteModifiee {
   villeRcs?: string | null;
 }
 
+/**
+ * Un associé présent à l'assemblée.
+ *
+ * Il peut être une personne morale : une SCI détenue par une holding, une SAS dont
+ * un fonds est associé. Le procès-verbal ne peut alors pas se contenter d'un nom - il
+ * doit désigner la société par sa forme, son capital, son siège et son numéro
+ * d'immatriculation, et nommer qui la représente à l'assemblée. Un acte qui écrirait
+ * « Monsieur HOLDING » se ferait refuser.
+ */
 export interface AssociePresent {
+  /** Personne physique par défaut : c'est le cas courant, et l'ancien format. */
+  nature?: "physique" | "morale" | null;
+  parts?: number | null;
+
   civilite?: string | null;
   prenom?: string | null;
   nom?: string | null;
-  parts?: number | null;
+
+  denomination?: string | null;
+  forme?: string | null;
+  siren?: string | null;
+  siege?: string | null;
+  capital?: number | null;
+  /** Qui signe pour elle, et à quel titre. */
+  representant?: string | null;
+  qualiteRepresentant?: string | null;
 }
 
 export interface Assemblee {
@@ -108,8 +129,49 @@ export function adresseSurUneLigne(
 
 /** « Monsieur Jean DUPONT » : la civilité fait partie du nom dans un acte. */
 function nomComplet(associe: AssociePresent): string {
+  if (associe.nature === "morale") return societeDesignee(associe);
+
   const morceaux = [associe.civilite, associe.prenom, associe.nom].filter((m) => m?.trim());
   return morceaux.length ? morceaux.join(" ") : TIRET;
+}
+
+/**
+ * Une société associée, désignée comme un acte la désigne.
+ *
+ * « La société ACME HOLDING, société par actions simplifiée au capital de 50 000
+ * euros, dont le siège est 3 rue X, immatriculée au registre du commerce et des
+ * sociétés sous le numéro 123456789, représentée par Monsieur Y en sa qualité de
+ * président ». Les morceaux absents sont simplement omis : une phrase courte vaut
+ * mieux qu'une phrase à trous.
+ */
+export function societeDesignee(associe: AssociePresent): string {
+  const denomination = ou(associe.denomination, "");
+  if (!denomination) return TIRET;
+
+  const morceaux = ["La société " + denomination];
+
+  const forme = ou(associe.forme, "");
+  const capital = typeof associe.capital === "number" ? montant(associe.capital) : "";
+  if (forme && capital) morceaux.push(forme + " au capital de " + capital + " euros");
+  else if (forme) morceaux.push(forme);
+
+  const siege = ou(associe.siege, "");
+  if (siege) morceaux.push("dont le siège est " + siege);
+
+  const siren = ou(associe.siren, "").replace(/\s/g, "");
+  if (siren) {
+    morceaux.push("immatriculée au registre du commerce et des sociétés sous le numéro " + siren);
+  }
+
+  const representant = ou(associe.representant, "");
+  if (representant) {
+    const qualite = ou(associe.qualiteRepresentant, "");
+    morceaux.push(
+      "représentée par " + representant + (qualite ? " en sa qualité de " + qualite.toLowerCase() : "")
+    );
+  }
+
+  return morceaux.join(", ");
 }
 
 /**
@@ -131,6 +193,9 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     civilite: ou(associe.civilite),
     prenom: ou(associe.prenom),
     nom: ou(associe.nom),
+    // Une société associée signe sous sa dénomination, non sous celle de son
+    // représentant : c'est elle qui est associée.
+    denomination: ou(associe.denomination),
     nomComplet: nomComplet(associe),
     parts: associe.parts ?? 0,
   }));

@@ -134,7 +134,7 @@ export interface PieceAFournir {
   formats: string[];
 }
 
-const PDF_OU_IMAGE = ["pdf", "jpg", "jpeg", "png"];
+const PDF_OU_IMAGE = [".pdf", ".jpg", ".jpeg", ".png"];
 
 /**
  * Les justificatifs, selon ce qui est décidé.
@@ -174,7 +174,7 @@ export function piecesAFournir(codes: string[], valeurs: Valeurs = {}): PieceAFo
         titre: "Attestation de dépôt des fonds",
         explication: "Délivrée par la banque après le versement de l'augmentation.",
         obligatoire: true,
-        formats: ["pdf"],
+        formats: [".pdf"],
       });
     }
     if (valeurs.modeAugmentation === "Apport en nature") {
@@ -183,7 +183,7 @@ export function piecesAFournir(codes: string[], valeurs: Valeurs = {}): PieceAFo
         titre: "Rapport du commissaire aux apports",
         explication: "Il évalue le bien apporté. Sa désignation précède l'assemblée.",
         obligatoire: true,
-        formats: ["pdf"],
+        formats: [".pdf"],
       });
     }
   }

@@ -29,11 +29,26 @@ const SOCIETE = z.object({
   villeRcs: z.string().trim().max(120).optional(),
 });
 
+/*
+ * Un associé peut être une société : une SCI détenue par une holding, une SAS dont un
+ * fonds est associé. L'acte la désigne alors par sa forme, son capital, son siège et
+ * son numéro, non par un prénom.
+ */
 const ASSOCIE = z.object({
+  nature: z.enum(["physique", "morale"]).nullable().optional(),
+  parts: z.number().int().nonnegative().max(100_000_000).nullable().optional(),
+
   civilite: z.string().trim().max(20).optional(),
   prenom: z.string().trim().max(120).optional(),
   nom: z.string().trim().max(120).optional(),
-  parts: z.number().int().nonnegative().max(100_000_000).nullable().optional(),
+
+  denomination: z.string().trim().max(200).optional(),
+  forme: z.string().trim().max(20).optional(),
+  siren: z.string().trim().max(20).optional(),
+  siege: z.string().trim().max(300).optional(),
+  capital: z.number().nonnegative().max(1_000_000_000).nullable().optional(),
+  representant: z.string().trim().max(200).optional(),
+  qualiteRepresentant: z.string().trim().max(80).optional(),
 });
 
 const ENREGISTREMENT = z.object({

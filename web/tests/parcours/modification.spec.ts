@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { prisma } from "../../src/infrastructure/db/client";
 
 /**
  * Le parcours de modification.
@@ -425,4 +426,89 @@ test("le fil ramène aux étapes déjà passées, et ne saute pas en avant", asy
 
   // Les étapes jamais atteintes ne sont pas des boutons.
   await expect(page.getByRole("button", { name: /Règlement/ })).toHaveCount(0);
+});
+
+test("les statuts déposés par le client arrivent bien au dossier", async ({ request }) => {
+  /*
+   * Ils n'y arrivaient pas : le dépôt exigeait « pdf » là où la convention du contrôle
+   * de fichiers est « .pdf ». Tout PDF valide était refusé, avec un message qui
+   * annonçait pourtant « Formats attendus : pdf ». Le client déposait, rien
+   * n'apparaissait, et l'avocat lisait « les statuts ne sont pas au dossier ».
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: { dossier, societe: SOCIETE, codes: ["denomination"] },
+  });
+
+  const document = await PDFDocument.create();
+  const police = await document.embedFont(StandardFonts.Helvetica);
+  document.addPage([595, 842]).drawText("STATUTS", { x: 60, y: 700, size: 14, font: police });
+
+  const depot = await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await document.save()),
+      },
+    },
+  });
+  expect(depot.status()).toBe(201);
+
+  // Et ils sont lisibles par la suite du parcours, côté client comme côté avocat.
+  const retouches = await request.get("/api/formalites/modification/retouches?dossier=" + dossier);
+  expect(retouches.status()).toBe(200);
+});
+
+test("un fichier qui n'est pas un PDF reste refusé", async ({ request }) => {
+  // La souplesse sur le point ne doit pas ouvrir la porte à autre chose.
+  const dossier = await ouvrirUnDossier(request);
+  const depot = await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: { name: "note.txt", mimeType: "text/plain", buffer: Buffer.from("bonjour") },
+    },
+  });
+  expect(depot.status()).toBe(400);
+});
+
+test("un associé peut être une société, et l'acte la désigne comme telle", async ({ page, request }) => {
+  /*
+   * Le cas n'était pas prévu : l'étape ne proposait que civilité, prénom et nom. Une
+   * SCI détenue par une holding ne pouvait pas être saisie, et l'acte aurait écrit
+   * « Monsieur HOLDING ».
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["denomination"],
+      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
+      assemblee: { date: "2026-09-01", associes: [{}] },
+    },
+  });
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=4");
+
+  await page.getByRole("radio", { name: "Une société" }).check();
+  await page.getByLabel("Dénomination", { exact: true }).fill("ACME HOLDING");
+  await page.getByLabel("Représentée par").fill("Monsieur Jean DUPONT");
+  await page.getByLabel("En qualité de").fill("Président");
+  await page.getByLabel("Parts détenues").fill("1000");
+
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await page.waitForURL(/etape=|dossier=/);
+
+  const relu = await request.get("/api/formalites/modification/retouches?dossier=" + dossier);
+  expect([200, 409]).toContain(relu.status());
+
+  const enregistre = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } });
+  const associe = JSON.parse(enregistre.data_json ?? "{}").assemblee.associes[0];
+  expect(associe.nature).toBe("morale");
+  expect(associe.denomination).toBe("ACME HOLDING");
+  expect(associe.representant).toBe("Monsieur Jean DUPONT");
 });

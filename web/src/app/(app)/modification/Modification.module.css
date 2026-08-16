@@ -1695,3 +1695,53 @@
   line-height: 1.6;
   color: #3f3f46;
 }
+
+/*
+ * Un associé est-il une personne ou une société ?
+ *
+ * L'acte ne les désigne pas de la même façon : une personne par sa civilité et son
+ * nom, une société par sa forme, son capital, son siège et son numéro. Poser la
+ * question avant les champs évite d'en afficher huit dont six sont sans objet.
+ */
+.natures {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 16px;
+  flex-wrap: wrap;
+}
+
+.natures .nature {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #52525b;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.natures .nature:hover {
+  border-color: #c9c9cc;
+}
+
+.nature input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+
+.nature:focus-within {
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+
+.natures .natureChoisie {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
