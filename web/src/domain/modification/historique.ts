@@ -1,4 +1,5 @@
 import type { Retouche } from "./edition";
+import { definitionModification } from "./types";
 
 /**
  * L'historique des retouches d'un document.
@@ -17,6 +18,14 @@ import type { Retouche } from "./edition";
 export interface EtatRetouche {
   retouches: Retouche[];
   pagesRetirees: number[];
+  /**
+   * Les changements que l'avocat a certifiés faits.
+   *
+   * Ils font partie de l'état, non d'un registre à côté : décocher par mégarde se
+   * rattrape comme le reste, et revenir à une étape rend le dossier tel qu'il était,
+   * suivi compris.
+   */
+  verifiees?: string[];
 }
 
 export interface EtapeDHistorique extends EtatRetouche {
@@ -110,7 +119,18 @@ function fragmentsCompares(retouche: Retouche) {
 export function memeEtat(avant: EtatRetouche, apres: EtatRetouche): boolean {
   if (avant.retouches.length !== apres.retouches.length) return false;
   if (avant.pagesRetirees.join(",") !== apres.pagesRetirees.join(",")) return false;
+  if (certifiees(avant).join(",") !== certifiees(apres).join(",")) return false;
   return avant.retouches.every((r, i) => memeRetouche(r, apres.retouches[i]));
+}
+
+/** Les confirmations d'un état, triées : leur ordre d'arrivée ne les distingue pas. */
+function certifiees(etat: EtatRetouche): string[] {
+  return [...(etat.verifiees ?? [])].sort();
+}
+
+/** Le nom d'un changement, tel que l'avocat l'a demandé. */
+function nommer(cle: string): string {
+  return definitionModification(cle)?.libelleCourt ?? cle;
 }
 
 function pluriel(nombre: number, singulier: string, plurielMot: string): string {
@@ -125,6 +145,16 @@ function pluriel(nombre: number, singulier: string, plurielMot: string): string 
  * l'étape sans avoir à l'essayer.
  */
 export function decrireLeChangement(avant: EtatRetouche, apres: EtatRetouche): string {
+  /*
+   * La confirmation passe avant le reste : cocher « la durée est faite » est le geste
+   * qu'on cherche en priorité dans l'historique - c'est celui qui engage.
+   */
+  const confirmes = certifiees(apres).filter((c) => !certifiees(avant).includes(c));
+  const retires = certifiees(avant).filter((c) => !certifiees(apres).includes(c));
+
+  if (confirmes.length > 0) return nommer(confirmes[0]) + " : confirmé";
+  if (retires.length > 0) return nommer(retires[0]) + " : confirmation retirée";
+
   const ecartees = apres.pagesRetirees.filter((p) => !avant.pagesRetirees.includes(p));
   const remises = avant.pagesRetirees.filter((p) => !apres.pagesRetirees.includes(p));
 

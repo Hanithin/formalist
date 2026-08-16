@@ -334,11 +334,11 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   await page.reload();
 
   /*
-   * On attend la liste du panneau, non le cadre : celui-ci se pose sur l'image de la
+   * On attend le suivi du panneau, non le cadre : celui-ci se pose sur l'image de la
    * page, qui met un instant à être rendue, et un cadre posé sur une image de hauteur
    * nulle n'est pas encore visible.
    */
-  await expect(page.locator("[class*='editeurZone']").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("[class*='suiviCarte']").first()).toBeVisible({ timeout: 30_000 });
 
   const textes = await page.locator("div[class*='repere']").allTextContents();
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
@@ -471,4 +471,118 @@ test("la barre du dossier est alignée, et le retour n'est pas souligné", async
     .locator("[class*='detailBadges'] > span")
     .evaluateAll((noeuds) => noeuds.map((n) => Math.round(n.getBoundingClientRect().height)));
   expect(new Set(hauteurs).size).toBe(1);
+});
+
+/** Des statuts qui nomment la société sur deux pages, comme tout acte réel. */
+async function statutsAvecDeuxOccurrences() {
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+
+  for (const lignes of [
+    ["AVOCAT ESSAI MODIF", "Societe par actions simplifiee au capital de 10 000 euros"],
+    ["ARTICLE 2 - DUREE", "La duree de la Societe est de 99 annees."],
+    ["Pour AVOCAT ESSAI MODIF", "Le President"],
+  ]) {
+    const page = acte.addPage([595, 842]);
+    lignes.forEach((ligne, rang) =>
+      page.drawText(ligne, { x: 60, y: 700 - rang * 30, size: 12, font: police })
+    );
+  }
+  return Buffer.from(await acte.save());
+}
+
+async function dossierANommer() {
+  const client = await prisma.users.findFirstOrThrow({
+    where: { email: { contains: "parcours" }, NOT: { email: { contains: "avocat" } } },
+  });
+  const avocat = await prisma.users.findFirstOrThrow({ where: { email: { contains: "avocat" } } });
+
+  const dossier = await prisma.formalites.create({
+    data: {
+      user_id: client.id,
+      assigned_avocat_id: avocat.id,
+      type: "modification",
+      forme: "SAS",
+      societe: "AVOCAT ESSAI MODIF",
+      status: "en_attente_validation",
+      phase: 5,
+      business_sub_phase: "5a",
+      data_json: JSON.stringify({
+        codes: ["denomination"],
+        societe: { denomination: "AVOCAT ESSAI MODIF", forme: "SAS", siren: "899979934" },
+        valeurs: { nouvelleDenomination: "NOUVEAU NOM", dateEffetDenomination: "2026-09-01" },
+        assemblee: { date: "2026-09-01" },
+        paye: true,
+      }),
+    },
+  });
+  semes.push(dossier.id);
+  return dossier.id;
+}
+
+test("le suivi compte les changements, non les cadres", async ({ page, request }) => {
+  /*
+   * « 2 sur 2 remplacements posés » s'affichait à côté d'une durée qui n'était pas
+   * faite : le décompte des cadres ne dit rien de l'avancement. Et l'on ne repérait
+   * que la première occurrence d'un nom qui figure partout dans l'acte - le document
+   * serait parti au greffe avec l'ancien nom à toutes les autres pages.
+   */
+  const dossier = await dossierANommer();
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: await statutsAvecDeuxOccurrences(),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1600, height: 1100 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  // Les deux occurrences sont vues, non la première seule.
+  await expect(page.getByText("2 sur 2 emplacements couverts")).toBeVisible();
+  await expect(page.getByText("0 sur 1")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Emplacement 1 sur 2/ })).toBeVisible();
+
+  // On parcourt les emplacements : le second est sur une autre page.
+  await page.getByRole("button", { name: "Emplacement suivant" }).click();
+  await expect(page.getByRole("button", { name: /Emplacement 2 sur 2 - page 3/ })).toBeVisible();
+  await expect(page.getByText("Page 3 sur 3")).toBeVisible();
+
+  // Le cadre y est supprimé : l'emplacement redevient découvert, et le dit.
+  await page.getByRole("button", { name: "Mise en forme" }).click();
+  await page.getByRole("button", { name: "Supprimer ce cadre" }).click();
+  await expect(page.getByText("1 sur 2 emplacements couverts")).toBeVisible();
+  const decouvert = page.locator("[class*='decouvert']").first();
+  await expect(decouvert).toBeVisible();
+
+  // Un clic dessus le recouvre : l'ancienne valeur ne peut pas rester par oubli.
+  await decouvert.click();
+  await expect(page.getByText("2 sur 2 emplacements couverts")).toBeVisible();
+
+  // La coche est celle de l'avocat, et elle est enregistrée au dossier.
+  await page.getByRole("checkbox").first().check();
+  await expect(page.getByText("1 sur 1")).toBeVisible();
+  await page.waitForTimeout(1600);
+
+  const enregistre = JSON.parse(
+    (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } })).data_json ?? "{}"
+  );
+  expect(enregistre.verifiees).toEqual(["denomination"]);
+
+  // Et la confirmation figure à l'historique, avec son auteur.
+  await page.getByRole("button", { name: "Historique" }).click();
+  await expect(page.getByText("Dénomination : confirmé")).toBeVisible();
 });

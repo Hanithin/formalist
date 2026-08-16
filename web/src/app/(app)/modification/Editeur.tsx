@@ -17,6 +17,12 @@ import {
   peutRevenir,
   type EtapeDHistorique,
 } from "@/domain/modification/historique";
+import {
+  ETATS,
+  cadreCouvrant,
+  type ChangementSuivi,
+  type Emplacement,
+} from "@/domain/modification/suivi";
 import styles from "./Modification.module.css";
 
 /**
@@ -58,6 +64,19 @@ interface Props {
   /** Les pages écartées du document produit ; l'original les garde. */
   pagesRetirees?: number[];
   surRetraitDePage?: (pages: number[]) => void;
+  /**
+   * Où en est chaque changement demandé.
+   *
+   * Le panneau listait les cadres. Un cadre n'est pas un changement : une dénomination
+   * en demande autant qu'elle a d'occurrences dans l'acte, et compter les cadres
+   * annonçait « 2 sur 2 posés » pendant que la durée n'était pas faite.
+   */
+  changements?: ChangementSuivi[];
+  /** Ce que le cabinet certifie fait. La machine constate, l'avocat certifie. */
+  verifiees?: string[];
+  surVerifier?: (cle: string, fait: boolean) => void;
+  /** Poser un cadre sur un emplacement repéré mais découvert. */
+  surPoserEmplacement?: (cle: string, emplacement: Emplacement) => void;
   /** L'historique du dossier, et où l'on s'y trouve. */
   historique?: EtapeDHistorique[];
   positionHistorique?: number;
@@ -503,6 +522,10 @@ export function Editeur({
   positionHistorique = -1,
   surInscription,
   surReprise,
+  changements = [],
+  verifiees = [],
+  surVerifier,
+  surPoserEmplacement,
 }: Props) {
   const [historiqueOuvert, setHistoriqueOuvert] = useState(false);
   /*
@@ -531,7 +554,7 @@ export function Editeur({
          * état où plus rien n'est écarté : il inscrivait « pages remises » dans
          * l'historique, et le document produit les aurait reprises.
          */
-        body: JSON.stringify({ dossier, retouches, pagesRetirees }),
+        body: JSON.stringify({ dossier, retouches, pagesRetirees, verifiees }),
       })
         .then((reponse) => (reponse.ok ? reponse.json() : null))
         .then((corps) => {
@@ -553,11 +576,13 @@ export function Editeur({
     }, 1000);
 
     return () => clearTimeout(minuteur);
-  }, [dossier, retouches, pagesRetirees, surInscription]);
+  }, [dossier, retouches, pagesRetirees, verifiees, surInscription]);
 
   const [page, setPage] = useState(retouches[0]?.page ?? pages[0]?.numero ?? 1);
   const [choisie, setChoisie] = useState<number | null>(null);
   const [toutesLesPages, setToutesLesPages] = useState(false);
+  /** Où l'on en est dans le parcours des emplacements, changement par changement. */
+  const [curseurs, setCurseurs] = useState<Record<string, number>>({});
   const cadre = useRef<HTMLDivElement>(null);
   const saisie = useRef<HTMLDivElement>(null);
   /*
@@ -839,11 +864,77 @@ export function Editeur({
     ouvrir(null);
   }
 
+  /**
+   * Se porte sur un emplacement d'un changement, et ouvre le cadre qui le couvre.
+   *
+   * Le parcours boucle : arrivé au dernier, on revient au premier. C'est ce qui permet
+   * de faire le tour d'une dénomination sans compter, et sans en oublier une.
+   */
+  function allerAuRang(changement: ChangementSuivi, rang: number) {
+    const total = changement.emplacements.length;
+    if (total === 0) return;
+
+    const retenu = ((rang % total) + total) % total;
+    const vise = changement.emplacements[retenu];
+    setCurseurs((precedents) => ({ ...precedents, [changement.cle]: retenu }));
+    setPage(vise.page);
+
+    const couvrant = cadreCouvrant(retouches, vise);
+    ouvrir(couvrant >= 0 ? couvrant : null);
+  }
+
+  /**
+   * Pose un cadre sur un emplacement repéré resté découvert.
+   *
+   * Il en reste quand l'avocat a supprimé le cadre, ou l'a déplacé ailleurs : sans ce
+   * geste, l'emplacement se voyait sur la page sans qu'on puisse rien y faire.
+   */
+  function couvrir(emplacement: Emplacement, propose: string) {
+    if (surPoserEmplacement) {
+      surPoserEmplacement(emplacement.cle, emplacement);
+      return;
+    }
+
+    surChangement([
+      ...retouches,
+      {
+        cle: emplacement.cle,
+        page: emplacement.page,
+        x: emplacement.x,
+        y: emplacement.y,
+        largeur: emplacement.largeur,
+        hauteur: emplacement.hauteur,
+        texte: propose,
+        taille: emplacement.taille,
+        police: "serif",
+      },
+    ]);
+    setPage(emplacement.page);
+  }
+
   if (!dimensions) return null;
 
   const surCettePage = retouches
     .map((retouche, index) => ({ retouche, index }))
     .filter(({ retouche }) => retouche.page === page);
+
+  /** Les cadres qu'aucun changement ne réclame : posés à la main. */
+  const libres = retouches
+    .map((retouche, index) => ({ retouche, index }))
+    .filter(({ retouche }) => !retouche.cle);
+
+  /*
+   * Les emplacements repérés que plus aucun cadre ne couvre, sur cette page.
+   *
+   * Ils se signalent d'un trait orange : un passage repéré puis découvert - le cadre
+   * supprimé, ou traîné ailleurs - ne se voyait plus du tout, et l'ancienne valeur
+   * serait restée dans le document produit sans que rien ne le dise.
+   */
+  const decouverts = changements.flatMap((c) =>
+    c.emplacements
+      .filter((e) => !e.couvert && e.page === page)
+      .map((e) => ({ emplacement: e, propose: c.nouveau, titre: c.titre }))
+  );
 
   /*
    * Les pages qui portent une retouche, avec l'article qu'elles visent.
@@ -859,7 +950,8 @@ export function Editeur({
       articles: [
         ...new Set(
           p.dessus
-            .map((r) => zones.find((z) => z.propose === r.texte)?.article)
+            // Par la clé, non par le texte : celui-ci change dès qu'on écrit dedans.
+            .map((r) => zones.find((z) => z.cle === r.cle)?.article)
             .filter((a): a is string => !!a)
         ),
       ],
@@ -1043,6 +1135,24 @@ export function Editeur({
             alt={"Page " + page + " des statuts"}
             draggable={false}
           />
+
+          {decouverts.map(({ emplacement, propose, titre }, rang) => (
+            <button
+              key={"decouvert-" + rang}
+              type="button"
+              className={styles.decouvert}
+              style={{
+                left: (emplacement.x / dimensions.largeur) * 100 + "%",
+                top: (emplacement.y / dimensions.hauteur) * 100 + "%",
+                width: (emplacement.largeur / dimensions.largeur) * 100 + "%",
+                height: (emplacement.hauteur / dimensions.hauteur) * 100 + "%",
+              }}
+              title={titre + " : passage repéré, aucun cadre ne le couvre"}
+              onClick={() => couvrir(emplacement, propose)}
+            >
+              <span className={styles.decouvertMot}>à couvrir</span>
+            </button>
+          ))}
 
           {surCettePage.map(({ retouche, index }) => {
             const ouvert = index === choisie;
@@ -1291,83 +1401,183 @@ export function Editeur({
         )}
 
         {/*
-          Une seule liste, non deux.
-          Les cadres posés et les passages introuvables se lisaient dans deux endroits
-          différents, l'un au-dessus de la page et l'autre à côté : on ne savait pas
-          lequel faisait foi.
+          Le suivi se lit par changement, non par cadre.
+          « 2 sur 2 remplacements posés » se lisait à côté d'une durée qui n'était pas
+          faite et d'une dénomination couverte à un endroit sur quatorze : le décompte
+          des cadres ne dit rien de l'avancement, seul celui des changements le dit.
         */}
-        <ul className={styles.editeurListe}>
-          {retouches.map((retouche, index) => {
-            const zone = zones.find((z) => z.propose === retouche.texte);
+        <ul className={styles.suiviListe}>
+          {changements.map((changement) => {
+            const manque = introuvables.find((i) => i.recherche.cle === changement.cle);
+            const rangs = changement.emplacements;
+            const courant = curseurs[changement.cle] ?? 0;
+            const vise = rangs[Math.min(courant, rangs.length - 1)];
+
             return (
-              <li key={"pose-" + index}>
-                <button
-                  type="button"
-                  className={
-                    index === choisie
-                      ? `${styles.editeurZone} ${styles.editeurZoneChoisie}`
-                      : styles.editeurZone
-                  }
-                  onClick={() => {
-                    setPage(retouche.page);
-                    ouvrir(index);
-                  }}
-                >
-                  <span className={styles.editeurZoneTete}>
-                    <span className={styles.editeurZoneArticle}>
-                      {zone?.article || "Retouche libre"}
+              <li key={changement.cle} className={styles.suiviCarte} data-etat={changement.etat}>
+                <div className={styles.suiviTete}>
+                  <span className={styles.suiviTitre}>{changement.titre}</span>
+                  <span className={styles.suiviEtatBadge}>{ETATS[changement.etat].libelle}</span>
+                </div>
+
+                <p className={styles.suiviValeurs}>
+                  <span className={styles.suiviAvant}>{changement.ancien}</span>
+                  <span className={styles.suiviFleche} aria-hidden="true">
+                    →
+                  </span>
+                  <span className={styles.suiviApres}>{changement.nouveau}</span>
+                </p>
+
+                {changement.situe ? (
+                  <>
+                    <div className={styles.suiviJauge}>
+                      <span
+                        className={styles.suiviJaugeRempli}
+                        style={{
+                          width: (changement.couverts / rangs.length) * 100 + "%",
+                        }}
+                      />
+                    </div>
+                    <p className={styles.suiviCompte}>
+                      {changement.couverts} sur {rangs.length}{" "}
+                      {rangs.length === 1 ? "emplacement couvert" : "emplacements couverts"}
+                    </p>
+
+                    {/*
+                      On parcourt les emplacements d'un changement l'un après l'autre.
+                      Chercher soi-même la douzième occurrence d'un nom dans vingt-trois
+                      pages est le moyen le plus sûr d'en oublier une.
+                    */}
+                    <div className={styles.suiviNav}>
+                      <button
+                        type="button"
+                        className={styles.suiviNavFleche}
+                        aria-label="Emplacement précédent"
+                        disabled={rangs.length < 2}
+                        onClick={() => allerAuRang(changement, courant - 1)}
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.suiviNavCentre}
+                        onClick={() => allerAuRang(changement, courant)}
+                      >
+                        {rangs.length === 1
+                          ? "Voir, page " + vise.page
+                          : "Emplacement " +
+                            (Math.min(courant, rangs.length - 1) + 1) +
+                            " sur " +
+                            rangs.length +
+                            " - page " +
+                            vise.page}
+                        {!vise.couvert && (
+                          <span className={styles.suiviNavAlerte}>découvert</span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.suiviNavFleche}
+                        aria-label="Emplacement suivant"
+                        disabled={rangs.length < 2}
+                        onClick={() => allerAuRang(changement, courant + 1)}
+                      >
+                        ›
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.suiviManque}>
+                    {/*
+                      Dire ce qui a été cherché, et non « introuvable » tout court.
+                      Les statuts écrivent souvent la valeur autrement, et savoir ce
+                      qu'on a cherché permet de comprendre pourquoi on ne l'a pas trouvé.
+                    */}
+                    <p className={styles.suiviCherche}>
+                      Rien trouvé pour « {manque?.recherche.cherche ?? changement.ancien} »
+                      {manque?.recherche.variantes?.length
+                        ? ", ni " +
+                          manque.recherche.variantes.length +
+                          (manque.recherche.variantes.length > 1
+                            ? " autres formulations"
+                            : " autre formulation")
+                        : ""}
+                      . À poser à la main.
+                    </p>
+
+                    {surPlacer && manque && (
+                      <button
+                        type="button"
+                        className={styles.editeurPlacer}
+                        onClick={() => surPlacer(manque)}
+                      >
+                        {manque.article
+                          ? "Poser le cadre à l'article, page " + manque.article.page
+                          : "Poser un cadre sur la page " + page}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/*
+                  La coche est celle de l'avocat, non de la machine.
+                  Cocher tout seul dès que les cadres sont posés donnerait une assurance
+                  fausse : le repérage peut manquer une occurrence écrite autrement, et
+                  un cadre peut contenir n'importe quoi. Elle clôt la carte, en pleine
+                  largeur - c'est le geste qui engage, il ne se coince pas dans un coin.
+                */}
+                {surVerifier && (
+                  <label className={styles.suiviCoche}>
+                    <input
+                      type="checkbox"
+                      checked={changement.confirme}
+                      onChange={(e) => surVerifier(changement.cle, e.target.checked)}
+                    />
+                    <span className={styles.suiviCocheMot}>
+                      {changement.confirme ? "Fait, vérifié par le cabinet" : "Marquer comme fait"}
                     </span>
-                    <span className={styles.editeurZonePage}>page {retouche.page}</span>
-                  </span>
-                  {zone?.trouve && <span className={styles.editeurZoneAvant}>{zone.trouve}</span>}
-                  <span className={styles.editeurZoneApres}>
-                    {retouche.texte || "Texte à saisir"}
-                  </span>
-                </button>
+                  </label>
+                )}
               </li>
             );
           })}
+        </ul>
 
-          {introuvables.map((manque, rang) => (
-            <li key={"manque-" + rang}>
-              <div className={`${styles.editeurZone} ${styles.editeurZoneManquante}`}>
-                <span className={styles.editeurZoneTete}>
-                  <span className={styles.editeurZoneArticle}>{manque.recherche.article}</span>
-                  <span className={styles.editeurZoneAPlacer}>
-                    {manque.article ? "article trouvé" : "à situer"}
-                  </span>
-                </span>
-
-                {/*
-                  Dire ce qui a été cherché, et non « introuvable » tout court.
-                  Les statuts écrivent souvent la valeur autrement - en toutes lettres,
-                  ou avec une autre formulation - et savoir ce qu'on a cherché permet
-                  de comprendre pourquoi on ne l'a pas trouvé.
-                */}
-                <span className={styles.editeurZoneCherche}>
-                  Cherché : « {manque.recherche.cherche} »
-                  {manque.recherche.variantes?.length
-                    ? ", et " + manque.recherche.variantes.length + " autre" +
-                      (manque.recherche.variantes.length > 1 ? "s formulations" : " formulation")
-                    : ""}
-                </span>
-                <span className={styles.editeurZoneApres}>{manque.recherche.propose}</span>
-
-                {surPlacer && (
+        {/*
+          Les cadres qu'aucun changement ne réclame : ajoutés à la main, ils ne
+          répondent de rien et se perdraient si le panneau ne les montrait plus.
+        */}
+        {libres.length > 0 && (
+          <div className={styles.suiviLibres}>
+            <h4 className={styles.suiviLibresTitre}>Cadres libres</h4>
+            <ul className={styles.editeurListe}>
+              {libres.map(({ retouche, index }) => (
+                <li key={"libre-" + index}>
                   <button
                     type="button"
-                    className={styles.editeurPlacer}
-                    onClick={() => surPlacer(manque)}
+                    className={
+                      index === choisie
+                        ? `${styles.editeurZone} ${styles.editeurZoneChoisie}`
+                        : styles.editeurZone
+                    }
+                    onClick={() => {
+                      setPage(retouche.page);
+                      ouvrir(index);
+                    }}
                   >
-                    {manque.article
-                      ? "Aller à l'article, page " + manque.article.page
-                      : "Poser un cadre sur cette page"}
+                    <span className={styles.editeurZoneTete}>
+                      <span className={styles.editeurZoneArticle}>Cadre libre</span>
+                      <span className={styles.editeurZonePage}>page {retouche.page}</span>
+                    </span>
+                    <span className={styles.editeurZoneApres}>
+                      {retouche.texte || "Texte à saisir"}
+                    </span>
                   </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <button type="button" className={styles.editeurAjouter} onClick={ajouter}>
           + Cadre libre sur la page {page}

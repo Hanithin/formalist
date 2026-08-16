@@ -22,8 +22,12 @@ import type { Introuvable, Rectangle, Retouche, Zone } from "./edition";
 export type EtatDeChangement = "a_placer" | "partiel" | "couvert" | "confirme";
 
 export interface Emplacement {
+  /** Le changement que cet emplacement sert. */
+  cle: string;
   /** Le rang de l'occurrence dans l'acte, à partir de 1. */
   occurrence: number;
+  /** La hauteur de police mesurée, pour poser un cadre à la bonne taille. */
+  taille: number;
   page: number;
   x: number;
   y: number;
@@ -101,7 +105,9 @@ export function suivreLesChangements(
 
     const emplacements: Emplacement[] = siennes.flatMap((zone) =>
       zone.rectangles.map((rectangle) => ({
+        cle,
         occurrence: zone.occurrence,
+        taille: Math.round(zone.taille * 10) / 10,
         page: rectangle.page,
         x: rectangle.x,
         y: rectangle.y,
@@ -148,6 +154,16 @@ function etatDe(compte: {
 
   if (compte.couverts === 0) return "a_placer";
   return compte.couverts >= compte.total ? "couvert" : "partiel";
+}
+
+/**
+ * Le cadre qui couvre cet emplacement, s'il en existe un.
+ *
+ * Le rang, non l'objet : l'éditeur désigne les cadres par leur position dans la liste,
+ * et c'est elle qu'il faut pour ouvrir la saisie.
+ */
+export function cadreCouvrant(retouches: Retouche[], emplacement: Emplacement): number {
+  return retouches.findIndex((r) => r.cle === emplacement.cle && recouvre(emplacement, r));
 }
 
 /** Ce qui n'est pas encore certifié, dans l'ordre où l'avocat le rencontrera. */

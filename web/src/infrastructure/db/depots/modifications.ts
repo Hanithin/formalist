@@ -55,6 +55,8 @@ export interface Modification {
    */
   historique?: EtapeDHistorique[];
   positionHistorique?: number;
+  /** Les changements que le cabinet certifie faits. */
+  verifiees?: string[];
   /** Les statuts retouchés ont été produits et joints au dossier. */
   statutsAJour?: boolean;
   /**

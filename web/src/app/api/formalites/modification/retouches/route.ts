@@ -84,6 +84,7 @@ export const GET = route(async (requete: Request) => {
       const premiere = inscrire([], -1, {
         retouches: depart,
         pagesRetirees: modification.pagesRetirees ?? [],
+        verifiees: modification.verifiees ?? [],
         quand: new Date().toISOString(),
         qui: deja.length > 0 ? "État repris" : "Repérage automatique",
         libelle:
@@ -105,6 +106,7 @@ export const GET = route(async (requete: Request) => {
     return NextResponse.json({
       pages: lecture.pages,
       pagesRetirees: modification.pagesRetirees ?? [],
+      verifiees: modification.verifiees ?? [],
       historique,
       positionHistorique: position,
       /*
@@ -130,6 +132,8 @@ export const GET = route(async (requete: Request) => {
 });
 
 const RETOUCHE = z.object({
+  /** Le changement que ce cadre sert. Absent, il est libre. */
+  cle: z.string().trim().max(40).optional(),
   page: z.number().int().min(1).max(60),
   x: z.number().min(0).max(2000),
   y: z.number().min(0).max(2000),
@@ -160,9 +164,15 @@ const RETOUCHE = z.object({
 
 const APPLICATION = z.object({
   dossier: schemas.identifiant,
-  retouches: z.array(RETOUCHE).max(200),
+  /*
+   * Le plafond suit le nombre d'occurrences : une dénomination figure en en-tête de
+   * chaque page, et couvrir toutes ses occurrences demande autant de cadres.
+   */
+  retouches: z.array(RETOUCHE).max(400),
   /** Les pages écartées du document produit. L'original les garde. */
   pagesRetirees: z.array(z.number().int().min(1).max(60)).max(60).optional(),
+  /** Les changements que le cabinet certifie faits. */
+  verifiees: z.array(z.string().trim().max(40)).max(20).optional(),
 });
 
 /**
@@ -179,17 +189,16 @@ const APPLICATION = z.object({
  */
 export const PUT = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
-  const { dossier: dossierId, retouches, pagesRetirees = [] } = await validerCorps(
-    APPLICATION,
-    requete
-  );
+  const { dossier: dossierId, retouches, pagesRetirees = [], verifiees = [] } =
+    await validerCorps(APPLICATION, requete);
 
   const { modification } = await ouvrirModification(utilisateur, dossierId);
   const avant = {
     retouches: modification.retouches ?? [],
     pagesRetirees: modification.pagesRetirees ?? [],
+    verifiees: modification.verifiees ?? [],
   };
-  const apres = { retouches, pagesRetirees };
+  const apres = { retouches, pagesRetirees, verifiees };
 
   // Un enregistrement qui ne change rien n'inscrit rien : la frappe en cours en
   // déclenche plusieurs, et l'historique se remplirait d'étapes identiques.
@@ -210,6 +219,7 @@ export const PUT = route(async (requete: Request) => {
   await completerModification(utilisateur, dossierId, {
     retouches,
     pagesRetirees,
+    verifiees,
     historique: suite.historique,
     positionHistorique: suite.position,
   });
@@ -245,6 +255,7 @@ export const PATCH = route(async (requete: Request) => {
   await completerModification(utilisateur, dossierId, {
     retouches: etape.retouches,
     pagesRetirees: etape.pagesRetirees,
+    verifiees: etape.verifiees ?? [],
     positionHistorique: retenue,
   });
 
@@ -253,6 +264,7 @@ export const PATCH = route(async (requete: Request) => {
     position: retenue,
     retouches: etape.retouches,
     pagesRetirees: etape.pagesRetirees,
+    verifiees: etape.verifiees ?? [],
   });
 });
 

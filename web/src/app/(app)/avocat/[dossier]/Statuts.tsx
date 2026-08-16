@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Editeur } from "@/app/(app)/modification/Editeur";
 import type { Introuvable, Retouche, Zone } from "@/domain/modification/edition";
+import { nonConfirmes, suivreLesChangements } from "@/domain/modification/suivi";
 import type { EtapeDHistorique } from "@/domain/modification/historique";
 import styles from "../Avocat.module.css";
 
@@ -22,6 +23,7 @@ import styles from "../Avocat.module.css";
 interface Lecture {
   pages: { numero: number; largeur: number; hauteur: number }[];
   pagesRetirees: number[];
+  verifiees: string[];
   historique: EtapeDHistorique[];
   positionHistorique: number;
   zones: Zone[];
@@ -34,6 +36,7 @@ export function Statuts({ dossier }: { dossier: number }) {
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [retouches, setRetouches] = useState<Retouche[]>([]);
   const [pagesRetirees, setPagesRetirees] = useState<number[]>([]);
+  const [verifiees, setVerifiees] = useState<string[]>([]);
   const [historique, setHistorique] = useState<EtapeDHistorique[]>([]);
   const [position, setPosition] = useState(-1);
   const [refus, setRefus] = useState<string | null>(null);
@@ -55,6 +58,7 @@ export function Statuts({ dossier }: { dossier: number }) {
       setLecture(corps as Lecture);
       setRetouches(corps.retouches ?? []);
       setPagesRetirees(corps.pagesRetirees ?? []);
+      setVerifiees(corps.verifiees ?? []);
       setHistorique(corps.historique ?? []);
       setPosition(corps.positionHistorique ?? -1);
     });
@@ -106,6 +110,7 @@ export function Statuts({ dossier }: { dossier: number }) {
         setLecture(corps as Lecture);
         setRetouches(corps.retouches ?? []);
         setPagesRetirees(corps.pagesRetirees ?? []);
+        setVerifiees(corps.verifiees ?? []);
         setHistorique(corps.historique ?? []);
         setPosition(corps.positionHistorique ?? -1);
       } catch {
@@ -134,6 +139,7 @@ export function Statuts({ dossier }: { dossier: number }) {
     setRetouches((precedentes) => [
       ...precedentes,
       {
+        cle: manque.recherche.cle,
         page: page.numero,
         x: sousLArticle ? sousLArticle.x : page.largeur * 0.15,
         y: sousLArticle
@@ -181,6 +187,7 @@ export function Statuts({ dossier }: { dossier: number }) {
 
       setRetouches(corps.retouches ?? []);
       setPagesRetirees(corps.pagesRetirees ?? []);
+      setVerifiees(corps.verifiees ?? []);
       setPosition(corps.position ?? demandee);
     });
   }
@@ -244,11 +251,21 @@ export function Statuts({ dossier }: { dossier: number }) {
 
   if (!lecture) return <p className={styles.tacheExplication}>Lecture des statuts…</p>;
 
-  const attendus = [...lecture.zones, ...lecture.introuvables];
-  const restants = lecture.introuvables.filter(
-    (m) => !retouches.some((t) => t.texte === m.recherche.propose)
+  /*
+   * L'avancement se compte par changement, non par cadre.
+   *
+   * « 2 sur 2 remplacements posés » s'affichait à côté d'une durée qui n'était pas
+   * faite et d'une dénomination couverte à un endroit sur quatorze : compter les
+   * cadres ne dit rien de ce qui reste à faire.
+   */
+  const changements = suivreLesChangements(
+    lecture.zones,
+    lecture.introuvables,
+    retouches,
+    verifiees
   );
-  const poses = attendus.length - restants.length;
+  const restants = nonConfirmes(changements);
+  const confirmes = changements.length - restants.length;
 
   return (
     <>
@@ -265,10 +282,19 @@ export function Statuts({ dossier }: { dossier: number }) {
         retouches={retouches}
         reconnus={lecture.reconnus}
         surChangement={setRetouches}
-        introuvables={restants}
+        introuvables={lecture.introuvables}
         surPlacer={placer}
         pagesRetirees={pagesRetirees}
         surRetraitDePage={setPagesRetirees}
+        changements={changements}
+        verifiees={verifiees}
+        surVerifier={(cle, fait) =>
+          setVerifiees((precedentes) =>
+            fait
+              ? [...precedentes.filter((c) => c !== cle), cle]
+              : precedentes.filter((c) => c !== cle)
+          )
+        }
         historique={historique}
         positionHistorique={position}
         surInscription={inscrire}
@@ -277,10 +303,10 @@ export function Statuts({ dossier }: { dossier: number }) {
           <div className={styles.statutsTete}>
             <div>
               <span className={styles.statutsCompte}>
-                {poses} sur {attendus.length}
+                {confirmes} sur {changements.length}
               </span>
               <span className={styles.statutsMention}>
-                {attendus.length === 1 ? "remplacement posé" : "remplacements posés"}
+                {changements.length === 1 ? "changement confirmé" : "changements confirmés"}
               </span>
             </div>
 
@@ -335,10 +361,17 @@ export function Statuts({ dossier }: { dossier: number }) {
       {confirmation && (
         <div className={styles.confirmationBloc} role="alertdialog">
           <p>
+            {/*
+              Nommer ce qui n'est pas confirmé, non en donner le nombre.
+              « 2 remplacements ne sont pas posés » n'apprend rien : c'est lequel qui
+              compte, et sur quels emplacements l'ancienne valeur resterait.
+            */}
             {restants.length === 1
-              ? "Un remplacement n'est pas posé."
-              : restants.length + " remplacements ne sont pas posés."}{" "}
-            Les statuts produits garderont l&apos;ancienne valeur à cet endroit. Continuer ?
+              ? "« " + restants[0].titre + " » n'est pas confirmé."
+              : restants.map((c) => c.titre).join(", ") + " ne sont pas confirmés."}{" "}
+            {restants.some((c) => c.couverts < c.emplacements.length) &&
+              "Des emplacements repérés restent découverts : les statuts produits y garderont l'ancienne valeur. "}
+            Continuer ?
           </p>
           <div className={styles.confirmationActions}>
             <button

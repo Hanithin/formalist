@@ -2747,3 +2747,311 @@
   color: #fff;
   letter-spacing: 0;
 }
+
+/* ---------- Le suivi, changement par changement ---------- */
+
+.suiviListe {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * Une carte par changement demandé.
+ *
+ * L'état se lit dans un badge, non dans une bande de couleur au bord : la bande
+ * découpait la carte sans rien nommer, et il fallait deviner ce que le rouge voulait
+ * dire.
+ */
+.suiviCarte {
+  position: relative;
+  padding: 14px 16px;
+  border: 1px solid #e8e8ea;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.suiviCarte[data-etat="confirme"] {
+  border-color: #d7f0dd;
+  background: #fbfefc;
+}
+
+.suiviTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.suiviTitre {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+/* L'état, nommé. Un mot vaut mieux qu'une couleur qu'il faut apprendre. */
+.suiviEtatBadge {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+  background: #f4f4f5;
+  color: #71717a;
+}
+.suiviCarte[data-etat="a_placer"] .suiviEtatBadge {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.suiviCarte[data-etat="partiel"] .suiviEtatBadge {
+  background: #fffbeb;
+  color: #b45309;
+}
+.suiviCarte[data-etat="couvert"] .suiviEtatBadge {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.suiviCarte[data-etat="confirme"] .suiviEtatBadge {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/*
+ * La coche de l'avocat, en pied de carte et sur toute la largeur.
+ *
+ * Serrée dans le coin en tête, elle se disputait la place avec le titre et se cliquait
+ * mal. C'est pourtant le seul geste de la carte qui engage : il mérite sa ligne.
+ */
+.suiviCoche {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 9px 12px;
+  border: 1px solid #e8e8ea;
+  border-radius: 10px;
+  background: #fafafa;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    border-color 0.12s,
+    background 0.12s,
+    color 0.12s;
+}
+.suiviCoche:hover {
+  border-color: #d4d4d8;
+  background: #fff;
+  color: #111;
+}
+
+/*
+ * La case elle-même est dessinée, non masquée derrière un décor.
+ *
+ * Une case cachée et redessinée à côté n'est plus cliquable ni atteignable au clavier
+ * là où on la voit : c'est la case native qu'on habille.
+ */
+.suiviCoche input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+  border: 1.5px solid #d4d4d8;
+  border-radius: 6px;
+  background: #fff no-repeat center;
+  background-size: 13px;
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+}
+.suiviCoche:hover input {
+  border-color: #16a34a;
+}
+.suiviCoche input:checked {
+  border-color: #16a34a;
+  background-color: #16a34a;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5 L6.5 11.5 L12.5 4.5'/%3E%3C/svg%3E");
+}
+.suiviCoche input:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+.suiviCarte[data-etat="confirme"] .suiviCoche {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.suiviValeurs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.suiviAvant {
+  color: #a1a1aa;
+  text-decoration: line-through;
+}
+.suiviFleche {
+  color: #c4c4c8;
+}
+.suiviApres {
+  font-weight: 600;
+  color: #15803d;
+  word-break: break-word;
+}
+
+.suiviJauge {
+  height: 4px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #f0f0f2;
+  overflow: hidden;
+}
+.suiviJaugeRempli {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #16a34a;
+  transition: width 0.2s;
+}
+
+.suiviCompte {
+  margin: 7px 0 0;
+  font-size: 11.5px;
+  color: #888;
+}
+
+/* Le parcours des emplacements : c'est ce qui évite d'en oublier un. */
+.suiviNav {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin-top: 10px;
+}
+.suiviNavFleche {
+  width: 30px;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 16px;
+  line-height: 1;
+  color: #555;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    color 0.12s;
+}
+.suiviNavFleche:hover:not(:disabled) {
+  border-color: #111;
+  color: #111;
+}
+.suiviNavFleche:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.suiviNavCentre {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  background: #fafafa;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #444;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.suiviNavCentre:hover {
+  border-color: #111;
+  background: #fff;
+}
+.suiviNavAlerte {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #fef3c7;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.suiviManque {
+  margin-top: 10px;
+}
+.suiviCherche {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #888;
+}
+
+.suiviLibres {
+  margin-top: 18px;
+}
+.suiviLibresTitre {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+/*
+ * Un passage repéré que plus aucun cadre ne couvre.
+ *
+ * Le cadre supprimé, ou traîné ailleurs, laissait l'ancienne valeur en place sans que
+ * rien ne le signale : le document serait parti au greffe avec.
+ */
+.decouvert {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0;
+  border: 2px dashed #f59e0b;
+  border-radius: 3px;
+  background: rgba(251, 191, 36, 0.14);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.decouvert:hover {
+  background: rgba(251, 191, 36, 0.26);
+}
+.decouvertMot {
+  position: absolute;
+  top: -9px;
+  right: -2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #f59e0b;
+  font-family: var(--police-texte), sans-serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
