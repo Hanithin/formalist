@@ -12,6 +12,11 @@ import {
   type Retouche,
   type Zone,
 } from "@/domain/modification/edition";
+import {
+  peutAvancer,
+  peutRevenir,
+  type EtapeDHistorique,
+} from "@/domain/modification/historique";
 import styles from "./Modification.module.css";
 
 /**
@@ -53,6 +58,12 @@ interface Props {
   /** Les pages écartées du document produit ; l'original les garde. */
   pagesRetirees?: number[];
   surRetraitDePage?: (pages: number[]) => void;
+  /** L'historique du dossier, et où l'on s'y trouve. */
+  historique?: EtapeDHistorique[];
+  positionHistorique?: number;
+  /** L'historique renvoyé par l'enregistrement, après qu'une étape s'y est inscrite. */
+  surInscription?: (historique: EtapeDHistorique[], position: number) => void;
+  surReprise?: (position: number) => void;
 }
 
 /**
@@ -452,6 +463,18 @@ function MiseEnForme({
   );
 }
 
+/** « 12:14, aujourd'hui » : une heure suffit quand le geste est du jour. */
+function quandLisible(iso: string): string {
+  const quand = new Date(iso);
+  if (Number.isNaN(quand.getTime())) return "";
+
+  const heure = quand.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const aujourdHui = new Date().toDateString() === quand.toDateString();
+  if (aujourdHui) return heure;
+
+  return quand.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " à " + heure;
+}
+
 /** Les familles, telles que le navigateur les rend, au plus près du PDF produit. */
 const FAMILLES: Record<Police, string> = {
   serif: '"Times New Roman", Times, serif',
@@ -476,7 +499,12 @@ export function Editeur({
   entete,
   pagesRetirees = [],
   surRetraitDePage,
+  historique = [],
+  positionHistorique = -1,
+  surInscription,
+  surReprise,
 }: Props) {
+  const [historiqueOuvert, setHistoriqueOuvert] = useState(false);
   /*
    * Le placement se conserve au fil de la saisie.
    *
@@ -496,15 +524,36 @@ export function Editeur({
       fetch("/api/formalites/modification/retouches", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier, retouches }),
-      }).catch(() => {
-        // Un enregistrement manqué n'interrompt pas le travail : la prochaine frappe
-        // le retentera, et « Appliquer » envoie de toute façon l'état complet.
-      });
+        /*
+         * L'état entier, non les seules retouches.
+         *
+         * Envoyer les retouches sans les pages écartées faisait lire au serveur un
+         * état où plus rien n'est écarté : il inscrivait « pages remises » dans
+         * l'historique, et le document produit les aurait reprises.
+         */
+        body: JSON.stringify({ dossier, retouches, pagesRetirees }),
+      })
+        .then((reponse) => (reponse.ok ? reponse.json() : null))
+        .then((corps) => {
+          /*
+           * L'historique revient de l'enregistrement, car c'est lui qui l'inscrit.
+           *
+           * Sans cela, l'écran ne le connaissait qu'au chargement : on travaillait
+           * toute une session sans voir apparaître ni les flèches ni le suivi, et
+           * revenir sur une fausse manœuvre demandait de recharger la page.
+           */
+          if (corps?.inscrit && surInscription) {
+            surInscription(corps.historique ?? [], corps.position ?? -1);
+          }
+        })
+        .catch(() => {
+          // Un enregistrement manqué n'interrompt pas le travail : la prochaine frappe
+          // le retentera, et « Appliquer » envoie de toute façon l'état complet.
+        });
     }, 1000);
 
     return () => clearTimeout(minuteur);
-  }, [dossier, retouches]);
+  }, [dossier, retouches, pagesRetirees, surInscription]);
 
   const [page, setPage] = useState(retouches[0]?.page ?? pages[0]?.numero ?? 1);
   const [choisie, setChoisie] = useState<number | null>(null);
@@ -875,6 +924,49 @@ export function Editeur({
           )}
 
           <div className={styles.accesCommandes}>
+            {surReprise && historique.length > 0 && (
+              <span className={styles.historiqueCommandes}>
+                <button
+                  type="button"
+                  className={styles.navFleche}
+                  onClick={() => surReprise(positionHistorique - 1)}
+                  disabled={!peutRevenir(positionHistorique)}
+                  aria-label="Revenir en arrière"
+                  title="Revenir en arrière"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 14 L4 9 L9 4 M4 9 H14 a6 6 0 0 1 0 12 H8" />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.navFleche}
+                  onClick={() => surReprise(positionHistorique + 1)}
+                  disabled={!peutAvancer(historique, positionHistorique)}
+                  aria-label="Revenir en avant"
+                  title="Revenir en avant"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 14 L20 9 L15 4 M20 9 H10 a6 6 0 0 0 0 12 H16" />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    historiqueOuvert
+                      ? `${styles.accesToutes} ${styles.accesRetablir}`
+                      : styles.accesToutes
+                  }
+                  onClick={() => setHistoriqueOuvert((ouvert) => !ouvert)}
+                  aria-expanded={historiqueOuvert}
+                >
+                  Historique
+                </button>
+              </span>
+            )}
+
             {surRetraitDePage && (
               <button
                 type="button"
@@ -1131,6 +1223,57 @@ export function Editeur({
 
       {/* ---------- Le panneau : tout ce qui n'est pas la page ---------- */}
       <div className={styles.editeurPanneau}>
+        {historiqueOuvert && surReprise ? (
+          /*
+            L'historique remplace le panneau plutôt que de s'y ajouter : on y va pour
+            retrouver un geste, non pour continuer à en poser.
+          */
+          <div className={styles.historique}>
+            <div className={styles.historiqueTete}>
+              <h3 className={styles.editeurTitre}>Historique</h3>
+              <button
+                type="button"
+                className={styles.accesToutes}
+                onClick={() => setHistoriqueOuvert(false)}
+              >
+                Fermer
+              </button>
+            </div>
+
+            <ol className={styles.historiqueListe}>
+              {[...historique].reverse().map((etape, rangInverse) => {
+                const rang = historique.length - 1 - rangInverse;
+                return (
+                  <li key={rang}>
+                    <button
+                      type="button"
+                      className={
+                        rang === positionHistorique
+                          ? `${styles.historiqueEtape} ${styles.historiqueEtapeCourante}`
+                          : styles.historiqueEtape
+                      }
+                      onClick={() => surReprise(rang)}
+                    >
+                      <span className={styles.historiqueLibelle}>{etape.libelle}</span>
+                      <span className={styles.historiqueQuand}>
+                        {quandLisible(etape.quand)} - {etape.qui}
+                      </span>
+                      {rang === positionHistorique && (
+                        <span className={styles.historiqueMarque}>état actuel</span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+
+            <p className={styles.editeurAide}>
+              Cliquez sur une étape pour y revenir. Rien n&apos;est perdu : les étapes
+              suivantes restent tant qu&apos;aucune nouvelle retouche n&apos;est posée.
+            </p>
+          </div>
+        ) : (
+          <>
         {entete}
 
         {reconnus && (
@@ -1228,6 +1371,8 @@ export function Editeur({
           carrés de la bordure le redimensionnent. Dans le document, son fond est blanc et
           couvre l&apos;ancienne valeur.
         </p>
+          </>
+        )}
       </div>
     </div>
   );

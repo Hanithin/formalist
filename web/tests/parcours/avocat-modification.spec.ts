@@ -343,3 +343,100 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   const textes = await page.locator("div[class*='repere']").allTextContents();
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
 });
+
+test("l'historique dit qui a fait quoi, et on revient dessus", async ({ page, request }) => {
+  /*
+   * Une page écartée par mégarde, un cadre posé au mauvais endroit : sans trace, la
+   * seule sortie était de tout refaire de mémoire. L'historique nomme chaque geste,
+   * son heure et son auteur, et l'on s'y replace dans les deux sens.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+  // Deux pages : on ne peut pas juger d'un retrait de page sur un document qui n'en a qu'une.
+  acte.addPage([595, 842]).drawText("Annexe : liste des souscripteurs.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  // Premier geste : on écrit dans le cadre repéré, pour avoir un état où revenir.
+  const cadre = page.locator("div[class*='repere']").first();
+  await expect(cadre).toBeVisible({ timeout: 30_000 });
+  const boite = (await cadre.boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page
+    .getByRole("textbox", { name: "Texte du cadre" })
+    .fill("5 avenue Victor Hugo, 69003 Lyon (bureau 4)");
+  await page.mouse.click(200, 950);
+  await page.waitForTimeout(1600);
+
+  // Second geste : la page 2 est écartée par mégarde.
+  await page.getByRole("button", { name: "Page suivante" }).click();
+  await page.getByRole("button", { name: "Retirer cette page" }).click();
+  await page.waitForTimeout(1600);
+
+  const ecartee = JSON.parse(
+    (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } })).data_json ?? "{}"
+  );
+  expect(ecartee.pagesRetirees).toEqual([2]);
+
+  // L'historique nomme le geste, son heure et son auteur.
+  await page.getByRole("button", { name: "Historique" }).click();
+  await expect(page.getByText("Page 2 écartée")).toBeVisible();
+  await expect(page.getByText("Texte réécrit page 1")).toBeVisible();
+  // L'état de départ est là, lui aussi : on peut revenir à la proposition d'origine.
+  await expect(page.getByText(/passages? repéré/)).toBeVisible();
+  const quand = await page.locator("[class*='historiqueQuand']").first().textContent();
+  expect(quand).toMatch(/\d{2}:\d{2}/);
+  expect(quand).toMatch(/Avocat|avocat|Maître|Parcours/i);
+
+  // On revient en arrière : la page est remise, et l'état enregistré la reprend.
+  await page.getByRole("button", { name: "Revenir en arrière" }).click();
+  await expect(page.getByRole("button", { name: "Remettre cette page" })).toHaveCount(0);
+
+  const revenu = JSON.parse(
+    (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } })).data_json ?? "{}"
+  );
+  expect(revenu.pagesRetirees).toEqual([]);
+
+  // Et en avant : finalement, ce n'était pas une erreur.
+  await page.getByRole("button", { name: "Revenir en avant" }).click();
+  await expect(page.getByRole("button", { name: "Remettre cette page" })).toBeVisible();
+
+  const refait = JSON.parse(
+    (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } })).data_json ?? "{}"
+  );
+  expect(refait.pagesRetirees).toEqual([2]);
+});

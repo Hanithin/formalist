@@ -5,6 +5,7 @@ import { relirePaiement } from "@/infrastructure/paiement/stripe";
 import { estUnTypeConnu, type Valeurs } from "@/domain/modification/types";
 import type { AssociePresent, SocieteModifiee } from "@/domain/modification/gabarit";
 import type { Retouche } from "@/domain/modification/edition";
+import type { EtapeDHistorique } from "@/domain/modification/historique";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "../sessions";
 
@@ -45,6 +46,15 @@ export interface Modification {
    * une page blanche que le dépôt suivant n'a pas à reprendre.
    */
   pagesRetirees?: number[];
+  /**
+   * Les états successifs des retouches, pour revenir en arrière.
+   *
+   * Chaque étape porte un état complet et dit qui l'a posée et quand. Persisté avec
+   * le dossier plutôt que gardé en mémoire : une fausse manœuvre se rattrape encore
+   * le lendemain, et l'avocat voit ce que le client avait fait avant lui.
+   */
+  historique?: EtapeDHistorique[];
+  positionHistorique?: number;
   /** Les statuts retouchés ont été produits et joints au dossier. */
   statutsAJour?: boolean;
   /**

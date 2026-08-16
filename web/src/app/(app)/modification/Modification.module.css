@@ -2656,3 +2656,94 @@
   color: #a1a1aa;
   overflow-wrap: anywhere;
 }
+
+/* ---------- L'historique ---------- */
+
+.historiqueCommandes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.historique {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.historiqueTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.historiqueListe {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+/*
+ * Une étape se lit d'un coup d'œil : ce qui a été fait, quand, par qui.
+ *
+ * « Modifié » ne dit rien quand on cherche le geste qui a tout cassé ; le libellé
+ * nomme la page et la nature du changement.
+ */
+.historiqueEtape {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.historiqueEtape:hover {
+  border-color: #111;
+}
+
+.historiqueEtapeCourante {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.historiqueLibelle {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+.historiqueQuand {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: #a1a1aa;
+}
+
+.historiqueMarque {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #16a34a;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0;
+}

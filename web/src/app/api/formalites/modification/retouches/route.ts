@@ -17,6 +17,12 @@ import {
   retouchesProposees,
   RetoucheInvalide,
 } from "@/domain/modification/edition";
+import {
+  decrireLeChangement,
+  inscrire,
+  memeEtat,
+  positionValide,
+} from "@/domain/modification/historique";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 import { TITRE_STATUTS } from "../statuts/route";
@@ -57,9 +63,43 @@ export const GET = route(async (requete: Request) => {
       recherchesPour(modification.codes, modification.valeurs, modification.societe)
     );
 
+    /*
+     * L'état de départ, posé au dossier dès la première lecture.
+     *
+     * Les passages repérés n'étaient qu'affichés : le dossier, lui, restait vide. Le
+     * premier geste de l'avocat se comparait donc au vide et s'inscrivait « cadre
+     * ajouté » alors qu'il réécrivait un cadre déjà là - et l'on ne pouvait pas
+     * revenir à la proposition d'origine, faute d'étape avant la sienne.
+     *
+     * L'auteur est le repérage, non l'avocat : il n'a rien fait à ce stade.
+     */
+    const proposees = retouchesProposees(zones);
+    let historique = modification.historique ?? [];
+    let position = modification.positionHistorique ?? historique.length - 1;
+
+    if (historique.length === 0 && !modification.retouches?.length && proposees.length > 0) {
+      const depart = inscrire([], -1, {
+        retouches: proposees,
+        pagesRetirees: modification.pagesRetirees ?? [],
+        quand: new Date().toISOString(),
+        qui: "Repérage automatique",
+        libelle:
+          proposees.length === 1 ? "1 passage repéré" : proposees.length + " passages repérés",
+      });
+      await completerModification(utilisateur, dossierId, {
+        retouches: proposees,
+        historique: depart.historique,
+        positionHistorique: depart.position,
+      });
+      historique = depart.historique;
+      position = depart.position;
+    }
+
     return NextResponse.json({
       pages: lecture.pages,
       pagesRetirees: modification.pagesRetirees ?? [],
+      historique,
+      positionHistorique: position,
       /*
        * Ce qui n'a pas été retrouvé compte autant que ce qui l'a été : sans cette
        * liste, l'avocat croit avoir tout remplacé et un article reste à l'ancienne
@@ -72,9 +112,7 @@ export const GET = route(async (requete: Request) => {
       zones,
       // Les retouches déjà validées l'emportent sur la proposition : reprendre
       // l'écran ne doit pas défaire un ajustement fait à la main.
-      retouches: modification.retouches?.length
-        ? modification.retouches
-        : retouchesProposees(zones),
+      retouches: modification.retouches?.length ? modification.retouches : proposees,
     });
   } catch (e) {
     if (e instanceof StatutsIllisibles) {
@@ -121,12 +159,16 @@ const APPLICATION = z.object({
 });
 
 /**
- * Le brouillon des retouches, conservé au fil de la saisie.
+ * Le brouillon des retouches, conservé au fil de la saisie, et son historique.
  *
  * Elles ne vivaient qu'en mémoire jusqu'au clic sur « Appliquer » : un
  * rafraîchissement, un onglet fermé, un retour en arrière, et tout le travail de
  * placement était perdu sans un mot. On les enregistre donc au fil de l'eau, sans
  * produire de document - produire à chaque frappe ferait un PDF par lettre.
+ *
+ * Chaque enregistrement qui change quelque chose inscrit une étape, avec l'heure et
+ * le nom du compte. Le nom est pris de la session, non du corps de la requête : c'est
+ * une trace, et une trace qu'on peut se donner soi-même n'en est pas une.
  */
 export const PUT = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
@@ -135,8 +177,76 @@ export const PUT = route(async (requete: Request) => {
     requete
   );
 
-  await completerModification(utilisateur, dossierId, { retouches, pagesRetirees });
-  return NextResponse.json({ ok: true, retouches: retouches.length });
+  const { modification } = await ouvrirModification(utilisateur, dossierId);
+  const avant = {
+    retouches: modification.retouches ?? [],
+    pagesRetirees: modification.pagesRetirees ?? [],
+  };
+  const apres = { retouches, pagesRetirees };
+
+  // Un enregistrement qui ne change rien n'inscrit rien : la frappe en cours en
+  // déclenche plusieurs, et l'historique se remplirait d'étapes identiques.
+  if (memeEtat(avant, apres)) {
+    return NextResponse.json({ ok: true, retouches: retouches.length, inscrit: false });
+  }
+
+  const historique = modification.historique ?? [];
+  const position = modification.positionHistorique ?? historique.length - 1;
+
+  const suite = inscrire(historique, position, {
+    ...apres,
+    quand: new Date().toISOString(),
+    qui: utilisateur.nom,
+    libelle: decrireLeChangement(avant, apres),
+  });
+
+  await completerModification(utilisateur, dossierId, {
+    retouches,
+    pagesRetirees,
+    historique: suite.historique,
+    positionHistorique: suite.position,
+  });
+
+  return NextResponse.json({ ok: true, retouches: retouches.length, inscrit: true, ...suite });
+});
+
+const RETOUR = z.object({
+  dossier: schemas.identifiant,
+  position: z.number().int().min(0).max(200),
+});
+
+/**
+ * Le retour à une étape de l'historique.
+ *
+ * On remplace l'état par celui de l'étape choisie, sans rien inscrire : revenir en
+ * arrière n'est pas un geste de plus, sans quoi l'on ne pourrait jamais revenir en
+ * avant. La position demandée est ramenée dans les bornes - elle vient du réseau.
+ */
+export const PATCH = route(async (requete: Request) => {
+  const utilisateur = await exigerUtilisateur();
+  const { dossier: dossierId, position } = await validerCorps(RETOUR, requete);
+
+  const { modification } = await ouvrirModification(utilisateur, dossierId);
+  const historique = modification.historique ?? [];
+  if (historique.length === 0) {
+    return NextResponse.json({ error: "Rien à reprendre" }, { status: 409 });
+  }
+
+  const retenue = positionValide(historique, position);
+  const etape = historique[retenue];
+
+  await completerModification(utilisateur, dossierId, {
+    retouches: etape.retouches,
+    pagesRetirees: etape.pagesRetirees,
+    positionHistorique: retenue,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    position: retenue,
+    retouches: etape.retouches,
+    pagesRetirees: etape.pagesRetirees,
+  });
 });
 
 export const POST = route(async (requete: Request) => {

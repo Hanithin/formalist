@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Editeur } from "@/app/(app)/modification/Editeur";
 import type { Introuvable, Retouche, Zone } from "@/domain/modification/edition";
+import type { EtapeDHistorique } from "@/domain/modification/historique";
 import styles from "../Avocat.module.css";
 
 /**
@@ -21,6 +22,8 @@ import styles from "../Avocat.module.css";
 interface Lecture {
   pages: { numero: number; largeur: number; hauteur: number }[];
   pagesRetirees: number[];
+  historique: EtapeDHistorique[];
+  positionHistorique: number;
   zones: Zone[];
   introuvables: Introuvable[];
   retouches: Retouche[];
@@ -31,6 +34,8 @@ export function Statuts({ dossier }: { dossier: number }) {
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [retouches, setRetouches] = useState<Retouche[]>([]);
   const [pagesRetirees, setPagesRetirees] = useState<number[]>([]);
+  const [historique, setHistorique] = useState<EtapeDHistorique[]>([]);
+  const [position, setPosition] = useState(-1);
   const [refus, setRefus] = useState<string | null>(null);
   const [retour, setRetour] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState(false);
@@ -50,6 +55,8 @@ export function Statuts({ dossier }: { dossier: number }) {
       setLecture(corps as Lecture);
       setRetouches(corps.retouches ?? []);
       setPagesRetirees(corps.pagesRetirees ?? []);
+      setHistorique(corps.historique ?? []);
+      setPosition(corps.positionHistorique ?? -1);
     });
   }
 
@@ -99,6 +106,8 @@ export function Statuts({ dossier }: { dossier: number }) {
         setLecture(corps as Lecture);
         setRetouches(corps.retouches ?? []);
         setPagesRetirees(corps.pagesRetirees ?? []);
+        setHistorique(corps.historique ?? []);
+        setPosition(corps.positionHistorique ?? -1);
       } catch {
         if (vivant) setRefus("Les statuts n'ont pas pu être lus");
       }
@@ -136,6 +145,44 @@ export function Statuts({ dossier }: { dossier: number }) {
         taille: sousLArticle ? Math.round(sousLArticle.hauteur * 8) / 10 : 11,
       },
     ]);
+  }
+
+  /**
+   * Recueille l'historique que l'enregistrement vient d'inscrire.
+   *
+   * Il est stable d'un rendu à l'autre : passé à l'éditeur, une fonction recréée à
+   * chaque rendu relancerait l'enregistrement en boucle.
+   */
+  const inscrire = useCallback((suite: EtapeDHistorique[], rang: number) => {
+    setHistorique(suite);
+    setPosition(rang);
+  }, []);
+
+  /**
+   * Revient à une étape de l'historique.
+   *
+   * C'est le serveur qui pose l'état, non l'écran : il détient l'historique, et une
+   * position venue du navigateur se vérifie avant d'être suivie.
+   */
+  function reprendre(demandee: number) {
+    setRefus(null);
+    demarrer(async () => {
+      const reponse = await fetch("/api/formalites/modification/retouches", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, position: demandee }),
+      });
+      const corps = await reponse.json().catch(() => ({}));
+
+      if (!reponse.ok) {
+        setRefus(corps.error ?? "L'étape n'a pas pu être reprise");
+        return;
+      }
+
+      setRetouches(corps.retouches ?? []);
+      setPagesRetirees(corps.pagesRetirees ?? []);
+      setPosition(corps.position ?? demandee);
+    });
   }
 
   function appliquer() {
@@ -222,6 +269,10 @@ export function Statuts({ dossier }: { dossier: number }) {
         surPlacer={placer}
         pagesRetirees={pagesRetirees}
         surRetraitDePage={setPagesRetirees}
+        historique={historique}
+        positionHistorique={position}
+        surInscription={inscrire}
+        surReprise={reprendre}
         entete={
           <div className={styles.statutsTete}>
             <div>
