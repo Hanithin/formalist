@@ -2,11 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import {
-  ouvrirModification,
-  societesConnues,
-  confirmerAuRetour,
-} from "@/infrastructure/db/depots/modifications";
+import { ouvrirModification, confirmerAuRetour } from "@/infrastructure/db/depots/modifications";
 import { Parcours, type EtatDuDossier } from "./Parcours";
 import { Commencer } from "./Commencer";
 import styles from "./Modification.module.css";
@@ -44,7 +40,7 @@ export default async function Modification({
 
         <div className={styles.content}>
           <h1 className={styles.titre}>Modifier ma société</h1>
-          <Commencer societes={await societesConnues(utilisateur)} />
+          <Commencer />
         </div>
       </main>
     );
@@ -101,7 +97,6 @@ export default async function Modification({
         <Parcours
           dossier={dossierId}
           initial={initial}
-          societesConnues={await societesConnues(utilisateur)}
           etapeInitiale={etapeInitiale}
           issueDuPaiement={issue}
         />

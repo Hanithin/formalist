@@ -78,7 +78,6 @@ export interface EtatDuDossier {
 interface Props {
   dossier: number;
   initial: EtatDuDossier;
-  societesConnues: { id: number; societe: string | null; forme: string | null }[];
   etapeInitiale: number;
   issueDuPaiement?: "regle" | "annule";
 }
@@ -102,7 +101,7 @@ const TRAITS = {
 
 /* --------------------------------------------------------------- Composant */
 
-export function Parcours({ dossier, initial, societesConnues, etapeInitiale, issueDuPaiement }: Props) {
+export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: Props) {
   const [etape, setEtape] = useState(etapeInitiale);
   const [etat, setEtat] = useState<EtatDuDossier>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -160,14 +159,7 @@ export function Parcours({ dossier, initial, societesConnues, etapeInitiale, iss
         </p>
         <h2>{ETAPES[etape - 1].titre}</h2>
 
-        {etape === 1 && (
-          <EtapeSociete
-            etat={etat}
-            connues={societesConnues}
-            anomalies={anomaliesSociete}
-            changer={changer}
-          />
-        )}
+        {etape === 1 && <EtapeSociete etat={etat} anomalies={anomaliesSociete} changer={changer} />}
 
         {etape === 2 && <EtapeChangements etat={etat} changer={changer} />}
 
@@ -285,12 +277,10 @@ const FORMES_JURIDIQUES: Record<string, string> = {
 
 function EtapeSociete({
   etat,
-  connues,
   anomalies,
   changer,
 }: {
   etat: EtatDuDossier;
-  connues: { id: number; societe: string | null; forme: string | null }[];
   anomalies: { champ: string; message: string }[];
   changer: (c: Partial<EtatDuDossier>) => void;
 }) {
@@ -365,7 +355,9 @@ function EtapeSociete({
       const donnees = (await fiche.json()) as { societe?: { capital?: number | null } };
       const capital = donnees.societe?.capital;
       if (typeof capital === "number") {
-        changer({ societe: { ...etat.societe, denomination: nom, siren: resultat.siren, capital } });
+        changer({
+          societe: { ...etat.societe, denomination: nom, siren: resultat.siren, capital },
+        });
       } else {
         setMessage("Capital non publié au registre : à saisir à la main.");
       }
@@ -383,9 +375,8 @@ function EtapeSociete({
   return (
     <>
       <p className={styles.description}>
-        Cherchez la société au registre : sa dénomination, son SIREN, son siège et son
-        capital se remplissent seuls. Tout reste modifiable - le registre peut être en
-        retard sur vous.
+        Cherchez la société au registre : sa dénomination, son SIREN, son siège et son capital se
+        remplissent seuls. Tout reste modifiable - le registre peut être en retard sur vous.
       </p>
 
       <div className={styles.recherche}>
@@ -419,33 +410,6 @@ function EtapeSociete({
           </ul>
         )}
       </div>
-
-      {connues.length > 0 && (
-        <p className={styles.description}>
-          Ou reprenez une société déjà chez nous :{" "}
-          {connues.map((c, rang) => (
-            <span key={c.id}>
-              {rang > 0 && ", "}
-              <button
-                type="button"
-                className={styles.resultat}
-                style={{ display: "inline", padding: 0, textDecoration: "underline" }}
-                onClick={() =>
-                  changer({
-                    societe: {
-                      ...etat.societe,
-                      denomination: c.societe ?? "",
-                      forme: c.forme ?? "",
-                    },
-                  })
-                }
-              >
-                {c.societe}
-              </button>
-            </span>
-          ))}
-        </p>
-      )}
 
       {message && <p className={styles.description}>{message}</p>}
 
@@ -557,16 +521,17 @@ function EtapeChangements({
   const chiffrage = devis({
     codes: etat.codes,
     ressortActuel: etat.societe.ville ?? "",
-    ressortNouveau: typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
+    ressortNouveau:
+      typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
     depotDesStatuts: statutsAMettreAJour(etat.codes),
   });
 
   return (
     <>
       <p className={styles.description}>
-        Cochez tout ce qui est décidé. Une même assemblée peut en décider plusieurs :
-        c&apos;est alors un seul procès-verbal, une seule annonce, un seul dépôt - et les
-        modifications suivantes coûtent moins cher.
+        Cochez tout ce qui est décidé. Une même assemblée peut en décider plusieurs : c&apos;est
+        alors un seul procès-verbal, une seule annonce, un seul dépôt - et les modifications
+        suivantes coûtent moins cher.
       </p>
 
       <ul className={styles.changements}>
@@ -584,6 +549,18 @@ function EtapeChangements({
                 checked={etat.codes.includes(m.code)}
                 onChange={() => basculer(m.code)}
               />
+              <span className={styles.changementCase} aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
               <span className={styles.changementTitre}>{m.libelle}</span>
               <span className={styles.changementDesc}>{m.description}</span>
             </label>
@@ -614,9 +591,7 @@ function Devis({ chiffrage }: { chiffrage: ReturnType<typeof devis> }) {
                     <span className={styles.devisPrecision}>{ligne.precision}</span>
                   )}
                 </span>
-                <span className={styles.devisMontant}>
-                  {montantLisible(ligne.centimes)} HT
-                </span>
+                <span className={styles.devisMontant}>{montantLisible(ligne.centimes)} HT</span>
               </li>
             ))}
           </ul>
@@ -646,9 +621,7 @@ function Devis({ chiffrage }: { chiffrage: ReturnType<typeof devis> }) {
       </div>
 
       <div className={styles.devisTotal}>
-        <span className={styles.devisTotalLibelle}>
-          Total, honoraires et frais compris
-        </span>
+        <span className={styles.devisTotalLibelle}>Total, honoraires et frais compris</span>
         <span className={styles.devisTotalMontant}>{montantLisible(chiffrage.totalTTC)} TTC</span>
       </div>
     </>
@@ -671,7 +644,11 @@ function EtapeDetails({
   }
 
   if (etat.codes.length === 0) {
-    return <p className={styles.description}>Revenez à l&apos;étape précédente pour choisir ce qui change.</p>;
+    return (
+      <p className={styles.description}>
+        Revenez à l&apos;étape précédente pour choisir ce qui change.
+      </p>
+    );
   }
 
   return (
@@ -812,8 +789,8 @@ function EtapeAssemblee({
   return (
     <>
       <p className={styles.description}>
-        Le procès-verbal nomme qui décide et combien de parts chacun détient. Ce sont ces
-        noms qui figureront au bas de l&apos;acte, sous les signatures.
+        Le procès-verbal nomme qui décide et combien de parts chacun détient. Ce sont ces noms qui
+        figureront au bas de l&apos;acte, sous les signatures.
       </p>
 
       <div className={styles.champs}>
@@ -1008,14 +985,16 @@ function EtapeStatuts({
     return (
       <>
         <p className={styles.description}>
-          Ces statuts serviront de base à la mise à jour : c&apos;est sur eux que les
-          articles modifiés seront retouchés, à l&apos;étape suivante.
+          Ces statuts serviront de base à la mise à jour : c&apos;est sur eux que les articles
+          modifiés seront retouchés, à l&apos;étape suivante.
         </p>
         <div className={styles.statutsConfirme}>
           <span>
             {etat.statuts.source === "inpi"
               ? etat.statuts.nature +
-                (etat.statuts.deposeLe ? ", déposés au registre le " + jourFrancais(etat.statuts.deposeLe) : "")
+                (etat.statuts.deposeLe
+                  ? ", déposés au registre le " + jourFrancais(etat.statuts.deposeLe)
+                  : "")
               : "Vos statuts : " + (etat.statuts.fichier ?? "document déposé")}
           </span>
         </div>
@@ -1070,7 +1049,14 @@ function EtapeStatuts({
             </button>
             <button
               type="button"
-              style={{ padding: "12px 20px", border: "1px solid #e5e5e7", borderRadius: 10, background: "#fff", fontWeight: 600, cursor: "pointer" }}
+              style={{
+                padding: "12px 20px",
+                border: "1px solid #e5e5e7",
+                borderRadius: 10,
+                background: "#fff",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
               onClick={() => setDepotDemande(true)}
             >
               Non, j&apos;ai une version plus récente
@@ -1182,9 +1168,9 @@ function EtapeActes({
   return (
     <>
       <p className={styles.description}>
-        Le procès-verbal porte toutes vos résolutions, numérotées dans l&apos;ordre. Les
-        statuts, eux, se retouchent article par article sur le document d&apos;origine : le
-        reste ne bouge pas d&apos;un point.
+        Le procès-verbal porte toutes vos résolutions, numérotées dans l&apos;ordre. Les statuts,
+        eux, se retouchent article par article sur le document d&apos;origine : le reste ne bouge
+        pas d&apos;un point.
       </p>
 
       <div className={styles.actions}>
@@ -1209,8 +1195,8 @@ function EtapeActes({
 
           {!etat.statuts ? (
             <p className={styles.description}>
-              Revenez à l&apos;étape précédente : les statuts en vigueur ne sont pas encore
-              au dossier.
+              Revenez à l&apos;étape précédente : les statuts en vigueur ne sont pas encore au
+              dossier.
             </p>
           ) : !editeurOuvert ? (
             <>
@@ -1275,14 +1261,16 @@ function EtapeReglement({
   const chiffrage = devis({
     codes: etat.codes,
     ressortActuel: etat.societe.ville ?? "",
-    ressortNouveau: typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
+    ressortNouveau:
+      typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
     depotDesStatuts: statutsAMettreAJour(etat.codes),
   });
 
   const publications = publicationsAPrevoir({
     codes: etat.codes,
     ressortActuel: etat.societe.ville ?? "",
-    ressortNouveau: typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
+    ressortNouveau:
+      typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
   });
 
   const pieces = piecesAFournir(etat.codes, etat.valeurs);
@@ -1404,8 +1392,9 @@ function EtapeReglement({
 
       {anomalies.length > 0 && (
         <p role="alert">
-          Il manque {anomalies.length === 1 ? "une information" : anomalies.length + " informations"}{" "}
-          avant de pouvoir régler : {anomalies.map((a) => a.message).join(", ")}.
+          Il manque{" "}
+          {anomalies.length === 1 ? "une information" : anomalies.length + " informations"} avant de
+          pouvoir régler : {anomalies.map((a) => a.message).join(", ")}.
         </p>
       )}
 

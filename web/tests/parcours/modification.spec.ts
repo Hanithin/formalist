@@ -248,3 +248,51 @@ test("le fil d'étapes se lit en ligne, jamais en colonne", async ({ page, reque
     expect(Math.abs(cercles[i].y - cercles[0].y), "pastille " + (i + 1)).toBeLessThan(4);
   }
 });
+
+test("les changements se cochent dès l'écran d'entrée, et plusieurs à la fois", async ({ page }) => {
+  /*
+   * Ils y étaient en cartes inertes : elles avaient tout l'air de cases à cocher et
+   * n'en étaient pas. On cliquait, rien ne se passait.
+   */
+  await page.goto("/modification");
+
+  await page.getByText("Transfert de siège social").click();
+  await page.getByText("Changement de dénomination").click();
+  await expect(page.getByText("2 modifications sélectionnées")).toBeVisible();
+
+  // Un second clic décoche : la sélection se corrige sans repartir de zéro.
+  await page.getByText("Transfert de siège social").click();
+  await expect(page.getByText("1 modification sélectionnée")).toBeVisible();
+
+  await page.getByRole("button", { name: "Commencer" }).click();
+  await page.waitForURL(/\/modification\?dossier=\d+/);
+
+  // La sélection a suivi le dossier plutôt que d'être reperdue en changeant d'écran.
+  await page.goto(page.url() + "&etape=2");
+  await expect(page.getByRole("checkbox", { name: /Changement de dénomination/ })).toBeChecked();
+});
+
+test("plusieurs changements se cochent aussi à l'étape 2", async ({ page, request }) => {
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: { dossier, societe: SOCIETE },
+  });
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=2");
+
+  const siege = page.getByRole("checkbox", { name: /Transfert de siège social/ });
+  const capital = page.getByRole("checkbox", { name: /Augmentation de capital/ });
+
+  await siege.check();
+  await capital.check();
+
+  await expect(siege).toBeChecked();
+  await expect(capital).toBeChecked();
+  // Le devis suit la sélection sans qu'on ait à valider quoi que ce soit.
+  await expect(page.getByText("Décidée dans la même assemblée")).toBeVisible();
+});
+
+test("l'écran d'entrée ne liste plus les sociétés du compte", async ({ page }) => {
+  await page.goto("/modification");
+  await expect(page.getByText(/Vos sociétés chez Formalist/)).toHaveCount(0);
+});

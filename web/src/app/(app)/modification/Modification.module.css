@@ -906,14 +906,17 @@
 /*
  * Une carte cochable.
  *
- * La case est masquée mais reste focalisable : la carte entière est la cible du
- * clic, et la navigation au clavier continue de fonctionner.
+ * La case native est masquée mais reste focalisable : la carte entière est la cible
+ * du clic, et la navigation au clavier continue de fonctionner. Un carré dessiné la
+ * remplace à l'œil - sans lui, la carte n'annonce pas qu'elle se coche, et l'on
+ * clique dessus sans comprendre pourquoi rien ne se passe.
  */
 .changement {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 16px;
+  padding: 16px 48px 16px 16px;
   border: 1px solid #e5e5e7;
   border-radius: 12px;
   cursor: pointer;
@@ -946,6 +949,43 @@
   font-size: 15px;
   font-weight: 600;
   color: #111;
+}
+
+/* Le carré qui dit « ceci se coche », et le montre une fois coché. */
+.changementCase {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #d4d4d8;
+  border-radius: 6px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.changement:hover .changementCase {
+  border-color: #a1a1aa;
+}
+
+.changementCase svg {
+  width: 13px;
+  height: 13px;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.changementChoisi .changementCase {
+  background: #111;
+  border-color: #111;
+}
+
+.changementChoisi .changementCase svg {
+  opacity: 1;
 }
 
 .changementDesc {
@@ -1328,4 +1368,11 @@
   .editeurPanneau {
     position: static;
   }
+}
+
+/* Le décompte de la sélection, à gauche du bouton qui la valide. */
+.compte {
+  align-self: center;
+  font-size: 13.5px;
+  color: #71717a;
 }

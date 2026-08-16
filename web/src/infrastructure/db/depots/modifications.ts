@@ -1,5 +1,5 @@
 import { prisma } from "../client";
-import { listerDossiers, exigerDossierModifiable } from "./dossiers";
+import { exigerDossierModifiable } from "./dossiers";
 import { proposerAuxAvocats } from "./avocat";
 import { relirePaiement } from "@/infrastructure/paiement/stripe";
 import { estUnTypeConnu, type Valeurs } from "@/domain/modification/types";
@@ -68,16 +68,6 @@ export function lireModification(dataJson: string | null): Modification {
   } catch {
     return { ...VIDE };
   }
-}
-
-/** Les sociétés déjà connues, proposées en raccourci avant toute recherche. */
-export async function societesConnues(utilisateur: UtilisateurConnecte) {
-  const dossiers = await listerDossiers(utilisateur);
-
-  return dossiers
-    .filter((d) => d.societe)
-    .filter((d) => d.type?.startsWith("Création") || d.type === "creation")
-    .map((d) => ({ id: d.id, societe: d.societe, forme: d.forme, status: d.status }));
 }
 
 /** Ouvre un dossier de modification, vide. La société se choisit à la première étape. */
