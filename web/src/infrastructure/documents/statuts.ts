@@ -280,7 +280,34 @@ export async function appliquerLesRetouches(
   const images = await imagesDesPages(pdf, [...pagesRetouchees]);
 
   const produit = await PDFDocument.create();
-  const police = await produit.embedFont(StandardFonts.Helvetica);
+
+  /*
+   * Les quatre variantes de chaque famille, embarquées une fois.
+   *
+   * Un acte est composé en serif : écrire la nouvelle valeur en sans serif à côté de
+   * l'ancienne se voit immédiatement et fait douter du document. Le gras et
+   * l'italique ne s'obtiennent pas par un réglage mais par une police distincte -
+   * c'est ainsi que le PDF fonctionne.
+   */
+  const familles = {
+    serif: [StandardFonts.TimesRoman, StandardFonts.TimesRomanBold, StandardFonts.TimesRomanItalic, StandardFonts.TimesRomanBoldItalic],
+    sans: [StandardFonts.Helvetica, StandardFonts.HelveticaBold, StandardFonts.HelveticaOblique, StandardFonts.HelveticaBoldOblique],
+    mono: [StandardFonts.Courier, StandardFonts.CourierBold, StandardFonts.CourierOblique, StandardFonts.CourierBoldOblique],
+  } as const;
+
+  const embarquees = new Map<string, Awaited<ReturnType<typeof produit.embedFont>>>();
+  for (const [famille, variantes] of Object.entries(familles)) {
+    for (let i = 0; i < variantes.length; i++) {
+      embarquees.set(famille + ":" + i, await produit.embedFont(variantes[i]));
+    }
+  }
+
+  /** La variante correspondant au gras et à l'italique demandés. */
+  function policeDe(retouche: Retouche) {
+    const famille = retouche.police ?? "serif";
+    const rang = (retouche.gras ? 1 : 0) + (retouche.italique ? 2 : 0);
+    return embarquees.get(famille + ":" + rang) ?? embarquees.get("serif:0")!;
+  }
 
   for (let index = 0; index < origine.getPageCount(); index++) {
     const numero = index + 1;
@@ -322,7 +349,7 @@ export async function appliquerLesRetouches(
         // La ligne de base se pose au bas du rectangle, remontée du jambage.
         y: height - retouche.y - retouche.hauteur + retouche.taille * 0.2,
         size: retouche.taille,
-        font: police,
+        font: policeDe(retouche),
         color: rgb(0, 0, 0),
       });
     }

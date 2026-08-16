@@ -308,3 +308,42 @@ describe("la retouche appliquée à un vrai PDF", () => {
     expect(vu).not.toContain("Paix");
   }, 120_000);
 });
+
+describe("la mise en forme d'une retouche", () => {
+  it("le gras et l'italique changent la police du document", async () => {
+    /*
+     * Dans un PDF, le gras ne se règle pas : c'est une autre police. Sans les quatre
+     * variantes de chaque famille, cocher « gras » n'aurait aucun effet sur le
+     * document produit alors que l'écran l'afficherait.
+     */
+    const statuts = await statutsDEssai();
+    const commun = { page: 1, x: 60, y: 300, largeur: 200, hauteur: 14, taille: 11 };
+
+    const ordinaire = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Texte temoin", police: "serif" as const },
+    ]);
+    const grasse = await appliquerLesRetouches(statuts, [
+      { ...commun, texte: "Texte temoin", police: "serif" as const, gras: true },
+    ]);
+
+    // Le même texte, deux polices : les documents diffèrent.
+    expect(ordinaire.equals(grasse)).toBe(false);
+
+    // Et le texte reste lisible dans les deux.
+    for (const produit of [ordinaire, grasse]) {
+      const relu = await lireLesStatuts(produit);
+      expect(relu.mots.map((m) => m.texte).join(" ")).toContain("temoin");
+    }
+  }, 120_000);
+
+  it("une police inconnue retombe sur le serif, sans faire échouer", async () => {
+    // Un dossier ancien n'a pas de police : il doit continuer de se produire.
+    const statuts = await statutsDEssai();
+    const produit = await appliquerLesRetouches(statuts, [
+      { page: 1, x: 60, y: 300, largeur: 200, hauteur: 14, taille: 11, texte: "Sans police" },
+    ]);
+
+    const relu = await lireLesStatuts(produit);
+    expect(relu.mots.map((m) => m.texte).join(" ")).toContain("police");
+  }, 120_000);
+});

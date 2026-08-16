@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Adresse } from "@/components/formulaire/Adresse";
 import { Editeur } from "./Editeur";
@@ -268,7 +269,9 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
 
         {etape === 5 && <EtapeStatuts dossier={dossier} etat={etat} changer={changer} />}
 
-        {etape === 6 && <EtapeActes dossier={dossier} etat={etat} changer={changer} />}
+        {etape === 6 && (
+          <EtapeActes dossier={dossier} etat={etat} changer={changer} />
+        )}
 
         {etape === 7 && (
           <EtapeReglement
@@ -1575,19 +1578,16 @@ function EtapeActes({
               </div>
             </>
           ) : (
-            <>
-              <Editeur
-                dossier={dossier}
-                pages={pages}
-                zones={zones}
-                retouches={retouches}
-                reconnus={reconnus}
-                surChangement={setRetouches}
-              />
-              <div className={styles.actions}>
-                <button type="button" onClick={() => setEditeurOuvert(false)}>
-                  Fermer
-                </button>
+            /*
+              L'éditeur prend l'écran entier.
+              Une page de statuts affichée dans une colonne de neuf cents pixels tient
+              à moins de la moitié de sa taille, et les cadres de quelques points y
+              deviennent des traits qu'on ne peut ni lire ni viser.
+            */
+            <PleinEcran
+              titre="Mettre les statuts à jour"
+              surFermeture={() => setEditeurOuvert(false)}
+              action={
                 <button
                   type="button"
                   className={styles.principal}
@@ -1596,8 +1596,17 @@ function EtapeActes({
                 >
                   {enCours ? "Application" : "Appliquer et produire les statuts à jour"}
                 </button>
-              </div>
-            </>
+              }
+            >
+              <Editeur
+                dossier={dossier}
+                pages={pages}
+                zones={zones}
+                retouches={retouches}
+                reconnus={reconnus}
+                surChangement={setRetouches}
+              />
+            </PleinEcran>
           )}
         </section>
       )}
@@ -1894,6 +1903,60 @@ function Fait({
         {precision && <span className={styles.faitPrecision}>{precision}</span>}
       </dd>
     </div>
+  );
+}
+
+/**
+ * Un écran entier, pour un travail qui le demande.
+ *
+ * Posé sur le document plutôt que dans la page : le gabarit met la colonne en
+ * position:sticky, ce qui crée un contexte d'empilement où un z-index resterait
+ * prisonnier.
+ */
+function PleinEcran({
+  titre,
+  action,
+  surFermeture,
+  children,
+}: {
+  titre: string;
+  action: ReactNode;
+  surFermeture: () => void;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    function auClavier(e: KeyboardEvent) {
+      // Échap ferme, sauf quand on est en train d'écrire dans un cadre.
+      if (e.key === "Escape" && !(e.target as HTMLElement)?.matches?.("input, textarea, select")) {
+        surFermeture();
+      }
+    }
+    document.addEventListener("keydown", auClavier);
+
+    // Le fond ne défile pas derrière : on travaille sur la page, pas sur le parcours.
+    const avant = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", auClavier);
+      document.body.style.overflow = avant;
+    };
+  }, [surFermeture]);
+
+  return createPortal(
+    <div className={styles.pleinEcran} role="dialog" aria-modal="true" aria-label={titre}>
+      <div className={styles.pleinEcranTete}>
+        <h2 className={styles.pleinEcranTitre}>{titre}</h2>
+        <div className={styles.pleinEcranActions}>
+          <button type="button" className={styles.pleinEcranFermer} onClick={surFermeture}>
+            Fermer
+          </button>
+          {action}
+        </div>
+      </div>
+      <div className={styles.pleinEcranCorps}>{children}</div>
+    </div>,
+    document.body
   );
 }
 

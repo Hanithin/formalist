@@ -1223,33 +1223,94 @@
 }
 
 /*
- * Une retouche, posée sur l'image.
+ * Le cadre qui marque un passage à remplacer.
  *
- * Le rectangle est blanc et opaque : c'est exactement ce que verra le document
- * produit. Un aperçu translucide donnerait à croire que l'ancien texte reste
- * visible, ou l'inverse.
+ * Trois pixels de vert : il doit se voir d'un bout à l'autre d'une page, sans avoir à
+ * la parcourir. Le fond reste transparent tant qu'on n'y a pas touché - l'ancien texte
+ * demeure lisible dessous, ce qui permet de vérifier qu'on vise le bon passage. Dans
+ * le document produit, il est blanc et couvre pour de bon.
  */
-.retouche {
+.repere {
   position: absolute;
   box-sizing: border-box;
-  border: 1px solid #2563eb;
-  background: #fff;
-  cursor: move;
+  margin: 0;
+  padding: 0 2px;
+  border: 3px solid #16a34a;
+  border-radius: 3px;
+  background: rgba(22, 163, 74, 0.08);
+  color: #111;
+  /* Le cadre entier se saisit : on le tire pour le déplacer, on le lâche sur place
+     pour écrire dedans. */
+  cursor: grab;
+  touch-action: none;
   line-height: 1.1;
   overflow: hidden;
   text-align: left;
+  font: inherit;
+  transition: background 0.12s, box-shadow 0.12s;
 }
 
-.retoucheChoisie {
-  border-color: #111;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+.repere:hover {
+  background: rgba(22, 163, 74, 0.16);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
 }
 
-.retoucheTexte {
+.repere:active {
+  cursor: grabbing;
+}
+
+.repereTexte {
   display: block;
-  padding: 0 1px;
-  color: #111;
   white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Ouvert : le fond passe au blanc, comme il le sera dans le document. */
+.repereOuvert {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  border: 3px solid #16a34a;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
+  overflow: visible;
+}
+
+.repereSaisie {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: #111;
+  /* La saisie porte la police, la taille et le style du cadre : ce qu'on tape est ce
+     qui sera écrit. */
+  font: inherit;
+  line-height: 1.1;
+}
+
+.repereSaisie:focus {
+  outline: none;
+}
+
+/*
+ * La poignée de déplacement.
+ *
+ * Sans elle, cliquer dans le cadre pour poser le curseur le déplaçait : on ne pouvait
+ * pas corriger un mot au milieu d'une phrase.
+ */
+.poignee {
+  flex-shrink: 0;
+  width: 10px;
+  background: #16a34a;
+  cursor: move;
+  border-radius: 1px 0 0 1px;
 }
 
 .editeurPanneau {
@@ -1744,4 +1805,279 @@
   background: #111;
   border-color: #111;
   color: #fff;
+}
+
+/* ---------- L'accès rapide aux pages à modifier ---------- */
+
+/*
+ * Sur des statuts de vingt-trois pages, lister toutes les pages sur le même plan
+ * oblige à chercher la bonne à la main - le geste le plus long de tout le travail.
+ * Celles qui portent une retouche passent devant, avec l'article qu'elles visent.
+ */
+.acces {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.accesTitre {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+.accesPages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.accesPage {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 7px 12px;
+  border: 1px solid #d5f0dd;
+  border-radius: 10px;
+  background: #f0fdf4;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.accesPage:hover {
+  border-color: #16a34a;
+}
+
+.accesPageActive {
+  border-color: #16a34a;
+  background: #dcfce7;
+}
+
+.accesNumero {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #14532d;
+}
+
+.accesArticle {
+  font-size: 11.5px;
+  color: #15803d;
+}
+
+.accesToutes {
+  margin: 0 0 0 auto;
+  padding: 6px 12px;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: #52525b;
+  cursor: pointer;
+}
+
+.accesToutes:hover {
+  border-color: #c9c9cc;
+  color: #111;
+}
+
+/* ---------- La mise en forme du cadre ouvert ---------- */
+
+.miseEnForme {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.miseEnForme select,
+.miseEnForme input {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.miseEnForme input[type="number"] {
+  width: 78px;
+}
+
+.style {
+  min-width: 34px;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #3f3f46;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.style:hover {
+  border-color: #c9c9cc;
+  color: #111;
+}
+
+.styleActif {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.styleDanger {
+  margin-left: auto;
+  color: #b91c1c;
+}
+
+.styleDanger:hover {
+  border-color: #b91c1c;
+  color: #7f1d1d;
+}
+
+/*
+ * La carte s'élargit le temps de la retouche.
+ *
+ * Neuf cents pixels conviennent à un formulaire ; une page de statuts s'y affiche à
+ * moins de la moitié de sa taille, et les cadres de quelques points y deviennent des
+ * traits qu'on ne peut ni lire ni viser.
+ */
+/* ---------- L'éditeur en plein écran ---------- */
+
+/*
+ * Élargir la carte ne marchait pas : centrée dans une colonne dont la largeur dépend
+ * du menu, elle débordait à gauche puis à droite selon la formule employée. L'écran
+ * entier ne dépend de rien.
+ */
+.pleinEcran {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #f6f6f7;
+}
+
+.pleinEcranTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e5e5e7;
+}
+
+.pleinEcranTitre {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.pleinEcranActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pleinEcranActions button {
+  margin: 0;
+}
+
+.pleinEcranFermer {
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3f3f46;
+  cursor: pointer;
+}
+
+.pleinEcranFermer:hover {
+  border-color: #c9c9cc;
+  color: #111;
+}
+
+.pleinEcranCorps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+}
+
+/* ---------- Les poignées de redimensionnement ---------- */
+
+/*
+ * Les bords se tirent, comme sur une image.
+ *
+ * Un champ numérique pour la largeur obligeait à viser un chiffre, à le corriger, à
+ * remonter voir le résultat, à recommencer. Les poignées débordent légèrement du
+ * cadre : sur un trait de sept pixels de haut, un bord au ras se rate.
+ */
+.borddroit,
+.bordbas,
+.coin {
+  position: absolute;
+  background: transparent;
+  touch-action: none;
+}
+
+.borddroit {
+  top: 0;
+  right: -5px;
+  width: 11px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.bordbas {
+  left: 0;
+  bottom: -5px;
+  width: 100%;
+  height: 11px;
+  cursor: ns-resize;
+}
+
+.coin {
+  right: -6px;
+  bottom: -6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: #16a34a;
+  cursor: nwse-resize;
+}
+
+/* La poignée de coin ne se montre qu'au survol : elle encombrerait sinon la page. */
+.repere .coin {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.repere:hover .coin,
+.repereOuvert .coin {
+  opacity: 1;
 }

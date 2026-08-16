@@ -351,6 +351,21 @@ export function recherchesPour(
  * décidé. L'avocat peut déplacer le rectangle, corriger le texte, en ajouter un que
  * rien n'a repéré, ou en supprimer un qui tombait à côté.
  */
+/**
+ * La police d'une retouche.
+ *
+ * Les statuts sont presque toujours composés en serif - c'est ce que rendent les
+ * traitements de texte par défaut sur un acte. Écrire la nouvelle valeur en sans
+ * serif à côté de l'ancienne se voit immédiatement, et fait douter du document.
+ */
+export type Police = "serif" | "sans" | "mono";
+
+export const POLICES: { valeur: Police; libelle: string }[] = [
+  { valeur: "serif", libelle: "Serif" },
+  { valeur: "sans", libelle: "Sans serif" },
+  { valeur: "mono", libelle: "Chasse fixe" },
+];
+
 export interface Retouche {
   page: number;
   x: number;
@@ -360,6 +375,10 @@ export interface Retouche {
   texte: string;
   /** Taille de police. Sous la hauteur du rectangle, faute de quoi le texte déborde. */
   taille: number;
+  /** Serif par défaut : c'est la composition ordinaire d'un acte. */
+  police?: Police;
+  gras?: boolean;
+  italique?: boolean;
 }
 
 /** Les retouches proposées à partir des zones repérées. */
@@ -375,6 +394,9 @@ export function retouchesProposees(zones: Zone[]): Retouche[] {
       // première : le reste est couvert, sans quoi le texte serait écrit deux fois.
       texte: rang === 0 ? zone.propose : "",
       taille: zone.taille,
+      police: "serif",
+      gras: false,
+      italique: false,
     }))
   );
 }
