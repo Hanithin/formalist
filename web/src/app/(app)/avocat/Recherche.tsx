@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { TRIS } from "@/domain/formalite/avocat";
+import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./Avocat.module.css";
 
 /**
@@ -75,12 +76,12 @@ export function Recherche() {
       {/* La période porte sur la création : c'est la date qui ne bouge plus. */}
       <label className={styles.outil}>
         <span className={styles.outilLibelle}>Créés du</span>
-        <input type="date" value={du} max={au || undefined} onChange={(e) => poser("du", e.target.value)} />
+        <ChampDate id="recherche-du" valeur={du} surChangement={(iso) => poser("du", iso)} />
       </label>
 
       <label className={styles.outil}>
         <span className={styles.outilLibelle}>au</span>
-        <input type="date" value={au} min={du || undefined} onChange={(e) => poser("au", e.target.value)} />
+        <ChampDate id="recherche-au" valeur={au} surChangement={(iso) => poser("au", iso)} />
       </label>
 
       {aUnCritere && (

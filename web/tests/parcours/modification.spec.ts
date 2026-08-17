@@ -973,3 +973,38 @@ test("une cession se compose à partir des associés, et sa répartition se voit
   // Et rien d'autre n'est réclamé : les anciens champs plats ne sont plus déclarés.
   await expect(page.getByText(/Nom du cédant est requis/)).toHaveCount(0);
 });
+
+test("le calendrier est le nôtre, et la saisie reste au clavier", async ({ page, request }) => {
+  /*
+   * Le champ natif du navigateur ouvre un calendrier que rien ne peut habiller : bleu
+   * système, boutons dans une autre langue selon la machine, apparence différente sur
+   * chaque navigateur. Celui-ci est écrit, et le même partout.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: { dossier, codes: ["prorogation"], societe: { denomination: "DATES", forme: "SARL" } },
+  });
+  await page.goto("/modification?dossier=" + dossier + "&etape=3");
+
+  // Aucun champ natif ne subsiste : le navigateur n'ouvre plus son propre calendrier.
+  expect(await page.locator('input[type="date"]').count()).toBe(0);
+
+  const champ = page.getByLabel("Date d'expiration actuelle");
+  await champ.fill("15/09/2026");
+  await expect(champ).toHaveValue("15/09/2026");
+
+  // Le calendrier s'ouvre sur le mois de la date retenue, non sur le mois courant.
+  await page.getByRole("button", { name: "Ouvrir le calendrier" }).first().click();
+  const calendrier = page.getByRole("dialog", { name: "Choisir une date" });
+  await expect(calendrier).toContainText("septembre 2026");
+
+  // Un jour cliqué se retient, et le calendrier se referme.
+  await calendrier.getByRole("button", { name: "22", exact: true }).click();
+  await expect(champ).toHaveValue("22/09/2026");
+  await expect(calendrier).toHaveCount(0);
+
+  // Une date impossible ne s'enregistre pas : elle revient à ce qui était retenu.
+  await champ.fill("31/02/2026");
+  await champ.blur();
+  await expect(champ).toHaveValue("22/09/2026");
+});

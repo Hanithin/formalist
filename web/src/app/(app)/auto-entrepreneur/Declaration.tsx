@@ -32,6 +32,7 @@ import {
 } from "@/domain/auto-entrepreneur/offre";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { Pieces } from "@/components/formulaire/Pieces";
+import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./AutoEntrepreneur.module.css";
 
 interface Props {
@@ -251,11 +252,10 @@ export function Declaration({
               libelle={<>Date de naissance</>}
               anomalie={erreur("dateNaissance")}
             >
-              <input
+              <ChampDate
                 id="dateNaissance"
-                type="date"
-                value={donnees.dateNaissance ?? ""}
-                onChange={(e) => modifier("dateNaissance", e.target.value)}
+                valeur={donnees.dateNaissance ?? ""}
+                surChangement={(iso) => modifier("dateNaissance", iso)}
               />
             </Champ>
 
@@ -501,11 +501,10 @@ export function Declaration({
               libelle={<>Date de début d&apos;activité</>}
               anomalie={erreur("dateDebut")}
             >
-              <input
+              <ChampDate
                 id="dateDebut"
-                type="date"
-                value={donnees.dateDebut ?? ""}
-                onChange={(e) => modifier("dateDebut", e.target.value)}
+                valeur={donnees.dateDebut ?? ""}
+                surChangement={(iso) => modifier("dateDebut", iso)}
               />
             </Champ>
 

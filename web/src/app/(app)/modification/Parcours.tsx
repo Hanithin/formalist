@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition, type ReactNode } from "reac
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Adresse } from "@/components/formulaire/Adresse";
+import { ChampDate } from "@/components/formulaire/ChampDate";
 import { Cessions } from "./Cessions";
 import { verifierCessions, type Cession } from "@/domain/modification/cession";
 import { Editeur } from "./Editeur";
@@ -293,6 +294,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
               mais leur champ porte le rang du bloc : « cession-1-parts ».
             */
             anomalies={manquesCourants.filter((a) => manquesVus.includes(a.champ))}
+            restants={manquesCourants}
             majValeurs={majValeurs}
             changer={changer}
           />
@@ -922,11 +924,14 @@ function Devis({ chiffrage }: { chiffrage: ReturnType<typeof devis> }) {
 function EtapeDetails({
   etat,
   anomalies,
+  restants,
   majValeurs,
   changer,
 }: {
   etat: EtatDuDossier;
   anomalies: { champ: string; message: string }[];
+  /** Tout ce qui manque, montré ou non : le sommaire s'en sert pour cocher. */
+  restants: { champ: string; message: string }[];
   majValeurs: (maj: (valeurs: Valeurs) => Valeurs) => void;
   changer: (c: Partial<EtatDuDossier>) => void;
 }) {
@@ -942,11 +947,64 @@ function EtapeDetails({
     );
   }
 
+  const choisies = definitions(etat.codes);
+
+  /*
+   * Ce qui manque, changement par changement.
+   *
+   * Quatre modifications à la suite formaient une seule coulée : les titres avaient le
+   * poids d'un libellé de champ, rien ne disait où l'une finissait, et l'on ne savait
+   * pas laquelle était encore à remplir.
+   */
+  const incomplete = (code: string) => {
+    const champs = new Set(
+      MODIFICATIONS.find((m) => m.code === code)?.champs.map((c) => c.identifiant) ?? []
+    );
+    if (code === "cession_parts") {
+      return restants.some((a) => a.champ === "cessions" || a.champ.startsWith("cession-"));
+    }
+    return restants.some((a) => champs.has(a.champ));
+  };
+
   return (
-    <>
-      {definitions(etat.codes).map((definition) => (
-        <section key={definition.code} style={{ marginBottom: 32 }}>
-          <h3>{definition.libelle}</h3>
+    <div className={styles.detailsCorps}>
+      {/*
+        Le sommaire, en tête et sur une ligne.
+        Une colonne à droite laissait un grand vide sous elle dès que les blocs
+        s'allongeaient, et écrasait le formulaire à sa gauche. Ici il ne prend qu'une
+        ligne, dit combien de changements restent, et mène à chacun.
+      */}
+      {choisies.length > 1 && (
+        <nav className={styles.sommaire} aria-label="Les changements à renseigner">
+          {choisies.map((definition, rang) => (
+            <a
+              key={definition.code}
+              href={"#modif-" + definition.code}
+              className={
+                incomplete(definition.code)
+                  ? styles.sommaireLien
+                  : `${styles.sommaireLien} ${styles.sommaireFait}`
+              }
+            >
+              <span className={styles.sommaireRang}>
+                {incomplete(definition.code) ? rang + 1 : "✓"}
+              </span>
+              {definition.libelleCourt}
+            </a>
+          ))}
+        </nav>
+      )}
+
+      {choisies.map((definition, rang) => (
+        <section
+          key={definition.code}
+          id={"modif-" + definition.code}
+          className={choisies.length > 1 ? styles.detailsBloc : undefined}
+        >
+          <h3 className={styles.detailsTitre}>
+            {choisies.length > 1 && <span className={styles.etapeNum}>{rang + 1}</span>}
+            {definition.libelle}
+          </h3>
 
           {/*
             La cession ne se saisit pas en champs plats.
@@ -997,7 +1055,7 @@ function EtapeDetails({
           )}
         </section>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -1060,10 +1118,22 @@ function Champ({
           value={typeof valeur === "string" ? valeur : ""}
           onChange={(e) => surChangement(champ.identifiant, e.target.value)}
         />
+      ) : champ.type === "date" ? (
+        /*
+          Notre calendrier, non celui du navigateur.
+          Le champ natif ouvre un calendrier que rien ne peut habiller : bleu système,
+          boutons dans une autre langue selon la machine, apparence différente sur
+          chaque navigateur.
+        */
+        <ChampDate
+          id={id}
+          valeur={typeof valeur === "string" ? valeur : ""}
+          surChangement={(iso) => surChangement(champ.identifiant, iso)}
+        />
       ) : (
         <input
           id={id}
-          type={champ.type === "nombre" ? "number" : champ.type === "date" ? "date" : "text"}
+          type={champ.type === "nombre" ? "number" : "text"}
           value={valeur ?? ""}
           onChange={(e) =>
             surChangement(
@@ -1108,11 +1178,10 @@ function EtapeAssemblee({
       <div className={styles.champs}>
         <div className={styles.champ}>
           <label htmlFor="assemblee-date">Date de l&apos;assemblée</label>
-          <input
+          <ChampDate
             id="assemblee-date"
-            type="date"
-            value={etat.assemblee.date ?? ""}
-            onChange={(e) => changer({ assemblee: { ...etat.assemblee, date: e.target.value } })}
+            valeur={etat.assemblee.date ?? ""}
+            surChangement={(iso) => changer({ assemblee: { ...etat.assemblee, date: iso } })}
           />
         </div>
       </div>

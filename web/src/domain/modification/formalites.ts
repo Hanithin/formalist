@@ -177,7 +177,36 @@ export function piecesAFournir(codes: string[], valeurs: Valeurs = {}): PieceAFo
         formats: [".pdf"],
       });
     }
-    if (valeurs.modeAugmentation === "Apport en nature") {
+    /*
+     * L'arrêté de compte d'une compensation de créances.
+     *
+     * La créance doit être liquide et exigible : c'est lui qui l'établit. Le mode
+     * n'existait pas, donc la pièce n'était jamais réclamée.
+     */
+    if (valeurs.modeAugmentation === "Compensation de créances") {
+      pieces.push({
+        identifiant: "arrete-compte",
+        titre: "Arrêté de compte de la créance",
+        explication:
+          "Il établit que la créance est liquide et exigible. Certifié par le commissaire aux comptes s'il en existe un, à défaut établi par l'expert-comptable.",
+        obligatoire: true,
+        formats: [".pdf"],
+      });
+    }
+
+    /*
+     * Le rapport du commissaire aux apports, sauf dispense.
+     *
+     * Les associés peuvent s'en dispenser à l'unanimité si aucun apport ne dépasse
+     * 30 000 € et si le total des apports en nature reste sous la moitié du capital
+     * (art. L. 223-33 renvoyant à L. 223-9, et art. D. 223-6-1). Le réclamer alors
+     * bloquerait un dossier sur une pièce que la loi n'exige pas - au prix, il est
+     * vrai, d'une responsabilité solidaire de cinq ans sur la valeur retenue.
+     */
+    if (
+      valeurs.modeAugmentation === "Apport en nature" &&
+      valeurs.dispenseCommissaire !== "Oui, à l'unanimité"
+    ) {
       pieces.push({
         identifiant: "commissaire-apports",
         titre: "Rapport du commissaire aux apports",
@@ -209,6 +238,22 @@ export function obligationsParticulieres(codes: string[], valeurs: Valeurs = {})
   if (codes.includes("reduction_capital") && valeurs.motifReduction === "Remboursement aux associés") {
     dits.push(
       "La réduction n'étant pas motivée par des pertes, les créanciers peuvent former opposition. Le dépôt au guichet unique attend l'expiration de ce délai."
+    );
+  }
+
+  /*
+   * La dispense de commissaire aux apports se paie d'une responsabilité.
+   *
+   * Elle n'est pas gratuite : sans commissaire, les associés répondent solidairement de
+   * la valeur retenue pendant cinq ans (art. L. 223-9). On le dit avant, non après.
+   */
+  if (
+    codes.includes("augmentation_capital") &&
+    valeurs.modeAugmentation === "Apport en nature" &&
+    valeurs.dispenseCommissaire === "Oui, à l'unanimité"
+  ) {
+    dits.push(
+      "Sans commissaire aux apports, les associés répondent solidairement de la valeur attribuée à l'apport pendant cinq ans à l'égard des tiers (article L. 223-9 du code de commerce)."
     );
   }
 

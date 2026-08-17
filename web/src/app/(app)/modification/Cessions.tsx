@@ -10,6 +10,7 @@ import {
   type Cession,
 } from "@/domain/modification/cession";
 import type { AssociePresent } from "@/domain/modification/gabarit";
+import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./Modification.module.css";
 
 /**
@@ -321,11 +322,10 @@ export function Cessions({
 
               <div className={styles.champ}>
                 <label htmlFor={"cession-date-" + rang}>Date de cession</label>
-                <input
+                <ChampDate
                   id={"cession-date-" + rang}
-                  type="date"
-                  value={cession.date ?? ""}
-                  onChange={(e) => modifier(rang, { date: e.target.value })}
+                  valeur={cession.date ?? ""}
+                  surChangement={(iso) => modifier(rang, { date: iso })}
                 />
                 {refus("cession-" + rang + "-date") && (
                   <p role="alert">{refus("cession-" + rang + "-date")}</p>

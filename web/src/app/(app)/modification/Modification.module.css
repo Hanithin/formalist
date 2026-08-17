@@ -3798,3 +3798,100 @@
   letter-spacing: 0;
   vertical-align: middle;
 }
+
+/* ---------- Plusieurs changements dans la même étape ---------- */
+
+/*
+ * Des blocs distincts, et un sommaire sur une ligne.
+ *
+ * Quatre modifications à la suite formaient une seule coulée : les titres avaient le
+ * poids d'un libellé de champ, et rien ne disait où l'une finissait. Essayé en colonne
+ * à droite : elle laissait un grand vide sous elle dès que les blocs s'allongeaient, et
+ * écrasait le formulaire à sa gauche.
+ */
+.detailsCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.detailsBloc {
+  padding: 20px 22px;
+  border: 1px solid #e8e8ea;
+  border-radius: 14px;
+  background: #fff;
+  /* La cible d'une ancre ne doit pas se coller au bord haut de la fenêtre. */
+  scroll-margin-top: 24px;
+}
+
+.detailsTitre {
+  display: flex;
+  align-items: center;
+  margin: 0 0 4px;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.sommaire {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sommaireLien {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px 6px 7px;
+  border: 1px solid #e8e8ea;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 12.5px;
+  color: #52525b;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.12s,
+    color 0.12s;
+}
+
+.sommaireLien:hover {
+  border-color: #111;
+  color: #111;
+}
+
+.sommaireRang {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f1f1f3;
+  font-size: 11px;
+  font-weight: 600;
+  color: #71717a;
+}
+
+/* Renseigné : la pastille se remplit, comme une étape franchie. */
+.sommaireFait .sommaireRang {
+  background: #16a34a;
+  color: #fff;
+}
+
+.sommaireFait {
+  border-color: #d7f0dd;
+  color: #15803d;
+}
+
+/*
+ * Le bloc où l'on vient d'arriver se signale un instant.
+ *
+ * Après un défilement, rien ne disait lequel des quatre blocs on visait : on relisait
+ * le titre pour s'en assurer.
+ */
+.detailsBloc:target {
+  border-color: #111;
+}

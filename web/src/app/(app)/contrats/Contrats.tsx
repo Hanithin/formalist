@@ -21,6 +21,7 @@ import {
   type ChampContrat,
 } from "@/domain/contrat/catalogue";
 import { formaterDate } from "@/lib/dates";
+import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./Contrats.module.css";
 
 export interface ContratAffiche {
@@ -631,10 +632,13 @@ function Champ({
 
       {champ.type === "long" ? (
         <textarea {...commun} rows={4} onChange={(e) => surSaisie(e.target.value)} />
+      ) : champ.type === "date" ? (
+        /* Notre calendrier, comme partout : celui du navigateur ne s'habille pas. */
+        <ChampDate id={identifiant} valeur={valeur} surChangement={surSaisie} />
       ) : (
         <input
           {...commun}
-          type={champ.type === "date" ? "date" : champ.type === "nombre" ? "number" : "text"}
+          type={champ.type === "nombre" ? "number" : "text"}
           onChange={(e) => surSaisie(e.target.value)}
         />
       )}

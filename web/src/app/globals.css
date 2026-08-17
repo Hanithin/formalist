@@ -56,6 +56,20 @@
 
 html {
   height: 100%;
+  /*
+   * Un ancrage se rejoint en glissant.
+   *
+   * Cliquer un lien de sommaire faisait sauter la page : on arrivait sans savoir si
+   * l'on avait monté ou descendu, ni de combien.
+   */
+  scroll-behavior: smooth;
+}
+
+/* Sauf pour qui demande à son système de limiter les animations. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {

@@ -368,6 +368,30 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     CESSIONNAIRE_TYPE: texte(valeurs.cessionnaireType),
     CESSIONNAIRE_NOM: cessions[0]?.CESSIONNAIRE || texte(valeurs.cessionnaireNom),
     CESSIONNAIRE_ADRESSE: texte(valeurs.cessionnaireAdresse),
+    /*
+     * Ce que chaque mode d'augmentation apporte au procès-verbal.
+     *
+     * L'acte doit nommer la banque dépositaire, le commissaire aux apports, le poste
+     * de réserves prélevé ou le titulaire de la créance : rien de tout cela n'était
+     * recueilli, et les phrases sortaient à trous.
+     */
+    BANQUE_DEPOT: texte(valeurs.banqueDepot),
+    DATE_DEPOT_FONDS: texte(valeurs.dateDepotFonds),
+    DATE_DEPOT_FONDS_FR: dateEnFrancais(texte(valeurs.dateDepotFonds)),
+    TITULAIRE_CREANCE: texte(valeurs.titulaireCreance),
+    MONTANT_CREANCE: nombreOuTiret(valeurs.montantCreance),
+    DATE_ARRETE_COMPTE: texte(valeurs.dateArreteCompte),
+    DATE_ARRETE_COMPTE_FR: dateEnFrancais(texte(valeurs.dateArreteCompte)),
+    POSTE_INCORPORE: texte(valeurs.posteIncorpore),
+    MONTANT_INCORPORE: nombreOuTiret(valeurs.montantIncorpore),
+    DESCRIPTION_APPORT: texte(valeurs.descriptionApport),
+    VALEUR_APPORT: nombreOuTiret(valeurs.valeurApport),
+    COMMISSAIRE_APPORTS: texte(valeurs.commissaireApports),
+    IS_COMMISSAIRE_DISPENSE: valeurs.dispenseCommissaire === "Oui, à l'unanimité",
+    IS_APPORT_NUMERAIRE: valeurs.modeAugmentation === "Apport en numéraire",
+    IS_COMPENSATION_CREANCES: valeurs.modeAugmentation === "Compensation de créances",
+    IS_INCORPORATION_RESERVES: valeurs.modeAugmentation === "Incorporation de réserves",
+    IS_APPORT_NATURE: valeurs.modeAugmentation === "Apport en nature",
     NB_PARTS_CEDEES: cessions[0] ? String(cessions[0].PARTS) : texte(valeurs.nbPartsCedees),
     PRIX_CESSION: cessions[0] ? cessions[0].PRIX : nombreOuTiret(valeurs.prixCession),
     DATE_CESSION: cessions[0]?.DATE || texte(valeurs.dateCession),

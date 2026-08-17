@@ -292,11 +292,120 @@ export const MODIFICATIONS: DefinitionModification[] = [
         identifiant: "modeAugmentation",
         libelle: "Mode d'augmentation",
         type: "choix",
-        options: ["Apport en numéraire", "Incorporation de réserves", "Apport en nature"],
+        /*
+         * Quatre modes, non trois.
+         *
+         * La compensation de créances - l'incorporation au capital du compte courant
+         * d'un associé - est le cas le plus fréquent dans une petite société, et
+         * n'était pas proposée : le dirigeant qui transforme son compte courant
+         * n'avait aucune case qui lui corresponde.
+         */
+        options: [
+          "Apport en numéraire",
+          "Compensation de créances",
+          "Incorporation de réserves",
+          "Apport en nature",
+        ],
         pleineLargeur: true,
         obligatoire: true,
-        aide: "Un apport en nature impose un commissaire aux apports ; un apport en numéraire, une attestation de dépôt des fonds.",
+        aide: "Chaque mode appelle ses propres pièces : elles se demandent ensuite, selon celui que vous choisissez.",
       },
+
+      /* ---------- Apport en numéraire ---------- */
+      {
+        identifiant: "banqueDepot",
+        libelle: "Banque dépositaire des fonds",
+        type: "texte",
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Apport en numéraire"] },
+        indication: "Celle qui délivrera l'attestation de dépôt",
+      },
+      {
+        identifiant: "dateDepotFonds",
+        libelle: "Date du dépôt des fonds",
+        type: "date",
+        visibleSi: { champ: "modeAugmentation", vaut: ["Apport en numéraire"] },
+      },
+
+      /* ---------- Compensation de créances ---------- */
+      {
+        identifiant: "titulaireCreance",
+        libelle: "Titulaire de la créance",
+        type: "texte",
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Compensation de créances"] },
+        aide: "L'associé dont le compte courant est incorporé au capital.",
+      },
+      {
+        identifiant: "montantCreance",
+        libelle: "Montant de la créance, en euros",
+        type: "nombre",
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Compensation de créances"] },
+      },
+      {
+        identifiant: "dateArreteCompte",
+        libelle: "Date de l'arrêté de compte",
+        type: "date",
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Compensation de créances"] },
+        aide: "La créance doit être liquide et exigible : l'arrêté de compte l'établit, certifié par le commissaire aux comptes s'il en existe un, à défaut par l'expert-comptable.",
+      },
+
+      /* ---------- Incorporation de réserves ---------- */
+      {
+        identifiant: "posteIncorpore",
+        libelle: "Poste prélevé",
+        type: "choix",
+        options: ["Réserves", "Report à nouveau", "Prime d'émission", "Réserve légale"],
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Incorporation de réserves"] },
+        aide: "La réserve légale ne peut être incorporée que pour la part qui excède le dixième du capital.",
+      },
+      {
+        identifiant: "montantIncorpore",
+        libelle: "Montant incorporé, en euros",
+        type: "nombre",
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Incorporation de réserves"] },
+      },
+
+      /* ---------- Apport en nature ---------- */
+      {
+        identifiant: "descriptionApport",
+        libelle: "Description du bien apporté",
+        type: "long",
+        pleineLargeur: true,
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Apport en nature"] },
+        indication: "Nature, désignation et, s'il y a lieu, références du bien",
+      },
+      {
+        identifiant: "valeurApport",
+        libelle: "Valeur retenue de l'apport, en euros",
+        type: "nombre",
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Apport en nature"] },
+      },
+      {
+        identifiant: "dispenseCommissaire",
+        libelle: "Les associés dispensent-ils du commissaire aux apports ?",
+        type: "choix",
+        options: ["Non, un commissaire est désigné", "Oui, à l'unanimité"],
+        pleineLargeur: true,
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Apport en nature"] },
+        aide: "La dispense suppose une décision unanime, aucun apport au-dessus de 30 000 € et un total des apports en nature inférieur à la moitié du capital (art. L. 223-33 et L. 223-9 du code de commerce, art. D. 223-6-1). Sans commissaire, les associés répondent solidairement de la valeur retenue pendant cinq ans.",
+      },
+      {
+        identifiant: "commissaireApports",
+        libelle: "Commissaire aux apports désigné",
+        type: "texte",
+        obligatoire: true,
+        visibleSi: { champ: "dispenseCommissaire", vaut: ["Non, un commissaire est désigné"] },
+        indication: "Son nom, tel qu'il figurera au procès-verbal",
+      },
+
       {
         identifiant: "nbPartsNouvelles",
         libelle: "Nombre de parts ou actions nouvelles",
