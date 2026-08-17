@@ -51,11 +51,29 @@ const ASSOCIE = z.object({
   qualiteRepresentant: z.string().trim().max(80).optional(),
 });
 
+/*
+ * Une cession désigne des associés par leur rang dans la liste, non par un nom : c'est
+ * ce qui empêche de céder les parts de quelqu'un qui n'est pas associé.
+ */
+const CESSION = z.object({
+  cedant: z.number().int().min(0).max(19).nullable(),
+  parts: z.number().int().min(0).max(100_000_000).nullable(),
+  prix: z.number().min(0).max(1_000_000_000).nullable(),
+  date: z.string().trim().max(40).nullable().optional(),
+  vers: z.enum(["associe", "tiers"]),
+  cessionnaire: z.number().int().min(0).max(19).nullable().optional(),
+  nom: z.string().trim().max(200).nullable().optional(),
+  adresse: z.string().trim().max(300).nullable().optional(),
+});
+
 const ENREGISTREMENT = z.object({
   dossier: schemas.identifiant,
   codes: z.array(z.enum(CODES_MODIFICATION as [string, ...string[]])).max(8).optional(),
   societe: SOCIETE.optional(),
   valeurs: z.record(z.string(), z.union([z.string().max(4000), z.number()])).optional(),
+  // Une assemblée décide rarement plus de quelques cessions ; au-delà, c'est un
+  // registre de mouvements, qui n'a pas sa place dans un formulaire.
+  cessions: z.array(CESSION).max(20).optional(),
   assemblee: z
     .object({
       date: z.string().trim().max(40).nullable().optional(),

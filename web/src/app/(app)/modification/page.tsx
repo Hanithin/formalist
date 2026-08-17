@@ -123,6 +123,7 @@ export default async function Modification({
     societe: modification.societe,
     valeurs: modification.valeurs,
     assemblee: modification.assemblee,
+    cessions: modification.cessions,
     statuts: modification.statuts,
     retouches: modification.retouches,
     statutsAJour: modification.statutsAJour,

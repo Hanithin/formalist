@@ -915,3 +915,61 @@ test("le message de ce qui manque suit ce qu'on remplit", async ({ page, request
   await expect(alerte).toContainText("La forme juridique est requise");
   await expect(alerte).not.toContainText("Il reste");
 });
+
+test("une cession se compose à partir des associés, et sa répartition se voit", async ({
+  page,
+  request,
+}) => {
+  /*
+   * Le formulaire demandait « Nom du cédant » dans un champ vide, alors que l'étape
+   * suivante faisait saisir les mêmes personnes avec leurs parts : on pouvait céder
+   * cinq cents parts quand on en détenait cent, et l'acte sortait ainsi.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      codes: ["cession_parts"],
+      societe: { denomination: "CESSION", forme: "SARL", siren: "899979934" },
+    },
+  });
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=3");
+
+  // Le formulaire s'ouvre prêt à écrire, sans qu'il faille cliquer pour créer la ligne.
+  await page.getByLabel("Nom de l'associé 1").fill("Jean DUPONT");
+  await page.getByLabel("Parts de l'associé 1").fill("500");
+  await page.getByRole("button", { name: "+ Ajouter un associé" }).click();
+  await page.getByLabel("Nom de l'associé 2").fill("Marie MARTIN");
+  await page.getByLabel("Parts de l'associé 2").fill("300");
+
+  // Le cédant se choisit dans la liste, avec ce qu'il détient.
+  await page.getByLabel("Cédant").selectOption({ label: "Jean DUPONT · 500 parts" });
+  await page.getByLabel("Parts cédées").fill("200");
+  await expect(page.getByText("sur 500 détenues")).toBeVisible();
+
+  await page.getByLabel("Nom du cessionnaire").fill("Paul BERNARD");
+  await page.getByLabel("Prix de cession, en euros").fill("20000");
+  await expect(page.getByText("soit 100 € la part")).toBeVisible();
+
+  // La répartition d'après se calcule à mesure : c'est elle qui rend les erreurs visibles.
+  const apres = page.locator("[class*='repartitionListe']");
+  await expect(apres).toContainText("Paul BERNARD");
+  await expect(apres.locator("li").first()).toContainText("300");
+  await expect(page.getByText("entre", { exact: true })).toBeVisible();
+
+  // L'agrément se déduit de la forme et du destinataire, au lieu d'être demandé.
+  await expect(page.getByText("Agrément requis")).toBeVisible();
+  await expect(page.getByText(/L. 223-14/)).toBeVisible();
+
+  // On ne cède pas plus qu'on ne détient : le refus le dit avec le compte exact.
+  await page.getByLabel("Parts cédées").fill("900");
+  await page.getByLabel("Date de cession").fill("2026-09-15");
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page.locator("[class*='manques']").first()).toContainText(
+    "cède au total plus de parts qu'il n'en détient (500)"
+  );
+
+  // Et rien d'autre n'est réclamé : les anciens champs plats ne sont plus déclarés.
+  await expect(page.getByText(/Nom du cédant est requis/)).toHaveCount(0);
+});

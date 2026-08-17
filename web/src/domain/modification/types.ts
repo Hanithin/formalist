@@ -342,50 +342,16 @@ export const MODIFICATIONS: DefinitionModification[] = [
     libelle: "Cession de parts ou d'actions",
     libelleCourt: "Cession",
     description: "Transférer des parts d'un associé à un autre.",
-    champs: [
-      { identifiant: "cedantNom", libelle: "Nom du cédant", type: "texte", obligatoire: true },
-      {
-        identifiant: "cessionnaireType",
-        libelle: "Le cessionnaire est",
-        type: "choix",
-        options: ["Un associé existant", "Un tiers, nouvel associé"],
-        obligatoire: true,
-      },
-      {
-        identifiant: "cessionnaireNom",
-        libelle: "Nom du cessionnaire",
-        type: "texte",
-        obligatoire: true,
-      },
-      {
-        identifiant: "cessionnaireAdresse",
-        libelle: "Adresse du cessionnaire",
-        type: "adresse",
-        pleineLargeur: true,
-        obligatoire: true,
-        visibleSi: { champ: "cessionnaireType", vaut: ["Un tiers, nouvel associé"] },
-      },
-      {
-        identifiant: "nbPartsCedees",
-        libelle: "Nombre de parts cédées",
-        type: "nombre",
-        obligatoire: true,
-      },
-      {
-        identifiant: "prixCession",
-        libelle: "Prix de cession, en euros",
-        type: "nombre",
-        obligatoire: true,
-      },
-      { identifiant: "dateCession", libelle: "Date de cession", type: "date", obligatoire: true },
-      {
-        identifiant: "agrementRequis",
-        libelle: "Agrément des associés requis ?",
-        type: "choix",
-        options: ["Oui", "Non"],
-        aide: "Les statuts le disent. Dans une SARL, l'agrément est la règle pour une cession à un tiers.",
-      },
-    ],
+    /*
+     * Aucun champ générique.
+     *
+     * Une cession désigne des associés, se compte à plusieurs dans une assemblée, et sa
+     * répartition se calcule : six cases côte à côte ne peuvent rien vérifier de tout
+     * cela. L'écran a son propre bloc, et sa vérification est dans le domaine des
+     * cessions. Les laisser déclarés ici les rendait obligatoires alors qu'ils ne
+     * s'affichent plus : on ne pouvait plus passer l'étape.
+     */
+    champs: [],
   },
   {
     code: "prorogation",

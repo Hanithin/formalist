@@ -48,6 +48,7 @@ export const POST = route(async (requete: Request) => {
     assemblee: modification.assemblee,
     codes: modification.codes,
     valeurs: modification.valeurs,
+    cessions: modification.cessions,
     villeRcsNouvelle: villeDuRcs(
       typeof modification.valeurs.nouveauCodePostal === "string"
         ? modification.valeurs.nouveauCodePostal

@@ -1,4 +1,5 @@
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
+import { cessionsRedigees, type Cession } from "./cession";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
 
@@ -80,6 +81,8 @@ export interface ContexteGabarit {
   valeurs: Valeurs;
   /** Ville du RCS du nouveau siège, quand il y a transfert. */
   villeRcsNouvelle?: string | null;
+  /** Les cessions décidées, qui désignent les associés de l'assemblée. */
+  cessions?: Cession[];
 }
 
 function ou(valeur: string | null | undefined, defaut = TIRET): string {
@@ -128,6 +131,10 @@ export function adresseSurUneLigne(
 }
 
 /** « Monsieur Jean DUPONT » : la civilité fait partie du nom dans un acte. */
+export function designationDeLAssocie(associe: AssociePresent): string {
+  return nomComplet(associe);
+}
+
 function nomComplet(associe: AssociePresent): string {
   if (associe.nature === "morale") return societeDesignee(associe);
 
@@ -187,6 +194,8 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
 
   const capital = typeof societe.capital === "number" ? societe.capital : 0;
   const siege = adresseSurUneLigne(societe.adresse, societe.codePostal, societe.ville);
+
+  const cessions = cessionsRedigees(assemblee.associes ?? [], contexte.cessions ?? []);
 
   const associes = (assemblee.associes ?? []).map((associe, rang) => ({
     index: rang + 1,
@@ -346,13 +355,22 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     ),
 
     /* ------------------------------------------------------------- Cession */
-    CEDANT_NOM: texte(valeurs.cedantNom),
+    /*
+     * Les cessions, et la première d'entre elles.
+     *
+     * Les gabarits existants attendent des clés au singulier : elles sont alimentées
+     * par la première cession, et CESSIONS porte la liste pour les actes qui savent
+     * boucler. Un dossier d'avant, saisi en champs plats, garde ses valeurs.
+     */
+    CESSIONS: cessions,
+    NB_CESSIONS: cessions.length,
+    CEDANT_NOM: cessions[0]?.CEDANT || texte(valeurs.cedantNom),
     CESSIONNAIRE_TYPE: texte(valeurs.cessionnaireType),
-    CESSIONNAIRE_NOM: texte(valeurs.cessionnaireNom),
+    CESSIONNAIRE_NOM: cessions[0]?.CESSIONNAIRE || texte(valeurs.cessionnaireNom),
     CESSIONNAIRE_ADRESSE: texte(valeurs.cessionnaireAdresse),
-    NB_PARTS_CEDEES: texte(valeurs.nbPartsCedees),
-    PRIX_CESSION: nombreOuTiret(valeurs.prixCession),
-    DATE_CESSION: texte(valeurs.dateCession),
+    NB_PARTS_CEDEES: cessions[0] ? String(cessions[0].PARTS) : texte(valeurs.nbPartsCedees),
+    PRIX_CESSION: cessions[0] ? cessions[0].PRIX : nombreOuTiret(valeurs.prixCession),
+    DATE_CESSION: cessions[0]?.DATE || texte(valeurs.dateCession),
     DATE_CESSION_FR: dateEnFrancais(
       typeof valeurs.dateCession === "string" ? valeurs.dateCession : null
     ),

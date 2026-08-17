@@ -3490,3 +3490,311 @@
   line-height: 1.55;
   color: #b91c1c;
 }
+
+/* ---------- Les cessions de parts ---------- */
+
+.cessions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Qui détient quoi : la liste dont tout le reste découle. */
+.capital {
+  padding: 18px 20px;
+  border: 1px solid #e8e8ea;
+  border-radius: 14px;
+  background: #fcfcfd;
+}
+
+.capitalTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.capitalTitre {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.capitalTotal {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #71717a;
+  white-space: nowrap;
+}
+
+.capitalAide {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8a8a92;
+}
+
+.detenteurs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detenteur {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detenteur input {
+  margin: 0;
+  max-width: none;
+}
+
+.detenteurNom {
+  flex: 1;
+  min-width: 0;
+}
+
+.detenteurParts {
+  width: 110px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.detenteurUnite {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: #8a8a92;
+}
+
+.detenteurRetrait {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 17px;
+  line-height: 1;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.detenteurRetrait:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+/* Une cession : un bloc qu'on lit d'un bout à l'autre. */
+.cession {
+  padding: 18px 20px;
+  border: 1px solid #e8e8ea;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.cessionTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.cessionTitre {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.cessionRetrait {
+  margin: 0;
+  padding: 5px 11px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.cessionRetrait:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.cessionAjouter {
+  align-self: flex-start;
+  margin: 0;
+  padding: 9px 16px;
+  border: 1px dashed #b8b8bf;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #3f3f46;
+  cursor: pointer;
+}
+
+.cessionAjouter:hover {
+  border-style: solid;
+  border-color: #111;
+  color: #111;
+}
+
+/*
+ * L'agrément, déduit et motivé.
+ *
+ * « Choisir » sur un menu vide ne guide personne : la règle dépend de la forme et du
+ * destinataire, et c'est à nous de la connaître.
+ */
+.agrement {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #f2f2f4;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+.agrementOui,
+.agrementNon {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.agrementOui {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.agrementNon {
+  background: #f4f4f5;
+  color: #71717a;
+}
+
+/*
+ * La répartition d'après.
+ *
+ * C'est elle qui rend visibles les erreurs qu'un formulaire plat laisse passer : un
+ * total qui ne retombe pas, un associé qui passe en négatif, un tiers qui entre pour
+ * rien.
+ */
+.repartition {
+  padding: 18px 20px;
+  border: 1px solid #e8e8ea;
+  border-radius: 14px;
+  background: #fcfcfd;
+}
+
+.repartitionListe {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 12px 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.repartitionLigne {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f2f2f4;
+  font-size: 13px;
+}
+
+.repartitionLigne:last-child {
+  border-bottom: none;
+}
+
+.repartitionNom {
+  flex: 1;
+  min-width: 0;
+  color: #3f3f46;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repartitionAvant {
+  color: #a1a1aa;
+}
+
+.repartitionFleche {
+  color: #c9c9cf;
+}
+
+.repartitionApres {
+  min-width: 44px;
+  font-weight: 600;
+  color: #111;
+  text-align: right;
+}
+
+.repartitionMarque {
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.repartitionEntrant .repartitionMarque {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.repartitionSortant .repartitionMarque {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.repartitionSortant .repartitionNom {
+  color: #a1a1aa;
+  text-decoration: line-through;
+}
+
+/*
+ * Le rang de la section, dans une pastille.
+ *
+ * Trois blocs à la suite - qui détient, ce qui est cédé, ce qu'il en résulte - sans
+ * rien qui dise l'ordre : on lisait trois encadrés de même poids, sans savoir par où
+ * commencer.
+ */
+.etapeNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #111;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0;
+  vertical-align: middle;
+}

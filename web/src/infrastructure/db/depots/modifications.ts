@@ -5,6 +5,7 @@ import { relirePaiement } from "@/infrastructure/paiement/stripe";
 import { estUnTypeConnu, type Valeurs } from "@/domain/modification/types";
 import type { AssociePresent, SocieteModifiee } from "@/domain/modification/gabarit";
 import type { Retouche } from "@/domain/modification/edition";
+import type { Cession } from "@/domain/modification/cession";
 import type { EtapeDHistorique } from "@/domain/modification/historique";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "../sessions";
@@ -37,6 +38,13 @@ export interface Modification {
   societe: SocieteModifiee;
   valeurs: Valeurs;
   assemblee: { date?: string | null; associes?: AssociePresent[] };
+  /**
+   * Les cessions de parts décidées.
+   *
+   * Hors de `valeurs`, qui ne porte que des chaînes et des nombres : une cession
+   * désigne des associés par leur rang et se compte à plusieurs dans une assemblée.
+   */
+  cessions?: Cession[];
   statuts?: StatutsDuDossier;
   retouches?: Retouche[];
   /**

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useTransition, type ReactNode } from "reac
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Adresse } from "@/components/formulaire/Adresse";
+import { Cessions } from "./Cessions";
+import { verifierCessions, type Cession } from "@/domain/modification/cession";
 import { Editeur } from "./Editeur";
 import {
   MODIFICATIONS,
@@ -78,6 +80,8 @@ export interface EtatDuDossier {
   societe: Societe & { villeRcs?: string | null };
   valeurs: Valeurs;
   assemblee: { date?: string | null; associes?: Associe[] };
+  /** Les cessions décidées, quand il y en a. */
+  cessions?: Cession[];
   statuts?: {
     source: "inpi" | "depot";
     nature?: string;
@@ -179,7 +183,15 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
         ? [{ champ: "codes", message: "Choisissez au moins une modification" }]
         : [];
     }
-    if (etape === 3) return anomalies;
+    if (etape === 3) {
+      /*
+       * Les cessions se vérifient à part : leurs manques se posent sous le bloc
+       * concerné, et le cumul de plusieurs cessions se juge sur l'ensemble.
+       */
+      return etat.codes.includes("cession_parts")
+        ? [...anomalies, ...verifierCessions(etat.assemblee.associes ?? [], etat.cessions ?? [])]
+        : anomalies;
+    }
     return [];
   }
 
@@ -225,6 +237,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
           societe: etat.societe,
           valeurs: etat.valeurs,
           assemblee: etat.assemblee,
+          cessions: etat.cessions,
         }),
       });
 
@@ -275,8 +288,13 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
         {etape === 3 && (
           <EtapeDetails
             etat={etat}
-            anomalies={anomalies.filter((a) => manquesVus.includes(a.champ))}
+            /*
+              Les manques d'une cession se montrent dès la tentative, comme les autres,
+              mais leur champ porte le rang du bloc : « cession-1-parts ».
+            */
+            anomalies={manquesCourants.filter((a) => manquesVus.includes(a.champ))}
             majValeurs={majValeurs}
+            changer={changer}
           />
         )}
 
@@ -905,10 +923,12 @@ function EtapeDetails({
   etat,
   anomalies,
   majValeurs,
+  changer,
 }: {
   etat: EtatDuDossier;
   anomalies: { champ: string; message: string }[];
   majValeurs: (maj: (valeurs: Valeurs) => Valeurs) => void;
+  changer: (c: Partial<EtatDuDossier>) => void;
 }) {
   function valeur(identifiant: string, v: string | number) {
     majValeurs((valeurs) => ({ ...valeurs, [identifiant]: v }));
@@ -927,6 +947,24 @@ function EtapeDetails({
       {definitions(etat.codes).map((definition) => (
         <section key={definition.code} style={{ marginBottom: 32 }}>
           <h3>{definition.libelle}</h3>
+
+          {/*
+            La cession ne se saisit pas en champs plats.
+            Elle désigne des associés, se compte à plusieurs, et sa répartition se
+            calcule : six cases côte à côte ne peuvent rien vérifier de tout cela.
+          */}
+          {definition.code === "cession_parts" ? (
+            <Cessions
+              associes={etat.assemblee.associes ?? []}
+              cessions={etat.cessions ?? []}
+              forme={etat.societe.forme}
+              anomalies={anomalies}
+              surAssocies={(associes) =>
+                changer({ assemblee: { ...etat.assemblee, associes } })
+              }
+              surCessions={(cessions) => changer({ cessions })}
+            />
+          ) : (
           <div className={styles.champs}>
             {definition.champs
               .filter((champ) => champVisible(champ, etat.valeurs))
@@ -956,6 +994,7 @@ function EtapeDetails({
                 />
               ))}
           </div>
+          )}
         </section>
       ))}
     </>
