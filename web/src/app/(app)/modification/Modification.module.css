@@ -1255,13 +1255,21 @@
   white-space: nowrap;
 }
 
+/*
+ * Le total, en noir : c'est le chiffre qu'on vient chercher.
+ *
+ * Essayé en gris clair, il se fondait dans les deux cartes qu'il additionne et ne
+ * concluait plus rien. Le fond plein le détache, et la ligne se replie proprement
+ * quand la largeur manque plutôt que de coller le montant au libellé.
+ */
 .devisTotal {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 16px;
+  gap: 8px 16px;
   margin-top: 16px;
-  padding: 16px 20px;
+  padding: 18px 22px;
   border-radius: 12px;
   background: #111;
   color: #fff;
@@ -1269,6 +1277,7 @@
 
 .devisTotalLibelle {
   font-size: 14px;
+  color: #d4d4d8;
 }
 
 .devisTotalMontant {
