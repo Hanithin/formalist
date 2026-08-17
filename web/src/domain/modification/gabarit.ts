@@ -1,5 +1,6 @@
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { cessionsRedigees, type Cession } from "./cession";
+import { formeEnToutesLettres } from "./annonce";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
 
@@ -120,14 +121,55 @@ function nombreOuTiret(valeur: string | number | undefined): string {
 }
 
 /** « 12 rue de la Paix, 75002 Paris » : l'adresse d'un acte tient sur une ligne. */
+/**
+ * L'adresse d'une société, sur une ligne.
+ *
+ * Le code postal et la ville ne s'ajoutent que s'ils manquent. La recherche au registre
+ * rend souvent une voie qui les contient déjà - « 861 chemin de l'Espagnol 06250
+ * Mougins » - et les accoler donnait, dans un acte qui part au greffe :
+ * « 861 chemin de l'Espagnol 06250 Mougins, 06250 Mougins ».
+ *
+ * La comparaison ignore la casse et les accents : « ORLÉANS » dans la voie et
+ * « Orleans » dans le champ désignent la même ville.
+ */
 export function adresseSurUneLigne(
   rue: string | null | undefined,
   codePostal: string | null | undefined,
   ville: string | null | undefined
 ): string {
-  const morceaux = [rue?.trim(), [codePostal?.trim(), ville?.trim()].filter(Boolean).join(" ")];
-  const ligne = morceaux.filter(Boolean).join(", ");
+  const voie = (rue ?? "").trim();
+  const sansAccent = (t: string) =>
+    t
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  const dansLaVoie = (morceau: string) =>
+    morceau.length > 0 && sansAccent(voie).includes(sansAccent(morceau));
+
+  const cp = (codePostal ?? "").trim();
+  const commune = (ville ?? "").trim();
+  const suite = [dansLaVoie(cp) ? "" : cp, dansLaVoie(commune) ? "" : commune]
+    .filter(Boolean)
+    .join(" ");
+
+  const ligne = [voie, suite].filter(Boolean).join(", ");
   return ligne || TIRET;
+}
+
+/**
+ * « d'Antibes », « de Nanterre » : le registre s'élide devant une voyelle.
+ *
+ * L'acte portait « immatriculée au RCS de Antibes ». Personne n'écrit cela, et cela se
+ * remarque dans un document signé.
+ */
+export function avecElision(ville: string): string {
+  const nette = ville.trim();
+  if (!nette) return TIRET;
+  const premiere = nette
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")[0]
+    .toLowerCase();
+  return /[aeiouy]/.test(premiere) ? "d'" + nette : "de " + nette;
 }
 
 /** « Monsieur Jean DUPONT » : la civilité fait partie du nom dans un acte. */
@@ -238,15 +280,23 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     DATE_STATUTS: ou(societe.dateStatuts),
     DATE_STATUTS_FR: dateEnFrancais(societe.dateStatuts),
     RCS_VILLE: ou(societe.villeRcs, ou(societe.ville)),
+    /* « immatriculée au registre du commerce et des sociétés d'Antibes ». */
+    RCS_DE: avecElision((societe.villeRcs ?? societe.ville ?? "").trim()),
+    /* La forme en toutes lettres : un acte n'écrit pas « SASU au capital de ». */
+    FORME_EN_CLAIR: formeEnToutesLettres(societe.forme).toLowerCase(),
 
     /* -------------------------------------------------------- L'assemblée */
     DATE_AGE: dateEnFrancais(assemblee.date),
     NB_ASSOCIES: associes.length,
     TOTAL_PARTS: totalParts,
+    /* Avec son séparateur de milliers : « 2000 parts » ne se relit pas. */
+    TOTAL_PARTS_FORMATE: montant(totalParts),
     TOTAL_PARTS_LETTRES: nombreEnFrancais(totalParts),
     ASSOCIES: associes,
     ASSOCIE_LISTE: associes.length
-      ? associes.map((a) => a.nomComplet + ", détenant " + a.parts + " parts").join(" ; ")
+      ? associes
+          .map((a) => a.nomComplet + ", détenant " + montant(a.parts) + " parts")
+          .join(" ; ")
       : TIRET,
 
     /* ------------------------------------------------- Ce qui est décidé */
@@ -395,8 +445,14 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     NB_PARTS_CEDEES: cessions[0] ? String(cessions[0].PARTS) : texte(valeurs.nbPartsCedees),
     PRIX_CESSION: cessions[0] ? cessions[0].PRIX : nombreOuTiret(valeurs.prixCession),
     DATE_CESSION: cessions[0]?.DATE || texte(valeurs.dateCession),
+    /*
+     * En français, depuis la cession.
+     *
+     * Elle était cherchée dans un champ plat que le formulaire ne remplit plus depuis
+     * que les cessions sont une liste : l'acte portait « prendra effet à compter du - ».
+     */
     DATE_CESSION_FR: dateEnFrancais(
-      typeof valeurs.dateCession === "string" ? valeurs.dateCession : null
+      cessions[0]?.DATE || (typeof valeurs.dateCession === "string" ? valeurs.dateCession : null)
     ),
     AGREMENT_REQUIS: texte(valeurs.agrementRequis),
 
@@ -455,11 +511,28 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
  * seul, et le document en porte la formulation. Le gabarit « sasu » est en réalité la
  * variante unipersonnelle, ce qui explique qu'une EURL l'emploie aussi.
  */
-export function gabaritProcesVerbal(forme: string | null | undefined): string {
+/**
+ * Le procès-verbal qui convient.
+ *
+ * La forme ne suffit pas : une SASU dont deux associés sont saisis n'a plus d'associé
+ * unique, et l'acte se contredisait dans sa propre en-tête - « DÉCISION DE L'ASSOCIÉ
+ * UNIQUE » suivi de deux noms détenant chacun des parts. Une cession d'actions à un
+ * tiers fait précisément passer une société unipersonnelle à plusieurs associés : le
+ * cas n'est pas rare, il est l'un des plus courants.
+ *
+ * Le nombre d'associés, quand on le connaît, l'emporte donc sur le sigle.
+ */
+export function gabaritProcesVerbal(
+  forme: string | null | undefined,
+  nombreDAssocies?: number
+): string {
   const f = (forme ?? "").trim().toUpperCase();
-  if (f === "SASU" || f === "EURL") return "modif-pv-transfert-siege-sasu.docx";
-  if (f === "SARL") return "modif-pv-transfert-siege-sarl.docx";
+  const unipersonnelle = f === "SASU" || f === "EURL";
+  const plusieurs = nombreDAssocies !== undefined && nombreDAssocies > 1;
+
+  if (unipersonnelle && !plusieurs) return "modif-pv-transfert-siege-sasu.docx";
   if (f === "SCI") return "modif-pv-transfert-siege-sci.docx";
+  if (f === "SARL" || f === "EURL") return "modif-pv-transfert-siege-sarl.docx";
   return "modif-pv-transfert-siege-sas.docx";
 }
 
@@ -478,7 +551,8 @@ export interface ActeAProduire {
 export function actesAProduire(
   codes: string[],
   forme: string | null | undefined,
-  valeurs: Valeurs = {}
+  valeurs: Valeurs = {},
+  nombreDAssocies?: number
 ): ActeAProduire[] {
   if (codes.length === 0) return [];
 
@@ -489,7 +563,7 @@ export function actesAProduire(
         choisies.length === 1
           ? "Procès-verbal - " + choisies[0].libelle
           : "Procès-verbal d'assemblée générale extraordinaire",
-      gabarit: gabaritProcesVerbal(forme),
+      gabarit: gabaritProcesVerbal(forme, nombreDAssocies),
     },
   ];
 

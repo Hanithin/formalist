@@ -60,7 +60,15 @@ export const POST = route(async (requete: Request) => {
   const aProduire = actesAProduire(
     modification.codes,
     modification.societe.forme,
-    modification.valeurs
+    modification.valeurs,
+    /*
+     * Le nombre d'associés décide du procès-verbal.
+     *
+     * Une SASU dont deux associés sont saisis n'a plus d'associé unique : l'acte
+     * s'intitulait « DÉCISION DE L'ASSOCIÉ UNIQUE » et listait deux noms détenant
+     * chacun des parts.
+     */
+    (modification.assemblee.associes ?? []).length
   );
   if (aProduire.length === 0) {
     return NextResponse.json({ error: "Aucun acte ne correspond" }, { status: 400 });
