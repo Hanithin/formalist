@@ -399,11 +399,10 @@ export const MODIFICATIONS: DefinitionModification[] = [
       },
       {
         identifiant: "commissaireApports",
-        libelle: "Commissaire aux apports désigné",
+        libelle: "Nom du commissaire aux apports désigné",
         type: "texte",
         obligatoire: true,
         visibleSi: { champ: "dispenseCommissaire", vaut: ["Non, un commissaire est désigné"] },
-        indication: "Son nom, tel qu'il figurera au procès-verbal",
       },
 
       {

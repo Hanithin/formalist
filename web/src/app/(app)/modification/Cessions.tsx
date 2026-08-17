@@ -11,6 +11,7 @@ import {
 } from "@/domain/modification/cession";
 import type { AssociePresent } from "@/domain/modification/gabarit";
 import { ChampDate } from "@/components/formulaire/ChampDate";
+import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import styles from "./Modification.module.css";
 
 /**
@@ -121,17 +122,15 @@ export function Cessions({
                 Les flèches d'un `type="number"` occupaient la moitié d'un champ étroit
                 et se plaçaient devant le chiffre qu'on venait taper.
               */}
-              <input
+              <ChampNombre
+                id={"detenteur-parts-" + rang}
                 aria-label={"Parts de l'associé " + (rang + 1)}
                 className={styles.detenteurParts}
-                type="text"
-                inputMode="numeric"
                 placeholder="0"
-                value={associe.parts ?? ""}
-                onChange={(e) => {
-                  const chiffres = e.target.value.replace(/[^0-9]/g, "");
-                  modifierAssocie(rang, { parts: chiffres === "" ? null : Number(chiffres) });
-                }}
+                valeur={associe.parts ?? ""}
+                surChangement={(nombre) =>
+                  modifierAssocie(rang, { parts: nombre === "" ? null : nombre })
+                }
               />
               <span className={styles.detenteurUnite}>parts</span>
 
@@ -205,15 +204,10 @@ export function Cessions({
 
               <div className={styles.champ}>
                 <label htmlFor={"cession-parts-" + rang}>Parts cédées</label>
-                <input
+                <ChampNombre
                   id={"cession-parts-" + rang}
-                  type="text"
-                  inputMode="numeric"
-                  value={cession.parts ?? ""}
-                  onChange={(e) => {
-                    const chiffres = e.target.value.replace(/[^0-9]/g, "");
-                    modifier(rang, { parts: chiffres === "" ? null : Number(chiffres) });
-                  }}
+                  valeur={cession.parts ?? ""}
+                  surChangement={(nombre) => modifier(rang, { parts: nombre === "" ? null : nombre })}
                 />
                 {detenues > 0 && (
                   <p className={styles.devisPrecision}>
@@ -229,24 +223,31 @@ export function Cessions({
             {/*
               Le destinataire décide de la suite : un associé se choisit dans la liste,
               un tiers se nomme et entre au capital.
+              Le choix portait sur deux pastilles collées au champ précédent, sans rien
+              qui dise ce qu'on choisissait.
             */}
-            <div className={styles.natures}>
-              {(["associe", "tiers"] as const).map((vers) => (
-                <label
-                  key={vers}
-                  className={
-                    cession.vers === vers ? `${styles.nature} ${styles.natureChoisie}` : styles.nature
-                  }
-                >
-                  <input
-                    type="radio"
-                    name={"vers-" + rang}
-                    checked={cession.vers === vers}
-                    onChange={() => modifier(rang, { vers })}
-                  />
-                  {vers === "associe" ? "À un associé" : "À un tiers"}
-                </label>
-              ))}
+            <div className={styles.destinataire}>
+              <span className={styles.destinataireLibelle}>Le cessionnaire est</span>
+              <div className={styles.natures}>
+                {(["associe", "tiers"] as const).map((vers) => (
+                  <label
+                    key={vers}
+                    className={
+                      cession.vers === vers
+                        ? `${styles.nature} ${styles.natureChoisie}`
+                        : styles.nature
+                    }
+                  >
+                    <input
+                      type="radio"
+                      name={"vers-" + rang}
+                      checked={cession.vers === vers}
+                      onChange={() => modifier(rang, { vers })}
+                    />
+                    {vers === "associe" ? "un associé" : "un tiers, qui entre au capital"}
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className={styles.champs}>
@@ -289,15 +290,11 @@ export function Cessions({
 
               <div className={styles.champ}>
                 <label htmlFor={"cession-prix-" + rang}>Prix de cession, en euros</label>
-                <input
+                <ChampNombre
                   id={"cession-prix-" + rang}
-                  type="text"
-                  inputMode="numeric"
-                  value={cession.prix ?? ""}
-                  onChange={(e) => {
-                    const chiffres = e.target.value.replace(/[^0-9]/g, "");
-                    modifier(rang, { prix: chiffres === "" ? null : Number(chiffres) });
-                  }}
+                  valeur={cession.prix ?? ""}
+                  decimales
+                  surChangement={(nombre) => modifier(rang, { prix: nombre === "" ? null : nombre })}
                 />
                 {unitaire !== null && (
                   <p className={styles.devisPrecision}>

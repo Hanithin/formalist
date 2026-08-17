@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Adresse } from "@/components/formulaire/Adresse";
 import { ChampDate } from "@/components/formulaire/ChampDate";
+import { ChampNombre } from "@/components/formulaire/ChampNombre";
+import { DepotFichier } from "@/components/formulaire/DepotFichier";
 import { Cessions } from "./Cessions";
 import { verifierCessions, type Cession } from "@/domain/modification/cession";
 import { Editeur } from "./Editeur";
@@ -745,14 +747,11 @@ function EtapeSociete({
 
         <div className={styles.champ}>
           <label htmlFor="societe-capital">Capital social, en euros</label>
-          <input
+          <ChampNombre
             id="societe-capital"
-            type="number"
-            min={0}
-            value={etat.societe.capital ?? ""}
-            onChange={(e) =>
-              champSociete("capital", e.target.value === "" ? null : Number(e.target.value))
-            }
+            valeur={etat.societe.capital ?? ""}
+            decimales
+            surChangement={(nombre) => champSociete("capital", nombre === "" ? null : nombre)}
           />
         </div>
 
@@ -1130,19 +1129,24 @@ function Champ({
           valeur={typeof valeur === "string" ? valeur : ""}
           surChangement={(iso) => surChangement(champ.identifiant, iso)}
         />
+      ) : champ.type === "nombre" ? (
+        /*
+          Un champ de chiffres, sans compteur.
+          `type="number"` accepte le signe moins - il n'y a pas de capital négatif - et
+          sa molette change la valeur au passage du curseur, sans qu'on s'en aperçoive.
+        */
+        <ChampNombre
+          id={id}
+          valeur={valeur}
+          decimales
+          surChangement={(nombre) => surChangement(champ.identifiant, nombre)}
+        />
       ) : (
         <input
           id={id}
-          type={champ.type === "nombre" ? "number" : "text"}
+          type="text"
           value={valeur ?? ""}
-          onChange={(e) =>
-            surChangement(
-              champ.identifiant,
-              champ.type === "nombre" && e.target.value !== ""
-                ? Number(e.target.value)
-                : e.target.value
-            )
-          }
+          onChange={(e) => surChangement(champ.identifiant, e.target.value)}
         />
       )}
 
@@ -1234,15 +1238,12 @@ function EtapeAssemblee({
                 </div>
                 <div className={styles.champ}>
                   <label htmlFor={"associe-parts-" + rang}>Parts détenues</label>
-                  <input
+                  <ChampNombre
                     id={"associe-parts-" + rang}
-                    type="number"
-                    min={0}
-                    value={associe.parts ?? ""}
-                    onChange={(e) =>
-                      modifierAssocie(rang, {
-                        parts: e.target.value === "" ? null : Number(e.target.value),
-                      })
+                    valeur={associe.parts ?? ""}
+                    decimales={false}
+                    surChangement={(nombre) =>
+                      modifierAssocie(rang, { parts: nombre === "" ? null : nombre })
                     }
                   />
                 </div>
@@ -1272,15 +1273,12 @@ function EtapeAssemblee({
                 </div>
                 <div className={styles.champ}>
                   <label htmlFor={"associe-capital-" + rang}>Capital, en euros</label>
-                  <input
+                  <ChampNombre
                     id={"associe-capital-" + rang}
-                    type="number"
-                    min={0}
-                    value={associe.capital ?? ""}
-                    onChange={(e) =>
-                      modifierAssocie(rang, {
-                        capital: e.target.value === "" ? null : Number(e.target.value),
-                      })
+                    valeur={associe.capital ?? ""}
+                    decimales={true}
+                    surChangement={(nombre) =>
+                      modifierAssocie(rang, { capital: nombre === "" ? null : nombre })
                     }
                   />
                 </div>
@@ -1330,15 +1328,11 @@ function EtapeAssemblee({
               </div>
               <div className={styles.champ}>
                 <label htmlFor={"associe-parts-" + rang}>Parts détenues</label>
-                <input
+                <ChampNombre
                   id={"associe-parts-" + rang}
-                  type="number"
-                  min={0}
-                  value={associe.parts ?? ""}
-                  onChange={(e) =>
-                    modifierAssocie(rang, {
-                      parts: e.target.value === "" ? null : Number(e.target.value),
-                    })
+                  valeur={associe.parts ?? ""}
+                  surChangement={(nombre) =>
+                    modifierAssocie(rang, { parts: nombre === "" ? null : nombre })
                   }
                 />
               </div>
@@ -1496,21 +1490,24 @@ function EtapeStatuts({
           Ces statuts serviront de base à la mise à jour : c&apos;est sur eux que les articles
           modifiés seront retouchés, à l&apos;étape suivante.
         </p>
-        <div className={styles.statutsConfirme}>
-          <span>
-            {etat.statuts.source === "inpi"
-              ? etat.statuts.nature +
-                (etat.statuts.deposeLe
-                  ? ", déposés au registre le " + jourFrancais(etat.statuts.deposeLe)
-                  : "")
-              : "Vos statuts : " + (etat.statuts.fichier ?? "document déposé")}
-          </span>
-        </div>
-        <div className={styles.actions}>
-          <button type="button" onClick={() => changer({ statuts: undefined, retouches: [] })}>
-            Changer de document
-          </button>
-        </div>
+        {/*
+          Le document se lit comme un document, et ses actions sont sur lui.
+          Une bande verte portant « Vos statuts : machin.pdf » ne disait ni d'où il
+          venait ni ce qu'on pouvait en faire, et le bouton pour le changer flottait
+          dessous, sans lien apparent avec lui.
+        */}
+        <DepotFichier
+          id="statuts-remplacement"
+          accepte=".pdf"
+          depose={
+            etat.statuts.source === "inpi"
+              ? etat.statuts.nature
+              : (etat.statuts.fichier ?? "Statuts déposés")
+          }
+          surFichier={deposer}
+          surRetrait={() => changer({ statuts: undefined, retouches: [] })}
+          desactive={enCours}
+        />
       </>
     );
   }
@@ -1579,17 +1576,14 @@ function EtapeStatuts({
       )}
 
       {(depotDemande || !acte) && (
-        <div className={styles.zoneDepot}>
-          <p>Déposez vos statuts à jour, au format PDF.</p>
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={(e) => {
-              const fichier = e.target.files?.[0];
-              if (fichier) deposer(fichier);
-            }}
-          />
-        </div>
+        <DepotFichier
+          id="statuts-depot"
+          accepte=".pdf"
+          invite="Déposez vos statuts à jour"
+          precision="Un seul fichier, au format PDF"
+          surFichier={deposer}
+          desactive={enCours}
+        />
       )}
 
       {refus && acte && <p role="alert">{refus}</p>}

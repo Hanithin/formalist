@@ -22,6 +22,7 @@ import {
 } from "@/domain/contrat/catalogue";
 import { formaterDate } from "@/lib/dates";
 import { ChampDate } from "@/components/formulaire/ChampDate";
+import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import styles from "./Contrats.module.css";
 
 export interface ContratAffiche {
@@ -635,12 +636,18 @@ function Champ({
       ) : champ.type === "date" ? (
         /* Notre calendrier, comme partout : celui du navigateur ne s'habille pas. */
         <ChampDate id={identifiant} valeur={valeur} surChangement={surSaisie} />
-      ) : (
-        <input
-          {...commun}
-          type={champ.type === "nombre" ? "number" : "text"}
-          onChange={(e) => surSaisie(e.target.value)}
+      ) : champ.type === "nombre" ? (
+        /* Sans compteur : sa molette change la valeur au passage du curseur. */
+        <ChampNombre
+          id={identifiant}
+          className={commun.className}
+          valeur={valeur}
+          decimales
+          aria-invalid={anomalie ? true : undefined}
+          surChangement={(nombre) => surSaisie(nombre === "" ? "" : String(nombre))}
         />
+      ) : (
+        <input {...commun} type="text" onChange={(e) => surSaisie(e.target.value)} />
       )}
 
       {anomalie && <span className={styles.messageChamp}>{anomalie}</span>}
