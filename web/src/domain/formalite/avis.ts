@@ -23,7 +23,8 @@ export type GenreDAvis =
   | "attestation_attendue"
   | "depot_en_cours"
   | "immatriculee"
-  | "dossier_a_prendre";
+  | "dossier_a_prendre"
+  | "actes_disponibles";
 
 /**
  * Où mène le bouton du courriel.
@@ -63,6 +64,7 @@ const PAR_COURRIEL = new Set<GenreDAvis>([
   "attestation_attendue",
   "immatriculee",
   "dossier_a_prendre",
+  "actes_disponibles",
 ]);
 
 export function partParCourriel(genre: GenreDAvis): boolean {
@@ -234,4 +236,22 @@ export function cheminDeLAvis(
     default:
       return "/tableau-de-bord";
   }
+}
+
+/**
+ * Les actes, relus et mis à disposition.
+ *
+ * Ils existaient dès leur production, mais personne ne les avait lus : c'est la
+ * relecture de l'avocat qui en fait des documents, et c'est elle qu'on annonce.
+ */
+export function actesDisponibles(societe: string): Avis {
+  return {
+    genre: "actes_disponibles",
+    contenu: "Vos actes sont disponibles pour " + societe,
+    sujet: "Vos actes sont prêts - " + societe,
+    corps:
+      "L'avocat a relu vos actes : ils sont dans vos documents.\n\nRelisez-les à votre tour, puis signez-les - c'est la dernière étape avant le dépôt.",
+    bouton: "Voir mes documents",
+    destination: "documents",
+  };
 }

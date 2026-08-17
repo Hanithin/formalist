@@ -82,6 +82,9 @@ test.afterAll(async () => {
   if (semes.length > 0) {
     await prisma.audit_log.deleteMany({ where: { formalite_id: { in: semes } } });
     await prisma.documents.deleteMany({ where: { formalite_id: { in: semes } } });
+    // La mise à disposition prévient le client : l'avis pointe le dossier.
+    await prisma.notifications.deleteMany({ where: { formalite_id: { in: semes } } });
+    await prisma.messages.deleteMany({ where: { formalite_id: { in: semes } } });
     await prisma.formalites.deleteMany({ where: { id: { in: semes } } });
   }
 });
@@ -694,4 +697,39 @@ test("le numéro de page s'écrit, au lieu de cliquer vingt fois", async ({ page
   await numero.press("Escape");
   await expect(numero).toHaveValue("3");
   await expect(page.getByRole("img", { name: "Page 3 des statuts" })).toBeVisible();
+});
+
+test("les actes attendent la relecture avant d'atteindre le client", async ({ page, browser }) => {
+  /*
+   * Ce qui sort d'un gabarit n'est pas un acte : c'est un projet. Il était versé dans
+   * la bibliothèque du client à la seconde où il était produit - le client pouvait le
+   * télécharger, l'envoyer à sa banque ou le signer avant que quiconque l'ait lu.
+   */
+  const dossier = await dossierDeModification();
+  await page.goto("/avocat/" + dossier);
+  await page.getByRole("button", { name: "Produire les actes" }).click();
+  await expect(page.getByRole("status")).toContainText("actes produits", { timeout: 20_000 });
+
+  const enAttente = await prisma.documents.count({
+    where: { formalite_id: dossier, uploaded_by: "system", status: "a_relire" },
+  });
+  expect(enAttente).toBeGreaterThan(0);
+
+  // Le client ne les voit pas : sa bibliothèque n'en montre aucun.
+  const client = await browser.newContext({ storageState: "./tests/parcours/session.json" });
+  const sonEcran = await client.newPage();
+  await sonEcran.goto("/documents");
+  await expect(sonEcran.getByText("Procès-verbal", { exact: false })).toHaveCount(0);
+
+  // L'avocat relit et met à disposition.
+  await page.reload();
+  await page.getByRole("button", { name: "Mettre à disposition du client" }).click();
+  await expect(page.getByRole("status")).toContainText("disponible", { timeout: 20_000 });
+
+  const restants = await prisma.documents.count({
+    where: { formalite_id: dossier, uploaded_by: "system", status: "a_relire" },
+  });
+  expect(restants).toBe(0);
+
+  await client.close();
 });

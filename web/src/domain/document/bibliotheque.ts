@@ -199,11 +199,17 @@ export function titreDeSociete(societe: string | null, forme: string | null): st
 /**
  * Range les documents par société.
  *
- * Deux ordres se superposent. Entre les groupes : les sociétés par ordre
- * alphabétique, et les dépôts personnels en dernier - ils n'appartiennent à aucun
- * dossier, les placer en tête ferait chercher plus loin ce qu'on vient voir. Dans un
- * groupe : ce qui attend une action d'abord, le reste du plus récent au plus ancien.
+ * Deux ordres se superposent. Entre les groupes : la société dont un document est le
+ * plus récent d'abord - on vient chercher ce qui vient d'arriver, non la première
+ * lettre de l'alphabet - et les dépôts personnels en dernier, qui n'appartiennent à
+ * aucun dossier. Dans un groupe : ce qui attend une action d'abord, le reste du plus
+ * récent au plus ancien.
  */
+/** La date du document le plus récent d'un groupe. */
+function dernierDepot(groupe: GroupeDeDocuments): number {
+  return groupe.documents.reduce((plus, d) => Math.max(plus, d.creeLe?.getTime() ?? 0), 0);
+}
+
 export function grouper(documents: DocumentRange[]): GroupeDeDocuments[] {
   const groupes = new Map<string, GroupeDeDocuments>();
 
@@ -238,6 +244,18 @@ export function grouper(documents: DocumentRange[]): GroupeDeDocuments[] {
   return [...groupes.values()].sort((a, b) => {
     if (a.societeId === null) return 1;
     if (b.societeId === null) return -1;
+
+    /*
+     * La société dont un document est le plus récent passe devant.
+     *
+     * L'ordre alphabétique donnait l'illusion d'un classement chronologique tant que
+     * les noms tombaient bien, et rangeait une société créée hier derrière une autre
+     * dont le dernier acte date d'un an.
+     */
+    const ecart = dernierDepot(b) - dernierDepot(a);
+    if (ecart !== 0) return ecart;
+
+    // À dates égales, l'alphabet départage plutôt qu'un ordre au hasard.
     return a.titre.localeCompare(b.titre, "fr");
   });
 }

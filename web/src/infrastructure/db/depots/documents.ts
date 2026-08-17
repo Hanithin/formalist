@@ -1,5 +1,6 @@
 import { prisma } from "../client";
 import { mesDossiers, exigerDossier } from "./dossiers";
+import { visibleParLeClient } from "@/domain/document/publication";
 import type { DossierListe } from "@/domain/formalite/liste";
 import type { DocumentRange } from "@/domain/document/bibliotheque";
 import { piecesAttendues } from "@/domain/formalite/documents";
@@ -24,10 +25,12 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
   const dossiersParId = new Map(dossiers.map((d) => [d.id, d]));
 
   const documents = dossiers.length
-    ? await prisma.documents.findMany({
-        where: { formalite_id: { in: [...dossiersParId.keys()] } },
-        orderBy: { created_at: "desc" },
-      })
+    ? (
+        await prisma.documents.findMany({
+          where: { formalite_id: { in: [...dossiersParId.keys()] } },
+          orderBy: { created_at: "desc" },
+        })
+      ).filter(visibleParLeClient)
     : [];
 
   const coffre = await prisma.user_documents.findMany({
@@ -175,10 +178,23 @@ function banqueDuBrouillon(dataJson: string | null): string | null {
 }
 
 /** Les documents d'un dossier précis, après contrôle d'accès au dossier. */
-export async function documentsDuDossier(utilisateur: UtilisateurConnecte, dossierId: number) {
+/**
+ * Les documents d'un dossier.
+ *
+ * `pourLeCabinet` rend tout, projets d'actes compris : c'est ce que l'avocat relit.
+ * Sans lui, on ne rend que ce que le client peut voir - un acte produit reste un
+ * projet jusqu'à la relecture.
+ */
+export async function documentsDuDossier(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  options: { pourLeCabinet?: boolean } = {}
+) {
   await exigerDossier(utilisateur, dossierId); // lève si l'accès est refusé
-  return prisma.documents.findMany({
+  const lignes = await prisma.documents.findMany({
     where: { formalite_id: dossierId },
     orderBy: { created_at: "desc" },
   });
+
+  return options.pourLeCabinet ? lignes : lignes.filter(visibleParLeClient);
 }

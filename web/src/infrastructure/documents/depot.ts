@@ -4,6 +4,7 @@ import { prisma } from "@/infrastructure/db/client";
 import { exigerDossierModifiable, lireDossier } from "@/infrastructure/db/depots/dossiers";
 import { verifierDepot, nomDeStockage } from "@/lib/fichiers";
 import { convertirEnPdf, ConversionImpossible } from "./conversion";
+import { A_RELIRE } from "@/domain/document/publication";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "@/infrastructure/db/sessions";
 
@@ -171,15 +172,23 @@ export async function deposerAuCoffre(
  */
 export async function remplacerDocumentsProduits(
   dossierId: number,
-  actes: { titre: string; contenu: Buffer }[]
+  actes: { titre: string; contenu: Buffer }[],
+  options: { aRelire?: boolean } = {}
 ) {
   const existants = await prisma.documents.findMany({
     where: { formalite_id: dossierId, uploaded_by: "system" },
   });
 
-  const conserves = existants.filter((d) => d.status !== "generated");
+  /*
+   * Un acte relu ou signé ne se régénère pas : il est figé.
+   *
+   * Les autres - projets en attente de relecture, ou déjà mis à disposition - se
+   * remplacent quand on reproduit le jeu.
+   */
+  const remplacables = new Set([A_RELIRE, "generated"]);
+  const conserves = existants.filter((d) => !remplacables.has(d.status));
   const figes = new Set(conserves.map((d) => d.name));
-  const remplaces = existants.filter((d) => d.status === "generated");
+  const remplaces = existants.filter((d) => remplacables.has(d.status));
 
   await mkdir(DEPOT, { recursive: true });
 
@@ -225,7 +234,17 @@ export async function remplacerDocumentsProduits(
             file_path: ecrit.livre,
             source_path: ecrit.source,
             uploaded_by: "system",
-            status: "generated",
+            /*
+             * Un projet quand c'est le cabinet qui produit, un document quand c'est le
+             * client.
+             *
+             * Sur une modification, l'acte sortait du gabarit et se retrouvait aussitôt
+             * dans la bibliothèque du client, qui pouvait le signer ou l'envoyer à sa
+             * banque avant que l'avocat l'ait lu. Sur une création en revanche, c'est le
+             * client lui-même qui produit ses actes - les retenir n'aurait aucun sens,
+             * il n'y a personne d'autre pour les relire.
+             */
+            status: options.aRelire ? A_RELIRE : "generated",
           },
         })
       );
@@ -285,6 +304,7 @@ export async function deposerPdfProduit(dossierId: number, titre: string, pdf: B
         type: "pdf",
         file_path: nom,
         uploaded_by: "system",
+        // Produit par le cabinet pour le cabinet : disponible sans attendre.
         status: "generated",
       },
     });

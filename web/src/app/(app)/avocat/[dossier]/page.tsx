@@ -14,6 +14,7 @@ import { travailDuCabinet, type TypeDeDossier } from "@/domain/formalite/cabinet
 import { statutsAMettreAJour } from "@/domain/modification/formalites";
 import { publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
+import { aRelire } from "@/domain/document/publication";
 import { Verification } from "./Verification";
 import { Avancement } from "./Avancement";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
@@ -169,7 +170,12 @@ export default async function DossierAvocat({
     status: dossier.status,
     sousPhase: dossier.business_sub_phase,
     piecesAVerifier: aVerifier,
-    actesProduits: documents.some((d) => d.uploaded_by === "system" && d.status === "generated"),
+    /*
+     * Produits, relus ou non : c'est la production qui compte ici, non la mise à
+     * disposition. Un acte à relire est bien un acte produit.
+     */
+    actesProduits: documents.some((d) => d.uploaded_by === "system"),
+    actesARelire: aRelire(documents).length,
     statutsAuDossier: documents.some((d) => d.name === "Statuts en vigueur"),
     statutsAJour: donnees.statutsAJour === true,
     avisAPublier:

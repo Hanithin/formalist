@@ -22,6 +22,7 @@ const NEUF: EtatDuCabinet = {
   sousPhase: "5a",
   piecesAVerifier: 0,
   actesProduits: false,
+  actesARelire: 0,
   statutsAuDossier: true,
   statutsAJour: false,
   avisAPublier: 1,

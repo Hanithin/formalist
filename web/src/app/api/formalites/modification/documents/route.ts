@@ -72,7 +72,15 @@ export const POST = route(async (requete: Request) => {
     contenu: renumeroterLesResolutions(genererDocument(acte.gabarit, donnees)),
   }));
 
-  const { produits, conserves } = await remplacerDocumentsProduits(dossier, actes);
+  /*
+   * Ce que produit le cabinet attend sa relecture.
+   *
+   * Une modification passe toujours par un avocat : ses actes ne sont des documents
+   * qu'une fois relus, et le client ne doit pas les voir avant.
+   */
+  const { produits, conserves } = await remplacerDocumentsProduits(dossier, actes, {
+    aRelire: true,
+  });
 
   return NextResponse.json({ ok: true, documents: [...produits, ...conserves] }, { status: 201 });
 });

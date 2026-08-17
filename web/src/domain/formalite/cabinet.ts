@@ -35,6 +35,8 @@ export interface EtatDuCabinet {
   piecesAVerifier: number;
   /** Les actes ont été produits. */
   actesProduits: boolean;
+  /** Combien d'actes attendent encore la relecture de l'avocat. */
+  actesARelire: number;
   /** Les statuts en vigueur sont au dossier. */
   statutsAuDossier: boolean;
   /** Les statuts à jour ont été produits. */
@@ -140,6 +142,25 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     etat: etat.actesProduits ? "faite" : "a_faire",
     onglet: "actes",
   });
+
+  /*
+   * La relecture, avant que le client voie quoi que ce soit.
+   *
+   * Un acte sorti du gabarit n'est pas un acte : c'est un projet. Il était versé dans
+   * la bibliothèque du client à la seconde où il était produit - le client pouvait
+   * l'envoyer à sa banque ou le signer avant que quiconque l'ait lu. Il attend
+   * désormais que l'avocat le relise et le mette à disposition.
+   */
+  if (etat.actesProduits) {
+    taches.push({
+      identifiant: "relecture",
+      titre: etat.actesARelire > 0 ? "Relire les actes et les mettre à disposition" : "Actes mis à disposition",
+      explication:
+        "Le client ne voit rien tant que vous n'avez pas relu. Corrigez ce qu'il faut, puis rendez les actes disponibles dans son espace.",
+      etat: etat.actesARelire > 0 ? "a_faire" : "faite",
+      onglet: "actes",
+    });
+  }
 
   if (etat.type === "modification" && etat.statutsConcernes) {
     taches.push({

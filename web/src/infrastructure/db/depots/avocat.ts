@@ -15,8 +15,10 @@ import {
   immatriculee,
   documentRefuse,
   documentValide,
+  actesDisponibles,
 } from "@/domain/formalite/avis";
 import { prevenir } from "./avis";
+import { A_RELIRE } from "@/domain/document/publication";
 import { LONGUEUR_COMMENTAIRE } from "@/domain/formalite/avocat";
 import { TYPE_RBE, TYPE_KBIS, typesDeposes } from "./suivi";
 import {
@@ -667,4 +669,40 @@ export async function derniereDemandeDeCorrections(dossierId: number): Promise<s
 
   const demande = trace?.comment?.trim();
   return demande ? demande : null;
+}
+
+/**
+ * Rend les actes visibles au client.
+ *
+ * C'est le geste qui transforme un projet en document : jusque-là, ce qui sort du
+ * gabarit n'est lu par personne. Le client en est prévenu, comme pour toute étape qui
+ * lui rend la main.
+ */
+export async function mettreLesActesADisposition(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  const { count } = await prisma.documents.updateMany({
+    where: { formalite_id: dossierId, uploaded_by: "system", status: A_RELIRE },
+    data: { status: "generated" },
+  });
+
+  if (count === 0) return { publies: 0 };
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "actes_mis_a_disposition",
+      after_value: String(count),
+    },
+  });
+
+  await prevenir(dossier.user_id, dossierId, actesDisponibles(dossier.societe || "votre société"));
+
+  return { publies: count };
 }

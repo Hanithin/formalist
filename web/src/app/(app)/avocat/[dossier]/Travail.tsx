@@ -52,6 +52,30 @@ export function Travail({
     });
   }
 
+  /** Rend les actes visibles au client, après relecture. */
+  function mettreADisposition() {
+    setRefus(null);
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/actes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier }),
+      });
+      const corps = await reponse.json().catch(() => ({}));
+
+      if (!reponse.ok) {
+        setRefus(corps.error ?? "Les actes n'ont pas pu être mis à disposition");
+        return;
+      }
+      setRetour(
+        corps.publies === 1
+          ? "L'acte est disponible dans l'espace du client, qui en est prévenu."
+          : corps.publies + " actes sont disponibles dans l'espace du client, qui en est prévenu."
+      );
+      router.refresh();
+    });
+  }
+
   function demanderDesCorrections() {
     const motif = window.prompt("Que doit reprendre le client ?");
     if (!motif?.trim()) return;
@@ -121,7 +145,21 @@ export function Travail({
 
               {tache.etat !== "faite" && !tache.bloquee && (
                 <span className={styles.tacheActions}>
-                  {tache.identifiant === "actes" && peutProduireLesActes ? (
+                  {tache.identifiant === "relecture" ? (
+                    /*
+                      Le geste qui rend les actes visibles au client.
+                      Jusque-là, ce qui sort du gabarit n'a été lu par personne : le
+                      client pouvait le signer ou l'envoyer à sa banque tel quel.
+                    */
+                    <button
+                      type="button"
+                      className={styles.travailPrincipal}
+                      onClick={mettreADisposition}
+                      disabled={enCours}
+                    >
+                      {enCours ? "Mise à disposition" : "Mettre à disposition du client"}
+                    </button>
+                  ) : tache.identifiant === "actes" && peutProduireLesActes ? (
                     <button
                       type="button"
                       className={styles.travailPrincipal}

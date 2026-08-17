@@ -438,3 +438,52 @@ describe("un rejet résolu", () => {
     expect(resolus.filter(aRemplacer)).toHaveLength(1);
   });
 });
+
+describe("l'ordre des sociétés", () => {
+  it("la plus récemment servie passe devant", () => {
+    /*
+     * L'ordre alphabétique donnait l'illusion d'un classement chronologique tant que
+     * les noms tombaient bien, et rangeait une société créée hier derrière une autre
+     * dont le dernier acte date d'un an.
+     */
+    const groupes = grouper([
+      doc({ societe: "ALPHA", societeId: 1, creeLe: new Date("2026-01-10T10:00:00Z") }),
+      doc({ societe: "ZULU", societeId: 2, creeLe: new Date("2026-08-16T10:00:00Z") }),
+      doc({ societe: "MIKE", societeId: 3, creeLe: new Date("2026-05-02T10:00:00Z") }),
+    ]);
+
+    expect(groupes.map((g) => g.titre)).toEqual([
+      "SASU ZULU",
+      "SASU MIKE",
+      "SASU ALPHA",
+    ]);
+  });
+
+  it("c'est le document le plus récent du groupe qui compte", () => {
+    // Une société dont un seul acte est récent passe devant celle qui n'en a que des vieux.
+    const groupes = grouper([
+      doc({ societe: "ANCIENNE", societeId: 1, creeLe: new Date("2026-02-01T10:00:00Z") }),
+      doc({ societe: "MELANGE", societeId: 2, creeLe: new Date("2025-01-01T10:00:00Z") }),
+      doc({ societe: "MELANGE", societeId: 2, creeLe: new Date("2026-08-17T10:00:00Z") }),
+    ]);
+    expect(groupes[0].titre).toContain("MELANGE");
+  });
+
+  it("les dépôts personnels restent en dernier", () => {
+    // Ils n'appartiennent à aucun dossier : les mettre en tête ferait chercher plus loin.
+    const groupes = grouper([
+      doc({ societe: null, societeId: null, creeLe: new Date("2026-08-18T10:00:00Z") }),
+      doc({ societe: "ACME", societeId: 1, creeLe: new Date("2026-01-01T10:00:00Z") }),
+    ]);
+    expect(groupes[groupes.length - 1].titre).toBe(TITRE_SANS_SOCIETE);
+  });
+
+  it("à date égale, l'alphabet départage", () => {
+    const meme = new Date("2026-08-01T10:00:00Z");
+    const groupes = grouper([
+      doc({ societe: "BETA", societeId: 2, creeLe: meme }),
+      doc({ societe: "ALPHA", societeId: 1, creeLe: meme }),
+    ]);
+    expect(groupes.map((g) => g.titre)).toEqual(["SASU ALPHA", "SASU BETA"]);
+  });
+});
