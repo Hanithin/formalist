@@ -29,8 +29,14 @@ const ORDINAUX = [
   "HUITIÈME",
 ];
 
-/** « RÉSOLUTION UNIQUE » ou « RÉSOLUTION », suivi du tiret de titre. */
-const TITRE = /RÉSOLUTION(?: UNIQUE)?(?=\s*[-—–])/g;
+/**
+ * « RÉSOLUTION » ou « DÉCISION », suivi du tiret de titre.
+ *
+ * L'associé unique ne délibère pas : ses points s'intitulent « DÉCISION ». Ils se
+ * numérotent pourtant comme les autres, et ne l'étaient pas - le registre des décisions
+ * de l'associé unique en recevait trois portant le même intitulé.
+ */
+const TITRE = /(RÉSOLUTION|DÉCISION)(?: UNIQUE)?(?=\s*[-—–])/g;
 
 export function renumeroterLesResolutions(docx: Buffer): Buffer {
   const PizZip = requerir("pizzip") as typeof import("pizzip");
@@ -41,14 +47,18 @@ export function renumeroterLesResolutions(docx: Buffer): Buffer {
   const xml = fichier.asText();
   const titres = xml.match(TITRE);
 
-  // Une seule résolution : « RÉSOLUTION UNIQUE » est la formulation juste.
+  /*
+   * Une seule : « RÉSOLUTION UNIQUE » est alors la formulation juste. Le cas ne se
+   * présente plus dans les procès-verbaux, où les pouvoirs au porteur en font toujours
+   * une seconde, mais un gabarit qui n'aurait qu'un point ne doit pas se voir numéroté.
+   */
   if (!titres || titres.length < 2) return docx;
 
   let rang = 0;
-  const renumerote = xml.replace(TITRE, () => {
+  const renumerote = xml.replace(TITRE, (_entier, mot: string) => {
     const ordinal = ORDINAUX[rang] ?? String(rang + 1) + "e";
     rang += 1;
-    return ordinal + " RÉSOLUTION";
+    return ordinal + " " + mot;
   });
 
   archive.file("word/document.xml", renumerote);

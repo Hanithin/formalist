@@ -138,7 +138,34 @@ describe("le procès-verbal de modification", () => {
     const texte = texteDu(genererDocument(gabaritProcesVerbal("SASU"), donnees));
 
     expect(texte).toContain("ACME GROUPE");
-    expect(gabaritProcesVerbal("EURL")).toBe("modif-pv-transfert-siege-sasu.docx");
+    expect(texte).toContain("DÉCISION DE L'ASSOCIÉ UNIQUE");
+    // Un associé unique ne convoque ni ne préside personne.
+    expect(texte).not.toContain("feuille de présence");
+  });
+
+  it("l'EURL a des parts sociales, non des actions", () => {
+    /*
+     * Elle recevait le procès-verbal de SASU, qui parle d'actions d'un bout à l'autre :
+     * une EURL n'en a pas, et le greffe lit ce que l'acte dit.
+     */
+    expect(gabaritProcesVerbal("EURL")).toBe("modif-pv-transfert-siege-eurl.docx");
+    expect(gabaritProcesVerbal("SASU")).toBe("modif-pv-transfert-siege-sasu.docx");
+
+    const donnees = donneesDuGabarit({
+      societe: { ...SOCIETE, forme: "EURL" },
+      assemblee: ASSEMBLEE,
+      codes: ["reduction_capital"],
+      valeurs: {
+        capitalActuelRed: "15000",
+        nouveauCapitalRed: "10000",
+        motifReduction: "Pertes",
+        nbPartsAnnulees: "500",
+        dateEffetRed: "2026-09-15",
+      },
+    });
+    const texte = texteDu(genererDocument(gabaritProcesVerbal("EURL"), donnees));
+    expect(texte).toContain("500 parts sociales");
+    expect(texte).not.toContain("actions");
   });
 });
 
@@ -232,9 +259,23 @@ describe("l'adresse d'un acte", () => {
 });
 
 describe("le numérotage des résolutions", () => {
-  it("une seule décision garde « résolution unique »", () => {
-    const texte = produire(["denomination"], { nouvelleDenomination: "ACME GROUPE" });
-    expect(texte).toContain("RÉSOLUTION UNIQUE");
+  it("une seule modification en fait quand même deux, avec les pouvoirs", () => {
+    /*
+     * Les pouvoirs au porteur sont une résolution : c'est elle qui permet au porteur du
+     * procès-verbal de déposer la formalité, et le greffe la cherche. Le document ne
+     * peut donc jamais annoncer une « résolution unique ».
+     */
+    const donnees = donneesDuGabarit({
+      societe: SOCIETE,
+      assemblee: ASSEMBLEE,
+      codes: ["denomination"],
+      valeurs: { nouvelleDenomination: "ACME GROUPE" },
+    });
+    const brut = genererDocument(gabaritProcesVerbal("SAS"), donnees);
+    const texte = texteDu(renumeroterLesResolutions(brut));
+    expect(texte).not.toContain("RÉSOLUTION UNIQUE");
+    expect(texte).toContain("PREMIÈRE RÉSOLUTION - CHANGEMENT DE DÉNOMINATION");
+    expect(texte).toContain("DEUXIÈME RÉSOLUTION - POUVOIRS");
   });
 
   it("deux décisions se numérotent, au lieu d'être deux fois uniques", () => {

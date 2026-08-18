@@ -212,6 +212,16 @@ test.describe("suivi côté client", () => {
     // Les six étapes sont là, et l'état technique n'apparaît nulle part.
     await expect(suivi.getByText("Kbis délivré")).toBeVisible();
     await expect(page.getByText("en_attente_validation")).toHaveCount(0);
+
+    /*
+     * Chaque ligne dit où elle en est.
+     * La liste ne se distinguait que par un rond plein, un rond vide et un gris plus
+     * pâle : on voyait qu'il se passait quelque chose sans savoir où l'on en était.
+     */
+    const etapes = suivi.getByRole("listitem");
+    await expect(etapes.first()).toContainText(/Terminé|En cours|À vous|À venir/);
+    await expect(suivi.getByText("À venir").first()).toBeVisible();
+    await expect(suivi.getByText("Terminé", { exact: true }).first()).toBeVisible();
   });
 
   test("tant qu'on remplit le dossier, le suivi ne s'affiche pas", async ({ page }) => {

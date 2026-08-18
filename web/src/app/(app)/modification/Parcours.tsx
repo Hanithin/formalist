@@ -802,10 +802,29 @@ function EtapeChangements({
   changer: (c: Partial<EtatDuDossier>) => void;
 }) {
   function basculer(code: string) {
-    const codes = etat.codes.includes(code)
-      ? etat.codes.filter((c) => c !== code)
-      : [...etat.codes, code];
-    changer({ codes });
+    const enleve = etat.codes.includes(code);
+    const codes = enleve ? etat.codes.filter((c) => c !== code) : [...etat.codes, code];
+
+    /*
+     * Le capital actuel est déjà connu : il vient du registre.
+     *
+     * Le retaper est la meilleure façon d'y glisser un écart, et l'acte se contredit
+     * alors dans sa propre page - l'en-tête annonce « au capital de 2 000 euros » et la
+     * résolution « porter le capital de 15 000 euros à 20 000 euros ». Le champ reste
+     * modifiable : le registre peut retarder d'une formalité non encore publiée.
+     */
+    const champ = code === "augmentation_capital" ? "capitalActuelAugm" : "capitalActuelRed";
+    const aPrefixer =
+      !enleve &&
+      (code === "augmentation_capital" || code === "reduction_capital") &&
+      typeof etat.societe.capital === "number" &&
+      etat.valeurs[champ] === undefined;
+
+    changer(
+      aPrefixer
+        ? { codes, valeurs: { ...etat.valeurs, [champ]: etat.societe.capital as number } }
+        : { codes }
+    );
   }
 
   const chiffrage = devis({

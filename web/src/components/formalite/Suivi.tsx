@@ -97,6 +97,29 @@ export function Suivi({ etat, lienAction, lienMessagerie, demande }: Props) {
               {etape.etat === "faite" ? <Coche /> : null}
             </span>
             <span className={styles.nom}>{etape.titre}</span>
+
+            {/*
+              L'état de chaque ligne, nommé.
+              La liste ne se distinguait que par un rond plein, un rond vide et un gris
+              plus pâle : on voyait bien qu'il se passait quelque chose quelque part,
+              sans savoir où l'on en était ni qui devait bouger. Un client qui ne sait
+              pas que la balle n'est pas dans son camp attend devant son écran.
+            */}
+            <span
+              className={
+                etape.etat === "en_cours" && etape.main === "vous"
+                  ? `${styles.badge} ${styles.badgeavous}`
+                  : `${styles.badge} ${styles["badge" + etape.etat]}`
+              }
+            >
+              {etape.etat === "faite"
+                ? "Terminé"
+                : etape.etat === "en_cours"
+                  ? etape.main === "vous"
+                    ? "À vous"
+                    : "En cours"
+                  : "À venir"}
+            </span>
           </li>
         ))}
       </ol>

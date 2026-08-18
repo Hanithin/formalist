@@ -196,3 +196,45 @@
   color: #27272a;
   white-space: pre-wrap;
 }
+
+/*
+ * L'état de chaque étape, nommé.
+ *
+ * La liste ne se distinguait que par un rond plein, un rond vide et un gris plus pâle :
+ * on voyait bien qu'il se passait quelque chose quelque part, sans savoir où l'on en
+ * était ni qui devait bouger. Un client qui ne sait pas que la balle n'est pas dans son
+ * camp attend devant son écran.
+ */
+.badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.badgefaite {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* En cours chez nous : la couleur d'attente, sans appel à l'action. */
+.badgeen_cours {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* À vous : l'ambre, comme partout où un geste est attendu du client. */
+.badgeen_cours.badgeavous,
+.badge.badgeavous {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badgea_venir {
+  background: #f4f4f5;
+  color: #a1a1aa;
+}

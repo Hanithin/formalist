@@ -116,11 +116,16 @@ function p(text, opts = {}) {
   if (opts.bold) rpr += '<w:b/>';
   if (opts.size) rpr += `<w:sz w:val="${opts.size}"/>`;
   if (opts.underline) rpr += '<w:u w:val="single"/>';
+  if (opts.italic) rpr += '<w:i/>';
   const rprXml = rpr ? `<w:rPr>${rpr}</w:rPr>` : '';
 
   let ppr = '';
   if (opts.center) ppr += '<w:jc w:val="center"/>';
-  if (opts.spacing) ppr += `<w:spacing w:after="${opts.spacing}"/>`;
+  if (opts.left) ppr += '<w:jc w:val="left"/>';
+  if (opts.spacing || opts.avant) {
+    const avant = opts.avant ? ` w:before="${opts.avant}"` : '';
+    ppr += `<w:spacing${avant} w:after="${opts.spacing || 0}"/>`;
+  }
   const pprXml = ppr ? `<w:pPr>${ppr}</w:pPr>` : '';
 
   // Handle linebreaks in text
@@ -134,203 +139,269 @@ function p(text, opts = {}) {
   return `<w:p>${pprXml}${runs}</w:p>`;
 }
 
+/**
+ * Une section conditionnelle, dont les marqueurs occupent leur propre paragraphe.
+ *
+ * Un marqueur écrit au début d'un paragraphe de texte laisse, quand la condition est
+ * fausse, un paragraphe vide : le procès-verbal sortait avec un trou sous chaque titre
+ * de résolution, à l'endroit des cas non retenus. Seul sur sa ligne, le paragraphe
+ * disparaît avec sa condition.
+ */
+function si(drapeau, corps) {
+  return p('{#' + drapeau + '}', {}) + corps + p('{/' + drapeau + '}', {});
+}
+
+/** La même chose, à la négative : ce qui ne s'écrit que si la condition est fausse. */
+function sinon(drapeau, corps) {
+  return p('{^' + drapeau + '}', {}) + corps + p('{/' + drapeau + '}', {});
+}
+
 function escXml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ====== PV AGE - SAS (Assemblée Générale Extraordinaire) ======
-function pvAgeSAS() {
-  return p('{{SOCIETE}}', { bold: true, size: 32, center: true })
-    + p('Société par Actions Simplifiée au capital de {{CAPITAL_FORMATE}} euros', { center: true, size: 20 })
+/* ================================ Le procès-verbal ================================
+ *
+ * Un seul texte pour les cinq formes.
+ *
+ * Il y en avait trois, divergents : le procès-verbal de SAS avait un ordre du jour et
+ * des résolutions rédigées, celui de SASU tenait en une phrase par décision - « décide
+ * de réduire le capital de X à Y pour motif : Pertes » - et la SARL était fabriquée en
+ * remplaçant « actions » par « parts » dans celui de la SAS. Ce remplacement portait
+ * sur une chaîne, donc sur la première occurrence seulement : le gabarit de SARL
+ * parlait encore d'actionnaires et d'actions partout ailleurs.
+ *
+ * Ce qui change d'une forme à l'autre tient en quatre mots - qui décide, comment
+ * s'appelle l'acte, comment s'appellent les titres et ceux qui les détiennent. Le reste
+ * est identique parce que le droit l'est : le délai d'opposition des créanciers, le
+ * quitus au dirigeant sortant, l'article des statuts modifié, les pouvoirs au porteur.
+ */
+
+/**
+ * @param titre     le nom de l'acte : procès-verbal d'assemblée, décision de l'associé unique
+ * @param sujet     qui délibère : « L'assemblée générale », « L'associé unique »
+ * @param mot       l'intitulé d'un point : « RÉSOLUTION », « DÉCISION »
+ * @param titres    « actions » ou « parts sociales »
+ * @param porteurs  « actionnaires » ou « associés »
+ * @param convoque  qui convoque : le président en SAS, la gérance en SARL et en SCI
+ * @param preside   qui préside la séance et met aux voix : président ou gérant
+ * @param seul      un associé unique ne tient pas d'assemblée : ni convocation, ni bureau
+ */
+function procesVerbal({ titre, sujet, mot, titres, porteurs, convoque, preside, seul }) {
+  const enTete =
+    p('{{SOCIETE}}', { bold: true, size: 32, center: true })
+    + p('{{FORME_EN_CLAIR}} au capital de {{CAPITAL_FORMATE}} euros', { center: true, size: 20 })
     + p('Siège social : {{SIEGE_SOCIAL}}', { center: true, size: 20 })
-    + p('RCS {{RCS_VILLE}}', { center: true, size: 20 })
-    + p('SIREN : {{SIREN}}', { center: true, size: 20, spacing: 400 })
-    + p('PROCÈS-VERBAL DE L\'ASSEMBLÉE GÉNÉRALE EXTRAORDINAIRE', { bold: true, size: 28, center: true, underline: true })
-    + p('EN DATE DU {{DATE_AGE}}', { bold: true, size: 24, center: true, spacing: 400 })
-    + p('Les actionnaires de la société {{SOCIETE}} se sont réunis en Assemblée Générale Extraordinaire au siège social, sur convocation du Président.', { spacing: 200 })
-    + p('Sont présents :', { bold: true, spacing: 200 })
-    + p('{{ASSOCIE_LISTE}}', { spacing: 200 })
-    + p('représentant la totalité des {{TOTAL_PARTS}} actions composant le capital social.', { spacing: 200 })
-    + p('L\'assemblée, réunissant la totalité des actionnaires, peut valablement délibérer sans qu\'il soit besoin de justifier de l\'accomplissement des formalités de convocation.', { spacing: 400 })
-    // Transfert de siège
-    + p('{#IS_TRANSFERT_SIEGE}', {})
-    + p('RÉSOLUTION UNIQUE — TRANSFERT DU SIÈGE SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale décide de transférer le siège social de la société, actuellement sis {{SIEGE_SOCIAL}}, à l\'adresse suivante :', { spacing: 200 })
+    + p('Immatriculée au registre du commerce et des sociétés {{RCS_DE}} sous le numéro {{SIREN}}', { center: true, size: 20, spacing: 400 })
+    + p(titre, { bold: true, size: 28, center: true, underline: true })
+    + p('EN DATE DU {{DATE_AGE}}', { bold: true, size: 24, center: true, spacing: 400 });
+
+  const ouverture = seul
+    ? p('Le soussigné, {{ASSOCIE_UNIQUE}}, associé unique de la société {{SOCIETE}}, propriétaire de la totalité des {{TOTAL_PARTS_FORMATE}} ' + titres + ' composant le capital social, a pris les décisions suivantes : {{LABEL_MODIFICATION}}.', { spacing: 200 })
+      + p('Conformément à la loi, ces décisions sont consignées dans le présent procès-verbal, reporté sur le registre des décisions de l\'associé unique.', { spacing: 400 })
+    : p('Les ' + porteurs + ' de la société {{SOCIETE}} se sont réunis au siège social, en assemblée générale, sur convocation ' + convoque + '.', { spacing: 200 })
+      + p('Sont présents :', { bold: true, spacing: 100 })
+      + p('{{ASSOCIE_LISTE}}', { spacing: 200 })
+      + p('soit {{NB_ASSOCIES}} ' + porteurs + ' détenant ensemble {{TOTAL_PARTS_FORMATE}} ' + titres + ', représentant la totalité du capital social.', { spacing: 200 })
+      + p('La feuille de présence, arrêtée et certifiée exacte par le bureau, fait apparaître que l\'assemblée réunit la totalité des ' + porteurs + '. Elle peut donc valablement délibérer sans qu\'il soit justifié de l\'accomplissement des formalités de convocation.', { spacing: 200 })
+      + p('Le ' + preside + ' rappelle que l\'assemblée est appelée à délibérer sur l\'ordre du jour suivant : {{LABEL_MODIFICATION}}, et sur les pouvoirs à donner pour l\'accomplissement des formalités.', { spacing: 200 })
+      + p('Les documents prévus par la loi et les statuts ont été tenus à la disposition des ' + porteurs + '. Personne ne demandant plus la parole, le ' + preside + ' met successivement aux voix les résolutions inscrites à l\'ordre du jour.', { spacing: 400 });
+
+  // « Cette résolution est adoptée » ne se dit pas d'une décision prise seul.
+  // Rien, et non un paragraphe vide : la mise en page en garderait le blanc.
+  const adoptee = seul
+    ? ''
+    : p('Cette résolution, mise aux voix, est adoptée.', { italic: true, spacing: 300 });
+
+  const titreDe = (libelle) => p(mot + ' - ' + libelle, { bold: true, size: 24, underline: true, spacing: 200 });
+
+  const transfert =
+    p('{#IS_TRANSFERT_SIEGE}', {})
+    + titreDe('TRANSFERT DU SIÈGE SOCIAL')
+    + p(sujet + ' décide de transférer le siège social, actuellement fixé {{SIEGE_SOCIAL}}, à l\'adresse suivante :', { spacing: 200 })
     + p('{{NOUVEAU_SIEGE}}', { bold: true, spacing: 200 })
-    + p('Ce transfert prend effet à compter du {{DATE_EFFET_TRANSFERT_FR}}.', { spacing: 200 })
-    + p('En conséquence, l\'article des statuts relatif au siège social est modifié comme suit :', { spacing: 200 })
-    + p('« Le siège social est fixé au {{NOUVEAU_SIEGE}}. »', { bold: true, spacing: 200 })
-    + p('L\'assemblée donne tous pouvoirs au porteur d\'un original, d\'une copie ou d\'un extrait du présent procès-verbal pour accomplir toutes les formalités de publicité et de dépôt requises par la loi.', { spacing: 200 })
-    + p('{/IS_TRANSFERT_SIEGE}', {})
-    // Dénomination
-    + p('{#IS_DENOMINATION}', {})
-    + p('RÉSOLUTION UNIQUE — CHANGEMENT DE DÉNOMINATION SOCIALE', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale décide de modifier la dénomination sociale de la société, actuellement «{{SOCIETE}}», pour adopter la nouvelle dénomination suivante :', { spacing: 200 })
+    + p('Ce transfert prend effet à compter du {{DATE_EFFET_TRANSFERT_FR}}. L\'article des statuts relatif au siège social est modifié en conséquence et rédigé comme suit :', { spacing: 200 })
+    + p('« Le siège social est fixé {{NOUVEAU_SIEGE}}. Il peut être transféré en tout autre lieu dans les conditions prévues par la loi. »', { bold: true, spacing: 200 })
+    + si('IS_HORS_RESSORT', p('Le nouveau siège relevant du ressort du registre du commerce et des sociétés {{NOUVEAU_RCS_DE}}, la société sera radiée du registre {{RCS_DE}} et immatriculée au registre {{NOUVEAU_RCS_DE}}. Un avis sera publié dans chacun de ces deux ressorts.', { spacing: 200 }))
+    + adoptee
+    + p('{/IS_TRANSFERT_SIEGE}', {});
+
+  const denomination =
+    p('{#IS_DENOMINATION}', {})
+    + titreDe('CHANGEMENT DE DÉNOMINATION SOCIALE')
+    + p(sujet + ' décide de modifier la dénomination sociale, actuellement « {{SOCIETE}} », qui devient :', { spacing: 200 })
     + p('« {{NOUVELLE_DENOMINATION}} »', { bold: true, spacing: 200 })
-    + p('Ce changement prend effet à compter du {{DATE_EFFET_DENOMINATION_FR}}.', { spacing: 200 })
-    + p('En conséquence, l\'article des statuts relatif à la dénomination sociale est modifié comme suit :', { spacing: 200 })
-    + p('« La société prend la dénomination sociale de : {{NOUVELLE_DENOMINATION}}. »', { bold: true, spacing: 200 })
-    + p('{/IS_DENOMINATION}', {})
-    // Objet social
-    + p('{#IS_OBJET_SOCIAL}', {})
-    + p('RÉSOLUTION UNIQUE — MODIFICATION DE L\'OBJET SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale décide de modifier l\'objet social de la société, qui sera désormais le suivant :', { spacing: 200 })
+    + p('Ce changement prend effet à compter du {{DATE_EFFET_DENOMINATION_FR}}. L\'article des statuts relatif à la dénomination sociale est modifié en conséquence et rédigé comme suit :', { spacing: 200 })
+    + p('« La société a pour dénomination sociale : {{NOUVELLE_DENOMINATION}}. »', { bold: true, spacing: 200 })
+    + p('Tous les actes et documents émanant de la société porteront désormais cette dénomination, suivie de l\'indication de la forme sociale, du montant du capital et du numéro d\'immatriculation.', { spacing: 200 })
+    + adoptee
+    + p('{/IS_DENOMINATION}', {});
+
+  const objet =
+    p('{#IS_OBJET_SOCIAL}', {})
+    + titreDe('MODIFICATION DE L\'OBJET SOCIAL')
+    + p(sujet + ' décide de modifier l\'objet social, qui sera désormais le suivant :', { spacing: 200 })
     + p('« {{NOUVEL_OBJET_SOCIAL}} »', { bold: true, spacing: 200 })
-    + p('Ce changement prend effet à compter du {{DATE_EFFET_OBJET_FR}}.', { spacing: 200 })
-    + p('{/IS_OBJET_SOCIAL}', {})
-    // Dirigeant
-    + p('{#IS_DIRIGEANT}', {})
-    + p('RÉSOLUTION UNIQUE — CHANGEMENT DE DIRIGEANT', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('{#IS_NOMINATION}L\'assemblée générale décide de nommer en qualité de {{FONCTION_DIRIGEANT}} de la société, à compter du {{DATE_EFFET_DIRIGEANT_FR}} :', { spacing: 200 })
-    + p('{{NOUVEAU_DIRIGEANT_CIVILITE}} {{NOUVEAU_DIRIGEANT_PRENOM}} {{NOUVEAU_DIRIGEANT_NOM}}, né(e) le {{NOUVEAU_DIRIGEANT_DATE_NAISSANCE}} à {{NOUVEAU_DIRIGEANT_LIEU_NAISSANCE}}, de nationalité {{NOUVEAU_DIRIGEANT_NATIONALITE}}, demeurant au {{NOUVEAU_DIRIGEANT_ADRESSE}}.', { spacing: 200 })
-    + p('Rémunération : {{REMUNERATION_DIRIGEANT}}.{/IS_NOMINATION}', { spacing: 200 })
-    + p('{#IS_REVOCATION}L\'assemblée générale décide de révoquer {{DIRIGEANT_REVOQUE_NOM}} de ses fonctions de {{FONCTION_DIRIGEANT}}, à compter du {{DATE_EFFET_DIRIGEANT_FR}}.{/IS_REVOCATION}', { spacing: 200 })
-    + p('{#IS_DEMISSION}L\'assemblée prend acte de la démission de {{DIRIGEANT_DEMISSIONNAIRE_NOM}} de ses fonctions de {{FONCTION_DIRIGEANT}}, à compter du {{DATE_EFFET_DIRIGEANT_FR}}.{/IS_DEMISSION}', { spacing: 200 })
-    + p('{/IS_DIRIGEANT}', {})
-    // Augmentation capital
-    + p('{#IS_AUGMENTATION_CAPITAL}', {})
-    + p('RÉSOLUTION UNIQUE — AUGMENTATION DU CAPITAL SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale décide d\'augmenter le capital social d\'une somme portant celui-ci de {{CAPITAL_ACTUEL_AUGM}} euros à {{NOUVEAU_CAPITAL_AUGM}} euros.', { spacing: 200 })
-    + p('{#IS_APPORT_NUMERAIRE}Cette augmentation est réalisée par apport en numéraire. Les fonds ont été déposés auprès de {{BANQUE_DEPOT}}, qui en a délivré attestation. Les actions nouvelles sont intégralement libérées.{/IS_APPORT_NUMERAIRE}', { spacing: 200 })
-    + p('{#IS_COMPENSATION_CREANCES}Cette augmentation est réalisée par compensation avec une créance certaine, liquide et exigible détenue sur la société par {{TITULAIRE_CREANCE}}, d\'un montant de {{MONTANT_CREANCE}} euros, telle qu\'elle ressort de l\'arrêté de compte établi le {{DATE_ARRETE_COMPTE_FR}}.{/IS_COMPENSATION_CREANCES}', { spacing: 200 })
-    + p('{#IS_INCORPORATION_RESERVES}Cette augmentation est réalisée par incorporation d\'une somme de {{MONTANT_INCORPORE}} euros prélevée sur le poste « {{POSTE_INCORPORE}} », sans apport nouveau.{/IS_INCORPORATION_RESERVES}', { spacing: 200 })
-    + p('{#IS_APPORT_NATURE}Cette augmentation est réalisée par apport en nature portant sur : {{DESCRIPTION_APPORT}}, évalué à {{VALEUR_APPORT}} euros.{/IS_APPORT_NATURE}', { spacing: 200 })
-    + p('{#IS_APPORT_NATURE}{#IS_COMMISSAIRE_DISPENSE}Les associés, statuant à l\'unanimité, décident de ne pas recourir à un commissaire aux apports, aucun apport en nature n\'excédant trente mille euros et leur valeur totale n\'excédant pas la moitié du capital. Ils déclarent avoir connaissance de ce qu\'ils répondent solidairement, pendant cinq ans et à l\'égard des tiers, de la valeur attribuée à cet apport.{/IS_COMMISSAIRE_DISPENSE}{/IS_APPORT_NATURE}', { spacing: 200 })
-    + p('{#IS_APPORT_NATURE}{^IS_COMMISSAIRE_DISPENSE}L\'assemblée, au vu du rapport établi par {{COMMISSAIRE_APPORTS}}, commissaire aux apports, approuve l\'évaluation qui y figure et l\'adopte pour la valeur de l\'apport.{/IS_COMMISSAIRE_DISPENSE}{/IS_APPORT_NATURE}', { spacing: 200 })
-    + p('Il est créé {{NB_PARTS_NOUVELLES}} actions nouvelles d\'une valeur nominale de {{VALEUR_NOMINALE_AUGM}} euros{#PRIME_EMISSION}, assorties d\'une prime d\'émission de {{PRIME_EMISSION}} euros{/PRIME_EMISSION}.', { spacing: 200 })
+    + p('Ce changement prend effet à compter du {{DATE_EFFET_OBJET_FR}}. L\'article des statuts relatif à l\'objet social est modifié en conséquence.', { spacing: 200 })
+    + adoptee
+    + p('{/IS_OBJET_SOCIAL}', {});
+
+  const dirigeant =
+    p('{#IS_DIRIGEANT}', {})
+    + titreDe('CHANGEMENT DE DIRIGEANT')
+    + si('IS_NOMINATION',
+      p(sujet + ' décide de nommer en qualité de {{FONCTION_DIRIGEANT}}, à compter du {{DATE_EFFET_DIRIGEANT_FR}} et pour une durée indéterminée :', { spacing: 200 })
+      + p('{{NOUVEAU_DIRIGEANT_CIVILITE}} {{NOUVEAU_DIRIGEANT_PRENOM}} {{NOUVEAU_DIRIGEANT_NOM}}, né(e) le {{NOUVEAU_DIRIGEANT_DATE_NAISSANCE}} à {{NOUVEAU_DIRIGEANT_LIEU_NAISSANCE}}, de nationalité {{NOUVEAU_DIRIGEANT_NATIONALITE}}, demeurant {{NOUVEAU_DIRIGEANT_ADRESSE}}.', { bold: true, spacing: 200 })
+      + p('L\'intéressé(e) déclare accepter ces fonctions et n\'être frappé(e) d\'aucune interdiction, incapacité ou déchéance susceptible de lui en interdire l\'exercice. Sa rémunération est fixée comme suit : {{REMUNERATION_DIRIGEANT}}.', { spacing: 200 }))
+    + si('IS_REVOCATION', p(sujet + ' décide de révoquer {{DIRIGEANT_REVOQUE_NOM}} de ses fonctions de {{FONCTION_DIRIGEANT}}, avec effet au {{DATE_EFFET_DIRIGEANT_FR}}.{#IS_MOTIF_REVOCATION} Le motif de cette révocation est le suivant : {{MOTIF_REVOCATION}}.{/IS_MOTIF_REVOCATION}', { spacing: 200 }))
+    + si('IS_DEMISSION', p(sujet + ' prend acte de la démission de {{DIRIGEANT_DEMISSIONNAIRE_NOM}} de ses fonctions de {{FONCTION_DIRIGEANT}}, avec effet au {{DATE_EFFET_DIRIGEANT_FR}}, et lui donne quitus entier et sans réserve de sa gestion jusqu\'à cette date.', { spacing: 200 }))
+    /*
+     * Il n'y a de dirigeant sortant que s'il en part un : la phrase s'écrivait sous une
+     * nomination, où elle désigne quelqu'un qui n'existe pas.
+     */
+    + sinon('IS_NOMINATION', p('Le dirigeant sortant restituera sans délai les documents et biens sociaux en sa possession.', { spacing: 200 }))
+    + p('Ce changement sera porté au registre du commerce et des sociétés.', { spacing: 200 })
+    + adoptee
+    + p('{/IS_DIRIGEANT}', {});
+
+  const augmentation =
+    p('{#IS_AUGMENTATION_CAPITAL}', {})
+    + titreDe('AUGMENTATION DU CAPITAL SOCIAL')
+    + p(sujet + ' décide d\'augmenter le capital social pour le porter de {{CAPITAL_ACTUEL_AUGM}} euros à {{NOUVEAU_CAPITAL_AUGM}} euros.', { spacing: 200 })
+    + si('IS_APPORT_NUMERAIRE', p('Cette augmentation est réalisée par apport en numéraire. Les fonds correspondants ont été déposés auprès de {{BANQUE_DEPOT}}, qui en a délivré attestation. Les ' + titres + ' nouvelles sont intégralement libérées.', { spacing: 200 }))
+    + si('IS_COMPENSATION_CREANCES', p('Cette augmentation est réalisée par compensation avec une créance certaine, liquide et exigible détenue sur la société par {{TITULAIRE_CREANCE}}, d\'un montant de {{MONTANT_CREANCE}} euros, telle qu\'elle ressort de l\'arrêté de compte établi le {{DATE_ARRETE_COMPTE_FR}}.', { spacing: 200 }))
+    + si('IS_INCORPORATION_RESERVES', p('Cette augmentation est réalisée par incorporation d\'une somme de {{MONTANT_INCORPORE}} euros prélevée sur le poste « {{POSTE_INCORPORE}} », sans apport nouveau ni modification de la répartition entre ' + porteurs + '.', { spacing: 200 }))
+    + si('IS_APPORT_NATURE',
+      p('Cette augmentation est réalisée par apport en nature portant sur : {{DESCRIPTION_APPORT}}, évalué à {{VALEUR_APPORT}} euros.', { spacing: 200 })
+      + si('IS_COMMISSAIRE_DISPENSE', p('Les ' + porteurs + ', statuant à l\'unanimité, décident de ne pas recourir à un commissaire aux apports, aucun apport en nature n\'excédant trente mille euros et leur valeur totale n\'excédant pas la moitié du capital. Ils déclarent avoir connaissance de ce qu\'ils répondent solidairement, pendant cinq ans et à l\'égard des tiers, de la valeur attribuée à cet apport.', { spacing: 200 }))
+      + sinon('IS_COMMISSAIRE_DISPENSE', p('Au vu du rapport établi par {{COMMISSAIRE_APPORTS}}, commissaire aux apports, l\'évaluation qui y figure est approuvée et retenue pour la valeur de l\'apport.', { spacing: 200 })))
+    + p('Il est en conséquence créé {{NB_PARTS_NOUVELLES}} ' + titres + ' nouvelles d\'une valeur nominale de {{VALEUR_NOMINALE_AUGM}} euros{#IS_PRIME_EMISSION}, assorties d\'une prime d\'émission de {{PRIME_EMISSION}} euros{/IS_PRIME_EMISSION}.', { spacing: 200 })
     + p('Cette augmentation prend effet à compter du {{DATE_EFFET_AUGM_FR}}. L\'article des statuts relatif au capital social est modifié en conséquence.', { spacing: 200 })
-    + p('{/IS_AUGMENTATION_CAPITAL}', {})
-    // Réduction capital
-    + p('{#IS_REDUCTION_CAPITAL}', {})
-    + p('RÉSOLUTION UNIQUE — RÉDUCTION DU CAPITAL SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale décide de réduire le capital social de {{CAPITAL_ACTUEL_RED}} euros à {{NOUVEAU_CAPITAL_RED}} euros, motivée par : {{MOTIF_REDUCTION}}.', { spacing: 200 })
-    + p('Il est annulé {{NB_PARTS_ANNULEES}} actions.', { spacing: 200 })
-    + p('Cette réduction prend effet à compter du {{DATE_EFFET_RED_FR}}.', { spacing: 200 })
-    + p('{/IS_REDUCTION_CAPITAL}', {})
-    // Cession parts
-    + p('{#IS_CESSION_PARTS}', {})
-    + p('RÉSOLUTION — AGRÉMENT DE LA CESSION DE PARTS', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale, statuant aux conditions de majorité prévues par les statuts, agrée en qualité de nouvel associé {{CESSIONNAIRE_NOM}} et autorise la cession de {{NB_PARTS_CEDEES}} parts par {{CEDANT_NOM}} à son profit, moyennant le prix de {{PRIX_CESSION}} euros, avec effet au {{DATE_CESSION_FR}}.', { spacing: 200 })
-    + p('En conséquence, l\'article des statuts relatif à la répartition du capital est modifié pour tenir compte de cette cession, et les statuts à jour seront déposés au registre du commerce et des sociétés.', { spacing: 200 })
-    + p('{/IS_CESSION_PARTS}', {})
-    // Prorogation
-    + p('{#IS_PROROGATION}', {})
-    + p('RÉSOLUTION UNIQUE — PROROGATION DE LA DURÉE DE LA SOCIÉTÉ', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale décide de proroger la durée de la société, actuellement fixée à {{DUREE_ACTUELLE}} ans, pour une nouvelle durée de {{NOUVELLE_DUREE}} ans.', { spacing: 200 })
-    + p('{/IS_PROROGATION}', {})
-    // Closing
-    + p('Plus rien n\'étant à l\'ordre du jour, la séance est levée.', { spacing: 400 })
+    + adoptee
+    + p('{/IS_AUGMENTATION_CAPITAL}', {});
+
+  const reduction =
+    p('{#IS_REDUCTION_CAPITAL}', {})
+    + titreDe('RÉDUCTION DU CAPITAL SOCIAL')
+    + p(sujet + ' décide de réduire le capital social de {{CAPITAL_ACTUEL_RED}} euros à {{NOUVEAU_CAPITAL_RED}} euros, réduction motivée par {{MOTIF_REDUCTION_EN_CLAIR}}.', { spacing: 200 })
+    + p('Il est en conséquence annulé {{NB_PARTS_ANNULEES}} ' + titres + '.', { spacing: 200 })
+    + si('IS_REDUCTION_HORS_PERTES', p('La réduction n\'étant pas motivée par des pertes, les créanciers dont la créance est antérieure au dépôt du présent acte au greffe pourront former opposition dans le délai légal. Le dépôt de la formalité n\'interviendra qu\'à l\'expiration de ce délai et, en cas d\'opposition, qu\'après règlement de celle-ci.', { spacing: 200 }))
+    + p('Cette réduction prend effet à compter du {{DATE_EFFET_RED_FR}}. L\'article des statuts relatif au capital social est modifié en conséquence.', { spacing: 200 })
+    + adoptee
+    + p('{/IS_REDUCTION_CAPITAL}', {});
+
+  const cession =
+    p('{#IS_CESSION_PARTS}', {})
+    + titreDe('AGRÉMENT DE LA CESSION')
+    + p(sujet + ', statuant aux conditions de majorité prévues par la loi et les statuts, agrée en qualité de nouvel associé {{CESSIONNAIRE_NOM}} et autorise la cession de {{NB_PARTS_CEDEES}} ' + titres + ' consentie par {{CEDANT_NOM}} à son profit, moyennant le prix de {{PRIX_CESSION}} euros, avec effet au {{DATE_CESSION_FR}}.', { spacing: 200 })
+    + p('L\'article des statuts relatif à la répartition du capital est modifié pour tenir compte de cette cession. Les statuts mis à jour seront déposés au registre du commerce et des sociétés.', { spacing: 200 })
+    + adoptee
+    + p('{/IS_CESSION_PARTS}', {});
+
+  const prorogation =
+    p('{#IS_PROROGATION}', {})
+    + titreDe('PROROGATION DE LA DURÉE DE LA SOCIÉTÉ')
+    + p(sujet + ', consulté avant l\'expiration du terme statutaire ainsi que l\'exige l\'article 1844-6 du code civil, décide de proroger la durée de la société, actuellement fixée à {{DUREE_ACTUELLE}} ans et venant à expiration le {{DATE_EXPIRATION_ACTUELLE_FR}}, pour une nouvelle durée de {{NOUVELLE_DUREE}} ans.', { spacing: 200 })
+    + p('L\'article des statuts relatif à la durée de la société est modifié en conséquence.', { spacing: 200 })
+    + adoptee
+    + p('{/IS_PROROGATION}', {});
+
+  const cloture =
+    titreDe('POUVOIRS POUR LES FORMALITÉS')
+    + p('Tous pouvoirs sont donnés au porteur d\'un original, d\'une copie ou d\'un extrait du présent acte à l\'effet d\'accomplir les formalités de publicité, de dépôt et d\'inscription modificative prévues par la loi.', { spacing: 200 })
+    + adoptee
+    + (seul
+      ? p('De tout ce que dessus, il a été dressé le présent procès-verbal, signé par l\'associé unique.', { spacing: 400 })
+      : p('Plus rien n\'étant à l\'ordre du jour, la séance est levée. De tout ce que dessus, il a été dressé le présent procès-verbal, signé par les membres du bureau et les ' + porteurs + ' présents.', { spacing: 400 }))
     + p('Fait au siège social, le {{DATE_AGE}}.', { spacing: 400 })
-    + p('Signatures des actionnaires :', { bold: true, spacing: 200 })
+    /*
+     * « Signé par », non « Signature des » : la mise en page trace une bordure sur le
+     * paragraphe qui suit tout intitulé commençant par « Signature », et le premier nom
+     * recevait donc deux traits - le sien et celui-là, sur toute la largeur.
+     */
+    + p(seul ? 'L\'associé unique :' : 'Signé par les ' + porteurs + ' présents :', { bold: true, spacing: 600 })
     + p('{#ASSOCIES}', {})
-    + p('{{nomComplet}}', { spacing: 100 })
-    + p('____________________________', { spacing: 200 })
+    /*
+     * Le trait au-dessus du nom, dans le même paragraphe que lui.
+     *
+     * Trois manières se sont révélées fausses. Une ligne de soulignés seule : la mise
+     * en page la retire, parce que les actes de création tracent le trait en bordure
+     * haute du nom en gras. Une bordure haute ici : Word fond en un seul bloc deux
+     * paragraphes de bordures identiques, et le second nom n'avait plus de trait. Une
+     * ligne vide entre les deux pour rompre le bloc : la mise en page la retire aussi,
+     * une ligne vide qui précède un titre étant du bruit - et le nom en gras est vu
+     * comme un titre. Le trait tient donc au nom, séparé par un simple retour.
+     */
+    /*
+     * 720 twips, et non une valeur ronde quelconque : la mise en page ramène à 120 tout
+     * espacement supérieur à 240 hors de sa liste - la place pour signer disparaissait.
+     */
+    + p('____________________________\n{{nomComplet}}', { left: true, avant: 600, spacing: 240 })
     + p('{/ASSOCIES}', {});
+
+  return enTete + ouverture + transfert + denomination + objet + dirigeant
+    + augmentation + reduction + cession + prorogation + cloture;
 }
 
-// ====== PV AGE - SASU (Décision de l'associé unique) ======
+function pvAgeSAS() {
+  return procesVerbal({
+    titre: 'PROCÈS-VERBAL DE L\'ASSEMBLÉE GÉNÉRALE EXTRAORDINAIRE',
+    sujet: 'L\'assemblée générale',
+    mot: 'RÉSOLUTION',
+    titres: 'actions',
+    porteurs: 'actionnaires',
+    convoque: 'du président',
+    preside: 'président',
+    seul: false,
+  });
+}
+
+function pvAgeSARL() {
+  return procesVerbal({
+    titre: 'PROCÈS-VERBAL DE L\'ASSEMBLÉE GÉNÉRALE EXTRAORDINAIRE',
+    sujet: 'L\'assemblée générale',
+    mot: 'RÉSOLUTION',
+    titres: 'parts sociales',
+    porteurs: 'associés',
+    convoque: 'de la gérance',
+    preside: 'gérant',
+    seul: false,
+  });
+}
+
 function pvAgeSASU() {
-  return p('{{SOCIETE}}', { bold: true, size: 32, center: true })
-    + p('Société par Actions Simplifiée Unipersonnelle au capital de {{CAPITAL_FORMATE}} euros', { center: true, size: 20 })
-    + p('Siège social : {{SIEGE_SOCIAL}}', { center: true, size: 20 })
-    + p('RCS {{RCS_VILLE}} — SIREN : {{SIREN}}', { center: true, size: 20, spacing: 400 })
-    + p('DÉCISION DE L\'ASSOCIÉ UNIQUE', { bold: true, size: 28, center: true, underline: true })
-    + p('EN DATE DU {{DATE_AGE}}', { bold: true, size: 24, center: true, spacing: 400 })
-    + p('L\'associé unique de la société {{SOCIETE}}, {{ASSOCIE_LISTE}}, représentant la totalité des {{TOTAL_PARTS}} actions, a pris la décision suivante :', { spacing: 400 })
-    + p('{#IS_TRANSFERT_SIEGE}', {})
-    + p('DÉCISION — TRANSFERT DU SIÈGE SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'associé unique décide de transférer le siège social de la société à l\'adresse suivante :', { spacing: 200 })
-    + p('{{NOUVEAU_SIEGE}}', { bold: true, spacing: 200 })
-    + p('Ce transfert prend effet à compter du {{DATE_EFFET_TRANSFERT_FR}}.', { spacing: 200 })
-    + p('L\'article des statuts relatif au siège social est modifié en conséquence.', { spacing: 200 })
-    + p('{/IS_TRANSFERT_SIEGE}', {})
-    + p('{#IS_DENOMINATION}', {})
-    + p('DÉCISION — CHANGEMENT DE DÉNOMINATION', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'associé unique décide de modifier la dénomination sociale pour : « {{NOUVELLE_DENOMINATION}} ».', { spacing: 200 })
-    + p('{/IS_DENOMINATION}', {})
-    + p('{#IS_OBJET_SOCIAL}', {})
-    + p('DÉCISION — MODIFICATION DE L\'OBJET SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'associé unique décide de modifier l\'objet social comme suit : « {{NOUVEL_OBJET_SOCIAL}} ».', { spacing: 200 })
-    + p('{/IS_OBJET_SOCIAL}', {})
-    + p('{#IS_DIRIGEANT}', {})
-    + p('DÉCISION — CHANGEMENT DE DIRIGEANT', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('{#IS_NOMINATION}L\'associé unique décide de nommer {{NOUVEAU_DIRIGEANT_CIVILITE}} {{NOUVEAU_DIRIGEANT_PRENOM}} {{NOUVEAU_DIRIGEANT_NOM}} en qualité de {{FONCTION_DIRIGEANT}} à compter du {{DATE_EFFET_DIRIGEANT_FR}}.{/IS_NOMINATION}', { spacing: 200 })
-    + p('{#IS_REVOCATION}L\'associé unique décide de révoquer {{DIRIGEANT_REVOQUE_NOM}} de ses fonctions de {{FONCTION_DIRIGEANT}} à compter du {{DATE_EFFET_DIRIGEANT_FR}}.{/IS_REVOCATION}', { spacing: 200 })
-    + p('{#IS_DEMISSION}L\'associé unique prend acte de la démission de {{DIRIGEANT_DEMISSIONNAIRE_NOM}} de ses fonctions de {{FONCTION_DIRIGEANT}} à compter du {{DATE_EFFET_DIRIGEANT_FR}}.{/IS_DEMISSION}', { spacing: 200 })
-    + p('{/IS_DIRIGEANT}', {})
-    + p('{#IS_AUGMENTATION_CAPITAL}', {})
-    + p('DÉCISION — AUGMENTATION DU CAPITAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'associé unique décide d\'augmenter le capital de {{CAPITAL_ACTUEL_AUGM}} € à {{NOUVEAU_CAPITAL_AUGM}} € par {{MODE_AUGMENTATION}}.', { spacing: 200 })
-    + p('{/IS_AUGMENTATION_CAPITAL}', {})
-    + p('{#IS_REDUCTION_CAPITAL}', {})
-    + p('DÉCISION — RÉDUCTION DU CAPITAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'associé unique décide de réduire le capital de {{CAPITAL_ACTUEL_RED}} € à {{NOUVEAU_CAPITAL_RED}} € pour motif : {{MOTIF_REDUCTION}}.', { spacing: 200 })
-    + p('{/IS_REDUCTION_CAPITAL}', {})
-    + p('{#IS_PROROGATION}', {})
-    + p('DÉCISION — PROROGATION', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'associé unique décide de proroger la durée de la société de {{DUREE_ACTUELLE}} ans à {{NOUVELLE_DUREE}} ans.', { spacing: 200 })
-    + p('{/IS_PROROGATION}', {})
-    + p('Fait au siège social, le {{DATE_AGE}}.', { spacing: 400 })
-    + p('L\'associé unique :', { bold: true, spacing: 200 })
-    + p('{#ASSOCIES}', {})
-    + p('{{nomComplet}}', { spacing: 100 })
-    + p('____________________________', { spacing: 200 })
-    + p('{/ASSOCIES}', {});
+  return procesVerbal({
+    titre: 'DÉCISION DE L\'ASSOCIÉ UNIQUE',
+    sujet: 'L\'associé unique',
+    mot: 'DÉCISION',
+    titres: 'actions',
+    porteurs: 'associés',
+    seul: true,
+  });
 }
 
-// ====== PV AGE - SCI (Assemblée des associés) ======
+function pvAgeEURL() {
+  return procesVerbal({
+    titre: 'DÉCISION DE L\'ASSOCIÉ UNIQUE',
+    sujet: 'L\'associé unique',
+    mot: 'DÉCISION',
+    titres: 'parts sociales',
+    porteurs: 'associés',
+    seul: true,
+  });
+}
+
 function pvAgeSCI() {
-  return p('{{SOCIETE}}', { bold: true, size: 32, center: true })
-    + p('Société Civile Immobilière au capital de {{CAPITAL_FORMATE}} euros', { center: true, size: 20 })
-    + p('Siège social : {{SIEGE_SOCIAL}}', { center: true, size: 20 })
-    + p('RCS {{RCS_VILLE}} — SIREN : {{SIREN}}', { center: true, size: 20, spacing: 400 })
-    + p('PROCÈS-VERBAL DE L\'ASSEMBLÉE GÉNÉRALE DES ASSOCIÉS', { bold: true, size: 28, center: true, underline: true })
-    + p('EN DATE DU {{DATE_AGE}}', { bold: true, size: 24, center: true, spacing: 400 })
-    + p('Les associés de la société {{SOCIETE}} se sont réunis en assemblée générale au siège social.', { spacing: 200 })
-    + p('Sont présents :', { bold: true, spacing: 200 })
-    + p('{{ASSOCIE_LISTE}}', { spacing: 200 })
-    + p('représentant la totalité des {{TOTAL_PARTS}} parts composant le capital social.', { spacing: 400 })
-    + p('{#IS_TRANSFERT_SIEGE}', {})
-    + p('RÉSOLUTION — TRANSFERT DU SIÈGE SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée décide de transférer le siège social à l\'adresse suivante : {{NOUVEAU_SIEGE}}, à compter du {{DATE_EFFET_TRANSFERT_FR}}.', { spacing: 200 })
-    + p('{/IS_TRANSFERT_SIEGE}', {})
-    + p('{#IS_DENOMINATION}', {})
-    + p('RÉSOLUTION — CHANGEMENT DE DÉNOMINATION', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée décide de modifier la dénomination pour : « {{NOUVELLE_DENOMINATION}} ».', { spacing: 200 })
-    + p('{/IS_DENOMINATION}', {})
-    + p('{#IS_OBJET_SOCIAL}', {})
-    + p('RÉSOLUTION — MODIFICATION DE L\'OBJET SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée décide de modifier l\'objet social : « {{NOUVEL_OBJET_SOCIAL}} ».', { spacing: 200 })
-    + p('{/IS_OBJET_SOCIAL}', {})
-    + p('{#IS_DIRIGEANT}', {})
-    + p('RÉSOLUTION — CHANGEMENT DE GÉRANT', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('{#IS_NOMINATION}L\'assemblée nomme {{NOUVEAU_DIRIGEANT_CIVILITE}} {{NOUVEAU_DIRIGEANT_PRENOM}} {{NOUVEAU_DIRIGEANT_NOM}} en qualité de {{FONCTION_DIRIGEANT}} à compter du {{DATE_EFFET_DIRIGEANT_FR}}.{/IS_NOMINATION}', { spacing: 200 })
-    + p('{#IS_REVOCATION}L\'assemblée révoque {{DIRIGEANT_REVOQUE_NOM}} de ses fonctions de {{FONCTION_DIRIGEANT}} à compter du {{DATE_EFFET_DIRIGEANT_FR}}.{/IS_REVOCATION}', { spacing: 200 })
-    + p('{#IS_DEMISSION}L\'assemblée prend acte de la démission de {{DIRIGEANT_DEMISSIONNAIRE_NOM}} de ses fonctions de {{FONCTION_DIRIGEANT}} à compter du {{DATE_EFFET_DIRIGEANT_FR}}.{/IS_DEMISSION}', { spacing: 200 })
-    + p('{/IS_DIRIGEANT}', {})
-    + p('{#IS_AUGMENTATION_CAPITAL}', {})
-    + p('RÉSOLUTION — AUGMENTATION DU CAPITAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée décide d\'augmenter le capital de {{CAPITAL_ACTUEL_AUGM}} € à {{NOUVEAU_CAPITAL_AUGM}} € par {{MODE_AUGMENTATION}}.', { spacing: 200 })
-    + p('{/IS_AUGMENTATION_CAPITAL}', {})
-    + p('{#IS_REDUCTION_CAPITAL}', {})
-    + p('RÉSOLUTION — RÉDUCTION DU CAPITAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée décide de réduire le capital de {{CAPITAL_ACTUEL_RED}} € à {{NOUVEAU_CAPITAL_RED}} € pour motif : {{MOTIF_REDUCTION}}.', { spacing: 200 })
-    + p('{/IS_REDUCTION_CAPITAL}', {})
-    + p('{#IS_CESSION_PARTS}', {})
-    + p('RÉSOLUTION — AGRÉMENT CESSION DE PARTS', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée agrée la cession de {{NB_PARTS_CEDEES}} parts par {{CEDANT_NOM}} au profit de {{CESSIONNAIRE_NOM}} pour {{PRIX_CESSION}} €, à compter du {{DATE_CESSION_FR}}.', { spacing: 200 })
-    + p('{/IS_CESSION_PARTS}', {})
-    + p('{#IS_PROROGATION}', {})
-    + p('RÉSOLUTION — PROROGATION', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée décide de proroger la durée de {{DUREE_ACTUELLE}} ans à {{NOUVELLE_DUREE}} ans.', { spacing: 200 })
-    + p('{/IS_PROROGATION}', {})
-    + p('Plus rien n\'étant à l\'ordre du jour, la séance est levée.', { spacing: 400 })
-    + p('Fait au siège social, le {{DATE_AGE}}.', { spacing: 400 })
-    + p('Signatures des associés :', { bold: true, spacing: 200 })
-    + p('{#ASSOCIES}', {})
-    + p('{{nomComplet}}', { spacing: 100 })
-    + p('____________________________', { spacing: 200 })
-    + p('{/ASSOCIES}', {});
+  return procesVerbal({
+    titre: 'PROCÈS-VERBAL DE L\'ASSEMBLÉE GÉNÉRALE DES ASSOCIÉS',
+    sujet: 'L\'assemblée générale',
+    mot: 'RÉSOLUTION',
+    titres: 'parts sociales',
+    porteurs: 'associés',
+    convoque: 'de la gérance',
+    preside: 'gérant',
+    seul: false,
+  });
 }
 
 // ====== Avenant aux statuts (générique) ======
@@ -467,11 +538,14 @@ const templates = {
   'modif-acte-cession.docx': acteCession(),
 };
 
-// SARL uses same as SAS (AGE), EURL uses SASU
-templates['modif-pv-transfert-siege-sarl.docx'] = pvAgeSAS().replace(
-  'Société par Actions Simplifiée',
-  'Société à Responsabilité Limitée'
-).replace('actionnaires', 'associés').replace('actions', 'parts');
+/*
+ * La SARL avait le procès-verbal de la SAS, où l'on remplaçait « actions » par
+ * « parts ». Le remplacement portait sur une chaîne, donc sur la première occurrence :
+ * le reste du document parlait toujours d'actions et d'actionnaires. Chaque forme a
+ * désormais son texte, tiré du même modèle.
+ */
+templates['modif-pv-transfert-siege-sarl.docx'] = pvAgeSARL();
+templates['modif-pv-transfert-siege-eurl.docx'] = pvAgeEURL();
 
 for (const [name, content] of Object.entries(templates)) {
   const buf = createDocx(content);

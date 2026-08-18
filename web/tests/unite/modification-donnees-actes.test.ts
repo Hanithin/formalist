@@ -74,7 +74,18 @@ describe("les nombres dans un acte", () => {
     // « 2000 parts » se lit mal et ne se relit pas : un acte écrit « 2 000 ».
     const d = donnees();
     expect(String(d.TOTAL_PARTS_FORMATE)).toBe("2 000");
-    expect(String(d.ASSOCIE_LISTE)).toContain("2 000 parts");
+    expect(String(d.ASSOCIE_LISTE)).toContain("2 000 actions");
+  });
+
+  it("les titres portent le nom que la forme leur donne", () => {
+    /*
+     * La liste des présents écrivait « détenant 700 parts » dans un procès-verbal de
+     * SAS qui parlait d'actions partout ailleurs.
+     */
+    expect(String(donnees().ASSOCIE_LISTE)).toContain("actions");
+    expect(
+      String(donnees({ societe: { ...SOCIETE, forme: "SARL" } }).ASSOCIE_LISTE)
+    ).toContain("parts sociales");
   });
 });
 

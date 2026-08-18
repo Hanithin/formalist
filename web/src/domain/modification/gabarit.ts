@@ -3,6 +3,7 @@ import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
 import { formeEnToutesLettres } from "./annonce";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
+import { changeDeRessort } from "./formalites";
 
 /**
  * Les champs attendus par les gabarits Word de modification.
@@ -106,6 +107,12 @@ function montant(valeur: number): string {
   return valeur
     .toLocaleString("fr-FR", { maximumFractionDigits: 2 })
     .replace(/[  ]/g, " ");
+}
+
+/** La valeur telle quelle, sans le tiret de remplacement : pour décider, non pour écrire. */
+function texteBrut(valeur: unknown): string {
+  if (typeof valeur === "number") return String(valeur);
+  return typeof valeur === "string" ? valeur.trim() : "";
 }
 
 function texte(valeur: string | number | undefined): string {
@@ -254,6 +261,12 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
 
   const forme = ou(societe.forme, "SAS");
   const unipersonnelle = forme === "SASU" || forme === "EURL";
+  /*
+   * Les titres portent le nom de la forme : une SAS a des actions, une SARL des parts
+   * sociales. La liste des présents écrivait « détenant 700 parts » dans un
+   * procès-verbal de SAS qui parlait d'actions partout ailleurs.
+   */
+  const titres = forme === "SAS" || forme === "SASU" ? "actions" : "parts sociales";
 
   const nouveauSiege = adresseSurUneLigne(
     typeof valeurs.nouvelleAdresse === "string" ? valeurs.nouvelleAdresse : "",
@@ -292,10 +305,20 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     /* Avec son séparateur de milliers : « 2000 parts » ne se relit pas. */
     TOTAL_PARTS_FORMATE: montant(totalParts),
     TOTAL_PARTS_LETTRES: nombreEnFrancais(totalParts),
+    /** « actions » ou « parts sociales », selon la forme. */
+    MOT_TITRES: titres,
+    /*
+     * L'associé unique, nommé sans ses parts.
+     *
+     * La décision disait « Le soussigné, Monsieur Jean DUPONT, détenant 2 000 actions,
+     * associé unique de la société, propriétaire de la totalité des 2 000 actions » :
+     * la liste des présents y sert de désignation, et elle compte déjà les titres.
+     */
+    ASSOCIE_UNIQUE: associes.length ? associes[0].nomComplet : TIRET,
     ASSOCIES: associes,
     ASSOCIE_LISTE: associes.length
       ? associes
-          .map((a) => a.nomComplet + ", détenant " + montant(a.parts) + " parts")
+          .map((a) => a.nomComplet + ", détenant " + montant(a.parts) + " " + titres)
           .join(" ; ")
       : TIRET,
 
@@ -328,6 +351,19 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     NOUVEAU_CP: texte(valeurs.nouveauCodePostal),
     NOUVEAU_MODE_DOMICILIATION: texte(valeurs.nouveauModeDomiciliation),
     NOUVEAU_RCS_VILLE: ou(contexte.villeRcsNouvelle, texte(valeurs.nouvelleVille)),
+    NOUVEAU_RCS_DE: avecElision(
+      (contexte.villeRcsNouvelle ?? (valeurs.nouvelleVille as string | undefined) ?? "").trim()
+    ),
+    /*
+     * Le déménagement d'un ressort à l'autre, que le procès-verbal doit dire.
+     *
+     * Deux avis au lieu d'un, une radiation et une nouvelle immatriculation : le greffe
+     * de départ ne peut pas le deviner d'un acte qui n'en parle pas. La règle est celle
+     * de l'annonce - on compare les villes de RCS, non les départements.
+     */
+    IS_HORS_RESSORT:
+      codes.includes("transfert_siege") &&
+      changeDeRessort(societe.villeRcs ?? societe.ville, contexte.villeRcsNouvelle),
     DATE_EFFET_TRANSFERT: texte(valeurs.dateEffetTransfert),
     DATE_EFFET_TRANSFERT_FR: dateEnFrancais(
       typeof valeurs.dateEffetTransfert === "string" ? valeurs.dateEffetTransfert : null
@@ -372,6 +408,13 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     REMUNERATION_DIRIGEANT: texte(valeurs.remunerationDirigeant),
     DIRIGEANT_REVOQUE_NOM: texte(valeurs.dirigeantRevoqueNom),
     MOTIF_REVOCATION: texte(valeurs.motifRevocation),
+    /*
+     * Le motif est facultatif, et un champ vide vaut « - » dans nos gabarits.
+     *
+     * Une section {#MOTIF_REVOCATION} verrait ce tiret comme une valeur et écrirait
+     * « Le motif de la révocation est le suivant : - ». Le drapeau dit la présence.
+     */
+    IS_MOTIF_REVOCATION: Boolean(texteBrut(valeurs.motifRevocation)),
     DIRIGEANT_DEMISSIONNAIRE_NOM: texte(valeurs.dirigeantDemissionnaireNom),
 
     /* -------------------------------------------------------- Objet social */
@@ -386,9 +429,12 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     CAPITAL_ACTUEL_AUGM: nombreOuTiret(valeurs.capitalActuelAugm),
     NOUVEAU_CAPITAL_AUGM: nombreOuTiret(valeurs.nouveauCapitalAugm),
     MODE_AUGMENTATION: texte(valeurs.modeAugmentation),
-    NB_PARTS_NOUVELLES: texte(valeurs.nbPartsNouvelles),
+    /* « 3000 parts nouvelles » : un acte écrit « 3 000 », comme partout ailleurs. */
+    NB_PARTS_NOUVELLES: nombreOuTiret(valeurs.nbPartsNouvelles),
     VALEUR_NOMINALE_AUGM: nombreOuTiret(valeurs.valeurNominaleAugm),
     PRIME_EMISSION: nombreOuTiret(valeurs.primeEmission),
+    /* Même raison que le motif de révocation : « une prime d'émission de - euros ». */
+    IS_PRIME_EMISSION: Boolean(texteBrut(valeurs.primeEmission)),
     DATE_EFFET_AUGM: texte(valeurs.dateEffetAugm),
     DATE_EFFET_AUGM_FR: dateEnFrancais(
       typeof valeurs.dateEffetAugm === "string" ? valeurs.dateEffetAugm : null
@@ -398,7 +444,21 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     CAPITAL_ACTUEL_RED: nombreOuTiret(valeurs.capitalActuelRed),
     NOUVEAU_CAPITAL_RED: nombreOuTiret(valeurs.nouveauCapitalRed),
     MOTIF_REDUCTION: texte(valeurs.motifReduction),
-    NB_PARTS_ANNULEES: texte(valeurs.nbPartsAnnulees),
+    /* « motivée par des pertes », non « motivée par : Pertes ». */
+    MOTIF_REDUCTION_EN_CLAIR:
+      valeurs.motifReduction === "Pertes"
+        ? "des pertes"
+        : valeurs.motifReduction === "Remboursement aux associés"
+          ? "un remboursement aux associés"
+          : texte(valeurs.motifReduction),
+    /*
+     * Hors pertes, les créanciers ont un délai d'opposition.
+     *
+     * Le procès-verbal le dit, faute de quoi le dépôt part trop tôt et le greffe le
+     * refuse. La condition est celle qu'emploie déjà obligationsParticulieres.
+     */
+    IS_REDUCTION_HORS_PERTES: valeurs.motifReduction === "Remboursement aux associés",
+    NB_PARTS_ANNULEES: nombreOuTiret(valeurs.nbPartsAnnulees),
     DATE_EFFET_RED: texte(valeurs.dateEffetRed),
     DATE_EFFET_RED_FR: dateEnFrancais(
       typeof valeurs.dateEffetRed === "string" ? valeurs.dateEffetRed : null
@@ -442,7 +502,9 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     IS_COMPENSATION_CREANCES: valeurs.modeAugmentation === "Compensation de créances",
     IS_INCORPORATION_RESERVES: valeurs.modeAugmentation === "Incorporation de réserves",
     IS_APPORT_NATURE: valeurs.modeAugmentation === "Apport en nature",
-    NB_PARTS_CEDEES: cessions[0] ? String(cessions[0].PARTS) : texte(valeurs.nbPartsCedees),
+    NB_PARTS_CEDEES: cessions[0]
+      ? nombreOuTiret(cessions[0].PARTS as number)
+      : nombreOuTiret(valeurs.nbPartsCedees),
     PRIX_CESSION: cessions[0] ? cessions[0].PRIX : nombreOuTiret(valeurs.prixCession),
     DATE_CESSION: cessions[0]?.DATE || texte(valeurs.dateCession),
     /*
@@ -540,6 +602,11 @@ export function gabaritProcesVerbal(
   const unipersonnelle = f === "SASU" || f === "EURL";
   const plusieurs = nombreDAssocies !== undefined && nombreDAssocies > 1;
 
+  /*
+   * L'EURL est une SARL : ses titres sont des parts sociales, non des actions.
+   * Elle recevait le procès-verbal de SASU, qui parle d'actions d'un bout à l'autre.
+   */
+  if (f === "EURL" && !plusieurs) return "modif-pv-transfert-siege-eurl.docx";
   if (unipersonnelle && !plusieurs) return "modif-pv-transfert-siege-sasu.docx";
   if (f === "SCI") return "modif-pv-transfert-siege-sci.docx";
   if (f === "SARL" || f === "EURL") return "modif-pv-transfert-siege-sarl.docx";

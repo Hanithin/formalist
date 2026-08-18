@@ -197,7 +197,7 @@ describe("chaque gabarit encore produit", () => {
       "prorogation",
     ];
 
-    for (const forme of ["SAS", "SASU", "SARL", "SCI"]) {
+    for (const forme of ["SAS", "SASU", "SARL", "EURL", "SCI"]) {
       const actes = actesAProduire(tous, forme, { typeChangementDirigeant: "Nomination" }, 2);
       expect(actes.length, forme).toBeGreaterThan(0);
 
@@ -219,5 +219,215 @@ describe("chaque gabarit encore produit", () => {
         expect(rendu, forme + " / " + acte.gabarit).not.toThrow();
       }
     }
+  });
+});
+
+describe("ce que le procès-verbal doit dire", () => {
+  /*
+   * Il tenait en une ligne par décision : « décide de réduire le capital de 15 000 à
+   * 10 000 pour motif : Pertes ». Aucun ordre du jour, aucun article de statuts
+   * désigné, aucune adoption constatée, et aucune des mentions qu'un greffe cherche -
+   * le délai d'opposition des créanciers, le quitus du dirigeant sortant, la double
+   * publication d'un transfert hors ressort.
+   */
+  const pv = (codes: string[], valeurs: Record<string, string | number>, forme = "SAS", villeRcsNouvelle?: string) =>
+    produire(
+      {
+        societe: { ...SOCIETE, forme },
+        assemblee: { date: "2026-08-01", associes: ASSOCIES },
+        codes,
+        valeurs,
+        villeRcsNouvelle,
+      },
+      forme === "SASU"
+        ? "modif-pv-transfert-siege-sasu.docx"
+        : forme === "SARL"
+          ? "modif-pv-transfert-siege-sarl.docx"
+          : "modif-pv-transfert-siege-sas.docx"
+    );
+
+  it("annonce son ordre du jour avant de délibérer", () => {
+    const texte = pv(["denomination"], { nouvelleDenomination: "ACME GROUPE" });
+    expect(texte).toContain("ordre du jour suivant");
+    expect(texte).toContain("Changement de dénomination");
+    // La feuille de présence est ce qui permet de délibérer sans convocation.
+    expect(texte).toContain("feuille de présence");
+  });
+
+  it("nomme l'article des statuts que chaque résolution modifie", () => {
+    const texte = pv(["objet_social"], {
+      nouvelObjetSocial: "Le conseil aux entreprises",
+      dateEffetObjet: "2026-09-15",
+    });
+    expect(texte).toContain("L'article des statuts relatif à l'objet social est modifié");
+  });
+
+  it("constate l'adoption de chaque résolution", () => {
+    const texte = pv(["denomination"], { nouvelleDenomination: "ACME GROUPE" });
+    expect(texte).toContain("mise aux voix, est adoptée");
+  });
+
+  it("donne les pouvoirs au porteur, sans quoi rien ne se dépose", () => {
+    const texte = pv(["denomination"], { nouvelleDenomination: "ACME GROUPE" });
+    expect(texte).toContain("POUVOIRS POUR LES FORMALITÉS");
+    expect(texte).toContain("porteur d'un original");
+  });
+
+  it("dit le délai d'opposition quand la réduction n'est pas motivée par des pertes", () => {
+    const remboursement = pv(["reduction_capital"], {
+      capitalActuelRed: 15000,
+      nouveauCapitalRed: 10000,
+      motifReduction: "Remboursement aux associés",
+      nbPartsAnnulees: 500,
+      dateEffetRed: "2026-09-15",
+    });
+    expect(remboursement).toContain("motivée par un remboursement aux associés");
+    expect(remboursement).toContain("former opposition");
+
+    // Motivée par des pertes, il n'y a pas d'opposition : la mention serait fausse.
+    const pertes = pv(["reduction_capital"], {
+      capitalActuelRed: 15000,
+      nouveauCapitalRed: 10000,
+      motifReduction: "Pertes",
+      nbPartsAnnulees: 500,
+      dateEffetRed: "2026-09-15",
+    });
+    expect(pertes).toContain("motivée par des pertes");
+    expect(pertes).not.toContain("former opposition");
+  });
+
+  it("annonce la radiation et la double publication d'un transfert hors ressort", () => {
+    const dehors = pv(
+      ["transfert_siege"],
+      {
+        nouvelleAdresse: "5 avenue Victor Hugo",
+        nouveauCodePostal: "69003",
+        nouvelleVille: "Lyon",
+        dateEffetTransfert: "2026-09-15",
+      },
+      "SAS",
+      "Lyon"
+    );
+    expect(dehors).toContain("radiée du registre");
+    expect(dehors).toContain("dans chacun de ces deux ressorts");
+
+    // Dans le même ressort, ni radiation ni second avis : la mention serait fausse.
+    const dedans = pv(
+      ["transfert_siege"],
+      {
+        nouvelleAdresse: "12 boulevard Carnot",
+        nouveauCodePostal: "06600",
+        nouvelleVille: "Antibes",
+        dateEffetTransfert: "2026-09-15",
+      },
+      "SAS",
+      "Antibes"
+    );
+    expect(dedans).not.toContain("radiée du registre");
+  });
+
+  it("donne quitus au dirigeant démissionnaire", () => {
+    const texte = pv(["dirigeant"], {
+      typeChangementDirigeant: "Démission",
+      dirigeantDemissionnaireNom: "Monsieur Paul BERNARD",
+      fonctionDirigeant: "Président",
+      dateEffetDirigeant: "2026-09-15",
+    });
+    expect(texte).toContain("quitus entier et sans réserve");
+  });
+
+  it("n'écrit un motif de révocation que s'il y en a un", () => {
+    const sans = pv(["dirigeant"], {
+      typeChangementDirigeant: "Révocation",
+      dirigeantRevoqueNom: "Monsieur Paul BERNARD",
+      fonctionDirigeant: "Président",
+      dateEffetDirigeant: "2026-09-15",
+    });
+    // Le champ vide vaut « - » : la phrase sortait « Le motif est le suivant : - ».
+    expect(sans).not.toContain("motif de cette révocation");
+
+    const avec = pv(["dirigeant"], {
+      typeChangementDirigeant: "Révocation",
+      dirigeantRevoqueNom: "Monsieur Paul BERNARD",
+      fonctionDirigeant: "Président",
+      dateEffetDirigeant: "2026-09-15",
+      motifRevocation: "Perte de confiance des actionnaires",
+    });
+    expect(avec).toContain("Perte de confiance des actionnaires");
+  });
+
+  it("n'écrit une prime d'émission que s'il y en a une", () => {
+    const sans = pv(["augmentation_capital"], {
+      capitalActuelAugm: 2000,
+      nouveauCapitalAugm: 5000,
+      modeAugmentation: "Apport en numéraire",
+      nbPartsNouvelles: 3000,
+      valeurNominaleAugm: 1,
+      dateEffetAugm: "2026-09-15",
+    });
+    expect(sans).not.toContain("prime d'émission");
+
+    const avec = pv(["augmentation_capital"], {
+      capitalActuelAugm: 2000,
+      nouveauCapitalAugm: 5000,
+      modeAugmentation: "Apport en numéraire",
+      nbPartsNouvelles: 3000,
+      valeurNominaleAugm: 1,
+      primeEmission: 500,
+      dateEffetAugm: "2026-09-15",
+    });
+    expect(avec).toContain("prime d'émission de 500");
+  });
+
+  it("cite l'article 1844-6 pour une prorogation", () => {
+    const texte = pv(["prorogation"], { dureeActuelle: 19, nouvelleDuree: 99 });
+    expect(texte).toContain("1844-6");
+  });
+
+  it("emploie le mot que la forme impose pour les titres", () => {
+    const sas = pv(["denomination"], { nouvelleDenomination: "ACME GROUPE" }, "SAS");
+    expect(sas).toContain("actionnaires");
+    expect(sas).not.toContain("parts sociales");
+
+    const sarl = pv(["denomination"], { nouvelleDenomination: "ACME GROUPE" }, "SARL");
+    expect(sarl).not.toContain("actionnaires");
+    expect(sarl).not.toContain(" actions");
+  });
+
+  it("laisse un trait à signer sous chaque nom", () => {
+    /*
+     * Le gabarit écrivait « ____________ » dans un paragraphe à part, sous chaque
+     * associé. La mise en page retire ces lignes-là - les actes de création tracent le
+     * trait en bordure haute du nom - et le procès-verbal sortait avec des noms les uns
+     * sous les autres et rien à signer. Le trait tient désormais au nom.
+     */
+    const brut = genererDocument(
+      "modif-pv-transfert-siege-sas.docx",
+      donneesDuGabarit({
+        societe: SOCIETE,
+        assemblee: { date: "2026-08-01", associes: ASSOCIES },
+        codes: ["denomination"],
+        valeurs: { nouvelleDenomination: "ACME GROUPE" },
+      })
+    );
+    const PizZip = requerir("pizzip") as typeof import("pizzip");
+    const xml = new PizZip(brut).file("word/document.xml")!.asText();
+
+    // Un trait par signataire, et chacun dans le paragraphe de son nom.
+    const traits = xml.match(/_{10,}/g) ?? [];
+    expect(traits.length).toBe(ASSOCIES.length);
+    for (const associe of ASSOCIES) {
+      expect(xml).toMatch(
+        new RegExp("_{10,}[\\s\\S]{0,200}?" + associe.nom + "[\\s\\S]{0,40}?</w:p>")
+      );
+    }
+  });
+
+  it("l'associé unique décide, sans assemblée ni mise aux voix", () => {
+    const texte = pv(["denomination"], { nouvelleDenomination: "ACME GROUPE" }, "SASU");
+    expect(texte).toContain("DÉCISION");
+    expect(texte).toContain("registre des décisions de l'associé unique");
+    expect(texte).not.toContain("mise aux voix");
+    expect(texte).not.toContain("feuille de présence");
   });
 });
