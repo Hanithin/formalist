@@ -87,7 +87,8 @@ test("les actes portent la société et les résolutions décidées", async ({ r
 
   // Une seule assemblée, un seul procès-verbal, quel que soit le nombre de décisions.
   expect(titres.filter((t: string) => t.startsWith("Procès-verbal"))).toHaveLength(1);
-  expect(titres).toContain("Avenant aux statuts");
+  // Pas d'avenant : les statuts se retouchent à l'éditeur, sur le document d'origine.
+  expect(titres).not.toContain("Avenant aux statuts");
 });
 
 test("un dossier incomplet ne produit pas d'actes troués", async ({ request }) => {

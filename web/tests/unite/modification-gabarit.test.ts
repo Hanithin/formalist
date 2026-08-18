@@ -149,12 +149,14 @@ describe("les actes produits", () => {
     expect(pv).toHaveLength(1);
   });
 
-  it("l'avenant aux statuts suit les changements qui touchent leur texte", () => {
-    expect(actesAProduire(["transfert_siege"], "SAS").map((a) => a.titre)).toContain(
-      "Avenant aux statuts"
-    );
-    // Un changement de dirigeant ne réécrit pas les statuts.
-    expect(actesAProduire(["dirigeant"], "SAS").map((a) => a.titre)).not.toContain(
+  it("aucun avenant aux statuts n'est produit", () => {
+    /*
+     * Il reprenait, article par article, l'ancienne et la nouvelle rédaction - ce que
+     * l'éditeur de statuts fait désormais sur le document d'origine, à l'endroit exact
+     * où la clause se trouve. Produire les deux revenait à livrer deux versions de la
+     * même chose, dont l'une pouvait contredire l'autre.
+     */
+    expect(actesAProduire(["transfert_siege"], "SAS").map((a) => a.titre)).not.toContain(
       "Avenant aux statuts"
     );
   });

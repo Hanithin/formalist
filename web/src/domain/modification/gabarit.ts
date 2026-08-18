@@ -1,5 +1,5 @@
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
-import { cessionsRedigees, type Cession } from "./cession";
+import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
 import { formeEnToutesLettres } from "./annonce";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
@@ -455,6 +455,16 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
       cessions[0]?.DATE || (typeof valeurs.dateCession === "string" ? valeurs.dateCession : null)
     ),
     AGREMENT_REQUIS: texte(valeurs.agrementRequis),
+    /*
+     * L'agrément, déduit de la forme et du destinataire.
+     *
+     * L'acte de cession porte deux clauses, l'une pour le cas où l'agrément a été
+     * donné, l'autre pour celui où il n'était pas requis : sans cette valeur, ni l'une
+     * ni l'autre n'apparaissait.
+     */
+    IS_AGREMENT_REQUIS:
+      texte(valeurs.agrementRequis) === "Oui" ||
+      (contexte.cessions ?? []).some((c) => agrementDeDroit(societe.forme, c.vers).requis),
 
     /*
      * La déclaration de non-condamnation, reprise des gabarits de la création.
@@ -545,8 +555,8 @@ export interface ActeAProduire {
  * Les actes à produire.
  *
  * Le procès-verbal est unique et porte toutes les résolutions : c'est une seule
- * assemblée. L'avenant aux statuts ne suit que les changements qui touchent leur
- * texte, et l'acte de cession n'existe que s'il y a cession.
+ * assemblée. L'acte de cession n'existe que s'il y a cession, et les statuts à jour se
+ * font à l'éditeur, sur le document d'origine, non par un avenant qui les recopierait.
  */
 export function actesAProduire(
   codes: string[],
@@ -571,19 +581,15 @@ export function actesAProduire(
     actes.push({ titre: "Acte de cession de parts", gabarit: "modif-acte-cession.docx" });
   }
 
-  const toucheLesStatuts = codes.some((c) =>
-    [
-      "transfert_siege",
-      "denomination",
-      "objet_social",
-      "augmentation_capital",
-      "reduction_capital",
-      "prorogation",
-    ].includes(c)
-  );
-  if (toucheLesStatuts) {
-    actes.push({ titre: "Avenant aux statuts", gabarit: "modif-avenant-statuts.docx" });
-  }
+  /*
+   * Pas d'avenant aux statuts.
+   *
+   * Il reprenait, article par article, l'ancienne et la nouvelle rédaction - ce que
+   * l'éditeur de statuts fait désormais sur le document d'origine, à l'endroit exact où
+   * la clause se trouve. Produire les deux revenait à livrer deux versions de la même
+   * chose, dont l'une pouvait contredire l'autre, et c'est la version retouchée que le
+   * greffe attend.
+   */
 
   const declaration = gabaritDeLaDeclaration(forme, valeurs);
   if (codes.includes("dirigeant") && valeurs.typeChangementDirigeant === "Nomination" && declaration) {

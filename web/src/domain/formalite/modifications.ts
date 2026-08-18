@@ -69,18 +69,12 @@ export const MODIFICATIONS: DefinitionModification[] = [
     libelle: "Augmentation de capital",
     description: "Augmenter le capital social.",
     champs: [{ identifiant: "nouveauCapital", libelle: "Nouveau capital, en euros", type: "nombre" }],
-    documentsSupplementaires: [
-      { titre: "Avenant aux statuts", gabarit: "modif-avenant-statuts.docx" },
-    ],
   },
   {
     code: "reduction_capital",
     libelle: "Réduction de capital",
     description: "Réduire le capital social.",
     champs: [{ identifiant: "nouveauCapital", libelle: "Nouveau capital, en euros", type: "nombre" }],
-    documentsSupplementaires: [
-      { titre: "Avenant aux statuts", gabarit: "modif-avenant-statuts.docx" },
-    ],
   },
   {
     code: "cession_parts",

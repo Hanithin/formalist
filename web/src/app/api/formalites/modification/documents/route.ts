@@ -6,6 +6,7 @@ import { verifierModification } from "@/domain/modification/verification";
 import { donneesDuGabarit, actesAProduire } from "@/domain/modification/gabarit";
 import { genererDocument } from "@/infrastructure/documents/generation";
 import { renumeroterLesResolutions } from "@/infrastructure/documents/resolutions";
+import { typographierLeDocument } from "@/infrastructure/documents/typographie-docx";
 import { remplacerDocumentsProduits } from "@/infrastructure/documents/depot";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { validerCorps, schemas } from "@/lib/valider";
@@ -77,7 +78,16 @@ export const POST = route(async (requete: Request) => {
   // Comme à la création : régénérer remplace le jeu précédent au lieu de l'empiler.
   const actes = aProduire.map((acte) => ({
     titre: acte.titre,
-    contenu: renumeroterLesResolutions(genererDocument(acte.gabarit, donnees)),
+    /*
+     * Rendu, renuméroté, puis typographié.
+     *
+     * La dernière passe ne peut pas se faire sur le gabarit : « {{PRIX_CESSION}} euros »
+     * n'a pas de chiffre avant l'unité, et c'est une fois la valeur posée qu'on sait
+     * qu'il faut lier « 2 000 » à « euros ».
+     */
+    contenu: typographierLeDocument(
+      renumeroterLesResolutions(genererDocument(acte.gabarit, donnees))
+    ),
   }));
 
   /*

@@ -65,7 +65,53 @@ function createDocx(content) {
   return zip.generate({ type: "nodebuffer" });
 }
 
+/*
+ * La typographie française, appliquée à chaque paragraphe.
+ *
+ * Les gabarits sortaient « au capital de 2000 euros », « la société «ACME» » sans le
+ * moindre espace dans les guillemets, et « Article 1 — Objet » avec un quadratin
+ * qu'aucun autre écrit de l'application n'emploie. Les mêmes règles que
+ * src/domain/document/typographie.ts, appliquées ici une fois pour toutes plutôt que
+ * rappelées à chaque phrase.
+ */
+var FINE = "\u202f";
+var INSECABLE = "\u00a0";
+
+/*
+ * Les sections s'écrivent avec les délimiteurs configurés.
+ *
+ * Le moteur est réglé sur « {{ » et « }} ». Une section posée en simples accolades -
+ * {#IS_X} - n'est pas une section : c'est du texte, que le moteur laisse tel quel. Le
+ * gabarit cesse alors de filtrer, et le procès-verbal sort avec toutes les résolutions,
+ * y compris celles que personne n'a décidées.
+ *
+ * Le script les écrivait en simples accolades ; on les double ici, une fois, plutôt que
+ * de compter sur chaque phrase pour le faire.
+ */
+function sections(texte) {
+  /*
+   * Seules les balises encore simples.
+   *
+   * Sans les gardes, « {{#IS_X}} » - déjà correcte - contient « {#IS_X} » et se voyait
+   * doublée à son tour : « {{{#IS_X}}} », que le moteur lit comme une accolade suivie
+   * d'une balise, et refuse.
+   */
+  return texte.replace(/(?<!\{)\{([#/^][A-Za-z0-9_]+)\}(?!\})/g, "{{$1}}");
+}
+
+function typographier(texte) {
+  return texte
+    .replace(/[\u2014\u2013]/g, "-")
+    .replace(/\u00ab\s*/g, "\u00ab" + FINE)
+    .replace(/\s*\u00bb/g, FINE + "\u00bb")
+    .replace(/\s*([;!?])/g, FINE + "$1")
+    .replace(/([^\d\s]|^)\s*:(\s|$)/g, "$1" + FINE + ":$2")
+    .replace(/(\d)\s+(euros?|ans?|ann\u00e9es?|parts?|actions?)\b/g, "$1" + INSECABLE + "$2")
+    .replace(/(\d)\s+([\u20ac%])/g, "$1" + INSECABLE + "$2");
+}
+
 function p(text, opts = {}) {
+  text = sections(typographier(text));
   let rpr = '';
   if (opts.bold) rpr += '<w:b/>';
   if (opts.size) rpr += `<w:sz w:val="${opts.size}"/>`;
@@ -144,9 +190,15 @@ function pvAgeSAS() {
     // Augmentation capital
     + p('{#IS_AUGMENTATION_CAPITAL}', {})
     + p('RÉSOLUTION UNIQUE — AUGMENTATION DU CAPITAL SOCIAL', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale décide d\'augmenter le capital social de {{CAPITAL_ACTUEL_AUGM}} euros à {{NOUVEAU_CAPITAL_AUGM}} euros par {{MODE_AUGMENTATION}}.', { spacing: 200 })
-    + p('Il est créé {{NB_PARTS_NOUVELLES}} actions nouvelles d\'une valeur nominale de {{VALEUR_NOMINALE_AUGM}} euros.', { spacing: 200 })
-    + p('Cette augmentation prend effet à compter du {{DATE_EFFET_AUGM_FR}}.', { spacing: 200 })
+    + p('L\'assemblée générale décide d\'augmenter le capital social d\'une somme portant celui-ci de {{CAPITAL_ACTUEL_AUGM}} euros à {{NOUVEAU_CAPITAL_AUGM}} euros.', { spacing: 200 })
+    + p('{#IS_APPORT_NUMERAIRE}Cette augmentation est réalisée par apport en numéraire. Les fonds ont été déposés auprès de {{BANQUE_DEPOT}}, qui en a délivré attestation. Les actions nouvelles sont intégralement libérées.{/IS_APPORT_NUMERAIRE}', { spacing: 200 })
+    + p('{#IS_COMPENSATION_CREANCES}Cette augmentation est réalisée par compensation avec une créance certaine, liquide et exigible détenue sur la société par {{TITULAIRE_CREANCE}}, d\'un montant de {{MONTANT_CREANCE}} euros, telle qu\'elle ressort de l\'arrêté de compte établi le {{DATE_ARRETE_COMPTE_FR}}.{/IS_COMPENSATION_CREANCES}', { spacing: 200 })
+    + p('{#IS_INCORPORATION_RESERVES}Cette augmentation est réalisée par incorporation d\'une somme de {{MONTANT_INCORPORE}} euros prélevée sur le poste « {{POSTE_INCORPORE}} », sans apport nouveau.{/IS_INCORPORATION_RESERVES}', { spacing: 200 })
+    + p('{#IS_APPORT_NATURE}Cette augmentation est réalisée par apport en nature portant sur : {{DESCRIPTION_APPORT}}, évalué à {{VALEUR_APPORT}} euros.{/IS_APPORT_NATURE}', { spacing: 200 })
+    + p('{#IS_APPORT_NATURE}{#IS_COMMISSAIRE_DISPENSE}Les associés, statuant à l\'unanimité, décident de ne pas recourir à un commissaire aux apports, aucun apport en nature n\'excédant trente mille euros et leur valeur totale n\'excédant pas la moitié du capital. Ils déclarent avoir connaissance de ce qu\'ils répondent solidairement, pendant cinq ans et à l\'égard des tiers, de la valeur attribuée à cet apport.{/IS_COMMISSAIRE_DISPENSE}{/IS_APPORT_NATURE}', { spacing: 200 })
+    + p('{#IS_APPORT_NATURE}{^IS_COMMISSAIRE_DISPENSE}L\'assemblée, au vu du rapport établi par {{COMMISSAIRE_APPORTS}}, commissaire aux apports, approuve l\'évaluation qui y figure et l\'adopte pour la valeur de l\'apport.{/IS_COMMISSAIRE_DISPENSE}{/IS_APPORT_NATURE}', { spacing: 200 })
+    + p('Il est créé {{NB_PARTS_NOUVELLES}} actions nouvelles d\'une valeur nominale de {{VALEUR_NOMINALE_AUGM}} euros{#PRIME_EMISSION}, assorties d\'une prime d\'émission de {{PRIME_EMISSION}} euros{/PRIME_EMISSION}.', { spacing: 200 })
+    + p('Cette augmentation prend effet à compter du {{DATE_EFFET_AUGM_FR}}. L\'article des statuts relatif au capital social est modifié en conséquence.', { spacing: 200 })
     + p('{/IS_AUGMENTATION_CAPITAL}', {})
     // Réduction capital
     + p('{#IS_REDUCTION_CAPITAL}', {})
@@ -158,7 +210,8 @@ function pvAgeSAS() {
     // Cession parts
     + p('{#IS_CESSION_PARTS}', {})
     + p('RÉSOLUTION — AGRÉMENT DE LA CESSION DE PARTS', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('L\'assemblée générale agrée la cession de {{NB_PARTS_CEDEES}} actions par {{CEDANT_NOM}} au profit de {{CESSIONNAIRE_NOM}}, pour un prix de {{PRIX_CESSION}} euros, à compter du {{DATE_CESSION_FR}}.', { spacing: 200 })
+    + p('L\'assemblée générale, statuant aux conditions de majorité prévues par les statuts, agrée en qualité de nouvel associé {{CESSIONNAIRE_NOM}} et autorise la cession de {{NB_PARTS_CEDEES}} parts par {{CEDANT_NOM}} à son profit, moyennant le prix de {{PRIX_CESSION}} euros, avec effet au {{DATE_CESSION_FR}}.', { spacing: 200 })
+    + p('En conséquence, l\'article des statuts relatif à la répartition du capital est modifié pour tenir compte de cette cession, et les statuts à jour seront déposés au registre du commerce et des sociétés.', { spacing: 200 })
     + p('{/IS_CESSION_PARTS}', {})
     // Prorogation
     + p('{#IS_PROROGATION}', {})
@@ -219,8 +272,10 @@ function pvAgeSASU() {
     + p('{/IS_PROROGATION}', {})
     + p('Fait au siège social, le {{DATE_AGE}}.', { spacing: 400 })
     + p('L\'associé unique :', { bold: true, spacing: 200 })
-    + p('{#ASSOCIES}{{nomComplet}}{/ASSOCIES}', { spacing: 100 })
-    + p('____________________________', { spacing: 200 });
+    + p('{#ASSOCIES}', {})
+    + p('{{nomComplet}}', { spacing: 100 })
+    + p('____________________________', { spacing: 200 })
+    + p('{/ASSOCIES}', {});
 }
 
 // ====== PV AGE - SCI (Assemblée des associés) ======
@@ -341,21 +396,60 @@ function avenantStatuts() {
 }
 
 // ====== Acte de cession ======
+/*
+ * L'acte de cession de parts.
+ *
+ * L'ancien tenait en quatre articles : objet, prix, date, formalités. Il ne portait ni
+ * la garantie du cédant, ni les déclarations des parties, ni l'agrément, ni le sort des
+ * droits d'enregistrement, ni l'opposabilité à la société et aux tiers - c'est-à-dire
+ * tout ce qui fait qu'un acte de cession protège celui qui le signe.
+ *
+ * Chaque article est rédigé pour tenir seul : un acte se relit article par article,
+ * souvent des années après, par quelqu'un qui n'était pas là.
+ */
 function acteCession() {
   return p('ACTE DE CESSION DE PARTS SOCIALES', { bold: true, size: 32, center: true, underline: true, spacing: 400 })
     + p('ENTRE LES SOUSSIGNÉS :', { bold: true, size: 24, spacing: 200 })
-    + p('Le Cédant : {{CEDANT_NOM}}', { bold: true, spacing: 200 })
-    + p('Le Cessionnaire : {{CESSIONNAIRE_NOM}}', { bold: true, spacing: 400 })
-    + p('IL A ÉTÉ CONVENU CE QUI SUIT :', { bold: true, size: 24, spacing: 200 })
-    + p('Article 1 — Objet', { bold: true, underline: true, spacing: 200 })
-    + p('Par les présentes, le Cédant cède au Cessionnaire, qui accepte, {{NB_PARTS_CEDEES}} parts sociales de la société {{SOCIETE}}, {{FORME_JURIDIQUE}} au capital de {{CAPITAL_FORMATE}} euros, dont le siège social est situé {{SIEGE_SOCIAL}}, immatriculée au RCS de {{RCS_VILLE}} sous le numéro {{SIREN}}.', { spacing: 400 })
-    + p('Article 2 — Prix', { bold: true, underline: true, spacing: 200 })
-    + p('La présente cession est consentie et acceptée moyennant le prix de {{PRIX_CESSION}} euros, payable au jour de la signature des présentes.', { spacing: 400 })
-    + p('Article 3 — Date d\'effet', { bold: true, underline: true, spacing: 200 })
-    + p('La présente cession prendra effet à compter du {{DATE_CESSION_FR}}.', { spacing: 400 })
-    + p('Article 4 — Formalités', { bold: true, underline: true, spacing: 200 })
-    + p('Le Cédant et le Cessionnaire s\'engagent à accomplir toutes les formalités nécessaires à la réalisation de la cession.', { spacing: 400 })
-    + p('Fait en deux exemplaires originaux, au siège social, le {{DATE_AGE}}.', { spacing: 400 })
+    + p('{{CEDANT_NOM}},', { spacing: 100 })
+    + p('ci-après dénommé « le Cédant », d\'une part,', { spacing: 300 })
+    + p('{{CESSIONNAIRE_NOM}},', { spacing: 100 })
+    + p('ci-après dénommé « le Cessionnaire », d\'autre part,', { spacing: 400 })
+    + p('IL A ÉTÉ PRÉALABLEMENT EXPOSÉ CE QUI SUIT :', { bold: true, size: 24, spacing: 200 })
+    + p('La société {{SOCIETE}}, {{FORME_EN_CLAIR}} au capital de {{CAPITAL_FORMATE}} euros, dont le siège social est situé {{SIEGE_SOCIAL}}, immatriculée au registre du commerce et des sociétés {{RCS_DE}} sous le numéro {{SIREN}}, a un capital divisé en {{TOTAL_PARTS_FORMATE}} parts.', { spacing: 200 })
+    + p('Le Cédant est propriétaire de parts de cette société, dont il souhaite céder une partie au Cessionnaire, qui accepte.', { spacing: 400 })
+    + p('CECI EXPOSÉ, IL A ÉTÉ CONVENU CE QUI SUIT :', { bold: true, size: 24, spacing: 300 })
+
+    + p('Article 1 - Cession', { bold: true, underline: true, spacing: 200 })
+    + p('Le Cédant cède au Cessionnaire, qui accepte, {{NB_PARTS_CEDEES}} parts de la société {{SOCIETE}}, avec tous les droits et obligations qui y sont attachés.', { spacing: 400 })
+
+    + p('Article 2 - Prix et paiement', { bold: true, underline: true, spacing: 200 })
+    + p('La présente cession est consentie et acceptée moyennant le prix de {{PRIX_CESSION}} euros, que le Cédant reconnaît avoir reçu du Cessionnaire au jour des présentes, dont quittance.', { spacing: 400 })
+
+    + p('Article 3 - Propriété et jouissance', { bold: true, underline: true, spacing: 200 })
+    + p('Le Cessionnaire est propriétaire des parts cédées à compter du {{DATE_CESSION_FR}}. Il est subrogé dans tous les droits et obligations attachés à ces parts à compter de cette date, notamment le droit aux bénéfices non encore distribués.', { spacing: 400 })
+
+    + p('Article 4 - Agrément', { bold: true, underline: true, spacing: 200 })
+    + p('{#IS_AGREMENT_REQUIS}La présente cession a été agréée par les associés dans les conditions prévues par la loi et les statuts, ainsi qu\'il résulte du procès-verbal de l\'assemblée générale en date du {{DATE_AGE}}, demeuré annexé aux présentes.{/IS_AGREMENT_REQUIS}', { spacing: 200 })
+    + p('{^IS_AGREMENT_REQUIS}La présente cession n\'est soumise à aucune procédure d\'agrément, ni la loi ni les statuts ne l\'imposant pour une cession de cette nature.{/IS_AGREMENT_REQUIS}', { spacing: 400 })
+
+    + p('Article 5 - Déclarations du Cédant', { bold: true, underline: true, spacing: 200 })
+    + p('Le Cédant déclare que les parts cédées sont libres de tout nantissement, gage, saisie ou droit quelconque au profit d\'un tiers, qu\'elles sont intégralement libérées, et qu\'il a la pleine capacité de les céder.', { spacing: 200 })
+    + p('Il garantit le Cessionnaire contre toute éviction et contre tout trouble de jouissance qui trouverait sa cause dans un fait antérieur aux présentes.', { spacing: 400 })
+
+    + p('Article 6 - Déclarations du Cessionnaire', { bold: true, underline: true, spacing: 200 })
+    + p('Le Cessionnaire déclare avoir pris connaissance des statuts de la société et, le cas échéant, du pacte d\'associés en vigueur, et s\'engage à les respecter. Il prend les parts cédées dans l\'état où elles se trouvent.', { spacing: 400 })
+
+    + p('Article 7 - Opposabilité et formalités', { bold: true, underline: true, spacing: 200 })
+    + p('La cession est opposable à la société par le dépôt d\'un original des présentes au siège social. Elle est opposable aux tiers par le dépôt, au registre du commerce et des sociétés, des statuts mis à jour de la répartition du capital.', { spacing: 200 })
+    + p('Les parties donnent tous pouvoirs au porteur d\'un original ou d\'une copie des présentes pour accomplir ces formalités.', { spacing: 400 })
+
+    + p('Article 8 - Droits d\'enregistrement', { bold: true, underline: true, spacing: 200 })
+    + p('Les droits d\'enregistrement exigibles au titre de la présente cession sont à la charge du Cessionnaire, qui s\'engage à faire enregistrer l\'acte dans le délai légal d\'un mois à compter de sa signature.', { spacing: 400 })
+
+    + p('Article 9 - Élection de domicile', { bold: true, underline: true, spacing: 200 })
+    + p('Pour l\'exécution des présentes, les parties élisent domicile au siège social de la société.', { spacing: 400 })
+
+    + p('Fait en autant d\'exemplaires originaux que de parties, augmenté d\'un exemplaire destiné à la société et d\'un exemplaire destiné à l\'enregistrement, au siège social, le {{DATE_AGE}}.', { spacing: 400 })
     + p('Le Cédant :', { bold: true, spacing: 100 })
     + p('{{CEDANT_NOM}}', { spacing: 100 })
     + p('____________________________', { spacing: 400 })

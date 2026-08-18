@@ -34,9 +34,11 @@ describe("documents produits", () => {
     expect(documents[0].titre).toContain("Procès-verbal");
   });
 
-  it("un changement de capital ajoute un avenant aux statuts", () => {
+  it("un changement de capital n'ajoute pas d'avenant aux statuts", () => {
+    // Les statuts se retouchent à l'éditeur, sur le document d'origine : un avenant en
+    // livrerait une seconde version, qui pourrait contredire la première.
     const gabarits = documentsModification("augmentation_capital", "SARL").map((d) => d.gabarit);
-    expect(gabarits).toContain("modif-avenant-statuts.docx");
+    expect(gabarits).not.toContain("modif-avenant-statuts.docx");
   });
 
   it("une cession ajoute l'acte de cession", () => {
