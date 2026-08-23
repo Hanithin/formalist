@@ -14,7 +14,10 @@ describe("anciennes adresses", () => {
   it("redirige les pages connues", () => {
     expect(nouvelleAdresse("/dashboard.html", params())).toBe("/tableau-de-bord");
     expect(nouvelleAdresse("/admin.html", params())).toBe("/administration");
-    expect(nouvelleAdresse("/index.html", params())).toBe("/");
+    // La vitrine est sur un autre site : ce qui y menait aboutit à la connexion.
+    expect(nouvelleAdresse("/index.html", params())).toBe("/connexion");
+    expect(nouvelleAdresse("/blog.html", params())).toBe("/connexion");
+    expect(nouvelleAdresse("/contact.html", params())).toBe("/connexion");
   });
 
   it("ne redirige pas une adresse inconnue", () => {

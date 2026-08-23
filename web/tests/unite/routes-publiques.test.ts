@@ -9,17 +9,15 @@ import { estPublic, PAGES_PUBLIQUES, API_PUBLIQUES } from "@/domain/acces/routes
  * d'origine, où /api/file s'est retrouvée ouverte sans que personne l'ait décidé.
  */
 const OUVERTURES_ATTENDUES = [
+  // La racine ne sert qu'à mener à la connexion : la vitrine est sur un autre site.
   "/",
   "/connexion",
   "/inscription",
   "/mot-de-passe-oublie",
-  "/contact",
-  "/blog",
   "/api/auth/connexion",
   "/api/auth/inscription",
   "/api/auth/verifier",
   "/api/auth/renvoyer-verification",
-  "/api/contact",
   "/api/signature/signer",
   "/api/equipe/accepter",
   // Stripe n'a pas de session chez nous : la signature du corps tient lieu
@@ -38,6 +36,12 @@ describe("liste des adresses publiques", () => {
 
 describe("protection par défaut", () => {
   const protegees = [
+    // Parties de la vitrine, désormais absentes : elles ne doivent pas rouvrir
+    // par accident si quelqu'un recrée une page à ces adresses.
+    "/blog",
+    "/blog/creer-une-sarl",
+    "/contact",
+    "/api/contact",
     "/aide",
     "/tableau-de-bord",
     "/formalites",
@@ -65,10 +69,6 @@ describe("protection par défaut", () => {
 });
 
 describe("cas particuliers de chemins", () => {
-  it("les articles du blog sont publics comme le blog", () => {
-    expect(estPublic("/blog/creer-une-sarl")).toBe(true);
-  });
-
   it("le lien de réinitialisation porte son jeton dans l'adresse", () => {
     expect(estPublic("/mot-de-passe-oublie")).toBe(true);
     expect(estPublic("/mot-de-passe-oublie/" + "a".repeat(64))).toBe(true);
@@ -87,10 +87,9 @@ describe("cas particuliers de chemins", () => {
   });
 
   it("les fichiers destinés aux moteurs sont servis", () => {
-    // Oubliés au départ : le flux revenait vide, renvoyé vers la page de connexion.
+    // Il ne reste que robots.txt, et il ferme tout : le plan du site et le flux
+    // du blog sont partis avec la vitrine.
     expect(estPublic("/robots.txt")).toBe(true);
-    expect(estPublic("/sitemap.xml")).toBe(true);
-    expect(estPublic("/flux.xml")).toBe(true);
   });
 
   it("une adresse qui ressemble à une adresse publique ne l'est pas", () => {

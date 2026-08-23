@@ -100,5 +100,22 @@ export const POST = route(async (requete: Request) => {
     aRelire: true,
   });
 
-  return NextResponse.json({ ok: true, documents: [...produits, ...conserves] }, { status: 201 });
+  /*
+   * L'état part avec le titre.
+   *
+   * Ce qu'on vient de produire attend l'avocat ; ce qui a été conservé lui a déjà
+   * échappé, parce que relu ou signé - c'est justement pourquoi la régénération ne
+   * l'a pas remplacé. L'écran doit pouvoir le dire : une liste de titres nus laisse
+   * chercher un lien de téléchargement qui n'existe pas encore.
+   */
+  return NextResponse.json(
+    {
+      ok: true,
+      documents: [
+        ...produits.map((d) => ({ ...d, enRelecture: true })),
+        ...conserves.map((d) => ({ ...d, enRelecture: false })),
+      ],
+    },
+    { status: 201 }
+  );
 });

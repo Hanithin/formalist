@@ -1,6 +1,10 @@
 import { prisma } from "../client";
 import { mesDossiers, exigerDossier } from "./dossiers";
-import { visibleParLeClient } from "@/domain/document/publication";
+import {
+  A_RELIRE,
+  visibleParLeClient,
+  type ActeProduit,
+} from "@/domain/document/publication";
 import type { DossierListe } from "@/domain/formalite/liste";
 import type { DocumentRange } from "@/domain/document/bibliotheque";
 import { piecesAttendues } from "@/domain/formalite/documents";
@@ -197,4 +201,36 @@ export async function documentsDuDossier(
   });
 
   return options.pourLeCabinet ? lignes : lignes.filter(visibleParLeClient);
+}
+
+/**
+ * Les actes qu'un dossier a déjà produits, pour l'étape qui les produit.
+ *
+ * documentsDuDossier écarte les projets en relecture, et c'est bien ce qu'il doit
+ * faire : un acte non relu n'est pas un document, et la bibliothèque du client ne
+ * doit pas le lui remettre. Mais l'étape qui vient de le produire a besoin de dire
+ * qu'il existe, sans quoi elle affiche un écran vide juste après le clic - et propose
+ * de reproduire ce qui est déjà là.
+ *
+ * Le titre et l'état sortent, jamais le chemin du fichier : il n'y a donc rien ici
+ * avec quoi ouvrir un acte avant sa relecture. La règle tient par ce que la fonction
+ * ne rend pas, non par la discipline des écrans qui l'appellent.
+ */
+export async function actesDuDossier(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number
+): Promise<ActeProduit[]> {
+  await exigerDossier(utilisateur, dossierId);
+
+  const lignes = await prisma.documents.findMany({
+    where: { formalite_id: dossierId, uploaded_by: "system" },
+    orderBy: { created_at: "asc" },
+    select: { id: true, name: true, status: true },
+  });
+
+  return lignes.map((l) => ({
+    id: l.id,
+    titre: l.name,
+    enRelecture: l.status === A_RELIRE,
+  }));
 }

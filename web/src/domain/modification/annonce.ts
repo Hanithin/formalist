@@ -52,6 +52,12 @@ function montant(valeur: string | number | null | undefined): string {
   return lu.toLocaleString("fr-FR", { maximumFractionDigits: 2 }).replace(/[\u202f\u00a0]/g, " ");
 }
 
+/** La valeur en nombre, pour ce qui s'additionne avant de s'écrire. */
+function nombre(valeur: string | number | null | undefined): number {
+  const lu = Number(texte(valeur).replace(",", "."));
+  return Number.isFinite(lu) ? lu : 0;
+}
+
 function adresse(rue: string, codePostal: string, ville: string): string {
   const fin = [codePostal, ville].filter(Boolean).join(" ");
   return [rue, fin].filter(Boolean).join(", ");
@@ -229,6 +235,38 @@ function decisions(contexte: ContexteAvis): string[] {
       "la durée de la société a été prorogée et portée à " +
         texte(valeurs.nouvelleDuree) +
         " ans"
+    );
+  }
+
+  /*
+   * L'apport de titres, vu du support d'annonces.
+   *
+   * Ce que le lecteur d'un journal doit savoir tient au capital : de combien il monte
+   * et par quoi. Le nom de l'apporteur, la valorisation et le régime fiscal ne
+   * figurent pas dans un avis - ils sont dans le traité, qui n'est pas public.
+   *
+   * Les deux augmentations comptent pour une seule phrase : c'est une assemblée, un
+   * capital d'arrivée, une inscription modificative. Les annoncer séparément ferait
+   * croire à deux opérations.
+   */
+  if (codes.includes("apport_titres")) {
+    const capital = nombre(societe.capital);
+    const numeraire = nombre(valeurs.apportNumeraire);
+    const apport = nombre(valeurs.apportValeur);
+
+    const parQuoi =
+      numeraire > 0
+        ? "par apport en numéraire et par apport en nature de titres"
+        : "par apport en nature de titres";
+
+    phrases.push(
+      "le capital social a été augmenté pour être porté de " +
+        montant(capital) +
+        " euros à " +
+        montant(capital + numeraire + apport) +
+        " euros, " +
+        parQuoi +
+        ", et l'article des statuts relatif au capital social modifié en conséquence"
     );
   }
 

@@ -1,4 +1,5 @@
 import { champsASaisir, definitions, type Valeurs } from "./types";
+import { verifierApport } from "./apport";
 
 /**
  * Ce qui manque, et ce qui ne tient pas debout.
@@ -118,6 +119,18 @@ export function verifierCoherence(codes: string[], valeurs: Valeurs): Anomalie[]
         message: "Une augmentation porte le capital au-dessus de sa valeur actuelle",
       });
     }
+  }
+
+  /*
+   * L'apport de titres a ses propres incohérences.
+   *
+   * Apporter plus de titres qu'il n'en existe, ou retenir une valeur que la valeur
+   * nominale ne divise pas : le formulaire les laisse passer, et c'est l'acte qui
+   * porte l'absurdité jusqu'au greffe. Le détail est dans apport.ts, avec le reste
+   * des règles de l'opération.
+   */
+  if (codes.includes("apport_titres")) {
+    anomalies.push(...verifierApport(valeurs));
   }
 
   if (codes.includes("reduction_capital")) {

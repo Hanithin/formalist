@@ -26,7 +26,8 @@ export default async function Connexion({
     <div className={styles.authSplit}>
       <div className={styles.authLeft}>
         <div className={styles.authTopbar}>
-          <Link href="/" className={styles.logo}>
+          {/* Le logo ne mène nulle part : cette page est la racine du site. */}
+          <span className={styles.logo}>
             <Image
               src="/images/logo.png"
               alt="Formalist"
@@ -35,10 +36,7 @@ export default async function Connexion({
               style={{ height: 30, width: "auto" }}
               priority
             />
-          </Link>
-          <Link href="/" className={styles.backLink}>
-            Retour
-          </Link>
+          </span>
         </div>
 
         <div className={styles.authFormWrap}>

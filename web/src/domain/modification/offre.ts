@@ -1,4 +1,4 @@
-import { definitions } from "./types";
+import { definitions, type TypeModification } from "./types";
 import { publicationsAPrevoir, type ContextePublication } from "./formalites";
 
 /**
@@ -28,6 +28,19 @@ export const TVA = 0.2;
  */
 export const HONORAIRES_PREMIERE_CENTIMES = 12_900;
 export const HONORAIRES_SUIVANTE_CENTIMES = 4_900;
+
+/**
+ * Les changements qui ont leur propre prix.
+ *
+ * L'apport de titres à une holding n'est pas une modification de plus : c'est un
+ * traité entre deux parties, une valorisation à motiver, un report d'imposition à
+ * sécuriser et un suivi qui engage l'apporteur pour des années. Le facturer au tarif
+ * dégressif d'un changement de nom reviendrait à travailler à perte, et à laisser
+ * croire au client que l'opération est anodine.
+ */
+export const HONORAIRES_PARTICULIERS: Partial<Record<TypeModification, number>> = {
+  apport_titres: 120_000,
+};
 
 /**
  * Frais avancés, en centimes.
@@ -84,12 +97,37 @@ export interface ContexteDevis extends ContextePublication {
 export function devis(contexte: ContexteDevis): Devis {
   const choisies = definitions(contexte.codes);
 
-  const honoraires: Ligne[] = choisies.map((definition, rang) => ({
-    libelle: definition.libelle,
-    precision: rang === 0 ? undefined : "Décidée dans la même assemblée",
-    centimes: rang === 0 ? HONORAIRES_PREMIERE_CENTIMES : HONORAIRES_SUIVANTE_CENTIMES,
-    horsTaxes: true,
-  }));
+  /*
+   * Le tarif dégressif ne vaut que pour les changements qui se ressemblent.
+   *
+   * Il repose sur une idée simple : une seconde décision prise dans la même assemblée
+   * n'ajoute qu'une résolution et une vérification. C'est vrai d'un changement de nom
+   * après un transfert de siège ; c'est faux d'un apport de titres, qui demande un
+   * contrat de vingt-sept articles entre deux parties, une valorisation à motiver et
+   * un régime fiscal à sécuriser pour des années. Il se facture donc à son prix, quel
+   * que soit son rang, et sans faire perdre la dégressivité aux autres.
+   */
+  let rangOrdinaire = 0;
+  const honoraires: Ligne[] = choisies.map((definition) => {
+    const particulier = HONORAIRES_PARTICULIERS[definition.code];
+    if (particulier !== undefined) {
+      return {
+        libelle: definition.libelle,
+        precision: "Acte distinct, non dégressif",
+        centimes: particulier,
+        horsTaxes: true,
+      };
+    }
+
+    const premier = rangOrdinaire === 0;
+    rangOrdinaire += 1;
+    return {
+      libelle: definition.libelle,
+      precision: premier ? undefined : "Décidée dans la même assemblée",
+      centimes: premier ? HONORAIRES_PREMIERE_CENTIMES : HONORAIRES_SUIVANTE_CENTIMES,
+      horsTaxes: true,
+    };
+  });
 
   const publications = publicationsAPrevoir(contexte);
   const horsRessort = publications.length > 1;

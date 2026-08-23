@@ -20,16 +20,61 @@ export type TypeModification =
   | "augmentation_capital"
   | "reduction_capital"
   | "cession_parts"
-  | "prorogation";
+  | "prorogation"
+  | "apport_titres";
 
-export type TypeDeChamp = "texte" | "nombre" | "date" | "choix" | "long" | "adresse";
+export type TypeDeChamp =
+  | "texte"
+  | "nombre"
+  | "date"
+  | "choix"
+  | "long"
+  | "adresse"
+  /**
+   * Une société, cherchée au registre plutôt que recopiée.
+   *
+   * Le champ porte la dénomination ; les autres - forme, SIREN, siège, capital,
+   * ville du RCS - se remplissent seuls quand on retient un résultat, selon la
+   * correspondance déclarée dans `remplit`. Recopier six lignes d'un extrait dans
+   * un acte est exactement là où l'erreur se glisse, et elle se paie au greffe.
+   */
+  | "societe";
+
+/**
+ * Ce qu'une recherche au registre sait remplir.
+ *
+ * La clé est ce que le registre rend, la valeur l'identifiant du champ qui le
+ * reçoit. Ce qui n'est pas déclaré n'est pas écrit : un changement qui n'a pas
+ * besoin du capital ne se le voit pas imposer.
+ */
+export interface ChampsRemplisParLeRegistre {
+  forme?: string;
+  siren?: string;
+  siege?: string;
+  capital?: string;
+  villeRcs?: string;
+}
 
 export interface ChampModification {
   identifiant: string;
   libelle: string;
   type: TypeDeChamp;
+  /**
+   * L'intertitre sous lequel ce champ se range.
+   *
+   * Trois ou quatre champs se lisent d'affilée ; vingt-six ne se lisent plus du tout.
+   * Les changements simples s'en passent - un intertitre pour deux champs n'aide
+   * personne - mais l'apport de titres décrit trois sociétés, une valorisation et un
+   * régime fiscal dans le même écran, et rien n'y disait où l'un finissait.
+   *
+   * Les champs d'un même groupe doivent se suivre : l'intertitre s'affiche au premier
+   * champ visible dont le groupe change.
+   */
+  groupe?: string;
   /** Pour les champs de type « choix ». La valeur vide n'y figure pas. */
   options?: string[];
+  /** Pour les champs de type « societe » : où verser ce que le registre rend. */
+  remplit?: ChampsRemplisParLeRegistre;
   obligatoire?: boolean;
   /** Le champ occupe les deux colonnes : une adresse ou un texte long. */
   pleineLargeur?: boolean;
@@ -485,6 +530,286 @@ export const MODIFICATIONS: DefinitionModification[] = [
         type: "date",
         obligatoire: true,
         aide: "La prorogation se décide avant le terme. Les associés doivent être consultés au moins un an avant (article 1844-6 du code civil).",
+      },
+    ],
+  },
+  {
+    code: "apport_titres",
+    libelle: "Apport de titres à une holding",
+    libelleCourt: "Apport de titres",
+    description: "Apporter les titres d'une société au capital d'une autre, en report d'imposition.",
+    /*
+     * Le seul changement dont la saisie se range sous des intertitres.
+     *
+     * Trois sociétés s'y croisent, plus une personne physique, une valorisation et un
+     * régime fiscal : vingt-six champs à la file formaient un mur où l'on ne savait
+     * plus lequel décrivait quoi. Les libellés s'en trouvent allégés du même coup -
+     * « Sa forme juridique » n'a de sens qu'immédiatement après la ligne qui nomme la
+     * société ; sous un intertitre, « Forme juridique » suffit et se lit mieux.
+     */
+    champs: [
+      /* ------------------------------------------------- La société apportée */
+      {
+        identifiant: "apporteeDenomination",
+        libelle: "Dénomination",
+        groupe: "La société dont les titres sont apportés",
+        type: "societe",
+        remplit: {
+          forme: "apporteeForme",
+          siren: "apporteeSiren",
+          siege: "apporteeSiege",
+          capital: "apporteeCapital",
+          villeRcs: "apporteeRcs",
+        },
+        obligatoire: true,
+        pleineLargeur: true,
+        aide: "Celle dans laquelle l'apporteur détient les titres. Elle n'est pas modifiée par l'opération, mais l'acte doit la désigner sans ambiguïté. Cherchez-la au registre : sa forme, son SIREN, son siège, son capital et son greffe se remplissent seuls.",
+      },
+      {
+        identifiant: "apporteeForme",
+        libelle: "Forme juridique",
+        groupe: "La société dont les titres sont apportés",
+        type: "choix",
+        options: ["SAS", "SASU", "SARL", "EURL", "SA", "SCI", "SNC"],
+        obligatoire: true,
+      },
+      {
+        identifiant: "apporteeSiren",
+        libelle: "SIREN",
+        groupe: "La société dont les titres sont apportés",
+        type: "texte",
+        obligatoire: true,
+      },
+      {
+        identifiant: "apporteeSiege",
+        libelle: "Siège social",
+        groupe: "La société dont les titres sont apportés",
+        type: "adresse",
+        obligatoire: true,
+        pleineLargeur: true,
+      },
+      {
+        identifiant: "apporteeRcs",
+        libelle: "Ville du RCS",
+        groupe: "La société dont les titres sont apportés",
+        type: "texte",
+        obligatoire: true,
+      },
+      {
+        identifiant: "apporteeCapital",
+        libelle: "Capital social, en euros",
+        groupe: "La société dont les titres sont apportés",
+        type: "nombre",
+        obligatoire: true,
+      },
+      {
+        identifiant: "apporteeNbTitres",
+        libelle: "Nombre total de titres",
+        groupe: "La société dont les titres sont apportés",
+        type: "nombre",
+        obligatoire: true,
+      },
+      {
+        identifiant: "apporteeNominale",
+        libelle: "Valeur nominale d'un titre, en euros",
+        groupe: "La société dont les titres sont apportés",
+        type: "nombre",
+        obligatoire: true,
+      },
+      {
+        identifiant: "apporteeDateStatuts",
+        libelle: "Date des statuts",
+        groupe: "La société dont les titres sont apportés",
+        type: "date",
+      },
+
+      /* ---------------------------------------------------- Les titres apportés */
+      {
+        identifiant: "apportNbTitres",
+        libelle: "Nombre de titres apportés",
+        groupe: "Les titres apportés",
+        type: "nombre",
+        obligatoire: true,
+        aide: "Le pourcentage du capital qu'ils représentent se calcule seul, à partir du nombre total de titres.",
+      },
+      {
+        identifiant: "apportOrigineTitres",
+        libelle: "Comment l'apporteur les a obtenus",
+        groupe: "Les titres apportés",
+        type: "choix",
+        options: [
+          "Souscription à la constitution",
+          "Souscription à une augmentation de capital",
+          "Acquisition auprès d'un tiers",
+          "Donation ou succession",
+        ],
+        obligatoire: true,
+      },
+      {
+        identifiant: "apportNumerotation",
+        libelle: "Numérotation des titres",
+        groupe: "Les titres apportés",
+        type: "texte",
+        indication: "Facultatif - « 1 à 50 » par exemple",
+      },
+
+      /* -------------------------------------------------------- La valorisation */
+      {
+        identifiant: "apportValeur",
+        libelle: "Valeur retenue, en euros",
+        groupe: "Ce que valent les titres",
+        type: "nombre",
+        obligatoire: true,
+        aide: "C'est le chiffre que le report d'imposition prend pour base. L'administration peut le contrôler des années plus tard : il doit reposer sur une méthode qu'on puisse expliquer.",
+      },
+      {
+        identifiant: "apportMethodeValorisation",
+        libelle: "Méthode retenue",
+        groupe: "Ce que valent les titres",
+        type: "choix",
+        options: [
+          "Actif net comptable",
+          "Actif net comptable corrigé",
+          "Rentabilité prévisionnelle",
+          "Actif net comptable et rentabilité prévisionnelle",
+          "Multiple de résultat",
+        ],
+        obligatoire: true,
+      },
+      {
+        identifiant: "apportCommissaire",
+        libelle: "Recourir à un commissaire aux apports ?",
+        groupe: "Ce que valent les titres",
+        type: "choix",
+        options: ["Oui", "Non, dispense décidée à l'unanimité"],
+        obligatoire: true,
+        pleineLargeur: true,
+        aide: "La dispense suppose que l'apport ne dépasse pas 30 000 € et reste sous la moitié du capital après l'opération. Elle est écrite pour les SARL (article L. 223-33) ; pour une société par actions, le texte ne la prévoit qu'à la constitution, et la pratique est partagée. Sans commissaire, les associés répondent de la valeur pendant cinq ans.",
+      },
+      {
+        identifiant: "apportCommissaireNom",
+        libelle: "Nom du commissaire aux apports",
+        groupe: "Ce que valent les titres",
+        type: "texte",
+        pleineLargeur: true,
+        visibleSi: { champ: "apportCommissaire", vaut: ["Oui"] },
+      },
+
+      /* ------------------------------------------- Ce que la holding émet en échange */
+      {
+        identifiant: "apportNominaleBeneficiaire",
+        libelle: "Valeur nominale des titres émis, en euros",
+        groupe: "Ce que la holding émet en échange",
+        type: "nombre",
+        obligatoire: true,
+        aide: "Elle doit diviser exactement la valeur de l'apport : sinon il faut une prime d'émission, et l'acte doit la chiffrer.",
+      },
+      {
+        identifiant: "apportNumeraire",
+        libelle: "Augmentation en numéraire préalable, en euros",
+        groupe: "Ce que la holding émet en échange",
+        type: "nombre",
+        indication: "Zéro s'il n'y en a pas",
+        aide: "Une augmentation en numéraire décidée juste avant l'apport grossit le capital et fait passer l'apport sous la moitié de celui-ci - l'une des deux conditions pour se dispenser d'un commissaire aux apports. Il faut au moins la valeur de l'apport, moins le capital actuel.",
+      },
+
+      /* ------------------------------------------------------------ L'apporteur */
+      {
+        identifiant: "apporteurNomComplet",
+        libelle: "Civilité, prénom et nom",
+        groupe: "L'apporteur",
+        type: "texte",
+        obligatoire: true,
+        pleineLargeur: true,
+        aide: "L'apport est consenti par une personne physique. C'est elle qui bénéficie du report d'imposition.",
+      },
+      { identifiant: "apporteurNeLe", libelle: "Né(e) le", groupe: "L'apporteur", type: "date", obligatoire: true },
+      {
+        identifiant: "apporteurNeA",
+        libelle: "Né(e) à",
+        groupe: "L'apporteur",
+        type: "texte",
+        obligatoire: true,
+        indication: "Commune et département",
+      },
+      {
+        identifiant: "apporteurNationalite",
+        libelle: "Nationalité",
+        groupe: "L'apporteur",
+        type: "texte",
+        indication: "Française par défaut",
+      },
+      {
+        identifiant: "apporteurAdresse",
+        libelle: "Adresse personnelle",
+        groupe: "L'apporteur",
+        type: "adresse",
+        obligatoire: true,
+        pleineLargeur: true,
+      },
+      {
+        identifiant: "apporteurQualite",
+        libelle: "Sa qualité dans la holding",
+        groupe: "L'apporteur",
+        type: "choix",
+        options: [
+          "Associé unique et représentant légal",
+          "Associé et représentant légal",
+          "Associé, sans mandat social",
+          "Tiers entrant au capital",
+        ],
+        obligatoire: true,
+        aide: "Quand l'apporteur représente aussi la société qui reçoit l'apport, il signe des deux côtés : l'acte doit alors porter l'autorisation prévue à l'article 1161 du code civil.",
+      },
+      {
+        identifiant: "apportControle",
+        libelle: "Contrôlera-t-il la holding après l'apport ?",
+        groupe: "L'apporteur",
+        type: "choix",
+        options: ["Oui", "Non"],
+        obligatoire: true,
+        pleineLargeur: true,
+        aide: "C'est cette réponse, et elle seule, qui décide du régime fiscal : report d'imposition de l'article 150-0 B ter s'il y a contrôle, sursis de l'article 150-0 B sinon. Le contrôle s'apprécie en droits de vote comme en droits financiers, seul ou de concert.",
+      },
+
+      /* ----------------------------------------------------------- Le traité */
+      {
+        identifiant: "apportDateEffet",
+        libelle: "Date d'effet de l'apport",
+        groupe: "Le traité d'apport",
+        type: "date",
+        obligatoire: true,
+      },
+      {
+        identifiant: "apportDateSignature",
+        libelle: "Date de signature",
+        groupe: "Le traité d'apport",
+        type: "date",
+        obligatoire: true,
+        aide: "Le traité se signe avant la décision qui approuve les augmentations de capital : c'est elle qui lève la condition suspensive.",
+      },
+      {
+        identifiant: "apportLieuSignature",
+        libelle: "Lieu de signature",
+        groupe: "Le traité d'apport",
+        type: "texte",
+        obligatoire: true,
+      },
+      {
+        identifiant: "apportDateLimiteCondition",
+        libelle: "Date limite de la condition suspensive",
+        groupe: "Le traité d'apport",
+        type: "date",
+        obligatoire: true,
+        aide: "Au-delà, faute de décision approuvant les augmentations de capital, le traité devient caduc.",
+      },
+      {
+        identifiant: "apportCourAppel",
+        libelle: "Cour d'appel compétente",
+        groupe: "Le traité d'apport",
+        type: "texte",
+        obligatoire: true,
+        indication: "Celle du ressort du siège de la holding",
       },
     ],
   },

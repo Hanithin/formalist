@@ -167,6 +167,56 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
 }
 
 /**
+ * Une adresse complète dans un seul champ.
+ *
+ * C'est la forme qu'un acte emploie : « demeurant 4 rue des Lilas, 95370
+ * Montigny-lès-Cormeilles ». Le composant nu rend la voie d'un côté et le code postal
+ * de l'autre, ce qui suppose deux champs pour les recevoir. Là où il n'y en a qu'un -
+ * l'adresse d'un cessionnaire, le siège d'un associé personne morale, celle d'un
+ * apporteur - le complément était jeté : on retenait une proposition entière et le
+ * champ n'en gardait que la rue.
+ *
+ * Ces adresses-là partaient donc dans les actes sans code postal ni commune, ou
+ * saisies à la main avec ce que cela suppose d'écarts entre les deux.
+ */
+export function AdresseUneLigne({
+  id,
+  valeur,
+  surChangement,
+  placeholder,
+}: {
+  id: string;
+  valeur: string;
+  surChangement: (adresse: string) => void;
+  placeholder?: string;
+}) {
+  /*
+   * La voie que l'on vient de retenir.
+   *
+   * Les deux rappels du composant nu se suivent dans le même cycle : quand la
+   * complétion arrive, `valeur` porte encore l'adresse d'avant. On garde donc la voie
+   * au passage plutôt que de la relire d'un état qui n'est pas à jour.
+   */
+  const derniereVoie = useRef(valeur);
+
+  return (
+    <Adresse
+      id={id}
+      valeur={valeur}
+      placeholder={placeholder}
+      surChangement={(voie) => {
+        derniereVoie.current = voie;
+        surChangement(voie);
+      }}
+      surCompletion={(codePostal, ville) => {
+        const fin = [codePostal, ville].filter(Boolean).join(" ");
+        surChangement([derniereVoie.current.trim(), fin].filter(Boolean).join(", "));
+      }}
+    />
+  );
+}
+
+/**
  * Autocomplétion de commune, sur l'API Découpage administratif.
  *
  * Elle sert quand on part de la ville plutôt que de l'adresse : le code postal

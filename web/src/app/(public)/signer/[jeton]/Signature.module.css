@@ -1,3 +1,12 @@
+/* La page portait jusqu'ici la largeur et les marges de la vitrine. Celle-ci
+   étant partie sur un autre site, la page de signature tient sa mise en page
+   elle-même, sans quoi son contenu collerait aux bords. */
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
 .zone {
   max-width: 560px;
   margin-top: 20px;

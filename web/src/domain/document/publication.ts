@@ -14,6 +14,19 @@
 /** Produit par le cabinet, en attente de la relecture de l'avocat. */
 export const A_RELIRE = "a_relire";
 
+/**
+ * Un acte produit, tel qu'un écran l'annonce.
+ *
+ * Le titre et l'état, jamais le chemin du fichier : il n'y a donc rien ici avec quoi
+ * ouvrir un acte que l'avocat n'a pas encore relu. La règle tient par ce que la forme
+ * ne porte pas, non par la discipline des écrans qui la reçoivent.
+ */
+export interface ActeProduit {
+  id: number;
+  titre: string;
+  enRelecture: boolean;
+}
+
 /** Ce qui identifie un acte produit par nous, par opposition à une pièce déposée. */
 const PRODUIT_PAR_NOUS = "system";
 

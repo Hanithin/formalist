@@ -15,7 +15,7 @@ export default function MotDePasseOublie() {
     <div className={styles.authSplit}>
       <div className={styles.authLeft}>
         <div className={styles.authTopbar}>
-          <Link href="/" className={styles.logo}>
+          <Link href="/connexion" className={styles.logo}>
             <Image
               src="/images/logo.png"
               alt="Formalist"

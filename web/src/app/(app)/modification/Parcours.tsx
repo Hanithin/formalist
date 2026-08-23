@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Adresse } from "@/components/formulaire/Adresse";
+import { Adresse, AdresseUneLigne } from "@/components/formulaire/Adresse";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { DepotFichier } from "@/components/formulaire/DepotFichier";
@@ -31,6 +38,7 @@ import {
 } from "@/domain/modification/formalites";
 import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification/offre";
 import type { Retouche, Zone } from "@/domain/modification/edition";
+import type { ActeProduit } from "@/domain/document/publication";
 import styles from "./Modification.module.css";
 
 /**
@@ -102,6 +110,8 @@ interface Props {
   initial: EtatDuDossier;
   etapeInitiale: number;
   issueDuPaiement?: "regle" | "annule";
+  /** Les actes déjà produits, relus par le serveur à chaque affichage de la page. */
+  actesInitiaux: ActeProduit[];
 }
 
 /* ------------------------------------------------------------------ Outils */
@@ -123,7 +133,13 @@ const TRAITS = {
 
 /* --------------------------------------------------------------- Composant */
 
-export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: Props) {
+export function Parcours({
+  dossier,
+  initial,
+  etapeInitiale,
+  issueDuPaiement,
+  actesInitiaux,
+}: Props) {
   const [etape, setEtape] = useState(etapeInitiale);
   const [etat, setEtat] = useState<EtatDuDossier>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -142,6 +158,12 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
    *
    * Le fil ne renvoie qu'en arrière ou là où l'on est déjà allé : sauter à une étape
    * jamais vue enjamberait les contrôles qui gardent les précédentes.
+   *
+   * L'étape 2 ne s'ouvre pas d'avance, même quand l'écran d'entrée l'a déjà remplie.
+   * Y sauter depuis l'étape 1 passerait par le contrôle de l'étape 1, qui refuserait une
+   * société pas encore saisie - on reprocherait un champ vide à qui veut corriger tout
+   * autre chose. Elle s'ouvre dès l'arrivée à l'étape 3, d'où l'on y revient en arrière,
+   * sans contrôle à franchir.
    */
   const [atteinte, setAtteinte] = useState(etapeInitiale);
   const [enCours, demarrer] = useTransition();
@@ -200,6 +222,22 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
 
   /** Ce qui manque à l'étape courante, recalculé à chaque rendu. */
   const manquesCourants = manquesDe(etape);
+
+  /**
+   * L'étape d'après.
+   *
+   * L'étape 2 est enjambée quand elle a déjà sa réponse. Les changements se cochent sur
+   * l'écran d'entrée, avec le prix qui suit ; les reposer ici ferait répondre deux fois
+   * à la même question, la seconde pour rien - c'est le défaut d'une version antérieure,
+   * et le rendre à l'identique n'aurait fait que le déplacer.
+   *
+   * Elle reste dans le fil, cochée et cliquable : on y revient quand on change d'avis,
+   * et « Retour » depuis l'étape 3 y ramène normalement.
+   */
+  function suivante(depuis: number): number {
+    if (depuis === 1 && etat.codes.length > 0) return 3;
+    return depuis + 1;
+  }
 
   /** Enregistre puis avance : l'étape suivante lit ce que le serveur a retenu. */
   function aller(vers: number) {
@@ -277,6 +315,19 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
           </span>
         </div>
 
+        {/*
+          Ce qui a été coché avant d'entrer, rappelé là où l'on entre.
+          Sans ce rappel, l'étape 2 est enjambée sans explication : on passe de la
+          société aux détails, et rien ne dit où sont partis les changements. La
+          reprise se fait par le fil, une fois l'étape 3 atteinte.
+        */}
+        {etape === 1 && definitionsChoisies.length > 0 && (
+          <p className={styles.rappelChoix}>
+            <span className={styles.rappelIntitule}>Vous changez</span>
+            {definitionsChoisies.map((d) => d.libelle).join(", ")}
+          </p>
+        )}
+
         {etape === 1 && (
           <EtapeSociete
             etat={etat}
@@ -307,7 +358,12 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
         {etape === 5 && <EtapeStatuts dossier={dossier} etat={etat} changer={changer} />}
 
         {etape === 6 && (
-          <EtapeActes dossier={dossier} etat={etat} changer={changer} />
+          <EtapeActes
+            dossier={dossier}
+            etat={etat}
+            changer={changer}
+            actesInitiaux={actesInitiaux}
+          />
         )}
 
         {etape === 7 && (
@@ -350,7 +406,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
             <button
               type="button"
               className={styles.principal}
-              onClick={() => aller(etape + 1)}
+              onClick={() => aller(suivante(etape))}
               disabled={enCours}
             >
               {enCours ? "Enregistrement" : "Continuer"}
@@ -370,7 +426,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
       </div>
 
       {definitionsChoisies.length > 0 && etape >= 2 && etape <= 4 && (
-        <Obligations codes={etat.codes} valeurs={etat.valeurs} />
+        <Obligations codes={etat.codes} valeurs={etat.valeurs} forme={etat.societe.forme} />
       )}
     </div>
   );
@@ -469,21 +525,44 @@ const FORMES_JURIDIQUES: Record<string, string> = {
  * dénomination, un SIREN et un siège à la main dans un acte est exactement là où
  * l'erreur se glisse, et elle se paie au greffe.
  */
+export interface SocieteTrouvee {
+  denomination: string;
+  forme: string;
+  siren: string;
+  /** Le siège sur une ligne, tel qu'un acte l'écrit. */
+  siege: string;
+  /** Les deux morceaux, pour qui doit en déduire le greffe compétent. */
+  codePostal: string;
+  commune: string;
+}
+
 function RechercheAuRegistre({
   id,
   libelle = "Chercher la société au registre",
+  valeur,
+  surSaisie,
   surSelection,
 }: {
   id: string;
   libelle?: string;
-  surSelection: (societe: {
-    denomination: string;
-    forme: string;
-    siren: string;
-    siege: string;
-  }) => void;
+  /*
+   * Contrôlé depuis l'extérieur quand on le lui demande.
+   *
+   * La recherche gardait son terme dans son propre état : rouvrir un dossier
+   * réaffichait un champ vide au-dessus de données déjà remplies, et l'on ne savait
+   * plus quelle société avait été retenue. Sans `valeur`, elle se gère comme avant.
+   */
+  valeur?: string;
+  surSaisie?: (terme: string) => void;
+  surSelection: (societe: SocieteTrouvee) => void;
 }) {
-  const [terme, setTerme] = useState("");
+  const [interne, setInterne] = useState("");
+  const controle = valeur !== undefined;
+  const terme = controle ? valeur : interne;
+  const setTerme = (v: string) => {
+    if (controle) surSaisie?.(v);
+    else setInterne(v);
+  };
   const [resultats, setResultats] = useState<ResultatRecherche[]>([]);
   const [ouvert, setOuvert] = useState(false);
   const frappe = useRef(false);
@@ -530,6 +609,8 @@ function RechercheAuRegistre({
       forme: FORMES_JURIDIQUES[resultat.nature_juridique ?? ""] ?? "",
       siren: resultat.siren ?? "",
       siege: [siege.adresse, siege.code_postal, siege.libelle_commune].filter(Boolean).join(" "),
+      codePostal: siege.code_postal ?? "",
+      commune: siege.libelle_commune ?? "",
     });
   }
 
@@ -957,6 +1038,67 @@ function EtapeDetails({
     majValeurs((valeurs) => ({ ...valeurs, [identifiant]: v }));
   }
 
+  /**
+   * Une société retenue au registre remplit les champs qu'elle sait remplir.
+   *
+   * Le registre public rend la dénomination, la forme, le SIREN et le siège d'un
+   * coup. Le capital et le greffe compétent demandent deux appels de plus, qui
+   * peuvent échouer sans que cela empêche de continuer : les champs restent
+   * saisissables, et c'est le contrôle de l'étape qui réclamera ce qui manque.
+   */
+  function remplirDepuisLeRegistre(champ: ChampModification, societe: SocieteTrouvee) {
+    const vers = champ.remplit ?? {};
+
+    majValeurs((valeurs) => {
+      const suite: Valeurs = { ...valeurs, [champ.identifiant]: societe.denomination };
+      if (vers.forme && societe.forme) suite[vers.forme] = societe.forme;
+      if (vers.siren) suite[vers.siren] = societe.siren;
+      if (vers.siege) suite[vers.siege] = societe.siege;
+      return suite;
+    });
+
+    /*
+     * Le greffe compétent n'est pas la commune du siège.
+     *
+     * Argenteuil relève du RCS de Pontoise. La table des exceptions charge par
+     * createRequire et ne peut pas descendre dans le navigateur : elle est derrière
+     * /api/rcs, qui répond même sans registre national configuré.
+     */
+    if (vers.villeRcs && societe.codePostal) {
+      const cible = vers.villeRcs;
+      fetch(
+        "/api/rcs?codePostal=" +
+          encodeURIComponent(societe.codePostal) +
+          "&ville=" +
+          encodeURIComponent(societe.commune)
+      )
+        .then((r) => (r.ok ? r.json() : null))
+        .then((corps: { villeRcs?: string } | null) => {
+          const trouve = corps?.villeRcs || societe.commune;
+          if (trouve) majValeurs((valeurs) => ({ ...valeurs, [cible]: trouve }));
+        })
+        .catch(() => {
+          // Injoignable : la commune vaut mieux que rien, et reste corrigeable.
+          if (societe.commune) majValeurs((v) => ({ ...v, [cible]: societe.commune }));
+        });
+    }
+
+    if (vers.capital && societe.siren) {
+      const cible = vers.capital;
+      fetch("/api/societe/" + encodeURIComponent(societe.siren))
+        .then((r) => (r.ok ? r.json() : null))
+        .then((corps: { societe?: { capital?: number | null } } | null) => {
+          const capital = corps?.societe?.capital;
+          if (typeof capital === "number") {
+            majValeurs((valeurs) => ({ ...valeurs, [cible]: capital }));
+          }
+        })
+        .catch(() => {
+          // Capital non publié ou registre muet : il se saisit à la main.
+        });
+    }
+  }
+
   if (etat.codes.length === 0) {
     return (
       <p className={styles.description}>
@@ -1044,13 +1186,23 @@ function EtapeDetails({
           <div className={styles.champs}>
             {definition.champs
               .filter((champ) => champVisible(champ, etat.valeurs))
-              .map((champ) => (
+              .map((champ, rang, visibles) => (
+                <Fragment key={champ.identifiant}>
+                  {/*
+                    L'intertitre paraît au premier champ visible de son groupe.
+                    Il se calcule sur les champs affichés, non sur la définition : un
+                    groupe entièrement masqué par une condition ne doit pas laisser son
+                    titre seul au-dessus du groupe suivant.
+                  */}
+                  {champ.groupe && champ.groupe !== visibles[rang - 1]?.groupe && (
+                    <h4 className={styles.champsGroupe}>{champ.groupe}</h4>
+                  )}
                 <Champ
-                  key={champ.identifiant}
                   champ={champ}
                   valeur={etat.valeurs[champ.identifiant]}
                   refus={anomalies.find((a) => a.champ === champ.identifiant)?.message}
                   surChangement={valeur}
+                  surSociete={remplirDepuisLeRegistre}
                   surAdresse={(voie, complements) =>
                     majValeurs((valeurs) => {
                       const suite: Valeurs = { ...valeurs };
@@ -1060,6 +1212,7 @@ function EtapeDetails({
 
                       // L'adresse du nouveau siège remplit aussi ses deux compagnons :
                       // les retaper serait la meilleure façon d'y glisser un écart.
+                      // Les adresses sur une ligne se composent dans AdresseUneLigne.
                       if (champ.identifiant === "nouvelleAdresse" && complements) {
                         if (complements.codePostal) suite.nouveauCodePostal = complements.codePostal;
                         if (complements.ville) suite.nouvelleVille = complements.ville;
@@ -1068,6 +1221,7 @@ function EtapeDetails({
                     })
                   }
                 />
+                </Fragment>
               ))}
           </div>
           )}
@@ -1083,26 +1237,67 @@ function Champ({
   refus,
   surChangement,
   surAdresse,
+  surSociete,
 }: {
   champ: ChampModification;
   valeur: string | number | undefined;
   refus?: string;
   surChangement: (identifiant: string, valeur: string | number) => void;
   surAdresse: (adresse: string, complements?: { codePostal?: string; ville?: string }) => void;
+  surSociete: (champ: ChampModification, societe: SocieteTrouvee) => void;
 }) {
   const classe = champ.pleineLargeur ? `${styles.champ} ${styles.pleineLargeur}` : styles.champ;
   const id = "champ-" + champ.identifiant;
 
+  /*
+   * Une société se cherche, elle ne se recopie pas.
+   *
+   * Le champ reste modifiable à la main : le registre ignore les sociétés étrangères
+   * et retarde d'une formalité sur les autres. La recherche remplit, elle n'impose pas.
+   */
+  if (champ.type === "societe") {
+    return (
+      <div className={classe}>
+        <RechercheAuRegistre
+          id={id}
+          libelle={champ.libelle}
+          valeur={typeof valeur === "string" ? valeur : ""}
+          surSaisie={(nom) => surChangement(champ.identifiant, nom)}
+          surSelection={(societe) => surSociete(champ, societe)}
+        />
+        {champ.aide && <p className={styles.devisPrecision}>{champ.aide}</p>}
+        {refus && <p role="alert">{refus}</p>}
+      </div>
+    );
+  }
+
   if (champ.type === "adresse") {
+    /*
+     * Deux champs pour le nouveau siège, un seul partout ailleurs.
+     *
+     * Le siège a son code postal et sa ville à part, parce que l'annonce légale et le
+     * greffe les lisent séparément. Les autres adresses tiennent sur une ligne, telles
+     * qu'un acte les écrit, et reçoivent donc la proposition entière.
+     */
+    const enDeuxChamps = champ.identifiant === "nouvelleAdresse";
+
     return (
       <div className={classe}>
         <label htmlFor={id}>{champ.libelle}</label>
-        <Adresse
-          id={id}
-          valeur={typeof valeur === "string" ? valeur : ""}
-          surChangement={(voie) => surAdresse(voie)}
-          surCompletion={(codePostal, ville) => surAdresse("", { codePostal, ville })}
-        />
+        {enDeuxChamps ? (
+          <Adresse
+            id={id}
+            valeur={typeof valeur === "string" ? valeur : ""}
+            surChangement={(voie) => surAdresse(voie)}
+            surCompletion={(codePostal, ville) => surAdresse("", { codePostal, ville })}
+          />
+        ) : (
+          <AdresseUneLigne
+            id={id}
+            valeur={typeof valeur === "string" ? valeur : ""}
+            surChangement={(adresse) => surChangement(champ.identifiant, adresse)}
+          />
+        )}
         {champ.aide && <p className={styles.devisPrecision}>{champ.aide}</p>}
         {refus && <p role="alert">{refus}</p>}
       </div>
@@ -1243,7 +1438,11 @@ function EtapeAssemblee({
             <>
               <RechercheAuRegistre
                 id={"associe-recherche-" + rang}
-                surSelection={(trouvee) => modifierAssocie(rang, trouvee)}
+                surSelection={({ denomination, forme, siren, siege }) =>
+                  /* Le code postal et la commune servent à déduire le greffe compétent,
+                     dont la fiche d'un associé n'a que faire. */
+                  modifierAssocie(rang, { denomination, forme, siren, siege })
+                }
               />
 
               <div className={styles.champs}>
@@ -1303,10 +1502,12 @@ function EtapeAssemblee({
                 </div>
                 <div className={`${styles.champ} ${styles.pleineLargeur}`}>
                   <label htmlFor={"associe-siege-" + rang}>Siège social</label>
-                  <input
+                  {/* Le siège part dans l'acte tel quel : il se cherche plutôt que de
+                      se recopier depuis un extrait. */}
+                  <AdresseUneLigne
                     id={"associe-siege-" + rang}
-                    value={associe.siege ?? ""}
-                    onChange={(e) => modifierAssocie(rang, { siege: e.target.value })}
+                    valeur={associe.siege ?? ""}
+                    surChangement={(siege) => modifierAssocie(rang, { siege })}
                   />
                 </div>
                 <div className={styles.champ}>
@@ -1616,12 +1817,14 @@ function EtapeActes({
   dossier,
   etat,
   changer,
+  actesInitiaux,
 }: {
   dossier: number;
   etat: EtatDuDossier;
   changer: (c: Partial<EtatDuDossier>) => void;
+  actesInitiaux: ActeProduit[];
 }) {
-  const [documents, setDocuments] = useState<{ id: number; titre: string }[]>([]);
+  const [documents, setDocuments] = useState<ActeProduit[]>(actesInitiaux);
   const [refus, setRefus] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
 
@@ -1688,46 +1891,85 @@ function EtapeActes({
 
   return (
     <>
-      <p className={styles.description}>
-        Le procès-verbal porte toutes vos résolutions, numérotées dans l&apos;ordre. Les statuts,
-        eux, se retouchent article par article sur le document d&apos;origine : le reste ne bouge
-        pas d&apos;un point.
-      </p>
+      {/*
+        Deux blocs de même facture : un titre, ce qu'il fait, son action à gauche.
+        Le bouton de production portait la classe du bouton « Continuer », qui se colle
+        à droite de la barre du bas par un margin-left automatique : seul dans sa rangée,
+        il partait à droite en laissant derrière lui la largeur entière de la carte.
+      */}
+      <section className={styles.bloc}>
+        <h3 className={styles.blocTitre}>Le procès-verbal et les actes</h3>
+        <p className={styles.blocTexte}>
+          Le procès-verbal porte toutes vos résolutions, numérotées dans l&apos;ordre. Un seul
+          acte pour toute l&apos;assemblée, quel que soit le nombre de décisions.
+        </p>
 
-      <div className={styles.actions}>
-        <button type="button" className={styles.principal} onClick={produire} disabled={enCours}>
-          {enCours ? "Production" : "Produire les actes"}
-        </button>
-      </div>
+        {documents.length > 0 && (
+          <ul className={styles.actes}>
+            {documents.map((d) => (
+              <li key={d.id} className={styles.acte}>
+                <span className={styles.acteTitre}>{d.titre}</span>
+                <span className={d.enRelecture ? styles.acteEnRelecture : styles.acteRemis}>
+                  {d.enRelecture ? "En relecture" : "Relu, à votre disposition"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {documents.length > 0 && (
-        <ul className={styles.devisLignes} style={{ marginTop: 20 }}>
-          {documents.map((d) => (
-            <li key={d.id} className={styles.devisLigne}>
-              <span className={styles.devisLibelle}>{d.titre}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+        {/*
+          Où sont passés les actes : dit ici, ou cherché en vain ailleurs.
+          Un acte produit part chez l'avocat avant d'être remis - la liste seule
+          laissait chercher un lien de téléchargement qui n'existe pas encore.
+        */}
+        {documents.some((d) => d.enRelecture) && (
+          <p className={styles.blocNote}>
+            Vos actes sont partis en relecture chez l&apos;avocat. Vous les retrouverez dans
+            vos documents une fois relus, et vous serez prévenu à ce moment-là.
+          </p>
+        )}
+
+        <div className={styles.blocActions}>
+          <button
+            type="button"
+            /* Une fois les actes produits, reproduire n'est plus l'action attendue :
+               c'est « Continuer » qui l'est, et deux boutons noirs se disputeraient l'œil. */
+            className={documents.length > 0 ? undefined : styles.blocPrincipal}
+            onClick={produire}
+            disabled={enCours}
+          >
+            {enCours
+              ? "Production"
+              : documents.length > 0
+                ? "Reproduire les actes"
+                : "Produire les actes"}
+          </button>
+        </div>
+      </section>
 
       {statutsAMettreAJour(etat.codes) && (
-        <section style={{ marginTop: 32 }}>
-          <h3>Les statuts à jour</h3>
+        <section className={styles.bloc}>
+          <h3 className={styles.blocTitre}>Les statuts à jour</h3>
 
           {!etat.statuts ? (
-            <p className={styles.description}>
+            <p className={styles.blocTexte}>
               Revenez à l&apos;étape précédente : les statuts en vigueur ne sont pas encore au
               dossier.
             </p>
           ) : !editeurOuvert ? (
             <>
-              <p className={styles.description}>
+              <p className={styles.blocTexte}>
                 {etat.statutsAJour
                   ? "Vos statuts à jour sont au dossier. Vous pouvez reprendre les retouches."
                   : "Nous repérons dans vos statuts les passages que vos décisions changent, et nous vous les proposons."}
               </p>
-              <div className={styles.actions}>
-                <button type="button" onClick={ouvrirLEditeur} disabled={enCours}>
+              <div className={styles.blocActions}>
+                <button
+                  type="button"
+                  className={etat.statutsAJour ? undefined : styles.blocPrincipal}
+                  onClick={ouvrirLEditeur}
+                  disabled={enCours}
+                >
                   {enCours ? "Lecture des statuts" : "Retoucher les statuts"}
                 </button>
               </div>
@@ -1998,7 +2240,7 @@ function EtapeReglement({
 
         <details className={styles.detailPrix}>
           <summary>Le détail du prix</summary>
-          <dl className={styles.faits}>
+          <dl className={`${styles.faits} ${styles.faitsPrix}`}>
             {chiffrage.honoraires.map((ligne, rang) => (
               <Fait
                 key={"h" + rang}
@@ -2054,7 +2296,9 @@ function Fait({
     <div className={styles.fait}>
       <dt>{libelle}</dt>
       <dd>
-        {valeur}
+        {/* La valeur porte sa propre balise : le détail du prix l'empêche de se couper,
+            ce qu'on ne peut pas demander à un nœud de texte nu. */}
+        <span className={styles.faitValeur}>{valeur}</span>
         {precision && <span className={styles.faitPrecision}>{precision}</span>}
       </dd>
     </div>
@@ -2117,8 +2361,17 @@ function PleinEcran({
 
 /* ------------------------------------------------------- Les obligations */
 
-function Obligations({ codes, valeurs }: { codes: string[]; valeurs: Valeurs }) {
-  const dites = obligationsParticulieres(codes, valeurs);
+function Obligations({
+  codes,
+  valeurs,
+  forme,
+}: {
+  codes: string[];
+  valeurs: Valeurs;
+  /* La forme décide de la solidité de la dispense de commissaire aux apports. */
+  forme?: string | null;
+}) {
+  const dites = obligationsParticulieres(codes, valeurs, forme);
   if (dites.length === 0) return null;
 
   return (

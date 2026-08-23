@@ -8,11 +8,13 @@
  * Cette table disparaîtra quand les anciennes adresses ne recevront plus rien.
  */
 export const ANCIENNES_ADRESSES: Record<string, string> = {
-  "/index.html": "/",
+  // La vitrine ayant déménagé, les adresses qui y menaient aboutissent à la
+  // connexion : mieux vaut la porte d'entrée qu'une page absente.
+  "/index.html": "/connexion",
+  "/contact.html": "/connexion",
+  "/blog.html": "/connexion",
   "/connexion.html": "/connexion",
   "/inscription.html": "/inscription",
-  "/contact.html": "/contact",
-  "/blog.html": "/blog",
   "/aide.html": "/aide",
   "/dashboard.html": "/tableau-de-bord",
   "/formalites.html": "/formalites",

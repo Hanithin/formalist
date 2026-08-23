@@ -9,15 +9,14 @@
  * routes-publiques.test.ts oblige à la justifier.
  */
 
-/** Pages et ressources servies à tout le monde. */
-export const PAGES_PUBLIQUES = [
-  "/",
-  "/connexion",
-  "/inscription",
-  "/mot-de-passe-oublie",
-  "/contact",
-  "/blog",
-] as const;
+/**
+ * Pages et ressources servies à tout le monde.
+ *
+ * La vitrine est partie sur un autre site : ce domaine ne sert plus que
+ * l'application, et la racine ne fait que mener à la connexion. Elle reste
+ * ouverte pour que ce détour se fasse proprement, sans passer par un refus.
+ */
+export const PAGES_PUBLIQUES = ["/", "/connexion", "/inscription", "/mot-de-passe-oublie"] as const;
 
 /** Points d'entrée ouverts, parce qu'ils servent justement à s'authentifier. */
 export const API_PUBLIQUES = [
@@ -25,7 +24,6 @@ export const API_PUBLIQUES = [
   "/api/auth/inscription",
   "/api/auth/verifier",
   "/api/auth/renvoyer-verification",
-  "/api/contact",
   // Les associés signent sans compte : leur jeton fait foi.
   "/api/signature/signer",
   // Le lien d'invitation est cliqué depuis un email : il redirige vers la
@@ -48,8 +46,6 @@ const PREFIXES_TECHNIQUES = [
   "/images/",
   "/favicon",
   "/robots.txt",
-  "/sitemap.xml",
-  "/flux.xml",
 ];
 
 export function estPublic(chemin: string): boolean {
@@ -57,9 +53,6 @@ export function estPublic(chemin: string): boolean {
 
   if ((PAGES_PUBLIQUES as readonly string[]).includes(propre)) return true;
   if ((API_PUBLIQUES as readonly string[]).includes(propre)) return true;
-
-  // Le blog a des articles : /blog/mon-article est public comme /blog
-  if (propre.startsWith("/blog/")) return true;
 
   // Le lien de réinitialisation porte son jeton dans l'adresse :
   // /mot-de-passe-oublie/abc… est public comme la page qui le demande.

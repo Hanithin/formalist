@@ -358,6 +358,34 @@
   letter-spacing: 0;
 }
 
+/*
+ * Le rappel des changements cochés à l'entrée.
+ *
+ * Ils sont décidés avant d'ouvrir le dossier, et l'étape qui les demande est enjambée
+ * pour ne pas poser deux fois la même question. Ce bandeau est ce qui rend le saut
+ * lisible : il dit ce qui a été retenu, et donne le chemin pour y revenir.
+ */
+.rappelChoix {
+  margin: 0 0 22px;
+  padding: 12px 16px;
+  border: 1px solid #e8e8ea;
+  border-radius: 12px;
+  background: #fafafa;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #3f3f46;
+  text-wrap: pretty;
+}
+
+/* L'intitulé porte le deux-points, pour qu'il ne se répète pas dans le balisage. */
+.rappelIntitule {
+  color: #8a8a92;
+}
+
+.rappelIntitule::after {
+  content: " : ";
+}
+
 .description {
   margin: 0 0 24px;
   color: #71717a;
@@ -383,6 +411,34 @@
 
 .champ {
   min-width: 0;
+}
+
+/*
+ * Les intertitres d'un formulaire long.
+ *
+ * L'apport de titres décrit trois sociétés, une personne, une valorisation et un
+ * régime fiscal : vingt-six champs à la file formaient un mur où l'on ne savait plus
+ * lequel se rapportait à quoi. Ils prennent la ligne entière, et leur écart au-dessus
+ * est plus grand qu'en dessous - c'est ce qui les rattache à ce qui suit plutôt qu'à
+ * ce qui précède.
+ *
+ * Le premier ne pousse pas le formulaire vers le bas : il touche déjà le titre du
+ * changement.
+ */
+.champsGroupe {
+  grid-column: 1 / -1;
+  margin: 14px 0 -6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f2f2f4;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a8a92;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.champsGroupe:first-child {
+  margin-top: 0;
 }
 
 /* Une adresse, un texte libre, une case à cocher : la ligne entière. */
@@ -489,6 +545,155 @@
   background: #18181b !important;
   border-color: #18181b !important;
   color: #fff;
+}
+
+/*
+ * Les blocs d'une étape qui en porte plusieurs.
+ *
+ * L'étape des actes en a deux - les actes, les statuts à jour - et ils ne se
+ * ressemblaient pas : l'un poussait son bouton à droite par le margin automatique de
+ * .principal, emprunté à la barre du bas, l'autre le laissait à gauche. Entre le
+ * texte et ce bouton isolé s'ouvrait la largeur entière de la carte, vide.
+ *
+ * Un bloc porte donc son titre, sa phrase et son action, dans cet ordre et alignés
+ * sur la même gauche. Les écarts viennent d'ici plutôt que de style={{marginTop}}
+ * posés au cas par cas dans le balisage.
+ */
+.bloc {
+  margin-top: 30px;
+  padding-top: 26px;
+  border-top: 1px solid #f2f2f4;
+}
+
+.bloc:first-of-type {
+  margin-top: 22px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.blocTitre {
+  margin: 0 0 6px;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.blocTexte {
+  margin: 0;
+  max-width: 68ch;
+  color: #71717a;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.blocNote {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f7f7f8;
+  max-width: 68ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #52525b;
+}
+
+.blocActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.blocActions button {
+  padding: 12px 20px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #18181b;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.blocActions button:hover:not(:disabled) {
+  border-color: #d4d4d8;
+  background: #fafafa;
+}
+
+/* Noir tant que l'action reste à faire. Une fois faite, c'est « Continuer » qui
+   prend le noir : deux boutons pleins se disputeraient l'œil. */
+.blocPrincipal {
+  border-color: #18181b !important;
+  background: #18181b !important;
+  color: #fff !important;
+}
+
+.blocPrincipal:hover:not(:disabled) {
+  background: #000 !important;
+}
+
+.blocActions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/*
+ * Les actes produits.
+ *
+ * Ils empruntaient les lignes du devis, faites pour un libellé et un montant : le
+ * titre s'y posait seul, sans rien dire de ce qu'il advenait de l'acte.
+ */
+.actes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.acte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 14px;
+  border: 1px solid #e8e8ea;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.acteTitre {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.acteEnRelecture,
+.acteRemis {
+  flex-shrink: 0;
+  padding: 4px 11px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.acteEnRelecture {
+  background: #f4f4f5;
+  color: #71717a;
+}
+
+.acteRemis {
+  background: #ecfdf3;
+  color: #15803d;
 }
 
 .actions button:disabled {
@@ -1862,11 +2067,77 @@
  * quinze faits faisaient quinze cartes pleine largeur, et le récapitulatif tenait sur
  * trois écrans pour dire quinze mots.
  */
+/*
+ * La colonne des libellés a un minimum, sans quoi elle disparaît.
+ *
+ * Elle était déclarée `minmax(0, 150px)` : un minimum de zéro, face à une colonne en
+ * `1fr` qui prend tout l'espace restant. Le navigateur donnait donc 0 pixel aux
+ * libellés et la largeur entière aux valeurs - les deux se peignaient au même endroit,
+ * le montant par-dessus le libellé. Mesuré à `0px 266px` dans la colonne du prix.
+ *
+ * Un minimum réel empêche l'effondrement, et le maximum garde la colonne courte quand
+ * la place ne manque pas.
+ */
 .faits {
   display: grid;
-  grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
+  grid-template-columns: minmax(110px, 150px) minmax(0, 1fr);
   gap: 0;
   margin: 0;
+}
+
+/*
+ * Le détail du prix, dans une colonne de trois cents pixels.
+ *
+ * Deux colonnes n'y tiennent pas : « Registre national des entreprises » à gauche
+ * d'un montant, dans 266 pixels, casse le libellé en un mot par ligne. Chaque ligne
+ * devient donc une rangée à elle seule - le libellé prend la place qu'il faut, le
+ * montant se cale à droite et ne se coupe jamais.
+ */
+.faitsPrix {
+  display: block;
+}
+
+.faitsPrix .fait {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f2f2f4;
+}
+
+.faitsPrix .fait:last-child {
+  border-bottom: none;
+}
+
+.faitsPrix .fait dt {
+  min-width: 0;
+  padding: 0;
+  border-bottom: none;
+}
+
+/*
+ * Le montant tient sur une ligne, sa précision non.
+ *
+ * « 108,00 € HT » coupé en deux ne veut plus rien dire, alors que la phrase qui le
+ * motive - la double parution du transfert hors ressort - doit pouvoir se replier. La
+ * largeur est donc bornée ici, et l'insécabilité posée sur le seul montant.
+ */
+.faitsPrix .fait dd {
+  max-width: 62%;
+  padding: 0;
+  border-bottom: none;
+  text-align: right;
+}
+
+.faitsPrix .faitValeur {
+  display: block;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.faitsPrix .faitPrecision {
+  white-space: normal;
 }
 
 .fait {
@@ -3371,33 +3642,130 @@
   background: #fcfcfd;
 }
 
-.entreeSousTitre {
-  margin: 0 0 14px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #a1a1aa;
-  text-transform: uppercase;
-  letter-spacing: 0;
-}
-
-/* Des pastilles, non des puces : on les parcourt sans lire ligne à ligne. */
-.entreeListe {
-  display: flex;
-  flex-flow: row wrap;
-  gap: 8px;
+/*
+ * Un choix multiple, non une énumération.
+ *
+ * Les huit changements étaient des pastilles : bord arrondi, fond blanc, coin à
+ * 100px - le style exact d'un bouton, pour un élément qui ne réagissait pas au clic.
+ * Ce sont des cases à cocher, parce qu'une assemblée décide couramment plusieurs
+ * changements le même jour : on déménage et on change de gérant à la même date. Une
+ * carte qui partirait au premier clic interdirait de le dire.
+ *
+ * La grille les range sur deux colonnes, où les pastilles se plaçaient par longueur
+ * de libellé : « Cession de parts ou d'actions » finissait seule sur sa ligne, ce qui
+ * laissait croire à un regroupement qui n'existait pas.
+ */
+.entreeChoix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.entreePastille {
-  padding: 7px 13px;
+.entreeCarte {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-content: start;
+  row-gap: 3px;
+  column-gap: 11px;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 14px 16px 15px 14px;
   border: 1px solid #e8e8ea;
-  border-radius: 100px;
+  border-radius: 13px;
   background: #fff;
-  font-size: 13px;
-  color: #3f3f46;
-  white-space: nowrap;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* La case occupe les deux lignes : elle appartient à la carte entière, non au titre. */
+.entreeCase {
+  display: flex;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 1.5px solid #d4d4d8;
+  border-radius: 6px;
+  background: #fff;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.entreeCase svg {
+  width: 11px;
+  height: 11px;
+  color: #fff;
+  /* La coche existe toujours dans le balisage : seule sa visibilité change, ce qui
+     évite un saut de mise en page au moment où l'on coche. */
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.entreeCarteTitre {
+  grid-column: 2;
+  font-size: 14px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.entreeCarteTexte {
+  grid-column: 2;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8a8a92;
+}
+
+.entreeCarte:hover:not(:disabled) {
+  border-color: #d4d4d8;
+  background: #fafafa;
+}
+
+.entreeCarte:hover:not(:disabled) .entreeCase {
+  border-color: #a1a1aa;
+}
+
+.entreeCarte:focus-visible {
+  outline: 2px solid #18181b;
+  outline-offset: 2px;
+}
+
+/* Coché : la carte entière le montre, pas seulement la case. */
+.entreeCarte[aria-pressed="true"] {
+  border-color: #18181b;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #18181b;
+}
+
+.entreeCarte[aria-pressed="true"] .entreeCase {
+  border-color: #18181b;
+  background: #18181b;
+}
+
+.entreeCarte[aria-pressed="true"] .entreeCase svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.entreeCarte:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .entreeNote {
@@ -3416,21 +3784,68 @@
   color: #b91c1c;
 }
 
+/*
+ * Ce qui attend derrière le clic.
+ *
+ * Sept étapes, deux pièces à réunir, un règlement à la fin : rien de tout cela
+ * n'était dit, et l'on s'engageait sans savoir ni combien de temps ni pour quoi. Les
+ * trois repères tiennent sur une ligne quand la place le permet, et se rangent en
+ * colonne sinon.
+ */
+.entreeRepere {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 8px 26px;
+  margin: 0;
+  padding: 18px 34px;
+  border-top: 1px solid #f2f2f4;
+  list-style: none;
+  font-size: 12.5px;
+  color: #8a8a92;
+}
+
+.entreeRepere li {
+  position: relative;
+  padding-left: 15px;
+}
+
+/* Une coche discrète, dessinée plutôt qu'écrite : elle ne se lit pas, elle se voit. */
+.entreeRepere li::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 7px;
+  height: 4px;
+  border-left: 1.5px solid #a1a1aa;
+  border-bottom: 1.5px solid #a1a1aa;
+  transform: rotate(-45deg);
+}
+
 /* Le prix se tient près du bouton : c'est là qu'on décide. */
 .entreePied {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 16px 28px;
   padding: 22px 34px;
   border-top: 1px solid #f2f2f4;
 }
 
+/*
+ * Le prix occupe la place restante, le bouton garde la sienne.
+ *
+ * La mention portait un `max-width: 46ch` qui se battait avec le `space-between` du
+ * pied : elle se cassait bien avant sa largeur utile, et rejetait « l'euro » seul sur
+ * une quatrième ligne. C'est au prix de prendre ce qui reste, non de deviner sa
+ * largeur.
+ */
 .entreePrix {
   display: flex;
+  flex: 1 1 340px;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -3443,10 +3858,24 @@
 }
 
 .entreeMention {
-  max-width: 46ch;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: #8a8a92;
+  text-wrap: pretty;
+}
+
+/*
+ * Deux sorties, de poids inégal.
+ *
+ * « Continuer » emmène là où l'on voulait aller : il est plein. « Je ne sais pas
+ * encore » ouvre un dossier vide pour qui vient se renseigner - c'est une échappatoire,
+ * et elle s'efface dès qu'une case est cochée, puisqu'elle ne veut alors plus rien dire.
+ */
+.entreeActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
 .entreeBouton {
@@ -3461,16 +3890,62 @@
   font-weight: 600;
   color: #fff;
   cursor: pointer;
-  transition: background 0.15s;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .entreeBouton:hover:not(:disabled) {
   background: #000;
 }
 
+.entreeBouton:focus-visible,
+.entreeSecondaire:focus-visible {
+  outline: 2px solid #18181b;
+  outline-offset: 2px;
+}
+
+/*
+ * Désactivé, il reste lisible plutôt que fantôme.
+ *
+ * Tant qu'aucune case n'est cochée, il n'y a rien à continuer : le bouton doit dire
+ * ce qui manque par son état, sans devenir illisible au point qu'on ne le trouve plus.
+ */
 .entreeBouton:disabled {
-  opacity: 0.6;
+  border-color: #e4e4e7;
+  background: #e4e4e7;
+  color: #a1a1aa;
   cursor: default;
+}
+
+.entreeSecondaire {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 11px 20px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #52525b;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.entreeSecondaire:hover:not(:disabled) {
+  background: #f1f1f3;
+  color: #18181b;
+}
+
+/* Une case cochée la rend sans objet : elle s'efface au lieu de disparaître, pour ne
+   pas décaler le bouton qui la suit. */
+.entreeSecondaire:disabled {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /*

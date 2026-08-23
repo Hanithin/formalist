@@ -1,4 +1,5 @@
 import { definitions, type TypeModification, type Valeurs } from "./types";
+import { REMPLOI, reserveSurLaDispense } from "./apport";
 
 /**
  * Ce qu'une modification oblige à faire au-delà du formulaire : publier, déposer,
@@ -33,6 +34,9 @@ const AVIS_REQUIS: TypeModification[] = [
   "augmentation_capital",
   "reduction_capital",
   "prorogation",
+  // L'apport de titres augmente le capital de la bénéficiaire : la mention publiée
+  // change, donc un avis est dû, comme pour toute augmentation.
+  "apport_titres",
 ];
 
 /**
@@ -107,6 +111,7 @@ const STATUTS_TOUCHES: TypeModification[] = [
   "reduction_capital",
   "cession_parts",
   "prorogation",
+  "apport_titres",
 ];
 
 export function statutsAMettreAJour(codes: string[]): boolean {
@@ -122,6 +127,7 @@ export const ARTICLE_VISE: Partial<Record<TypeModification, string>> = {
   reduction_capital: "Capital social",
   cession_parts: "Apports",
   prorogation: "Durée",
+  apport_titres: "Capital social",
 };
 
 /* -------------------------------------------------------------------- Pièces */
@@ -217,6 +223,50 @@ export function piecesAFournir(codes: string[], valeurs: Valeurs = {}): PieceAFo
     }
   }
 
+  /*
+   * L'apport de titres : ce qui fonde la valeur retenue.
+   *
+   * Une pièce dans tous les cas, mais pas la même. Avec commissaire aux apports, son
+   * rapport ; sans lui, l'attestation par laquelle les parties assument la valeur -
+   * et la responsabilité solidaire de cinq ans qui va avec.
+   *
+   * Le dossier n'est jamais sans justificatif de valeur : c'est ce chiffre que le
+   * report d'imposition prend pour base, et l'administration le contrôle des années
+   * plus tard, quand plus personne n'a le détail du calcul en tête.
+   */
+  if (codes.includes("apport_titres")) {
+    const avecCommissaire = valeurs.apportCommissaire === "Oui";
+
+    pieces.push(
+      avecCommissaire
+        ? {
+            identifiant: "apport-rapport-commissaire",
+            titre: "Rapport du commissaire aux apports",
+            explication:
+              "Il évalue les titres apportés sous sa responsabilité. Sa désignation précède la décision d'augmentation de capital.",
+            obligatoire: true,
+            formats: [".pdf"],
+          }
+        : {
+            identifiant: "apport-attestation-valeur",
+            titre: "Attestation de valorisation des titres",
+            explication:
+              "Faute de commissaire aux apports, elle porte la méthode retenue et le calcul. Les associés répondent solidairement de cette valeur pendant cinq ans, et l'administration s'y reportera si elle vérifie le report d'imposition.",
+            obligatoire: true,
+            formats: [".pdf"],
+          }
+    );
+
+    pieces.push({
+      identifiant: "apport-comptes-societe",
+      titre: "Derniers comptes de la société dont les titres sont apportés",
+      explication:
+        "Bilan et compte de résultat du dernier exercice clos. C'est sur eux que la valorisation s'appuie ; ils la rendent vérifiable.",
+      obligatoire: false,
+      formats: [".pdf"],
+    });
+  }
+
   return pieces;
 }
 
@@ -226,7 +276,19 @@ export function piecesAFournir(codes: string[], valeurs: Valeurs = {}): PieceAFo
  * La déclaration de non-condamnation n'est pas une pièce à téléverser mais un acte
  * que nous produisons : elle est ici pour mémoire de l'obligation.
  */
-export function obligationsParticulieres(codes: string[], valeurs: Valeurs = {}): string[] {
+export function obligationsParticulieres(
+  codes: string[],
+  valeurs: Valeurs = {},
+  /*
+   * La forme de la société modifiée.
+   *
+   * Elle ne se lit pas dans les valeurs saisies, et pourtant elle décide : la dispense
+   * de commissaire aux apports est écrite pour les SARL, contestée pour les sociétés
+   * par actions. Sans elle, l'avertissement ne pourrait pas être posé au bon endroit,
+   * ni tu au bon endroit.
+   */
+  forme?: string | null
+): string[] {
   const dits: string[] = [];
 
   if (codes.includes("dirigeant") && valeurs.typeChangementDirigeant === "Nomination") {
@@ -266,6 +328,57 @@ export function obligationsParticulieres(codes: string[], valeurs: Valeurs = {})
   if (codes.includes("prorogation")) {
     dits.push(
       "La prorogation se décide avant le terme, les associés ayant été consultés au moins un an avant (article 1844-6 du code civil)."
+    );
+  }
+
+  /*
+   * L'apport de titres engage pour des années, pas pour une formalité.
+   *
+   * Le report d'imposition se suit chaque année et se perd sur des événements qui
+   * n'ont plus rien à voir avec l'apport - une revente par la holding, un départ à
+   * l'étranger. Ce n'est pas au client de le découvrir à ce moment-là.
+   */
+  if (codes.includes("apport_titres")) {
+    if (valeurs.apportControle === "Non") {
+      dits.push(
+        "L'apporteur ne contrôlant pas la société bénéficiaire, la plus-value relève du sursis d'imposition de l'article 150-0 B du code général des impôts : ni suivi déclaratif annuel, ni obligation de remploi."
+      );
+    } else {
+      dits.push(
+        "La plus-value est placée en report d'imposition (article 150-0 B ter du code général des impôts). L'apporteur la déclare chaque année tant que le report dure, sur le formulaire 2074 puis 2074-I."
+      );
+      dits.push(
+        "Si la société bénéficiaire revend les titres apportés moins de " +
+          REMPLOI.franchiseAns +
+          " ans après l'apport, le report tombe, sauf remploi d'au moins " +
+          Math.round(REMPLOI.quota * 100) +
+          " % du produit dans les " +
+          REMPLOI.delaiMois +
+          " mois, conservé " +
+          REMPLOI.conservationAns +
+          " ans. Ces seuils sont ceux de la loi de finances pour 2026, applicables aux cessions réalisées à compter du " +
+          REMPLOI.applicableDepuis +
+          "."
+      );
+    }
+
+    if (valeurs.apportCommissaire !== "Oui") {
+      dits.push(
+        "Sans commissaire aux apports, les associés répondent solidairement de la valeur attribuée aux titres pendant cinq ans à l'égard des tiers."
+      );
+
+      /*
+       * Ce que la dispense a de fragile, dit avant de s'y engager.
+       *
+       * On ne l'interdit pas - la pratique l'admet largement - mais on ne laisse pas
+       * non plus quelqu'un s'y engager en croyant le terrain sûr.
+       */
+      const reserve = reserveSurLaDispense(forme);
+      if (reserve) dits.push(reserve);
+    }
+
+    dits.push(
+      "Le traité d'apport est enregistré gratuitement auprès de l'administration fiscale (article 810-I du code général des impôts)."
     );
   }
 

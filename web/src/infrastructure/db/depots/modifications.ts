@@ -2,7 +2,11 @@ import { prisma } from "../client";
 import { exigerDossierModifiable } from "./dossiers";
 import { proposerAuxAvocats } from "./avocat";
 import { relirePaiement } from "@/infrastructure/paiement/stripe";
-import { estUnTypeConnu, type Valeurs } from "@/domain/modification/types";
+import {
+  estUnTypeConnu,
+  type TypeModification,
+  type Valeurs,
+} from "@/domain/modification/types";
 import type { AssociePresent, SocieteModifiee } from "@/domain/modification/gabarit";
 import type { Retouche } from "@/domain/modification/edition";
 import type { Cession } from "@/domain/modification/cession";
@@ -86,6 +90,15 @@ const VIDE: Modification = {
   assemblee: {},
 };
 
+/**
+ * La dénomination d'attente, tant que la société n'est pas choisie.
+ *
+ * Elle sert de marqueur autant que d'affichage : c'est à elle qu'on reconnaît un
+ * dossier resté sur la ligne de départ. Écrite à deux endroits sous forme de chaîne
+ * libre, elle se serait désaccordée à la première reformulation.
+ */
+const SOCIETE_A_IDENTIFIER = "Société à identifier";
+
 export function lireModification(dataJson: string | null): Modification {
   if (!dataJson) return { ...VIDE };
   try {
@@ -105,8 +118,47 @@ export function lireModification(dataJson: string | null): Modification {
   }
 }
 
-/** Ouvre un dossier de modification, vide. La société se choisit à la première étape. */
-export async function commencerModification(utilisateur: UtilisateurConnecte) {
+/**
+ * Ouvre un dossier de modification. La société se choisit à la première étape.
+ *
+ * `codes` vient de l'écran d'entrée, où les changements se cochent : le dossier
+ * s'ouvre avec la réponse de l'étape 2 déjà donnée. Ils sont filtrés comme partout
+ * ailleurs - un code inconnu ferait sortir les actes avec des blancs.
+ *
+ * Un dossier resté sur la ligne de départ est repris plutôt que doublé. Chaque
+ * ouverture créait une ligne, et rien ne les distingue tant que la société n'est pas
+ * choisie : ouvrir l'écran trois fois laissait trois « Société à identifier » dans la
+ * liste des formalités, sans moyen de savoir laquelle reprendre ni laquelle jeter.
+ */
+export async function commencerModification(
+  utilisateur: UtilisateurConnecte,
+  codes?: TypeModification[]
+) {
+  const depart: Modification = { ...VIDE, codes: (codes ?? []).filter(estUnTypeConnu) };
+
+  const enAttente = await prisma.formalites.findFirst({
+    where: {
+      user_id: utilisateur.id,
+      type: "modification",
+      status: "en_cours",
+      phase: 1,
+      // La dénomination d'attente n'est remplacée qu'à l'enregistrement de la société :
+      // tant qu'elle est là, la première étape n'a pas abouti et le dossier ne porte
+      // rien de plus que les changements cochés - qu'un second passage peut écraser.
+      societe: SOCIETE_A_IDENTIFIER,
+    },
+    orderBy: { id: "desc" },
+    select: { id: true },
+  });
+
+  if (enAttente) {
+    await prisma.formalites.update({
+      where: { id: enAttente.id },
+      data: { data_json: JSON.stringify(depart) },
+    });
+    return enAttente.id;
+  }
+
   const equipe = await prisma.team_members.findFirst({
     where: { user_id: utilisateur.id },
     select: { team_id: true },
@@ -124,10 +176,10 @@ export async function commencerModification(utilisateur: UtilisateurConnecte) {
        * l'enregistrement de la société.
        */
       forme: "",
-      societe: "Société à identifier",
+      societe: SOCIETE_A_IDENTIFIER,
       status: "en_cours",
       phase: 1,
-      data_json: JSON.stringify(VIDE),
+      data_json: JSON.stringify(depart),
     },
   });
 
@@ -157,7 +209,7 @@ export async function enregistrerModification(
     where: { id: dossierId },
     data: {
       data_json: JSON.stringify(modification),
-      societe: modification.societe.denomination?.trim() || "Société à identifier",
+      societe: modification.societe.denomination?.trim() || SOCIETE_A_IDENTIFIER,
       forme: modification.societe.forme?.trim() || "",
       updated_at: new Date(),
     },

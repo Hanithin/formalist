@@ -6,6 +6,7 @@ import { Parcours, type EtatDuDossier } from "./Parcours";
 import { Commencer } from "./Commencer";
 import { Suivi } from "@/components/formalite/Suivi";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
+import { actesDuDossier } from "@/infrastructure/db/depots/documents";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import styles from "./Modification.module.css";
 
@@ -150,6 +151,12 @@ export default async function Modification({
           initial={initial}
           etapeInitiale={etapeInitiale}
           issueDuPaiement={issue}
+          /*
+            Les actes déjà produits, pour que l'étape 6 les retrouve au retour.
+            Elle partait d'une liste vide : quitter l'étape et y revenir effaçait les
+            actes de l'écran, et le bouton proposait de reproduire ce qui existait.
+          */
+          actesInitiaux={await actesDuDossier(utilisateur, dossierId)}
         />
       </div>
     </main>

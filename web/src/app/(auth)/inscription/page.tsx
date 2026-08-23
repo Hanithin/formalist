@@ -16,7 +16,7 @@ export default function Inscription() {
     <div className={styles.authSplit}>
       <div className={styles.authLeft}>
         <div className={styles.authTopbar}>
-          <Link href="/" className={styles.logo}>
+          <Link href="/connexion" className={styles.logo}>
             <Image
               src="/images/logo.png"
               alt="Formalist"
@@ -26,7 +26,7 @@ export default function Inscription() {
               priority
             />
           </Link>
-          <Link href="/" className={styles.backLink}>
+          <Link href="/connexion" className={styles.backLink}>
             Retour
           </Link>
         </div>

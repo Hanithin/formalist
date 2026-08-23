@@ -13,7 +13,6 @@ export interface Quota {
   fenetreMs: number;
 }
 
-export const QUOTA_CONTACT: Quota = { maximum: 3, fenetreMs: 60 * 60 * 1000 };
 export const QUOTA_CONNEXION: Quota = { maximum: 10, fenetreMs: 15 * 60 * 1000 };
 export const QUOTA_INSCRIPTION: Quota = { maximum: 5, fenetreMs: 60 * 60 * 1000 };
 

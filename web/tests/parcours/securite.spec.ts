@@ -67,13 +67,13 @@ test.describe("anciennes adresses", () => {
     expect(reponse.headers()["location"]).toContain("/creation?dossier=42");
   });
 
-  test("la vitrine aussi", async ({ request }) => {
+  test("l'ancienne vitrine mène à la connexion", async ({ request }) => {
     const reponse = await request.get("/index.html", { maxRedirects: 0 });
     expect(reponse.status()).toBe(308);
     // L'en-tête peut être relatif ou absolu selon le cadre : on compare le chemin.
     const destination = reponse.headers()["location"];
     const chemin = destination.startsWith("http") ? new URL(destination).pathname : destination;
-    expect(chemin).toBe("/");
+    expect(chemin).toBe("/connexion");
   });
 
   test("une adresse en .html inconnue n'est pas redirigée au hasard", async ({ request }) => {

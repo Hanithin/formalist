@@ -12,6 +12,7 @@ import {
 import type { AssociePresent } from "@/domain/modification/gabarit";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
+import { AdresseUneLigne } from "@/components/formulaire/Adresse";
 import styles from "./Modification.module.css";
 
 /**
@@ -309,10 +310,12 @@ export function Cessions({
               {cession.vers === "tiers" && (
                 <div className={`${styles.champ} ${styles.pleineLargeur}`}>
                   <label htmlFor={"cession-adresse-" + rang}>Adresse du cessionnaire</label>
-                  <input
+                  {/* L'acte nomme le cessionnaire par son adresse complète : elle se
+                      cherche, comme les autres, plutôt que de se taper de mémoire. */}
+                  <AdresseUneLigne
                     id={"cession-adresse-" + rang}
-                    value={cession.adresse ?? ""}
-                    onChange={(e) => modifier(rang, { adresse: e.target.value })}
+                    valeur={cession.adresse ?? ""}
+                    surChangement={(adresse) => modifier(rang, { adresse })}
                   />
                 </div>
               )}

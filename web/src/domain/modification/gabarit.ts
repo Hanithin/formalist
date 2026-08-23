@@ -4,6 +4,7 @@ import { formeEnToutesLettres } from "./annonce";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
 import { changeDeRessort } from "./formalites";
+import { evaluationDesApports, planDeCapital, regimeApport, REMPLOI } from "./apport";
 
 /**
  * Les champs attendus par les gabarits Word de modification.
@@ -336,6 +337,7 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     IS_REDUCTION_CAPITAL: codes.includes("reduction_capital"),
     IS_CESSION_PARTS: codes.includes("cession_parts"),
     IS_PROROGATION: codes.includes("prorogation"),
+    IS_APPORT_TITRES: codes.includes("apport_titres"),
 
     IS_SAS: forme === "SAS",
     IS_SASU: forme === "SASU",
@@ -528,6 +530,9 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
       texte(valeurs.agrementRequis) === "Oui" ||
       (contexte.cessions ?? []).some((c) => agrementDeDroit(societe.forme, c.vers).requis),
 
+    /* ------------------------------------------ L'apport de titres à une holding */
+    ...donneesDeLApport(societe, valeurs),
+
     /*
      * La déclaration de non-condamnation, reprise des gabarits de la création.
      *
@@ -613,6 +618,173 @@ export function gabaritProcesVerbal(
   return "modif-pv-transfert-siege-sas.docx";
 }
 
+/**
+ * Ce que le traité d'apport a besoin de savoir.
+ *
+ * Trois entités s'y croisent : l'apporteur, personne physique décrite avec son état
+ * civil ; la société bénéficiaire, qui est celle du dossier et dont le capital
+ * augmente ; et la société dont les titres sont apportés, qui ne change pas mais que
+ * l'acte doit désigner sans ambiguïté.
+ *
+ * Tout ce qui se calcule est calculé ici plutôt que saisi : le capital après chaque
+ * augmentation, le nombre de titres émis, la part de l'apport dans le capital final,
+ * le régime fiscal. Le modèle dont ce gabarit est tiré portait ces valeurs à la main,
+ * et son pourcentage - 49,18 % - n'était vrai que pour ses propres chiffres.
+ */
+function donneesDeLApport(
+  societe: SocieteModifiee,
+  valeurs: Valeurs
+): Record<string, string | number | boolean> {
+  const enCentimes = (euros: number) => Math.round(euros * 100);
+  const enEuros = (centimes: number) => centimes / 100;
+
+  const nb = (cle: string): number => {
+    const v = valeurs[cle];
+    if (typeof v === "number") return v;
+    const n = Number(String(v ?? "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const valeurApport = nb("apportValeur");
+  const numeraire = nb("apportNumeraire");
+  const nominale = nb("apportNominaleBeneficiaire");
+  const capitalActuel = societe.capital ?? 0;
+
+  const plan = planDeCapital({
+    capitalActuelCentimes: enCentimes(capitalActuel),
+    numeraireCentimes: enCentimes(numeraire),
+    valeurApportCentimes: enCentimes(valeurApport),
+  });
+
+  const verdict = evaluationDesApports({
+    formeBeneficiaire: societe.forme,
+    valeurApportCentimes: plan.valeurApportCentimes,
+    capitalFinalCentimes: plan.capitalFinalCentimes,
+    commissaireVolontaire: texte(valeurs.apportCommissaire) === "Oui",
+  });
+
+  const fiscal = regimeApport(texte(valeurs.apportControle) !== "Non");
+
+  /* Le nombre de titres émis découle de la valeur nominale : il ne se saisit pas. */
+  const titresNumeraire = nominale > 0 ? Math.round(numeraire / nominale) : 0;
+  const titresNature = nominale > 0 ? Math.round(valeurApport / nominale) : 0;
+
+  const titresApportes = nb("apportNbTitres");
+  const titresApporteeTotal = nb("apporteeNbTitres");
+  const partDetenue =
+    titresApporteeTotal > 0
+      ? Math.round((titresApportes / titresApporteeTotal) * 10000) / 100
+      : 0;
+
+  const formeApportee = texte(valeurs.apporteeForme);
+  const motTitresApportee = /^(SARL|EURL|SCI|SNC|SCP)/i.test(formeApportee)
+    ? "parts sociales"
+    : "actions";
+
+  const qualite = texte(valeurs.apporteurQualite);
+
+  return {
+    /* --------------------------------------------------------- L'apporteur */
+    APPORTEUR_NOM: ou(texte(valeurs.apporteurNomComplet)),
+    APPORTEUR_NE_LE_FR: dateEnFrancais(texteBrut(valeurs.apporteurNeLe)),
+    APPORTEUR_NE_A: ou(texte(valeurs.apporteurNeA)),
+    APPORTEUR_NATIONALITE: ou(texte(valeurs.apporteurNationalite), "française"),
+    APPORTEUR_ADRESSE: ou(texte(valeurs.apporteurAdresse)),
+    APPORTEUR_QUALITE: ou(qualite),
+    /*
+     * « en sa qualité d'associé unique », non « de Associé unique ».
+     *
+     * La qualité est un libellé de liste, capitalisé et destiné à un écran. Reprise
+     * telle quelle au fil d'une phrase, elle donne une majuscule au milieu d'un acte
+     * et une élision fautive. L'acte emploie donc cette forme-ci.
+     */
+    APPORTEUR_QUALITE_DE: qualite ? avecElision(qualite.toLowerCase()) : TIRET,
+    /*
+     * L'apporteur signe-t-il des deux côtés ?
+     *
+     * Quand il représente aussi la société qui reçoit, il contracte avec lui-même :
+     * l'article 1161 du code civil l'interdit sauf autorisation, que l'acte doit
+     * porter. Sans cette clause, le traité est annulable.
+     */
+    IS_APPORTEUR_REPRESENTANT: qualite.includes("représentant légal"),
+    IS_APPORTEUR_ASSOCIE_UNIQUE: qualite.startsWith("Associé unique"),
+
+    /* ------------------------------------------- La société dont les titres viennent */
+    APPORTEE_DENOMINATION: ou(texte(valeurs.apporteeDenomination)),
+    APPORTEE_FORME: ou(formeApportee),
+    APPORTEE_FORME_EN_CLAIR: formeEnToutesLettres(formeApportee).toLowerCase(),
+    APPORTEE_SIREN: ou(texte(valeurs.apporteeSiren)),
+    APPORTEE_SIEGE: ou(texte(valeurs.apporteeSiege)),
+    APPORTEE_RCS_VILLE: ou(texte(valeurs.apporteeRcs)),
+    APPORTEE_RCS_DE: avecElision(texte(valeurs.apporteeRcs)),
+    APPORTEE_CAPITAL_FORMATE: montant(nb("apporteeCapital")),
+    APPORTEE_CAPITAL_LETTRES: nombreEnFrancais(nb("apporteeCapital")),
+    APPORTEE_NB_TITRES: montant(titresApporteeTotal),
+    APPORTEE_NB_TITRES_LETTRES: nombreEnFrancais(titresApporteeTotal),
+    APPORTEE_NOMINALE_FORMATE: montant(nb("apporteeNominale")),
+    APPORTEE_NOMINALE_LETTRES: nombreEnFrancais(nb("apporteeNominale")),
+    APPORTEE_MOT_TITRES: motTitresApportee,
+    APPORTEE_DATE_STATUTS_FR: dateEnFrancais(texteBrut(valeurs.apporteeDateStatuts)),
+
+    /* ------------------------------------------------------ Les titres apportés */
+    APPORT_NB_TITRES: montant(titresApportes),
+    APPORT_NB_TITRES_LETTRES: nombreEnFrancais(titresApportes),
+    APPORT_PART_DETENUE: String(partDetenue).replace(".", ","),
+    APPORT_NUMEROTATION: texte(valeurs.apportNumerotation),
+    IS_APPORT_NUMEROTE: texteBrut(valeurs.apportNumerotation).length > 0,
+    /* En minuscule : l'acte l'emploie en milieu de phrase, « à la suite d'une … ». */
+    APPORT_ORIGINE: ou(texte(valeurs.apportOrigineTitres).toLowerCase()),
+
+    /* ------------------------------------------------------- La valorisation */
+    APPORT_VALEUR_FORMATE: montant(valeurApport),
+    APPORT_VALEUR_LETTRES: nombreEnFrancais(valeurApport),
+    APPORT_METHODE: ou(texte(valeurs.apportMethodeValorisation)),
+
+    /* ------------------------------------------------- Le plan de capital */
+    IS_DOUBLE_AUGMENTATION: numeraire > 0,
+    APPORT_NUMERAIRE_FORMATE: montant(numeraire),
+    APPORT_NUMERAIRE_LETTRES: nombreEnFrancais(numeraire),
+    APPORT_NOMINALE_FORMATE: montant(nominale),
+    APPORT_NOMINALE_LETTRES: nombreEnFrancais(nominale),
+    APPORT_TITRES_NUMERAIRE: montant(titresNumeraire),
+    APPORT_TITRES_NUMERAIRE_LETTRES: nombreEnFrancais(titresNumeraire),
+    APPORT_TITRES_NATURE: montant(titresNature),
+    APPORT_TITRES_NATURE_LETTRES: nombreEnFrancais(titresNature),
+    CAPITAL_AVANT_FORMATE: montant(capitalActuel),
+    CAPITAL_AVANT_LETTRES: nombreEnFrancais(capitalActuel),
+    CAPITAL_APRES_NUMERAIRE_FORMATE: montant(enEuros(plan.capitalApresNumeraireCentimes)),
+    CAPITAL_APRES_NUMERAIRE_LETTRES: nombreEnFrancais(
+      enEuros(plan.capitalApresNumeraireCentimes)
+    ),
+    CAPITAL_FINAL_FORMATE: montant(enEuros(plan.capitalFinalCentimes)),
+    CAPITAL_FINAL_LETTRES: nombreEnFrancais(enEuros(plan.capitalFinalCentimes)),
+    APPORT_PART_CAPITAL: String(plan.partDeLApport).replace(".", ","),
+
+    /* -------------------------------------------- Le commissaire aux apports */
+    IS_APPORT_COMMISSAIRE: verdict.commissaireRequis,
+    IS_APPORT_DISPENSE: !verdict.commissaireRequis,
+    APPORT_DISPENSE_MOTIFS: verdict.motifs.join(" "),
+    APPORT_COMMISSAIRE_NOM: texte(valeurs.apportCommissaireNom),
+
+    /* --------------------------------------------------------- Le régime fiscal */
+    IS_APPORT_REPORT: fiscal.regime === "report",
+    IS_APPORT_SURSIS: fiscal.regime === "sursis",
+    APPORT_ARTICLE_FISCAL: fiscal.article,
+    APPORT_REGIME_LIBELLE: fiscal.libelle,
+    REMPLOI_QUOTA: String(Math.round(REMPLOI.quota * 100)),
+    REMPLOI_DELAI_MOIS: String(REMPLOI.delaiMois),
+    REMPLOI_CONSERVATION_ANS: String(REMPLOI.conservationAns),
+    REMPLOI_FRANCHISE_ANS: String(REMPLOI.franchiseAns),
+
+    /* ---------------------------------------------------------------- Divers */
+    APPORT_DATE_EFFET_FR: dateEnFrancais(texteBrut(valeurs.apportDateEffet)),
+    APPORT_DATE_LIMITE_FR: dateEnFrancais(texteBrut(valeurs.apportDateLimiteCondition)),
+    APPORT_LIEU_SIGNATURE: ou(texte(valeurs.apportLieuSignature)),
+    APPORT_DATE_SIGNATURE_FR: dateEnFrancais(texteBrut(valeurs.apportDateSignature)),
+    APPORT_COUR_APPEL: ou(texte(valeurs.apportCourAppel)),
+  };
+}
+
 export interface ActeAProduire {
   titre: string;
   gabarit: string;
@@ -646,6 +818,18 @@ export function actesAProduire(
 
   if (codes.includes("cession_parts")) {
     actes.push({ titre: "Acte de cession de parts", gabarit: "modif-acte-cession.docx" });
+  }
+
+  /*
+   * Le traité d'apport, distinct du procès-verbal.
+   *
+   * Le procès-verbal constate la décision de la société bénéficiaire ; le traité est
+   * le contrat entre l'apporteur et elle, et c'est lui qui se produit en trois
+   * exemplaires, s'enregistre auprès de l'administration et fonde le report
+   * d'imposition. Les fondre en un seul acte priverait l'apporteur du sien.
+   */
+  if (codes.includes("apport_titres")) {
+    actes.push({ titre: "Traité d'apport de titres", gabarit: "modif-traite-apport.docx" });
   }
 
   /*
