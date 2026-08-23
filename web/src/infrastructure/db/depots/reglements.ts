@@ -3,6 +3,7 @@ import { confirmerLeReglement as confirmerAutoEntreprise } from "./auto-entrepre
 import { confirmerLeReglement as confirmerModification } from "./modifications";
 import { confirmerLeReglementDesComptes } from "./comptes";
 import { confirmerLeReglementDeLaFermeture } from "./fermeture";
+import { confirmerLeReglementDeLaCessation } from "./cessation";
 import { journal } from "@/lib/journal";
 
 /**
@@ -34,6 +35,9 @@ export async function confirmerLeReglementDeLaFormalite(
 
   if (dossier.type === "comptes") {
     return confirmerLeReglementDesComptes(reference, dossier.id);
+  }
+  if (dossier.type === "cessation") {
+    return confirmerLeReglementDeLaCessation(reference, dossier.id);
   }
   if (dossier.type === "fermeture") {
     return confirmerLeReglementDeLaFermeture(reference, dossier.id);

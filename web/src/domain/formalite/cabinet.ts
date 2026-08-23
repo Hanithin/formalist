@@ -16,7 +16,8 @@ export type TypeDeDossier =
   | "modification"
   | "auto-entrepreneur"
   | "comptes"
-  | "fermeture";
+  | "fermeture"
+  | "cessation";
 
 export type EtatTache = "faite" | "a_faire" | "plus_tard";
 
@@ -89,6 +90,8 @@ export const DOCUMENT_FINAL: Record<TypeDeDossier, string> = {
   comptes: "Récépissé de dépôt",
   /* Une société fermée ne reçoit pas d'extrait à jour : elle reçoit sa radiation. */
   fermeture: "Attestation de radiation",
+  /* Le guichet accuse réception de la cessation : c'est la preuve de la radiation. */
+  cessation: "Récépissé de cessation",
 };
 
 export const LIBELLES_SOUS_PHASES: Record<TypeDeDossier, Record<string, string>> = {
@@ -132,6 +135,13 @@ export const LIBELLES_SOUS_PHASES: Record<TypeDeDossier, Record<string, string>>
     "5c": "Vérifié",
     "5d": "Dissolution",
     "5e": "Radiation",
+  },
+  cessation: {
+    "5a": "Transmis",
+    "5b": "Révision",
+    "5c": "Vérifié",
+    "5d": "Guichet",
+    "5e": "Récépissé",
   },
 };
 
@@ -180,7 +190,9 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
         ? "Procès-verbal d'approbation, rapport spécial sur les conventions quand la loi l'exige, et déclaration de confidentialité quand elle est demandée."
         : etat.type === "fermeture"
           ? "Décision de dissolution rédigée à la majorité propre à la forme, nomination du liquidateur, déclaration de non-condamnation et pouvoir. Les comptes définitifs et le quitus viendront à la clôture, des mois plus tard."
-          : "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
+          : etat.type === "cessation"
+            ? "Déclaration récapitulative de cessation et pouvoir. Une auto-entreprise n'a pas d'acte à rédiger : la valeur est dans le calendrier des échéances qui suivent."
+            : "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
     etat: etat.actesProduits ? "faite" : "a_faire",
     onglet: "actes",
   });
@@ -286,7 +298,9 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
         ? "Transmettez les comptes annuels, la décision d'approbation et, s'il y en a une, la déclaration de confidentialité. Un mois après l'approbation, deux par voie électronique."
         : etat.type === "fermeture"
           ? "Transmettez la décision de dissolution, l'attestation de parution, la déclaration de non-condamnation du liquidateur et sa pièce d'identité. La radiation se demandera à la clôture, avec les deux attestations."
-          : "Transmettez le dossier à l'INPI au nom du client, avec les actes et les statuts à jour.",
+          : etat.type === "cessation"
+            ? "Déposez la déclaration de cessation au guichet unique, sur mandat du client. La démarche est gratuite : aucun règlement à avancer."
+            : "Transmettez le dossier à l'INPI au nom du client, avec les actes et les statuts à jour.",
     etat: depose ? "faite" : "a_faire",
     onglet: "avancement",
     bloquee: verifie ? undefined : "Le dossier n'est pas encore vérifié.",

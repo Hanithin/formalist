@@ -4779,3 +4779,9 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Ce dont le cabinet se charge, dans une liste où le reste revient au client. */
+.jalonNotre {
+  font-weight: 400;
+  color: #15803d;
+}

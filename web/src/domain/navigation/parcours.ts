@@ -99,6 +99,15 @@ export const FAMILLES: FamilleDeParcours[] = [
         titre: "Fermer ma société",
         description: "Dissolution, liquidation, radiation",
       },
+      {
+        lien: "/cessation",
+        teinte: "amber",
+        icone:
+          '<circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>' +
+          '<line x1="17" y1="3" x2="23" y2="9"/><line x1="23" y1="3" x2="17" y2="9"/>',
+        titre: "Fermer une auto-entreprise",
+        description: "Cessation ou mise en pause",
+      },
     ],
   },
   {

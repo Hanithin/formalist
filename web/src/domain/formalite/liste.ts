@@ -37,6 +37,7 @@ const TYPES: Record<string, string> = {
   modification: "Modification",
   fermeture: "Fermeture",
   comptes: "Dépôt des comptes",
+  cessation: "Cessation d'auto-entreprise",
   depot: "Dépôt des comptes",
   "auto-entrepreneur": "Auto-entrepreneur",
 };
@@ -340,5 +341,6 @@ export function adresseDuDossier(dossier: { id: number; type: string | null }): 
    */
   if (dossier.type === "comptes") return "/depot-des-comptes?dossier=" + dossier.id;
   if (dossier.type === "fermeture") return "/fermeture?dossier=" + dossier.id;
+  if (dossier.type === "cessation") return "/cessation?dossier=" + dossier.id;
   return "/creation?dossier=" + dossier.id;
 }

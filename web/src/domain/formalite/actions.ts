@@ -63,6 +63,11 @@ const REPRISES: Record<string, { titre: string; precision: string; bouton: strin
     precision: "Dissolution, liquidation puis radiation",
     bouton: "Reprendre",
   },
+  cessation: {
+    titre: "Cessation à déclarer",
+    precision: "La date d'arrêt, votre régime, et vos dernières échéances",
+    bouton: "Reprendre",
+  },
   "auto-entrepreneur": {
     titre: "Déclaration à compléter",
     precision: "Votre état civil et votre activité",
@@ -75,6 +80,7 @@ function adresseDe(ctx: ContexteDossier): string {
   if (type === "modification") return "/modification?dossier=" + ctx.dossierId;
   if (type === "comptes") return "/depot-des-comptes?dossier=" + ctx.dossierId;
   if (type === "fermeture") return "/fermeture?dossier=" + ctx.dossierId;
+  if (type === "cessation") return "/cessation?dossier=" + ctx.dossierId;
   if (type === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + ctx.dossierId;
   return "/creation?dossier=" + ctx.dossierId;
 }

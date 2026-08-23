@@ -160,7 +160,9 @@ export default async function DossierAvocat({
           ? "comptes"
           : dossier.type === "fermeture"
             ? "fermeture"
-            : "creation";
+            : dossier.type === "cessation"
+              ? "cessation"
+              : "creation";
 
   const codes = sectionsModification ? ((donnees.codes as string[]) ?? []) : [];
   const societeDuDossier = (donnees.societe ?? {}) as {

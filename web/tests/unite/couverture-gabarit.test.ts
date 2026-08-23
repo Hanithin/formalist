@@ -128,10 +128,10 @@ const fournis = new Set(Object.keys(donnees));
  *
  * Les autres parcours ont leurs propres données et leur propre couverture : celle de
  * la modification, celle de l'approbation des comptes dans comptes-actes, celle de la
- * fermeture dans fermeture-actes. Les mesurer ici avec les données d'une création
+ * fermeture dans fermeture-actes, celle de la cessation dans cessation-actes. Les mesurer ici avec les données d'une création
  * signalerait comme manquants des champs qu'aucune création ne connaît.
  */
-const AUTRES_PARCOURS = ["modif-", "comptes-", "fermeture-"];
+const AUTRES_PARCOURS = ["modif-", "comptes-", "fermeture-", "cessation-"];
 
 const gabarits = readdirSync(GABARITS).filter(
   (f) => f.endsWith(".docx") && !AUTRES_PARCOURS.some((prefixe) => f.startsWith(prefixe))
