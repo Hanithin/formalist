@@ -723,10 +723,18 @@
 .entete {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 8px 20px;
-  padding: 26px 32px 0;
+  gap: 12px 20px;
+  padding: 24px 32px 0;
+}
+
+.enteteTexte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  min-width: 0;
 }
 
 .enteteTitre {
@@ -745,47 +753,67 @@
 /* --------------------------------------------------------- Les indicateurs */
 
 /*
- * Trois nombres sur une ligne, non trois cartes.
+ * La tête de page : la reprise à gauche, les chiffres à droite.
  *
- * Des cartes en donneraient l'importance d'indicateurs financiers qu'on vient
- * contempler. Ce sont des repères qu'on lit en passant, avant de descendre vers ce
- * qui demande un geste.
+ * L'un et l'autre répondent à la même question - où en suis-je - et se lisaient l'un
+ * sous l'autre, sur toute la largeur. Côte à côte, ils tiennent dans le premier coup
+ * d'œil, et la page gagne cent cinquante pixels avant la première section.
+ */
+.tete {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+/*
+ * Quatre cases, non quatre cartes.
+ *
+ * Une bordure les réunit, des filets intérieurs les séparent : c'est un bloc, non
+ * quatre objets. Des cartes distinctes auraient pesé autant que la reprise à côté.
  */
 .indicateurs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0;
-  margin: 18px 0 26px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: 0;
   padding: 0;
+  border: 1px solid #ececee;
+  border-radius: 16px;
+  background: #ececee;
+  overflow: hidden;
 }
 
 .indicateur {
   display: flex;
-  align-items: baseline;
-  gap: 7px;
-  padding: 0 22px;
-  border-left: 1px solid #e8e8ea;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background: #fff;
 }
 
-.indicateur:first-child {
-  padding-left: 0;
-  border-left: none;
+.indicateurLibelle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
 }
 
 .indicateurValeur {
   margin: 0;
-  font-size: 21px;
+  font-size: 26px;
   font-weight: 600;
+  line-height: 1.1;
   color: #18181b;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.indicateurLibelle {
-  margin: 0;
-  font-size: 13.5px;
-  color: #71717a;
+/* Le seul chiffre qui appelle un geste porte la teinte qui le dit. */
+.indicateurAlerte {
+  color: #a1751b;
 }
 
 /* ------------------------------------------------------- Le bloc de reprise */
@@ -1393,5 +1421,302 @@
   .echeanceGeste {
     grid-column: 1 / -1;
     justify-self: start;
+  }
+}
+
+
+/* =========================================================== La disposition */
+
+/*
+ * Deux colonnes : ce qui appelle un geste, et ce qui informe.
+ *
+ * Tout était empilé sur toute la largeur. Sur un écran de 1440, la page mesurait deux
+ * fois et demie la hauteur visible, avec un tiers de blanc à droite, et il fallait
+ * défiler pour savoir s'il restait quelque chose. Les listes courtes - échéances,
+ * activité - passent à droite ; la file de travail et les actions gardent la largeur
+ * dont elles ont besoin.
+ */
+.corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr);
+  gap: 16px 28px;
+  align-items: start;
+  margin-top: 4px;
+}
+
+.colonnePrincipale,
+.colonneLaterale {
+  min-width: 0;
+}
+
+/* Une seule colonne dès que la latérale n'a plus la place d'être lisible. */
+@media (max-width: 1080px) {
+  .tete,
+  .corps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ------------------------------------------------------ La file de travail */
+
+.sectionCompte {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #52525b;
+  vertical-align: 1px;
+}
+
+.file {
+  border: 1px solid #ececee;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/*
+ * Les colonnes, une fois pour l'en-tête et pour les lignes.
+ *
+ * Deux grilles au même gabarit se décalent au premier changement de l'une : elles
+ * partagent donc la même déclaration, et l'en-tête a le retrait des lignes.
+ */
+.fileEntete,
+.fileLigne {
+  display: grid;
+  /*
+   * La société a besoin de place : « SASU PARCOURS SIGNATURE » se réduisait à
+   * « SASU PARCOURS SIG… » pour laisser cent quarante pixels à une jauge qui se lit
+   * très bien sur cent vingt.
+   */
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) 120px auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+}
+
+.fileEntete {
+  border-bottom: 1px solid #f2f2f4;
+  background: #fafafa;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+.fileLignes {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fileLigne {
+  padding: 13px 18px;
+  border: 0;
+  border-bottom: 1px solid #f4f4f5;
+  border-radius: 0;
+  background: none;
+}
+
+.fileLignes li:last-child .fileLigne,
+.fileLignes > li:last-child {
+  border-bottom: none;
+}
+
+.fileCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fileType {
+  font-size: 14px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.filePrecision,
+.fileSociete {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePrecision {
+  font-size: 12.5px;
+  color: #8a8a92;
+}
+
+.fileSociete {
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #52525b;
+}
+
+.fileAvancement {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fileAvancement .jauge {
+  flex: 1;
+}
+
+.filePourcent {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+.fileGeste {
+  padding: 7px 15px;
+  border: 1px solid #e5e5e7;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #18181b;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.fileGeste:hover {
+  border-color: #18181b;
+}
+
+.filePied {
+  margin: 0;
+  padding: 11px 18px;
+  border-top: 1px solid #f2f2f4;
+  background: #fafafa;
+  font-size: 12px;
+  color: #8a8a92;
+}
+
+/* --------------------------------------------------- Les documents récents */
+
+/*
+ * Quatre cartes au plus, et la rangée s'arrête où la liste s'arrête.
+ *
+ * Quatre colonnes fixes laissaient deux emplacements vides quand il n'y avait que deux
+ * documents ; des colonnes élastiques les auraient étirées sur toute la largeur pour un
+ * nom de fichier. Une largeur bornée règle les deux : les cartes gardent leur taille et
+ * la rangée finit tôt, sans trou.
+ */
+.pieces {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 300px));
+  justify-content: start;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pieces > li {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 0;
+}
+
+.pieceLien {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 14px 16px;
+  border: 1px solid #ececee;
+  border-radius: 12px;
+  background: #fff;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.pieceLien:hover {
+  border-color: #d4d4d8;
+}
+
+.pieceTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pieceType {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f4f4f5;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #71717a;
+}
+
+.pieceDate {
+  font-size: 11.5px;
+  color: #a1a1aa;
+}
+
+.pieceNom,
+.pieceSociete {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pieceNom {
+  font-size: 14px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.pieceSociete {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+@media (max-width: 900px) {
+  .pieces {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  /* La file passe en deux lignes : la société sous la formalité, le geste au bout. */
+  .fileEntete {
+    display: none;
+  }
+
+  .fileLigne {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 8px;
+  }
+
+  .fileAvancement {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .pieces {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

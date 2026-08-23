@@ -1,5 +1,6 @@
 import { prisma } from "../client";
 import { mesDossiers, exigerDossier } from "./dossiers";
+import { listerDocuments } from "./documents";
 import { actionsAttendues, prochaineEtape, type ContexteDossier } from "@/domain/formalite/actions";
 import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
 import type { EntreeJournal } from "@/domain/formalite/journal";
@@ -54,7 +55,9 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
    * messagerie posaient déjà cette règle.
    */
   const dossiers = await mesDossiers(utilisateur);
-  if (dossiers.length === 0) return { dossiers: [], societes: [], activite: [] };
+  if (dossiers.length === 0) {
+    return { dossiers: [], societes: [], activite: [], documents: [], nombreDeDocuments: 0 };
+  }
 
   const identifiants = dossiers.map((d) => d.id);
 
@@ -244,7 +247,23 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
     quand: e.created_at,
   }));
 
-  return { dossiers, societes, activite };
+  /*
+   * Les derniers documents, et leur nombre.
+   *
+   * L'accueil ne les montrait pas : on savait qu'un acte avait été produit par la ligne
+   * d'activité qui le disait, mais il fallait ouvrir la bibliothèque pour le retrouver.
+   * Quatre vignettes suffisent - c'est ce qu'on vient chercher le lendemain d'un dépôt.
+   */
+  const bibliotheque = await listerDocuments(utilisateur);
+  const documents = bibliotheque.slice(0, 4).map((d) => ({
+    id: d.id,
+    nom: d.nom,
+    societe: d.societe,
+    fichier: d.fichier,
+    creeLe: d.creeLe,
+  }));
+
+  return { dossiers, societes, activite, documents, nombreDeDocuments: bibliotheque.length };
 }
 
 /**

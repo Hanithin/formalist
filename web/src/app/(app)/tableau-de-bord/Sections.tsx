@@ -18,38 +18,39 @@ import styles from "./TableauDeBord.module.css";
 
 /* ------------------------------------------------------------ Les chiffres */
 
+export interface Chiffre {
+  valeur: number;
+  libelle: string;
+  /** Le chiffre qui appelle un geste se distingue des autres. */
+  alerte?: boolean;
+}
+
 /**
- * Les chiffres qui valent quelque chose, sur une ligne.
+ * Quatre cases, à côté du dossier à reprendre.
  *
- * Pas des cartes : ce ne sont pas des indicateurs financiers qu'on vient contempler,
- * mais un état des lieux qu'on lit en passant.
+ * Elles occupaient une ligne pleine largeur au-dessus : le regard les traversait sans
+ * s'arrêter, et la ligne poussait tout le reste vers le bas. En bloc, à droite de la
+ * reprise, elles tiennent dans le même coup d'œil que ce qu'elles chiffrent.
  *
- * Un zéro ne s'écrit pas. « 0 en validation » occupe la même place qu'un chiffre et
- * n'apprend rien : il annonce une absence là où l'on cherche une présence, et il fait
- * douter - on relit pour vérifier qu'on n'a rien manqué. La ligne ne porte donc que ce
- * qui existe, et disparaît quand il n'y a plus rien à compter.
+ * Un zéro s'écrit ici, contrairement à la ligne d'avant : dans une grille de quatre
+ * cases fixes, une case vide se remarquerait plus qu'un zéro - et « 0 échéance » est
+ * précisément ce qu'on veut lire.
  */
-export function Indicateurs({ chiffres }: { chiffres: Indicateurs }) {
-  const lignes = [
-    {
-      valeur: chiffres.enCours,
-      libelle: chiffres.enCours > 1 ? "formalités en cours" : "formalité en cours",
-    },
-    {
-      valeur: chiffres.actionsRequises,
-      libelle: chiffres.actionsRequises > 1 ? "actions requises" : "action requise",
-    },
-    { valeur: chiffres.enValidation, libelle: "en validation" },
-  ].filter((ligne) => ligne.valeur > 0);
-
-  if (lignes.length === 0) return null;
-
+export function Indicateurs({ chiffres }: { chiffres: Chiffre[] }) {
   return (
     <dl className={styles.indicateurs}>
-      {lignes.map((ligne) => (
-        <div className={styles.indicateur} key={ligne.libelle}>
-          <dt className={styles.indicateurValeur}>{ligne.valeur}</dt>
-          <dd className={styles.indicateurLibelle}>{ligne.libelle}</dd>
+      {chiffres.map((chiffre) => (
+        <div className={styles.indicateur} key={chiffre.libelle}>
+          <dt className={styles.indicateurLibelle}>{chiffre.libelle}</dt>
+          <dd
+            className={
+              chiffre.alerte && chiffre.valeur > 0
+                ? `${styles.indicateurValeur} ${styles.indicateurAlerte}`
+                : styles.indicateurValeur
+            }
+          >
+            {chiffre.valeur}
+          </dd>
         </div>
       ))}
     </dl>
@@ -166,15 +167,15 @@ export function Attention({ actions }: { actions: ActionDeDossier[] }) {
   );
 }
 
-/* -------------------------------------------------- Les formalités en cours */
+/* --------------------------------------------------- La file de travail */
 
-export interface CarteFormalite {
+export interface LigneDeTravail {
   id: number;
-  /** « Création SASU » : la nature de l'opération, non celle de la société. */
+  /** L'opération : « Création SASU », « Dépôt des comptes ». */
   type: string;
+  /** Ce qu'elle attend, en une ligne. */
+  precision: string;
   societe: string;
-  /** « Étape 1 sur 5 · Informations », quand le parcours l'expose. */
-  etape?: string | null;
   pourcentage: number;
   etat: string;
   ton: Ton;
@@ -182,76 +183,156 @@ export interface CarteFormalite {
   lien: string;
 }
 
-export function FormalitesEnCours({
-  cartes,
+/** Cinq lignes à l'écran : au-delà, la file se lit sur sa propre page. */
+export const LIGNES_MONTREES = 5;
+
+/**
+ * Les dossiers en cours, en table plutôt qu'en vignettes.
+ *
+ * Trois cartes suffisaient pour trois dossiers ; à vingt, elles ne montraient plus que
+ * les trois premiers et occupaient toute la largeur pour le faire. Une table en montre
+ * cinq dans la même hauteur, aligne les avancements - ce qui rend la comparaison
+ * possible d'un coup d'œil - et laisse la place à une colonne latérale.
+ */
+export function FileDeTravail({
+  lignes,
   total,
 }: {
-  cartes: CarteFormalite[];
+  lignes: LigneDeTravail[];
   total: number;
 }) {
   return (
-    <section className={styles.section} aria-labelledby="formalites-en-cours">
+    <section className={styles.section} aria-labelledby="file">
       <div className={styles.sectionTete}>
-        <h2 id="formalites-en-cours" className={styles.sectionTitre}>
+        <h2 id="file" className={styles.sectionTitre}>
           Formalités en cours
+          {total > 0 && <span className={styles.sectionCompte}>{total}</span>}
         </h2>
-        {total > cartes.length && (
+        {total > lignes.length && (
           <Link href="/formalites" className={styles.sectionLien}>
-            Voir tout
+            Voir toute la file →
           </Link>
         )}
       </div>
 
-      {cartes.length === 0 ? (
+      {lignes.length === 0 ? (
         <EtatVide
           titre="Aucune formalité en cours"
           texte="Lancez votre première démarche depuis le bouton de la colonne."
         />
       ) : (
-        <ul className={styles.formalites}>
-          {cartes.map((carte) => (
-            <li key={carte.id} className={styles.formalite}>
-              <div className={styles.formaliteTete}>
-                <span className={styles.formaliteType}>{carte.type}</span>
-                <StatutBadge ton={carte.ton} libelle={carte.etat} />
-              </div>
+        <div className={styles.file}>
+          <div className={styles.fileEntete} aria-hidden="true">
+            <span>Formalité</span>
+            <span>Société</span>
+            <span>Avancement</span>
+            <span />
+          </div>
 
-              {/*
-                Trois lignes, trois choses.
-                « SASU PARCOURS SIGNATURE » sur une seule ligne mélangeait la forme de la
-                société et son nom, et taisait ce qu'on était en train de lui faire : on
-                lisait un nom sans savoir s'il s'agissait de la créer ou de la fermer.
-              */}
-              <p className={styles.formaliteSociete} title={carte.societe}>
-                {carte.societe}
-              </p>
+          <ul className={styles.fileLignes}>
+            {lignes.map((ligne) => (
+              <li key={ligne.id} className={styles.fileLigne}>
+                <span className={styles.fileCorps}>
+                  <span className={styles.fileType}>{ligne.type}</span>
+                  <span className={styles.filePrecision}>{ligne.precision}</span>
+                </span>
 
-              {carte.etape && <p className={styles.formaliteEtape}>{carte.etape}</p>}
+                <span className={styles.fileSociete} title={ligne.societe}>
+                  {ligne.societe}
+                </span>
 
-              <div
-                className={styles.jauge}
-                role="progressbar"
-                aria-valuenow={carte.pourcentage}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={"Avancement : " + carte.pourcentage + " %"}
-              >
-                <span
-                  className={styles.jaugeRemplie}
-                  style={{ width: carte.pourcentage + "%" }}
-                />
-              </div>
+                <span className={styles.fileAvancement}>
+                  <span
+                    className={styles.jauge}
+                    role="progressbar"
+                    aria-valuenow={ligne.pourcentage}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={"Avancement : " + ligne.pourcentage + " %"}
+                  >
+                    <span
+                      className={styles.jaugeRemplie}
+                      style={{ width: ligne.pourcentage + "%" }}
+                    />
+                  </span>
+                  <span className={styles.filePourcent}>{ligne.pourcentage} %</span>
+                </span>
 
-              <div className={styles.formalitePied}>
-                <span className={styles.formalitePourcent}>{carte.pourcentage} %</span>
-                <Link href={carte.lien} className={styles.formaliteGeste}>
-                  {carte.geste}
+                <Link href={ligne.lien} className={styles.fileGeste}>
+                  {ligne.geste}
                 </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+
+          {total > lignes.length && (
+            <p className={styles.filePied}>
+              {lignes.length} sur {total} affichées
+            </p>
+          )}
+        </div>
       )}
+    </section>
+  );
+}
+
+/* ----------------------------------------------------- Documents récents */
+
+export interface DocumentRecent {
+  id: string;
+  nom: string;
+  societe: string | null;
+  fichier: string | null;
+  creeLe: Date | string | null;
+}
+
+const JOUR_COURT = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+
+/** L'extension, en majuscules : c'est ce qu'on cherche d'abord dans une liste de pièces. */
+function extension(nom: string): string {
+  const point = nom.lastIndexOf(".");
+  return point > 0 ? nom.slice(point + 1).toUpperCase().slice(0, 4) : "DOC";
+}
+
+/**
+ * Les quatre derniers documents.
+ *
+ * L'accueil n'en montrait aucun : on apprenait qu'un acte existait par la ligne
+ * d'activité qui le disait, et il fallait ouvrir la bibliothèque pour le retrouver.
+ * C'est pourtant ce qu'on vient chercher le lendemain d'un dépôt.
+ */
+export function DocumentsRecents({ documents }: { documents: DocumentRecent[] }) {
+  if (documents.length === 0) return null;
+
+  return (
+    <section className={styles.section} aria-labelledby="documents-recents">
+      <div className={styles.sectionTete}>
+        <h2 id="documents-recents" className={styles.sectionTitre}>
+          Documents récents
+        </h2>
+        <Link href="/documents" className={styles.sectionLien}>
+          Tous les documents
+        </Link>
+      </div>
+
+      <ul className={styles.pieces}>
+        {documents.map((document) => (
+          <li key={document.id} className={styles.piece}>
+            <Link href="/documents" className={styles.pieceLien}>
+              <span className={styles.pieceTete}>
+                <span className={styles.pieceType}>{extension(document.nom)}</span>
+                <span className={styles.pieceDate}>
+                  {document.creeLe ? JOUR_COURT.format(new Date(document.creeLe)) : ""}
+                </span>
+              </span>
+              <span className={styles.pieceNom} title={document.nom}>
+                {document.nom}
+              </span>
+              <span className={styles.pieceSociete}>{document.societe ?? "Sans société"}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

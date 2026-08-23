@@ -29,7 +29,7 @@ const OUVERTURE =
  * précisément pour en créer une, et où descendre chercher la colonne est un détour.
  */
 export function NouvelleFormalite({
-  libelle = "+ Nouvelle formalité",
+  libelle = "Nouvelle formalité",
   apparence = "colonne",
 }: {
   libelle?: string;
@@ -66,12 +66,14 @@ export function NouvelleFormalite({
         aria-haspopup="dialog"
         aria-expanded={ouverte}
       >
-        {/* Le « + » dit le geste avant même qu'on lise le libellé. */}
-        {apparence === "page" && (
-          <span className={styles.plus} aria-hidden="true">
-            +
-          </span>
-        )}
+        {/*
+          Le « + » dit le geste avant même qu'on lise le libellé.
+          Il est dessiné ici, non écrit dans le libellé : écrit, il se doublait avec
+          celui-ci sur la variante de page, qui le posait déjà.
+        */}
+        <span className={styles.plus} aria-hidden="true">
+          +
+        </span>
         {libelle}
       </button>
 

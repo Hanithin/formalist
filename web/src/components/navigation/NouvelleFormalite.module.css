@@ -9,6 +9,11 @@
 /* ---------- Le bouton ---------- */
 
 .action {
+  /* Le signe et le libellé sur une ligne, espacés : sans cela ils se touchent. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   flex-shrink: 0;
   margin: 4px 12px 20px;
   padding: 13px 18px;

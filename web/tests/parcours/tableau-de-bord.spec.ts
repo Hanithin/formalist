@@ -21,19 +21,41 @@ test.describe("tableau de bord du client", () => {
     await expect(titre).toHaveText(/^(Bonjour|Bonsoir) Camille$/);
   });
 
-  test("annonce en chiffres ce qu'il y a à savoir, et tait les zéros", async ({ page }) => {
+  test("annonce en quatre chiffres ce qu'il y a à savoir", async ({ page }) => {
     /*
-     * « 0 en validation » occupe la place d'un chiffre et n'apprend rien : il annonce
-     * une absence là où l'on cherche une présence, et l'on relit pour vérifier qu'on
-     * n'a rien manqué. Seul ce qui existe s'écrit.
+     * Quatre cases fixes, à côté du dossier à reprendre : c'est le premier coup d'œil,
+     * et il doit tenir sans défiler. Le zéro s'y écrit - dans une grille de quatre, une
+     * case vide se remarquerait plus qu'un zéro, et « 0 échéance » est précisément ce
+     * qu'on veut lire.
      */
     await page.goto("/tableau-de-bord");
 
-    await expect(page.getByText(/formalités? en cours/)).toBeVisible();
-    await expect(page.getByText(/actions? requises?/).first()).toBeVisible();
-
     const indicateurs = page.locator("dl[class*='indicateurs']");
-    await expect(indicateurs.getByText("0", { exact: true })).toHaveCount(0);
+    await expect(indicateurs).toBeVisible();
+
+    for (const libelle of ["En cours", "Actions requises", "Échéances 30 j.", "Documents"]) {
+      await expect(indicateurs.getByText(libelle, { exact: true }), libelle).toBeVisible();
+    }
+  });
+
+  test("la tête de page tient sans défiler", async ({ page }) => {
+    /*
+     * La reprise et les chiffres répondent à la même question - où en suis-je - et se
+     * lisaient l'un sous l'autre sur toute la largeur. Côte à côte, ils tiennent dans
+     * le premier écran, ce qui était le point de la refonte.
+     */
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/tableau-de-bord");
+
+    const chiffres = page.locator("dl[class*='indicateurs']");
+    const reprise = page.getByRole("region", { name: "Reprendre" });
+
+    const boiteChiffres = await chiffres.boundingBox();
+    const boiteReprise = await reprise.boundingBox();
+
+    // Côte à côte : la même bande horizontale, non l'une sous l'autre.
+    expect(boiteChiffres!.x).toBeGreaterThan(boiteReprise!.x + boiteReprise!.width - 10);
+    expect(boiteChiffres!.y).toBeLessThan(boiteReprise!.y + 40);
   });
 
   test("dit ce qui requiert l'attention, avec la société concernée", async ({ page }) => {

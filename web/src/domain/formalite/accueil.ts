@@ -161,6 +161,25 @@ export function echeancesDesDossiers(
   return echeances.sort((a, b) => a.limite.localeCompare(b.limite));
 }
 
+/**
+ * Ce qui tombe dans les trente prochains jours.
+ *
+ * L'horizon d'un tableau de bord n'est pas l'année : c'est le mois. Une échéance à huit
+ * mois n'appelle aucun geste aujourd'hui, et la compter dans un indicateur ferait
+ * paraître urgent ce qui ne l'est pas.
+ */
+export function echeancesProches(
+  echeances: Echeance[],
+  aujourdHui: Date = new Date(),
+  jours = 30
+): Echeance[] {
+  const horizon = new Date(aujourdHui);
+  horizon.setUTCDate(horizon.getUTCDate() + jours);
+  const limite = horizon.toISOString().slice(0, 10);
+
+  return echeances.filter((echeance) => echeance.limite <= limite);
+}
+
 /** Une échéance passée n'est plus une échéance : c'est un retard. */
 export function enRetard(echeance: Echeance, aujourdHui: Date = new Date()): boolean {
   return echeance.limite < aujourdHui.toISOString().slice(0, 10);
