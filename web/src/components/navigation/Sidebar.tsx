@@ -49,6 +49,7 @@ function initiales(nom: string): string {
 export function Sidebar({ utilisateur, resume }: Props) {
   const chemin = usePathname();
   const [resumeCourant, setResumeCourant] = useState(resume);
+  const [ouvert, setOuvert] = useState(false);
 
   useEffect(() => {
     const abandon = new AbortController();
@@ -63,12 +64,81 @@ export function Sidebar({ utilisateur, resume }: Props) {
     return () => abandon.abort();
   }, [chemin]);
 
+  /*
+   * Le tiroir se referme dès qu'on navigue.
+   *
+   * Sans cela, un client qui touche « Mes documents » voit la page changer derrière un
+   * tiroir resté ouvert, et croit que rien ne s'est passé.
+   *
+   * L'ajustement se fait pendant le rendu, non dans un effet : le tiroir se fermerait
+   * alors après un premier rendu déjà peint, ce qui produit un battement visible - et
+   * c'est ce que la règle `set-state-in-effect` signale.
+   */
+  const [cheminAffiche, setCheminAffiche] = useState(chemin);
+  if (chemin !== cheminAffiche) {
+    setCheminAffiche(chemin);
+    setOuvert(false);
+  }
+
+  useEffect(() => {
+    if (!ouvert) return;
+    const surTouche = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOuvert(false);
+    };
+    window.addEventListener("keydown", surTouche);
+    return () => window.removeEventListener("keydown", surTouche);
+  }, [ouvert]);
+
   const menu = menuPour(utilisateur.roles);
   const active = entreeActive(chemin, menu);
   const estAdmin = utilisateur.roles.includes("admin");
 
   return (
-    <aside className={styles.colonne}>
+    <>
+      {/*
+        Le tiroir, sur écran étroit.
+        La colonne fait 300 pixels fixes : sur un téléphone, elle ne laissait que
+        quatre-vingt-dix pixels au contenu, où le moindre titre se brisait mot par mot.
+        Elle sort du flux en dessous de 900 px et s'ouvre par ce bouton.
+      */}
+      <button
+        type="button"
+        className={styles.tiroirBouton}
+        aria-expanded={ouvert}
+        aria-controls="colonne-navigation"
+        aria-label={ouvert ? "Fermer le menu" : "Ouvrir le menu"}
+        onClick={() => setOuvert((o) => !o)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+             strokeLinecap="round" aria-hidden="true">
+          {ouvert ? (
+            <>
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </>
+          ) : (
+            <>
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </>
+          )}
+        </svg>
+      </button>
+
+      {ouvert && (
+        <button
+          type="button"
+          className={styles.tiroirVoile}
+          aria-label="Fermer le menu"
+          onClick={() => setOuvert(false)}
+        />
+      )}
+
+    <aside
+      id="colonne-navigation"
+      className={ouvert ? `${styles.colonne} ${styles.ouverte}` : styles.colonne}
+    >
       <div className={styles.entete}>
         <Link href="/tableau-de-bord" className={styles.logo}>
           <Image
@@ -192,6 +262,7 @@ export function Sidebar({ utilisateur, resume }: Props) {
         <Deconnexion />
       </div>
     </aside>
+    </>
   );
 }
 

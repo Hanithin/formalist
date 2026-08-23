@@ -422,3 +422,54 @@ test.describe("ce qui requiert votre attention", () => {
     await expect(carte.getByText("Un document à remplacer")).toBeVisible();
   });
 });
+
+test.describe("sur écran étroit", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("la colonne devient un tiroir, et la page ne déborde jamais", async ({ page }) => {
+    /*
+     * La colonne fait 300 pixels fixes, et rien ne la réduisait : sur un téléphone de
+     * 390 px, le contenu tenait dans quatre-vingt-dix pixels, où « Bonjour Camille » se
+     * brisait en trois lignes et chaque titre en autant de mots.
+     */
+    await page.goto("/tableau-de-bord");
+    await page.getByRole("heading", { level: 1 }).waitFor();
+
+    const colonne = page.locator("aside#colonne-navigation");
+    expect((await colonne.boundingBox())?.x, "le tiroir doit être hors de l'écran").toBeLessThan(0);
+
+    const debord = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+    );
+    expect(debord, "aucun défilement horizontal").toBe(0);
+  });
+
+  test("le tiroir s'ouvre, se referme, et ne cache pas son propre bouton", async ({ page }) => {
+    await page.goto("/tableau-de-bord");
+    const ouvrir = page.getByRole("button", { name: "Ouvrir le menu" });
+    await ouvrir.click();
+
+    const colonne = page.locator("aside#colonne-navigation");
+    await expect.poll(async () => Math.round((await colonne.boundingBox())?.x ?? -999)).toBe(0);
+
+    /*
+     * Le bouton passe à droite quand le tiroir est ouvert : fixé à gauche, il restait
+     * dessous, et l'on ne pouvait plus refermer ce qu'on venait d'ouvrir.
+     */
+    const fermer = page.getByRole("button", { name: "Fermer le menu" }).first();
+    const boite = await fermer.boundingBox();
+    expect(boite!.x, "le bouton doit sortir de sous le tiroir").toBeGreaterThan(300);
+
+    await page.keyboard.press("Escape");
+    await expect.poll(async () => Math.round((await colonne.boundingBox())?.x ?? 0)).toBeLessThan(0);
+  });
+
+  test("naviguer referme le tiroir", async ({ page }) => {
+    await page.goto("/tableau-de-bord");
+    await page.getByRole("button", { name: "Ouvrir le menu" }).click();
+    await page.getByRole("link", { name: "Mes documents" }).click();
+    await page.waitForURL(/documents/);
+
+    await expect(page.getByRole("button", { name: "Ouvrir le menu" })).toBeVisible();
+  });
+});

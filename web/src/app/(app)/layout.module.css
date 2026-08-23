@@ -23,3 +23,14 @@
   flex-direction: column;
   overflow-y: auto;
 }
+
+
+/*
+ * Sur écran étroit, la colonne est un tiroir : le contenu prend toute la largeur, et
+ * réserve seulement de quoi ne pas passer sous le bouton du menu.
+ */
+@media (max-width: 900px) {
+  .contenu {
+    padding-top: 58px;
+  }
+}
