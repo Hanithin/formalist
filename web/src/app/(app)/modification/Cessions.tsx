@@ -121,11 +121,16 @@ export function Cessions({
                 Les flèches d'un `type="number"` occupaient la moitié d'un champ étroit
                 et se plaçaient devant le chiffre qu'on venait taper.
               */}
+              {/*
+                Pas de « 0 » en indication.
+                Il se lit comme une valeur et ne s'efface pas : on clique, on appuie sur
+                retour arrière, et le zéro reste - puisqu'il n'a jamais été saisi. Le mot
+                « parts » à côté du champ dit déjà ce qu'on y attend.
+              */}
               <ChampNombre
                 id={"detenteur-parts-" + rang}
                 aria-label={"Parts de l'associé " + (rang + 1)}
                 className={styles.detenteurParts}
-                placeholder="0"
                 valeur={associe.parts ?? ""}
                 surChangement={(nombre) =>
                   modifierAssocie(rang, { parts: nombre === "" ? null : nombre })

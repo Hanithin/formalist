@@ -4133,6 +4133,102 @@
   color: #dc2626;
 }
 
+/*
+ * Les signataires d'un procès-verbal.
+ *
+ * Civilité, prénom et nom se saisissent séparément. Une ligne unique où l'on tapait
+ * « Monsieur Jean DUPONT » demandait de deviner où finissait le prénom, et se trompait
+ * dès qu'il était composé : « Marie Claire DUPONT » donnait un nom « Claire DUPONT »,
+ * et l'acte nommait quelqu'un qui n'existe pas. Trois champs ne coûtent qu'une ligne
+ * de plus et ne se trompent jamais.
+ */
+.signataires {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signataire,
+.signatairesEntete {
+  display: grid;
+  grid-template-columns: 122px minmax(0, 1fr) minmax(0, 1fr) 108px 34px;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Les intitulés une seule fois, en tête : les répéter à chaque ligne les noierait. */
+.signatairesEntete {
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a8a92;
+  letter-spacing: 0;
+}
+
+.signataire input,
+.signataire select {
+  margin: 0;
+  max-width: none;
+}
+
+.signataireTitres {
+  text-align: right;
+}
+
+.signataireRetrait {
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 17px;
+  line-height: 1;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.signataireRetrait:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+/* Le bouton respire : collé à la dernière ligne, il se lisait comme une sixième colonne. */
+.signataireAjouter {
+  align-self: flex-start;
+  margin: 14px 0 0;
+  padding: 9px 16px;
+  border: 1px dashed #b8b8bf;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #3f3f46;
+  cursor: pointer;
+}
+
+.signataireAjouter:hover {
+  border-style: solid;
+  border-color: #111;
+  color: #111;
+}
+
+/* Sur écran étroit, chaque champ prend la ligne plutôt que de se réduire à rien. */
+@media (max-width: 720px) {
+  .signatairesEntete {
+    display: none;
+  }
+
+  .signataire {
+    grid-template-columns: minmax(0, 1fr) 34px;
+  }
+}
+
 /* Une cession : un bloc qu'on lit d'un bout à l'autre. */
 .cession {
   padding: 18px 20px;

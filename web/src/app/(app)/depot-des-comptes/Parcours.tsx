@@ -5,7 +5,6 @@ import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { champVisible } from "@/domain/modification/types";
 import { montantLisible } from "@/domain/modification/offre";
-import { identiteSurUneLigne, separerLIdentite } from "@/domain/formalite/noms";
 import type { ActeProduit } from "@/domain/document/publication";
 import type { Comptes } from "@/infrastructure/db/depots/comptes";
 import { CHAMPS_COMPTES, GROUPE_ASSOCIE_UNIQUE } from "@/domain/comptes/types";
@@ -508,9 +507,9 @@ function Associes({
 }) {
   const associes = etat.associes.length > 0 ? etat.associes : [{ parts: null }];
 
-  const modifier = (rang: number, champ: string, valeur: string | number | null) =>
+  const modifier = (rang: number, changement: Partial<(typeof associes)[number]>) =>
     changer({
-      associes: associes.map((a, i) => (i === rang ? { ...a, [champ]: valeur } : a)),
+      associes: associes.map((a, i) => (i === rang ? { ...a, ...changement } : a)),
     });
 
   return (
@@ -521,36 +520,52 @@ function Associes({
         unique se saisit seul.
       </p>
 
-      <ul className={styles.detenteurs}>
+      <div className={styles.signatairesEntete} aria-hidden="true">
+        <span>Civilité</span>
+        <span>Prénom</span>
+        <span>Nom</span>
+        <span>Titres détenus</span>
+        <span />
+      </div>
+
+      <ul className={styles.signataires}>
         {associes.map((associe, rang) => (
-          <li key={rang} className={styles.detenteur}>
+          <li key={rang} className={styles.signataire}>
+            <select
+              aria-label={"Civilité de l'associé " + (rang + 1)}
+              value={associe.civilite ?? ""}
+              onChange={(e) => modifier(rang, { civilite: e.target.value })}
+            >
+              <option value="">Civilité</option>
+              <option value="Monsieur">Monsieur</option>
+              <option value="Madame">Madame</option>
+            </select>
+
+            <input
+              aria-label={"Prénom de l'associé " + (rang + 1)}
+              value={associe.prenom ?? ""}
+              onChange={(e) => modifier(rang, { prenom: e.target.value })}
+            />
+
+            {/* En capitales dans les actes : le champ le fait, plutôt que de le demander. */}
             <input
               aria-label={"Nom de l'associé " + (rang + 1)}
-              className={styles.detenteurNom}
-              placeholder={"Associé " + (rang + 1)}
-              value={identiteSurUneLigne(associe)}
-              onChange={(e) => {
-                /* La casse tranche entre prénom et nom : c'est la convention des actes,
-                   et la règle est partagée avec la liste des cessions. */
-                const identite = separerLIdentite(e.target.value);
-                changer({
-                  associes: associes.map((a, i) => (i === rang ? { ...a, ...identite } : a)),
-                });
-              }}
+              value={associe.nom ?? ""}
+              onChange={(e) => modifier(rang, { nom: e.target.value.toLocaleUpperCase("fr") })}
             />
+
             <ChampNombre
               id={"associe-parts-" + rang}
               aria-label={"Titres de l'associé " + (rang + 1)}
-              className={styles.detenteurParts}
-              placeholder="0"
+              className={styles.signataireTitres}
               valeur={associe.parts ?? ""}
               decimales={false}
-              surChangement={(n) => modifier(rang, "parts", n === "" ? null : n)}
+              surChangement={(n) => modifier(rang, { parts: n === "" ? null : n })}
             />
-            <span className={styles.detenteurUnite}>titres</span>
+
             <button
               type="button"
-              className={styles.detenteurRetrait}
+              className={styles.signataireRetrait}
               aria-label={"Retirer l'associé " + (rang + 1)}
               onClick={() => changer({ associes: associes.filter((_, i) => i !== rang) })}
             >
@@ -562,7 +577,7 @@ function Associes({
 
       <button
         type="button"
-        className={styles.cessionAjouter}
+        className={styles.signataireAjouter}
         onClick={() => changer({ associes: [...associes, { parts: null }] })}
       >
         + Ajouter un associé
