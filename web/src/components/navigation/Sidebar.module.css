@@ -266,24 +266,35 @@
 /* Le filet de séparation, à la place des titres de rubrique : c'est ainsi que la
    colonne d'origine découpait ses douze entrées. */
 /*
- * L'intertitre d'un groupe.
+ * L'intertitre d'un groupe, posé sur son filet.
  *
- * Le filet est porté par le titre lui-même, en bordure haute : deux éléments - un
- * trait puis un mot - auraient coûté deux fois la hauteur pour dire une seule chose.
- * La colonne compte dix-huit entrées ; chaque ligne gagnée compte.
+ * Le trait ne passe pas au-dessus du titre mais le prolonge, à sa hauteur : le
+ * groupe s'ouvre alors sur une seule ligne au lieu de deux, et le titre cesse de
+ * flotter entre un trait et la première entrée. La colonne compte dix-huit
+ * entrées ; chaque ligne gagnée compte.
  *
  * `letter-spacing` reste à zéro, comme partout : des capitales à 11 pixels se lisent
  * très bien sans être écartées.
  */
 .rubrique {
-  margin: 16px 0 6px;
-  padding: 14px 12px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 6px;
+  padding: 0 12px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.38);
+}
+
+/* Le filet part du titre et court jusqu'au bord : il n'a pas de longueur propre. */
+.rubrique::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .icone {
