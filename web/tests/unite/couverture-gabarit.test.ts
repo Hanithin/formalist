@@ -123,7 +123,17 @@ const donnees = donneesDeGabarit(complet, {
 });
 const fournis = new Set(Object.keys(donnees));
 
-const gabarits = readdirSync(GABARITS).filter((f) => f.endsWith(".docx") && !f.startsWith("modif-"));
+/*
+ * Les gabarits de la création, et eux seuls.
+ *
+ * Les autres parcours ont leurs propres données et leur propre couverture : celle de
+ * la modification, et celle de l'approbation des comptes dans comptes-actes. Les
+ * mesurer ici avec les données d'une création signalerait comme manquants des champs
+ * qu'aucune création ne connaît.
+ */
+const gabarits = readdirSync(GABARITS).filter(
+  (f) => f.endsWith(".docx") && !f.startsWith("modif-") && !f.startsWith("comptes-")
+);
 
 describe("les gabarits de création reçoivent tous leurs champs", () => {
   it("il y a bien des gabarits à vérifier", () => {
