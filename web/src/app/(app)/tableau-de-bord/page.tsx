@@ -17,7 +17,13 @@ import { adresseDuDossier, libelleDuType, nomAffichable } from "@/domain/formali
 import { dateEnTete } from "@/lib/dates";
 import { NouvelleFormalite } from "@/components/navigation/NouvelleFormalite";
 import { Accueil } from "./Accueil";
-import { DocumentsDuDossier, FeuilleDeRoute, Frise, Interlocuteur } from "./Focus";
+import {
+  DocumentsDuDossier,
+  DossierUnique,
+  FeuilleDeRoute,
+  Frise,
+  Interlocuteur,
+} from "./Focus";
 import {
   ActiviteRecente,
   Attention,
@@ -153,9 +159,81 @@ export default async function TableauDeBord() {
    * nulle part ailleurs : ils ne relèvent pas de la redondance qu'on a supprimée, mais
    * du seul endroit où un client à un dossier voit où il en est.
    */
-  const seul = enCours.length === 1 ? enCours[0] : null;
+  /*
+   * Un dossier, et rien d'autre.
+   *
+   * Le critère est le nombre total de dossiers, non celui des dossiers ouverts : un
+   * compte qui en a terminé un et en a un en cours a une histoire, et la disposition
+   * comparative la lui montre. Celui qui n'en a qu'un n'a rien à comparer.
+   */
+  const seul = dossiers.length === 1 ? dossiers[0] : null;
   const detail = seul ? await focusDuDossier(utilisateur, seul.id) : null;
   const toutTermine = enCours.length === 0;
+
+  /*
+   * Un dossier, une disposition.
+   *
+   * À plusieurs, l'accueil compare : des chiffres, une table, deux colonnes. À un
+   * seul, il n'y a rien à comparer, et cet appareil disait trois fois le même dossier
+   * - la ligne de chiffres, le bandeau de reprise, la table et son unique ligne. La
+   * page d'origine ne s'y trompait pas : `renderSingleState()` ne montrait qu'un
+   * objet, suivi de ce qui aide à le faire avancer.
+   *
+   * Les sections vides ne s'affichent pas ici. « Aucune échéance à venir », « Aucune
+   * activité récente » et « Tout est à jour » remplissaient trois cadres pour dire
+   * trois fois rien, sur un écran qui n'a qu'une chose à dire.
+   */
+  if (seul) {
+    return (
+      <main className={styles.page}>
+        <header className={styles.entete}>
+          <h1 className={styles.enteteTitre}>{phraseDAccueil(prenom, societes.length)}</h1>
+          <div className={styles.enteteDroite}>
+            <span className={styles.enteteDate}>{dateEnTete()}</span>
+            <NouvelleFormalite apparence="page" />
+          </div>
+        </header>
+
+        <div className={styles.content}>
+          <div className={styles.colonneUnique}>
+            <DossierUnique
+              type={libelleDuType(seul.type) ?? "Formalité"}
+              societe={nomComplet(seul)}
+              pourcentage={avancement(seul.etapeAffichee, seul.offre)}
+              prochaineEtape={seul.prochaineEtape}
+              bouton={gesteDuDossier(seul)}
+              lien={lienDu(seul.id)}
+            />
+
+            {/* Terminé, on montre ce qui vient après ; en cours, où l'on en est. */}
+            {toutTermine ? (
+              <FeuilleDeRoute />
+            ) : (
+              <Frise
+                etapes={nomsDEtapes(seul.offre)}
+                etape={seul.etapeAffichee}
+                nomEtape={nomEtape(seul.etapeAffichee, seul.offre)}
+              />
+            )}
+
+            {/* Ce qu'on attend de lui garde sa carte même vide : c'est la seule qui
+                rassure - « nous traitons votre dossier ». Les autres se taisent. */}
+            <Attention actions={attentionRequise(dossiers, null)} />
+
+            {(detail?.documents.length ?? 0) > 0 && (
+              <DocumentsDuDossier documents={detail?.documents ?? []} />
+            )}
+            {echeances.length > 0 && <Echeances echeances={echeances} />}
+            {activite.length > 0 && (
+              <ActiviteRecente activite={activite} lienDossier={lienDu} />
+            )}
+
+            <Interlocuteur avocat={detail?.avocat ?? null} />
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.page}>
@@ -210,17 +288,6 @@ export default async function TableauDeBord() {
             <Attention actions={actions} />
             <FileDeTravail lignes={lignes} total={enCours.length} />
 
-            {seul && (
-              <>
-                <Frise
-                  etapes={nomsDEtapes(seul.offre)}
-                  etape={seul.etapeAffichee}
-                  nomEtape={nomEtape(seul.etapeAffichee, seul.offre)}
-                />
-                <DocumentsDuDossier documents={detail?.documents ?? []} />
-              </>
-            )}
-
             {/* Tout est fini : on montre ce qui vient après plutôt qu'une page vide. */}
             {toutTermine && <FeuilleDeRoute />}
           </div>
@@ -228,7 +295,6 @@ export default async function TableauDeBord() {
           <aside className={styles.colonneLaterale}>
             <Echeances echeances={echeances} />
             <ActiviteRecente activite={activite} lienDossier={lienDu} />
-            {seul && <Interlocuteur avocat={detail?.avocat ?? null} />}
           </aside>
         </div>
       </div>

@@ -13,7 +13,10 @@ test.describe("disponibilités de l'avocat", () => {
 
   test("la page se trouve depuis l'espace avocat", async ({ page }) => {
     await page.goto("/avocat");
-    await page.getByRole("link", { name: "Mes disponibilités" }).click();
+    await page
+      .getByRole("navigation", { name: "Navigation principale" })
+      .getByRole("link", { name: "Mes disponibilités" })
+      .click();
 
     await expect(page).toHaveURL(/\/avocat\/disponibilites$/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Mes disponibilités");
@@ -84,8 +87,12 @@ test.describe("disponibilités de l'avocat", () => {
     await page.getByRole("link", { name: "Consultations" }).click();
 
     await expect(page).toHaveURL(/\/consultations$/);
-    await expect(page.getByRole("link", { name: "Mes disponibilités" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Dossiers" })).toBeVisible();
+    await expect(
+      page
+        .getByRole("navigation", { name: "Navigation principale" })
+        .getByRole("link", { name: "Mes disponibilités" })
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Dossiers", exact: true })).toBeVisible();
   });
 
   test("un client n'accède pas à la page", async ({ browser, baseURL }) => {

@@ -99,7 +99,8 @@ test.describe("parcours connecté", () => {
 
   test("la page courante est marquée dans la navigation", async ({ page }) => {
     await page.goto("/aide");
-    await expect(page.locator('[aria-current="page"]')).toHaveText("Aide & FAQ");
+    // « Aide & FAQ » est devenu « Centre d'aide » quand la colonne est passée en rubriques.
+    await expect(page.locator('[aria-current="page"]')).toHaveText("Centre d'aide");
   });
 
   test("un client ne voit ni espace avocat ni administration", async ({ page }) => {

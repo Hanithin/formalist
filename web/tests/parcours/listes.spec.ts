@@ -221,7 +221,9 @@ test.describe("la fenêtre de nouvelle formalité", () => {
 
     // Le bouton de la barre de titre, en plus de celui de la colonne : on est venu
     // ici pour en créer une.
-    const enTete = page.getByRole("button", { name: "Nouvelle formalité" });
+    // Celui de la barre de titre, non celui de la colonne : depuis que la page en
+    // porte un, le nom seul en désigne deux.
+    const enTete = page.getByRole("main").getByRole("button", { name: "Nouvelle formalité" });
     await expect(enTete).toBeVisible();
     await enTete.click();
 
@@ -238,7 +240,9 @@ test.describe("la fenêtre de nouvelle formalité", () => {
     expect(dessus).toBe(true);
 
     // Et elle mène toujours où il faut.
-    await fenetre.getByRole("link", { name: /Auto-entrepreneur/ }).click();
+    // « Auto-entrepreneur » s'appelle « Créer une auto-entreprise » depuis que les
+    // intitulés de la fenêtre sont tous des verbes.
+    await fenetre.getByRole("link", { name: "Créer une auto-entreprise" }).click();
     await page.waitForURL(/auto-entrepreneur/);
   });
 

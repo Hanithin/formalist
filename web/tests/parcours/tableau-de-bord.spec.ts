@@ -8,6 +8,16 @@ import { retirerDossiers } from "./nettoyage";
  * refusé et un avocat assigné.
  */
 
+/*
+ * Un seul ouvrier pour ce fichier.
+ *
+ * `fullyParallel` répartit les essais d'un même fichier entre les ouvriers, et deux
+ * de ses blocs sèment des dossiers sur le compte partagé pour éprouver les seuils :
+ * l'accueil lu par un autre essai au même instant n'était plus celui du jeu de
+ * données - d'où des échecs qui ne se reproduisaient jamais seuls.
+ */
+test.describe.configure({ mode: "serial" });
+
 test.describe("tableau de bord du client", () => {
   test("annonce en chiffres ce qu'il y a à savoir, et tait les zéros", async ({ page }) => {
     /*
@@ -66,7 +76,12 @@ test.describe("tableau de bord du client", () => {
     const reprise = page.getByRole("region", { name: "Reprendre" });
     await expect(reprise).toBeVisible();
 
-    const societeReprise = await reprise.locator("strong").first().textContent();
+    // Le nom y est le titre du bandeau, non un fragment en gras : depuis que la
+    // nature est passée en badge, c'est lui le sujet de la carte.
+    const societeReprise = await reprise
+      .locator("[class*='reprendreTitre']")
+      .first()
+      .textContent();
     expect(societeReprise, "le bandeau doit nommer une société").toBeTruthy();
 
     const attention = page.getByRole("region", { name: "Ce qui requiert votre attention" });

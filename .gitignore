@@ -10,3 +10,6 @@ npm-debug.log*
 # Sorties de Playwright : des captures et des traces, jamais du code.
 /web/test-results/
 /web/playwright-report/
+
+# Sessions ouvertes par les essais de parcours.
+web/tests/parcours/session-*.json

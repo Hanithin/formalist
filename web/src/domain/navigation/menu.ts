@@ -111,6 +111,18 @@ export const MENU: ElementMenu[] = [
   { rubrique: "Espace avocat", roles: ["avocat", "admin"] },
   { libelle: "Dossiers à réviser", lien: "/avocat", roles: ["avocat", "admin"], compteur: "aReviser" },
   { libelle: "Mes disponibilités", lien: "/avocat/disponibilites", roles: ["avocat", "admin"] },
+  /*
+   * La recherche au registre national.
+   *
+   * Elle a disparu de la colonne quand celle-ci est passée en rubriques, alors que
+   * la page existe et reste réservée au cabinet : l'outil était devenu introuvable
+   * autrement qu'en tapant son adresse.
+   */
+  {
+    libelle: "Recherche d'entreprise",
+    lien: "/recherche-entreprise",
+    roles: ["avocat", "admin"],
+  },
   { libelle: "Conversations support", lien: "/support", roles: ["admin"] },
   { libelle: "Administration", lien: "/administration", roles: ["admin"] },
 

@@ -31,6 +31,89 @@ function Coche({ epaisseur = "3" }: { epaisseur?: string }) {
   );
 }
 
+/* ---------- Le dossier unique, en tête ---------- */
+
+/** Rayon et circonférence de l'anneau, comme dans la page d'origine. */
+const RAYON = 56;
+const CIRCONFERENCE = 2 * Math.PI * RAYON;
+
+/**
+ * Le dossier, quand c'est le seul.
+ *
+ * À un dossier, la page le disait trois fois : la ligne de chiffres (« 1 action
+ * requise · 1 formalité en cours »), le bandeau de reprise, puis la table des
+ * formalités en cours et son unique ligne. Trois présentations du même objet, dont
+ * deux faites pour en comparer plusieurs.
+ *
+ * Il n'y a plus qu'un objet, repris de `renderSingleState()` de la page d'origine :
+ * l'anneau d'avancement, ce que c'est, à qui c'est, et ce qui vient ensuite. Un
+ * anneau plutôt qu'une barre parce qu'il porte son chiffre au centre - la barre
+ * demandait un pourcentage posé à côté d'elle, et un bouton posé encore à côté.
+ */
+export function DossierUnique({
+  type,
+  societe,
+  pourcentage,
+  prochaineEtape,
+  bouton,
+  lien,
+}: {
+  type: string;
+  societe: string;
+  pourcentage: number;
+  prochaineEtape: string;
+  bouton: string;
+  lien: string;
+}) {
+  const termine = pourcentage >= 100;
+
+  return (
+    <section className={styles.heros} aria-labelledby="dossier-unique">
+      <div className={styles.herosAnneau}>
+        <svg viewBox="0 0 132 132" aria-hidden="true">
+          <circle className={styles.anneauFond} cx="66" cy="66" r={RAYON} />
+          <circle
+            className={styles.anneauTrait}
+            cx="66"
+            cy="66"
+            r={RAYON}
+            strokeDasharray={CIRCONFERENCE}
+            strokeDashoffset={CIRCONFERENCE - (pourcentage / 100) * CIRCONFERENCE}
+          />
+        </svg>
+        <div className={styles.anneauCentre}>
+          <span className={styles.anneauValeur}>
+            {termine ? <Coche epaisseur="2.4" /> : pourcentage + " %"}
+          </span>
+          <span className={styles.anneauLegende}>{termine ? "Terminé" : "Avancement"}</span>
+        </div>
+      </div>
+
+      <div className={styles.herosCorps}>
+        <span className={styles.herosEtiquette}>{type}</span>
+        <h2 id="dossier-unique" className={styles.herosTitre}>
+          {societe}
+        </h2>
+        <p className={styles.herosSuite}>{prochaineEtape}</p>
+        <Link href={lien} className={styles.herosBouton}>
+          {bouton}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 /* ---------- La frise des phases ---------- */
 
 interface FriseProps {

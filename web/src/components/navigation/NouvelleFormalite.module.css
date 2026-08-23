@@ -352,7 +352,12 @@
   background: #111;
   font-family: inherit;
   font-size: 14px;
-  font-weight: 500;
+  /*
+   * 600, comme le même bouton en tête de colonne et comme tous les boutons pleins de
+   * l'application. À 500, celui-ci était le seul écrit en romain sur son fond noir :
+   * l'action principale de la page paraissait plus légère qu'un intitulé de colonne.
+   */
+  font-weight: 600;
   color: #fff;
   cursor: pointer;
   letter-spacing: 0;

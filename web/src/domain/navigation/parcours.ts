@@ -19,12 +19,52 @@
  * plateforme sait faire d'autre.
  */
 
+import { OFFRES } from "@/domain/formalite/offres";
+import { PRIX_HT_CENTIMES as AUTO_ENTREPRISE_HT } from "@/domain/auto-entrepreneur/offre";
+import { PRIX_HT_CENTIMES as CONSULTATION_HT } from "@/domain/consultation/offre";
+import { HONORAIRES_PREMIERE_CENTIMES } from "@/domain/modification/offre";
+import { HONORAIRES_CENTIMES as COMPTES_HT } from "@/domain/comptes/offre";
+import { HONORAIRES_CENTIMES as FERMETURE_HT } from "@/domain/fermeture/offre";
+import { HONORAIRES_CENTIMES as CESSATION_HT } from "@/domain/cessation/offre";
+
+/**
+ * Les prix viennent du domaine, jamais d'une recopie.
+ *
+ * Ils étaient écrits en dur dans l'accueil, hérités de public/dashboard.html : trois
+ * sur huit étaient faux le jour où on les a rapprochés des offres - une création
+ * annoncée à 129 € qui commence à 89, une auto-entreprise dite gratuite qui coûte
+ * 149 €, une consultation à 49 € facturée 99 €. Un tarif recopié dérive ; celui-ci
+ * suit l'offre qu'il annonce.
+ */
+function euros(centimes: number): string {
+  return (centimes / 100).toLocaleString("fr-FR") + " € HT";
+}
+
+/** La formule la moins chère : c'est elle que « à partir de » désigne. */
+const CREATION_HT = Math.min(...OFFRES.map((o) => o.prix)) * 100;
+
 export interface ParcoursACreer {
   lien: string;
   teinte: "green" | "blue" | "violet" | "amber" | "red" | "teal";
   icone: string;
   titre: string;
   description: string;
+  /**
+   * Ce qu'il en coûte, et le temps qu'il prend.
+   *
+   * L'accueil d'un compte sans dossier les affiche : on y choisit une formalité sans
+   * en connaître aucune, et « 12 min · à partir de 129 € » répond aux deux questions
+   * qu'on se pose avant de cliquer. La fenêtre « Nouvelle formalité », elle, s'ouvre
+   * sur un compte déjà installé qui sait ce qu'il vient faire : elle les ignore.
+   *
+   * Les montants sont ceux du domaine - `HONORAIRES_CENTIMES` de chaque offre - et
+   * non des chiffres ronds recopiés : un prix affiché ici et facturé autrement plus
+   * loin est la manière la plus sûre de perdre la confiance qu'on vient chercher.
+   */
+  duree?: string;
+  prix?: string;
+  /** Le parcours mis en avant, et le seul : deux recommandations n'en font aucune. */
+  recommande?: boolean;
   /**
    * Parcours annoncé mais pas ouvert.
    *
@@ -54,6 +94,9 @@ export const FAMILLES: FamilleDeParcours[] = [
         icone: '<path d="M3 21h18M5 21V7l7-4 7 4v14"/>',
         titre: "Créer une société",
         description: "SAS, SARL, SCI, SASU, EURL",
+        duree: "12 min",
+        prix: "dès " + euros(CREATION_HT),
+        recommande: true,
       },
       {
         lien: "/auto-entrepreneur",
@@ -61,6 +104,8 @@ export const FAMILLES: FamilleDeParcours[] = [
         icone: '<circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>',
         titre: "Créer une auto-entreprise",
         description: "Micro-entreprise, en une déclaration",
+        duree: "7 min",
+        prix: euros(AUTO_ENTREPRISE_HT),
       },
     ],
   },
@@ -75,6 +120,8 @@ export const FAMILLES: FamilleDeParcours[] = [
           '<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',
         titre: "Modifier ma société",
         description: "Transfert, gérant, capital…",
+        duree: "10 min",
+        prix: "dès " + euros(HONORAIRES_PREMIERE_CENTIMES),
       },
       {
         lien: "/depot-des-comptes",
@@ -84,6 +131,8 @@ export const FAMILLES: FamilleDeParcours[] = [
           '<line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
         titre: "Déposer mes comptes annuels",
         description: "Approbation et dépôt au greffe",
+        duree: "15 min",
+        prix: euros(COMPTES_HT),
       },
     ],
   },
@@ -98,6 +147,8 @@ export const FAMILLES: FamilleDeParcours[] = [
           '<line x1="9" y1="9" x2="15" y2="15"/>',
         titre: "Fermer ma société",
         description: "Dissolution, liquidation, radiation",
+        duree: "15 min",
+        prix: euros(FERMETURE_HT) + " hors frais",
       },
       {
         lien: "/cessation",
@@ -107,6 +158,8 @@ export const FAMILLES: FamilleDeParcours[] = [
           '<line x1="17" y1="3" x2="23" y2="9"/><line x1="23" y1="3" x2="17" y2="9"/>',
         titre: "Fermer une auto-entreprise",
         description: "Cessation ou mise en pause",
+        duree: "5 min",
+        prix: euros(CESSATION_HT),
       },
     ],
   },
@@ -120,6 +173,8 @@ export const FAMILLES: FamilleDeParcours[] = [
           '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>',
         titre: "Rédiger un contrat",
         description: "Modèles sur mesure",
+        duree: "10 min",
+        prix: "sur mesure",
       },
       {
         lien: "/consultations",
@@ -129,6 +184,8 @@ export const FAMILLES: FamilleDeParcours[] = [
           '<path d="M16 7l-4 7a4 4 0 008 0z"/>',
         titre: "Consulter un avocat",
         description: "Rendez-vous en visio, sous 48 heures",
+        duree: "30 min",
+        prix: euros(CONSULTATION_HT),
       },
     ],
   },

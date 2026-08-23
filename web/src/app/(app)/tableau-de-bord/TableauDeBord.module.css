@@ -1781,3 +1781,162 @@
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* ---------- Le dossier unique, en tête ---------- */
+
+/*
+ * L'anneau de `renderSingleState()` de la page d'origine.
+ *
+ * Le pourcentage y est au centre, ce qui évite de le poser à côté d'une barre et le
+ * bouton encore à côté : le bandeau de reprise alignait trois choses sur une même
+ * ligne de pied pour dire une seule.
+ */
+.heros {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 26px 30px;
+  background: #fff;
+  border: 1px solid #ececee;
+  border-radius: 18px;
+}
+
+.herosAnneau {
+  position: relative;
+  flex-shrink: 0;
+  width: 132px;
+  height: 132px;
+}
+
+.herosAnneau svg {
+  width: 132px;
+  height: 132px;
+  transform: rotate(-90deg);
+}
+
+.anneauFond {
+  fill: none;
+  stroke: #f1f1f3;
+  stroke-width: 10;
+}
+
+.anneauTrait {
+  fill: none;
+  stroke: #18181b;
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.anneauCentre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.anneauValeur {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.anneauValeur svg {
+  width: 26px;
+  height: 26px;
+  transform: none;
+}
+
+.anneauLegende {
+  font-size: 11px;
+  color: #9a9aa2;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.herosCorps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.herosEtiquette {
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.herosTitre {
+  margin: 2px 0 0;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.herosSuite {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #71717a;
+  line-height: 1.5;
+}
+
+.herosBouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 20px;
+  border-radius: 10px;
+  background: #18181b;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0;
+  transition: background 0.15s;
+}
+
+.herosBouton:hover {
+  background: #333;
+}
+
+.herosBouton svg {
+  width: 15px;
+  height: 15px;
+}
+
+/*
+ * Une seule colonne quand il n'y a qu'un dossier.
+ * La colonne latérale n'aurait que des cadres vides à porter.
+ */
+/* Pleine largeur : un plafond laisserait un tiers d'écran blanc à droite. */
+.colonneUnique {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+@media (max-width: 760px) {
+  .heros {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 22px 20px;
+  }
+}

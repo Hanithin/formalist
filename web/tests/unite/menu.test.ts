@@ -7,6 +7,9 @@ import {
   estRubrique,
 } from "@/domain/navigation/menu";
 import { FAMILLES, PARCOURS } from "@/domain/navigation/parcours";
+import { OFFRES } from "@/domain/formalite/offres";
+import { PRIX_HT_CENTIMES as AUTO_ENTREPRISE_HT } from "@/domain/auto-entrepreneur/offre";
+import { PRIX_HT_CENTIMES as CONSULTATION_HT } from "@/domain/consultation/offre";
 import { ICONES } from "@/domain/navigation/icones";
 import { COLONNE_VIDE, libelleDeLEntree } from "@/domain/navigation/colonne";
 
@@ -247,6 +250,44 @@ describe("les parcours qu'on peut ouvrir", () => {
     }
     // Et tous les parcours sont rangés : aucun ne se perd hors des familles.
     expect(PARCOURS.length).toBe(FAMILLES.reduce((t, f) => t + f.parcours.length, 0));
+  });
+
+  it("chaque parcours annonce son temps et son prix", () => {
+    /*
+     * L'accueil d'un compte sans dossier les affiche : on y choisit une formalité sans
+     * en connaître aucune. Un parcours ajouté au catalogue sans ces deux valeurs y
+     * apparaîtrait muet, au milieu de sept cartes qui répondent.
+     */
+    for (const parcours of PARCOURS) {
+      expect(parcours.duree, parcours.titre).toBeTruthy();
+      expect(parcours.prix, parcours.titre).toBeTruthy();
+    }
+  });
+
+  it("les prix annoncés sont ceux des offres, non des chiffres recopiés", () => {
+    /*
+     * Le défaut a existé, et il a vécu longtemps : l'accueil annonçait une création
+     * « à partir de 129 € » quand la formule la moins chère est à 89, une
+     * auto-entreprise « gratuite » facturée 149 €, et une consultation à 49 € qui
+     * en coûte 99. Les trois venaient d'une liste écrite à la main.
+     */
+    const prixDe = (lien: string) => PARCOURS.find((p) => p.lien === lien)?.prix;
+
+    const moinsChere = Math.min(...OFFRES.map((o) => o.prix));
+    expect(prixDe("/creation?type=creation")).toContain(String(moinsChere));
+    expect(prixDe("/auto-entrepreneur")).toContain(String(AUTO_ENTREPRISE_HT / 100));
+    expect(prixDe("/consultations")).toContain(String(CONSULTATION_HT / 100));
+
+    // Et aucun ne se dit gratuit : aucune prestation ne l'est.
+    for (const parcours of PARCOURS) {
+      expect(parcours.prix, parcours.titre).not.toMatch(/gratuit/i);
+    }
+  });
+
+  it("une seule recommandation, sinon aucune ne l'est", () => {
+    expect(PARCOURS.filter((p) => p.recommande).map((p) => p.titre)).toEqual([
+      "Créer une société",
+    ]);
   });
 
   it("ses intitulés sont tous des verbes : elle dit ce qu'on fait", () => {
