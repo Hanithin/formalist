@@ -78,17 +78,19 @@
  * Quatre étapes, chacune avec sa phrase. C'est ce qui manquait le plus : la page
  * affichait « en validation » sans dire qui valide ni s'il y a quelque chose à faire.
  */
+/*
+ * Autant de colonnes que d'étapes, jamais une de plus.
+ *
+ * Quatre colonnes étaient déclarées pour trois cartes - « Prêt » ne fait pas partie du
+ * parcours de relecture - et la quatrième restait vide : une bande blanche à droite,
+ * large d'un quart de l'écran, qui donnait l'impression qu'il manquait quelque chose.
+ * `auto-fit` efface les pistes vides, et les cartes se partagent toute la largeur.
+ */
 .parcours {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
   margin-bottom: 28px;
-}
-
-@media (max-width: 1000px) {
-  .parcours {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 .etape {
@@ -139,16 +141,23 @@
   margin-top: 4px;
 }
 
+/*
+ * Le décompte porte son mot.
+ *
+ * Deux nombres nus sur la même carte - le rang de l'étape à gauche, le nombre de
+ * contrats à droite - ne se distinguaient pas : rien ne disait lequel comptait quoi.
+ * « 1 contrat » lève l'ambiguïté sans rien ajouter à la carte.
+ */
 .etapeCompte {
   position: absolute;
   top: 14px;
   right: 16px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: #71717a;
+  color: #52525b;
   background: #f4f4f5;
   border-radius: 100px;
-  padding: 2px 9px;
+  padding: 3px 10px;
 }
 
 /* ---------- Barre ---------- */

@@ -24,7 +24,13 @@ export const metadata: Metadata = {
  * Les dates traversent en ISO : ce qui part au navigateur est sérialisé, et une Date
  * y arriverait en chaîne sans que le type le dise.
  */
-export default async function Documents() {
+export default async function Documents({
+  searchParams,
+}: {
+  searchParams: Promise<{ societe?: string }>;
+}) {
+  const { societe } = await searchParams;
+
   const utilisateur = await exigerUtilisateur();
   const [documents, dossiers] = await Promise.all([
     listerDocuments(utilisateur),
@@ -54,6 +60,7 @@ export default async function Documents() {
             nom: d.societe?.trim() || "Sans nom",
             lien: adresseDuDossier(d),
           }))}
+          rechercheInitiale={societe ?? ""}
         />
       </div>
     </main>

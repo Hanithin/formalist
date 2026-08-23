@@ -174,13 +174,21 @@ const ETIQUETTES: Record<string, string> = {
 export function Bibliotheque({
   documents,
   societes,
+  rechercheInitiale = "",
 }: {
   documents: DocumentAffiche[];
   societes: SocieteProposee[];
+  /*
+   * La recherche préremplie, quand on arrive d'ailleurs.
+   *
+   * La fiche d'une société renvoie ici pour « ouvrir la bibliothèque » : sans cela on
+   * atterrit sur la liste entière, et il faut retaper le nom qu'on vient de quitter.
+   */
+  rechercheInitiale?: string;
 }) {
   const router = useRouter();
   const [filtre, setFiltre] = useState("tous");
-  const [recherche, setRecherche] = useState("");
+  const [recherche, setRecherche] = useState(rechercheInitiale);
   const [fenetre, setFenetre] = useState(false);
   const [apercu, setApercu] = useState<{ nom: string; fichier: string } | null>(null);
   const [remplacement, setRemplacement] = useState<DocumentRange | null>(null);

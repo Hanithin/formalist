@@ -7,6 +7,7 @@
  */
 
 import type { Compteur } from "./menu";
+import { libelleDuPortefeuille } from "@/domain/societe/portefeuille";
 
 export interface ResumeColonne {
   /** La société mise en avant, ou null quand il n'y en a aucune. */
@@ -30,6 +31,8 @@ export interface ResumeColonne {
    * et le calculer pour tout le monde ferait une requête inutile à chaque page.
    */
   aReviser: number;
+  /** Combien de sociétés distinctes : l'intitulé de l'entrée en dépend. */
+  nombreDeSocietes: number;
 }
 
 /** Une colonne sans dossier : rien à situer, aucun chiffre à porter. */
@@ -40,7 +43,19 @@ export const COLONNE_VIDE: ResumeColonne = {
   enCours: 0,
   nonLus: 0,
   aReviser: 0,
+  nombreDeSocietes: 0,
 };
+
+/**
+ * L'intitulé d'une entrée, quand il dépend de ce qu'on possède.
+ *
+ * Seule « Mes sociétés » varie aujourd'hui. La règle vit ici plutôt que dans la
+ * colonne : c'est une décision de langue, pas d'affichage.
+ */
+export function libelleDeLEntree(lien: string, libelle: string, resume: ResumeColonne): string {
+  if (lien === "/societes") return libelleDuPortefeuille(resume.nombreDeSocietes);
+  return libelle;
+}
 
 /**
  * Le texte d'un compteur, tel que l'écrivait la colonne d'origine : « 3 en cours »

@@ -110,6 +110,11 @@ export const ICONES: Record<string, string> = {
       '<line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/>' +
       '<line x1="17" y1="16" x2="23" y2="16"/>'
   ),
+  // Les sociétés : deux immeubles, pour dire le portefeuille plutôt que l'entreprise.
+  "/societes": icone_(
+    '<path d="M3 21h18"/><path d="M5 21V6a1 1 0 011-1h6a1 1 0 011 1v15"/>' +
+      '<path d="M13 10h5a1 1 0 011 1v10"/><path d="M8 9h2M8 13h2M8 17h2"/>'
+  ),
   // Paramètres : la roue crantée.
   "/parametres": icone_(
     '<circle cx="12" cy="12" r="3"/>' +

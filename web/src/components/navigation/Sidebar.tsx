@@ -5,7 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { menuPour, entreeActive, estRubrique, SEPARATEUR } from "@/domain/navigation/menu";
-import { libelleCompteur, type ResumeColonne } from "@/domain/navigation/colonne";
+import {
+  libelleCompteur,
+  libelleDeLEntree,
+  type ResumeColonne,
+} from "@/domain/navigation/colonne";
 import { libelleDuType } from "@/domain/formalite/liste";
 import { icone } from "@/domain/navigation/icones";
 import type { Role } from "@/domain/acces/regles";
@@ -203,7 +207,7 @@ export function Sidebar({ utilisateur, resume }: Props) {
             return (
               <span key={element.lien} className={styles.bientot} aria-disabled="true">
                 {dessin}
-                {element.libelle}
+                {libelleDeLEntree(element.lien, element.libelle, resumeCourant)}
                 <span className={styles.pastille}>Bientôt</span>
               </span>
             );
@@ -222,7 +226,7 @@ export function Sidebar({ utilisateur, resume }: Props) {
               aria-current={estActive ? "page" : undefined}
             >
               {dessin}
-              {element.libelle}
+              {libelleDeLEntree(element.lien, element.libelle, resumeCourant)}
               {compteur && <span className={styles.compteur}>{compteur}</span>}
             </Link>
           );

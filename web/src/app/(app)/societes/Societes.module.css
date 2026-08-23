@@ -1,0 +1,582 @@
+/*
+ * Le portefeuille de sociétés, et la fiche de l'une d'elles.
+ *
+ * Même vocabulaire visuel que l'accueil - cartes blanches, grands arrondis, fond très
+ * clair, jaune rare - pour qu'on ne se demande pas si l'on a changé de produit.
+ */
+
+/*
+ * La page prend toute la largeur.
+ *
+ * `globals.css` plafonne `main` à 980 pixels - une largeur de lecture, juste pour un
+ * formulaire, absurde pour un registre à six colonnes : la table s'arrêtait aux deux
+ * tiers de l'écran et le tiers restant était vide.
+ */
+.page {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.fil {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 48px 0;
+  font-size: 13px;
+  color: #8a8a92;
+}
+
+.fil a {
+  color: #8a8a92;
+  text-decoration: none;
+}
+
+.fil a:hover {
+  color: #18181b;
+}
+
+.fil svg {
+  width: 14px;
+  height: 14px;
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 24px 48px 0;
+}
+
+.titre {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.sousTitre {
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  color: #8a8a92;
+}
+
+.date {
+  font-size: 13.5px;
+  color: #8a8a92;
+}
+
+.contenu {
+  padding: 22px 48px 48px;
+}
+
+/* --------------------------------------------------------- Le portefeuille */
+
+/*
+ * Un registre, non une galerie.
+ *
+ * Les grandes cartes conviennent à trois éléments qu'on regarde ; à huit sociétés, on
+ * ne les regarde plus, on les cherche - et l'on veut alors des colonnes alignées, où
+ * l'œil descend un état ou une échéance sans relire chaque bloc.
+ */
+.registre {
+  border: 1px solid #ececee;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.registreEntete,
+.ligneSociete {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.6fr) 120px 130px 150px minmax(0, 1.2fr) 20px;
+  align-items: center;
+  gap: 20px;
+  padding: 13px 20px;
+}
+
+.registreEntete {
+  border-bottom: 1px solid #f2f2f4;
+  background: #fafafa;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+.registreLignes {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.registreLignes > li {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #f4f4f5;
+  background: none;
+  border-radius: 0;
+}
+
+.registreLignes > li:last-child {
+  border-bottom: none;
+}
+
+.ligneSociete {
+  text-decoration: none;
+  transition: background 0.12s ease;
+}
+
+.ligneSociete:hover {
+  background: #fafafa;
+}
+
+.celluleNom {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.nom {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forme {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+.celluleSiren {
+  font-size: 13px;
+  color: #52525b;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.celluleFormalites {
+  font-size: 13px;
+  color: #52525b;
+  white-space: nowrap;
+}
+
+.enCours {
+  color: #8a5f0a;
+}
+
+.celluleEcheance {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 13px;
+  color: #52525b;
+}
+
+.echeanceNom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.echeanceQuand {
+  font-size: 12px;
+  color: #a1a1aa;
+  font-variant-numeric: tabular-nums;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: #c4c4c8;
+}
+
+.ligneSociete:hover .chevron {
+  color: #18181b;
+}
+
+/*
+ * Sur écran étroit, la ligne se replie : le nom et l'état d'abord, le reste dessous.
+ * Une table de six colonnes ne se lit pas sur un téléphone.
+ */
+@media (max-width: 1000px) {
+  .registreEntete {
+    display: none;
+  }
+
+  .ligneSociete {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 8px;
+    padding: 16px 18px;
+  }
+
+  .celluleSiren,
+  .celluleFormalites,
+  .celluleEcheance {
+    grid-column: 1 / -1;
+  }
+
+  .chevron {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ Les badges */
+
+.badge {
+  flex-shrink: 0;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #52525b;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.badge-action {
+  background: #fdf3d7;
+  color: #8a5f0a;
+}
+
+.badge-validation {
+  background: #eef2f7;
+  color: #475569;
+}
+
+.badge-termine {
+  background: #e9f5ec;
+  color: #256b38;
+}
+
+/* ------------------------------------------------------------- La fiche */
+
+.colonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  gap: 16px 28px;
+  align-items: start;
+}
+
+.laterale {
+  min-width: 0;
+  position: sticky;
+  top: 0;
+}
+
+@media (max-width: 1080px) {
+  .colonnes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .laterale {
+    position: static;
+  }
+}
+
+.bloc {
+  margin-bottom: 30px;
+}
+
+.blocTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.blocTitre {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.blocLien {
+  font-size: 13px;
+  color: #71717a;
+  text-decoration: none;
+}
+
+.blocLien:hover {
+  color: #18181b;
+}
+
+.lignes,
+.echeances,
+.journal {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  /*
+   * Des cartes qui respirent.
+   *
+   * Serrées, elles faisaient trois lignes hautes de rien au sommet d'une colonne vide :
+   * l'espace était en bas de la page, pas dans les cases où on lit.
+   */
+  padding: 10px 24px;
+  border: 1px solid #ececee;
+  border-radius: 16px;
+  background: #fff;
+  list-style: none;
+}
+
+/*
+ * Neutraliser la carte de `globals.css` sans écraser la mise en page des lignes.
+ *
+ * `display: block` posé ici l'emportait sur le `display: flex` de `.echeance` et
+ * `.entree`, qui sont ces mêmes `li` : le texte et la date s'y retrouvaient collés -
+ * « a mis à jour le dossier16 août ». On ne retire donc que ce que la carte ajoute.
+ */
+.lignes > li,
+.echeances > li,
+.journal > li {
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 0;
+}
+
+.lignes > li {
+  display: block;
+}
+
+.ligneLien,
+.echeance,
+.entree {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid #f4f4f5;
+  text-decoration: none;
+}
+
+.lignes > li:last-child .ligneLien,
+.echeances > li:last-child,
+.journal > li:last-child {
+  border-bottom: none;
+}
+
+.ligneCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ligneTitre {
+  font-size: 15px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ligneDetail {
+  font-size: 13.5px;
+  color: #8a8a92;
+}
+
+.ligneQuand,
+.entreeQuand {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #a1a1aa;
+  white-space: nowrap;
+}
+
+/* Une échéance : ce qu'elle est, quand elle tombe, et le geste. */
+.echeance {
+  flex-wrap: wrap;
+}
+
+.echeanceIntitule {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.echeanceDate {
+  font-size: 13.5px;
+  color: #52525b;
+  white-space: nowrap;
+}
+
+.echeanceGeste {
+  padding: 8px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #18181b;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.echeanceGeste:hover {
+  border-color: #18181b;
+}
+
+.entree {
+  align-items: baseline;
+}
+
+.entreeTexte {
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #52525b;
+}
+
+.vide {
+  margin: 0;
+  padding: 22px 24px;
+  border: 1px solid #ececee;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 14px;
+  color: #8a8a92;
+}
+
+@media (max-width: 720px) {
+  .fil,
+  .entete {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .contenu {
+    padding: 18px;
+  }
+}
+
+
+/* ---------------------------------------------------- L'identité, sur la fiche */
+
+/*
+ * Le nom, l'état, les chiffres et les gestes dans une même carte.
+ *
+ * Ils flottaient sur le fond gris au-dessus de trois blocs blancs : la page commençait
+ * par du vide. Et l'on ne pouvait rien faire d'une société depuis sa fiche - il fallait
+ * ressortir par le bouton de la colonne pour y revenir.
+ */
+.identite {
+  margin-bottom: 22px;
+  padding: 22px 24px;
+  border: 1px solid #ececee;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.identiteTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.identiteFaits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 0;
+  margin: 20px 0 0;
+  padding: 0;
+}
+
+.identiteFaits > div {
+  padding: 0 22px;
+  border-left: 1px solid #ececee;
+}
+
+.identiteFaits > div:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.identiteFaits dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+.identiteFaits dd {
+  margin: 2px 0 0;
+  font-size: 19px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.identiteGestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #f2f2f4;
+}
+
+.geste,
+.gesteSortie {
+  padding: 9px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #18181b;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.geste:hover {
+  border-color: #18181b;
+}
+
+/* Fermer n'est pas un geste comme les autres : il se distingue sans crier. */
+.gesteSortie {
+  margin-left: auto;
+  color: #71717a;
+}
+
+.gesteSortie:hover {
+  border-color: #9c2620;
+  color: #9c2620;
+}
+
+@media (max-width: 640px) {
+  .gesteSortie {
+    margin-left: 0;
+  }
+}

@@ -8,6 +8,7 @@ import {
 } from "@/domain/navigation/menu";
 import { FAMILLES, PARCOURS } from "@/domain/navigation/parcours";
 import { ICONES } from "@/domain/navigation/icones";
+import { COLONNE_VIDE, libelleDeLEntree } from "@/domain/navigation/colonne";
 
 const liensPour = (roles: Parameters<typeof menuPour>[0]) =>
   entreesDuMenu(menuPour(roles)).map((e) => e.lien);
@@ -60,6 +61,22 @@ describe("rubriques", () => {
       "Services juridiques",
       "Mon compte",
     ]);
+  });
+
+  it("« Mes sociétés » se met au singulier quand il n'y en a qu'une", () => {
+    /*
+     * « Mes sociétés » à quelqu'un qui n'en a qu'une se lit comme une promesse d'en
+     * avoir plusieurs, ou comme un menu qui ne le concerne pas.
+     */
+    const resume = { ...COLONNE_VIDE };
+    expect(libelleDeLEntree("/societes", "Mes sociétés", { ...resume, nombreDeSocietes: 1 })).toBe(
+      "Ma société"
+    );
+    expect(libelleDeLEntree("/societes", "Mes sociétés", { ...resume, nombreDeSocietes: 3 })).toBe(
+      "Mes sociétés"
+    );
+    // Les autres entrées ne bougent pas.
+    expect(libelleDeLEntree("/documents", "Mes documents", resume)).toBe("Mes documents");
   });
 
   it("aucune rubrique ne coiffe moins de deux entrées", () => {

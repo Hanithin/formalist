@@ -4,6 +4,7 @@ import { nonLus as nonLusDuSupport } from "./support";
 import type { UtilisateurConnecte } from "../sessions";
 import { COLONNE_VIDE, type ResumeColonne } from "@/domain/navigation/colonne";
 import { nomAffichable } from "@/domain/formalite/liste";
+import { regrouperEnSocietes } from "@/domain/societe/portefeuille";
 
 /**
  * Ce que la colonne de navigation affiche en plus de ses liens : la société
@@ -99,5 +100,26 @@ export async function resumeColonne(utilisateur: UtilisateurConnecte): Promise<R
     enCours,
     nonLus: messages + support,
     aReviser,
+    /*
+     * Le nombre de sociétés distinctes, non de dossiers.
+     *
+     * Il ne sert qu'à l'intitulé de l'entrée - « Ma société » ou « Mes sociétés » - et
+     * se calcule sur les dossiers déjà chargés : aucune requête de plus.
+     */
+    nombreDeSocietes: regrouperEnSocietes(
+      dossiers
+        .filter((d) => nomAffichable(d.societe))
+        .map((d) => ({
+          id: d.id,
+          type: d.type,
+          societe: d.societe ?? "",
+          forme: d.forme,
+          siren: null,
+          status: d.status,
+          offre: d.offer,
+          etapeAffichee: d.phase ?? 1,
+          majLe: d.updated_at ?? new Date(),
+        }))
+    ).length,
   };
 }

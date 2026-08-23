@@ -23,10 +23,10 @@ export const metadata: Metadata = {
 export default async function Formalites({
   searchParams,
 }: {
-  searchParams: Promise<{ filtre?: string }>;
+  searchParams: Promise<{ filtre?: string; societe?: string }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { filtre } = await searchParams;
+  const { filtre, societe } = await searchParams;
   const dossiers = await formalitesPourListe(utilisateur);
 
   return (
@@ -43,7 +43,11 @@ export default async function Formalites({
       </div>
 
       <div className={styles.content}>
-        <Liste dossiers={dossiers} filtre={filtreValide(filtre)} />
+        <Liste
+          dossiers={dossiers}
+          filtre={filtreValide(filtre)}
+          rechercheInitiale={societe ?? ""}
+        />
       </div>
     </main>
   );

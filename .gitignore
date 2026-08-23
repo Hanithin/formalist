@@ -6,3 +6,7 @@ tmp/
 *.log
 npm-debug.log*
 .DS_Store
+
+# Sorties de Playwright : des captures et des traces, jamais du code.
+/web/test-results/
+/web/playwright-report/

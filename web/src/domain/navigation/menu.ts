@@ -77,6 +77,14 @@ export const MENU: ElementMenu[] = [
    */
   { rubrique: "Mon activité" },
   { libelle: "Mes formalités", lien: "/formalites", compteur: "enCours" },
+  /*
+   * « Ma société » au singulier quand il n'y en a qu'une.
+   *
+   * « Mes sociétés » se lit alors comme une promesse d'en avoir plusieurs, ou comme un
+   * menu qui ne concerne pas celui qui le voit. L'intitulé se substitue à l'affichage,
+   * la colonne connaissant le nombre par son résumé.
+   */
+  { libelle: "Mes sociétés", lien: "/societes" },
   { libelle: "Mes documents", lien: "/documents" },
   { libelle: "Messagerie", lien: "/messagerie", compteur: "nonLus" },
 

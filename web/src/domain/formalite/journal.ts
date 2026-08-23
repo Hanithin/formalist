@@ -63,3 +63,23 @@ export function dateRelative(quand: Date, maintenant: Date = new Date()): string
   if (minutes < 60 * 48) return "hier";
   return quand.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
 }
+
+/**
+ * La même date, avec l'heure.
+ *
+ * « 16 août » suffit dans un fil d'activité qu'on parcourt ; dans l'historique d'une
+ * société, on cherche l'ordre exact des événements d'une journée - qui a fait quoi,
+ * et avant quoi. Les moins d'une journée gardent leur formulation relative : « il y a
+ * 27 min à 14h32 » n'apprendrait rien de plus.
+ */
+export function dateEtHeure(quand: Date, maintenant: Date = new Date()): string {
+  const minutes = Math.round((maintenant.getTime() - quand.getTime()) / 60000);
+  if (minutes < 60 * 24) return dateRelative(quand, maintenant);
+
+  const heure = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    .format(quand)
+    .replace(":", "h");
+
+  if (minutes < 60 * 48) return "hier à " + heure;
+  return quand.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) + " à " + heure;
+}

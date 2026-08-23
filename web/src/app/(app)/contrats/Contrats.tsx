@@ -141,7 +141,11 @@ export function Contrats({ contrats }: { contrats: ContratAffiche[] }) {
                 key={etape.code}
               >
                 <span className={styles.etapeNumero}>{i + 1}</span>
-                {combien > 0 && <span className={styles.etapeCompte}>{combien}</span>}
+                {combien > 0 && (
+                  <span className={styles.etapeCompte}>
+                    {combien} {combien > 1 ? "contrats" : "contrat"}
+                  </span>
+                )}
                 <span className={styles.etapeNom}>{etape.libelle}</span>
                 <span className={styles.etapeTexte}>{etape.explication}</span>
               </div>
@@ -160,7 +164,11 @@ export function Contrats({ contrats }: { contrats: ContratAffiche[] }) {
             aria-pressed={filtre === f.valeur}
           >
             {f.libelle}
-            <span className={styles.compte}>{comptes[f.valeur]}</span>
+            {/* Un « 0 » collé au libellé n'informe pas : la catégorie est vide, cela se
+                voit en cliquant, et le compteur ne sert qu'à ce qui existe. */}
+            {comptes[f.valeur] > 0 && (
+              <span className={styles.compte}>{comptes[f.valeur]}</span>
+            )}
           </button>
         ))}
 

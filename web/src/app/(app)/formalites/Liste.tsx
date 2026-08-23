@@ -18,6 +18,14 @@ import styles from "./Formalites.module.css";
 interface Props {
   dossiers: DossierListe[];
   filtre: ValeurFiltre;
+  /*
+   * La recherche préremplie, quand on arrive d'ailleurs.
+   *
+   * La fiche d'une société renvoie ici pour voir ses formalités dans la liste : sans
+   * cela on atterrit sur les vingt dossiers du compte, et il faut retaper le nom qu'on
+   * vient de quitter.
+   */
+  rechercheInitiale?: string;
 }
 
 /** Les tons du domaine, dans les classes de la page d'origine. */
@@ -34,8 +42,8 @@ const TRAITS = {
   strokeLinejoin: "round" as const,
 };
 
-export function Liste({ dossiers, filtre }: Props) {
-  const [recherche, setRecherche] = useState("");
+export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
+  const [recherche, setRecherche] = useState(rechercheInitiale);
   const [page, setPage] = useState(1);
 
   const comptes = useMemo(() => comptesParFiltre(dossiers), [dossiers]);

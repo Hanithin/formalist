@@ -66,14 +66,6 @@ export function NouvelleFormalite({
         aria-haspopup="dialog"
         aria-expanded={ouverte}
       >
-        {/*
-          Le « + » dit le geste avant même qu'on lise le libellé.
-          Il est dessiné ici, non écrit dans le libellé : écrit, il se doublait avec
-          celui-ci sur la variante de page, qui le posait déjà.
-        */}
-        <span className={styles.plus} aria-hidden="true">
-          +
-        </span>
         {libelle}
       </button>
 
