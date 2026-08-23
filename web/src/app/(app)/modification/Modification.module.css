@@ -3729,6 +3729,16 @@
   list-style: none;
 }
 
+/*
+ * Chaque `li` porte déjà sa carte - le bouton `.entreeCarte`. Celle que `globals.css`
+ * pose sur les `li` d'une section en dessinait une seconde autour, rentrée de 17 px.
+ */
+.entreeChoix > li {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 .entreeCarte {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -4212,27 +4222,6 @@
   color: #dc2626;
 }
 
-/* Le bouton respire : collé à la dernière ligne, il se lisait comme une sixième colonne. */
-.signataireAjouter {
-  align-self: flex-start;
-  margin: 14px 0 0;
-  padding: 9px 16px;
-  border: 1px dashed #b8b8bf;
-  border-radius: 10px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #3f3f46;
-  cursor: pointer;
-}
-
-.signataireAjouter:hover {
-  border-style: solid;
-  border-color: #111;
-  color: #111;
-}
-
 /* Sur écran étroit, chaque champ prend la ligne plutôt que de se réduire à rien. */
 @media (max-width: 720px) {
   .signatairesEntete {
@@ -4285,9 +4274,19 @@
   color: #dc2626;
 }
 
-.cessionAjouter {
+/*
+ * Le bouton qui ajoute une ligne à une liste : associé, cession, convention.
+ *
+ * En pointillé, parce qu'il ouvre une place vide plutôt que d'agir. Et détaché de la
+ * liste : collé à la dernière ligne, il se lisait comme une colonne de plus.
+ *
+ * Un seul nom pour les trois. Sous deux noms, l'un des deux finissait par dériver - et
+ * placé dans un `.blocActions`, dont la règle `button` l'emporte en spécificité, il
+ * ressortait en bouton plein comme n'importe quel autre.
+ */
+.ajouterLigne {
   align-self: flex-start;
-  margin: 0;
+  margin: 14px 0 0;
   padding: 9px 16px;
   border: 1px dashed #b8b8bf;
   border-radius: 10px;
@@ -4299,7 +4298,7 @@
   cursor: pointer;
 }
 
-.cessionAjouter:hover {
+.ajouterLigne:hover {
   border-style: solid;
   border-color: #111;
   color: #111;

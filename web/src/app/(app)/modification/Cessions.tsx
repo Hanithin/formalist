@@ -152,7 +152,7 @@ export function Cessions({
 
         <button
           type="button"
-          className={styles.cessionAjouter}
+          className={styles.ajouterLigne}
           onClick={() => surAssocies([...associes, { parts: null }])}
         >
           + Ajouter un associé
@@ -357,7 +357,7 @@ export function Cessions({
       {cessions[cessions.length - 1]?.cedant !== null && (
         <button
           type="button"
-          className={styles.cessionAjouter}
+          className={styles.ajouterLigne}
           onClick={() => surCessions([...cessions, cessionVide()])}
         >
           + Ajouter une autre cession

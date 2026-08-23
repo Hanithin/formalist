@@ -58,6 +58,37 @@ function nombre(valeur: unknown): number {
 const centimes = (valeur: unknown) => Math.round(nombre(valeur) * 100);
 const euros = (valeur: number) => valeur / 100;
 
+/**
+ * L'étape où un manque se répare.
+ *
+ * Une seule table, lue dans les deux sens : elle dit ce qui bloque la sortie d'une
+ * étape, et où mène le bouton « Corriger » du récapitulatif. Ce bouton renvoyait
+ * jusqu'ici à l'étape 1 quoi qu'il arrive, y compris pour une convention de l'étape 5 :
+ * on retraversait tout le parcours pour trouver la case en défaut.
+ */
+function champsDuGroupe(groupes: string[]): string[] {
+  return CHAMPS_COMPTES.filter((c) => groupes.includes(c.groupe ?? "")).map(
+    (c) => c.identifiant
+  );
+}
+
+function etapeDe(champ: string): number {
+  if (["denomination", "forme", "siren", "adresse"].includes(champ)) return 1;
+  if (
+    champsDuGroupe(["L'exercice à approuver", "Le dirigeant", GROUPE_ASSOCIE_UNIQUE]).includes(
+      champ
+    ) ||
+    champ === "dateAssemblee"
+  ) {
+    return 2;
+  }
+  if (champsDuGroupe(["Les chiffres de l'exercice"]).includes(champ)) return 3;
+  if (champ === "affectation") return 4;
+  if (champ.startsWith("convention-")) return 5;
+  // Une anomalie qu'on n'a pas su placer se répare au début, plutôt que nulle part.
+  return 1;
+}
+
 export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, actesInitiaux }: Props) {
   const [etape, setEtape] = useState(etapeInitiale);
   const [etat, setEtat] = useState<Comptes>(initial);
@@ -138,28 +169,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
 
   /** Ce qui manque pour quitter une étape. On ne bloque qu'en avançant. */
   function manquesDe(rang: number) {
-    const champsDe = (groupes: string[]) =>
-      CHAMPS_COMPTES.filter((c) => groupes.includes(c.groupe ?? "")).map((c) => c.identifiant);
-
-    if (rang === 1) {
-      return anomalies.filter((a) =>
-        ["denomination", "forme", "siren", "adresse"].includes(a.champ)
-      );
-    }
-    if (rang === 2) {
-      const vises = champsDe(["L'exercice à approuver", "Le dirigeant", GROUPE_ASSOCIE_UNIQUE]);
-      return anomalies.filter((a) => vises.includes(a.champ) || a.champ === "dateAssemblee");
-    }
-    if (rang === 3) {
-      return anomalies.filter((a) => champsDe(["Les chiffres de l'exercice"]).includes(a.champ));
-    }
-    if (rang === 4) {
-      return anomalies.filter((a) => a.champ === "affectation");
-    }
-    if (rang === 5) {
-      return anomalies.filter((a) => a.champ.startsWith("convention-"));
-    }
-    return [];
+    return anomalies.filter((a) => etapeDe(a.champ) === rang);
   }
 
   const manquesCourants = manquesDe(etape);
@@ -232,9 +242,9 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
             etat={etat}
             anomalies={anomalies}
             actesInitiaux={actesInitiaux}
-            surCorrection={(rang) => {
+            surCorrection={(champ) => {
               setTentative(true);
-              aller(rang);
+              aller(etapeDe(champ));
             }}
           />
         )}
@@ -577,7 +587,7 @@ function Associes({
 
       <button
         type="button"
-        className={styles.signataireAjouter}
+        className={styles.ajouterLigne}
         onClick={() => changer({ associes: [...associes, { parts: null }] })}
       >
         + Ajouter un associé
@@ -699,9 +709,15 @@ function EtapeAffectation({
           .map(([champ, libelle]) => (
             <div className={styles.champ} key={champ}>
               <label htmlFor={"aff-" + champ}>{libelle}, en euros</label>
+              {/*
+                Un poste à zéro se montre vide.
+                « 0 » se lit comme un montant décidé, alors que personne ne l'a saisi -
+                et l'effacer le fait revenir, puisque le champ vidé vaut zéro. Le vide
+                dit la même chose sans se faire passer pour une saisie.
+              */}
               <ChampNombre
                 id={"aff-" + champ}
-                valeur={euros(affectation[champ])}
+                valeur={affectation[champ] === 0 ? "" : euros(affectation[champ])}
                 surChangement={(n) => poser(champ, n)}
               />
             </div>
@@ -866,7 +882,8 @@ function EtapeReglement({
   etat: Comptes;
   anomalies: { champ: string; message: string }[];
   actesInitiaux: ActeProduit[];
-  surCorrection: (etape: number) => void;
+  /** Le champ en défaut ; l'étape s'en déduit. */
+  surCorrection: (champ: string) => void;
 }) {
   const [documents, setDocuments] = useState<ActeProduit[]>(actesInitiaux);
   const [refus, setRefus] = useState<string | null>(null);
@@ -1003,7 +1020,7 @@ function EtapeReglement({
               {anomalies.map((a) => a.message).join(", ")}.
             </p>
             <div className={styles.blocActions}>
-              <button type="button" onClick={() => surCorrection(1)}>
+              <button type="button" onClick={() => surCorrection(anomalies[0].champ)}>
                 Corriger
               </button>
             </div>

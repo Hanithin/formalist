@@ -269,6 +269,74 @@ test("les intitulés des associés tombent sur leurs colonnes", async ({ page, r
   expect(entete[3].droite).toBeCloseTo(champs[3].droite, 0);
 });
 
+test("la case des conventions se voit, et un montant nul ne se saisit pas tout seul", async ({
+  page,
+  request,
+}) => {
+  /*
+   * La case portait la classe des pastilles à choisir, qui masque son `input` : on
+   * cochait à l'aveugle une mention qui change le texte de l'acte. Et le montant
+   * s'ouvrait sur un « 0 » que personne n'avait tapé, et que l'effacer ramenait.
+   */
+  const { dossier } = await dossierRempli(request, {
+    conventions: [
+      {
+        nature: "Compte courant d'associé",
+        partie: "Madame Claire MARCHAND, présidente",
+        objet: "avance de trésorerie",
+        montantCentimes: 0,
+        modalites: "",
+        poursuivie: false,
+      },
+    ],
+  });
+  await page.goto("/depot-des-comptes?dossier=" + dossier + "&etape=5");
+
+  const case_ = page.getByRole("checkbox");
+  await expect(case_).toBeVisible();
+  expect((await case_.boundingBox())?.width ?? 0).toBeGreaterThan(9);
+
+  await expect(page.getByLabel("Montant, en euros")).toHaveValue("");
+
+  // Le bouton d'ajout garde son pointillé, que `.blocActions` lui ôtait.
+  const ajouter = page.getByRole("button", { name: "+ Déclarer une convention" });
+  await expect(ajouter).toHaveCSS("border-top-style", "dashed");
+});
+
+test("les cas d'exclusion ne s'encadrent pas deux fois", async ({ page, request }) => {
+  const { dossier } = await dossierRempli(request);
+  await page.goto("/depot-des-comptes?dossier=" + dossier + "&etape=6");
+
+  const item = page.locator("ul[class*='entreeChoix'] > li").first();
+  await expect(item).toHaveCSS("border-top-width", "0px");
+  await expect(item).toHaveCSS("padding-top", "0px");
+});
+
+test("« Corriger » mène à l'étape où le manque se répare", async ({ page, request }) => {
+  /*
+   * Il renvoyait à l'étape 1 quoi qu'il arrive : pour un objet de convention oublié, on
+   * retraversait six écrans avant de retrouver la case en défaut.
+   */
+  const { dossier } = await dossierRempli(request, {
+    conventions: [
+      {
+        nature: "Compte courant d'associé",
+        partie: "Madame Claire MARCHAND, présidente",
+        objet: "",
+        montantCentimes: 250000,
+        modalites: "",
+        poursuivie: false,
+      },
+    ],
+  });
+  await page.goto("/depot-des-comptes?dossier=" + dossier + "&etape=7");
+
+  await page.getByRole("button", { name: "Corriger" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Les conventions réglementées", exact: true })
+  ).toBeVisible();
+});
+
 test("l'écran d'entrée annonce les seuils de confidentialité", async ({ page }) => {
   /*
    * C'est souvent la raison de la visite : découvrir à la dernière étape qu'on n'y a

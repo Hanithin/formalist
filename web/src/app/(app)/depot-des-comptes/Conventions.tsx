@@ -113,7 +113,9 @@ export function Conventions({
               <label htmlFor={"conv-montant-" + rang}>Montant, en euros</label>
               <ChampNombre
                 id={"conv-montant-" + rang}
-                valeur={convention.montantCentimes / 100}
+                valeur={
+                  convention.montantCentimes === 0 ? "" : convention.montantCentimes / 100
+                }
                 surChangement={(n) =>
                   modifier(rang, { montantCentimes: n === "" ? 0 : Math.round(n * 100) })
                 }
@@ -157,7 +159,13 @@ export function Conventions({
             </div>
 
             <div className={`${styles.champ} ${styles.pleineLargeur}`}>
-              <label className={styles.nature}>
+              {/*
+                `.case`, non `.nature`.
+                `.nature` habille les pastilles à choisir, et masque leur `input` - ici
+                la case disparaissait, et l'on cochait sans rien voir une mention qui
+                change le texte de l'acte.
+              */}
+              <label className={styles.case}>
                 <input
                   type="checkbox"
                   checked={convention.poursuivie}
@@ -172,15 +180,13 @@ export function Conventions({
         </section>
       ))}
 
-      <div className={styles.blocActions}>
-        <button
-          type="button"
-          className={styles.cessionAjouter}
-          onClick={() => surConventions([...conventions, conventionVide()])}
-        >
-          + Déclarer une convention
-        </button>
-      </div>
+      <button
+        type="button"
+        className={styles.ajouterLigne}
+        onClick={() => surConventions([...conventions, conventionVide()])}
+      >
+        + Déclarer une convention
+      </button>
     </>
   );
 }
