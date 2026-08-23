@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauDeBord, focusDuDossier } from "@/infrastructure/db/depots/tableau-de-bord";
-import { salutation } from "@/domain/formalite/actions";
+import { phraseDAccueil } from "@/domain/formalite/actions";
 import {
   attentionRequise,
   dossierAReprendre,
@@ -81,7 +81,7 @@ export default async function TableauDeBord() {
     return (
       <main className={styles.page}>
         <div className={styles.content}>
-          <Accueil salutation={salutation() + " " + prenom} />
+          <Accueil salutation={phraseDAccueil(prenom, 0)} />
         </div>
       </main>
     );
@@ -160,40 +160,48 @@ export default async function TableauDeBord() {
   return (
     <main className={styles.page}>
       <header className={styles.entete}>
-        <div className={styles.enteteTexte}>
-          <h1 className={styles.enteteTitre}>
-            {salutation()} {prenom}
-          </h1>
+        {/*
+          La salutation suit le moment de la journée, comme la page d'origine.
+          Réduite à « Bonjour Hani », elle ne disait plus rien qu'un nom déjà connu.
+        */}
+        <h1 className={styles.enteteTitre}>{phraseDAccueil(prenom, societes.length)}</h1>
+
+        {/* La date à droite, avant le bouton : elle situe, elle n'annonce pas. */}
+        <div className={styles.enteteDroite}>
           <span className={styles.enteteDate}>{dateEnTete()}</span>
+          <NouvelleFormalite apparence="page" />
         </div>
-        {/* Le même geste qu'en colonne : ici, on est venu pour agir. */}
-        <NouvelleFormalite apparence="page" />
       </header>
 
       <div className={styles.content}>
-        <div className={styles.tete}>
-          {aReprendre ? (
-            <Reprendre
-              type={libelleDuType(aReprendre.type) ?? "Formalité"}
-              societe={nomComplet(aReprendre)}
-              pourcentage={avancement(aReprendre.etapeAffichee, aReprendre.offre)}
-              prochaineEtape={aReprendre.prochaineEtape}
-              bouton={gesteDuDossier(aReprendre)}
-              lien={lienDu(aReprendre.id)}
-            />
-          ) : (
-            <div />
-          )}
+        <Indicateurs
+          chiffres={[
+            {
+              valeur: chiffres.actionsRequises,
+              libelle: chiffres.actionsRequises > 1 ? "actions requises" : "action requise",
+            },
+            {
+              valeur: chiffres.enCours,
+              libelle: chiffres.enCours > 1 ? "formalités en cours" : "formalité en cours",
+            },
+            {
+              valeur: echeancesProches(echeances).length,
+              libelle: "sous trente jours",
+            },
+            { valeur: nombreDeDocuments, libelle: "documents" },
+          ]}
+        />
 
-          <Indicateurs
-            chiffres={[
-              { valeur: chiffres.enCours, libelle: "En cours" },
-              { valeur: chiffres.actionsRequises, libelle: "Actions requises", alerte: true },
-              { valeur: echeancesProches(echeances).length, libelle: "Échéances 30 j." },
-              { valeur: nombreDeDocuments, libelle: "Documents" },
-            ]}
+        {aReprendre && (
+          <Reprendre
+            type={libelleDuType(aReprendre.type) ?? "Formalité"}
+            societe={nomComplet(aReprendre)}
+            pourcentage={avancement(aReprendre.etapeAffichee, aReprendre.offre)}
+            prochaineEtape={aReprendre.prochaineEtape}
+            bouton={gesteDuDossier(aReprendre)}
+            lien={lienDu(aReprendre.id)}
           />
-        </div>
+        )}
 
         <DocumentsRecents documents={documents} />
 

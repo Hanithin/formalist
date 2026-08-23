@@ -9,53 +9,33 @@ import { retirerDossiers } from "./nettoyage";
  */
 
 test.describe("tableau de bord du client", () => {
-  test("accueille par son prénom, sans phrase de circonstance", async ({ page }) => {
+  test("annonce en chiffres ce qu'il y a à savoir, et tait les zéros", async ({ page }) => {
     /*
-     * L'accueil disait « Bonjour Camille, besoin de finaliser un dossier ? ». La
-     * question était rhétorique : c'est la page elle-même qui doit y répondre, et
-     * elle le fait trois lignes plus bas. Le titre se contente de nommer.
-     */
-    await page.goto("/tableau-de-bord");
-    const titre = page.getByRole("heading", { level: 1 });
-
-    await expect(titre).toHaveText(/^(Bonjour|Bonsoir) Camille$/);
-  });
-
-  test("annonce en quatre chiffres ce qu'il y a à savoir", async ({ page }) => {
-    /*
-     * Quatre cases fixes, à côté du dossier à reprendre : c'est le premier coup d'œil,
-     * et il doit tenir sans défiler. Le zéro s'y écrit - dans une grille de quatre, une
-     * case vide se remarquerait plus qu'un zéro, et « 0 échéance » est précisément ce
-     * qu'on veut lire.
+     * Une ligne discrète sous la salutation, non un bloc de cases : ces chiffres ne
+     * demandent rien, ils situent. Et un zéro ne s'écrit pas - « 0 échéance » occupe la
+     * place d'un chiffre pour annoncer une absence, et l'on relit pour vérifier qu'on
+     * n'a rien manqué.
      */
     await page.goto("/tableau-de-bord");
 
     const indicateurs = page.locator("dl[class*='indicateurs']");
     await expect(indicateurs).toBeVisible();
-
-    for (const libelle of ["En cours", "Actions requises", "Échéances 30 j.", "Documents"]) {
-      await expect(indicateurs.getByText(libelle, { exact: true }), libelle).toBeVisible();
-    }
+    await expect(indicateurs.getByText(/formalités? en cours/)).toBeVisible();
+    await expect(indicateurs.getByText("0", { exact: true })).toHaveCount(0);
   });
 
-  test("la tête de page tient sans défiler", async ({ page }) => {
-    /*
-     * La reprise et les chiffres répondent à la même question - où en suis-je - et se
-     * lisaient l'un sous l'autre sur toute la largeur. Côte à côte, ils tiennent dans
-     * le premier écran, ce qui était le point de la refonte.
-     */
-    await page.setViewportSize({ width: 1440, height: 900 });
+  test("la salutation reprend la phrase du moment, et la date passe à droite", async ({
+    page,
+  }) => {
     await page.goto("/tableau-de-bord");
 
-    const chiffres = page.locator("dl[class*='indicateurs']");
-    const reprise = page.getByRole("region", { name: "Reprendre" });
+    const titre = page.getByRole("heading", { level: 1 });
+    await expect(titre).toHaveText(/^(Bonjour|Bonsoir) Camille, .+/);
 
-    const boiteChiffres = await chiffres.boundingBox();
-    const boiteReprise = await reprise.boundingBox();
-
-    // Côte à côte : la même bande horizontale, non l'une sous l'autre.
-    expect(boiteChiffres!.x).toBeGreaterThan(boiteReprise!.x + boiteReprise!.width - 10);
-    expect(boiteChiffres!.y).toBeLessThan(boiteReprise!.y + 40);
+    // La date n'est plus collée sous le prénom : elle accompagne le bouton, à droite.
+    const boiteTitre = await titre.boundingBox();
+    const boiteDate = await page.getByText(/^(Dimanche|Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi)/).first().boundingBox();
+    expect(boiteDate!.x).toBeGreaterThan(boiteTitre!.x + boiteTitre!.width);
   });
 
   test("dit ce qui requiert l'attention, avec la société concernée", async ({ page }) => {

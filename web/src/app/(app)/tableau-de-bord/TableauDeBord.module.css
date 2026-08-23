@@ -142,21 +142,40 @@
 .smFootLink { font-size: 13.5px; color: #52525b; text-decoration: none; }
 .smFootLink:hover { color: #111; }
 /* Accès à toutes les sociétés : un vrai bouton, pas un lien discret */
-    .socSeeAll {
-      display: inline-flex; align-items: center; gap: 9px;
-      font-family: inherit; font-size: 14px; font-weight: 500; color: #111;
-      background: #fff; border: 1px solid #d4d4d8; border-radius: 100px;
-      padding: 9px 16px; margin: 0; cursor: pointer;
-      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-    }
+/*
+ * « Voir tout » se lit comme les autres liens de section, non comme un bouton.
+ *
+ * C'était une pastille blanche cerclée, avec un compteur noir : posée à côté d'un
+ * titre de section, elle pesait plus lourd que le titre lui-même et ne ressemblait à
+ * aucun autre lien de la page - « Tous les documents », « Voir toute la file ».
+ */
+.socSeeAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #71717a;
+  cursor: pointer;
+}
+
 .socSeeAll:hover:not(:disabled) {
-      border-color: #111; background: #fafafa; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    }
+  color: #18181b;
+}
+
+.socSeeAll svg {
+  width: 14px;
+  height: 14px;
+}
+
 .socSeeAllCount {
-      min-width: 22px; height: 22px; padding: 0 7px; border-radius: 100px;
-      background: #111; color: #fff; font-size: 12.5px; font-weight: 700;
-      display: inline-flex; align-items: center; justify-content: center;
-    }
+  font-variant-numeric: tabular-nums;
+}
 .socSeeAll svg { width: 15px; height: 15px; color: #71717a; }
 .socSeeAll:hover svg { color: #111; }
 /* ===== Vue plusieurs dossiers : une carte par société ===== */
@@ -586,7 +605,8 @@
       padding-top: 4px;
     }
 .topbarDate { font-size: 14.5px; color: #888; white-space: nowrap; }
-.content { padding: 0 48px 48px; flex: 1; }
+/* Dix-huit pixels sous l'en-tête : le contenu venait toucher le bouton. */
+.content { padding: 18px 48px 48px; flex: 1; }
 @media (max-width: 768px) {
       .topbar { flex-direction: column; padding: 24px 20px 16px; }
       .topbarActions { padding-top: 0; }
@@ -726,15 +746,21 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px 20px;
-  padding: 24px 32px 0;
+  /*
+   * La même marge que le contenu, non seize pixels de moins.
+   *
+   * Le bouton dépassait donc du bord droit des cartes, et le titre ne commençait pas
+   * au même endroit que la première section : deux désalignements pour une valeur
+   * recopiée de travers.
+   */
+  padding: 24px 48px 0;
 }
 
-.enteteTexte {
+/* La date et le bouton vont ensemble, à droite : l'un situe, l'autre agit. */
+.enteteDroite {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 14px;
-  min-width: 0;
+  align-items: center;
+  gap: 18px;
 }
 
 .enteteTitre {
@@ -746,6 +772,7 @@
 }
 
 .enteteDate {
+  margin: 0;
   font-size: 13.5px;
   color: #8a8a92;
 }
@@ -753,67 +780,47 @@
 /* --------------------------------------------------------- Les indicateurs */
 
 /*
- * La tête de page : la reprise à gauche, les chiffres à droite.
+ * Une ligne, non un bloc de cases.
  *
- * L'un et l'autre répondent à la même question - où en suis-je - et se lisaient l'un
- * sous l'autre, sur toute la largeur. Côte à côte, ils tiennent dans le premier coup
- * d'œil, et la page gagne cent cinquante pixels avant la première section.
- */
-.tete {
-  display: grid;
-  grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr);
-  gap: 16px;
-  align-items: stretch;
-}
-
-/*
- * Quatre cases, non quatre cartes.
- *
- * Une bordure les réunit, des filets intérieurs les séparent : c'est un bloc, non
- * quatre objets. Des cartes distinctes auraient pesé autant que la reprise à côté.
+ * En bloc de quatre à droite de la reprise, ils pesaient autant qu'elle alors qu'ils ne
+ * demandent rien, et venaient toucher le bouton de l'en-tête. En ligne, ils se lisent
+ * en passant - c'est leur rôle - et la reprise retrouve toute la largeur.
  */
 .indicateurs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 0;
+  margin: 0 0 18px;
   padding: 0;
-  border: 1px solid #ececee;
-  border-radius: 16px;
-  background: #ececee;
-  overflow: hidden;
 }
 
 .indicateur {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
-  background: #fff;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0 20px;
+  border-left: 1px solid #e4e4e7;
 }
 
-.indicateurLibelle {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  color: #a1a1aa;
+.indicateur:first-child {
+  padding-left: 0;
+  border-left: none;
 }
 
 .indicateurValeur {
   margin: 0;
-  font-size: 26px;
+  font-size: 19px;
   font-weight: 600;
-  line-height: 1.1;
   color: #18181b;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
-/* Le seul chiffre qui appelle un geste porte la teinte qui le dit. */
-.indicateurAlerte {
-  color: #a1751b;
+.indicateurLibelle {
+  margin: 0;
+  font-size: 13px;
+  color: #71717a;
 }
 
 /* ------------------------------------------------------- Le bloc de reprise */
@@ -826,17 +833,32 @@
  * qui, lui, demande quelque chose.
  */
 .reprendre {
-  padding: 22px 24px;
+  padding: 20px 24px;
   border: 1px solid #f2e7c3;
   border-radius: 16px;
-  background: linear-gradient(180deg, #fefbf1 0%, #fdf9ec 100%);
+  background: #fdfaf0;
 }
 
+/* L'étiquette et le badge se font face : l'un dit le geste, l'autre la nature. */
 .reprendreTete {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 8px;
+}
+
+.reprendreBadge {
+  flex-shrink: 0;
+  padding: 4px 11px;
+  border: 1px solid #edddb4;
+  border-radius: 999px;
+  background: #fdf6e3;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #8a5f0a;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .reprendreEtiquette {
@@ -848,53 +870,51 @@
   color: #a1751b;
 }
 
+/* Le nom de la société est le sujet : il porte le corps le plus fort de la carte. */
+.reprendreTitre {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.reprendreSuite {
+  margin: 3px 0 0;
+  max-width: 70ch;
+  font-size: 14px;
+  color: #71717a;
+}
+
+/*
+ * La barre, le pourcentage et le bouton sur une seule ligne.
+ *
+ * Le pourcentage était seul en haut à droite et le bouton seul en bas à droite : deux
+ * ancrages opposés pour la même information, et un grand vide entre eux.
+ */
+.reprendrePied {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.reprendrePied .jauge {
+  flex: 1;
+  min-width: 0;
+}
+
 .reprendrePourcent {
+  flex-shrink: 0;
   font-size: 13px;
   font-weight: 600;
   color: #71717a;
   font-variant-numeric: tabular-nums;
 }
 
-.reprendreTitre {
-  margin: 8px 0 14px;
-  font-size: 16.5px;
-  color: #52525b;
-  letter-spacing: 0;
-}
-
-.reprendreTitre strong {
-  font-weight: 600;
-  color: #18181b;
-}
-
-.reprendrePied {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 20px;
-  margin-top: 16px;
-}
-
-.reprendreSuite {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  font-size: 14px;
-  color: #3f3f46;
-}
-
-.reprendreSuiteEtiquette {
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  color: #a1a1aa;
-}
-
 .reprendreBouton {
   flex-shrink: 0;
-  padding: 11px 22px;
+  padding: 10px 22px;
   border-radius: 10px;
   background: #18181b;
   font-size: 14.5px;
@@ -908,11 +928,11 @@
   background: #000;
 }
 
-/* La jauge, partagée par le bloc de reprise et les vignettes. */
+/* La jauge, partagée par le bloc de reprise et la file de travail. */
 .jauge {
   height: 6px;
   border-radius: 999px;
-  background: rgba(24, 24, 27, 0.08);
+  background: rgba(24, 24, 27, 0.1);
   overflow: hidden;
 }
 
@@ -922,6 +942,17 @@
   border-radius: 999px;
   background: #18181b;
   transition: width 0.3s ease;
+}
+
+@media (max-width: 640px) {
+  .reprendrePied {
+    flex-wrap: wrap;
+  }
+
+  .reprendreBouton {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 /* ----------------------------------------------------------- Les sections */
@@ -990,7 +1021,8 @@
   grid-template-columns: 8px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  padding: 15px 18px;
+  /* Deux lignes de texte n'ont pas besoin de trente pixels de respiration. */
+  padding: 12px 16px;
   border: 1px solid #ececee;
   border-radius: 12px;
   background: #fff;
@@ -1206,13 +1238,23 @@
 
 /* --------------------------------------------------------- Les échéances */
 
+/*
+ * Les deux listes de la colonne latérale sont des cartes.
+ *
+ * Elles étaient posées à même le fond gris, seules de toute la page : les rangées
+ * d'attention, la file, les documents et les états vides sont blancs. Une liste sans
+ * fond au milieu de cartes ne se lit pas comme un choix, mais comme un oubli.
+ */
 .echeances,
 .activites {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   margin: 0;
-  padding: 0;
+  padding: 4px 16px;
+  border: 1px solid #ececee;
+  border-radius: 14px;
+  background: #fff;
   list-style: none;
 }
 
@@ -1340,16 +1382,17 @@
 /* --------------------------------------------------------- Les états vides */
 
 /*
- * Un état vide est une absence, non une carte à contempler.
+ * Un état vide reste une carte.
  *
- * Il occupait vingt-deux pixels de fond gris et une bordure pointillée, pour dire
- * qu'il n'y avait rien. Aligné à gauche et posé sur le fond de la page, il pèse ce
- * qu'il annonce.
+ * Il était en pointillé sur fond transparent : au milieu de blocs blancs, il se lisait
+ * comme un emplacement à remplir plutôt que comme une réponse. Il dit quelque chose -
+ * « rien à faire », « aucune échéance » - et mérite le même support que le reste.
  */
 .vide {
   padding: 14px 16px;
-  border: 1px dashed #e2e2e5;
+  border: 1px solid #ececee;
   border-radius: 12px;
+  background: #fff;
 }
 
 .videTitre {
@@ -1444,14 +1487,33 @@
   margin-top: 4px;
 }
 
-.colonnePrincipale,
+.colonnePrincipale {
+  min-width: 0;
+}
+
+/*
+ * La colonne latérale suit le défilement.
+ *
+ * Elle est deux fois plus courte que la principale : arrivé au bas de la file de
+ * travail, on n'avait plus à droite qu'un demi-écran de gris. Collée, elle reste
+ * lisible pendant qu'on parcourt la file - ce qui est précisément son rôle, puisqu'elle
+ * porte ce qui informe.
+ */
 .colonneLaterale {
   min-width: 0;
+  position: sticky;
+  top: 0;
+  align-self: start;
+}
+
+@media (max-width: 1080px) {
+  .colonneLaterale {
+    position: static;
+  }
 }
 
 /* Une seule colonne dès que la latérale n'a plus la place d'être lisible. */
 @media (max-width: 1080px) {
-  .tete,
   .corps {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1616,10 +1678,9 @@
  * nom de fichier. Une largeur bornée règle les deux : les cartes gardent leur taille et
  * la rangée finit tôt, sans trou.
  */
+/* Le nombre de colonnes vient du composant : il connaît le nombre de cartes. */
 .pieces {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 300px));
-  justify-content: start;
   gap: 12px;
   margin: 0;
   padding: 0;
@@ -1695,9 +1756,9 @@
 }
 
 @media (max-width: 900px) {
+  /* Sous 900 px, deux colonnes quel que soit le nombre de cartes. */
   .pieces {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-content: stretch;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   /* La file passe en deux lignes : la société sous la formalité, le geste au bout. */
@@ -1717,6 +1778,6 @@
 
 @media (max-width: 560px) {
   .pieces {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }

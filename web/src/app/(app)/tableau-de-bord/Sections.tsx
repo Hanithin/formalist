@@ -21,36 +21,36 @@ import styles from "./TableauDeBord.module.css";
 export interface Chiffre {
   valeur: number;
   libelle: string;
-  /** Le chiffre qui appelle un geste se distingue des autres. */
-  alerte?: boolean;
 }
 
 /**
- * Quatre cases, à côté du dossier à reprendre.
+ * Une ligne de chiffres, sous la salutation.
  *
- * Elles occupaient une ligne pleine largeur au-dessus : le regard les traversait sans
- * s'arrêter, et la ligne poussait tout le reste vers le bas. En bloc, à droite de la
- * reprise, elles tiennent dans le même coup d'œil que ce qu'elles chiffrent.
+ * Ils ont été essayés en bloc de quatre cases à droite de la reprise : ils y pesaient
+ * autant qu'elle, alors qu'ils ne demandent rien, et le bloc venait toucher le bouton
+ * de l'en-tête. En ligne, ils se lisent en passant - c'est leur rôle - et la reprise
+ * retrouve toute la largeur, qui est ce qu'elle mérite puisqu'on vient pour elle.
  *
- * Un zéro s'écrit ici, contrairement à la ligne d'avant : dans une grille de quatre
- * cases fixes, une case vide se remarquerait plus qu'un zéro - et « 0 échéance » est
- * précisément ce qu'on veut lire.
+ * Un zéro ne s'écrit pas. « 0 échéance » occupe la place d'un chiffre et annonce une
+ * absence là où l'on cherche une présence : on relit pour vérifier qu'on n'a rien
+ * manqué.
  */
 export function Indicateurs({ chiffres }: { chiffres: Chiffre[] }) {
+  const montres = chiffres.filter((chiffre) => chiffre.valeur > 0);
+  if (montres.length === 0) return null;
+
   return (
     <dl className={styles.indicateurs}>
-      {chiffres.map((chiffre) => (
+      {montres.map((chiffre) => (
         <div className={styles.indicateur} key={chiffre.libelle}>
-          <dt className={styles.indicateurLibelle}>{chiffre.libelle}</dt>
-          <dd
-            className={
-              chiffre.alerte && chiffre.valeur > 0
-                ? `${styles.indicateurValeur} ${styles.indicateurAlerte}`
-                : styles.indicateurValeur
-            }
-          >
-            {chiffre.valeur}
-          </dd>
+          {/*
+            Tous les chiffres de la même encre.
+            Le premier était doré pour dire qu'il appelle un geste : sur un fond clair,
+            l'or vire au brun et se lit comme une couleur passée, non comme une alerte.
+            L'ordre suffit - ce qui presse vient en premier.
+          */}
+          <dt className={styles.indicateurValeur}>{chiffre.valeur}</dt>
+          <dd className={styles.indicateurLibelle}>{chiffre.libelle}</dd>
         </div>
       ))}
     </dl>
@@ -83,34 +83,45 @@ export function Reprendre({
 }) {
   return (
     <section className={styles.reprendre} aria-labelledby="reprendre">
+      {/*
+        La nature en badge, non en préfixe du titre.
+        « Fermeture · SASU STERLING PEAK » mettait sur la même ligne, au même corps, ce
+        qu'on fait et à qui on le fait : le nom de la société s'y perdait alors qu'il
+        est le sujet. En badge, la nature se lit d'un coup d'œil et rend sa place au nom.
+      */}
       <div className={styles.reprendreTete}>
         <h2 id="reprendre" className={styles.reprendreEtiquette}>
           Reprendre
         </h2>
-        <span className={styles.reprendrePourcent}>{pourcentage} %</span>
+        <span className={styles.reprendreBadge}>{type}</span>
       </div>
 
-      <p className={styles.reprendreTitre}>
-        {type} · <strong>{societe}</strong>
-      </p>
+      <p className={styles.reprendreTitre}>{societe}</p>
 
-      {/* La barre porte son état en texte : une couleur seule ne se lit pas. */}
-      <div
-        className={styles.jauge}
-        role="progressbar"
-        aria-valuenow={pourcentage}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={"Avancement : " + pourcentage + " %"}
-      >
-        <span className={styles.jaugeRemplie} style={{ width: pourcentage + "%" }} />
-      </div>
+      {/*
+        La suite en une phrase, sans intitulé.
+        « PROCHAINE ÉTAPE » au-dessus d'une phrase qui dit déjà l'étape prenait une
+        ligne pour répéter ce que la ligne suivante disait mieux.
+      */}
+      <p className={styles.reprendreSuite}>{prochaineEtape}</p>
 
+      {/*
+        La barre, le pourcentage et le bouton sur la même ligne.
+        Le pourcentage était seul en haut à droite et le bouton seul en bas à droite :
+        deux ancrages opposés pour une même information, et un grand vide entre les deux.
+      */}
       <div className={styles.reprendrePied}>
-        <span className={styles.reprendreSuite}>
-          <span className={styles.reprendreSuiteEtiquette}>Prochaine étape</span>
-          {prochaineEtape}
-        </span>
+        <div
+          className={styles.jauge}
+          role="progressbar"
+          aria-valuenow={pourcentage}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={"Avancement : " + pourcentage + " %"}
+        >
+          <span className={styles.jaugeRemplie} style={{ width: pourcentage + "%" }} />
+        </div>
+        <span className={styles.reprendrePourcent}>{pourcentage} %</span>
         <Link href={lien} className={styles.reprendreBouton}>
           {bouton}
         </Link>
@@ -315,7 +326,16 @@ export function DocumentsRecents({ documents }: { documents: DocumentRecent[] })
         </Link>
       </div>
 
-      <ul className={styles.pieces}>
+      {/*
+        Autant de colonnes que de documents, jamais plus de quatre.
+        Des colonnes élastiques repliaient la quatrième carte sur une seconde ligne
+        toute seule, dès que la largeur manquait de quelques pixels ; des colonnes
+        fixes laissaient des emplacements vides quand il y en avait deux.
+      */}
+      <ul
+        className={styles.pieces}
+        style={{ gridTemplateColumns: "repeat(" + documents.length + ", minmax(0, 1fr))" }}
+      >
         {documents.map((document) => (
           <li key={document.id} className={styles.piece}>
             <Link href="/documents" className={styles.pieceLien}>
@@ -403,8 +423,8 @@ type Entree = EntreeJournal & { dossierId: number; societe: string };
  * L'activité, en une colonne serrée.
  *
  * Elle occupait une grande carte à deux colonnes, pour une information dont personne
- * n'a besoin tout de suite. Cinq lignes suffisent : c'est un journal, pas un tableau
- * de bord dans le tableau de bord.
+ * n'a besoin tout de suite. En colonne serrée, huit lignes tiennent dans la place que
+ * deux en prenaient : c'est un journal, pas un tableau de bord dans le tableau de bord.
  */
 export function ActiviteRecente({
   activite,
@@ -425,7 +445,7 @@ export function ActiviteRecente({
         <EtatVide texte="Aucune activité récente." />
       ) : (
         <ul className={styles.activites}>
-          {activite.slice(0, 5).map((entree, rang) => {
+          {activite.slice(0, 8).map((entree, rang) => {
             const cestMoi = entree.auteurRole === "user";
             const qui = cestMoi ? "Vous" : (entree.auteur ?? "Formalist");
 
