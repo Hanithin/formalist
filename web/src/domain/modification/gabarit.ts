@@ -279,6 +279,27 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     ? valeurs.typeChangementDirigeant
     : "";
 
+  /*
+   * L'agrément est dû, ou il ne l'est pas : les deux actes doivent dire la même chose.
+   *
+   * Il se déduit de la forme et du destinataire - la loi l'impose pour une cession à
+   * un tiers dans une société de personnes, pas dans une société par actions - et
+   * l'utilisateur peut le déclarer dû quand une clause des statuts le prévoit.
+   */
+  const agrementDeLaCession =
+    texte(valeurs.agrementRequis) === "Oui" ||
+    (contexte.cessions ?? []).some((c) => agrementDeDroit(societe.forme, c.vers).requis);
+
+  /*
+   * L'associé unique est-il une femme ?
+   *
+   * Sur la civilité saisie, non sur le prénom : deviner le genre d'après un prénom
+   * se trompe, et se trompe justement sur les noms que la France compte le moins.
+   * Sans civilité - une société associée, ou une civilité non renseignée - on reste
+   * au masculin, qui est la forme du texte de loi.
+   */
+  const feminin = associes.length === 1 && /^(mme|madame)$/i.test(associes[0].civilite.trim());
+
   return {
     /* --------------------------------------------------------- La société */
     SOCIETE: ou(societe.denomination),
@@ -316,6 +337,22 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      * la liste des présents y sert de désignation, et elle compte déjà les titres.
      */
     ASSOCIE_UNIQUE: associes.length ? associes[0].nomComplet : TIRET,
+    /*
+     * L'accord de l'associé unique, quand l'acte le désigne comme personne.
+     *
+     * Le procès-verbal ouvrait sur « Le soussigné, Madame Claire MARCHAND, associé
+     * unique » : deux accords fautifs dans la même ligne, sur un acte qui part au
+     * greffe et que l'intéressée signe.
+     *
+     * Seule cette phrase-là est accordée. Ailleurs, « l'associé unique décide »
+     * désigne l'organe et non la personne : c'est la formule des actes, et la
+     * réécrire quinze fois par gabarit ferait courir un risque sans rien corriger.
+     *
+     * Une société associée unique - une holding détenant sa filiale - reste au
+     * masculin : « le soussigné » y renvoie à un associé, non à quelqu'un.
+     */
+    SOUSSIGNE: feminin ? "La soussignée" : "Le soussigné",
+    QUALITE_ASSOCIE_UNIQUE: feminin ? "associée unique" : "associé unique",
     ASSOCIES: associes,
     ASSOCIE_LISTE: associes.length
       ? associes
@@ -507,7 +544,16 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     NB_PARTS_CEDEES: cessions[0]
       ? nombreOuTiret(cessions[0].PARTS as number)
       : nombreOuTiret(valeurs.nbPartsCedees),
-    PRIX_CESSION: cessions[0] ? cessions[0].PRIX : nombreOuTiret(valeurs.prixCession),
+    /*
+     * Le prix passe par le formateur, comme tout montant d'un acte.
+     *
+     * Il sortait du tableau des cessions en nombre brut et partait tel quel dans le
+     * gabarit : « moyennant le prix de 24000 euros », dans le procès-verbal comme
+     * dans l'acte de cession, quand le capital voisin s'écrivait « 100 000 euros ».
+     */
+    PRIX_CESSION: cessions[0]
+      ? nombreOuTiret(cessions[0].PRIX as number)
+      : nombreOuTiret(valeurs.prixCession),
     DATE_CESSION: cessions[0]?.DATE || texte(valeurs.dateCession),
     /*
      * En français, depuis la cession.
@@ -526,9 +572,20 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      * donné, l'autre pour celui où il n'était pas requis : sans cette valeur, ni l'une
      * ni l'autre n'apparaissait.
      */
-    IS_AGREMENT_REQUIS:
-      texte(valeurs.agrementRequis) === "Oui" ||
-      (contexte.cessions ?? []).some((c) => agrementDeDroit(societe.forme, c.vers).requis),
+    IS_AGREMENT_REQUIS: agrementDeLaCession,
+    /*
+     * Le cas contraire, nommé plutôt que déduit dans le gabarit.
+     *
+     * Le procès-verbal agréait le cessionnaire dès qu'il y avait cession, sans
+     * regarder si un agrément était dû, pendant que l'acte de cession écrivait pour la
+     * même opération qu'elle « n'est soumise à aucune procédure d'agrément ». Deux
+     * actes de la même assemblée se démentaient, et c'est le greffe qui l'aurait dit.
+     *
+     * Un second drapeau plutôt qu'une section inversée : les gabarits n'en emploient
+     * nulle part, et une notation qu'on n'a jamais essayée n'a pas sa place dans un
+     * acte qui part au greffe.
+     */
+    IS_CESSION_SANS_AGREMENT: codes.includes("cession_parts") && !agrementDeLaCession,
 
     /* ------------------------------------------ L'apport de titres à une holding */
     ...donneesDeLApport(societe, valeurs),
