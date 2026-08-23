@@ -159,6 +159,15 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
     ANNEE_LETTRES: anneeEnLettres(texte(valeurs.dateAssemblee)),
     HEURE_ASSEMBLEE: ou(texte(valeurs.heureAssemblee), "14 heures"),
     LIEU_ASSEMBLEE: ou(texte(valeurs.lieuAssemblee), "au siège social"),
+    /*
+     * La ville de signature, pour la formule « Fait à … ».
+     *
+     * Elle est distincte du lieu de réunion, qui se dit « au siège social » et ne peut
+     * pas suivre un « à ». La forme importe au-delà du style : la production d'actes
+     * dessine le trait de signature au-dessus du nom quand elle reconnaît « Fait à »,
+     * et retire les lignes de tirets qu'on écrirait à la main.
+     */
+    VILLE_SIGNATURE: ou(texte(societe.ville)),
 
     /* -------------------------------------------------------- Qui décide */
     IS_UNIPERSONNELLE: unipersonnelle,

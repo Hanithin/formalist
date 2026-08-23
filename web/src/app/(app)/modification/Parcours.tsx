@@ -536,7 +536,7 @@ export interface SocieteTrouvee {
   commune: string;
 }
 
-function RechercheAuRegistre({
+export function RechercheAuRegistre({
   id,
   libelle = "Chercher la société au registre",
   valeur,
@@ -1231,7 +1231,7 @@ function EtapeDetails({
   );
 }
 
-function Champ({
+export function Champ({
   champ,
   valeur,
   refus,

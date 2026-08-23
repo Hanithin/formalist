@@ -643,6 +643,71 @@
 }
 
 /*
+ * Les seuils de confidentialité, sur l'écran d'entrée du dépôt des comptes.
+ *
+ * Ils y figurent parce que c'est souvent la raison de la visite : découvrir à la
+ * dernière étape qu'on n'y a pas droit est une déception qu'un tableau de trois lignes
+ * évite. Une ligne par taille, avec ce qu'elle ouvre.
+ */
+.seuils {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seuil {
+  display: grid;
+  grid-template-columns: minmax(140px, auto) minmax(0, 1fr);
+  align-items: baseline;
+  row-gap: 2px;
+  column-gap: 14px;
+  padding: 11px 14px;
+  border: 1px solid #e8e8ea;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.seuilTaille {
+  grid-column: 1;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.seuilChiffres {
+  grid-column: 2;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8a8a92;
+}
+
+/* Ce que la taille ouvre : la seule chose qu'on retient de la ligne. */
+.seuilOuvre {
+  grid-column: 1 / -1;
+  font-size: 12.5px;
+  color: #52525b;
+}
+
+/*
+ * D'où vient un chiffre extrait du bilan.
+ *
+ * La ligne du document, sous le champ qu'elle a rempli. Sans elle, un montant mal lu
+ * a l'apparence d'une donnée vérifiée ; avec elle, l'écart se voit sans rouvrir le PDF.
+ */
+.origineDuChiffre {
+  grid-column: 1 / -1;
+  margin: -12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8a8a92;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+/*
  * Les actes produits.
  *
  * Ils empruntaient les lignes du devis, faites pour un libellé et un montant : le

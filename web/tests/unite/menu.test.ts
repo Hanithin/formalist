@@ -139,8 +139,9 @@ describe("les fonctions annoncées mais pas ouvertes", () => {
       e === SEPARATEUR ? "" : e.libelle
     );
 
-    // L'auto-entreprise et la modification n'y sont plus : leurs parcours sont ouverts.
-    expect(bientot).toEqual(["Dépôt des comptes", "Fermer ma société"]);
+    // L'auto-entreprise, la modification et le dépôt des comptes n'y sont plus :
+    // leurs parcours sont ouverts.
+    expect(bientot).toEqual(["Fermer ma société"]);
   });
 
   it("une entrée grisée n'est pas active, même sur son propre chemin", () => {

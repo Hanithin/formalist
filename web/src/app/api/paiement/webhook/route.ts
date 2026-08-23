@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { confirmerPaiement } from "@/infrastructure/db/depots/consultations";
-import { confirmerLeReglement } from "@/infrastructure/db/depots/auto-entrepreneur";
+import { confirmerLeReglementDeLaFormalite } from "@/infrastructure/db/depots/reglements";
 import { evenementDeStripe, encaissementDe } from "@/infrastructure/paiement/stripe";
 import { journal } from "@/lib/journal";
 import { route } from "@/lib/reponses";
@@ -30,12 +30,19 @@ export const POST = route(async (requete: Request) => {
   }
 
   /*
-   * Deux objets se règlent ici : une consultation et la création d'une auto-entreprise.
-   * Les métadonnées de la session disent lequel ; les confondre confirmerait la
-   * mauvaise chose.
+   * Deux natures se règlent ici : une consultation juridique et une formalité. Les
+   * métadonnées de la session disent laquelle ; les confondre confirmerait la mauvaise
+   * chose.
+   *
+   * Une formalité se confirme ensuite par le parcours dont elle relève - création,
+   * modification, approbation des comptes - qui n'écrivent ni les mêmes champs ni la
+   * même ligne de journal.
    */
   if (encaissement.dossierId !== null) {
-    const resultat = await confirmerLeReglement(encaissement.reference, encaissement.dossierId);
+    const resultat = await confirmerLeReglementDeLaFormalite(
+      encaissement.reference,
+      encaissement.dossierId
+    );
     journal.info(
       { evenement: evenement.type, dossier: resultat.dossierId, paye: resultat.paye },
       "Règlement de formalité traité"
