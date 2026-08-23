@@ -11,8 +11,8 @@ import {
   tonDuDossier,
   type DossierDAccueil,
 } from "@/domain/formalite/accueil";
-import { avancement, nomEtape, nomsDEtapes } from "@/domain/formalite/etapes";
-import { adresseDuDossier, libelleDuType } from "@/domain/formalite/liste";
+import { avancement, nomEtape, nombreDEtapes, nomsDEtapes } from "@/domain/formalite/etapes";
+import { adresseDuDossier, libelleDuType, nomAffichable } from "@/domain/formalite/liste";
 import { dateEnTete } from "@/lib/dates";
 import { Accueil } from "./Accueil";
 import { DocumentsDuDossier, FeuilleDeRoute, Frise, Interlocuteur } from "./Focus";
@@ -35,9 +35,21 @@ export const metadata: Metadata = {
 /** Le nombre de vignettes montrées : au-delà, la liste des formalités prend le relais. */
 const FORMALITES_MONTREES = 3;
 
-/** « SASU STUDIO KERN » : la forme précède le nom, comme partout ailleurs. */
-function nomComplet(dossier: { forme: string | null; societe: string }): string {
-  return dossier.forme ? dossier.forme.toUpperCase() + " " + dossier.societe : dossier.societe;
+/**
+ * « SASU STUDIO KERN » : la forme précède le nom, comme partout ailleurs.
+ *
+ * Tant que la société n'est pas choisie, le dossier n'a pas de nom à donner. On écrit
+ * alors ce qu'il est - « Nouvelle création », « Nouvelle fermeture » - plutôt que le
+ * marqueur « Société à identifier », qui ressemble à un nom et n'en est pas un.
+ */
+function nomComplet(dossier: {
+  forme: string | null;
+  societe: string;
+  type?: string | null;
+}): string {
+  const nom = nomAffichable(dossier.societe);
+  if (!nom) return "Nouveau dossier · " + (libelleDuType(dossier.type) ?? "formalité");
+  return dossier.forme ? dossier.forme.toUpperCase() + " " + nom : nom;
 }
 
 /**
@@ -101,10 +113,29 @@ export default async function TableauDeBord() {
   const enCours = dossiers.filter((d) => d.status !== "terminee" && d.status !== "archive");
   const cartes: CarteFormalite[] = enCours.slice(0, FORMALITES_MONTREES).map((dossier) => {
     const etat = tonDuDossier(dossier);
+    const nature = libelleDuType(dossier.type) ?? "Formalité";
+
     return {
       id: dossier.id,
-      type: libelleDuType(dossier.type) ?? "Formalité",
-      societe: nomComplet(dossier),
+      // « Création SASU » : l'opération d'abord, la forme ensuite.
+      type: dossier.forme ? nature + " " + dossier.forme.toUpperCase() : nature,
+      societe: nomAffichable(dossier.societe) ?? "Société à choisir",
+      /*
+       * L'étape, quand le parcours l'expose.
+       *
+       * Seule la création numérote ses étapes de un à cinq ; les autres parcours ont
+       * leur propre découpage, que ce compteur ne connaît pas. Mieux vaut ne rien dire
+       * que d'annoncer « Étape 1 sur 5 » à une fermeture qui en a quatre.
+       */
+      etape:
+        dossier.type === "creation" || !dossier.type
+          ? "Étape " +
+            dossier.etapeAffichee +
+            " sur " +
+            nombreDEtapes(dossier.offre) +
+            " · " +
+            nomEtape(dossier.etapeAffichee, dossier.offre)
+          : null,
       pourcentage: avancement(dossier.etapeAffichee, dossier.offre),
       etat: etat.libelle,
       ton: etat.ton,
@@ -169,10 +200,24 @@ export default async function TableauDeBord() {
         {/* Tout est fini : on montre ce qui vient après plutôt qu'une page vide. */}
         {toutTermine && <FeuilleDeRoute />}
 
-        <div className={styles.deuxColonnes}>
-          <Echeances echeances={echeances} />
-          <ActiviteRecente activite={activite} lienDossier={lienDu} />
-        </div>
+        {/*
+          Deux colonnes seulement quand les deux ont de quoi les remplir.
+
+          Les échéances sont vides le plus souvent - nous n'avons pas de calendrier des
+          obligations - pendant que l'activité aligne cinq lignes. Côte à côte, la
+          gauche s'arrêtait après trois lignes et laissait un demi-écran de blanc.
+        */}
+        {echeances.length > 0 ? (
+          <div className={styles.deuxColonnes}>
+            <Echeances echeances={echeances} />
+            <ActiviteRecente activite={activite} lienDossier={lienDu} />
+          </div>
+        ) : (
+          <>
+            <Echeances echeances={echeances} />
+            <ActiviteRecente activite={activite} lienDossier={lienDu} />
+          </>
+        )}
       </div>
     </main>
   );

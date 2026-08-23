@@ -21,12 +21,19 @@ test.describe("tableau de bord du client", () => {
     await expect(titre).toHaveText(/^(Bonjour|Bonsoir) Camille$/);
   });
 
-  test("annonce en trois chiffres ce qu'il y a à savoir", async ({ page }) => {
+  test("annonce en chiffres ce qu'il y a à savoir, et tait les zéros", async ({ page }) => {
+    /*
+     * « 0 en validation » occupe la place d'un chiffre et n'apprend rien : il annonce
+     * une absence là où l'on cherche une présence, et l'on relit pour vérifier qu'on
+     * n'a rien manqué. Seul ce qui existe s'écrit.
+     */
     await page.goto("/tableau-de-bord");
 
     await expect(page.getByText(/formalités? en cours/)).toBeVisible();
     await expect(page.getByText(/actions? requises?/).first()).toBeVisible();
-    await expect(page.getByText("en validation")).toBeVisible();
+
+    const indicateurs = page.locator("dl[class*='indicateurs']");
+    await expect(indicateurs.getByText("0", { exact: true })).toHaveCount(0);
   });
 
   test("dit ce qui requiert l'attention, avec la société concernée", async ({ page }) => {
@@ -402,7 +409,7 @@ test.describe("ce qui requiert votre attention", () => {
     await expect(voirTout).toBeVisible();
 
     await voirTout.click();
-    const fenetre = page.getByRole("dialog", { name: "Tout ce qu'on attend de vous" });
+    const fenetre = page.getByRole("dialog", { name: "Ce qui requiert votre attention" });
     await expect(fenetre).toBeVisible();
 
     // Elle en montre plus que la carte.

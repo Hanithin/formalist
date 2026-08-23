@@ -8,6 +8,8 @@
 
 export interface ContexteDossier {
   dossierId: number;
+  /** La nature du dossier : elle décide des étapes, et de l'écran où l'on retourne. */
+  type?: string | null;
   status: string | null;
   phase: number;
   banque?: string | null;
@@ -34,10 +36,53 @@ function montantLisible(capital: number | null | undefined): string {
   return capital.toLocaleString("fr-FR") + " euros";
 }
 
+/**
+ * Ce qu'un dossier attend, selon ce qu'il est.
+ *
+ * Ces étapes - informations, banque, dépôt de capital, pièces des associés - sont
+ * celles d'une création. Elles étaient appliquées à tous les dossiers : une fermeture
+ * s'y voyait reprocher un capital non déposé, et le bouton renvoyait au formulaire de
+ * création d'une société qu'on cherchait précisément à fermer.
+ *
+ * Les autres parcours n'exposent pas leur avancement à ce niveau. On dit donc ce qu'on
+ * sait - qu'il reste à le reprendre, et où - plutôt qu'une étape inventée.
+ */
+const REPRISES: Record<string, { titre: string; precision: string; bouton: string }> = {
+  modification: {
+    titre: "Modification à finaliser",
+    precision: "Reprenez la saisie là où vous l'avez laissée",
+    bouton: "Reprendre",
+  },
+  comptes: {
+    titre: "Comptes annuels à déposer",
+    precision: "L'exercice, les chiffres et l'affectation du résultat",
+    bouton: "Reprendre",
+  },
+  fermeture: {
+    titre: "Fermeture à poursuivre",
+    precision: "Dissolution, liquidation puis radiation",
+    bouton: "Reprendre",
+  },
+  "auto-entrepreneur": {
+    titre: "Déclaration à compléter",
+    precision: "Votre état civil et votre activité",
+    bouton: "Compléter",
+  },
+};
+
+function adresseDe(ctx: ContexteDossier): string {
+  const type = ctx.type ?? "creation";
+  if (type === "modification") return "/modification?dossier=" + ctx.dossierId;
+  if (type === "comptes") return "/depot-des-comptes?dossier=" + ctx.dossierId;
+  if (type === "fermeture") return "/fermeture?dossier=" + ctx.dossierId;
+  if (type === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + ctx.dossierId;
+  return "/creation?dossier=" + ctx.dossierId;
+}
+
 export function actionsAttendues(ctx: ContexteDossier): ActionAttendue[] {
   if (ctx.status === "terminee") return [];
 
-  const lien = "/creation?dossier=" + ctx.dossierId;
+  const lien = adresseDe(ctx);
   const actions: ActionAttendue[] = [];
 
   // Un document refusé passe avant tout : il bloque la suite et le client ne
@@ -53,6 +98,18 @@ export function actionsAttendues(ctx: ContexteDossier): ActionAttendue[] {
       lien,
       urgent: true,
     });
+  }
+
+  /*
+   * Les autres parcours s'arrêtent ici.
+   *
+   * Ils ont leurs propres étapes, que ce module ne connaît pas : leur en prêter
+   * quatre qui ne sont pas les leurs produisait des phrases fausses.
+   */
+  const reprise = REPRISES[ctx.type ?? ""];
+  if (reprise) {
+    actions.push({ ...reprise, lien, urgent: false });
+    return actions;
   }
 
   // Les étapes du parcours s'excluent : une seule est la prochaine à faire.

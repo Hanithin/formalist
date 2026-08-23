@@ -153,11 +153,65 @@
 
 /* ---------- Les six cartes ---------- */
 
+/*
+ * Une famille par moment de la vie d'une société.
+ *
+ * Les huit cartes étaient alignées à plat : on les parcourait toutes avant de choisir.
+ * Rangées, on saute à celle qui nous concerne - et l'on découvre au passage ce que la
+ * plateforme sait faire d'autre, ce qu'une grille indifférenciée ne montre pas.
+ */
+.famille {
+  padding: 0 18px;
+}
+
+.famille:first-of-type {
+  padding-top: 16px;
+}
+
+.famille:last-of-type {
+  padding-bottom: 18px;
+}
+
+.familleTitre {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
 .grille {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding: 18px;
+  padding: 0 0 16px;
+}
+
+.famille:last-of-type .grille {
+  padding-bottom: 0;
+}
+
+/*
+ * La fenêtre défile quand les familles la débordent.
+ *
+ * Sur un portable de 800 px de haut, la dernière famille passait sous le pli sans que
+ * rien ne l'indique - et l'en-tête sortait de l'écran avec elle.
+ */
+.fenetre {
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.familles {
+  overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+  .grille {
+    grid-template-columns: 1fr;
+  }
 }
 
 .carte,

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { accorder } from "@/domain/formalite/etapes";
 import { ATTENTES_MONTREES } from "@/domain/formalite/actions";
 import type { ActionDeDossier } from "@/domain/formalite/actions";
 import { enRetard, type Echeance, type Indicateurs, type Ton } from "@/domain/formalite/accueil";
@@ -20,18 +19,30 @@ import styles from "./TableauDeBord.module.css";
 /* ------------------------------------------------------------ Les chiffres */
 
 /**
- * Trois nombres sur une ligne, séparés par un filet.
+ * Les chiffres qui valent quelque chose, sur une ligne.
  *
  * Pas des cartes : ce ne sont pas des indicateurs financiers qu'on vient contempler,
- * mais un état des lieux qu'on lit en passant. Un zéro s'affiche - « 0 action
- * requise » est une bonne nouvelle qu'il faut pouvoir lire.
+ * mais un état des lieux qu'on lit en passant.
+ *
+ * Un zéro ne s'écrit pas. « 0 en validation » occupe la même place qu'un chiffre et
+ * n'apprend rien : il annonce une absence là où l'on cherche une présence, et il fait
+ * douter - on relit pour vérifier qu'on n'a rien manqué. La ligne ne porte donc que ce
+ * qui existe, et disparaît quand il n'y a plus rien à compter.
  */
 export function Indicateurs({ chiffres }: { chiffres: Indicateurs }) {
   const lignes = [
-    { valeur: chiffres.enCours, libelle: accorder(chiffres.enCours, "formalité en cours", "formalités en cours").replace(/^\d+\s/, "") },
-    { valeur: chiffres.actionsRequises, libelle: chiffres.actionsRequises > 1 ? "actions requises" : "action requise" },
+    {
+      valeur: chiffres.enCours,
+      libelle: chiffres.enCours > 1 ? "formalités en cours" : "formalité en cours",
+    },
+    {
+      valeur: chiffres.actionsRequises,
+      libelle: chiffres.actionsRequises > 1 ? "actions requises" : "action requise",
+    },
     { valeur: chiffres.enValidation, libelle: "en validation" },
-  ];
+  ].filter((ligne) => ligne.valeur > 0);
+
+  if (lignes.length === 0) return null;
 
   return (
     <dl className={styles.indicateurs}>
@@ -159,8 +170,11 @@ export function Attention({ actions }: { actions: ActionDeDossier[] }) {
 
 export interface CarteFormalite {
   id: number;
+  /** « Création SASU » : la nature de l'opération, non celle de la société. */
   type: string;
   societe: string;
+  /** « Étape 1 sur 5 · Informations », quand le parcours l'expose. */
+  etape?: string | null;
   pourcentage: number;
   etat: string;
   ton: Ton;
@@ -202,9 +216,17 @@ export function FormalitesEnCours({
                 <StatutBadge ton={carte.ton} libelle={carte.etat} />
               </div>
 
+              {/*
+                Trois lignes, trois choses.
+                « SASU PARCOURS SIGNATURE » sur une seule ligne mélangeait la forme de la
+                société et son nom, et taisait ce qu'on était en train de lui faire : on
+                lisait un nom sans savoir s'il s'agissait de la créer ou de la fermer.
+              */}
               <p className={styles.formaliteSociete} title={carte.societe}>
                 {carte.societe}
               </p>
+
+              {carte.etape && <p className={styles.formaliteEtape}>{carte.etape}</p>}
 
               <div
                 className={styles.jauge}

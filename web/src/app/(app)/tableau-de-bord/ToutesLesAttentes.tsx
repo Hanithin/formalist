@@ -8,7 +8,7 @@ import type { ActionDeDossier } from "@/domain/formalite/actions";
 import styles from "./TableauDeBord.module.css";
 
 /**
- * La fenêtre « Tout ce qu'on attend de vous ».
+ * La fenêtre « Ce qui requiert votre attention ».
  *
  * L'accueil n'en montre que cinq : au-delà, la carte devenait une liste à faire
  * défiler, et l'activité récente disparaissait sous elle. Cette fenêtre les reprend
@@ -74,11 +74,11 @@ export function ToutesLesAttentes({
               className={styles.smModal}
               role="dialog"
               aria-modal="true"
-              aria-label="Tout ce qu'on attend de vous"
+              aria-label="Ce qui requiert votre attention"
             >
               <div className={styles.smHead}>
                 <div>
-                  <h3 className={styles.smTitle}>Tout ce qu&apos;on attend de vous</h3>
+                  <h3 className={styles.smTitle}>Ce qui requiert votre attention</h3>
                   <p className={styles.smSub}>
                     {accorder(actions.length, "action à traiter", "actions à traiter")}, les
                     bloquantes d&apos;abord
@@ -106,33 +106,41 @@ export function ToutesLesAttentes({
                 </button>
               </div>
 
-              {/* Les mêmes lignes que dans la carte : on ne réapprend pas à les lire. */}
+              {/*
+                Les mêmes rangées que sur l'accueil, à la classe près.
+                Elles en avaient d'autres, qui laissaient la description passer sur deux
+                lignes : les rangées n'avaient plus la même hauteur, et les boutons -
+                centrés verticalement - se décalaient les uns par rapport aux autres.
+              */}
               <div className={styles.smList}>
-                <div className={styles.todoList}>
+                <ul className={styles.attentions}>
                   {actions.map((a, i) => (
-                    <Link
-                      key={a.dossierId + "-" + i}
-                      href={a.lien}
-                      className={a.urgent ? `${styles.todo} ${styles.urgent}` : styles.todo}
-                      onClick={() => setOuverte(false)}
-                    >
-                      <span className={styles.todoDot} />
-                      <span className={styles.todoBody}>
-                        <span className={styles.todoTitle}>{a.titre}</span>
-                        <span className={styles.todoDesc}>
-                          {plusieurs ? (
-                            <>
-                              <strong>{a.societe}</strong> · {a.precision}
-                            </>
-                          ) : (
-                            a.precision
-                          )}
+                    <li key={a.dossierId + "-" + i}>
+                      <Link
+                        href={a.lien}
+                        className={
+                          a.urgent ? `${styles.attention} ${styles.urgente}` : styles.attention
+                        }
+                        onClick={() => setOuverte(false)}
+                      >
+                        <span className={styles.attentionPastille} aria-hidden="true" />
+                        <span className={styles.attentionCorps}>
+                          <span className={styles.attentionTitre}>{a.titre}</span>
+                          <span className={styles.attentionDetail}>
+                            {plusieurs ? (
+                              <>
+                                <strong>{a.societe}</strong> · {a.precision}
+                              </>
+                            ) : (
+                              a.precision
+                            )}
+                          </span>
                         </span>
-                      </span>
-                      <span className={styles.todoCta}>{a.bouton}</span>
-                    </Link>
+                        <span className={styles.attentionGeste}>{a.bouton}</span>
+                      </Link>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
 
               <div className={styles.smFoot}>

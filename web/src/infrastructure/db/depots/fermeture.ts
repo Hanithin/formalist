@@ -6,6 +6,7 @@ import type { Voie } from "@/domain/fermeture/voie";
 import type { SocieteFermee, AssociePresent } from "@/domain/fermeture/gabarit";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "../sessions";
+import { SOCIETE_A_IDENTIFIER } from "@/domain/formalite/liste";
 
 /**
  * Les dossiers de fermeture.
@@ -62,7 +63,6 @@ const VIDE: Fermeture = {
   jalons: {},
 };
 
-const SOCIETE_A_IDENTIFIER = "Société à identifier";
 
 export function lireFermeture(dataJson: string | null): Fermeture {
   if (!dataJson) return structuredClone(VIDE);

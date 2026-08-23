@@ -6,7 +6,7 @@ import {
   entreeActive,
   estRubrique,
 } from "@/domain/navigation/menu";
-import { PARCOURS } from "@/domain/navigation/parcours";
+import { FAMILLES, PARCOURS } from "@/domain/navigation/parcours";
 import { ICONES } from "@/domain/navigation/icones";
 
 const liensPour = (roles: Parameters<typeof menuPour>[0]) =>
@@ -224,10 +224,20 @@ describe("les parcours qu'on peut ouvrir", () => {
     }
   });
 
+  it("chaque famille de la fenêtre coiffe au moins un parcours", () => {
+    for (const famille of FAMILLES) {
+      expect(famille.parcours.length, famille.titre).toBeGreaterThan(0);
+    }
+    // Et tous les parcours sont rangés : aucun ne se perd hors des familles.
+    expect(PARCOURS.length).toBe(FAMILLES.reduce((t, f) => t + f.parcours.length, 0));
+  });
+
   it("ses intitulés sont tous des verbes : elle dit ce qu'on fait", () => {
     // La colonne dit où l'on va, la fenêtre ce qu'on entreprend. Deux registres, tenus.
     for (const parcours of PARCOURS) {
-      expect(parcours.titre, parcours.lien).toMatch(/^(Créer|Modifier|Déposer|Fermer|Rédiger|Transférer)\b/);
+      expect(parcours.titre, parcours.lien).toMatch(
+        /^(Créer|Modifier|Déposer|Fermer|Rédiger|Consulter|Transférer)\b/
+      );
     }
   });
 });

@@ -8,6 +8,7 @@ import type { Convention } from "@/domain/comptes/conventions";
 import type { AssociePresent, SocieteApprouvante } from "@/domain/comptes/gabarit";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "../sessions";
+import { SOCIETE_A_IDENTIFIER } from "@/domain/formalite/liste";
 
 /**
  * Les dossiers d'approbation des comptes.
@@ -59,7 +60,6 @@ const VIDE: Comptes = {
  * Elle sert de marqueur autant que d'affichage : c'est à elle qu'on reconnaît un
  * dossier resté sur la ligne de départ, et qu'on reprend au lieu d'en ouvrir un second.
  */
-const SOCIETE_A_IDENTIFIER = "Société à identifier";
 
 export function lireComptes(dataJson: string | null): Comptes {
   if (!dataJson) return structuredClone(VIDE);

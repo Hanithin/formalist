@@ -2,21 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  FILTRES,
-  comptesParFiltre,
-  correspond,
-  dateRelative,
-  pageDe,
-  paginer,
-  parModificationRecente,
-  retenu,
-  statistiques,
-  type DossierListe,
-  type ValeurFiltre,
-  adresseDuDossier,
-  gesteDuDossier,
-} from "@/domain/formalite/liste";
+import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuType, nomAffichable, pageDe, paginer, parModificationRecente, retenu, statistiques, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
 import { avancementDuDossier, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
 import styles from "./Formalites.module.css";
 
@@ -276,7 +262,13 @@ function Carte({ dossier }: { dossier: DossierListe }) {
       </div>
 
       <span className={styles.dossierTitle}>
-        {dossier.societe || "Sans nom"}
+        {/*
+          Le nom, ou ce que le dossier est.
+          « Société à identifier » est un marqueur de base : posé en titre, il se lit
+          comme un nom de société, et l'on ouvre le dossier pour découvrir laquelle.
+        */}
+        {nomAffichable(dossier.societe) ??
+          "Nouveau dossier · " + (libelleDuType(dossier.type)?.toLowerCase() ?? "formalité")}
         {dossier.nonLus > 0 && (
           <span
             className={styles.notifBadge}

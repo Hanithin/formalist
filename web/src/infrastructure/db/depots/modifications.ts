@@ -13,6 +13,7 @@ import type { Cession } from "@/domain/modification/cession";
 import type { EtapeDHistorique } from "@/domain/modification/historique";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "../sessions";
+import { SOCIETE_A_IDENTIFIER } from "@/domain/formalite/liste";
 
 /**
  * Les dossiers de modification.
@@ -97,7 +98,6 @@ const VIDE: Modification = {
  * dossier resté sur la ligne de départ. Écrite à deux endroits sous forme de chaîne
  * libre, elle se serait désaccordée à la première reformulation.
  */
-const SOCIETE_A_IDENTIFIER = "Société à identifier";
 
 export function lireModification(dataJson: string | null): Modification {
   if (!dataJson) return { ...VIDE };

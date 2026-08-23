@@ -183,6 +183,7 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
 
     const contexte: ContexteDossier = {
       dossierId: d.id,
+      type: d.type,
       status: d.status,
       phase: d.phase ?? 1,
       banque: banqueDe(brouillon),

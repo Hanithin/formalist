@@ -51,6 +51,33 @@ export function libelleDuType(type: string | null | undefined): string | null {
   return TYPES[brut] ?? brut.charAt(0).toUpperCase() + brut.slice(1);
 }
 
+/**
+ * Le nom qu'un dossier porte tant qu'aucune société n'y est rattachée.
+ *
+ * Il sert de marqueur en base - c'est à lui qu'on reconnaît un dossier resté sur la
+ * ligne de départ, et qu'on reprend au lieu d'en ouvrir un second. Il n'a jamais été
+ * fait pour être lu : « Société à identifier » écrit sous « Vous travaillez sur »
+ * ressemble à un nom de société, et l'on cherche laquelle.
+ */
+export const SOCIETE_A_IDENTIFIER = "Société à identifier";
+
+/** Ce dossier porte-t-il encore son nom d'attente ? */
+export function sansSociete(nom: string | null | undefined): boolean {
+  const propre = (nom ?? "").trim();
+  return propre === "" || propre === SOCIETE_A_IDENTIFIER;
+}
+
+/**
+ * Le nom à écrire, ou rien.
+ *
+ * Rien plutôt qu'un nom d'attente : l'écran qui l'affiche sait mieux que nous quoi
+ * mettre à la place - un type de formalité, un bandeau qui disparaît, une invitation
+ * à choisir la société.
+ */
+export function nomAffichable(nom: string | null | undefined): string | null {
+  return sansSociete(nom) ? null : (nom ?? "").trim();
+}
+
 /* ---------- Filtres ---------- */
 
 export const FILTRES = [

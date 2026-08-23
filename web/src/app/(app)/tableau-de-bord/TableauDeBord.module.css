@@ -1107,6 +1107,16 @@
   white-space: nowrap;
 }
 
+/* L'étape, sous le nom : une ligne de plus, mais celle qui dit où l'on en est. */
+.formaliteEtape {
+  margin: -4px 0 0;
+  font-size: 12.5px;
+  color: #8a8a92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .formalitePied {
   display: flex;
   align-items: center;
@@ -1301,16 +1311,21 @@
 
 /* --------------------------------------------------------- Les états vides */
 
+/*
+ * Un état vide est une absence, non une carte à contempler.
+ *
+ * Il occupait vingt-deux pixels de fond gris et une bordure pointillée, pour dire
+ * qu'il n'y avait rien. Aligné à gauche et posé sur le fond de la page, il pèse ce
+ * qu'il annonce.
+ */
 .vide {
-  padding: 22px 20px;
+  padding: 14px 16px;
   border: 1px dashed #e2e2e5;
   border-radius: 12px;
-  background: #fafafa;
-  text-align: center;
 }
 
 .videTitre {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   font-size: 14px;
   font-weight: 600;
   color: #3f3f46;

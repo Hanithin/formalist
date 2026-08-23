@@ -3,6 +3,7 @@ import { mesDossiers } from "./dossiers";
 import { nonLus as nonLusDuSupport } from "./support";
 import type { UtilisateurConnecte } from "../sessions";
 import { COLONNE_VIDE, type ResumeColonne } from "@/domain/navigation/colonne";
+import { nomAffichable } from "@/domain/formalite/liste";
 
 /**
  * Ce que la colonne de navigation affiche en plus de ses liens : la société
@@ -61,8 +62,16 @@ export async function resumeColonne(utilisateur: UtilisateurConnecte): Promise<R
 
   // Même définition que la colonne d'origine : un dossier de création ou de
   // modification, portant une dénomination.
+  /*
+   * Un dossier sans société n'a rien à situer.
+   *
+   * Le bandeau « Vous travaillez sur » affichait alors « Société à identifier », qui
+   * est un marqueur de base de données et se lit comme un nom : on cherche laquelle,
+   * et l'on clique pour comprendre. Tant que la société n'est pas choisie, le bandeau
+   * n'apparaît pas - il reviendra dès qu'il aura quelque chose à dire.
+   */
   const societes = dossiers.filter(
-    (d) => d.societe?.trim() && (!d.type || TYPES_SOCIETE.has(d.type))
+    (d) => nomAffichable(d.societe) && (!d.type || TYPES_SOCIETE.has(d.type))
   );
 
   const enCours = dossiers.filter((d) => !CLOS.has(d.status ?? "")).length;
