@@ -4159,6 +4159,19 @@
   gap: 8px;
 }
 
+/*
+ * La carte que `globals.css` pose sur `main section > ul > li` ne vaut pas ici.
+ *
+ * Elle encadre une ligne dont chaque champ a déjà son cadre - un cadre dans un cadre -
+ * et son retrait de 17 px décalait la ligne par rapport aux intitulés, qui eux tombent
+ * au bord du bloc. Les colonnes ne se rejoignaient plus.
+ */
+.signataire {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 /* Les intitulés une seule fois, en tête : les répéter à chaque ligne les noierait. */
 .signatairesEntete {
   margin-top: 14px;
@@ -4174,7 +4187,9 @@
   max-width: none;
 }
 
-.signataireTitres {
+/* Un nombre se lit par la droite : l'intitulé se cale du même côté que les chiffres. */
+.signataireTitres,
+.signatairesEntete span:nth-child(4) {
   text-align: right;
 }
 

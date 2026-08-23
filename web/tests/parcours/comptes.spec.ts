@@ -241,6 +241,34 @@ test("le parcours s'affiche à chacune de ses étapes", async ({ page, request }
   }
 });
 
+test("les intitulés des associés tombent sur leurs colonnes", async ({ page, request }) => {
+  /*
+   * L'en-tête et les lignes sont deux grilles distinctes : rien ne les tient ensemble
+   * qu'un même gabarit de colonnes. La carte que `globals.css` pose sur les `li` d'une
+   * section les avait déjà décalées de son retrait, et le décalage ne se voit qu'à
+   * l'œil - aucun test fonctionnel n'en souffre.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await page.goto("/depot-des-comptes?dossier=" + dossier + "&etape=1");
+
+  const bords = async (selecteur: string) =>
+    Promise.all(
+      (await page.locator(selecteur).all()).map(async (element) => {
+        const boite = await element.boundingBox();
+        return { gauche: boite?.x ?? 0, droite: (boite?.x ?? 0) + (boite?.width ?? 0) };
+      })
+    );
+
+  const entete = await bords("[class*='signatairesEntete'] > span");
+  const champs = await bords("ul[class*='signataires'] > li > *");
+
+  for (const colonne of [0, 1, 2]) {
+    expect(entete[colonne].gauche, "colonne " + colonne).toBeCloseTo(champs[colonne].gauche, 0);
+  }
+  // Les titres se lisent par la droite : intitulé et chiffres s'y calent ensemble.
+  expect(entete[3].droite).toBeCloseTo(champs[3].droite, 0);
+});
+
 test("l'écran d'entrée annonce les seuils de confidentialité", async ({ page }) => {
   /*
    * C'est souvent la raison de la visite : découvrir à la dernière étape qu'on n'y a
