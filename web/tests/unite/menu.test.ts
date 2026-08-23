@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   MENU,
-  SEPARATEUR,
   menuPour,
   entreesDuMenu,
   entreeActive,
+  estRubrique,
 } from "@/domain/navigation/menu";
 import { ICONES } from "@/domain/navigation/icones";
 
@@ -43,26 +43,42 @@ describe("menu selon les rôles", () => {
   });
 });
 
-describe("filets de séparation", () => {
-  it("un client perd les entrées de métier, et le filet qui les précédait", () => {
-    const menu = menuPour(["user"]);
-    // Sans les trois entrées réservées, le second filet n'a plus rien à séparer.
-    expect(menu.filter((e) => e === SEPARATEUR)).toHaveLength(1);
+describe("rubriques", () => {
+  const rubriquesDe = (roles: Parameters<typeof menuPour>[0]) =>
+    menuPour(roles)
+      .filter(estRubrique)
+      .map((r) => r.rubrique);
+
+  it("un client voit les trois rubriques qui le concernent, pas celle du cabinet", () => {
+    expect(rubriquesDe(["user"])).toEqual(["Formalités", "Mon espace", "Compte"]);
   });
 
-  it("un administrateur garde les deux", () => {
-    expect(menuPour(["admin"]).filter((e) => e === SEPARATEUR)).toHaveLength(2);
+  it("un avocat et un administrateur voient aussi le cabinet", () => {
+    expect(rubriquesDe(["avocat"])).toContain("Cabinet");
+    expect(rubriquesDe(["admin"])).toContain("Cabinet");
   });
 
-  it("aucun filet en tête, en queue, ni deux de suite", () => {
+  it("aucune rubrique ne coiffe le vide", () => {
+    /*
+     * Une rubrique vaut par ce qui la suit. « Cabinet » laissée en bas de colonne
+     * d'un client, sans aucune entrée dessous, annoncerait un groupe inexistant.
+     */
     for (const roles of [["user"], ["avocat"], ["admin"]] as const) {
       const menu = menuPour([...roles]);
-      expect(menu[0]).not.toBe(SEPARATEUR);
-      expect(menu[menu.length - 1]).not.toBe(SEPARATEUR);
-      for (let i = 1; i < menu.length; i++) {
-        expect(menu[i] === SEPARATEUR && menu[i - 1] === SEPARATEUR).toBe(false);
+      expect(menu[menu.length - 1], roles.join()).not.toSatisfy(estRubrique);
+
+      for (const [i, element] of menu.entries()) {
+        if (!estRubrique(element)) continue;
+        const suivant = menu[i + 1];
+        expect(suivant && !estRubrique(suivant), element.rubrique).toBe(true);
       }
     }
+  });
+
+  it("le tableau de bord reste seul en tête, sans rubrique", () => {
+    const menu = menuPour(["user"]);
+    expect(estRubrique(menu[0])).toBe(false);
+    expect(estRubrique(menu[1])).toBe(true);
   });
 });
 
@@ -141,25 +157,23 @@ describe("les fonctions annoncées mais pas ouvertes", () => {
      * dit désormais que rien n'est annoncé sans être ouvert, et il redeviendra utile le
      * jour où une entrée sera ajoutée avant son parcours.
      */
-    const bientot = MENU.filter((e) => e !== SEPARATEUR && e.bientot).map((e) =>
-      e === SEPARATEUR ? "" : e.libelle
-    );
+    const bientot = entreesDuMenu(MENU)
+      .filter((e) => e.bientot)
+      .map((e) => e.libelle);
 
     expect(bientot).toEqual([]);
   });
 
   it("la fermeture est ouverte, et mène à son parcours", () => {
-    const menu = menuPour(["user"]);
-    const entree = menu.find((e) => e !== SEPARATEUR && e.lien === "/fermeture");
+    const entree = entreesDuMenu(menuPour(["user"])).find((e) => e.lien === "/fermeture");
     expect(entree, "l'entrée doit exister").toBeTruthy();
-    expect(entree && entree !== SEPARATEUR && entree.bientot).toBeUndefined();
+    expect(entree?.bientot).toBeUndefined();
   });
 
   it("la modification est ouverte, et mène à son parcours", () => {
     // Le badge est tombé avec la mise en service du parcours : le laisser aurait
     // grisé une page qui fonctionne.
-    const menu = menuPour(["user"]);
-    const entree = menu.find((e) => e !== SEPARATEUR && e.lien === "/modification");
-    expect(entree && entree !== SEPARATEUR && entree.bientot).toBeUndefined();
+    const entree = entreesDuMenu(menuPour(["user"])).find((e) => e.lien === "/modification");
+    expect(entree?.bientot).toBeUndefined();
   });
 });

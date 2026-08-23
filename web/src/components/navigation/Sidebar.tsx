@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { menuPour, entreeActive, SEPARATEUR } from "@/domain/navigation/menu";
+import { menuPour, entreeActive, estRubrique } from "@/domain/navigation/menu";
 import { libelleCompteur, type ResumeColonne } from "@/domain/navigation/colonne";
 import { libelleDuType } from "@/domain/formalite/liste";
 import { icone } from "@/domain/navigation/icones";
@@ -98,8 +98,21 @@ export function Sidebar({ utilisateur, resume }: Props) {
 
       <Navigation>
         {menu.map((element, i) => {
-          if (element === SEPARATEUR) {
-            return <hr key={"filet-" + i} className={styles.filet} />;
+          if (estRubrique(element)) {
+            /*
+             * Un intertitre, non une entrée.
+             *
+             * Il ne se clique pas et ne prend pas le focus : c'est une étiquette. Le
+             * lecteur d'écran le rattache au groupe qui suit par `aria-labelledby` sur
+             * la liste, ce que la colonne ne fait pas encore - elle est une suite de
+             * liens à plat. En attendant, un `<p>` vaut mieux qu'un titre de niveau
+             * arbitraire au milieu de la page.
+             */
+            return (
+              <p key={"rubrique-" + i} className={styles.rubrique}>
+                {element.rubrique}
+              </p>
+            );
           }
 
           const lienNu = element.lien.split("?")[0];

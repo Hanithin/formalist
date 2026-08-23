@@ -265,11 +265,25 @@
 
 /* Le filet de séparation, à la place des titres de rubrique : c'est ainsi que la
    colonne d'origine découpait ses douze entrées. */
-.filet {
-  height: 1px;
-  margin: 12px;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
+/*
+ * L'intertitre d'un groupe.
+ *
+ * Le filet est porté par le titre lui-même, en bordure haute : deux éléments - un
+ * trait puis un mot - auraient coûté deux fois la hauteur pour dire une seule chose.
+ * La colonne compte dix-huit entrées ; chaque ligne gagnée compte.
+ *
+ * `letter-spacing` reste à zéro, comme partout : des capitales à 11 pixels se lisent
+ * très bien sans être écartées.
+ */
+.rubrique {
+  margin: 16px 0 6px;
+  padding: 14px 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
 }
 
 .icone {
