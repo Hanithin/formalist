@@ -9,23 +9,32 @@ import { retirerDossiers } from "./nettoyage";
  */
 
 test.describe("tableau de bord du client", () => {
-  test("accueille par son prénom, avec une phrase du moment", async ({ page }) => {
+  test("accueille par son prénom, sans phrase de circonstance", async ({ page }) => {
+    /*
+     * L'accueil disait « Bonjour Camille, besoin de finaliser un dossier ? ». La
+     * question était rhétorique : c'est la page elle-même qui doit y répondre, et
+     * elle le fait trois lignes plus bas. Le titre se contente de nommer.
+     */
     await page.goto("/tableau-de-bord");
     const titre = page.getByRole("heading", { level: 1 });
 
-    await expect(titre).toContainText("Camille");
-    /*
-     * La page d'origine ne se contentait pas de « Bonjour Prénom » : buildGreeting()
-     * ajoutait une phrase suivant le moment de la journée. Elle se reconnaît à sa
-     * virgule et à ce qui suit.
-     */
-    await expect(titre).toHaveText(/^(Bonjour|Bonsoir) Camille, .+/);
+    await expect(titre).toHaveText(/^(Bonjour|Bonsoir) Camille$/);
   });
 
-  test("dit ce qu'on attend, avec la société concernée", async ({ page }) => {
+  test("annonce en trois chiffres ce qu'il y a à savoir", async ({ page }) => {
     await page.goto("/tableau-de-bord");
 
-    await expect(page.getByRole("heading", { name: "Ce qu'on attend de vous" })).toBeVisible();
+    await expect(page.getByText(/formalités? en cours/)).toBeVisible();
+    await expect(page.getByText(/actions? requises?/).first()).toBeVisible();
+    await expect(page.getByText("en validation")).toBeVisible();
+  });
+
+  test("dit ce qui requiert l'attention, avec la société concernée", async ({ page }) => {
+    await page.goto("/tableau-de-bord");
+
+    await expect(
+      page.getByRole("heading", { name: "Ce qui requiert votre attention" })
+    ).toBeVisible();
     // Le document refusé du jeu de données doit remonter en premier.
     await expect(page.getByText("Un document à remplacer").first()).toBeVisible();
     await expect(page.getByText(/PARCOURS EN COURS/).first()).toBeVisible();
@@ -37,47 +46,77 @@ test.describe("tableau de bord du client", () => {
     await expect(lien).toHaveAttribute("href", /\/creation\?dossier=\d+/);
   });
 
-  test("les trois sociétés les plus récentes sont mises en avant", async ({ page, request }) => {
-    // L'accueil ne liste pas tous les dossiers : il montre les trois derniers et
-    // renvoie au reste. Sur trente-cinq dossiers, tout lister ferait de l'accueil
-    // une deuxième page « Mes formalités ».
+  test("le dossier mis en avant ne se répète pas plus bas", async ({ page }) => {
+    /*
+     * C'était le défaut le plus visible : un même dossier figurait dans le bandeau de
+     * reprise, dans les vignettes et dans la liste des attentes. Sur vingt dossiers,
+     * l'accueil affichait vingt fois la même phrase sans jamais dire ce qui pressait.
+     */
     await page.goto("/tableau-de-bord");
-    await expect(page.getByRole("heading", { name: /Vos sociétés|Votre société/ })).toBeVisible();
 
-    // Trois vignettes, pas une de plus, et le bouton annonce le total.
-    const vignettes = page.getByRole("region", { name: "Vos sociétés" });
-    await expect(vignettes.getByRole("link", { name: /Continuer|Consulter/ })).toHaveCount(3);
+    const reprise = page.getByRole("region", { name: "Reprendre" });
+    await expect(reprise).toBeVisible();
 
-    const { dossiers } = await (await request.get("/api/formalites")).json();
-    await expect(page.getByRole("button", { name: /Voir toutes/ })).toContainText(
-      String(dossiers.length)
-    );
+    const societeReprise = await reprise.locator("strong").first().textContent();
+    expect(societeReprise, "le bandeau doit nommer une société").toBeTruthy();
+
+    const attention = page.getByRole("region", { name: "Ce qui requiert votre attention" });
+    await expect(attention.getByText(societeReprise!.trim(), { exact: true })).toHaveCount(0);
   });
 
-  test("« Voir toutes » ouvre la fenêtre et sa recherche", async ({ page }) => {
+  test("les formalités en cours sont des formalités, non des sociétés", async ({ page }) => {
+    /*
+     * La section s'appelait « Vos sociétés » et montrait des barres d'avancement avec
+     * un bouton « Continuer » : ce sont des dossiers. Une société est permanente, une
+     * formalité est une opération - la confusion tenait au seul titre.
+     */
     await page.goto("/tableau-de-bord");
-    await page.getByRole("button", { name: /Voir toutes/ }).click();
 
-    const fenetre = page.getByRole("dialog", { name: "Toutes vos sociétés" });
-    await expect(fenetre).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Formalités en cours" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Vos sociétés/ })).toHaveCount(0);
 
-    await fenetre.getByLabel("Rechercher une société").fill("PARCOURS TERMINEE");
-    await expect(fenetre.getByText("PARCOURS TERMINEE")).toBeVisible();
-    await expect(fenetre.getByText("PARCOURS SIGNATURE")).toHaveCount(0);
+    const section = page.getByRole("region", { name: "Formalités en cours" });
+    const vignettes = section.locator("li");
+    expect(await vignettes.count()).toBeLessThanOrEqual(3);
 
-    // Une recherche sans résultat le dit, plutôt que de laisser une liste vide.
-    await fenetre.getByLabel("Rechercher une société").fill("zzzz introuvable");
-    await expect(fenetre.getByText(/Aucune société ne correspond/)).toBeVisible();
+    // Chaque vignette distingue le type de formalité du nom de la société.
+    await expect(section.getByText(/Création|Modification|Dépôt des comptes|Fermeture/).first()).toBeVisible();
+  });
 
-    await page.keyboard.press("Escape");
-    await expect(fenetre).not.toBeVisible();
+  test("une section d'échéances existe, même sans échéance connue", async ({ page }) => {
+    /*
+     * Nous n'avons pas de calendrier des obligations : la section reste vide plutôt
+     * que d'afficher un exemple qui ne bougerait jamais. Elle doit exister quand même,
+     * sans quoi personne ne saura qu'elle se remplira.
+     */
+    await page.goto("/tableau-de-bord");
+    await expect(page.getByRole("heading", { name: "Échéances à venir" })).toBeVisible();
+  });
+
+  test("« Voir tout » mène à la liste des formalités", async ({ page, request }) => {
+    /*
+     * Le lien n'apparaît que s'il reste des formalités à voir : trois vignettes au
+     * plus. Le jeu de données en compte parfois exactement trois - le seuil se mesure
+     * donc sur les dossiers ouverts, non sur le total, qui inclut les terminés.
+     */
+    const { dossiers } = (await (await request.get("/api/formalites")).json()) as {
+      dossiers: { status: string | null }[];
+    };
+    const ouverts = dossiers.filter((d) => d.status !== "terminee" && d.status !== "archive");
+    test.skip(ouverts.length <= 3, "il faut plus de trois dossiers ouverts");
+
+    await page.goto("/tableau-de-bord");
+    const section = page.getByRole("region", { name: "Formalités en cours" });
+    await expect(section.getByRole("link", { name: "Voir tout" })).toHaveAttribute(
+      "href",
+      "/formalites"
+    );
   });
 
   test("aucun lien de l'accueil ne mène nulle part", async ({ page, request }) => {
     // Les vignettes ont pointé sur /formalites/<id>, qui n'existe pas : la page
     // s'affichait bien et « Continuer » rendait un 404.
     await page.goto("/tableau-de-bord");
-    await page.getByRole("button", { name: /Voir toutes/ }).click();
 
     const adresses = await page.getByRole("link").evaluateAll((liens) =>
       liens
@@ -326,7 +365,7 @@ test.describe("la colonne suit la page ouverte", () => {
   });
 });
 
-test.describe("ce qu'on attend de vous", () => {
+test.describe("ce qui requiert votre attention", () => {
   /** Les dossiers semés pour dépasser le seuil, retirés après la série. */
   const semes: number[] = [];
 
@@ -350,7 +389,7 @@ test.describe("ce qu'on attend de vous", () => {
 
     await page.goto("/tableau-de-bord");
 
-    const carte = page.getByRole("region", { name: "Ce qu'on attend de vous" });
+    const carte = page.getByRole("region", { name: "Ce qui requiert votre attention" });
     const lignes = carte.locator("a[href*='/creation'], a[href*='/signer'], a[href*='/documents']");
 
     /*
@@ -379,7 +418,7 @@ test.describe("ce qu'on attend de vous", () => {
 
     // Le jeu de données comprend un document refusé, qui arrête son dossier : il doit
     // figurer parmi les cinq, pas au fond de la liste.
-    const carte = page.getByRole("region", { name: "Ce qu'on attend de vous" });
+    const carte = page.getByRole("region", { name: "Ce qui requiert votre attention" });
     await expect(carte.getByText("Un document à remplacer")).toBeVisible();
   });
 });

@@ -106,6 +106,31 @@ export function dateLimiteApprobation(
   return cible.toISOString().slice(0, 10);
 }
 
+/**
+ * La date limite de dépôt au greffe.
+ *
+ * Un mois après l'approbation, deux par voie électronique - et c'est par voie
+ * électronique que nous déposons. On retient donc le délai d'un mois, qui est le plus
+ * court : annoncer deux mois à un client qui déposerait au guichet le mettrait en
+ * retard sans qu'il le sache.
+ */
+export function dateLimiteDepot(approbationIso: string | null | undefined): string | null {
+  if (!approbationIso) return null;
+
+  const approbation = new Date(approbationIso);
+  if (Number.isNaN(approbation.getTime())) return null;
+
+  const cible = new Date(
+    Date.UTC(
+      approbation.getUTCFullYear(),
+      approbation.getUTCMonth() + 1,
+      approbation.getUTCDate()
+    )
+  );
+  if (cible.getUTCMonth() !== (approbation.getUTCMonth() + 1) % 12) cible.setUTCDate(0);
+  return cible.toISOString().slice(0, 10);
+}
+
 /* -------------------------------------------------------- La réserve légale */
 
 /** La part du bénéfice prélevée, et le plafond auquel le prélèvement s'arrête. */

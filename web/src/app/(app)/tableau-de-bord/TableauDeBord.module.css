@@ -709,3 +709,674 @@
   .jnStep { flex: 0 0 33%; }
   .jnStep::before { display: none; }
 }
+
+
+/* ==========================================================================
+   L'accueil refondu.
+
+   Il répond à « qu'est-ce qui m'attend » plutôt qu'à « voici vos dossiers ». La
+   direction artistique ne bouge pas - fond très clair, grands arrondis, jaune rare -
+   mais la densité augmente : le bandeau de reprise occupait un tiers de l'écran pour
+   une phrase, et l'activité récente une carte à deux colonnes pour cinq lignes.
+   ========================================================================== */
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 20px;
+  padding: 26px 32px 0;
+}
+
+.enteteTitre {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.enteteDate {
+  font-size: 13.5px;
+  color: #8a8a92;
+}
+
+/* --------------------------------------------------------- Les indicateurs */
+
+/*
+ * Trois nombres sur une ligne, non trois cartes.
+ *
+ * Des cartes en donneraient l'importance d'indicateurs financiers qu'on vient
+ * contempler. Ce sont des repères qu'on lit en passant, avant de descendre vers ce
+ * qui demande un geste.
+ */
+.indicateurs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0;
+  margin: 18px 0 26px;
+  padding: 0;
+}
+
+.indicateur {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0 22px;
+  border-left: 1px solid #e8e8ea;
+}
+
+.indicateur:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.indicateurValeur {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.indicateurLibelle {
+  margin: 0;
+  font-size: 13.5px;
+  color: #71717a;
+}
+
+/* ------------------------------------------------------- Le bloc de reprise */
+
+/*
+ * Un fond crème, non un fond jaune plein.
+ *
+ * Le bandeau d'avant se lisait comme une alerte alors qu'il n'annonce rien de grave :
+ * c'est une invitation à reprendre. Le jaune franc reste au badge « Action requise »,
+ * qui, lui, demande quelque chose.
+ */
+.reprendre {
+  padding: 22px 24px;
+  border: 1px solid #f2e7c3;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fefbf1 0%, #fdf9ec 100%);
+}
+
+.reprendreTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reprendreEtiquette {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1751b;
+}
+
+.reprendrePourcent {
+  font-size: 13px;
+  font-weight: 600;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+.reprendreTitre {
+  margin: 8px 0 14px;
+  font-size: 16.5px;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+.reprendreTitre strong {
+  font-weight: 600;
+  color: #18181b;
+}
+
+.reprendrePied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-top: 16px;
+}
+
+.reprendreSuite {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+  color: #3f3f46;
+}
+
+.reprendreSuiteEtiquette {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+.reprendreBouton {
+  flex-shrink: 0;
+  padding: 11px 22px;
+  border-radius: 10px;
+  background: #18181b;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.reprendreBouton:hover {
+  background: #000;
+}
+
+/* La jauge, partagée par le bloc de reprise et les vignettes. */
+.jauge {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(24, 24, 27, 0.08);
+  overflow: hidden;
+}
+
+.jaugeRemplie {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #18181b;
+  transition: width 0.3s ease;
+}
+
+/* ----------------------------------------------------------- Les sections */
+
+.section {
+  margin-top: 30px;
+}
+
+.sectionTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sectionTitre {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.sectionLien {
+  font-size: 13px;
+  font-weight: 500;
+  color: #71717a;
+  text-decoration: none;
+}
+
+.sectionLien:hover {
+  color: #18181b;
+}
+
+/* --------------------------------------------- Ce qui requiert l'attention */
+
+.attentions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * Le `li` n'est qu'un support : la carte, c'est le lien qu'il contient.
+ *
+ * `globals.css` en fait une carte à lui seul - fond, bordure, et surtout
+ * `display: flex`, qui réduisait le lien à la largeur de son texte : les lignes
+ * s'arrêtaient au milieu de la page, avec un vide à droite.
+ */
+.attentions > li,
+.echeances > li,
+.activites > li {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 0;
+}
+
+.attention {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 18px;
+  border: 1px solid #ececee;
+  border-radius: 12px;
+  background: #fff;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.attention:hover {
+  border-color: #d4d4d8;
+  background: #fafafa;
+}
+
+.attentionPastille {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d4d4d8;
+}
+
+.urgente .attentionPastille {
+  background: #e0a11a;
+}
+
+.attentionCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.attentionTitre {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.attentionDetail {
+  font-size: 13px;
+  color: #71717a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attentionDetail strong {
+  font-weight: 600;
+  color: #52525b;
+}
+
+.attentionGeste {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.attention:hover .attentionGeste {
+  border-color: #18181b;
+}
+
+/* ------------------------------------------------- Les formalités en cours */
+
+/*
+ * Trois colonnes, et trois vignettes au plus.
+ *
+ * `auto-fill` découpait la largeur en quatre pistes et laissait les deux cartes
+ * présentes à 250 px, avec la moitié de la ligne vide. On fixe le nombre de colonnes :
+ * la section n'en montre jamais plus de trois.
+ */
+.formalites {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 1100px) {
+  .formalites {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .formalites {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.formalite {
+  display: flex;
+  flex-direction: column;
+  /*
+   * `align-items: stretch`, contre la carte de `globals.css`.
+   *
+   * Elle centre ses enfants : la jauge, qui n'a pas de largeur propre, se réduisait
+   * alors à rien - la vignette annonçait « 80 % » sans montrer les 80 %.
+   */
+  align-items: stretch;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid #ececee;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.formaliteTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.formaliteType {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+/*
+ * Le nom de la société, sur une ligne et jamais coupé en deux.
+ *
+ * « SAS GREMLINS COMMUNICATION » passait à la ligne et poussait la jauge hors de la
+ * carte : les vignettes n'avaient plus la même hauteur.
+ */
+.formaliteSociete {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.formalitePied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.formalitePourcent {
+  font-size: 13px;
+  font-weight: 600;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+.formaliteGeste {
+  padding: 8px 16px;
+  border-radius: 9px;
+  background: #18181b;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.formaliteGeste:hover {
+  background: #000;
+}
+
+/* ------------------------------------------------------------ Les badges */
+
+.badge {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #52525b;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.badgeAction {
+  background: #fdf3d7;
+  color: #8a5f0a;
+}
+
+.badgeValidation {
+  background: #eef2f7;
+  color: #475569;
+}
+
+.badgeTermine {
+  background: #e9f5ec;
+  color: #256b38;
+}
+
+/* --------------------------------------------------------- Les échéances */
+
+.echeances,
+.activites {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.echeance {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border: 0;
+  border-bottom: 1px solid #f2f2f4;
+  background: none;
+  border-radius: 0;
+}
+
+.echeance:last-child {
+  border-bottom: none;
+}
+
+.echeanceCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.echeanceIntitule {
+  font-size: 14px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.echeanceSociete {
+  font-size: 12.5px;
+  color: #8a8a92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.echeanceDate {
+  font-size: 13px;
+  color: #52525b;
+  white-space: nowrap;
+}
+
+/* Une échéance passée n'est plus une échéance : c'est un retard, et ça se dit. */
+.depassee {
+  font-weight: 600;
+  color: #9c2620;
+}
+
+.echeanceGeste {
+  padding: 7px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #18181b;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.echeanceGeste:hover {
+  border-color: #18181b;
+}
+
+/* ---------------------------------------------------------- L'activité */
+
+.activite {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f2f2f4;
+  text-decoration: none;
+}
+
+.activites li:last-child .activite {
+  border-bottom: none;
+}
+
+.activitePastille {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d4d4d8;
+  transform: translateY(-2px);
+}
+
+.activiteCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.activiteSociete {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activiteTexte {
+  font-size: 12.5px;
+  color: #71717a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activiteQuand {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #a1a1aa;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------- Les états vides */
+
+.vide {
+  padding: 22px 20px;
+  border: 1px dashed #e2e2e5;
+  border-radius: 12px;
+  background: #fafafa;
+  text-align: center;
+}
+
+.videTitre {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3f3f46;
+  letter-spacing: 0;
+}
+
+.videTexte {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #8a8a92;
+}
+
+/* ------------------------------------------------------------ La grille */
+
+/*
+ * Deux colonnes sur grand écran, une seule dès qu'elles se serrent.
+ *
+ * Les échéances et l'activité sont deux listes courtes : côte à côte, elles tiennent
+ * dans le pli ; empilées, elles allongent la page pour rien.
+ */
+.deuxColonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 12px 32px;
+}
+
+@media (max-width: 720px) {
+  .entete {
+    padding: 20px 18px 0;
+  }
+
+  .indicateurs {
+    gap: 10px 0;
+    margin: 14px 0 20px;
+  }
+
+  /*
+   * Sur téléphone, les trois chiffres se lisent l'un sous l'autre.
+   *
+   * Le filet vertical qui les sépare devient horizontal : posé entre deux lignes, il
+   * découpait la colonne au milieu d'un chiffre.
+   */
+  .indicateur {
+    width: 100%;
+    padding: 0;
+    border-left: none;
+  }
+
+  .attention {
+    grid-template-columns: 8px minmax(0, 1fr);
+    row-gap: 10px;
+  }
+
+  .attentionGeste {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .echeance {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 8px;
+  }
+
+  .echeanceGeste {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}

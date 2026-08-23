@@ -3,6 +3,8 @@ import { mesDossiers, exigerDossier } from "./dossiers";
 import { actionsAttendues, prochaineEtape, type ContexteDossier } from "@/domain/formalite/actions";
 import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
 import type { EntreeJournal } from "@/domain/formalite/journal";
+import { dateLimiteApprobation, dateLimiteDepot } from "@/domain/comptes/regles";
+import { termeDuMandat } from "@/domain/fermeture/delais";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -130,6 +132,51 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
     signaturesPar.set(s.formalite_id, courant);
   }
 
+  /**
+   * Les deux dates que les dossiers portent vraiment.
+   *
+   * L'accueil annonce des échéances, et il n'a pas de calendrier des obligations : on
+   * ne lui donne donc que ce qui est réellement saisi. La clôture d'un exercice
+   * commande la date limite de dépôt ; la dissolution commande le terme du mandat du
+   * liquidateur. Le reste attendra que la donnée existe.
+   */
+  function echeanceDu(d: (typeof dossiers)[number]): {
+    limiteDepot: string | null;
+    termeDuMandat: string | null;
+  } {
+    if (d.type !== "comptes" && d.type !== "fermeture") {
+      return { limiteDepot: null, termeDuMandat: null };
+    }
+
+    let valeurs: Record<string, unknown> = {};
+    try {
+      const lu: unknown = JSON.parse(d.data_json ?? "{}");
+      if (lu && typeof lu === "object" && "valeurs" in lu) {
+        const brut = (lu as { valeurs?: unknown }).valeurs;
+        if (brut && typeof brut === "object") valeurs = brut as Record<string, unknown>;
+      }
+      if (d.type === "comptes" && lu && typeof lu === "object" && "societe" in lu) {
+        const societe = (lu as { societe?: { forme?: string } }).societe;
+        if (societe?.forme) valeurs.__forme = societe.forme;
+      }
+    } catch {
+      return { limiteDepot: null, termeDuMandat: null };
+    }
+
+    const texte = (cle: string) =>
+      typeof valeurs[cle] === "string" ? (valeurs[cle] as string) : null;
+
+    if (d.type === "comptes") {
+      const approbation = dateLimiteApprobation(
+        typeof valeurs.__forme === "string" ? valeurs.__forme : d.forme,
+        texte("dateCloture")
+      );
+      return { limiteDepot: dateLimiteDepot(approbation), termeDuMandat: null };
+    }
+
+    return { limiteDepot: null, termeDuMandat: termeDuMandat(texte("dateDissolution")) };
+  }
+
   const societes = dossiers.map((d) => {
     const brouillon = lireBrouillon(d.data_json);
     const compteurs = signaturesPar.get(d.id) ?? { total: 0, enAttente: 0 };
@@ -178,6 +225,7 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       attendLeClient: actions.length > 0,
       prochaineEtape: prochaineEtape(contexte),
       actions,
+      ...echeanceDu(d),
     };
   });
 
