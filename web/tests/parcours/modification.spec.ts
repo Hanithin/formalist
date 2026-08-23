@@ -251,21 +251,45 @@ test("le fil d'étapes se lit en ligne, jamais en colonne", async ({ page, reque
   }
 });
 
-test("l'écran d'entrée présente, il ne demande rien", async ({ page }) => {
+test("l'écran d'entrée fait cocher, et le choix remplit l'étape 2", async ({ page }) => {
   /*
-   * Il faisait cocher les changements, que l'étape 2 reposait ensuite : on répondait
-   * deux fois à la même question, et la seconde pour rien. L'ordre est celui du
-   * travail réel - la société d'abord, ce qu'on y change ensuite.
+   * Deux versions ont échoué avant celle-ci. La première faisait cocher ici puis
+   * reposait la question à l'étape 2 ; la seconde n'offrait que des pastilles inertes,
+   * puis des cartes qui partaient au premier clic - et l'on ne voyait pas comment
+   * décider deux changements dans la même assemblée.
+   *
+   * Aujourd'hui les cartes se cochent, le prix suit, et l'étape 2 est enjambée
+   * puisqu'elle a déjà sa réponse.
    */
   await page.goto("/modification");
 
-  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  const siege = page.getByRole("button", { name: /Transfert de siège social/ });
+  const denomination = page.getByRole("button", { name: /Changement de dénomination/ });
 
-  await page.getByRole("button", { name: "Commencer" }).click();
+  await siege.click();
+  await expect(siege).toHaveAttribute("aria-pressed", "true");
+
+  await denomination.click();
+  // Le bouton dit combien de changements partent avec le dossier.
+  await expect(page.getByRole("button", { name: /Continuer avec ces 2 changements/ })).toBeVisible();
+
+  await page.getByRole("button", { name: /Continuer/ }).click();
   await page.waitForURL(/\/modification\?dossier=\d+/);
 
-  // On arrive sur la société, non sur les changements.
+  // On arrive sur la société : les changements sont déjà répondus.
   await expect(page.getByRole("heading", { name: "La société" })).toBeVisible();
+  await expect(page.getByText(/Vous changez/)).toBeVisible();
+});
+
+test("qui ne sait pas encore ouvre un dossier vide", async ({ page }) => {
+  await page.goto("/modification");
+
+  await page.getByRole("button", { name: "Je ne sais pas encore" }).click();
+  await page.waitForURL(/\/modification\?dossier=\d+/);
+
+  await expect(page.getByRole("heading", { name: "La société" })).toBeVisible();
+  // Rien n'ayant été répondu, l'étape 2 se pose normalement.
+  await expect(page.getByText(/Vous changez/)).toHaveCount(0);
 });
 
 test("plusieurs changements se cochent aussi à l'étape 2", async ({ page, request }) => {
@@ -364,15 +388,32 @@ test("les cartes d'une même ligne ont la même hauteur", async ({ page, request
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/modification?dossier=" + dossier + "&etape=2");
 
-  const hauteurs = await page.evaluate(() =>
-    [...document.querySelectorAll("label[class*='changement']")].map((e) =>
-      Math.round(e.getBoundingClientRect().height)
-    )
+  /*
+   * Les cartes se comparent par rangée réelle, non deux par deux.
+   *
+   * Le test comptait huit cartes et les appariait par leur rang : ajouter un neuvième
+   * changement le faisait échouer sur un décompte, non sur un défaut d'alignement.
+   * On regroupe donc par ordonnée, ce qui est la question posée - deux cartes côte à
+   * côte doivent avoir la même hauteur.
+   */
+  const cartes = await page.evaluate(() =>
+    [...document.querySelectorAll("label[class*='changement']")].map((e) => {
+      const cadre = e.getBoundingClientRect();
+      return { haut: Math.round(cadre.top), hauteur: Math.round(cadre.height) };
+    })
   );
 
-  expect(hauteurs).toHaveLength(8);
-  for (let i = 0; i < hauteurs.length; i += 2) {
-    expect(hauteurs[i], "ligne " + (i / 2 + 1)).toBe(hauteurs[i + 1]);
+  expect(cartes.length).toBeGreaterThan(1);
+
+  const rangees = new Map<number, number[]>();
+  for (const carte of cartes) {
+    const rangee = rangees.get(carte.haut) ?? [];
+    rangee.push(carte.hauteur);
+    rangees.set(carte.haut, rangee);
+  }
+
+  for (const [haut, hauteurs] of rangees) {
+    expect(new Set(hauteurs).size, "rangée à " + haut + " px").toBe(1);
   }
 });
 

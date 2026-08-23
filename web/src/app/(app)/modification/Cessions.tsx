@@ -10,6 +10,7 @@ import {
   type Cession,
 } from "@/domain/modification/cession";
 import type { AssociePresent } from "@/domain/modification/gabarit";
+import { identiteSurUneLigne, separerLIdentite } from "@/domain/formalite/noms";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { AdresseUneLigne } from "@/components/formulaire/Adresse";
@@ -96,7 +97,7 @@ export function Cessions({
                 value={
                   associe.nature === "morale"
                     ? (associe.denomination ?? "")
-                    : [associe.prenom, associe.nom].filter(Boolean).join(" ")
+                    : identiteSurUneLigne(associe)
                 }
                 onChange={(e) => {
                   const saisi = e.target.value;
@@ -105,16 +106,13 @@ export function Cessions({
                     return;
                   }
                   /*
-                   * Le premier mot est le prénom, le reste le nom.
-                   *
-                   * Deux champs pour une ligne de liste alourdiraient l'écran ; l'étape
-                   * de l'assemblée les sépare pour l'acte, où la distinction compte.
+                   * Deux champs pour une ligne de liste alourdiraient l'écran ; l'acte,
+                   * lui, distingue le prénom du nom. La casse tranche - c'est la
+                   * convention des actes - et la règle vit dans le domaine, partagée
+                   * avec les autres parcours.
                    */
-                  const morceaux = saisi.trim().split(/\s+/);
-                  modifierAssocie(rang, {
-                    prenom: morceaux.length > 1 ? morceaux[0] : saisi,
-                    nom: morceaux.length > 1 ? morceaux.slice(1).join(" ") : "",
-                  });
+                  const { civilite, prenom, nom } = separerLIdentite(saisi);
+                  modifierAssocie(rang, { civilite, prenom, nom });
                 }}
               />
 

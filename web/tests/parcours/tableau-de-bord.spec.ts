@@ -118,8 +118,17 @@ test.describe("espace avocat", () => {
   });
 
   test("un filtre laisse exactement le nombre de dossiers qu'il annonce", async ({ page }) => {
-    // Le compte affiché à côté d'un filtre n'a d'intérêt que s'il correspond à ce
-    // que le filtre laisse.
+    /*
+     * Le compte affiché à côté d'un filtre n'a d'intérêt que s'il correspond à ce que
+     * le filtre laisse.
+     *
+     * La liste est paginée : au-delà d'une page, le compte annonce le total et le
+     * tableau n'en montre qu'une tranche. Comparer les deux ne valait donc que tant
+     * que le cabinet avait peu de dossiers - le test passait par chance, et tombait dès
+     * qu'un parcours en créait quelques-uns de plus.
+     */
+    const PAR_PAGE = 15;
+
     for (const filtre of ["tous", "verifier", "encours", "termines", "miens"]) {
       await page.goto("/avocat?filtre=" + filtre);
 
@@ -129,7 +138,7 @@ test.describe("espace avocat", () => {
       const annonce = Number((await actif.innerText()).match(/(\d+)\s*$/)?.[1] ?? 0);
       const lignes = await page.locator("table tbody tr").count();
 
-      expect(lignes, filtre).toBe(annonce);
+      expect(lignes, filtre).toBe(Math.min(annonce, PAR_PAGE));
     }
   });
 

@@ -11,7 +11,7 @@
  * pas de Kbis, il y a un extrait à jour - et rien ne parlait des statuts.
  */
 
-export type TypeDeDossier = "creation" | "modification" | "auto-entrepreneur";
+export type TypeDeDossier = "creation" | "modification" | "auto-entrepreneur" | "comptes";
 
 export type EtatTache = "faite" | "a_faire" | "plus_tard";
 
@@ -49,6 +49,13 @@ export interface EtatDuCabinet {
   finalRemis: boolean;
   /** La modification touche-t-elle au texte des statuts ? */
   statutsConcernes: boolean;
+  /**
+   * Une déclaration de confidentialité accompagne-t-elle le dépôt des comptes ?
+   *
+   * Elle se dépose avec les comptes, dans le même envoi. L'oublier ne se rattrape pas :
+   * les comptes sont publiés, et ils le restent.
+   */
+  confidentialiteDemandee?: boolean;
 }
 
 const ORDRE = ["5a", "5b", "5c", "5d", "5e"];
@@ -71,6 +78,8 @@ export const DOCUMENT_FINAL: Record<TypeDeDossier, string> = {
   creation: "Extrait Kbis",
   modification: "Extrait à jour",
   "auto-entrepreneur": "Avis de situation SIRENE",
+  /* Le greffe ne délivre pas d'extrait pour un dépôt de comptes : il en accuse réception. */
+  comptes: "Récépissé de dépôt",
 };
 
 export const LIBELLES_SOUS_PHASES: Record<TypeDeDossier, Record<string, string>> = {
@@ -94,6 +103,13 @@ export const LIBELLES_SOUS_PHASES: Record<TypeDeDossier, Record<string, string>>
     "5c": "Vérifié",
     "5d": "Guichet",
     "5e": "SIRET",
+  },
+  comptes: {
+    "5a": "Transmis",
+    "5b": "Révision",
+    "5c": "Vérifié",
+    "5d": "Dépôt",
+    "5e": "Récépissé",
   },
 };
 
@@ -138,7 +154,9 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     identifiant: "actes",
     titre: "Produire les actes",
     explication:
-      "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
+      etat.type === "comptes"
+        ? "Procès-verbal d'approbation, rapport spécial sur les conventions quand la loi l'exige, et déclaration de confidentialité quand elle est demandée."
+        : "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
     etat: etat.actesProduits ? "faite" : "a_faire",
     onglet: "actes",
   });
@@ -193,11 +211,32 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     });
   }
 
+  /*
+   * Le dépôt des comptes ne passe pas par le guichet unique de la même façon.
+   *
+   * Ce sont les comptes eux-mêmes qui se déposent, avec la décision d'approbation et,
+   * le cas échéant, la déclaration de confidentialité. Cette dernière ne se rattrape
+   * pas : sans elle dans l'envoi, les comptes sont publiés, et ils le restent.
+   */
+  if (etat.type === "comptes" && etat.confidentialiteDemandee) {
+    taches.push({
+      identifiant: "confidentialite",
+      titre: "Joindre la déclaration de confidentialité au dépôt",
+      explication:
+        "Elle voyage avec les comptes, dans le même envoi. Déposée après coup, elle ne rattrape rien : les comptes sont déjà consultables.",
+      etat: depose ? "faite" : "a_faire",
+      onglet: "actes",
+      bloquee: etat.actesProduits ? undefined : "La déclaration n'est pas encore produite.",
+    });
+  }
+
   taches.push({
     identifiant: "depot",
-    titre: "Déposer au guichet unique",
+    titre: etat.type === "comptes" ? "Déposer les comptes au greffe" : "Déposer au guichet unique",
     explication:
-      "Transmettez le dossier à l'INPI au nom du client, avec les actes et les statuts à jour.",
+      etat.type === "comptes"
+        ? "Transmettez les comptes annuels, la décision d'approbation et, s'il y en a une, la déclaration de confidentialité. Un mois après l'approbation, deux par voie électronique."
+        : "Transmettez le dossier à l'INPI au nom du client, avec les actes et les statuts à jour.",
     etat: depose ? "faite" : "a_faire",
     onglet: "avancement",
     bloquee: verifie ? undefined : "Le dossier n'est pas encore vérifié.",

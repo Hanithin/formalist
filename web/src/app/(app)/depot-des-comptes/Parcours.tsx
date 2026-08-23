@@ -5,6 +5,7 @@ import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { champVisible } from "@/domain/modification/types";
 import { montantLisible } from "@/domain/modification/offre";
+import { identiteSurUneLigne, separerLIdentite } from "@/domain/formalite/noms";
 import type { ActeProduit } from "@/domain/document/publication";
 import type { Comptes } from "@/infrastructure/db/depots/comptes";
 import { CHAMPS_COMPTES, GROUPE_ASSOCIE_UNIQUE } from "@/domain/comptes/types";
@@ -527,24 +528,13 @@ function Associes({
               aria-label={"Nom de l'associé " + (rang + 1)}
               className={styles.detenteurNom}
               placeholder={"Associé " + (rang + 1)}
-              value={[associe.civilite, associe.prenom, associe.nom].filter(Boolean).join(" ")}
+              value={identiteSurUneLigne(associe)}
               onChange={(e) => {
-                const morceaux = e.target.value.trim().split(/\s+/);
-                const civilite = /^(monsieur|madame|m\.|mme)$/i.test(morceaux[0] ?? "")
-                  ? morceaux.shift()
-                  : "";
-                modifier(rang, "civilite", civilite ?? "");
+                /* La casse tranche entre prénom et nom : c'est la convention des actes,
+                   et la règle est partagée avec la liste des cessions. */
+                const identite = separerLIdentite(e.target.value);
                 changer({
-                  associes: associes.map((a, i) =>
-                    i === rang
-                      ? {
-                          ...a,
-                          civilite: civilite ?? "",
-                          prenom: morceaux.length > 1 ? morceaux[0] : morceaux.join(" "),
-                          nom: morceaux.length > 1 ? morceaux.slice(1).join(" ") : "",
-                        }
-                      : a
-                  ),
+                  associes: associes.map((a, i) => (i === rang ? { ...a, ...identite } : a)),
                 });
               }}
             />

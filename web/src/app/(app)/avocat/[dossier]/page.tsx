@@ -156,7 +156,9 @@ export default async function DossierAvocat({
       ? "modification"
       : dossier.type === "auto-entrepreneur"
         ? "auto-entrepreneur"
-        : "creation";
+        : dossier.type === "comptes"
+          ? "comptes"
+          : "creation";
 
   const codes = sectionsModification ? ((donnees.codes as string[]) ?? []) : [];
   const societeDuDossier = (donnees.societe ?? {}) as {
@@ -194,6 +196,7 @@ export default async function DossierAvocat({
           }).length
         : 0,
     avisPublies: donnees.avisPublies === true,
+    confidentialiteDemandee: donnees.demandeLaConfidentialite === true,
     finalRemis: remis(TYPE_KBIS),
     statutsConcernes: statutsAMettreAJour(codes),
   });
