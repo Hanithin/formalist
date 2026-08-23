@@ -29,11 +29,35 @@ const TYPES_SOCIETE = new Set(["creation", "modification", "fermeture", "depot"]
 /** Un dossier clos ne compte plus comme « en cours ». */
 const CLOS = new Set(["terminee", "archive"]);
 
+/**
+ * Ce qui attend le cabinet : ses dossiers, et ceux que personne n'a pris.
+ *
+ * Même définition que la liste de l'espace avocat, sans quoi le compteur annoncerait
+ * un travail qu'on ne retrouve pas en cliquant. Zéro pour un client : la requête n'est
+ * lancée que si l'entrée existe.
+ */
+async function dossiersAReviser(utilisateur: UtilisateurConnecte): Promise<number> {
+  if (!utilisateur.roles.includes("avocat") && !utilisateur.roles.includes("admin")) return 0;
+
+  return prisma.formalites.count({
+    where: {
+      status: { notIn: ["en_cours", "terminee", "archive", "rejete"] },
+      OR: [{ assigned_avocat_id: utilisateur.id }, { assigned_avocat_id: null }],
+    },
+  });
+}
+
 export async function resumeColonne(utilisateur: UtilisateurConnecte): Promise<ResumeColonne> {
   // Les siens, jamais ceux de toute la plateforme : le compteur d'un administrateur
   // annonçait le travail de tous les comptes.
   const dossiers = await mesDossiers(utilisateur);
-  if (dossiers.length === 0) return { ...COLONNE_VIDE, nonLus: await nonLusDuSupport(utilisateur) };
+  if (dossiers.length === 0) {
+    return {
+      ...COLONNE_VIDE,
+      nonLus: await nonLusDuSupport(utilisateur),
+      aReviser: await dossiersAReviser(utilisateur),
+    };
+  }
 
   // Même définition que la colonne d'origine : un dossier de création ou de
   // modification, portant une dénomination.
@@ -43,7 +67,7 @@ export async function resumeColonne(utilisateur: UtilisateurConnecte): Promise<R
 
   const enCours = dossiers.filter((d) => !CLOS.has(d.status ?? "")).length;
 
-  const [messages, support] = await Promise.all([
+  const [messages, support, aReviser] = await Promise.all([
     // Ses propres messages ne lui sont pas signalés comme non lus.
     prisma.messages.count({
       where: {
@@ -53,6 +77,7 @@ export async function resumeColonne(utilisateur: UtilisateurConnecte): Promise<R
       },
     }),
     nonLusDuSupport(utilisateur),
+    dossiersAReviser(utilisateur),
   ]);
 
   // Le plus récemment touché : mesDossiers rend la liste par updated_at décroissant.
@@ -64,5 +89,6 @@ export async function resumeColonne(utilisateur: UtilisateurConnecte): Promise<R
     plusieurs: societes.length > 1,
     enCours,
     nonLus: messages + support,
+    aReviser,
   };
 }

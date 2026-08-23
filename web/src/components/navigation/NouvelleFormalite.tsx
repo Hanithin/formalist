@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { PARCOURS } from "@/domain/navigation/parcours";
 import styles from "./NouvelleFormalite.module.css";
 
 /**
- * Le bouton « Créer une formalité » et sa fenêtre.
+ * Le bouton « + Démarrer une formalité » et sa fenêtre.
  *
  * Reprise de la modale de public/dashboard.html (openNewActionModal) : six cartes
  * à pastille colorée, en deux colonnes, une seule sous 600px. Les libellés, les
@@ -19,70 +20,6 @@ import styles from "./NouvelleFormalite.module.css";
 const OUVERTURE =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">';
 
-interface Choix {
-  lien: string;
-  teinte: "green" | "blue" | "violet" | "amber" | "red" | "teal";
-  icone: string;
-  titre: string;
-  description: string;
-  /** Parcours annoncé mais pas ouvert : la carte est présente, inerte. */
-  bientot?: boolean;
-}
-
-const CHOIX: Choix[] = [
-  {
-    lien: "/creation?type=creation",
-    teinte: "green",
-    icone: '<path d="M3 21h18M5 21V7l7-4 7 4v14"/>',
-    titre: "Créer une société",
-    description: "SAS, SARL, SCI, SASU, EURL",
-  },
-  {
-    lien: "/auto-entrepreneur",
-    teinte: "blue",
-    icone: '<circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>',
-    titre: "Auto-entrepreneur",
-    description: "Création de micro-entreprise",
-  },
-  {
-    lien: "/modification",
-    teinte: "violet",
-    icone:
-      '<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>' +
-      '<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',
-    titre: "Modifier ma société",
-    description: "Transfert, gérant, capital…",
-  },
-  {
-    lien: "/depot-des-comptes",
-    teinte: "amber",
-    icone:
-      '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>' +
-      '<line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
-    titre: "Dépôt des comptes",
-    description: "Comptes annuels au greffe",
-    bientot: true,
-  },
-  {
-    lien: "/fermeture",
-    teinte: "red",
-    icone:
-      '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/>' +
-      '<line x1="9" y1="9" x2="15" y2="15"/>',
-    titre: "Fermer ma société",
-    description: "Dissolution, liquidation, radiation",
-    bientot: true,
-  },
-  {
-    lien: "/contrats",
-    teinte: "teal",
-    icone:
-      '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>',
-    titre: "Rédiger un contrat",
-    description: "Modèles sur mesure",
-  },
-];
-
 /**
  * Le bouton d'ouverture, et la fenêtre qu'il commande.
  *
@@ -91,7 +28,7 @@ const CHOIX: Choix[] = [
  * précisément pour en créer une, et où descendre chercher la colonne est un détour.
  */
 export function NouvelleFormalite({
-  libelle = "Créer une formalité",
+  libelle = "+ Démarrer une formalité",
   apparence = "colonne",
 }: {
   libelle?: string;
@@ -190,7 +127,7 @@ export function NouvelleFormalite({
               </div>
 
               <div className={styles.grille}>
-                {CHOIX.map((c) => {
+                {PARCOURS.map((c) => {
                   const dessin = (
                     <span
                       className={`${styles.pastille} ${styles[c.teinte]}`}

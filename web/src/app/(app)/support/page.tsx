@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { messagesDe, conversations } from "@/infrastructure/db/depots/support";
 import { Support } from "./Support";
@@ -15,6 +16,15 @@ export default async function PageSupport({
 }) {
   const utilisateur = await exigerUtilisateur();
   const estAdmin = utilisateur.roles.includes("admin");
+
+  /*
+   * Un client n'a plus rien à faire ici.
+   *
+   * Son fil de support vit dans le centre d'aide, sous la FAQ, avec les mêmes
+   * messages. La redirection garde les anciens liens et les signets valides plutôt
+   * que de les casser.
+   */
+  if (!estAdmin) redirect("/aide#support");
 
   const { client } = await searchParams;
   const cible = estAdmin && client ? Number(client) : undefined;

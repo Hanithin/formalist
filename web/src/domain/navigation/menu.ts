@@ -8,20 +8,26 @@ import type { Role } from "@/domain/acces/regles";
  * entrée ajoutée dans une page et pas dans les autres, un lien resté sur l'ancien
  * nom, une balise mal fermée qui avalait toute la colonne dans une seule page.
  *
- * La colonne a longtemps été plate, comme celle d'origine : douze entrées à la file,
- * séparées par un filet muet. Elle en compte dix-huit aujourd'hui, et le filet ne
- * suffisait plus - cinq parcours de formalité s'y lisaient comme cinq pages parmi
- * d'autres, entre « Mes formalités » et « Consultation juridique ».
+ * La colonne dit où l'on va, le bouton dit ce que l'on fait.
  *
- * Les rubriques les regroupent. Un titre coûte une ligne, et rend visible ce que la
- * colonne fait : d'un côté ce qu'on entreprend, de l'autre ce qu'on consulte.
+ * Elle a longtemps fait les deux, et se répétait : « Démarrer une formalité » ouvre une
+ * fenêtre qui contient exactement les six parcours que la colonne alignait deux
+ * centimètres plus bas. Dix-sept entrées, dont cinq sous la ligne de flottaison d'un
+ * portable ordinaire, pour un doublon.
  *
- * « Paramètres » n'y figure pas, comme à l'origine : on y accède par la roue
- * crantée du pied de colonne.
+ * Les formalités ponctuelles - créer, modifier, fermer - ne vivent donc plus que dans
+ * la fenêtre. Restent en colonne ce qui se consulte et les deux services qui
+ * reviennent chaque année : on ne crée pas une société toutes les semaines, mais on
+ * dépose ses comptes et l'on rédige des contrats régulièrement.
+ *
+ * Une rubrique vaut par ce qu'elle coiffe : aucune n'a moins de deux entrées, sans
+ * quoi le titre pèse plus lourd que ce qu'il annonce. C'est ce qui a fait remonter
+ * « Paramètres » dans la colonne - il était caché derrière une roue crantée de seize
+ * pixels, que personne ne trouve, et il tient compagnie à « Équipe ».
  */
 
 /** Le chiffre porté par une entrée. Le calcul est dans resumeColonne(). */
-export type Compteur = "enCours" | "nonLus";
+export type Compteur = "enCours" | "nonLus" | "aReviser";
 
 export interface EntreeMenu {
   libelle: string;
@@ -40,50 +46,100 @@ export interface Rubrique {
   roles?: Role[];
 }
 
-export type ElementMenu = EntreeMenu | Rubrique;
+/** Un filet muet, qui détache sans annoncer. */
+export const SEPARATEUR = "separateur" as const;
+
+export type ElementMenu = EntreeMenu | Rubrique | typeof SEPARATEUR;
 
 export function estRubrique(element: ElementMenu): element is Rubrique {
-  return "rubrique" in element;
+  return element !== SEPARATEUR && "rubrique" in element;
+}
+
+export function estEntree(element: ElementMenu): element is EntreeMenu {
+  return element !== SEPARATEUR && "lien" in element;
 }
 
 /**
  * Le tableau de bord reste seul en tête, sans rubrique.
  *
- * C'est l'accueil : le coiffer d'un titre reviendrait à ranger la porte d'entrée
- * dans une catégorie. « Mes formalités » ouvre en revanche le groupe des parcours -
- * on y crée, et juste au-dessus on retrouve ce qu'on a créé.
+ * C'est l'accueil : le coiffer d'un titre reviendrait à ranger la porte d'entrée dans
+ * une catégorie.
  */
 export const MENU: ElementMenu[] = [
   { libelle: "Tableau de bord", lien: "/tableau-de-bord" },
 
-  { rubrique: "Formalités" },
+  /*
+   * Ce que le client a engagé, et ce qui en sort.
+   *
+   * La messagerie y figure plutôt que sous un titre à elle : les échanges portent sur
+   * les dossiers en cours, ils n'ont pas de vie propre. Une rubrique « Communication »
+   * pour une seule entrée coûtait un titre pour rien.
+   */
+  { rubrique: "Mon activité" },
   { libelle: "Mes formalités", lien: "/formalites", compteur: "enCours" },
-  { libelle: "Créer une société", lien: "/creation?type=creation" },
-  { libelle: "Créer une auto-entreprise", lien: "/auto-entrepreneur" },
-  { libelle: "Modifier ma société", lien: "/modification" },
-  { libelle: "Dépôt des comptes", lien: "/depot-des-comptes" },
-  { libelle: "Fermer ma société", lien: "/fermeture" },
-
-  { rubrique: "Mon espace" },
-  { libelle: "Consultation juridique", lien: "/consultations" },
-  { libelle: "Documents", lien: "/documents" },
-  { libelle: "Contrats", lien: "/contrats" },
+  { libelle: "Mes documents", lien: "/documents" },
   { libelle: "Messagerie", lien: "/messagerie", compteur: "nonLus" },
-  { libelle: "Support", lien: "/support" },
 
-  { rubrique: "Compte" },
-  { libelle: "Équipe", lien: "/equipe" },
-  { libelle: "Aide & FAQ", lien: "/aide" },
+  /*
+   * Les services qui reviennent.
+   *
+   * On ne crée pas une société toutes les semaines, mais on dépose ses comptes chaque
+   * année et l'on rédige un contrat quand il le faut. Ceux-là méritent une entrée
+   * permanente ; les formalités ponctuelles - création, modification, fermeture -
+   * vivent dans le bouton, qui est fait pour ça.
+   */
+  { rubrique: "Services juridiques" },
+  { libelle: "Dépôt des comptes", lien: "/depot-des-comptes" },
+  { libelle: "Contrats", lien: "/contrats" },
+  { libelle: "Consultation juridique", lien: "/consultations" },
 
-  { rubrique: "Cabinet", roles: ["avocat", "admin"] },
-  { libelle: "Espace avocat", lien: "/avocat", roles: ["avocat", "admin"] },
-  { libelle: "Recherche d'entreprise", lien: "/recherche-entreprise", roles: ["avocat", "admin"] },
+  /*
+   * Le travail du cabinet.
+   *
+   * « Dossiers à réviser » plutôt qu'« Espace avocat » : le second nommait un lieu, le
+   * premier annonce une charge - et il porte son compte, qui est ce qu'un avocat vient
+   * lire en premier.
+   */
+  { rubrique: "Espace avocat", roles: ["avocat", "admin"] },
+  { libelle: "Dossiers à réviser", lien: "/avocat", roles: ["avocat", "admin"], compteur: "aReviser" },
+  { libelle: "Mes disponibilités", lien: "/avocat/disponibilites", roles: ["avocat", "admin"] },
+  { libelle: "Conversations support", lien: "/support", roles: ["admin"] },
   { libelle: "Administration", lien: "/administration", roles: ["admin"] },
+
+  { rubrique: "Mon compte" },
+  { libelle: "Équipe", lien: "/equipe" },
+  { libelle: "Paramètres", lien: "/parametres" },
+
+  /*
+   * Le centre d'aide, détaché en pied.
+   *
+   * Il ne se range dans aucune rubrique : c'est le recours, et on doit le trouver sans
+   * lire la colonne. Un filet suffit à le séparer, un titre l'aurait noyé.
+   */
+  SEPARATEUR,
+  { libelle: "Centre d'aide", lien: "/aide" },
 ];
+
+/**
+ * Les pages qui n'ont pas d'entrée, et l'entrée à laquelle elles se rattachent.
+ *
+ * Un parcours de fermeture n'est plus dans la colonne, mais on y est bien quelque
+ * part : sans rattachement, la colonne ne marquerait rien pendant tout le parcours,
+ * et l'on perdrait le seul repère qui dit où l'on se trouve. Ces pages appartiennent
+ * à « Mes formalités », d'où elles sont d'ailleurs reprises.
+ */
+const RATTACHEMENTS: Record<string, string> = {
+  "/creation": "/formalites",
+  "/auto-entrepreneur": "/formalites",
+  "/modification": "/formalites",
+  "/fermeture": "/formalites",
+  // Le support d'un client est devenu un pan du centre d'aide.
+  "/support": "/aide",
+};
 
 /** Les entrées seules, sans les intertitres. */
 export function entreesDuMenu(menu: ElementMenu[]): EntreeMenu[] {
-  return menu.filter((e): e is EntreeMenu => !estRubrique(e));
+  return menu.filter(estEntree);
 }
 
 /**
@@ -94,13 +150,15 @@ export function entreesDuMenu(menu: ElementMenu[]): EntreeMenu[] {
  * plus rien. On écarte donc les rubriques qui n'ont plus d'entrée à annoncer.
  */
 export function menuPour(roles: Role[]): ElementMenu[] {
-  const visibles = MENU.filter((e) => !e.roles || e.roles.some((r) => roles.includes(r)));
+  const visibles = MENU.filter(
+    (e) => e === SEPARATEUR || !e.roles || e.roles.some((r) => roles.includes(r))
+  );
 
   return visibles.filter((element, i) => {
     if (!estRubrique(element)) return true;
-    // Une rubrique vaut par ce qui la suit, jusqu'à la rubrique d'après.
+    // Une rubrique vaut par ce qui la suit, jusqu'à la rubrique - ou au filet - d'après.
     const suite = visibles.slice(i + 1);
-    const fin = suite.findIndex(estRubrique);
+    const fin = suite.findIndex((e) => e === SEPARATEUR || estRubrique(e));
     const groupe = fin === -1 ? suite : suite.slice(0, fin);
     return groupe.length > 0;
   });
@@ -114,10 +172,18 @@ export function menuPour(roles: Role[]): ElementMenu[] {
  * une hypothétique entrée /f.
  */
 export function entreeActive(chemin: string, menu: ElementMenu[]): string | null {
-  const candidats = entreesDuMenu(menu)
-    .map((e) => e.lien.split("?")[0])
-    .filter((lien) => chemin === lien || chemin.startsWith(lien + "/"))
-    .sort((a, b) => b.length - a.length);
+  const liens = entreesDuMenu(menu).map((e) => e.lien.split("?")[0]);
 
-  return candidats[0] ?? null;
+  const correspond = (lien: string) => chemin === lien || chemin.startsWith(lien + "/");
+
+  const candidats = liens.filter(correspond).sort((a, b) => b.length - a.length);
+  if (candidats[0]) return candidats[0];
+
+  // À défaut, la page se rattache peut-être à une entrée qui, elle, est dans la colonne.
+  const rattache = Object.keys(RATTACHEMENTS)
+    .filter(correspond)
+    .sort((a, b) => b.length - a.length)[0];
+
+  const cible = rattache ? RATTACHEMENTS[rattache] : null;
+  return cible && liens.includes(cible) ? cible : null;
 }

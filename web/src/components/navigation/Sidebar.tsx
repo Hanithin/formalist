@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { menuPour, entreeActive, estRubrique } from "@/domain/navigation/menu";
+import { menuPour, entreeActive, estRubrique, SEPARATEUR } from "@/domain/navigation/menu";
 import { libelleCompteur, type ResumeColonne } from "@/domain/navigation/colonne";
 import { libelleDuType } from "@/domain/formalite/liste";
 import { icone } from "@/domain/navigation/icones";
@@ -98,6 +98,10 @@ export function Sidebar({ utilisateur, resume }: Props) {
 
       <Navigation>
         {menu.map((element, i) => {
+          if (element === SEPARATEUR) {
+            return <hr key={"filet-" + i} className={styles.filet} />;
+          }
+
           if (estRubrique(element)) {
             /*
              * Un intertitre, non une entrée.

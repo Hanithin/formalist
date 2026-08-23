@@ -6,6 +6,7 @@ import {
   entreeActive,
   estRubrique,
 } from "@/domain/navigation/menu";
+import { PARCOURS } from "@/domain/navigation/parcours";
 import { ICONES } from "@/domain/navigation/icones";
 
 const liensPour = (roles: Parameters<typeof menuPour>[0]) =>
@@ -37,9 +38,13 @@ describe("menu selon les rôles", () => {
     expect(new Set(liens).size).toBe(liens.length);
   });
 
-  it("les paramètres ne sont pas dans la colonne", () => {
-    // On y accède par la roue crantée du pied, comme dans la colonne d'origine.
-    expect(liensPour(["admin"])).not.toContain("/parametres");
+  it("les paramètres sont dans la colonne, et plus seulement sous la roue crantée", () => {
+    /*
+     * Ils n'y étaient pas, par fidélité à la colonne d'origine. Une cible de seize
+     * pixels en pied de page ne se trouve pas : ils ont une entrée, et la roue reste
+     * en raccourci.
+     */
+    expect(liensPour(["user"])).toContain("/parametres");
   });
 });
 
@@ -50,12 +55,33 @@ describe("rubriques", () => {
       .map((r) => r.rubrique);
 
   it("un client voit les trois rubriques qui le concernent, pas celle du cabinet", () => {
-    expect(rubriquesDe(["user"])).toEqual(["Formalités", "Mon espace", "Compte"]);
+    expect(rubriquesDe(["user"])).toEqual([
+      "Mon activité",
+      "Services juridiques",
+      "Mon compte",
+    ]);
   });
 
-  it("un avocat et un administrateur voient aussi le cabinet", () => {
-    expect(rubriquesDe(["avocat"])).toContain("Cabinet");
-    expect(rubriquesDe(["admin"])).toContain("Cabinet");
+  it("aucune rubrique ne coiffe moins de deux entrées", () => {
+    /*
+     * Un titre pour une seule entrée pèse plus lourd que ce qu'il annonce : il double
+     * la hauteur de la ligne sans rien apprendre.
+     */
+    for (const roles of [["user"], ["avocat"], ["admin"]] as const) {
+      const menu = menuPour([...roles]);
+      for (const [i, element] of menu.entries()) {
+        if (!estRubrique(element)) continue;
+        const suite = menu.slice(i + 1);
+        const fin = suite.findIndex(estRubrique);
+        const groupe = fin === -1 ? suite : suite.slice(0, fin);
+        expect(groupe.length, element.rubrique + " (" + roles.join() + ")").toBeGreaterThan(1);
+      }
+    }
+  });
+
+  it("un avocat et un administrateur voient aussi leur espace", () => {
+    expect(rubriquesDe(["avocat"])).toContain("Espace avocat");
+    expect(rubriquesDe(["admin"])).toContain("Espace avocat");
   });
 
   it("aucune rubrique ne coiffe le vide", () => {
@@ -93,8 +119,19 @@ describe("entrée active", () => {
     expect(entreeActive("/formalites/12", menu)).toBe("/formalites");
   });
 
-  it("ignore les paramètres d'adresse dans la comparaison", () => {
-    expect(entreeActive("/creation", menu)).toBe("/creation");
+  it("rattache un parcours à « Mes formalités »", () => {
+    /*
+     * Les parcours ne sont plus dans la colonne - ils vivent dans le bouton. Sans
+     * rattachement, rien n'y serait marqué pendant tout un parcours, et l'on perdrait
+     * le seul repère qui dit où l'on est.
+     */
+    for (const parcours of ["/creation", "/auto-entrepreneur", "/modification", "/fermeture"]) {
+      expect(entreeActive(parcours, menu), parcours).toBe("/formalites");
+    }
+    expect(entreeActive("/fermeture/quelque-chose", menu)).toBe("/formalites");
+
+    // Le dépôt des comptes, lui, a son entrée : il se marque tout seul.
+    expect(entreeActive("/depot-des-comptes", menu)).toBe("/depot-des-comptes");
   });
 
   it("ne marque rien sur une page hors menu", () => {
@@ -119,9 +156,10 @@ describe("intégrité du menu", () => {
     expect(new Set(liens).size).toBe(liens.length);
   });
 
-  it("les compteurs ne sont posés que là où la colonne d'origine en avait", () => {
+
+  it("les compteurs sont posés là où il y a une charge à annoncer", () => {
     const avecCompteur = entrees.filter((e) => e.compteur).map((e) => e.lien);
-    expect(avecCompteur).toEqual(["/formalites", "/messagerie"]);
+    expect(avecCompteur).toEqual(["/formalites", "/messagerie", "/avocat"]);
   });
 });
 
@@ -149,13 +187,12 @@ describe("icônes de la navigation", () => {
   });
 });
 
-describe("les fonctions annoncées mais pas ouvertes", () => {
-  it("il n'en reste aucune", () => {
+describe("les parcours qu'on peut ouvrir", () => {
+  it("aucune entrée de la colonne n'est annoncée sans être ouverte", () => {
     /*
-     * Le badge « Bientôt » a fondu au fil des mises en service : auto-entreprise,
-     * modification, dépôt des comptes, puis fermeture. Le test reste, à l'envers : il
-     * dit désormais que rien n'est annoncé sans être ouvert, et il redeviendra utile le
-     * jour où une entrée sera ajoutée avant son parcours.
+     * Le badge « Bientôt » a fondu au fil des mises en service. Le test reste, à
+     * l'envers : il dit désormais que rien n'est annoncé sans être ouvert, et il
+     * redeviendra utile le jour où une entrée sera ajoutée avant son parcours.
      */
     const bientot = entreesDuMenu(MENU)
       .filter((e) => e.bientot)
@@ -164,16 +201,33 @@ describe("les fonctions annoncées mais pas ouvertes", () => {
     expect(bientot).toEqual([]);
   });
 
-  it("la fermeture est ouverte, et mène à son parcours", () => {
-    const entree = entreesDuMenu(menuPour(["user"])).find((e) => e.lien === "/fermeture");
-    expect(entree, "l'entrée doit exister").toBeTruthy();
-    expect(entree?.bientot).toBeUndefined();
+  it("aucun parcours livré ne reste grisé dans la fenêtre de création", () => {
+    /*
+     * Le défaut a existé : le dépôt des comptes et la fermeture y sont restés
+     * « bientôt » après leur mise en production. Une carte inerte y est bien pire
+     * qu'ailleurs - c'est le seul endroit d'où l'on démarre une formalité.
+     */
+    const grises = PARCOURS.filter((p) => p.bientot).map((p) => p.titre);
+    expect(grises).toEqual([]);
   });
 
-  it("la modification est ouverte, et mène à son parcours", () => {
-    // Le badge est tombé avec la mise en service du parcours : le laisser aurait
-    // grisé une page qui fonctionne.
-    const entree = entreesDuMenu(menuPour(["user"])).find((e) => e.lien === "/modification");
-    expect(entree?.bientot).toBeUndefined();
+  it("les formalités ponctuelles ne sont que dans la fenêtre", () => {
+    /*
+     * Créer, modifier, fermer : trois gestes qu'on fait une fois. Les garder en
+     * permanence dans la colonne, c'était proposer deux fois la même chose à deux
+     * centimètres d'écart. Le dépôt des comptes et les contrats, eux, reviennent
+     * chaque année : ils restent des deux côtés, et c'est voulu.
+     */
+    const dansLaColonne = entreesDuMenu(MENU).map((e) => e.lien.split("?")[0]);
+    for (const ponctuel of ["/creation", "/auto-entrepreneur", "/modification", "/fermeture"]) {
+      expect(dansLaColonne, ponctuel).not.toContain(ponctuel);
+    }
+  });
+
+  it("ses intitulés sont tous des verbes : elle dit ce qu'on fait", () => {
+    // La colonne dit où l'on va, la fenêtre ce qu'on entreprend. Deux registres, tenus.
+    for (const parcours of PARCOURS) {
+      expect(parcours.titre, parcours.lien).toMatch(/^(Créer|Modifier|Déposer|Fermer|Rédiger|Transférer)\b/);
+    }
   });
 });

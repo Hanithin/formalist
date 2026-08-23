@@ -289,6 +289,14 @@
   color: rgba(255, 255, 255, 0.38);
 }
 
+/* Un filet muet, qui détache le centre d'aide du reste sans l'annoncer. */
+.filet {
+  height: 1px;
+  margin: 16px 12px 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Le filet part du titre et court jusqu'au bord : il n'a pas de longueur propre. */
 .rubrique::after {
   content: "";

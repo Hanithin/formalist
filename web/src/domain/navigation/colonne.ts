@@ -23,6 +23,13 @@ export interface ResumeColonne {
   plusieurs: boolean;
   enCours: number;
   nonLus: number;
+  /**
+   * Les dossiers qui attendent le cabinet.
+   *
+   * Zéro pour un client : le compteur n'est lu que par l'entrée réservée aux avocats,
+   * et le calculer pour tout le monde ferait une requête inutile à chaque page.
+   */
+  aReviser: number;
 }
 
 /** Une colonne sans dossier : rien à situer, aucun chiffre à porter. */
@@ -32,6 +39,7 @@ export const COLONNE_VIDE: ResumeColonne = {
   plusieurs: false,
   enCours: 0,
   nonLus: 0,
+  aReviser: 0,
 };
 
 /**
@@ -44,6 +52,11 @@ export const COLONNE_VIDE: ResumeColonne = {
 export function libelleCompteur(compteur: Compteur, resume: ResumeColonne): string | null {
   if (compteur === "enCours") {
     return resume.enCours > 0 ? resume.enCours + " en cours" : null;
+  }
+
+  if (compteur === "aReviser") {
+    // Un nombre nu : « 4 à réviser » répéterait l'intitulé de l'entrée.
+    return resume.aReviser > 0 ? String(resume.aReviser) : null;
   }
 
   if (resume.nonLus === 0) return null;
