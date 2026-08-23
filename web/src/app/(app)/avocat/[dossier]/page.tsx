@@ -158,7 +158,9 @@ export default async function DossierAvocat({
         ? "auto-entrepreneur"
         : dossier.type === "comptes"
           ? "comptes"
-          : "creation";
+          : dossier.type === "fermeture"
+            ? "fermeture"
+            : "creation";
 
   const codes = sectionsModification ? ((donnees.codes as string[]) ?? []) : [];
   const societeDuDossier = (donnees.societe ?? {}) as {
@@ -197,6 +199,18 @@ export default async function DossierAvocat({
         : 0,
     avisPublies: donnees.avisPublies === true,
     confidentialiteDemandee: donnees.demandeLaConfidentialite === true,
+    /*
+     * Les deux attestations de la radiation, telles que le client les a marquées.
+     *
+     * Le cabinet ne peut pas les obtenir à sa place - elles se tirent de l'espace
+     * URSSAF et de l'espace fiscal de la société - mais il doit savoir si elles
+     * manquent, parce que c'est lui qui déposera et lui qui essuiera le refus.
+     */
+    attestationsReunies:
+      typeof donnees.jalons === "object" && donnees.jalons !== null
+        ? (donnees.jalons as Record<string, unknown>).attestationFiscale === true &&
+          (donnees.jalons as Record<string, unknown>).attestationSociale === true
+        : false,
     finalRemis: remis(TYPE_KBIS),
     statutsConcernes: statutsAMettreAJour(codes),
   });

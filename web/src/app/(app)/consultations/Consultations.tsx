@@ -73,15 +73,27 @@ export function Consultations({
   consultations,
   avocats,
   paiement,
+  ouvertureDemandee,
 }: {
   consultations: ConsultationAffichee[];
   avocats: AvocatProposable[];
   paiement: string | null;
+  /*
+   * L'assistant ouvert d'emblée, depuis un autre écran.
+   *
+   * Un dirigeant qu'on vient d'arrêter sur une fermeture impossible ne doit pas
+   * retraverser trois écrans pour trouver le bouton : il arrive sur le calendrier, la
+   * matière choisie et sa situation déjà écrite.
+   */
+  ouvertureDemandee?: { matiere: CleMatiere | null; demande: string } | null;
 }) {
   const router = useRouter();
   const [onglet, setOnglet] = useState<Onglet>("toutes");
   const [ouverte, setOuverte] = useState<number | null>(null);
-  const [assistant, setAssistant] = useState<{ matiere: CleMatiere | null } | null>(null);
+  const [assistant, setAssistant] = useState<{
+    matiere: CleMatiere | null;
+    demande?: string;
+  } | null>(ouvertureDemandee ?? null);
   const [avis, setAvis] = useState(paiement);
   const [confirmeAnnulation, setConfirmeAnnulation] = useState(false);
   const [annulationEnCours, setAnnulationEnCours] = useState(false);
@@ -567,6 +579,7 @@ export function Consultations({
         <Assistant
           avocats={avocats}
           matiereInitiale={assistant.matiere}
+          demandeInitiale={assistant.demande}
           onFermer={() => setAssistant(null)}
         />
       )}

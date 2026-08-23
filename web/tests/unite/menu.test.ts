@@ -134,21 +134,25 @@ describe("icônes de la navigation", () => {
 });
 
 describe("les fonctions annoncées mais pas ouvertes", () => {
-  it("sont grisées plutôt que menant à une page vide", () => {
+  it("il n'en reste aucune", () => {
+    /*
+     * Le badge « Bientôt » a fondu au fil des mises en service : auto-entreprise,
+     * modification, dépôt des comptes, puis fermeture. Le test reste, à l'envers : il
+     * dit désormais que rien n'est annoncé sans être ouvert, et il redeviendra utile le
+     * jour où une entrée sera ajoutée avant son parcours.
+     */
     const bientot = MENU.filter((e) => e !== SEPARATEUR && e.bientot).map((e) =>
       e === SEPARATEUR ? "" : e.libelle
     );
 
-    // L'auto-entreprise, la modification et le dépôt des comptes n'y sont plus :
-    // leurs parcours sont ouverts.
-    expect(bientot).toEqual(["Fermer ma société"]);
+    expect(bientot).toEqual([]);
   });
 
-  it("une entrée grisée n'est pas active, même sur son propre chemin", () => {
-    // Elle n'est pas un lien : rien ne doit la surligner.
+  it("la fermeture est ouverte, et mène à son parcours", () => {
     const menu = menuPour(["user"]);
     const entree = menu.find((e) => e !== SEPARATEUR && e.lien === "/fermeture");
-    expect(entree && entree !== SEPARATEUR && entree.bientot).toBe(true);
+    expect(entree, "l'entrée doit exister").toBeTruthy();
+    expect(entree && entree !== SEPARATEUR && entree.bientot).toBeUndefined();
   });
 
   it("la modification est ouverte, et mène à son parcours", () => {

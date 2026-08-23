@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { mesConsultations, avocatsDisponibles } from "@/infrastructure/db/depots/consultations";
+import { matiereValide } from "@/domain/consultation/matieres";
 import { dateEnTete } from "@/lib/dates";
 import { Consultations, type ConsultationAffichee } from "./Consultations";
 import { SousNavigation } from "../avocat/SousNavigation";
@@ -30,10 +31,22 @@ export const metadata: Metadata = {
 export default async function PageConsultations({
   searchParams,
 }: {
-  searchParams: Promise<{ paiement?: string }>;
+  searchParams: Promise<{ paiement?: string; matiere?: string; demande?: string }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { paiement } = await searchParams;
+  const { paiement, matiere, demande } = await searchParams;
+
+  /*
+   * L'assistant ouvert depuis un autre écran.
+   *
+   * `matiere` est validée plutôt que crue : elle vient de l'adresse, et une clé
+   * inventée ferait un rendez-vous rangé sous une matière qui n'existe pas. La demande,
+   * elle, est bornée - c'est un texte libre qui arrive par l'URL.
+   */
+  const ouvertureDemandee =
+    matiere || demande
+      ? { matiere: matiereValide(matiere), demande: (demande ?? "").slice(0, 2000) }
+      : null;
   const estAvocat = utilisateur.roles.includes("avocat") || utilisateur.roles.includes("admin");
 
   const [consultations, avocats] = await Promise.all([
@@ -80,6 +93,7 @@ export default async function PageConsultations({
           email: a.email ?? "",
         }))}
         paiement={paiement ?? null}
+        ouvertureDemandee={ouvertureDemandee}
       />
     </main>
   );

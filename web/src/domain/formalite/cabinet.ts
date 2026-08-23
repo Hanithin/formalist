@@ -11,7 +11,12 @@
  * pas de Kbis, il y a un extrait à jour - et rien ne parlait des statuts.
  */
 
-export type TypeDeDossier = "creation" | "modification" | "auto-entrepreneur" | "comptes";
+export type TypeDeDossier =
+  | "creation"
+  | "modification"
+  | "auto-entrepreneur"
+  | "comptes"
+  | "fermeture";
 
 export type EtatTache = "faite" | "a_faire" | "plus_tard";
 
@@ -56,6 +61,8 @@ export interface EtatDuCabinet {
    * les comptes sont publiés, et ils le restent.
    */
   confidentialiteDemandee?: boolean;
+  /** Sur une fermeture : les deux attestations exigées à la radiation sont au dossier. */
+  attestationsReunies?: boolean;
 }
 
 const ORDRE = ["5a", "5b", "5c", "5d", "5e"];
@@ -80,6 +87,8 @@ export const DOCUMENT_FINAL: Record<TypeDeDossier, string> = {
   "auto-entrepreneur": "Avis de situation SIRENE",
   /* Le greffe ne délivre pas d'extrait pour un dépôt de comptes : il en accuse réception. */
   comptes: "Récépissé de dépôt",
+  /* Une société fermée ne reçoit pas d'extrait à jour : elle reçoit sa radiation. */
+  fermeture: "Attestation de radiation",
 };
 
 export const LIBELLES_SOUS_PHASES: Record<TypeDeDossier, Record<string, string>> = {
@@ -110,6 +119,19 @@ export const LIBELLES_SOUS_PHASES: Record<TypeDeDossier, Record<string, string>>
     "5c": "Vérifié",
     "5d": "Dépôt",
     "5e": "Récépissé",
+  },
+  /*
+   * La fermeture s'étale sur deux dépôts séparés par la liquidation.
+   *
+   * « Dissolution » n'est pas la fin du dossier mais son milieu : les pastilles le
+   * disent, sans quoi un dossier resté six mois en « Dépôt » passerait pour bloqué.
+   */
+  fermeture: {
+    "5a": "Transmis",
+    "5b": "Révision",
+    "5c": "Vérifié",
+    "5d": "Dissolution",
+    "5e": "Radiation",
   },
 };
 
@@ -156,7 +178,9 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     explication:
       etat.type === "comptes"
         ? "Procès-verbal d'approbation, rapport spécial sur les conventions quand la loi l'exige, et déclaration de confidentialité quand elle est demandée."
-        : "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
+        : etat.type === "fermeture"
+          ? "Décision de dissolution rédigée à la majorité propre à la forme, nomination du liquidateur, déclaration de non-condamnation et pouvoir. Les comptes définitifs et le quitus viendront à la clôture, des mois plus tard."
+          : "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
     etat: etat.actesProduits ? "faite" : "a_faire",
     onglet: "actes",
   });
@@ -230,13 +254,39 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     });
   }
 
+  /*
+   * Les deux attestations de la radiation.
+   *
+   * Depuis le décret n° 2024-751, le greffe refuse de radier sans elles. Elles ne
+   * dépendent pas du cabinet mais du client, et il faut des semaines pour régulariser
+   * une déclaration manquante : la tâche existe pour que l'avocat relance à temps,
+   * plutôt que de découvrir le manque au refus.
+   */
+  if (etat.type === "fermeture") {
+    taches.push({
+      identifiant: "attestations",
+      titre: "Réunir les attestations fiscale et sociale",
+      explication:
+        "Attestation de régularité fiscale et attestation de vigilance URSSAF, exigées à la clôture depuis le 1er octobre 2024. Une société sans salarié doit produire une attestation d'entreprise sans salarié : rien d'autre n'est accepté.",
+      etat: etat.attestationsReunies ? "faite" : "a_faire",
+      onglet: "pieces",
+    });
+  }
+
   taches.push({
     identifiant: "depot",
-    titre: etat.type === "comptes" ? "Déposer les comptes au greffe" : "Déposer au guichet unique",
+    titre:
+      etat.type === "comptes"
+        ? "Déposer les comptes au greffe"
+        : etat.type === "fermeture"
+          ? "Déposer la dissolution au guichet unique"
+          : "Déposer au guichet unique",
     explication:
       etat.type === "comptes"
         ? "Transmettez les comptes annuels, la décision d'approbation et, s'il y en a une, la déclaration de confidentialité. Un mois après l'approbation, deux par voie électronique."
-        : "Transmettez le dossier à l'INPI au nom du client, avec les actes et les statuts à jour.",
+        : etat.type === "fermeture"
+          ? "Transmettez la décision de dissolution, l'attestation de parution, la déclaration de non-condamnation du liquidateur et sa pièce d'identité. La radiation se demandera à la clôture, avec les deux attestations."
+          : "Transmettez le dossier à l'INPI au nom du client, avec les actes et les statuts à jour.",
     etat: depose ? "faite" : "a_faire",
     onglet: "avancement",
     bloquee: verifie ? undefined : "Le dossier n'est pas encore vérifié.",

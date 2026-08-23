@@ -74,17 +74,21 @@ const ETAPES = [1, 2, 3, 4] as const;
  * L'assistant de réservation, en quatre étapes : la matière, l'avocat et le créneau,
  * la demande et ses pièces, le récapitulatif avant paiement.
  *
- * `matiereInitiale` permet d'ouvrir directement à la deuxième étape depuis les
+ * `matiereInitiale` et `demandeInitiale` permettent d'ouvrir directement à la deuxième
+ * étape depuis les
  * raccourcis de l'écran vide : la matière est déjà choisie, la redemander serait
  * revenir en arrière.
  */
 export function Assistant({
   avocats,
   matiereInitiale,
+  demandeInitiale,
   onFermer,
 }: {
   avocats: AvocatProposable[];
   matiereInitiale: CleMatiere | null;
+  /** Ce que le client vient demander, quand il arrive d'un autre écran. */
+  demandeInitiale?: string;
   onFermer: () => void;
 }) {
   const [etape, setEtape] = useState(matiereInitiale ? 2 : 1);
@@ -93,7 +97,7 @@ export function Assistant({
   const [journees, setJournees] = useState<Journee[] | null>(null);
   const [jour, setJour] = useState<string | null>(null);
   const [creneau, setCreneau] = useState<string | null>(null);
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(demandeInitiale ?? "");
   const [pieces, setPieces] = useState<PieceJointe[]>([]);
   const [depotEnCours, setDepotEnCours] = useState(false);
   const [avis, setAvis] = useState<string | null>(null);

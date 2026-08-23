@@ -2,6 +2,7 @@ import { prisma } from "../client";
 import { confirmerLeReglement as confirmerAutoEntreprise } from "./auto-entrepreneur";
 import { confirmerLeReglement as confirmerModification } from "./modifications";
 import { confirmerLeReglementDesComptes } from "./comptes";
+import { confirmerLeReglementDeLaFermeture } from "./fermeture";
 import { journal } from "@/lib/journal";
 
 /**
@@ -33,6 +34,9 @@ export async function confirmerLeReglementDeLaFormalite(
 
   if (dossier.type === "comptes") {
     return confirmerLeReglementDesComptes(reference, dossier.id);
+  }
+  if (dossier.type === "fermeture") {
+    return confirmerLeReglementDeLaFermeture(reference, dossier.id);
   }
   if (dossier.type === "modification") {
     return confirmerModification(reference, dossier.id);

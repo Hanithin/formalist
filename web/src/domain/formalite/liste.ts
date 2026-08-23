@@ -36,6 +36,7 @@ const TYPES: Record<string, string> = {
   creation: "Création",
   modification: "Modification",
   fermeture: "Fermeture",
+  comptes: "Dépôt des comptes",
   depot: "Dépôt des comptes",
   "auto-entrepreneur": "Auto-entrepreneur",
 };
@@ -303,5 +304,14 @@ export function gesteDuDossier(dossier: { status: string | null }): string {
 export function adresseDuDossier(dossier: { id: number; type: string | null }): string {
   if (dossier.type === "modification") return "/modification?dossier=" + dossier.id;
   if (dossier.type === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + dossier.id;
+  /*
+   * Les deux parcours ajoutés après coup.
+   *
+   * Sans eux, un dépôt de comptes ou une fermeture repris depuis la liste ouvrait le
+   * parcours de création avec un dossier qui n'en est pas un : l'écran s'affichait vide,
+   * et le client croyait son dossier perdu.
+   */
+  if (dossier.type === "comptes") return "/depot-des-comptes?dossier=" + dossier.id;
+  if (dossier.type === "fermeture") return "/fermeture?dossier=" + dossier.id;
   return "/creation?dossier=" + dossier.id;
 }

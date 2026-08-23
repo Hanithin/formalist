@@ -791,8 +791,22 @@ function generateDocxFromBuffer(buf, data) {
     const neLe = estFemme ? 'née le ' : 'né le ';
     const enfantDe = estFemme ? 'fille de ' : 'fils de ';
 
+    /*
+     * Cette passe ne vaut que pour les actes d'une création.
+     *
+     * Elle reconstruit la phrase entière à partir des clés d'un dossier de création -
+     * CIVILITE_NOM_PRENOM_1, NOM_PERE_1, ADRESSE_ASSOCIE_1 - et remplace le paragraphe
+     * d'origine par le résultat. Sur un acte d'un autre parcours, qui ne porte aucune de
+     * ces clés, elle produisait « Je soussigné, , » et avalait les paragraphes suivants :
+     * la déclaration du liquidateur d'une fermeture sortait sans nom ni date de naissance.
+     *
+     * Faute de civilité, il n'y a rien à reconstruire : on laisse le document tel que le
+     * gabarit l'a rendu.
+     */
     let finalText;
-    if (isAttestationDomicile) {
+    if (!civNomPrenom) {
+      finalText = null;
+    } else if (isAttestationDomicile) {
       // Attestation de domiciliation: include "agissant en qualité de Président..." and "déclare domicilier..."
       const parts = [jeSoussigne + civNomPrenom + ','];
       if (dateNaiss) parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
@@ -833,7 +847,7 @@ function generateDocxFromBuffer(buf, data) {
          'agissant', 'déclare domicilier', 'declare domicilier']
       : ['demeurant', 'né le', 'née le', 'à ', 'de nationalité', 'fils de', 'fille de', 'et de', 'née ', 'né ',
          'monsieur', 'madame', 'mademoiselle'];
-    docXml = docXml.replace(
+    if (finalText) docXml = docXml.replace(
       /(<w:p[ >][^<]*(?:<(?!w:p[ >])[^<]*)*?<w:t[^>]*>Je soussigné[\s\S]*?<\/w:p>)((?:<w:p[ >][\s\S]*?<\/w:p>){0,12})/,
       function(_, soussignePara, followingParas) {
         // Build a fresh paragraph with our text, justified, not bold
