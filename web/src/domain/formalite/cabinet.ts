@@ -27,7 +27,13 @@ export interface Tache {
   /** Pourquoi elle existe, et ce qu'elle engage. */
   explication: string;
   etat: EtatTache;
-  /** Où elle se fait, dans l'écran du dossier. */
+  /**
+   * Où elle se fait, dans l'écran du dossier.
+   *
+   * Le nom doit être celui d'un onglet réel : trois tâches désignaient « actes », qui
+   * n'en est pas un - le lien retombait sur « À faire », d'où l'on venait. Les actes
+   * produits vivent dans les pièces du dossier.
+   */
   onglet?: string;
   /** Ce qui l'empêche encore, quand elle attend autre chose. */
   bloquee?: string;
@@ -221,7 +227,7 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
             ? "Déclaration récapitulative de cessation et pouvoir. Une auto-entreprise n'a pas d'acte à rédiger : la valeur est dans le calendrier des échéances qui suivent."
             : "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
     etat: etat.actesProduits ? "faite" : "a_faire",
-    onglet: "actes",
+    onglet: "pieces",
   });
 
   /*
@@ -266,7 +272,7 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
       explication:
         "Le client ne voit rien tant que vous n'avez pas relu. Corrigez ce qu'il faut, puis rendez tout disponible d'un coup dans son espace.",
       etat: etat.actesARelire > 0 ? "a_faire" : "faite",
-      onglet: "actes",
+      onglet: "pieces",
       /*
        * Tout part ensemble ou rien ne part.
        *
@@ -310,7 +316,7 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
       explication:
         "Elle voyage avec les comptes, dans le même envoi. Déposée après coup, elle ne rattrape rien : les comptes sont déjà consultables.",
       etat: depose ? "faite" : "a_faire",
-      onglet: "actes",
+      onglet: "pieces",
       bloquee: etat.actesProduits ? undefined : "La déclaration n'est pas encore produite.",
     });
   }

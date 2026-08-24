@@ -232,6 +232,24 @@ export function Travail({
                 dépassé l'étape ne se décoche pas d'un lien.
               */}
               {/*
+                Une tâche faite se relit.
+                
+                Elle ne portait plus rien : « Produire les actes » cochée, on n'avait
+                aucun chemin vers ce qui avait été produit, et il fallait deviner que
+                cela vivait dans l'onglet des pièces.
+              */}
+              {tache.etat === "faite" && tache.onglet === "pieces" && (
+                <span className={styles.tacheActions}>
+                  <Link
+                    href={"/avocat/" + dossier + "?onglet=pieces"}
+                    className={styles.travailTertiaire}
+                  >
+                    Voir les documents
+                  </Link>
+                </span>
+              )}
+
+              {/*
                 Ce qui est fait peut se défaire, quand cela a un sens.
                 
                 Un acte publié par erreur restait chez le client : le geste le remet en
