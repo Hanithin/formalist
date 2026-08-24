@@ -225,24 +225,12 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
   });
 
   /*
-   * La relecture, avant que le client voie quoi que ce soit.
+   * Les statuts à jour, avant la relecture.
    *
-   * Un acte sorti du gabarit n'est pas un acte : c'est un projet. Il était versé dans
-   * la bibliothèque du client à la seconde où il était produit - le client pouvait
-   * l'envoyer à sa banque ou le signer avant que quiconque l'ait lu. Il attend
-   * désormais que l'avocat le relise et le mette à disposition.
+   * Ils partent au client dans le même envoi que les actes : les relire et les mettre à
+   * disposition avant de les avoir produits laissait le client avec un procès-verbal
+   * qui modifie des statuts qu'il n'a pas, et obligeait le cabinet à publier deux fois.
    */
-  if (etat.actesProduits) {
-    taches.push({
-      identifiant: "relecture",
-      titre: etat.actesARelire > 0 ? "Relire les actes et les mettre à disposition" : "Actes mis à disposition",
-      explication:
-        "Le client ne voit rien tant que vous n'avez pas relu. Corrigez ce qu'il faut, puis rendez les actes disponibles dans son espace.",
-      etat: etat.actesARelire > 0 ? "a_faire" : "faite",
-      onglet: "actes",
-    });
-  }
-
   if (etat.type === "modification" && etat.statutsConcernes) {
     taches.push({
       identifiant: "statuts",
@@ -254,6 +242,40 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
       bloquee: etat.statutsAuDossier
         ? undefined
         : "Les statuts en vigueur ne sont pas au dossier : demandez-les au client.",
+    });
+  }
+
+  /*
+   * La relecture, avant que le client voie quoi que ce soit.
+   *
+   * Un acte sorti du gabarit n'est pas un acte : c'est un projet. Il était versé dans
+   * la bibliothèque du client à la seconde où il était produit - le client pouvait
+   * l'envoyer à sa banque ou le signer avant que quiconque l'ait lu. Il attend
+   * désormais que l'avocat le relise et le mette à disposition.
+   */
+  if (etat.actesProduits) {
+    const statutsEnRetard =
+      etat.type === "modification" && etat.statutsConcernes && !etat.statutsAJour;
+
+    taches.push({
+      identifiant: "relecture",
+      titre:
+        etat.actesARelire > 0
+          ? "Relire les actes et les mettre à disposition"
+          : "Actes mis à disposition",
+      explication:
+        "Le client ne voit rien tant que vous n'avez pas relu. Corrigez ce qu'il faut, puis rendez tout disponible d'un coup dans son espace.",
+      etat: etat.actesARelire > 0 ? "a_faire" : "faite",
+      onglet: "actes",
+      /*
+       * Tout part ensemble ou rien ne part.
+       *
+       * Mettre les actes à disposition avant d'avoir produit les statuts à jour donne
+       * au client un procès-verbal qui modifie des statuts qu'il n'a pas.
+       */
+      bloquee: statutsEnRetard
+        ? "Mettez d'abord les statuts à jour : ils partent au client avec les actes."
+        : undefined,
     });
   }
 

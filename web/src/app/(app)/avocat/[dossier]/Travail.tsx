@@ -33,6 +33,9 @@ export function Travail({
   informationsVerifiees: boolean;
 }) {
   const [refus, setRefus] = useState<string | null>(null);
+  /** La demande de corrections, et ce qu'on y écrit. */
+  const [corrections, setCorrections] = useState(false);
+  const [motif, setMotif] = useState("");
   const [retour, setRetour] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
@@ -114,9 +117,17 @@ export function Travail({
     });
   }
 
+  /**
+   * Renvoyer le dossier au client, en disant ce qu'il doit reprendre.
+   *
+   * La demande passait par window.prompt : une boîte grise du navigateur, sans le nom
+   * du dossier, sans dire ce qu'elle déclenche, et qui gèle la page tant qu'on n'a pas
+   * répondu. Le motif part pourtant au client tel quel - c'est la seule chose qu'il
+   * lira - et il mérite plus de deux lignes et un champ d'une ligne.
+   */
   function demanderDesCorrections() {
-    const motif = window.prompt("Que doit reprendre le client ?");
-    if (!motif?.trim()) return;
+    const texte = motif.trim();
+    if (!texte) return;
 
     setRefus(null);
     demarrer(async () => {
@@ -126,7 +137,7 @@ export function Travail({
         body: JSON.stringify({
           dossier,
           etat: "corrections_demandees",
-          commentaire: motif.trim(),
+          commentaire: texte,
         }),
       });
 
@@ -134,6 +145,8 @@ export function Travail({
         setRefus("La demande n'a pas pu être envoyée");
         return;
       }
+      setCorrections(false);
+      setMotif("");
       setRetour("Le client est prévenu de ce qu'il doit reprendre.");
       router.refresh();
     });
@@ -152,7 +165,7 @@ export function Travail({
         <button
           type="button"
           className={styles.travailSecondaire}
-          onClick={demanderDesCorrections}
+          onClick={() => setCorrections(true)}
           disabled={enCours}
         >
           Demander des corrections au client
@@ -268,6 +281,64 @@ export function Travail({
           </li>
         ))}
       </ol>
+
+      {corrections && (
+        <>
+          {/* Le voile ne masque pas la liste : on écrit en regardant ce qui cloche. */}
+          <div
+            className={styles.voile}
+            onClick={() => setCorrections(false)}
+            aria-hidden="true"
+          />
+
+          <div
+            className={styles.fenetreCorrections}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Demander des corrections au client"
+          >
+            <h3 className={styles.fenetreCorrectionsTitre}>Demander des corrections au client</h3>
+            <p className={styles.fenetreCorrectionsDetail}>
+              Le dossier repasse de son côté et il en est prévenu par courriel. Ce que
+              vous écrivez ici est ce qu&apos;il lira : dites ce qui cloche et ce que
+              vous attendez de lui.
+            </p>
+
+            <label className={styles.fenetreCorrectionsLabel} htmlFor="motif-corrections">
+              Ce que le client doit reprendre
+            </label>
+            <textarea
+              id="motif-corrections"
+              className={styles.fenetreCorrectionsChamp}
+              value={motif}
+              onChange={(e) => setMotif(e.target.value)}
+              rows={4}
+              maxLength={1000}
+              autoFocus
+              placeholder="Le justificatif de jouissance est au nom d'un tiers : il nous faut un bail ou une attestation au nom de la société."
+            />
+
+            <div className={styles.fenetreCorrectionsActions}>
+              <button
+                type="button"
+                className={styles.travailSecondaire}
+                onClick={() => setCorrections(false)}
+                disabled={enCours}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className={styles.travailPrincipal}
+                onClick={demanderDesCorrections}
+                disabled={enCours || !motif.trim()}
+              >
+                {enCours ? "Envoi" : "Envoyer la demande"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {retour && (
         <p className={styles.travailRetour} role="status">

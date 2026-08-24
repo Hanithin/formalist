@@ -429,6 +429,79 @@
   white-space: nowrap;
 }
 
+/* ---------- Demander des corrections au client ---------- */
+
+/*
+ * La demande passait par window.prompt : une boîte grise du navigateur, sans le nom du
+ * dossier, sans dire ce qu'elle déclenche, et qui gèle la page. Le motif part pourtant
+ * au client tel quel - c'est la seule chose qu'il lira.
+ */
+.fenetreCorrections {
+  position: fixed;
+  z-index: 60;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, calc(100vw - 40px));
+  padding: 22px 24px 20px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+}
+
+.fenetreCorrectionsTitre {
+  margin: 0 0 6px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.fenetreCorrectionsDetail {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+.fenetreCorrectionsLabel {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.fenetreCorrectionsChamp {
+  display: block;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #111;
+  resize: vertical;
+}
+
+.fenetreCorrectionsChamp:focus {
+  outline: none;
+  border-color: #111;
+}
+
+.fenetreCorrectionsChamp::placeholder {
+  color: #a1a1aa;
+}
+
+.fenetreCorrectionsActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 /* ---------- L'attente de la lecture des statuts ---------- */
 
 .lectureEnCours {
