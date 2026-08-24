@@ -24,7 +24,8 @@ export type GenreDAvis =
   | "depot_en_cours"
   | "immatriculee"
   | "dossier_a_prendre"
-  | "actes_disponibles";
+  | "actes_disponibles"
+  | "actes_retires";
 
 /**
  * Où mène le bouton du courriel.
@@ -59,6 +60,9 @@ export interface Avis {
 const PAR_COURRIEL = new Set<GenreDAvis>([
   "document_refuse",
   "corrections_demandees",
+  // Des documents qui disparaissent de l'espace sans un mot inquiètent plus qu'ils
+  // n'informent : le retrait se dit, comme la mise à disposition.
+  "actes_retires",
   "dossier_rejete",
   "annonce_a_publier",
   "attestation_attendue",
@@ -265,6 +269,25 @@ export function cheminDeLAvis(
  * Ils existaient dès leur production, mais personne ne les avait lus : c'est la
  * relecture de l'avocat qui en fait des documents, et c'est elle qu'on annonce.
  */
+/**
+ * Le cabinet reprend les actes qu'il venait de mettre à disposition.
+ *
+ * On ne peut pas défaire ce que le client a déjà lu : le geste retire les documents de
+ * son espace, mais il les a peut-être ouverts, envoyés à sa banque, signés. Le taire
+ * serait pire - il chercherait des documents disparus sans explication.
+ */
+export function actesRetires(societe: string): Avis {
+  return {
+    genre: "actes_retires",
+    contenu: "L'avocat reprend les actes de " + societe,
+    sujet: "Vos actes sont repris pour correction - " + societe,
+    corps:
+      "L'avocat a repris vos actes pour les corriger : ils ne sont plus dans vos documents.\n\nVous serez prévenu dès qu'ils y reviendront. Si vous en aviez déjà transmis un exemplaire, attendez la nouvelle version avant de vous en servir.",
+    bouton: "Voir mes documents",
+    destination: "documents",
+  };
+}
+
 export function actesDisponibles(societe: string): Avis {
   return {
     genre: "actes_disponibles",

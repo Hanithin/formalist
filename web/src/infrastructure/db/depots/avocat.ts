@@ -19,9 +19,11 @@ import {
   messageDeRefusDePiece,
   documentValide,
   actesDisponibles,
+  actesRetires,
 } from "@/domain/formalite/avis";
 import { prevenir } from "./avis";
 import { A_RELIRE } from "@/domain/document/publication";
+import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
 import { LONGUEUR_COMMENTAIRE } from "@/domain/formalite/avocat";
 import { TYPE_RBE, TYPE_KBIS, typesDeposes } from "./suivi";
 import {
@@ -807,4 +809,51 @@ export async function mettreLesActesADisposition(
   await prevenir(dossier.user_id, dossierId, actesDisponibles(dossier.societe || "votre société"));
 
   return { publies: count };
+}
+
+/**
+ * Retirer de l'espace du client les actes qu'on venait d'y mettre.
+ *
+ * La mise à disposition n'avait pas d'envers : un acte publié par erreur - le mauvais
+ * dossier, une coquille vue une seconde trop tard - restait chez le client, qui pouvait
+ * le signer ou l'envoyer à sa banque. Le geste le remet en relecture.
+ *
+ * Trois réserves. Les statuts en vigueur ne sont pas des actes du cabinet : ils
+ * viennent du registre ou du client, et les retirer lui ôterait son propre document. Un
+ * acte signé ou vérifié ne se reprend pas non plus - la signature est un fait, elle ne
+ * s'annule pas d'un clic. Et le client est prévenu : des documents qui disparaissent
+ * sans un mot inquiètent plus qu'ils n'informent.
+ */
+export async function retirerLesActesDeLEspaceClient(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  const { count } = await prisma.documents.updateMany({
+    where: {
+      formalite_id: dossierId,
+      uploaded_by: "system",
+      status: "generated",
+      name: { not: TITRE_STATUTS_EN_VIGUEUR },
+    },
+    data: { status: A_RELIRE },
+  });
+
+  if (count === 0) return { retires: 0 };
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "actes_retires",
+      after_value: String(count),
+    },
+  });
+
+  await prevenir(dossier.user_id, dossierId, actesRetires(dossier.societe || "votre société"));
+
+  return { retires: count };
 }

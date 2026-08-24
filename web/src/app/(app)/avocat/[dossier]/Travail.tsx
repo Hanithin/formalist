@@ -125,6 +125,36 @@ export function Travail({
    * répondu. Le motif part pourtant au client tel quel - c'est la seule chose qu'il
    * lira - et il mérite plus de deux lignes et un champ d'une ligne.
    */
+  /**
+   * Retirer de l'espace du client les actes qu'on vient d'y mettre.
+   *
+   * Publier n'avait pas d'envers : un acte mis à disposition par erreur restait chez le
+   * client, qui pouvait le signer ou l'envoyer à sa banque.
+   */
+  function retirerDeLEspaceClient() {
+    setRefus(null);
+    setRetour(null);
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/actes", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier }),
+      });
+      const corps = await reponse.json().catch(() => ({}));
+
+      if (!reponse.ok) {
+        setRefus(corps.error ?? "Les actes n'ont pas pu être retirés");
+        return;
+      }
+      setRetour(
+        corps.retires === 1
+          ? "L'acte est retiré de l'espace du client, qui en est prévenu."
+          : corps.retires + " actes sont retirés de l'espace du client, qui en est prévenu."
+      );
+      router.refresh();
+    });
+  }
+
   function demanderDesCorrections() {
     const texte = motif.trim();
     if (!texte) return;
@@ -201,6 +231,25 @@ export function Travail({
                 relecture déclarée se retire : une tâche cochée parce que le dossier a
                 dépassé l'étape ne se décoche pas d'un lien.
               */}
+              {/*
+                Ce qui est fait peut se défaire, quand cela a un sens.
+                
+                Un acte publié par erreur restait chez le client : le geste le remet en
+                relecture et l'en prévient.
+              */}
+              {tache.identifiant === "relecture" && tache.etat === "faite" && (
+                <span className={styles.tacheActions}>
+                  <button
+                    type="button"
+                    className={styles.travailTertiaire}
+                    onClick={retirerDeLEspaceClient}
+                    disabled={enCours}
+                  >
+                    Retirer de l&apos;espace du client
+                  </button>
+                </span>
+              )}
+
               {tache.identifiant === "informations" &&
                 tache.etat === "faite" &&
                 informationsVerifiees && (
