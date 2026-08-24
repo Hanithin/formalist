@@ -461,7 +461,21 @@ export function Statuts({ dossier }: { dossier: number }) {
       />
 
       {confirmation && (
-        <div className={styles.confirmationBloc} role="alertdialog">
+        <>
+          {/*
+            La question se pose devant l'écran, non tout en bas.
+            
+            Elle était rendue à la suite de l'éditeur, dans le flux de la page : cliquer
+            sur « Produire les statuts à jour » posait la question sous plusieurs
+            écrans de hauteur de document, et l'on croyait le bouton mort.
+          */}
+          <div
+            className={styles.voile}
+            onClick={() => setConfirmation(false)}
+            aria-hidden="true"
+          />
+
+          <div className={styles.confirmationBloc} role="alertdialog">
           <p>
             {/*
               Nommer ce qui n'est pas confirmé, non en donner le nombre.
@@ -489,10 +503,11 @@ export function Statuts({ dossier }: { dossier: number }) {
               onClick={appliquer}
               disabled={enCours}
             >
-              Produire quand même
+              {enCours ? "Production" : "Produire quand même"}
             </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );

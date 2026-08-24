@@ -2625,22 +2625,37 @@
   color: #15803d;
 }
 
+/*
+ * La question posée avant de produire un document incomplet.
+ *
+ * Elle vivait dans le flux de la page, à la suite de l'éditeur : cliquer sur « Produire
+ * les statuts à jour » l'affichait sous plusieurs écrans de hauteur de document, et le
+ * bouton passait pour mort.
+ */
 .confirmationBloc {
-  padding: 16px 18px;
+  position: fixed;
+  z-index: 60;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 40px));
+  padding: 20px 22px 18px;
   border: 1px solid #fde9c8;
-  border-radius: 12px;
+  border-radius: 16px;
   background: #fffbeb;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
 }
 
 .confirmationBloc p {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   font-size: 13.5px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: #78350f;
 }
 
 .confirmationActions {
   display: flex;
+  justify-content: flex-end;
   gap: 10px;
 }
 
