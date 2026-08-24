@@ -2618,6 +2618,36 @@
   color: #71717a;
 }
 
+/* ---------- Ce qui reste à vérifier, nommé ---------- */
+
+.statutsDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0 0;
+}
+
+.statutsDetailTitre {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.statutsDetailValeurs {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #71717a;
+}
+
+/* L'ancienne valeur est barrée : c'est ce qui disparaît du document. */
+.statutsAncien {
+  text-decoration: line-through;
+}
+
+.statutsNouveau {
+  color: #111;
+}
+
 .statutsTete .travailPrincipal {
   justify-content: center;
   width: 100%;

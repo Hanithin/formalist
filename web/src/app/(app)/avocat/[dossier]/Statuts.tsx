@@ -383,6 +383,35 @@ export function Statuts({ dossier }: { dossier: number }) {
               )}
             </div>
 
+            {/*
+              Quel changement, et pas seulement combien.
+              
+              « 1 changement à vérifier » ne dit pas lequel : sur un dossier qui déplace
+              le siège et change la dénomination, il fallait descendre la colonne pour
+              savoir ce qui restait. Un seul changement se nomme avec ses deux valeurs -
+              c'est ce qu'on relit dans le document ; plusieurs se nomment tout court.
+            */}
+            {restants.length > 0 && (
+              <p className={styles.statutsDetail}>
+                {restants.length === 1 ? (
+                  <>
+                    <span className={styles.statutsDetailTitre}>{restants[0].titre}</span>
+                    {restants[0].ancien && restants[0].nouveau && (
+                      <span className={styles.statutsDetailValeurs}>
+                        <span className={styles.statutsAncien}>{restants[0].ancien}</span>
+                        <span aria-hidden="true"> → </span>
+                        <span className={styles.statutsNouveau}>{restants[0].nouveau}</span>
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className={styles.statutsDetailTitre}>
+                    {restants.map((c) => c.titre).join(", ")}
+                  </span>
+                )}
+              </p>
+            )}
+
             <button
               type="button"
               className={styles.travailPrincipal}
