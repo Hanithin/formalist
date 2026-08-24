@@ -354,7 +354,15 @@ export default async function DossierAvocat({
           l'invitation : l'avocat se retrouvait devant sept tâches dont trois étaient
           déjà faites, à chercher la première qui l'attendait.
         */}
-        {monDossier && !libre && (
+        {/*
+          Le bandeau n'a rien à dire sur l'onglet des tâches.
+          
+          Il y répétait mot pour mot ce que la liste dit dessous : l'avancement, la
+          prochaine étape et son bouton. Trois lignes et une jauge pour redire la
+          première ligne de la page. Ailleurs, il reste le seul endroit qui dise par
+          quoi continuer et qui y mène.
+        */}
+        {monDossier && !libre && onglet !== "travail" && (
           <section className={styles.bandeauAssigne} aria-label="Votre dossier">
             <div className={styles.bandeauAssigneHaut}>
               <span className={styles.bandeauAssigneIcone} aria-hidden="true">
