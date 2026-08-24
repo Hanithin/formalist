@@ -473,13 +473,19 @@ export default async function DossierAvocat({
               Les cinq sous-phases disent la même chose que les tâches, en plus court :
               elles sont le résumé de ce travail, pas un travail à côté.
             */}
-            <h3 className={styles.sectionTitre}>Avancement du dossier</h3>
-            <Avancement
-              dossierId={dossier.id}
-              sousPhase={dossier.business_sub_phase}
-              aLeKbis={remis(TYPE_KBIS)}
-              aLeRbe={remis(TYPE_RBE)}
-            />
+            {/*
+              Le bloc porte l'ancre, non un titre de plus : le composant a déjà le sien,
+              et deux « Avancement du dossier » l'un sur l'autre se lisaient comme un
+              défaut d'affichage.
+            */}
+            <div id="avancement" className={styles.ancreAvancement}>
+              <Avancement
+                dossierId={dossier.id}
+                sousPhase={dossier.business_sub_phase}
+                aLeKbis={remis(TYPE_KBIS)}
+                aLeRbe={remis(TYPE_RBE)}
+              />
+            </div>
           </>
         )}
 

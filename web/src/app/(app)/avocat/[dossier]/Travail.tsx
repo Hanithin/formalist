@@ -479,6 +479,18 @@ export function Travail({
                     >
                       {libelleDesPieces(tache.identifiant)}
                     </button>
+                  ) : tache.onglet === "avancement" ? (
+                    /*
+                      Le dépôt se marque plus bas, dans la même page.
+                      
+                      « Y aller » menait à l'onglet de l'avancement, qui a rejoint
+                      celui-ci : le bouton rechargeait donc l'écran où l'on était déjà.
+                      Le dépôt lui-même se fait au guichet de l'INPI, hors d'ici ; ce
+                      qui se fait ici, c'est de dire qu'il a eu lieu.
+                    */
+                    <a href="#avancement" className={styles.travailPrincipal}>
+                      Marquer l&apos;avancement
+                    </a>
                   ) : (
                     tache.onglet && (
                       <Link

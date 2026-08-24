@@ -445,6 +445,12 @@
   scroll-margin-top: 24px;
 }
 
+/* L'ancre du dépôt : la tâche y conduit, le titre ne doit pas coller au bord. */
+.ancreAvancement {
+  margin-top: 28px;
+  scroll-margin-top: 24px;
+}
+
 .sectionTitre:first-of-type {
   margin-top: 26px;
 }
