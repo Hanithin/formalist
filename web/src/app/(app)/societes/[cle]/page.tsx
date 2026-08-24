@@ -40,6 +40,31 @@ function dateLisible(iso: string): string {
  * troisième liste : c'est la même information vue par l'entité plutôt que par
  * l'opération ou par le fichier, et chaque section renvoie à la liste complète.
  */
+/**
+ * Le chevron d'une ligne cliquable.
+ *
+ * Ces lignes menaient au dossier ou à la bibliothèque sans le dire : ni fond au
+ * survol, ni signe à droite, elles se lisaient comme une liste de faits. Le chevron
+ * paraît au survol et au focus clavier, comme sur le registre des sociétés, où la
+ * même flèche annonce la même chose.
+ */
+function Chevron() {
+  return (
+    <svg
+      className={styles.ligneChevron}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
 export default async function FicheSociete({
   params,
 }: {
@@ -68,13 +93,48 @@ export default async function FicheSociete({
 
   return (
     <main className={styles.page}>
-      <div className={styles.fil}>
-        <Link href="/societes">Mes sociétés</Link>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      {/*
+        Le fil : ce qui se clique se voit, ce qui ne se clique pas se lit.
+
+        Les deux membres avaient le même gris et la même graisse, séparés d'un chevron
+        de la même couleur : rien ne disait lequel était un lien, ni où l'on se
+        trouvait. Le retour devient une pastille qui réagit au survol, avec sa flèche ;
+        le nom de la société prend le noir du titre, puisque c'est la page courante.
+      */}
+      <nav className={styles.fil} aria-label="Fil d'Ariane">
+        <Link href="/societes" className={styles.filRetour}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Mes sociétés
+        </Link>
+
+        <svg
+          className={styles.filSeparateur}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <polyline points="9 18 15 12 9 6" />
         </svg>
-        <span>{societe.denomination}</span>
-      </div>
+
+        <span className={styles.filCourant} aria-current="page">
+          {societe.denomination}
+        </span>
+      </nav>
 
       <div className={styles.contenu}>
         {/*
@@ -185,8 +245,11 @@ export default async function FicheSociete({
                             {avancement(dossier.etapeAffichee, dossier.offre)} %
                           </span>
                         </span>
-                        <span className={styles.ligneQuand}>
-                          {dateRelative(new Date(dossier.majLe))}
+                        <span className={styles.ligneFin}>
+                          <span className={styles.ligneQuand}>
+                            {dateRelative(new Date(dossier.majLe))}
+                          </span>
+                          <Chevron />
                         </span>
                       </Link>
                     </li>
@@ -219,8 +282,11 @@ export default async function FicheSociete({
                             {document.origine === "entreprise" ? "Produit par le cabinet" : "Déposé par vous"}
                           </span>
                         </span>
-                        <span className={styles.ligneQuand}>
-                          {document.creeLe ? dateRelative(new Date(document.creeLe)) : ""}
+                        <span className={styles.ligneFin}>
+                          <span className={styles.ligneQuand}>
+                            {document.creeLe ? dateRelative(new Date(document.creeLe)) : ""}
+                          </span>
+                          <Chevron />
                         </span>
                       </Link>
                     </li>

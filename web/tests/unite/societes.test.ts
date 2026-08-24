@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   etatDeLaSociete,
+  libelleDesFormalites,
   libelleDuPortefeuille,
   nomDeLaSociete,
   regrouperEnSocietes,
@@ -197,5 +198,38 @@ describe("l'historique porte l'heure", () => {
     // « il y a 30 min à 11h30 » n'apprendrait rien de plus.
     expect(dateEtHeure(new Date("2026-08-23T11:30:00Z"), maintenant)).toBe("il y a 30 min");
     expect(dateEtHeure(new Date("2026-08-23T06:00:00Z"), maintenant)).toBe("il y a 6 h");
+  });
+});
+
+describe("la colonne des formalités se lit comme une phrase", () => {
+  /*
+   * Elle affichait « 2 · 2 en cours » : le même chiffre deux fois, dont le premier ne
+   * disait pas de quoi il parlait.
+   */
+  it("dit ce qui avance quand tout avance", () => {
+    expect(libelleDesFormalites(2, 2)).toBe("2 en cours");
+    expect(libelleDesFormalites(1, 1)).toBe("1 en cours");
+  });
+
+  it("dit la part quand une partie seulement avance", () => {
+    expect(libelleDesFormalites(3, 1)).toBe("1 en cours sur 3");
+  });
+
+  /*
+   * Rien ne qualifie les dossiers clos : « terminées » serait faux pour un dossier
+   * archivé ou rejeté, et cette colonne n'a pas de quoi les distinguer.
+   */
+  it("donne le total seul quand rien n'avance, avec son nom", () => {
+    expect(libelleDesFormalites(4, 0)).toBe("4 formalités");
+    expect(libelleDesFormalites(1, 0)).toBe("1 formalité");
+  });
+
+  it("écrit un tiret plutôt qu'un zéro", () => {
+    expect(libelleDesFormalites(0, 0)).toBe("—");
+  });
+
+  /* Un décompte incohérent ne doit pas produire « 3 en cours sur 2 ». */
+  it("ne promet jamais plus en cours que de total", () => {
+    expect(libelleDesFormalites(2, 3)).toBe("2 en cours");
   });
 });

@@ -3,6 +3,8 @@ import { exigerDossierModifiable } from "./dossiers";
 import { ETAPES, premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
 import { nombreDEtapes } from "@/domain/formalite/etapes";
 import { monteeEnOffrePermise } from "@/domain/formalite/transitions";
+import { motifDuRefus, phraseDuRefus } from "@/domain/formalite/suppression";
+import { effacerPieces } from "@/infrastructure/documents/depot";
 import { Interdit } from "../utilisateur-courant";
 import { regle } from "@/domain/formalite/formes";
 import { journal } from "@/lib/journal";
@@ -28,6 +30,29 @@ function lireBrouillon(dataJson: string | null): Brouillon {
     // d'un brouillon vide et on garde la trace.
     journal.error({ err: e }, "Brouillon illisible");
     return {};
+  }
+}
+
+/**
+ * Le dossier se dit-il payé ?
+ *
+ * Les cinq parcours qui encaissent - auto-entreprise, modification, dépôt des
+ * comptes, fermeture, cessation - posent `paye: true` dans le brouillon au moment de
+ * la confirmation. La création n'encaisse pas encore : son brouillon ne porte jamais
+ * ce drapeau, et c'est son statut qui dit s'il a quitté les mains du client.
+ *
+ * Un brouillon illisible est tenu pour payé : c'est le sens qui protège. Mieux vaut
+ * refuser une suppression légitime que d'effacer un dossier réglé sur une erreur de
+ * lecture.
+ */
+export function paiementDuBrouillon(dataJson: string | null): boolean {
+  if (!dataJson) return false;
+  try {
+    const brouillon: unknown = JSON.parse(dataJson);
+    if (!brouillon || typeof brouillon !== "object") return false;
+    return (brouillon as { paye?: unknown }).paye === true;
+  } catch {
+    return true;
   }
 }
 
@@ -188,4 +213,90 @@ export class DossierIncompletPourTransmission extends Error {
   constructor(readonly etape: number) {
     super("Le dossier est incomplet");
   }
+}
+
+/**
+ * Le client retire un brouillon qu'il n'a jamais transmis.
+ *
+ * La règle est dans `estSupprimable`, et elle est revérifiée ici sur les lignes
+ * réelles : la liste qui a montré la corbeille a été rendue à un instant donné, et le
+ * dossier a pu être réglé depuis un autre onglet entre-temps. Le brouillon dit ce
+ * qu'il croit du paiement ; `payments` et `signature_requests` disent ce qui s'est
+ * vraiment passé, et ce sont eux qui tranchent.
+ *
+ * Les clés étrangères sont posées en `NoAction` : les lignes filles partent d'abord,
+ * dans une transaction, sans quoi Postgres refuse la suppression du dossier. Ce qui
+ * survit est la ligne d'audit, écrite avec `formalite_id` à nul - la colonne
+ * l'admet - car une suppression dont il ne reste aucune trace n'en est pas une.
+ */
+export async function supprimerBrouillon(utilisateur: UtilisateurConnecte, dossierId: number) {
+  const dossier = await exigerDossierModifiable(utilisateur, dossierId);
+
+  const [reglements, signatures] = await Promise.all([
+    prisma.payments.count({ where: { formalite_id: dossierId, status: "paid" } }),
+    prisma.signature_requests.count({ where: { formalite_id: dossierId } }),
+  ]);
+
+  const motif = motifDuRefus({
+    statut: dossier.status,
+    avocatAssigneId: dossier.assigned_avocat_id,
+    finaliseLe: dossier.finalized_at,
+    paye: paiementDuBrouillon(dossier.data_json),
+    aUnReglement: reglements > 0,
+    aUneSignature: signatures > 0,
+  });
+
+  if (motif) throw new Interdit(phraseDuRefus(motif));
+
+  // Les chemins sont relevés avant la transaction : après elle, plus rien ne dit
+  // quels fichiers appartenaient à ce dossier.
+  const documents = await prisma.documents.findMany({
+    where: { formalite_id: dossierId },
+    select: { file_path: true, source_path: true },
+  });
+  const depots = await prisma.uploaded_files.findMany({
+    where: { formalite_id: dossierId },
+    select: { filename: true },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.documents.deleteMany({ where: { formalite_id: dossierId } });
+    await tx.uploaded_files.deleteMany({ where: { formalite_id: dossierId } });
+    await tx.messages.deleteMany({ where: { formalite_id: dossierId } });
+    await tx.notifications.deleteMany({ where: { formalite_id: dossierId } });
+    await tx.team_notes.deleteMany({ where: { formalite_id: dossierId } });
+    await tx.signature_requests.deleteMany({ where: { formalite_id: dossierId } });
+    /*
+     * Les règlements non aboutis partent avec le dossier.
+     *
+     * Il n'en reste ici que des tentatives abandonnées - une session Stripe ouverte
+     * puis fermée : `estSupprimable` a déjà écarté tout dossier portant un paiement
+     * encaissé, et le montant réel vit chez Stripe, non dans cette table.
+     */
+    await tx.payments.deleteMany({ where: { formalite_id: dossierId } });
+    await tx.audit_log.deleteMany({ where: { formalite_id: dossierId } });
+    await tx.formalites.delete({ where: { id: dossierId } });
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: null,
+      actor_id: utilisateur.id,
+      actor_role: "user",
+      action: "brouillon_supprime",
+      // Le dossier n'existe plus : la ligne dit lequel, et ce qu'il portait.
+      before_value: JSON.stringify({
+        dossier: dossierId,
+        type: dossier.type,
+        societe: dossier.societe,
+      }),
+    },
+  });
+
+  await effacerPieces([
+    ...documents.flatMap((d) => [d.file_path, d.source_path]),
+    ...depots.map((f) => f.filename),
+  ]);
+
+  return { supprime: dossierId };
 }

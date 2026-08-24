@@ -82,12 +82,26 @@ export default async function TableauDeBord() {
 
   const prenom = utilisateur.nom.split(" ")[0];
 
-  // Un compte sans dossier n'a rien à savoir : il a quelque chose à commencer.
+  /*
+   * Un compte sans dossier n'a rien à savoir : il a quelque chose à commencer.
+   *
+   * Le bandeau est celui des deux autres états - salutation, date, bouton - et non
+   * une tête de page réinventée dans la carte : c'est ce qui fait que passer de zéro
+   * à un dossier ne donne pas l'impression de changer de produit.
+   */
   if (societes.length === 0) {
     return (
       <main className={styles.page}>
+        <header className={styles.entete}>
+          <h1 className={styles.enteteTitre}>{phraseDAccueil(prenom, 0)}</h1>
+          <div className={styles.enteteDroite}>
+            <span className={styles.enteteDate}>{dateEnTete()}</span>
+            <NouvelleFormalite apparence="page" />
+          </div>
+        </header>
+
         <div className={styles.content}>
-          <Accueil salutation={phraseDAccueil(prenom, 0)} />
+          <Accueil />
         </div>
       </main>
     );

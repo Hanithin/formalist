@@ -1,98 +1,117 @@
 /**
  * L'écran d'un compte sans dossier.
  *
- * Il portait la mise en page de public/dashboard.html : deux groupes de deux cartes
- * verticales, hautes de cent quarante pixels dont un tiers de blanc, une pastille de
- * réassurance dans le coin le plus précieux de la page, et six parcours absents.
+ * Trois dispositions ont été essayées avant celle-ci, et ce qu'elles ont appris tient
+ * en trois règles.
  *
- * Il tient désormais en quatre rangées. L'intitulé de famille occupe la première
- * colonne au lieu de coiffer sa rangée - à quatre familles de deux parcours, trois
- * colonnes laisseraient une cellule vide à chaque ligne. Les cartes sont horizontales,
- * ce qui les réduit de moitié en hauteur sans rien retirer de ce qu'elles disent.
+ * Pas de cadre autour des cadres : les cartes se posent sur le fond gris de la page,
+ * comme les sections des autres états du tableau de bord. Enfermées dans une grande
+ * carte blanche, elles ajoutaient un contour qui ne disait rien.
  *
- * Le vert est conservé : c'est la couleur de cet écran depuis l'origine, et le seul
- * parcours qu'il met en avant.
+ * Pas de colonne d'intitulés : « GÉRER MA SOCIÉTÉ » prenait deux cent quatorze pixels
+ * de large pour trois mots, et les cartes s'étiraient sur ce qui restait, vides en
+ * leur milieu. L'intitulé coiffe désormais ses deux cartes.
+ *
+ * Pas de blanc au milieu d'une carte : elle a deux étages, l'identité puis le coût,
+ * et chaque étage occupe sa ligne entière.
+ *
+ * Le vert est conservé : c'est la couleur de cet écran depuis l'origine, et il ne
+ * désigne qu'une chose - le parcours recommandé, et la réassurance qui le rend
+ * acceptable.
  */
 
-.hero {
-  position: relative;
-  overflow: hidden;
-  margin: 32px 0 24px;
-  padding: 40px 40px 32px;
-  border-radius: 20px;
-  background: #fff;
-  border: 1px solid #ececec;
-  color: #111;
+.accueil {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-/* ---------- Le haut : la salutation et la date ---------- */
+/* ---------- Le haut : ce que la page propose, et ce qui rassure ---------- */
 
 .haut {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 8px;
-}
-
-.titre {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  font-family: var(--police-titre), sans-serif;
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: #111;
-}
-
-.date {
-  flex-shrink: 0;
-  font-size: 13px;
-  color: #999;
 }
 
 .chapeau {
-  max-width: 640px;
-  margin: 0 0 26px;
+  max-width: 700px;
+  margin: 0;
   font-size: 14.5px;
-  color: #666;
+  color: #71717a;
   line-height: 1.55;
 }
 
 .chapeau strong {
-  color: #111;
+  color: #18181b;
   font-weight: 600;
 }
 
-/* ---------- Les rangées : la famille, puis ses parcours ---------- */
-
-.grille {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.rangee {
-  display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
+.reassurance {
+  display: inline-flex;
   align-items: center;
-  gap: 24px;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 7px 14px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #047857;
 }
+
+.reassurance strong {
+  color: #065f46;
+  font-weight: 600;
+}
+
+.reassurance svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ---------- Une famille : son intitulé, puis ses parcours ---------- */
 
 .famille {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* L'intitulé, et un filet qui court jusqu'au bord : la rangée se tient. */
+.familleTitre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin: 0;
   font-size: 11.5px;
   font-weight: 600;
-  color: #9a9aa2;
+  color: #a1a1aa;
   text-transform: uppercase;
   letter-spacing: 0;
-  line-height: 1.4;
 }
 
+.familleTitre::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  /* Sur le gris de la page, un filet plus clair que #e4e4e7 ne se voit pas. */
+  background: #e4e4e7;
+}
+
+/*
+ * Deux cartes tant qu'elles tiennent, une seule ensuite.
+ *
+ * La bascule ne peut pas se régler sur la largeur de la fenêtre : la colonne de
+ * navigation en prend trois cents pixels, et `auto-fit` mesure la place réellement
+ * disponible.
+ */
 .cartes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 12px;
   margin: 0;
   padding: 0;
@@ -109,58 +128,38 @@
   border-radius: 0;
 }
 
-/*
- * La carte, horizontale : l'icône, le texte, la flèche.
- * En colonne, l'icône flottait seule au-dessus d'un grand vide.
- */
+/* ---------- La carte ---------- */
+
 .chemin {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   height: 100%;
   padding: 14px 16px;
-  background: #fafafa;
-  border: 1px solid #ececec;
-  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
   color: #111;
   text-decoration: none;
   cursor: pointer;
   transition:
-    background 0.18s ease,
     border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .chemin:hover {
-  background: #f3f3f4;
   border-color: #ddd;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
 }
 
-/* Le parcours mis en avant : dégradé vert et liseré plus épais. */
-.recommande {
-  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-  border: 1.5px solid #10b981;
-}
-
-.recommande:hover {
-  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-  border-color: #059669;
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.16);
-}
-
-.recommande .icone {
-  background: #10b981;
-  color: #fff;
-}
-
-/* Sur la carte mise en avant, la flèche est déjà là, et pleine. */
-.recommande .fleche {
-  background: #10b981;
-  border-color: #10b981;
-  color: #fff;
-  opacity: 1;
+/* Le premier étage : l'icône en face du nom, non en face de la description. */
+.tete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .icone {
@@ -168,17 +167,54 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  background: #f0f0f2;
-  color: #111;
+  background: #f4f4f5;
+  color: #18181b;
 }
 
 .icone svg {
-  width: 19px;
-  height: 19px;
+  width: 18px;
+  height: 18px;
   display: block;
+}
+
+/*
+ * Les six teintes du catalogue.
+ *
+ * Elles viennent du HTML d'origine, où chaque parcours portait la sienne. Reprises
+ * ici, elles font reconnaître une carte à son pictogramme avant d'en lire le titre -
+ * et elles rangent la page sans ajouter un mot.
+ */
+.green {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.violet {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.amber {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.red {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.teal {
+  background: #f0fdfa;
+  color: #0d9488;
 }
 
 .corps {
@@ -221,20 +257,41 @@
   white-space: nowrap;
 }
 
-.cheminMeta {
+/*
+ * Le second étage : ce que le parcours coûte, et ce qu'il prend de temps.
+ *
+ * `margin-top: auto` colle ce pied au bas de la carte : dans une rangée où une
+ * description passe à la ligne, les deux pieds restent alignés.
+ */
+.pied {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #f4f4f5;
+}
+
+.duree {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-top: 2px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: #555;
+  font-size: 12px;
+  color: #8a8a92;
 }
 
-.cheminMeta svg {
-  width: 12px;
-  height: 12px;
+.duree svg {
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
+}
+
+/* Le prix pousse la flèche au bout et se lit sans être cherché. */
+.prix {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #18181b;
 }
 
 .fleche {
@@ -242,80 +299,73 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: #fff;
-  border: 1px solid #ececec;
-  color: #111;
-  opacity: 0;
-  transition: opacity 0.18s ease;
+  background: #f4f4f5;
+  color: #18181b;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
 }
 
 .fleche svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   display: block;
 }
 
 .chemin:hover .fleche {
-  opacity: 1;
+  background: #18181b;
+  color: #fff;
 }
 
-/* ---------- La réassurance, en pied ---------- */
+/* ---------- Le parcours recommandé ---------- */
 
-.reassurance {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 26px 0 0;
-  padding-top: 22px;
-  border-top: 1px solid #f1f1f3;
-  font-size: 12.5px;
-  color: #8a8a92;
+.recommande {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f7fdfa 100%);
+  border: 1.5px solid #10b981;
 }
 
-.reassurance strong {
-  color: #52525b;
-  font-weight: 600;
+.recommande:hover {
+  border-color: #059669;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.16);
 }
 
-.reassurance svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: #10b981;
+.recommande .icone,
+.recommande .icone.green {
+  background: #10b981;
+  color: #fff;
+}
+
+.recommande .pied {
+  border-top-color: rgba(16, 185, 129, 0.22);
+}
+
+.recommande .duree {
+  color: #4d7c6f;
+}
+
+.recommande .prix {
+  color: #065f46;
+}
+
+.recommande .fleche {
+  background: #10b981;
+  color: #fff;
+}
+
+.recommande:hover .fleche {
+  background: #059669;
 }
 
 /* ---------- Écrans étroits ---------- */
 
 @media (max-width: 1100px) {
-  /* L'intitulé repasse au-dessus de ses cartes : la colonne de gauche mangerait
-     la moitié de la largeur restante. */
-  .rangee {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .grille {
-    gap: 22px;
-  }
-}
-
-@media (max-width: 760px) {
-  .hero {
-    padding: 28px 20px 24px;
-  }
-
-  .cartes {
-    grid-template-columns: 1fr;
-  }
-
+  /* La réassurance passe sous le chapeau plutôt que de le comprimer. */
   .haut {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 14px;
   }
 }

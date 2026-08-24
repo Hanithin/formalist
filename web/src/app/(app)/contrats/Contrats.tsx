@@ -20,6 +20,7 @@ import {
   verifierContrat,
   type ChampContrat,
 } from "@/domain/contrat/catalogue";
+import { filtresUtiles } from "@/domain/document/statuts";
 import { formaterDate } from "@/lib/dates";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
@@ -155,7 +156,7 @@ export function Contrats({ contrats }: { contrats: ContratAffiche[] }) {
       )}
 
       <div className={styles.barre}>
-        {FILTRES.map((f) => (
+        {filtresUtiles(FILTRES, comptes, filtre).map((f) => (
           <button
             type="button"
             key={f.valeur}
@@ -164,8 +165,8 @@ export function Contrats({ contrats }: { contrats: ContratAffiche[] }) {
             aria-pressed={filtre === f.valeur}
           >
             {f.libelle}
-            {/* Un « 0 » collé au libellé n'informe pas : la catégorie est vide, cela se
-                voit en cliquant, et le compteur ne sert qu'à ce qui existe. */}
+            {/* Un « 0 » collé au libellé n'informe pas : la rubrique vide ne s'affiche
+                plus du tout, sauf « Tous » et celle qu'on regarde. */}
             {comptes[f.valeur] > 0 && (
               <span className={styles.compte}>{comptes[f.valeur]}</span>
             )}

@@ -4,6 +4,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { mesSocietes } from "@/infrastructure/db/depots/societes";
 import {
   etatDeLaSociete,
+  libelleDesFormalites,
   libelleDuPortefeuille,
   type Societe,
 } from "@/domain/societe/portefeuille";
@@ -124,11 +125,19 @@ function Ligne({ societe }: { societe: Societe }) {
           </span>
         </span>
 
-        <span className={styles.celluleFormalites}>
-          {societe.dossiers.length}
-          {societe.enCours > 0 && (
-            <span className={styles.enCours}> · {societe.enCours} en cours</span>
-          )}
+        {/*
+          Une phrase, non deux nombres.
+          « 2 · 2 en cours » faisait lire le même chiffre deux fois, et le premier ne
+          disait pas de quoi il parlait.
+        */}
+        <span
+          className={
+            societe.enCours > 0
+              ? `${styles.celluleFormalites} ${styles.enCours}`
+              : styles.celluleFormalites
+          }
+        >
+          {libelleDesFormalites(societe.dossiers.length, societe.enCours)}
         </span>
 
         <span className={styles.celluleEcheance}>

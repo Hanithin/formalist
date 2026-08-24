@@ -21,6 +21,12 @@ export interface DossierListe {
   banque: string | null;
   modifieLe: Date | null;
   nonLus: number;
+  /**
+   * Un dossier que rien n'a encore engagé : ni règlement, ni transmission au cabinet,
+   * ni signature demandée. La carte l'annonce comme brouillon plutôt que d'annoncer
+   * une étape en cours qui ne bouge pas, et lui seul porte la corbeille.
+   */
+  brouillon?: boolean;
 }
 
 /* ---------- Le type d'un dossier ---------- */

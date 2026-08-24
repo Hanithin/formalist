@@ -23,6 +23,8 @@ import { verifierComptes } from "@/domain/comptes/verification";
 import { Conventions } from "./Conventions";
 import { Chiffres } from "./Chiffres";
 import styles from "../modification/Modification.module.css";
+import { remonterEnHaut } from "@/lib/defilement";
+import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
 
 const ETAPES = [
   { numero: 1, titre: "La société", court: "Société" },
@@ -162,8 +164,9 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
       }
 
       setEtape(vers);
+      memoriserEtape(dossier, vers);
       setAtteinte((loin) => Math.max(loin, vers));
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      remonterEnHaut();
     });
   }
 
@@ -300,47 +303,46 @@ function Frise({
   surChoix: (vers: number) => void;
 }) {
   return (
-    <ol className={styles.stepper}>
-      {ETAPES.map((e, rang) => (
-        <li key={e.numero} style={{ display: "contents" }}>
-          {rang > 0 && (
-            <span
-              className={
-                e.numero <= atteinte ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment
-              }
-              aria-hidden="true"
-            />
-          )}
-          {e.numero <= atteinte ? (
-            <button
-              type="button"
-              className={
-                e.numero === etape
-                  ? `${styles.step} ${styles.stepBouton} ${styles.active}`
-                  : `${styles.step} ${styles.stepBouton} ${styles.done}`
-              }
-              onClick={() => surChoix(e.numero)}
-              aria-current={e.numero === etape ? "step" : undefined}
-            >
-              <span className={styles.stepCircle}>
-                {e.numero !== etape ? (
-                  <svg viewBox="0 0 24 24" {...TRAITS} aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  e.numero
-                )}
+    <ol className={styles.frise}>
+      {ETAPES.map((e) => {
+        const faite = e.numero < etape;
+        const courante = e.numero === etape;
+        /* « À venir » est l'état par défaut : il n'a pas de classe. */
+        const ton = faite ? styles.friseFaite : courante ? styles.friseCourante : "";
+        const marque = faite ? (
+          <svg viewBox="0 0 24 24" {...TRAITS} aria-hidden="true">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        ) : (
+          e.numero
+        );
+
+        return (
+          <li key={e.numero} className={`${styles.friseEtape} ${ton}`}>
+            {/*
+              Une étape déjà atteinte se rouvre d'un clic.
+              Celles qu'on n'a pas encore vues ne sont pas des boutons : y sauter
+              enjamberait les contrôles qui gardent les précédentes.
+            */}
+            {e.numero <= atteinte ? (
+              <button
+                type="button"
+                className={styles.friseGeste}
+                onClick={() => surChoix(e.numero)}
+                aria-current={courante ? "step" : undefined}
+              >
+                <span className={styles.friseMarque}>{marque}</span>
+                <span className={styles.friseLibelle}>{e.court}</span>
+              </button>
+            ) : (
+              <span className={styles.friseGeste}>
+                <span className={styles.friseMarque}>{marque}</span>
+                <span className={styles.friseLibelle}>{e.court}</span>
               </span>
-              <span className={styles.stepLabel}>{e.court}</span>
-            </button>
-          ) : (
-            <span className={styles.step}>
-              <span className={styles.stepCircle}>{e.numero}</span>
-              <span className={styles.stepLabel}>{e.court}</span>
-            </span>
-          )}
-        </li>
-      ))}
+            )}
+          </li>
+        );
+      })}
     </ol>
   );
 }

@@ -170,3 +170,25 @@ export function etatDeLaSociete(societe: Societe): Etat {
 export function libelleDuPortefeuille(nombre: number): string {
   return nombre === 1 ? "Ma société" : "Mes sociétés";
 }
+
+/**
+ * Ce que la colonne « Formalités » annonce pour une société.
+ *
+ * Elle affichait le total, puis le nombre en cours : « 2 · 2 en cours ». Deux nombres
+ * côte à côte dont le premier ne dit pas de quoi il parle - la colonne est déjà
+ * intitulée - et qui se répètent quand tout est en cours. On lisait « 2 · 2 » avant de
+ * comprendre qu'il s'agissait du même chiffre vu deux fois.
+ *
+ * Trois cas, trois phrases. Rien en cours : le total seul, avec son nom pour que le
+ * nombre ne flotte pas. Tout en cours : ce qui avance, sans redite. Entre les deux :
+ * la part, qui est la seule chose que le lecteur cherche.
+ *
+ * Aucun mot ne qualifie les dossiers clos : « terminées » serait faux pour un dossier
+ * archivé ou rejeté, et cette colonne n'a pas de quoi les distinguer.
+ */
+export function libelleDesFormalites(total: number, enCours: number): string {
+  if (total <= 0) return "—";
+  if (enCours <= 0) return total === 1 ? "1 formalité" : total + " formalités";
+  if (enCours >= total) return enCours === 1 ? "1 en cours" : total + " en cours";
+  return enCours + " en cours sur " + total;
+}

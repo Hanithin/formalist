@@ -10,6 +10,7 @@ import {
   libelleDeLEntree,
   type ResumeColonne,
 } from "@/domain/navigation/colonne";
+import { EVENEMENT_COLONNE } from "@/lib/colonne";
 import { libelleDuType } from "@/domain/formalite/liste";
 import { icone } from "@/domain/navigation/icones";
 import type { Role } from "@/domain/acces/regles";
@@ -55,17 +56,32 @@ export function Sidebar({ utilisateur, resume }: Props) {
   const [resumeCourant, setResumeCourant] = useState(resume);
   const [ouvert, setOuvert] = useState(false);
 
+  /*
+   * Les compteurs sont redemandés à chaque changement de page, et sur signal.
+   *
+   * Le signal sert aux actions qui changent les dossiers sans changer de page :
+   * supprimer un brouillon depuis la liste laissait la colonne annoncer « Vous
+   * travaillez sur X » pour un dossier disparu, avec un lien vers une page d'erreur.
+   */
   useEffect(() => {
     const abandon = new AbortController();
 
-    fetch("/api/colonne", { signal: abandon.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((frais: ResumeColonne | null) => {
-        if (frais) setResumeCourant(frais);
-      })
-      .catch(() => undefined);
+    function redemander() {
+      fetch("/api/colonne", { signal: abandon.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((frais: ResumeColonne | null) => {
+          if (frais) setResumeCourant(frais);
+        })
+        .catch(() => undefined);
+    }
 
-    return () => abandon.abort();
+    redemander();
+    window.addEventListener(EVENEMENT_COLONNE, redemander);
+
+    return () => {
+      window.removeEventListener(EVENEMENT_COLONNE, redemander);
+      abandon.abort();
+    };
   }, [chemin]);
 
   /*

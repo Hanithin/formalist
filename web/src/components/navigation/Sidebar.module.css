@@ -16,11 +16,19 @@
   letter-spacing: 0;
 }
 
+/*
+ * Le logo, sur la ligne de tête des pages.
+ *
+ * Il était posé quatre pixels plus bas que le centre commun des en-têtes, et le
+ * décalage se voyait surtout à côté d'un fil d'Ariane, qui monte plus haut qu'un
+ * titre. Les quatre écrans - tableau de bord, listes, fiches, parcours - alignent
+ * désormais le milieu de leur première ligne sur celui du logo, à 39 pixels du haut.
+ */
 .entete {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 28px 24px 20px;
+  padding: 24px 24px 20px;
   flex-shrink: 0;
 }
 

@@ -28,7 +28,7 @@
 }
 
 .topbar {
-  padding: 30px 48px 24px;
+  padding: 19px 48px 24px;
   background: transparent;
   display: flex;
   flex-wrap: wrap;
@@ -603,4 +603,240 @@
   .searchWrapper {
     flex: 1;
   }
+}
+
+/* ---------- Le brouillon et sa corbeille ---------- */
+
+/*
+ * La case qui porte la carte.
+ *
+ * La corbeille est posée dessus, hors du lien : c'est cette case qui lui donne son
+ * repère, et le survol de l'une comme de l'autre la fait apparaître.
+ */
+.dossierCase {
+  position: relative;
+}
+
+/* Le badge d'un dossier que rien n'a encore engagé. */
+.statusDraft {
+  background: #f4f4f5;
+  color: #9a9aa2;
+}
+
+/*
+ * L'angle du brouillon : la corbeille, puis la pastille.
+ *
+ * Les deux sont posées sur la carte plutôt que dedans - un bouton ne se met pas dans
+ * un lien - et la pastille les rejoint pour que la corbeille tienne à sa gauche, là
+ * où l'œil la cherche.
+ */
+.coinBrouillon {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /*
+   * L'angle laisse passer les clics, la corbeille seule les prend.
+   *
+   * Posé sur la carte, il en masquerait un coin : cliquer la pastille - ou l'écart
+   * entre elle et la corbeille - n'ouvrirait pas le dossier, alors que tout le reste
+   * de la carte l'ouvre.
+   */
+  pointer-events: none;
+}
+
+.corbeille {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  /* globals.css espace les boutons de la page : ici la marge décalait la corbeille
+     de dix-huit pixels sous la pastille qu'elle doit longer. */
+  margin: 0;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  color: #9a9aa2;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.corbeille svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.dossierCase:hover .corbeille,
+.corbeille:focus-visible {
+  opacity: 1;
+}
+
+.corbeille:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/*
+ * Sans survol, pas de découverte : au doigt, la corbeille est toujours là.
+ * Elle resterait invisible sur un téléphone, où rien ne survole.
+ */
+@media (hover: none) {
+  .corbeille {
+    opacity: 1;
+  }
+}
+
+/*
+ * La place que la corbeille et la pastille prennent dans l'en-tête.
+ *
+ * Elles sont hors du flux : sans cette réserve, un type long - « modification » -
+ * passerait dessous. Trente pixels de corbeille, huit d'écart, le reste de pastille.
+ */
+.enteteAvecCorbeille {
+  padding-right: 132px;
+}
+
+/* ---------- La fenêtre de confirmation ---------- */
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 17, 17, 0.45);
+  backdrop-filter: blur(2px);
+  animation: apparait 0.15s ease;
+}
+
+@keyframes apparait {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fenetre {
+  width: 100%;
+  max-width: 440px;
+  padding: 26px 26px 22px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  animation: monte 0.18s ease;
+}
+
+@keyframes monte {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voile,
+  .fenetre {
+    animation: none;
+  }
+}
+
+.fenetreTitre {
+  margin: 0 0 10px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.fenetreTexte {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #666;
+}
+
+.fenetreTexte strong {
+  color: #111;
+  font-weight: 600;
+}
+
+.fenetreRefus {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.fenetreActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.boutonSecondaire,
+.boutonDanger {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.boutonSecondaire {
+  background: #fff;
+  border: 1px solid #e5e5e7;
+  color: #52525b;
+}
+
+.boutonSecondaire:hover:not(:disabled) {
+  background: #f5f5f7;
+  color: #111;
+}
+
+.boutonDanger {
+  background: #dc2626;
+  border: 1px solid #dc2626;
+  color: #fff;
+}
+
+.boutonDanger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.boutonSecondaire:disabled,
+.boutonDanger:disabled {
+  opacity: 0.6;
+  cursor: default;
 }

@@ -1,9 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { filtresUtiles } from "@/domain/document/statuts";
 import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuType, nomAffichable, pageDe, paginer, parModificationRecente, retenu, statistiques, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
 import { avancementDuDossier, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
+import { signalerChangementDeColonne } from "@/lib/colonne";
 import styles from "./Formalites.module.css";
 
 /**
@@ -45,6 +49,14 @@ const TRAITS = {
 export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
   const [recherche, setRecherche] = useState(rechercheInitiale);
   const [page, setPage] = useState(1);
+  /*
+   * Le brouillon dont on demande le retrait.
+   *
+   * Il tient lieu d'état d'ouverture de la fenêtre : sa présence l'ouvre, et son nom
+   * s'y écrit. Deux variables séparées se seraient désaccordées le jour où l'on ferme
+   * sans réinitialiser.
+   */
+  const [aSupprimer, setASupprimer] = useState<DossierListe | null>(null);
 
   const comptes = useMemo(() => comptesParFiltre(dossiers), [dossiers]);
 
@@ -90,7 +102,7 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
       {/* ---------- Filtres et recherche ---------- */}
       <div className={styles.filterBar}>
         <nav className={styles.filterGroup} aria-label="Filtrer les formalités">
-          {FILTRES.map((f) => (
+          {filtresUtiles(FILTRES, comptes, filtre).map((f) => (
             <Link
               key={f.valeur}
               href={f.valeur === "tous" ? "/formalites" : "/formalites?filtre=" + f.valeur}
@@ -136,8 +148,40 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
         <>
           <ul className={styles.dossiersGrid} aria-label="Formalités">
             {affiches.map((d) => (
-              <li key={d.id}>
+              <li key={d.id} className={styles.dossierCase}>
                 <Carte dossier={d} />
+
+                {/*
+                  La corbeille et la pastille sont les sœurs de la carte, non ses
+                  filles : un bouton dans un lien est du HTML invalide, et le clic y
+                  devient imprévisible - selon le navigateur, on supprime, ou l'on
+                  ouvre le dossier. La pastille les rejoint pour que la corbeille se
+                  pose à sa gauche, à la place que l'angle de la carte lui laisse.
+                */}
+                {d.brouillon && (
+                  <div className={styles.coinBrouillon}>
+                    <button
+                      type="button"
+                      className={styles.corbeille}
+                      onClick={() => setASupprimer(d)}
+                      aria-label={"Supprimer le brouillon " + nomDuDossier(d)}
+                      title="Supprimer ce brouillon"
+                    >
+                      <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="1.7" aria-hidden="true">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                        <path d="M10 11v6M14 11v6" />
+                        <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                      </svg>
+                    </button>
+
+                    {/* Elle est hors du lien : les clics la traversent, sans quoi
+                        toucher la pastille n'ouvrirait pas le dossier. */}
+                    <span className={`${styles.statusBadge} ${styles.statusDraft}`}>
+                      Brouillon
+                    </span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -208,7 +252,144 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
           )}
         </>
       )}
+
+      {aSupprimer && (
+        <Suppression dossier={aSupprimer} surFermeture={() => setASupprimer(null)} />
+      )}
     </>
+  );
+}
+
+/**
+ * Le nom qu'une carte porte.
+ *
+ * Un dossier sans société n'en a pas : on dit alors ce qu'il est. La fenêtre de
+ * suppression reprend le même, sans quoi elle demanderait de confirmer le retrait
+ * d'un dossier qui ne s'appelle pas comme celui qu'on vient de désigner.
+ */
+function nomDuDossier(dossier: DossierListe): string {
+  return (
+    nomAffichable(dossier.societe) ??
+    "Nouveau dossier · " + (libelleDuType(dossier.type)?.toLowerCase() ?? "formalité")
+  );
+}
+
+/**
+ * Confirmer le retrait d'un brouillon.
+ *
+ * Jamais un `confirm()` du navigateur : il fige l'onglet, ne se traduit pas, et
+ * n'annonce pas ce qui va disparaître. La fenêtre le dit - un brouillon, son nom, et
+ * que c'est définitif.
+ *
+ * Le refus du serveur est montré ici plutôt qu'avalé : la liste a été rendue à un
+ * instant donné, et le dossier a pu être réglé depuis un autre onglet entre-temps.
+ * Le client doit apprendre pourquoi son brouillon ne part pas.
+ */
+function Suppression({
+  dossier,
+  surFermeture,
+}: {
+  dossier: DossierListe;
+  surFermeture: () => void;
+}) {
+  const router = useRouter();
+  const [enCours, setEnCours] = useState(false);
+  const [refus, setRefus] = useState<string | null>(null);
+  const fenetre = useRef<HTMLDivElement>(null);
+
+  // Échap ferme, tant qu'on n'a pas lancé la suppression : fermer pendant l'envoi
+  // laisserait croire qu'on l'a annulée, alors qu'elle se poursuit.
+  useEffect(() => {
+    function auClavier(e: KeyboardEvent) {
+      if (e.key === "Escape" && !enCours) surFermeture();
+    }
+    document.addEventListener("keydown", auClavier);
+    fenetre.current?.focus();
+    return () => document.removeEventListener("keydown", auClavier);
+  }, [enCours, surFermeture]);
+
+  async function supprimer() {
+    setEnCours(true);
+    setRefus(null);
+    try {
+      const reponse = await fetch("/api/formalites", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier: dossier.id }),
+      });
+
+      if (!reponse.ok) {
+        const corps: unknown = await reponse.json().catch(() => null);
+        const message =
+          corps && typeof corps === "object" && typeof (corps as { error?: unknown }).error === "string"
+            ? (corps as { error: string }).error
+            : "Le brouillon n'a pas pu être supprimé.";
+        setRefus(message);
+        setEnCours(false);
+        return;
+      }
+
+      // La liste, les trois compteurs et les décomptes de filtres sont calculés côté
+      // serveur : les recalculer ici les ferait diverger de la base au premier écart.
+      surFermeture();
+      router.refresh();
+      // La colonne ne se redemande qu'au changement de page : sans ce signal, elle
+      // continuerait d'annoncer le dossier qu'on vient de supprimer.
+      signalerChangementDeColonne();
+    } catch {
+      setRefus("Le brouillon n'a pas pu être supprimé. Vérifiez votre connexion.");
+      setEnCours(false);
+    }
+  }
+
+  return createPortal(
+    <div className={styles.voile} onClick={() => !enCours && surFermeture()}>
+      <div
+        ref={fenetre}
+        className={styles.fenetre}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="supprimer-brouillon"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="supprimer-brouillon" className={styles.fenetreTitre}>
+          Supprimer ce brouillon ?
+        </h2>
+
+        <p className={styles.fenetreTexte}>
+          <strong>{nomDuDossier(dossier)}</strong> n&apos;a pas été réglé ni transmis au
+          cabinet. Le dossier et les pièces que vous y avez déposées seront supprimés
+          définitivement.
+        </p>
+
+        {refus && (
+          <p className={styles.fenetreRefus} role="alert">
+            {refus}
+          </p>
+        )}
+
+        <div className={styles.fenetreActions}>
+          <button
+            type="button"
+            className={styles.boutonSecondaire}
+            onClick={surFermeture}
+            disabled={enCours}
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            className={styles.boutonDanger}
+            onClick={supprimer}
+            disabled={enCours}
+          >
+            {enCours ? "Suppression…" : "Supprimer définitivement"}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -258,7 +439,13 @@ function Carte({ dossier }: { dossier: DossierListe }) {
 
   return (
     <Link href={adresseDuDossier(dossier)} className={styles.dossierCard}>
-      <div className={styles.dossierCardHeader}>
+      <div
+        className={
+          dossier.brouillon
+            ? `${styles.dossierCardHeader} ${styles.enteteAvecCorbeille}`
+            : styles.dossierCardHeader
+        }
+      >
         <span
           className={
             dossier.forme ? styles.typeBadge : `${styles.typeBadge} ${styles.typeBadgeDefaut}`
@@ -266,7 +453,19 @@ function Carte({ dossier }: { dossier: DossierListe }) {
         >
           {dossier.forme || dossier.type || "Formalité"}
         </span>
-        <span className={`${styles.statusBadge} ${CLASSES_ETAT[ton] ?? ""}`}>{etat}</span>
+
+        {/*
+          Un brouillon le dit, plutôt que d'annoncer une étape.
+          « En attente d'attestation » sur un dossier que personne ne traite promet un
+          travail en cours : rien n'avance tant que le dossier n'est ni réglé ni
+          transmis, et l'attente qu'il annonce est la sienne.
+
+          Sa pastille est rendue hors du lien, avec la corbeille : c'est le seul moyen
+          de poser un bouton à sa gauche. L'en-tête lui réserve la place.
+        */}
+        {!dossier.brouillon && (
+          <span className={`${styles.statusBadge} ${CLASSES_ETAT[ton] ?? ""}`}>{etat}</span>
+        )}
       </div>
 
       <span className={styles.dossierTitle}>
@@ -275,8 +474,7 @@ function Carte({ dossier }: { dossier: DossierListe }) {
           « Société à identifier » est un marqueur de base : posé en titre, il se lit
           comme un nom de société, et l'on ouvre le dossier pour découvrir laquelle.
         */}
-        {nomAffichable(dossier.societe) ??
-          "Nouveau dossier · " + (libelleDuType(dossier.type)?.toLowerCase() ?? "formalité")}
+        {nomDuDossier(dossier)}
         {dossier.nonLus > 0 && (
           <span
             className={styles.notifBadge}
