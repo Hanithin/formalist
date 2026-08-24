@@ -373,6 +373,96 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
   return taches;
 }
 
+/* ---------- Les phases du travail du cabinet ---------- */
+
+/**
+ * Quatre temps, dans l'ordre où le travail se fait.
+ *
+ * Les tâches s'affichaient à plat, huit cartes de même poids : rien ne disait qu'on
+ * était encore à vérifier ou déjà à déposer, ni ce qui restait avant de passer la main.
+ * Un dossier de cabinet se conduit par étapes, chacune close avant la suivante -
+ * vérifier ce qui est déclaré, rédiger ce qui sera signé, publier ce que la loi exige,
+ * déposer au guichet.
+ *
+ * Le découpage suit ce que les tâches engagent, non leur ordre d'apparition : la
+ * relecture appartient à la rédaction - c'est encore de l'écrit - quand l'attestation
+ * de parution appartient au dépôt, puisque le greffe la réclame avec le reste.
+ */
+export type PhaseDuCabinet = "verification" | "redaction" | "publication" | "depot";
+
+export const PHASES: { cle: PhaseDuCabinet; titre: string; resume: string }[] = [
+  {
+    cle: "verification",
+    titre: "Vérifier",
+    resume: "Relire ce que le client a déclaré et contrôler ses justificatifs.",
+  },
+  {
+    cle: "redaction",
+    titre: "Rédiger",
+    resume: "Produire les actes, mettre les statuts à jour, les remettre au client.",
+  },
+  {
+    cle: "publication",
+    titre: "Publier",
+    resume: "Faire paraître l'avis et joindre l'attestation au dossier.",
+  },
+  {
+    cle: "depot",
+    titre: "Déposer",
+    resume: "Transmettre au guichet unique, puis remettre le document du greffe.",
+  },
+];
+
+const PHASE_DE_LA_TACHE: Record<string, PhaseDuCabinet> = {
+  informations: "verification",
+  pieces: "verification",
+  actes: "redaction",
+  statuts: "redaction",
+  relecture: "redaction",
+  confidentialite: "redaction",
+  annonce: "publication",
+  attestations: "depot",
+  depot: "depot",
+  final: "depot",
+};
+
+export type EtatDePhase = "faite" | "en_cours" | "a_venir";
+
+export interface PhaseSuivie {
+  cle: PhaseDuCabinet;
+  titre: string;
+  resume: string;
+  taches: Tache[];
+  faites: number;
+  etat: EtatDePhase;
+}
+
+/**
+ * Les tâches rangées par phase, avec l'état de chacune.
+ *
+ * Une phase sans tâche n'existe pas pour ce dossier : une cession ne publie pas d'avis,
+ * et « Publier » n'a alors rien à dire. La phase en cours est la première qui n'est pas
+ * finie ; celles d'avant sont faites, celles d'après attendent leur tour.
+ */
+export function phasesDuCabinet(taches: Tache[]): PhaseSuivie[] {
+  const phases = PHASES.map((phase) => {
+    const siennes = taches.filter((t) => PHASE_DE_LA_TACHE[t.identifiant] === phase.cle);
+    return {
+      ...phase,
+      taches: siennes,
+      faites: siennes.filter((t) => t.etat === "faite").length,
+      etat: "a_venir" as EtatDePhase,
+    };
+  }).filter((phase) => phase.taches.length > 0);
+
+  const courante = phases.findIndex((phase) => phase.faites < phase.taches.length);
+
+  return phases.map((phase, rang) => ({
+    ...phase,
+    etat: courante === -1 || rang < courante ? "faite" : rang === courante ? "en_cours" : "a_venir",
+  }));
+}
+
 /** La première tâche à faire, celle qu'on met en avant. */
 export function tacheEnCours(taches: Tache[]): Tache | null {
   return taches.find((t) => t.etat === "a_faire" && !t.bloquee) ?? null;

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   travailDuCabinet,
   prochaineTache,
+  phasesDuCabinet,
   tacheEnCours,
   resteAFaire,
   libelleSousPhase,
@@ -213,5 +214,39 @@ describe("par quoi commencer", () => {
   it("ne rend rien quand tout est fait", () => {
     const taches = [{ identifiant: "a", titre: "A", explication: "", etat: "faite" as const }];
     expect(prochaineTache(taches)).toBeNull();
+  });
+});
+
+describe("les quatre temps du dossier", () => {
+  it("range chaque tâche dans la phase qui l'engage", () => {
+    const phases = phasesDuCabinet(travailDuCabinet(etat()));
+    expect(phases.map((p) => p.cle)).toEqual([
+      "verification",
+      "redaction",
+      "publication",
+      "depot",
+    ]);
+
+    const redaction = phases.find((p) => p.cle === "redaction")!;
+    // La relecture est encore de l'écrit ; l'attestation de parution est du dépôt.
+    expect(redaction.taches.map((t) => t.identifiant)).toContain("statuts");
+    expect(phases.find((p) => p.cle === "publication")!.taches[0].identifiant).toBe("annonce");
+  });
+
+  it("la phase en cours est la première qui n'est pas finie", () => {
+    const phases = phasesDuCabinet(travailDuCabinet(etat({ piecesAVerifier: 2 })));
+    expect(phases[0].etat).toBe("en_cours");
+    expect(phases[1].etat).toBe("a_venir");
+  });
+
+  it("une phase sans tâche n'existe pas pour ce dossier", () => {
+    // Une modification qui ne publie aucun avis n'a rien à dire sous « Publier ».
+    const phases = phasesDuCabinet(travailDuCabinet(etat({ avisAPublier: 0 })));
+    expect(phases.map((p) => p.cle)).not.toContain("publication");
+  });
+
+  it("tout fait ne laisse aucune phase en cours", () => {
+    const finies = travailDuCabinet(etat()).map((t) => ({ ...t, etat: "faite" as const }));
+    expect(phasesDuCabinet(finies).every((p) => p.etat === "faite")).toBe(true);
   });
 });

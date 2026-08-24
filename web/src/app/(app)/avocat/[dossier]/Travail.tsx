@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Tache } from "@/domain/formalite/cabinet";
+import { phasesDuCabinet, type Tache } from "@/domain/formalite/cabinet";
 import styles from "../Avocat.module.css";
 
 /**
@@ -36,6 +36,13 @@ export function Travail({
   /** La demande de corrections, et ce qu'on y écrit. */
   const [corrections, setCorrections] = useState(false);
   const [motif, setMotif] = useState("");
+  /*
+   * La phase ouverte, quand on veut en rouvrir une autre.
+   *
+   * Par défaut c'est celle en cours : c'est là qu'on travaille. Une chaîne vide dit
+   * « toutes repliées », ce qui n'est pas la même chose que « aucune préférence ».
+   */
+  const [phaseOuverte, setPhaseOuverte] = useState<string | null>(null);
   const [retour, setRetour] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
@@ -182,6 +189,9 @@ export function Travail({
     });
   }
 
+  const phases = phasesDuCabinet(taches);
+  const enCoursCle = phases.find((p) => p.etat === "en_cours")?.cle;
+
   return (
     <div className={styles.travail}>
       <div className={styles.travailTete}>
@@ -202,8 +212,76 @@ export function Travail({
         </button>
       </div>
 
-      <ol className={styles.taches}>
-        {taches.map((tache) => (
+      {/*
+        Le chemin, avant la liste.
+        
+        Huit cartes de même poids ne disaient pas où l'on en était : encore à vérifier,
+        ou déjà à déposer ? Un dossier de cabinet se conduit par temps - vérifier ce qui
+        est déclaré, rédiger ce qui sera signé, publier ce que la loi exige, déposer au
+        guichet - et chacun se ferme avant le suivant.
+      */}
+      <ol className={styles.frise} aria-label="Les étapes du dossier">
+        {phases.map((phase, rang) => (
+          <li
+            key={phase.cle}
+            className={
+              phase.etat === "faite"
+                ? `${styles.friseEtape} ${styles.friseFaite}`
+                : phase.etat === "en_cours"
+                  ? `${styles.friseEtape} ${styles.friseEnCours}`
+                  : styles.friseEtape
+            }
+            aria-current={phase.etat === "en_cours" ? "step" : undefined}
+          >
+            <span className={styles.frisePastille} aria-hidden="true">
+              {phase.etat === "faite" ? "✓" : rang + 1}
+            </span>
+            <span className={styles.friseTexte}>
+              <span className={styles.friseTitre}>{phase.titre}</span>
+              <span className={styles.friseCompte}>
+                {phase.etat === "faite"
+                  ? "fait"
+                  : phase.faites + " sur " + phase.taches.length}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      {phases.map((phase) => {
+        const ouverte = phase.cle === (phaseOuverte ?? enCoursCle);
+
+        return (
+          <section key={phase.cle} className={styles.phase}>
+            <button
+              type="button"
+              className={styles.phaseTete}
+              onClick={() => setPhaseOuverte(ouverte ? "" : phase.cle)}
+              aria-expanded={ouverte}
+            >
+              <span className={styles.phaseTitre}>
+                {phase.titre}
+                {phase.etat === "en_cours" && (
+                  <span className={styles.phaseMarque}>en cours</span>
+                )}
+              </span>
+              <span className={styles.phaseResume}>{phase.resume}</span>
+              <span className={styles.phaseCompte}>
+                {phase.faites} / {phase.taches.length}
+              </span>
+              <span
+                className={ouverte ? `${styles.phaseChevron} ${styles.ouvert}` : styles.phaseChevron}
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </span>
+            </button>
+
+            {ouverte && (
+              <ol className={styles.taches}>
+                {phase.taches.map((tache) => (
           <li
             key={tache.identifiant}
             className={
@@ -345,9 +423,13 @@ export function Travail({
                 </span>
               )}
             </div>
-          </li>
-        ))}
-      </ol>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        );
+      })}
 
       {corrections && (
         <>

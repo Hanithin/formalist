@@ -2390,6 +2390,189 @@
   cursor: default;
 }
 
+/* ---------- Le chemin du dossier ---------- */
+
+/*
+ * Quatre temps, dans l'ordre où le travail se fait.
+ *
+ * Les tâches s'affichaient à plat, huit cartes de même poids : rien ne disait qu'on
+ * était encore à vérifier ou déjà à déposer. La frise porte cette lecture-là, et les
+ * phases qui suivent la détaillent une à une.
+ */
+.frise {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.friseEtape {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 180px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid #ececee;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.frisePastille {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f4f4f5;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.friseTexte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.friseTitre {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.friseCompte {
+  font-size: 11.5px;
+  color: #b4b4bb;
+}
+
+/* Ce qui est fait s'éteint ; ce qui se fait maintenant se voit. */
+.friseFaite .frisePastille {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.friseFaite .friseTitre {
+  color: #52525b;
+}
+
+.friseEnCours {
+  border-color: #d8d2ea;
+  background: #f8f6fc;
+}
+
+.friseEnCours .frisePastille {
+  background: #6f6193;
+  color: #fff;
+}
+
+.friseEnCours .friseTitre {
+  color: #3f3a4d;
+}
+
+.friseEnCours .friseCompte {
+  color: #7b7291;
+}
+
+/* ---------- Une phase, dépliée ou repliée ---------- */
+
+.phase {
+  margin-bottom: 10px;
+  border: 1px solid #ececee;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/*
+ * L'en-tête d'une phase se clique : on referme celle qu'on vient de finir, on rouvre
+ * celle d'avant pour vérifier. Seule la phase en cours est ouverte au chargement.
+ */
+.phaseTete {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas: "titre compte chevron" "resume compte chevron";
+  align-items: center;
+  gap: 2px 14px;
+  width: 100%;
+  margin: 0;
+  padding: 14px 18px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.phaseTete:hover {
+  background: #fafafa;
+}
+
+.phaseTitre {
+  grid-area: titre;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #111;
+}
+
+.phaseMarque {
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #f4f1fa;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6f6193;
+}
+
+.phaseResume {
+  grid-area: resume;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #8a8a8f;
+}
+
+.phaseCompte {
+  grid-area: compte;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: #a1a1aa;
+}
+
+.phaseChevron {
+  grid-area: chevron;
+  display: inline-flex;
+  color: #a1a1aa;
+  transition: transform 0.15s;
+}
+
+.phaseChevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+.phaseChevron.ouvert {
+  transform: rotate(180deg);
+}
+
+/* Les tâches d'une phase ouverte : dans le cadre, sans double bordure. */
+.phase .taches {
+  padding: 0 18px 16px;
+}
+
+.phase .tache {
+  border-color: #f0f0f2;
+}
+
 /* ---------- Les tâches ---------- */
 
 .taches {
