@@ -429,6 +429,26 @@
   white-space: nowrap;
 }
 
+/*
+ * L'intertitre d'une section, dans un onglet qui en réunit deux.
+ *
+ * « Le dossier » porte le récapitulatif puis les pièces, « Coulisses » les notes puis
+ * le journal : sans titre, on ne voyait pas où l'un finit et où l'autre commence.
+ */
+.sectionTitre {
+  margin: 32px 0 14px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+  scroll-margin-top: 24px;
+}
+
+.sectionTitre:first-of-type {
+  margin-top: 26px;
+}
+
 /* ---------- Demander des corrections au client ---------- */
 
 /*

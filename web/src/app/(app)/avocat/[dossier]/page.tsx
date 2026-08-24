@@ -54,27 +54,43 @@ const CHAMPS: { cle: string; libelle: string }[] = [
   { cle: "capitalLibere", libelle: "Capital libéré" },
 ];
 
-const ONGLETS = [
-  "travail",
-  "recapitulatif",
-  "statuts",
-  "annonce",
-  "avancement",
-  "pieces",
-  "notes",
-  "journal",
-] as const;
+/*
+ * Cinq onglets au plus, et seulement ceux qui servent.
+ *
+ * Il y en avait huit, tous affichés quel que soit le dossier - « Statuts » sur une
+ * création qui n'en a pas à retoucher, « Annonce légale » sur une cession qui n'en
+ * publie aucune. Chercher où l'on travaille prenait plus de temps que le travail.
+ *
+ * Trois regroupements. L'avancement rejoint « À faire » : les sous-phases disent la
+ * même chose que les tâches, en plus court. Le récapitulatif et les pièces forment
+ * « Le dossier » - ce que le client a déclaré, puis ce qu'il a déposé. Les notes
+ * internes et le journal forment « Coulisses » : deux écrits que le client ne voit
+ * jamais, qu'on relit rarement, et jamais l'un sans l'autre.
+ */
+const ONGLETS = ["travail", "dossier", "statuts", "annonce", "coulisses"] as const;
 type Onglet = (typeof ONGLETS)[number];
 
 const NOMS: Record<Onglet, string> = {
   travail: "À faire",
-  recapitulatif: "Récapitulatif",
+  dossier: "Le dossier",
   statuts: "Statuts",
   annonce: "Annonce légale",
-  avancement: "Avancement",
-  pieces: "Pièces",
-  notes: "Notes internes",
-  journal: "Journal",
+  coulisses: "Coulisses",
+};
+
+/*
+ * Les anciens noms d'onglets mènent toujours quelque part.
+ *
+ * Ils sont écrits dans les tâches du domaine, dans les liens des écrans, et dans les
+ * adresses que l'on a pu mettre en signet : « ?onglet=pieces » doit ouvrir la section
+ * des pièces, non retomber en silence sur « À faire ».
+ */
+const ALIAS: Record<string, Onglet> = {
+  recapitulatif: "dossier",
+  pieces: "dossier",
+  avancement: "travail",
+  notes: "coulisses",
+  journal: "coulisses",
 };
 
 /** La teinte du picto d'une entrée de journal, selon ce qu'elle raconte. */
@@ -135,7 +151,9 @@ export default async function DossierAvocat({
    * L'avocat qui vient de prendre un dossier veut savoir par où commencer, non relire
    * une fiche. Le récapitulatif est à un clic.
    */
-  const onglet: Onglet = ONGLETS.includes(demande as Onglet) ? (demande as Onglet) : "travail";
+  const onglet: Onglet = ONGLETS.includes(demande as Onglet)
+    ? (demande as Onglet)
+    : (ALIAS[demande ?? ""] ?? "travail");
 
   /*
    * Une modification ne se range pas comme une création.
@@ -269,6 +287,21 @@ export default async function DossierAvocat({
     statutsConcernes: statutsAMettreAJour(codes),
   });
 
+  /*
+   * Les ateliers ne s'affichent que sur les dossiers qui les emploient.
+   *
+   * « Statuts » sur une création qui n'a rien à retoucher et « Annonce légale » sur une
+   * cession qui n'en publie aucune n'offraient qu'un encart d'excuses - et allongeaient
+   * la barre pour tout le monde.
+   */
+  const retoucheDesStatuts = type === "modification" && statutsAMettreAJour(codes);
+  const annonceAPublier = taches.some((t) => t.identifiant === "annonce");
+
+  const onglets = ONGLETS.filter(
+    (o) =>
+      (o !== "statuts" || retoucheDesStatuts) && (o !== "annonce" || annonceAPublier)
+  );
+
   const suivante = prochaineTache(taches);
 
   /*
@@ -393,7 +426,7 @@ export default async function DossierAvocat({
         )}
 
         <nav className={styles.detailTabs} aria-label="Sections du dossier">
-          {ONGLETS.map((o) => (
+          {onglets.map((o) => (
             <Link
               key={o}
               href={adresse(o)}
@@ -401,32 +434,39 @@ export default async function DossierAvocat({
               aria-current={o === onglet ? "page" : undefined}
             >
               {NOMS[o]}
-              {o === "notes" && notes.length > 0 && (
+              {o === "coulisses" && notes.length > 0 && (
                 <span className={styles.tabCount}>{notes.length}</span>
               )}
-              {o === "pieces" && aVerifier > 0 && (
+              {o === "dossier" && aVerifier > 0 && (
                 <span className={styles.tabCount}>{aVerifier} à vérifier</span>
               )}
             </Link>
           ))}
         </nav>
 
-        {onglet === "avancement" && (
-          <Avancement
-            dossierId={dossier.id}
-            sousPhase={dossier.business_sub_phase}
-            aLeKbis={remis(TYPE_KBIS)}
-            aLeRbe={remis(TYPE_RBE)}
-          />
-        )}
-
         {onglet === "travail" && (
-          <Travail
-            dossier={dossier.id}
-            taches={taches}
-            peutProduireLesActes={type === "modification"}
-            informationsVerifiees={informationsVerifiees}
-          />
+          <>
+            <Travail
+              dossier={dossier.id}
+              taches={taches}
+              peutProduireLesActes={type === "modification"}
+              informationsVerifiees={informationsVerifiees}
+            />
+
+            {/*
+              L'avancement sous les tâches, non dans son propre onglet.
+              
+              Les cinq sous-phases disent la même chose que les tâches, en plus court :
+              elles sont le résumé de ce travail, pas un travail à côté.
+            */}
+            <h3 className={styles.sectionTitre}>Avancement du dossier</h3>
+            <Avancement
+              dossierId={dossier.id}
+              sousPhase={dossier.business_sub_phase}
+              aLeKbis={remis(TYPE_KBIS)}
+              aLeRbe={remis(TYPE_RBE)}
+            />
+          </>
         )}
 
         {onglet === "statuts" &&
@@ -449,7 +489,7 @@ export default async function DossierAvocat({
             />
           ))}
 
-        {onglet === "recapitulatif" && (
+        {onglet === "dossier" && (
           <div className={styles.recapGrid}>
             <div className={styles.recapGridLeft}>
               <div className={styles.recapCard}>
@@ -551,20 +591,27 @@ export default async function DossierAvocat({
               <div className={styles.recapSideCard}>
                 <h3>Actions rapides</h3>
                 <div className={styles.recapQuickActions}>
-                  <Link href={adresse("pieces")}>Vérifier les pièces</Link>
+                  {/* Les pièces sont sous le récapitulatif, dans ce même onglet. */}
+                  <Link href={adresse("dossier") + "#pieces"}>Vérifier les pièces</Link>
                   <Link href={"/messagerie?dossier=" + dossier.id}>
                     Ouvrir la messagerie
                     {nonLus > 0 && <span className={styles.pastilleRouge}>{nonLus}</span>}
                   </Link>
-                  <Link href={adresse("notes")}>Écrire une note interne</Link>
-                  <Link href={adresse("journal")}>Voir le journal</Link>
+                  <Link href={adresse("coulisses")}>Écrire une note interne</Link>
+                  <Link href={adresse("coulisses") + "#journal"}>Voir le journal</Link>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {onglet === "pieces" &&
+        {onglet === "dossier" && (
+          <h3 className={styles.sectionTitre} id="pieces">
+            Pièces du dossier
+          </h3>
+        )}
+
+        {onglet === "dossier" &&
           (documents.length === 0 && !statutsAProduire ? (
             <Vide ton="encart" texte="Aucune pièce déposée." />
           ) : (
@@ -680,7 +727,7 @@ export default async function DossierAvocat({
           pièces ne les montrait donc pas, et rien n'y disait qu'un document manquait
           encore au dossier ni où on le fabrique. La ligne dit l'un et mène à l'autre.
         */}
-        {onglet === "pieces" && statutsAProduire && (
+        {onglet === "dossier" && statutsAProduire && (
           <div className={styles.docCard}>
             <div className={styles.docIcon}>
               <svg
@@ -716,8 +763,9 @@ export default async function DossierAvocat({
           </div>
         )}
 
-        {onglet === "notes" && (
+        {onglet === "coulisses" && (
           <>
+            <h3 className={styles.sectionTitre}>Notes internes</h3>
             <div className={styles.notesIntro}>
               Visibles de votre équipe seulement. Le client ne les voit jamais.
             </div>
@@ -733,7 +781,13 @@ export default async function DossierAvocat({
           </>
         )}
 
-        {onglet === "journal" &&
+        {onglet === "coulisses" && (
+          <h3 className={styles.sectionTitre} id="journal">
+            Journal du dossier
+          </h3>
+        )}
+
+        {onglet === "coulisses" &&
           (historique.length === 0 ? (
             <Vide ton="encart" texte="Aucune intervention enregistrée." />
           ) : (
