@@ -8,6 +8,8 @@ import { journal } from "@/lib/journal";
 import {
   verifierRetouche,
   fragmentsDe,
+  angleRetenu,
+  pointTourne,
   POLICES_EMBARQUEES,
   type Mot,
   type Retouche,
@@ -314,7 +316,7 @@ export async function appliquerLesRetouches(
   retouches: Retouche[],
   pagesRetirees: number[] = []
 ): Promise<Buffer> {
-  const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
+  const { PDFDocument, StandardFonts, rgb, degrees } = await import("pdf-lib");
 
   const origine = await PDFDocument.load(pdf).catch(() => {
     throw new StatutsIllisibles("Ce document n'est pas un PDF lisible");
@@ -431,12 +433,33 @@ export async function appliquerLesRetouches(
       // serrent les glyphes, et un jambage descendant dépasserait du blanc.
       const marge = Math.max(1, retouche.hauteur * 0.15);
 
-      page.drawRectangle({
+      /*
+       * L'inclinaison du cadre, quand la page a été numérisée de travers.
+       *
+       * Tout tourne autour du centre du cadre - le blanc comme le texte - parce que
+       * c'est ainsi qu'on le fait pivoter à l'écran. pdf-lib tournant autour du point
+       * d'origine de ce qu'il dessine, chaque point est reporté avant d'être posé.
+       */
+      const angle = angleRetenu(retouche.angle);
+      const centre = {
+        x: retouche.x + retouche.largeur / 2,
+        y: height - retouche.y - retouche.hauteur / 2,
+      };
+      const tourner = (point: { x: number; y: number }) =>
+        angle === 0 ? point : pointTourne(point, centre, angle);
+
+      const coinDuBlanc = tourner({
         x: retouche.x - marge,
         y: height - retouche.y - retouche.hauteur - marge,
+      });
+
+      page.drawRectangle({
+        x: coinDuBlanc.x,
+        y: coinDuBlanc.y,
         width: retouche.largeur + marge * 2,
         height: retouche.hauteur + marge * 2,
         color: rgb(1, 1, 1),
+        ...(angle === 0 ? {} : { rotate: degrees(-angle) }),
       });
 
       /*
@@ -488,12 +511,15 @@ export async function appliquerLesRetouches(
 
       let abscisse = retouche.x + decalage;
       for (const morceau of morceaux) {
+        const depart = tourner({ x: abscisse, y: ligneDeBase });
+
         page.drawText(morceau.texte, {
-          x: abscisse,
-          y: ligneDeBase,
+          x: depart.x,
+          y: depart.y,
           size: retouche.taille,
           font: morceau.fonte,
           color: rgb(0, 0, 0),
+          ...(angle === 0 ? {} : { rotate: degrees(-angle) }),
         });
 
         /*
@@ -504,9 +530,10 @@ export async function appliquerLesRetouches(
          */
         if (morceau.souligne) {
           const bas = ligneDeBase - retouche.taille * 0.12;
+          // Un trait se définit par ses deux points : il suffit de les tourner.
           page.drawLine({
-            start: { x: abscisse, y: bas },
-            end: { x: abscisse + morceau.largeur, y: bas },
+            start: tourner({ x: abscisse, y: bas }),
+            end: tourner({ x: abscisse + morceau.largeur, y: bas }),
             thickness: Math.max(0.5, retouche.taille * 0.06),
             color: rgb(0, 0, 0),
           });

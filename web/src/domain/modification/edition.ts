@@ -135,13 +135,28 @@ function rectanglesDe(mots: Mot[]): Rectangle[] {
     const droite = Math.max(...ligne.map((m) => m.x + m.largeur));
     const haut = Math.min(...ligne.map((m) => m.y));
     const bas = Math.max(...ligne.map((m) => m.y + m.hauteur));
+    const hauteur = bas - haut;
+
+    /*
+     * Un peu plus large que les mots eux-mêmes.
+     *
+     * Le rectangle épousait la boîte des mots au point près. Deux ennuis : le cadre
+     * proposé était si serré que le nouveau texte y touchait les bords - les jambages
+     * du « y » et du « g » venaient buter dessous - et le blanc qui couvre l'ancienne
+     * valeur laissait dépasser un accent ou une queue de lettre, une trace d'encre au
+     * bord d'un document qui part au greffe.
+     *
+     * La marge suit la taille du texte plutôt qu'une valeur fixe : un titre en corps
+     * vingt a besoin de plus d'air qu'une mention en corps huit.
+     */
+    const marge = Math.max(1, hauteur * 0.28);
 
     return {
       page: ligne[0].page,
-      x: gauche,
-      y: haut,
-      largeur: droite - gauche,
-      hauteur: bas - haut,
+      x: Math.max(0, gauche - marge * 0.6),
+      y: Math.max(0, haut - marge),
+      largeur: droite - gauche + marge * 1.2,
+      hauteur: hauteur + marge * 2,
     };
   });
 }
@@ -531,6 +546,17 @@ export interface Retouche {
   /** À gauche par défaut, comme le texte courant d'un acte. */
   alignement?: Alignement;
   /**
+   * L'inclinaison du cadre, en degrés, dans le sens des aiguilles d'une montre.
+   *
+   * Les statuts qu'on reçoit sont numérisés, et une page passée de travers dans le
+   * scanner l'est de deux ou trois degrés : un cadre parfaitement droit posé sur une
+   * ligne penchée se voit, et le blanc découvre l'ancienne valeur d'un côté. Le cadre
+   * suit donc la ligne quand on le lui demande.
+   *
+   * Bornée : au-delà d'une quinzaine de degrés, ce n'est plus une page de travers.
+   */
+  angle?: number;
+  /**
    * Le texte découpé, quand il porte plusieurs mises en forme.
    *
    * Absent, c'est le texte entier au style du cadre - la forme d'origine, que les
@@ -605,6 +631,16 @@ export class RetoucheInvalide extends Error {
  * Un rectangle hors page ne se voit pas et ne couvre rien : la retouche paraîtrait
  * appliquée alors que l'ancienne valeur resterait lisible dans le document déposé.
  */
+/** Au-delà, ce n'est plus une page de travers mais une erreur de saisie. */
+export const ANGLE_MAXIMUM = 15;
+
+/** L'inclinaison retenue : bornée, arrondie au dixième de degré. */
+export function angleRetenu(angle: number | undefined): number {
+  if (typeof angle !== "number" || !Number.isFinite(angle)) return 0;
+  const borne = Math.max(-ANGLE_MAXIMUM, Math.min(ANGLE_MAXIMUM, angle));
+  return Math.round(borne * 10) / 10;
+}
+
 export function verifierRetouche(
   retouche: Retouche,
   page: { largeur: number; hauteur: number }
@@ -621,4 +657,32 @@ export function verifierRetouche(
   if (retouche.taille <= 0 || retouche.taille > 72) {
     throw new RetoucheInvalide("Taille de texte hors limites");
   }
+  if (retouche.angle !== undefined && Math.abs(retouche.angle) > ANGLE_MAXIMUM) {
+    throw new RetoucheInvalide("Inclinaison hors limites");
+  }
+}
+
+/**
+ * Le coin d'un cadre incliné, dans le repère du PDF.
+ *
+ * Le cadre tourne autour de son centre : c'est le geste qu'on attend quand on redresse
+ * un cadre sur une ligne penchée. pdf-lib, lui, fait tourner ce qu'il dessine autour de
+ * son point d'origine - on calcule donc où ce point atterrit après rotation.
+ *
+ * Les ordonnées sont celles du PDF, comptées depuis le bas ; l'angle est donné dans le
+ * sens des aiguilles d'une montre, comme à l'écran, et s'inverse donc ici.
+ */
+export function pointTourne(
+  point: { x: number; y: number },
+  centre: { x: number; y: number },
+  angleEnDegres: number
+): { x: number; y: number } {
+  const radians = (-angleEnDegres * Math.PI) / 180;
+  const dx = point.x - centre.x;
+  const dy = point.y - centre.y;
+
+  return {
+    x: centre.x + dx * Math.cos(radians) - dy * Math.sin(radians),
+    y: centre.y + dx * Math.sin(radians) + dy * Math.cos(radians),
+  };
 }

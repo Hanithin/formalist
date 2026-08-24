@@ -5,6 +5,7 @@ import {
   ALIGNEMENTS,
   POLICES,
   fragmentsDe,
+  angleRetenu,
   type Alignement,
   type Introuvable,
   type Fragment,
@@ -454,6 +455,54 @@ function MiseEnForme({
         </button>
       ))}
 
+      <span className={styles.formeSeparateur} aria-hidden="true" />
+
+      {/*
+        L'inclinaison du cadre.
+        
+        Les statuts déposés sont des numérisations, et une page passée de travers dans
+        le scanner l'est de deux ou trois degrés : un cadre parfaitement droit posé sur
+        une ligne penchée se voit, et le blanc découvre l'ancienne valeur d'un côté. Un
+        dixième de degré à la fois, parce que c'est de cet ordre qu'il s'agit ; la
+        valeur affichée se clique pour revenir à l'horizontale.
+      */}
+      <button
+        type="button"
+        className={styles.formeBouton}
+        onMouseDown={garderLeFocus}
+        onClick={() => surChangement({ angle: angleRetenu((retouche.angle ?? 0) - 0.5) })}
+        title="Pencher le cadre vers la gauche"
+        aria-label="Pencher le cadre vers la gauche"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.formeIcone}>
+          <path d="M4 8a9 9 0 1 1-1 6" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M3 4v5h5" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        className={styles.angleValeur}
+        onMouseDown={garderLeFocus}
+        onClick={() => surChangement({ angle: 0 })}
+        title="Remettre le cadre à l'horizontale"
+      >
+        {(retouche.angle ?? 0).toFixed(1).replace(".", ",")}°
+      </button>
+
+      <button
+        type="button"
+        className={styles.formeBouton}
+        onMouseDown={garderLeFocus}
+        onClick={() => surChangement({ angle: angleRetenu((retouche.angle ?? 0) + 0.5) })}
+        title="Pencher le cadre vers la droite"
+        aria-label="Pencher le cadre vers la droite"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.formeIcone}>
+          <path d="M20 8a9 9 0 1 0 1 6" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M21 4v5h-5" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -1224,6 +1273,15 @@ export function Editeur({
                   : retouche.alignement === "droite"
                     ? ("right" as const)
                     : ("left" as const),
+              /*
+                Le cadre suit la ligne, quand la page a été numérisée de travers.
+                
+                Il tourne autour de son centre - c'est le geste qu'on attend en
+                redressant un cadre - et le document produit le tourne de même.
+              */
+              ...(retouche.angle
+                ? { transform: "rotate(" + retouche.angle + "deg)", transformOrigin: "center" }
+                : {}),
             };
 
             /*
@@ -1321,7 +1379,28 @@ export function Editeur({
                         : `${styles.repereTexte} ${styles.repereVide}`
                     }
                   >
-                    {retouche.texte || "Cliquez pour écrire"}
+                    {/*
+                      Le cadre fermé montre la mise en forme qu'il porte.
+                      
+                      Il n'affichait que le texte brut : un mot passé en gras
+                      redevenait maigre dès qu'on refermait le cadre, et l'on croyait
+                      la commande sans effet. Le document produit, lui, l'a toujours
+                      respectée - c'est l'aperçu qui mentait.
+                    */}
+                    {retouche.texte
+                      ? fragmentsDe(retouche).map((fragment, rang) => (
+                          <span
+                            key={rang}
+                            style={{
+                              fontWeight: fragment.gras ? 700 : undefined,
+                              fontStyle: fragment.italique ? "italic" : undefined,
+                              textDecoration: fragment.souligne ? "underline" : undefined,
+                            }}
+                          >
+                            {fragment.texte}
+                          </span>
+                        ))
+                      : "Cliquez pour écrire"}
                   </span>
                   {poignees}
                 </div>

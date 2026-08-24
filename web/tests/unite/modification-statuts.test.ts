@@ -9,6 +9,9 @@ import {
   retouchesProposees,
   verifierRetouche,
   fragmentsDe,
+  angleRetenu,
+  pointTourne,
+  ANGLE_MAXIMUM,
   RetoucheInvalide,
   type Mot,
 } from "@/domain/modification/edition";
@@ -215,6 +218,52 @@ describe("les garde-fous d'une retouche", () => {
 
   it("le texte est ramené à ce que la police sait écrire", () => {
     expect(lisibleParLaPolice("l’adresse — « test »")).toBe("l'adresse - « test »");
+  });
+
+  it("une inclinaison absurde est refusée", () => {
+    // Au-delà d'une quinzaine de degrés, ce n'est plus une page de travers.
+    expect(() =>
+      verifierRetouche(
+        { page: 1, x: 60, y: 100, largeur: 100, hauteur: 12, texte: "x", taille: 10, angle: 40 },
+        page
+      )
+    ).toThrow(RetoucheInvalide);
+  });
+});
+
+describe("l'inclinaison d'un cadre", () => {
+  it("est bornée et arrondie au dixième de degré", () => {
+    expect(angleRetenu(2.34)).toBe(2.3);
+    expect(angleRetenu(-2.36)).toBe(-2.4);
+    expect(angleRetenu(90)).toBe(ANGLE_MAXIMUM);
+    expect(angleRetenu(-90)).toBe(-ANGLE_MAXIMUM);
+    expect(angleRetenu(undefined)).toBe(0);
+    expect(angleRetenu(Number.NaN)).toBe(0);
+  });
+
+  it("laisse le centre en place", () => {
+    // Le cadre tourne autour de son centre : c'est le geste qu'on attend en redressant
+    // un cadre posé sur une ligne penchée.
+    const centre = { x: 100, y: 200 };
+    expect(pointTourne(centre, centre, 7)).toEqual(centre);
+  });
+
+  it("fait descendre le coin gauche quand le cadre penche à droite", () => {
+    /*
+     * Les ordonnées sont celles du PDF, comptées depuis le bas : pencher le cadre dans
+     * le sens des aiguilles d'une montre - comme à l'écran - fait donc monter son coin
+     * gauche dans ce repère inversé.
+     */
+    const tourne = pointTourne({ x: 0, y: 0 }, { x: 10, y: 0 }, 90);
+    expect(Math.round(tourne.x)).toBe(10);
+    expect(Math.round(tourne.y)).toBe(10);
+  });
+
+  it("un tour complet ramène au point de départ", () => {
+    const point = { x: 33, y: 77 };
+    const tourne = pointTourne(pointTourne(point, { x: 0, y: 0 }, 12), { x: 0, y: 0 }, -12);
+    expect(tourne.x).toBeCloseTo(point.x, 6);
+    expect(tourne.y).toBeCloseTo(point.y, 6);
   });
 });
 

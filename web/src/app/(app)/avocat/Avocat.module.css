@@ -804,19 +804,29 @@
   gap: 6px;
   margin-bottom: 10px;
 }
+/*
+ * Les pastilles du titre, posées sur une surface.
+ *
+ * Leur fond gris très clair se confondait avec celui de la page : la forme juridique
+ * s'y lisait comme un mot posé à côté du titre, sans cadre, et la rangée paraissait
+ * mal alignée. Un fond blanc et un filet suffisent à les poser.
+ */
 .detailBadge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: 16px;
+  padding: 4px 11px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
   font-size: 12px;
   font-weight: 500;
-  background: #f5f5f7;
-  color: #555;
+  line-height: 1.5;
+  color: #52525b;
 }
 /* Qui s'en occupe : la même teinte que la pastille de la liste. */
 .detailBadge.assigne {
+  border-color: #e9d5ff;
   background: #f3e8ff;
   color: #7c3aed;
 }
@@ -826,6 +836,7 @@
   border: 1px solid #eee;
 }
 .detailBadge.phase {
+  border-color: #fde68a;
   background: #fef3c7;
   color: #92400e;
 }

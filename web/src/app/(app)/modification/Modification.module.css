@@ -3899,6 +3899,28 @@
   white-space: nowrap;
 }
 
+/*
+ * L'inclinaison courante, entre les deux boutons qui la règlent.
+ *
+ * Elle se clique pour revenir à l'horizontale : c'est le geste qu'on cherche après
+ * avoir trop penché, et un troisième bouton pour cela aurait chargé la barre.
+ */
+.angleValeur {
+  min-width: 44px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #52525b;
+  cursor: pointer;
+}
+
+.angleValeur:hover {
+  color: #111;
+}
+
 .formeSeparateur {
   width: 1px;
   height: 20px;

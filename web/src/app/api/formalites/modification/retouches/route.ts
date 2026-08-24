@@ -16,6 +16,7 @@ import {
   recherchesPour,
   retouchesProposees,
   RetoucheInvalide,
+  ANGLE_MAXIMUM,
 } from "@/domain/modification/edition";
 import {
   decrireLeChangement,
@@ -149,6 +150,8 @@ const RETOUCHE = z.object({
   italique: z.boolean().optional(),
   souligne: z.boolean().optional(),
   alignement: z.enum(["gauche", "centre", "droite"]).optional(),
+  /* L'inclinaison du cadre, pour suivre une page numérisée de travers. */
+  angle: z.number().min(-ANGLE_MAXIMUM).max(ANGLE_MAXIMUM).optional(),
   // Le texte découpé, quand il porte plusieurs mises en forme.
   fragments: z
     .array(
