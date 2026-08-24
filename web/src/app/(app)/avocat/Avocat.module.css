@@ -459,12 +459,19 @@
 .fenetrePieces {
   position: fixed;
   z-index: 60;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  /*
+   * Centrée par les marges, non par une transformation.
+   *
+   * Un élément transformé devient le bloc de référence de tout ce qu'il contient en
+   * position fixe : la fenêtre d'aperçu ouverte depuis ici se calait donc sur cette
+   * fenêtre-ci plutôt que sur l'écran, et sortait du cadre à moitié coupée.
+   */
+  inset: 0;
+  margin: auto;
   display: flex;
   flex-direction: column;
   width: min(760px, calc(100vw - 40px));
+  height: fit-content;
   max-height: min(720px, calc(100vh - 60px));
   border-radius: 16px;
   background: #fafafa;
@@ -522,10 +529,11 @@
 .fenetreCorrections {
   position: fixed;
   z-index: 60;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  /* Centrée par les marges : voir .fenetrePieces, une transformation ferait bloc. */
+  inset: 0;
+  margin: auto;
   width: min(560px, calc(100vw - 40px));
+  height: fit-content;
   padding: 22px 24px 20px;
   border-radius: 16px;
   background: #fff;
@@ -2907,10 +2915,11 @@
 .confirmationBloc {
   position: fixed;
   z-index: 60;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  /* Centrée par les marges : voir .fenetrePieces. */
+  inset: 0;
+  margin: auto;
   width: min(520px, calc(100vw - 40px));
+  height: fit-content;
   padding: 20px 22px 18px;
   border: 1px solid #fde9c8;
   border-radius: 16px;

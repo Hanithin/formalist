@@ -464,6 +464,21 @@ export function Travail({
                         Relire le récapitulatif
                       </Link>
                     </>
+                  ) : tache.onglet === "pieces" ? (
+                    /*
+                      Les pièces s'ouvrent en fenêtre, faite ou non.
+                      
+                      « Y aller » emmenait dans l'onglet du dossier, devant l'ensemble
+                      des documents : on quittait sa liste pour retrouver ensuite les
+                      deux pièces dont la tâche parlait.
+                    */
+                    <button
+                      type="button"
+                      className={styles.travailPrincipal}
+                      onClick={() => setPiecesMontrees(tache.identifiant)}
+                    >
+                      {libelleDesPieces(tache.identifiant)}
+                    </button>
                   ) : (
                     tache.onglet && (
                       <Link
