@@ -1438,6 +1438,54 @@ export function Editeur({
                   posé au mauvais endroit.
                 */}
                 <span className={styles.appels}>
+                  {/*
+                    L'inclinaison au bord du cadre, non dans la barre de mise en forme.
+                    
+                    Elle y était rangée avec la police et l'alignement : il fallait
+                    ouvrir le cadre, ouvrir la barre, puis trouver les deux flèches -
+                    trois gestes pour redresser un cadre sur une ligne penchée, ce qu'on
+                    fait sur presque chaque page numérisée.
+                  */}
+                  <button
+                    type="button"
+                    className={styles.appelPenche}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => modifier(index, { angle: angleRetenu((retouche.angle ?? 0) - 0.5) })}
+                    aria-label="Pencher le cadre vers la gauche"
+                    title="Pencher le cadre vers la gauche"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 8a9 9 0 1 1-1 6" />
+                      <path d="M3 4v5h5" />
+                    </svg>
+                  </button>
+
+                  {retouche.angle ? (
+                    <button
+                      type="button"
+                      className={styles.appelAngle}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => modifier(index, { angle: 0 })}
+                      title="Remettre le cadre à l'horizontale"
+                    >
+                      {retouche.angle.toFixed(1).replace(".", ",")}°
+                    </button>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    className={styles.appelPenche}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => modifier(index, { angle: angleRetenu((retouche.angle ?? 0) + 0.5) })}
+                    aria-label="Pencher le cadre vers la droite"
+                    title="Pencher le cadre vers la droite"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M20 8a9 9 0 1 0 1 6" />
+                      <path d="M21 4v5h-5" />
+                    </svg>
+                  </button>
+
                   <button
                     type="button"
                     className={styles.appelForme}
