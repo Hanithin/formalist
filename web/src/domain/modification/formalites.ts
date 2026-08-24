@@ -11,6 +11,27 @@ import { REMPLOI, reserveSurLaDispense } from "./apport";
  * ce qui se fait une fois serait faux, et cher pour le client.
  */
 
+/**
+ * Le titre sous lequel les statuts en vigueur sont joints au dossier.
+ *
+ * Ils sont enregistrés comme document du dossier - c'est ainsi que l'éditeur de
+ * retouches les relit page par page - mais ils ne sont pas un acte produit par le
+ * cabinet : ils viennent du registre, ou du client. La liste des actes les écarte par
+ * ce titre, sans quoi ils s'y affichaient « Relu, à votre disposition », comme si nous
+ * les avions rédigés.
+ */
+export const TITRE_STATUTS_EN_VIGUEUR = "Statuts en vigueur";
+
+/**
+ * Le titre sous lequel les statuts retouchés sont joints au dossier.
+ *
+ * Ils sortent de l'éditeur de retouches, mais ne sont pas remis au client dans la
+ * foulée : l'avocat les revoit avant qu'ils partent au greffe. Le titre est ici, et
+ * non dans la route qui les produit, parce que le dépôt des actes doit le connaître
+ * pour ne pas les emporter en régénérant le procès-verbal.
+ */
+export const TITRE_STATUTS_A_JOUR = "Statuts mis à jour";
+
 /* ---------------------------------------------------------------- Publication */
 
 export interface Publication {
@@ -153,11 +174,25 @@ export function piecesAFournir(codes: string[], valeurs: Valeurs = {}): PieceAFo
   const pieces: PieceAFournir[] = [];
 
   if (codes.includes("transfert_siege")) {
+    /*
+     * La pièce dit ce qu'on attend d'elle, selon le mode choisi.
+     *
+     * « Bail, contrat de domiciliation ou titre de propriété » laissait au client le
+     * soin de deviner lequel des trois le concernait, et surtout ce que le sien devait
+     * porter. Un contrat de domiciliation sans le numéro d'agrément préfectoral du
+     * domiciliataire se fait refuser au dépôt : autant le dire au moment où on le
+     * dépose.
+     */
+    const chezUnDomiciliataire = valeurs.nouveauModeDomiciliation === "Société de domiciliation";
+
     pieces.push({
       identifiant: "jouissance-locaux",
-      titre: "Justificatif de jouissance du nouveau local",
-      explication:
-        "Bail, contrat de domiciliation ou titre de propriété, au nom de la société et de moins de trois mois.",
+      titre: chezUnDomiciliataire
+        ? "Contrat de domiciliation"
+        : "Justificatif de jouissance du nouveau local",
+      explication: chezUnDomiciliataire
+        ? "Au nom de la société, en cours de validité, portant le numéro d'agrément préfectoral du domiciliataire - sans lui, le greffe refuse le transfert."
+        : "Bail, contrat de domiciliation ou titre de propriété, au nom de la société et de moins de trois mois.",
       obligatoire: true,
       formats: PDF_OU_IMAGE,
     });
@@ -293,13 +328,13 @@ export function obligationsParticulieres(
 
   if (codes.includes("dirigeant") && valeurs.typeChangementDirigeant === "Nomination") {
     dits.push(
-      "Le nouveau dirigeant signe une déclaration de non-condamnation et de filiation ; nous la produisons avec les actes."
+      "Le nouveau dirigeant signera une déclaration attestant qu'il n'a jamais été condamné et indiquant le nom de ses parents. Nous la préparons avec les actes, il n'a qu'à la signer."
     );
   }
 
   if (codes.includes("reduction_capital") && valeurs.motifReduction === "Remboursement aux associés") {
     dits.push(
-      "La réduction n'étant pas motivée par des pertes, les créanciers peuvent former opposition. Le dépôt au guichet unique attend l'expiration de ce délai."
+      "Cette réduction rembourse les associés au lieu d'effacer des pertes : la loi laisse alors aux créanciers de la société un délai pour s'y opposer devant le tribunal. Le dépôt au guichet unique n'a lieu qu'une fois ce délai écoulé."
     );
   }
 
@@ -315,19 +350,46 @@ export function obligationsParticulieres(
     valeurs.dispenseCommissaire === "Oui, à l'unanimité"
   ) {
     dits.push(
-      "Sans commissaire aux apports, les associés répondent solidairement de la valeur attribuée à l'apport pendant cinq ans à l'égard des tiers (article L. 223-9 du code de commerce)."
+      "Vous vous dispensez de commissaire aux apports : ce sont donc les associés qui garantissent la valeur donnée au bien apporté. Pendant cinq ans, si un tiers la conteste et obtient gain de cause, chacun d'eux peut être appelé à payer la différence, solidairement (article L. 223-9 du code de commerce)."
     );
+  }
+
+  /*
+   * L'information du conjoint, et ce qu'elle engage.
+   *
+   * Ce n'est pas une formalité de plus : sans elle, le conjoint peut faire annuler
+   * l'apport pendant deux ans, et il peut réclamer la moitié des parts souscrites - y
+   * compris des années après, tant que la société n'est pas dissoute. Celui qui apporte
+   * un bien commun doit le savoir avant de signer, non le découvrir sur assignation.
+   */
+  if (
+    codes.includes("augmentation_capital") &&
+    valeurs.apportBienCommun === "Oui : le bien apporté est un bien commun"
+  ) {
+    dits.push(
+      "Le bien apporté étant un bien commun, votre conjoint doit en être averti avant la décision, et l'acte doit porter la mention de cet avertissement. Sans elle, il peut demander l'annulation de l'apport pendant deux ans à compter du jour où il l'apprend (article 1832-2 du code civil)."
+    );
+
+    if (valeurs.conjointRevendication === "Non : il renonce à la qualité d'associé") {
+      dits.push(
+        "Votre conjoint renonce aujourd'hui à la qualité d'associé, et le procès-verbal le constate. Il pourra toutefois la revendiquer plus tard pour la moitié des parts souscrites, tant que la société n'est pas dissoute : la renonciation notée dans l'acte est ce qui rend cette revendication difficile à soutenir."
+      );
+    } else if (valeurs.conjointRevendication === "Oui : il revendique la moitié des parts") {
+      dits.push(
+        "Votre conjoint revendiquant la qualité d'associé, la moitié des parts souscrites lui revient : la répartition du capital en tient compte, et il signe le procès-verbal au même titre que les autres associés."
+      );
+    }
   }
 
   if (codes.includes("cession_parts")) {
     dits.push(
-      "Depuis le décret du 30 avril 2026, c'est le dépôt des statuts à jour qui rend la cession opposable aux tiers : l'acte de cession seul ne suffit plus."
+      "Tant que les statuts à jour ne sont pas déposés au greffe, la cession ne vaut qu'entre vous : une banque ou un créancier peut continuer de traiter l'ancien associé comme propriétaire des parts. L'acte signé n'y suffit plus depuis le décret du 30 avril 2026 - c'est le dépôt qui compte."
     );
   }
 
   if (codes.includes("prorogation")) {
     dits.push(
-      "La prorogation se décide avant le terme, les associés ayant été consultés au moins un an avant (article 1844-6 du code civil)."
+      "La décision doit être prise avant la date de fin inscrite dans les statuts, et les associés consultés au moins un an avant cette date (article 1844-6 du code civil)."
     );
   }
 
@@ -341,22 +403,22 @@ export function obligationsParticulieres(
   if (codes.includes("apport_titres")) {
     if (valeurs.apportControle === "Non") {
       dits.push(
-        "L'apporteur ne contrôlant pas la société bénéficiaire, la plus-value relève du sursis d'imposition de l'article 150-0 B du code général des impôts : ni suivi déclaratif annuel, ni obligation de remploi."
+        "Comme l'apporteur ne contrôle pas la société qui reçoit les titres, l'impôt sur le gain est mis en attente sans autre formalité : rien à déclarer chaque année, aucune obligation de réinvestir (sursis d'imposition, article 150-0 B du code général des impôts)."
       );
     } else {
       dits.push(
-        "La plus-value est placée en report d'imposition (article 150-0 B ter du code général des impôts). L'apporteur la déclare chaque année tant que le report dure, sur le formulaire 2074 puis 2074-I."
+        "L'impôt sur le gain est reporté, non effacé : l'apporteur le devra si le report tombe un jour. Tant qu'il dure, il le rappelle chaque année dans sa déclaration de revenus, sur le formulaire 2074 puis 2074-I (article 150-0 B ter du code général des impôts)."
       );
       dits.push(
-        "Si la société bénéficiaire revend les titres apportés moins de " +
+        "Si la holding revend les titres apportés moins de " +
           REMPLOI.franchiseAns +
-          " ans après l'apport, le report tombe, sauf remploi d'au moins " +
+          " ans après l'apport, l'impôt reporté devient exigible - à moins qu'elle ne réinvestisse au moins " +
           Math.round(REMPLOI.quota * 100) +
-          " % du produit dans les " +
+          " % du prix de vente dans les " +
           REMPLOI.delaiMois +
-          " mois, conservé " +
+          " mois, et conserve cet investissement " +
           REMPLOI.conservationAns +
-          " ans. Ces seuils sont ceux de la loi de finances pour 2026, applicables aux cessions réalisées à compter du " +
+          " ans. Ces seuils sont ceux de la loi de finances pour 2026, pour les ventes réalisées à partir du " +
           REMPLOI.applicableDepuis +
           "."
       );
@@ -364,7 +426,7 @@ export function obligationsParticulieres(
 
     if (valeurs.apportCommissaire !== "Oui") {
       dits.push(
-        "Sans commissaire aux apports, les associés répondent solidairement de la valeur attribuée aux titres pendant cinq ans à l'égard des tiers."
+        "Sans commissaire aux apports, ce sont les associés qui garantissent la valeur donnée aux titres. Pendant cinq ans, si un tiers la conteste et obtient gain de cause, chacun d'eux peut être appelé à payer la différence, solidairement."
       );
 
       /*
@@ -378,7 +440,7 @@ export function obligationsParticulieres(
     }
 
     dits.push(
-      "Le traité d'apport est enregistré gratuitement auprès de l'administration fiscale (article 810-I du code général des impôts)."
+      "L'enregistrement du traité d'apport auprès des impôts ne coûte rien : cette formalité est gratuite (article 810-I du code général des impôts)."
     );
   }
 

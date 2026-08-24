@@ -68,10 +68,15 @@ function nombre(valeur: string | number | undefined): number | null {
 }
 
 /** Les champs de la sélection, remplis ou non. */
-export function verifierChamps(codes: string[], valeurs: Valeurs): Anomalie[] {
+export function verifierChamps(
+  codes: string[],
+  valeurs: Valeurs,
+  /* La forme décide de la visibilité de quelques champs : un champ tu n'est pas dû. */
+  forme?: string | null
+): Anomalie[] {
   const anomalies: Anomalie[] = [];
 
-  for (const champ of champsASaisir(codes, valeurs)) {
+  for (const champ of champsASaisir(codes, valeurs, forme)) {
     if (!champ.obligatoire) continue;
     const valeur = valeurs[champ.identifiant];
 
@@ -106,6 +111,20 @@ export function verifierCoherence(codes: string[], valeurs: Valeurs): Anomalie[]
       anomalies.push({
         champ: "nouveauCodePostal",
         message: "Le code postal comporte cinq chiffres",
+      });
+    }
+
+    /*
+     * Le SIREN du domiciliataire se contrôle comme celui de la société.
+     *
+     * Il part au registre dans la déclaration du domicilié : un chiffre de travers y
+     * désigne une autre entreprise, et le greffe le voit avant nous.
+     */
+    const siren = valeurs.domiciliataireSiren;
+    if (typeof siren === "string" && siren.trim() && !SIREN.test(siren.replace(/\s/g, ""))) {
+      anomalies.push({
+        champ: "domiciliataireSiren",
+        message: "Le SIREN du domiciliataire comporte neuf chiffres",
       });
     }
   }
@@ -180,7 +199,7 @@ export function verifierModification(
 
   return [
     ...verifierSociete(societe),
-    ...verifierChamps(codes, valeurs),
+    ...verifierChamps(codes, valeurs, societe.forme),
     ...verifierCoherence(codes, valeurs),
   ];
 }
@@ -193,4 +212,41 @@ export function avancement(codes: string[], valeurs: Valeurs, societe: Societe):
 
   const faits = [societeFaite, choixFait, champsFaits].filter(Boolean).length;
   return Math.round((faits / 3) * 100);
+}
+
+/**
+ * Tout le capital est-il représenté à l'assemblée ?
+ *
+ * Le total des parts de la société est déclaré, les parts de chaque associé s'y
+ * ajoutent. Un écart ne se voit pas dans un procès-verbal : il se découvre au greffe,
+ * une fois l'acte signé et l'annonce publiée. Tant que le total n'est pas donné, on
+ * ne vérifie rien - on ne peut pas comparer à ce qui n'est pas dit.
+ */
+export function verifierLesParts(assemblee: {
+  totalParts?: number | null;
+  associes?: { parts?: number | null }[];
+}): Anomalie[] {
+  const total = assemblee.totalParts;
+  if (typeof total !== "number" || total <= 0) return [];
+
+  const reparties = (assemblee.associes ?? []).reduce((somme, a) => somme + (a.parts ?? 0), 0);
+  if (reparties === total) return [];
+
+  return [
+    {
+      champ: "assemblee-total-parts",
+      message:
+        reparties < total
+          ? "Il manque " +
+            (total - reparties) +
+            " part" +
+            (total - reparties > 1 ? "s" : "") +
+            " : ajoutez les associés qui les détiennent, ou corrigez le total."
+          : "Les associés se partagent " +
+            reparties +
+            " parts pour un capital qui n'en compte que " +
+            total +
+            ".",
+    },
+  ];
 }

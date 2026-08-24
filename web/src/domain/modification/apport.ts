@@ -145,11 +145,10 @@ export function reserveSurLaDispense(forme: string | null | undefined): string |
   if (dispenseEcriteAuTexte(forme)) return null;
 
   return (
-    "Pour une société par actions, la dispense de commissaire aux apports n'est écrite " +
-    "que pour la constitution : l'article L. 227-1 vise « les futurs associés ». Une " +
-    "augmentation de capital relève de l'article L. 225-147, qui n'en prévoit pas. La " +
-    "pratique l'admet largement, les greffes inégalement. Votre avocat tranchera à la " +
-    "relecture."
+    "Attention : dans une société par actions, cette dispense n'est prévue par la loi " +
+    "que pour la création de la société, pas pour une augmentation de capital. Elle est " +
+    "couramment admise en pratique, mais certains greffes la refusent. Votre avocat " +
+    "tranchera à la relecture (articles L. 227-1 et L. 225-147 du code de commerce)."
   );
 }
 

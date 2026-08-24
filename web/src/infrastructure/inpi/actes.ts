@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { journal } from "@/lib/journal";
-import { RegistreIndisponible, sirenValide } from "./registre";
+import {
+  contenuDuRegistre, RegistreIndisponible, sirenValide } from "./registre";
 
 /**
  * Les actes déposés au registre national des entreprises.
@@ -26,7 +27,11 @@ const requerir = createRequire(import.meta.url);
 
 interface ModuleInpi {
   inpiJson: (chemin: string) => Promise<unknown>;
-  httpsBuffer: (chemin: string, entetes: Record<string, string>) => Promise<Buffer>;
+  /* Une enveloppe, non le fichier : `{ status, contentType, buffer }`. */
+  httpsBuffer: (
+    chemin: string,
+    entetes: Record<string, string>
+  ) => Promise<{ status: number; contentType: string; buffer: Buffer }>;
   getToken: (force?: boolean) => Promise<string>;
 }
 
@@ -66,12 +71,39 @@ function texteDe(valeur: unknown): string {
 }
 
 /** Les natures d'un acte, le registre en listant parfois plusieurs par dépôt. */
+/*
+ * Ce que l'acte contient, dit une fois.
+ *
+ * Un dépôt porte souvent plusieurs pièces, et le registre les énumère telles qu'elles
+ * ont été déclarées - avec leurs répétitions : « Procès-verbal d'assemblée générale
+ * extraordinaire, Statuts mis à jour, Procès-verbal d'assemblée générale
+ * extraordinaire ». On dédoublonne, en gardant l'ordre du registre, et l'on borne à
+ * trois mentions : au-delà, la ligne dit ce qu'elle a de plus et non tout ce qu'elle a.
+ */
+const MENTIONS_MONTREES = 3;
+
 function naturesDe(acte: Record<string, unknown>): string {
   const rdd = acte.typeRdd;
   if (Array.isArray(rdd)) {
-    const dits = rdd
-      .map((r) => (r && typeof r === "object" ? texteDe((r as Record<string, unknown>).typeActe) : ""))
-      .filter(Boolean);
+    const dits = [
+      ...new Set(
+        rdd
+          .map((r) =>
+            r && typeof r === "object" ? texteDe((r as Record<string, unknown>).typeActe) : ""
+          )
+          .filter(Boolean)
+      ),
+    ];
+
+    if (dits.length > MENTIONS_MONTREES) {
+      const reste = dits.length - MENTIONS_MONTREES;
+      return (
+        dits.slice(0, MENTIONS_MONTREES).join(", ") +
+        " et " +
+        reste +
+        (reste > 1 ? " autres pièces" : " autre pièce")
+      );
+    }
     if (dits.length) return dits.join(", ");
   }
   return texteDe(acte.nomDocument) || texteDe(acte.typeActe) || "Acte";
@@ -108,7 +140,7 @@ export async function actesDe(sirenBrut: string): Promise<Acte[]> {
     throw new RegistreIndisponible("Le registre national ne répond pas");
   }
 
-  const racine = (donnees ?? {}) as Record<string, unknown>;
+  const racine = contenuDuRegistre(donnees);
   const bruts = Array.isArray(racine.actes) ? racine.actes : [];
 
   const actes = bruts
@@ -153,10 +185,30 @@ export async function telechargerActe(id: string): Promise<Buffer> {
   const inpi = charger();
   try {
     const jeton = await inpi.getToken();
-    return await inpi.httpsBuffer("/api/actes/" + id + "/download", {
+    const reponse = await inpi.httpsBuffer("/api/actes/" + id + "/download", {
       Authorization: "Bearer " + jeton,
     });
+
+    /*
+     * Le transport rend `{ status, contentType, buffer }`, non le PDF.
+     *
+     * On renvoyait l'enveloppe telle quelle : le fichier joint au dossier pesait zéro
+     * octet, et l'aperçu affichait une page blanche. Le registre, lui, répondait
+     * correctement - 8,8 Mo pour les statuts de la première société essayée.
+     */
+    if (reponse.status !== 200 || !reponse.buffer?.length) {
+      journal.error({ acte: id, statut: reponse.status }, "Acte téléchargé sans contenu");
+      throw new RegistreIndisponible("L'acte n'a pas pu être téléchargé");
+    }
+
+    // Un acte confidentiel ou retiré rend une page d'erreur, avec un statut 200.
+    if (!reponse.contentType.includes("pdf")) {
+      throw new RegistreIndisponible("Cet acte n'est pas diffusé sous forme de PDF", 400);
+    }
+
+    return reponse.buffer;
   } catch (e) {
+    if (e instanceof RegistreIndisponible) throw e;
     const message = e instanceof Error ? e.message : "";
     if (message.includes("INPI_CREDENTIALS_MISSING")) {
       throw new RegistreIndisponible("La consultation du registre n'est pas configurée");

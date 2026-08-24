@@ -28,11 +28,13 @@ import {
   verifierSociete,
   verifierChamps,
   verifierCoherence,
+  verifierLesParts,
   type Societe,
 } from "@/domain/modification/verification";
 import {
   publicationsAPrevoir,
   piecesAFournir,
+  type PieceAFournir,
   obligationsParticulieres,
   statutsAMettreAJour,
 } from "@/domain/modification/formalites";
@@ -40,6 +42,10 @@ import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification
 import type { Retouche, Zone } from "@/domain/modification/edition";
 import type { ActeProduit } from "@/domain/document/publication";
 import styles from "./Modification.module.css";
+import { remonterEnHaut } from "@/lib/defilement";
+import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
+import { qualitesDuRepresentant } from "@/domain/formalite/formes";
+import { Pieces } from "@/components/formulaire/Pieces";
 
 /**
  * Le parcours de modification.
@@ -53,14 +59,25 @@ import styles from "./Modification.module.css";
  * un onglet fermé.
  */
 
+/*
+ * Le règlement avant les actes.
+ *
+ * Les actes venaient d'abord : on produisait le procès-verbal et les statuts à jour,
+ * puis on demandait à payer. Le travail était donc fait avant d'être commandé, et le
+ * client repartait avec ses actes sans avoir rien réglé.
+ *
+ * Les justificatifs se déposent au même écran que le règlement, avant lui : l'avocat
+ * qui reçoit un dossier payé mais incomplet doit relancer quelqu'un qui a déjà quitté
+ * l'écran, et la formalité attend.
+ */
 const ETAPES = [
   { numero: 1, titre: "La société", court: "Société" },
   { numero: 2, titre: "Ce que vous changez", court: "Changements" },
   { numero: 3, titre: "Les détails", court: "Détails" },
   { numero: 4, titre: "L'assemblée", court: "Assemblée" },
   { numero: 5, titre: "Les statuts en vigueur", court: "Statuts" },
-  { numero: 6, titre: "Vos actes", court: "Actes" },
-  { numero: 7, titre: "Récapitulatif et règlement", court: "Règlement" },
+  { numero: 6, titre: "Justificatifs et règlement", court: "Règlement" },
+  { numero: 7, titre: "Vos actes", court: "Actes" },
 ];
 
 const FORMES = ["SAS", "SASU", "SARL", "EURL", "SCI", "SA", "SNC"];
@@ -90,7 +107,7 @@ export interface EtatDuDossier {
   codes: string[];
   societe: Societe & { villeRcs?: string | null };
   valeurs: Valeurs;
-  assemblee: { date?: string | null; associes?: Associe[] };
+  assemblee: { date?: string | null; totalParts?: number | null; associes?: Associe[] };
   /** Les cessions décidées, quand il y en a. */
   cessions?: Cession[];
   statuts?: {
@@ -112,6 +129,8 @@ interface Props {
   issueDuPaiement?: "regle" | "annule";
   /** Les actes déjà produits, relus par le serveur à chaque affichage de la page. */
   actesInitiaux: ActeProduit[];
+  /** Les justificatifs déjà remis : l'étape du règlement en dépend pour laisser payer. */
+  piecesDeposees: { type: string; nom: string }[];
 }
 
 /* ------------------------------------------------------------------ Outils */
@@ -139,6 +158,7 @@ export function Parcours({
   etapeInitiale,
   issueDuPaiement,
   actesInitiaux,
+  piecesDeposees,
 }: Props) {
   const [etape, setEtape] = useState(etapeInitiale);
   const [etat, setEtat] = useState<EtatDuDossier>(initial);
@@ -170,7 +190,7 @@ export function Parcours({
   const router = useRouter();
 
   const anomalies = [
-    ...verifierChamps(etat.codes, etat.valeurs),
+    ...verifierChamps(etat.codes, etat.valeurs, etat.societe.forme),
     ...verifierCoherence(etat.codes, etat.valeurs),
   ];
   const anomaliesSociete = verifierSociete(etat.societe);
@@ -195,6 +215,15 @@ export function Parcours({
     setEtat((precedent) => ({ ...precedent, societe: maj(precedent.societe) }));
   }
 
+  /*
+   * Même raison pour l'assemblée : le capital d'un associé société arrive du registre
+   * national après un aller-retour, et une écriture bâtie sur l'état de son rendu
+   * effacerait la dénomination et le siège qu'on venait d'inscrire.
+   */
+  function majAssemblee(maj: (assemblee: EtatDuDossier["assemblee"]) => EtatDuDossier["assemblee"]) {
+    setEtat((precedent) => ({ ...precedent, assemblee: maj(precedent.assemblee) }));
+  }
+
   /**
    * Ce qui manque pour quitter cette étape.
    *
@@ -217,6 +246,15 @@ export function Parcours({
         ? [...anomalies, ...verifierCessions(etat.assemblee.associes ?? [], etat.cessions ?? [])]
         : anomalies;
     }
+    /*
+     * L'assemblée : tout le capital doit être représenté.
+     *
+     * Le total des parts est déclaré à l'étape, les parts de chacun s'y ajoutent. Un
+     * écart signifie qu'un associé manque à l'appel - ou qu'on lui a attribué trop de
+     * parts. Continuer avec un procès-verbal qui ne représente que la moitié du
+     * capital, c'est le faire retoquer plus loin, quand tout est déjà signé.
+     */
+    if (etape === 4) return verifierLesParts(etat.assemblee);
     return [];
   }
 
@@ -234,6 +272,48 @@ export function Parcours({
    * Elle reste dans le fil, cochée et cliquable : on y revient quand on change d'avis,
    * et « Retour » depuis l'étape 3 y ramène normalement.
    */
+  /*
+   * Le règlement vit ici, non dans l'étape qui l'affiche.
+   *
+   * Deux endroits l'appellent : la carte de droite, où l'on lit le prix, et la barre du
+   * bas, au terme d'un récapitulatif qui fait deux écrans. La barre y remplace
+   * « Continuer » - continuer vers quoi, quand l'étape suivante attend d'être payée ?
+   */
+  const [reglementRefuse, setReglementRefuse] = useState<string | null>(null);
+  const [reglementEnCours, demarrerReglement] = useTransition();
+
+  const piecesDuDossier = piecesAFournir(etat.codes, etat.valeurs);
+  const piecesRemises = new Set(piecesDeposees.map((d) => d.type));
+  /*
+   * On ne retient le paiement que sur les pièces obligatoires : les autres sont utiles,
+   * non exigibles, et bloquer pour l'une d'elles la rendrait obligatoire sans le dire.
+   */
+  const piecesManquantes = piecesDuDossier.filter(
+    (p) => p.obligatoire && !piecesRemises.has(p.identifiant)
+  );
+
+  function reglerLaFormalite() {
+    setReglementRefuse(null);
+    demarrerReglement(async () => {
+      const reponse = await fetch("/api/formalites/modification/paiement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier }),
+      });
+      const corps = await reponse.json().catch(() => ({}));
+
+      if (!reponse.ok || !corps.adresse) {
+        setReglementRefuse(corps.error ?? "Le règlement n'a pas pu être ouvert");
+        return;
+      }
+      window.location.href = corps.adresse;
+    });
+  }
+
+  /** Tout est là : la formalité peut être réglée. */
+  const reglementPossible =
+    anomaliesSociete.length === 0 && anomalies.length === 0 && piecesManquantes.length === 0;
+
   function suivante(depuis: number): number {
     if (depuis === 1 && etat.codes.length > 0) return 3;
     return depuis + 1;
@@ -242,6 +322,19 @@ export function Parcours({
   /** Enregistre puis avance : l'étape suivante lit ce que le serveur a retenu. */
   function aller(vers: number) {
     setErreur(null);
+
+    /*
+     * Les actes attendent le règlement.
+     *
+     * C'est le sens de l'ordre des étapes : le procès-verbal et les statuts à jour
+     * sont le travail commandé, non un aperçu. La frise grise la pastille et ne la
+     * rend pas cliquable ; ce contrôle-ci couvre le reste - un retour d'historique,
+     * une adresse tapée à la main, un `?etape=7` gardé en favori.
+     */
+    if (vers === ETAPES.length && !etat.paye) {
+      setErreur("Vos actes seront produits dès le règlement de la formalité.");
+      return;
+    }
 
     /*
      * Rien ne part vers l'avant tant que l'étape n'est pas complète.
@@ -289,8 +382,9 @@ export function Parcours({
       }
 
       setEtape(vers);
+      memoriserEtape(dossier, vers);
       setAtteinte((loin) => Math.max(loin, vers));
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      remonterEnHaut();
     });
   }
 
@@ -300,7 +394,12 @@ export function Parcours({
     <div className={styles.parcours}>
       {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} dossier={dossier} />}
 
-      <Frise etape={etape} atteinte={atteinte} surChoix={aller} />
+      {/* La dernière étape ne s'ouvre qu'une fois la formalité réglée. */}
+      <Frise
+        etape={etape}
+        atteinte={etat.paye ? atteinte : Math.min(atteinte, ETAPES.length - 1)}
+        surChoix={aller}
+      />
 
       <div className={styles.contenu}>
         {/*
@@ -316,16 +415,49 @@ export function Parcours({
         </div>
 
         {/*
+          Ce que le droit impose, replié en tête.
+
+          Ces rappels s'empilaient tout en bas de l'étape, dépliés, sur un fond ambre
+          qui prenait un écran entier - six paragraphes d'articles de code sous un
+          formulaire qu'on venait de remplir. Personne ne les lit là : on y arrive
+          après avoir décidé, quand il n'y a plus rien à en faire. En tête et repliés,
+          ils s'annoncent avant la saisie et s'ouvrent quand on veut les lire.
+        */}
+        {definitionsChoisies.length > 0 && etape >= 2 && etape <= 4 && (
+          <Obligations codes={etat.codes} valeurs={etat.valeurs} forme={etat.societe.forme} />
+        )}
+
+        {/*
           Ce qui a été coché avant d'entrer, rappelé là où l'on entre.
           Sans ce rappel, l'étape 2 est enjambée sans explication : on passe de la
           société aux détails, et rien ne dit où sont partis les changements. La
           reprise se fait par le fil, une fois l'étape 3 atteinte.
         */}
         {etape === 1 && definitionsChoisies.length > 0 && (
-          <p className={styles.rappelChoix}>
-            <span className={styles.rappelIntitule}>Vous changez</span>
-            {definitionsChoisies.map((d) => d.libelle).join(", ")}
-          </p>
+          <div className={styles.rappelChoix}>
+            <div className={styles.rappelTete}>
+              <span className={styles.rappelIntitule}>
+                Ce que vous modifiez
+                <span className={styles.rappelCompte}>{definitionsChoisies.length}</span>
+              </span>
+            </div>
+
+            {/*
+              Des pastilles, non une phrase.
+
+              Les six changements s'écrivaient en une énumération séparée de virgules,
+              sur deux lignes pleines : on la lisait comme un texte alors qu'on veut y
+              vérifier une liste. Chacun a maintenant sa pastille, et l'œil en compte
+              les éléments sans les lire.
+            */}
+            <ul className={styles.rappelListe}>
+              {definitionsChoisies.map((d) => (
+                <li key={d.code} className={styles.rappelPastille}>
+                  {d.libelleCourt}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {etape === 1 && (
@@ -353,25 +485,33 @@ export function Parcours({
           />
         )}
 
-        {etape === 4 && <EtapeAssemblee etat={etat} changer={changer} />}
+        {etape === 4 && (
+          <EtapeAssemblee etat={etat} changer={changer} majAssemblee={majAssemblee} />
+        )}
 
         {etape === 5 && <EtapeStatuts dossier={dossier} etat={etat} changer={changer} />}
 
         {etape === 6 && (
+          <EtapeReglement
+            etat={etat}
+            anomalies={[...anomaliesSociete, ...anomalies]}
+            dossier={dossier}
+            pieces={piecesDuDossier}
+            manquantes={piecesManquantes}
+            piecesDeposees={piecesDeposees}
+            payer={reglerLaFormalite}
+            enCoursDeReglement={reglementEnCours}
+            refusDuReglement={reglementRefuse}
+            surCorrection={(champ) => aller(CHAMPS_DE_SOCIETE.includes(champ) ? 1 : 3)}
+          />
+        )}
+
+        {etape === 7 && (
           <EtapeActes
             dossier={dossier}
             etat={etat}
             changer={changer}
             actesInitiaux={actesInitiaux}
-          />
-        )}
-
-        {etape === 7 && (
-          <EtapeReglement
-            dossier={dossier}
-            etat={etat}
-            anomalies={[...anomaliesSociete, ...anomalies]}
-            surCorrection={(champ) => aller(CHAMPS_DE_SOCIETE.includes(champ) ? 1 : 3)}
           />
         )}
 
@@ -402,7 +542,25 @@ export function Parcours({
               Retour
             </button>
           )}
-          {etape < ETAPES.length && (
+          {/*
+            À l'étape du règlement, la barre règle.
+
+            « Continuer » y menait vers une étape verrouillée, et l'on se voyait
+            répondre que les actes attendent le paiement - la réponse à un geste qu'on
+            n'avait pas demandé. Le bouton porte donc l'action de l'écran.
+          */}
+          {etape === ETAPES.length - 1 && !etat.paye && (
+            <button
+              type="button"
+              className={styles.principal}
+              onClick={reglerLaFormalite}
+              disabled={reglementEnCours || !reglementPossible}
+            >
+              {reglementEnCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
+            </button>
+          )}
+
+          {etape < ETAPES.length && (etape !== ETAPES.length - 1 || etat.paye) && (
             <button
               type="button"
               className={styles.principal}
@@ -425,14 +583,80 @@ export function Parcours({
         </div>
       </div>
 
-      {definitionsChoisies.length > 0 && etape >= 2 && etape <= 4 && (
-        <Obligations codes={etat.codes} valeurs={etat.valeurs} forme={etat.societe.forme} />
-      )}
     </div>
   );
 }
 
 /* -------------------------------------------------------------- Le fil */
+
+/**
+ * Interroge l'annuaire public des entreprises.
+ *
+ * L'annuaire ne cherche que des mots entiers : « gremlins commu » ne trouve rien,
+ * quand « gremlins communication » trouve la société. Personne ne tape un nom complet
+ * avant d'attendre une suggestion - c'est tout l'intérêt d'en proposer.
+ *
+ * On retente donc sans le dernier mot, celui qu'on est en train d'écrire : la liste
+ * se remplit dès les premières lettres, et se resserre à mesure qu'on les termine.
+ */
+async function chercherAuRegistre(
+  terme: string,
+  signal: AbortSignal
+): Promise<ResultatRecherche[]> {
+  async function interroger(question: string, combien: number): Promise<ResultatRecherche[]> {
+    const reponse = await fetch(
+      "https://recherche-entreprises.api.gouv.fr/search?q=" +
+        encodeURIComponent(question) +
+        "&per_page=" +
+        combien +
+        "&page=1",
+      { signal }
+    );
+    if (!reponse.ok) return [];
+    const donnees = (await reponse.json()) as { results?: ResultatRecherche[] };
+    return donnees.results ?? [];
+  }
+
+  const propre = terme.trim().replace(/\s+/g, " ");
+  const trouves = await interroger(propre, MONTREES);
+  if (trouves.length > 0) return trouves;
+
+  const mots = propre.split(" ");
+  if (mots.length < 2) return [];
+
+  /*
+   * Le repli remonte large, puis remet en ordre.
+   *
+   * « gremlins commu » cherché sur « gremlins » seul rend d'abord les trois « LES
+   * GREMLINS », et « GREMLINS COMMUNICATION » - celui qu'on est en train d'écrire -
+   * se perd au-delà du sixième. On en demande vingt et l'on fait remonter ceux dont
+   * le nom porte le mot commencé.
+   */
+  const amorce = normaliser(mots[mots.length - 1]);
+  const larges = await interroger(mots.slice(0, -1).join(" "), 20);
+
+  return larges
+    .map((r, rang) => ({
+      r,
+      /* Le rang de l'annuaire départage ceux qui répondent aussi bien. */
+      score: normaliser(r.nom_complet ?? r.nom_raison_sociale ?? "").includes(amorce) ? -1 : 0,
+      rang,
+    }))
+    .sort((a, b) => a.score - b.score || a.rang - b.rang)
+    .slice(0, MONTREES)
+    .map((x) => x.r);
+}
+
+/** Le nombre de suggestions affichées : au-delà, la liste couvre le formulaire. */
+const MONTREES = 6;
+
+/** Sans accents ni casse : « communication » se reconnaît dans « COMMUNICATION ». */
+function normaliser(texte: string): string {
+  return texte
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 function Frise({
   etape,
@@ -444,52 +668,46 @@ function Frise({
   surChoix: (vers: number) => void;
 }) {
   return (
-    <ol className={styles.stepper}>
-      {ETAPES.map((e, rang) => (
-        <li key={e.numero} style={{ display: "contents" }}>
-          {rang > 0 && (
-            <span
-              className={
-                e.numero <= atteinte ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment
-              }
-              aria-hidden="true"
-            />
-          )}
-          {/*
-            Une étape déjà atteinte se rouvre d'un clic.
-            Celles qu'on n'a pas encore vues ne sont pas des liens : y sauter
-            enjamberait les contrôles qui gardent les précédentes.
-          */}
-          {e.numero <= atteinte ? (
-            <button
-              type="button"
-              className={
-                e.numero === etape
-                  ? `${styles.step} ${styles.stepBouton} ${styles.active}`
-                  : `${styles.step} ${styles.stepBouton} ${styles.done}`
-              }
-              onClick={() => surChoix(e.numero)}
-              aria-current={e.numero === etape ? "step" : undefined}
-            >
-              <span className={styles.stepCircle}>
-                {e.numero !== etape ? (
-                  <svg viewBox="0 0 24 24" {...TRAITS} aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  e.numero
-                )}
+    <ol className={styles.frise}>
+      {ETAPES.map((e) => {
+        const faite = e.numero < etape;
+        const courante = e.numero === etape;
+        /* « À venir » est l'état par défaut : il n'a pas de classe. */
+        const ton = faite ? styles.friseFaite : courante ? styles.friseCourante : "";
+        const marque = faite ? (
+          <svg viewBox="0 0 24 24" {...TRAITS} aria-hidden="true">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        ) : (
+          e.numero
+        );
+
+        return (
+          <li key={e.numero} className={`${styles.friseEtape} ${ton}`}>
+            {/*
+              Une étape déjà atteinte se rouvre d'un clic.
+              Celles qu'on n'a pas encore vues ne sont pas des boutons : y sauter
+              enjamberait les contrôles qui gardent les précédentes.
+            */}
+            {e.numero <= atteinte ? (
+              <button
+                type="button"
+                className={styles.friseGeste}
+                onClick={() => surChoix(e.numero)}
+                aria-current={courante ? "step" : undefined}
+              >
+                <span className={styles.friseMarque}>{marque}</span>
+                <span className={styles.friseLibelle}>{e.court}</span>
+              </button>
+            ) : (
+              <span className={styles.friseGeste}>
+                <span className={styles.friseMarque}>{marque}</span>
+                <span className={styles.friseLibelle}>{e.court}</span>
               </span>
-              <span className={styles.stepLabel}>{e.court}</span>
-            </button>
-          ) : (
-            <span className={styles.step}>
-              <span className={styles.stepCircle}>{e.numero}</span>
-              <span className={styles.stepLabel}>{e.court}</span>
-            </span>
-          )}
-        </li>
-      ))}
+            )}
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -536,15 +754,68 @@ export interface SocieteTrouvee {
   commune: string;
 }
 
+/**
+ * Le siège sur une ligne, sans le répéter.
+ *
+ * L'annuaire rend une adresse déjà complète - « 34 RUE LAUGIER 75017 PARIS » - et,
+ * à côté, le code postal et la commune séparément. On collait les trois : le siège
+ * d'un associé s'écrivait « 34 RUE LAUGIER 75017 PARIS 75017 PARIS », et partait tel
+ * quel dans l'acte.
+ */
+/**
+ * Le capital d'une société, au registre national.
+ *
+ * L'annuaire public ne le publie pas ; le relais `/api/societe/{siren}` interroge
+ * l'INPI, qui exige un compte connecté. Une panne de ce côté ne doit rien empêcher :
+ * le champ reste saisissable, et l'on rend simplement « on ne sait pas ».
+ */
+async function capitalAuRegistre(siren: string): Promise<number | null> {
+  const propre = (siren ?? "").replace(/\s/g, "");
+  if (!/^\d{9}$/.test(propre)) return null;
+
+  try {
+    const reponse = await fetch("/api/societe/" + encodeURIComponent(propre));
+    if (!reponse.ok) return null;
+    const donnees = (await reponse.json()) as { societe?: { capital?: number | null } };
+    return typeof donnees.societe?.capital === "number" ? donnees.societe.capital : null;
+  } catch {
+    return null;
+  }
+}
+
+function siegeSurUneLigne(siege: {
+  adresse?: string;
+  code_postal?: string;
+  libelle_commune?: string;
+}): string {
+  const complete = (siege.adresse ?? "").trim();
+  const codePostal = (siege.code_postal ?? "").trim();
+
+  // L'adresse porte déjà le code postal : elle porte donc aussi la commune.
+  if (codePostal && complete.includes(codePostal)) return complete;
+
+  return [complete, codePostal, siege.libelle_commune].filter(Boolean).join(" ").trim();
+}
+
 export function RechercheAuRegistre({
   id,
   libelle = "Chercher la société au registre",
   valeur,
   surSaisie,
   surSelection,
+  compacte = false,
 }: {
   id: string;
   libelle?: string;
+  /**
+   * Posée en bout de ligne plutôt qu'en tête de fiche.
+   *
+   * Dans la fiche d'un associé, la recherche prenait une rangée entière pour un champ
+   * qu'on n'utilise qu'une fois, au tout début. Compacte, elle tient à droite des deux
+   * onglets, là où il n'y avait rien - et son intitulé passe au placeholder, l'étiquette
+   * restant lisible aux lecteurs d'écran.
+   */
+  compacte?: boolean;
   /*
    * Contrôlé depuis l'extérieur quand on le lui demande.
    *
@@ -575,15 +846,7 @@ export function RechercheAuRegistre({
     const abandon = new AbortController();
     const minuteur = setTimeout(async () => {
       try {
-        const reponse = await fetch(
-          "https://recherche-entreprises.api.gouv.fr/search?q=" +
-            encodeURIComponent(terme.trim()) +
-            "&per_page=6&page=1",
-          { signal: abandon.signal }
-        );
-        if (!reponse.ok) return;
-        const donnees = (await reponse.json()) as { results?: ResultatRecherche[] };
-        setResultats(donnees.results ?? []);
+        setResultats(await chercherAuRegistre(terme, abandon.signal));
         setOuvert(true);
       } catch {
         // Annuaire injoignable : les champs restent saisissables à la main.
@@ -608,20 +871,22 @@ export function RechercheAuRegistre({
       denomination: nom,
       forme: FORMES_JURIDIQUES[resultat.nature_juridique ?? ""] ?? "",
       siren: resultat.siren ?? "",
-      siege: [siege.adresse, siege.code_postal, siege.libelle_commune].filter(Boolean).join(" "),
+      siege: siegeSurUneLigne(siege),
       codePostal: siege.code_postal ?? "",
       commune: siege.libelle_commune ?? "",
     });
   }
 
   return (
-    <div className={styles.recherche}>
-      <label htmlFor={id}>{libelle}</label>
+    <div className={compacte ? `${styles.recherche} ${styles.rechercheCompacte}` : styles.recherche}>
+      <label htmlFor={id} className={compacte ? styles.invisible : undefined}>
+        {libelle}
+      </label>
       <input
         id={id}
         value={terme}
         autoComplete="off"
-        placeholder="Nom ou SIREN"
+        placeholder={compacte ? "Rechercher une société" : "Nom ou SIREN"}
         onChange={(e) => {
           frappe.current = true;
           setTerme(e.target.value);
@@ -642,6 +907,20 @@ export function RechercheAuRegistre({
             </li>
           ))}
         </ul>
+      )}
+
+      {/*
+        Rien trouvé : on le dit.
+
+        La liste ne s'affichait que si elle avait quelque chose à montrer : sur un nom
+        introuvable, l'écran ne répondait rien, et l'on ne savait pas si la recherche
+        tournait, si l'annuaire était en panne, ou si la société n'y était pas.
+      */}
+      {ouvert && resultats.length === 0 && (
+        <p className={styles.resultatVide}>
+          Aucune société de ce nom au registre. Vérifiez l&apos;orthographe, essayez le
+          SIREN, ou remplissez les champs à la main.
+        </p>
       )}
     </div>
   );
@@ -677,15 +956,7 @@ function EtapeSociete({
     const abandon = new AbortController();
     const minuteur = setTimeout(async () => {
       try {
-        const reponse = await fetch(
-          "https://recherche-entreprises.api.gouv.fr/search?q=" +
-            encodeURIComponent(terme.trim()) +
-            "&per_page=6&page=1",
-          { signal: abandon.signal }
-        );
-        if (!reponse.ok) return;
-        const donnees = (await reponse.json()) as { results?: ResultatRecherche[] };
-        setResultats(donnees.results ?? []);
+        setResultats(await chercherAuRegistre(terme, abandon.signal));
         setOuvert(true);
       } catch {
         // Annuaire injoignable : les champs restent saisissables à la main.
@@ -707,17 +978,24 @@ function EtapeSociete({
     setResultats([]);
     setMessage(null);
 
-    changer({
-      societe: {
-        ...etat.societe,
-        denomination: nom,
-        forme: FORMES_JURIDIQUES[resultat.nature_juridique ?? ""] ?? etat.societe.forme ?? "",
-        siren: resultat.siren ?? "",
-        adresse: siege.adresse ?? "",
-        codePostal: siege.code_postal ?? "",
-        ville: siege.libelle_commune ?? "",
-      },
-    });
+    /*
+     * La mise à jour part de l'état courant, non de celui qu'on avait en entrant.
+     *
+     * `changer({ societe: { ...etat.societe } })` fige la société telle qu'elle était
+     * au premier rendu. Le capital arrive après un aller-retour au registre national,
+     * et l'écriture qui le posait rendait à `etat.societe` sa valeur d'avant - la
+     * forme juridique, l'adresse et la ville qu'on venait d'inscrire repassaient à
+     * blanc au moment même où le capital s'affichait.
+     */
+    majSociete((societe) => ({
+      ...societe,
+      denomination: nom,
+      forme: FORMES_JURIDIQUES[resultat.nature_juridique ?? ""] ?? societe.forme ?? "",
+      siren: resultat.siren ?? "",
+      adresse: siege.adresse ?? "",
+      codePostal: siege.code_postal ?? "",
+      ville: siege.libelle_commune ?? "",
+    }));
 
     if (!resultat.siren) return;
     try {
@@ -729,9 +1007,7 @@ function EtapeSociete({
       const donnees = (await fiche.json()) as { societe?: { capital?: number | null } };
       const capital = donnees.societe?.capital;
       if (typeof capital === "number") {
-        changer({
-          societe: { ...etat.societe, denomination: nom, siren: resultat.siren, capital },
-        });
+        majSociete((societe) => ({ ...societe, capital }));
       } else {
         setMessage("Capital non publié au registre : à saisir à la main.");
       }
@@ -748,24 +1024,57 @@ function EtapeSociete({
 
   return (
     <>
+      {/*
+        Ce qu'on demande, et ce qui arrive ensuite.
+
+        La phrase disait « cherchez la société au registre », sans dire lequel ni où
+        chercher, puis « son siège et son capital se remplissent seuls », qui décrit un
+        formulaire agissant de lui-même, puis « le registre peut être en retard sur
+        vous », dont personne ne devine ce qu'il faut en faire. Elle dit maintenant le
+        geste, d'où viennent les données, et pourquoi on peut les corriger.
+      */}
       <p className={styles.description}>
-        Cherchez la société au registre : sa dénomination, son SIREN, son siège et son capital se
-        remplissent seuls. Tout reste modifiable - le registre peut être en retard sur vous.
+        Tapez le nom ou le SIREN de votre société : nous reprenons sa forme, son siège
+        et son capital depuis le registre du commerce. Vous pouvez tout corriger
+        ensuite, car le registre n&apos;est pas toujours à jour.
       </p>
 
-      <div className={styles.recherche}>
+      {/*
+        La recherche prend toute la largeur.
+
+        Bornée à 460 px par la feuille globale, elle s'arrêtait au milieu de la carte
+        pendant que les champs qu'elle remplit s'étendaient sur deux colonnes en
+        dessous : le formulaire semblait coupé en son milieu. Elle est le geste
+        principal de l'étape - elle occupe donc la ligne, avec sa loupe.
+      */}
+      <div className={`${styles.recherche} ${styles.recherchePrincipale}`}>
         <label htmlFor="recherche-societe">Nom ou SIREN de la société</label>
-        <input
-          id="recherche-societe"
-          value={terme}
-          autoComplete="off"
-          placeholder="Ex : ACME CONSEIL, ou 123456789"
-          onChange={(e) => {
-            frappe.current = true;
-            setTerme(e.target.value);
-          }}
-          onBlur={() => setTimeout(() => setOuvert(false), 150)}
-        />
+
+        <div className={styles.rechercheChamp}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            id="recherche-societe"
+            value={terme}
+            autoComplete="off"
+            placeholder="Ex : ACME CONSEIL, ou 123456789"
+            onChange={(e) => {
+              frappe.current = true;
+              setTerme(e.target.value);
+            }}
+            onBlur={() => setTimeout(() => setOuvert(false), 150)}
+          />
+        </div>
 
         {ouvert && resultats.length > 0 && (
           <ul className={styles.resultats}>
@@ -783,6 +1092,20 @@ function EtapeSociete({
             ))}
           </ul>
         )}
+
+      {/*
+        Rien trouvé : on le dit.
+
+        La liste ne s'affichait que si elle avait quelque chose à montrer : sur un nom
+        introuvable, l'écran ne répondait rien, et l'on ne savait pas si la recherche
+        tournait, si l'annuaire était en panne, ou si la société n'y était pas.
+      */}
+      {ouvert && resultats.length === 0 && (
+        <p className={styles.resultatVide}>
+          Aucune société de ce nom au registre. Vérifiez l&apos;orthographe, essayez le
+          SIREN, ou remplissez les champs à la main.
+        </p>
+      )}
       </div>
 
       {message && <p className={styles.description}>{message}</p>}
@@ -1038,6 +1361,20 @@ function EtapeDetails({
     majValeurs((valeurs) => ({ ...valeurs, [identifiant]: v }));
   }
 
+  /*
+   * Un changement ouvert à la fois.
+   *
+   * Six changements dépliés font une page de six formulaires bout à bout - le
+   * transfert de siège en compte six champs, l'apport de titres vingt-six. On y
+   * descendait sans jamais voir où l'on en était, et le sommaire posé en tête
+   * disparaissait dès le premier écran.
+   *
+   * Celui qu'on ouvre referme le précédent : c'est ce qui garde la page à hauteur
+   * d'écran et rend le sommaire utile. Un dossier à un seul changement n'a rien à
+   * replier, et reste ouvert.
+   */
+  const [ouvert, setOuvert] = useState<string | null>(null);
+
   /**
    * Une société retenue au registre remplit les champs qu'elle sait remplir.
    *
@@ -1140,6 +1477,9 @@ function EtapeDetails({
             <a
               key={definition.code}
               href={"#modif-" + definition.code}
+              /* Le sommaire déplie ce qu'il désigne : y mener un bloc replié ne
+                 montrerait qu'un titre. */
+              onClick={() => setOuvert(definition.code)}
               className={
                 incomplete(definition.code)
                   ? styles.sommaireLien
@@ -1155,16 +1495,68 @@ function EtapeDetails({
         </nav>
       )}
 
-      {choisies.map((definition, rang) => (
+      {choisies.map((definition, rang) => {
+        /*
+         * Le premier incomplet s'ouvre de lui-même.
+         *
+         * Tant que rien n'a été déplié à la main, c'est là qu'il y a du travail : on
+         * arrive sur l'étape le formulaire déjà ouvert, sans un clic pour commencer.
+         */
+        const premierIncomplet = choisies.find((d) => incomplete(d.code))?.code ?? choisies[0].code;
+        const seul = choisies.length === 1;
+        const deplie = seul || (ouvert ?? premierIncomplet) === definition.code;
+        const fait = !incomplete(definition.code);
+
+        return (
         <section
           key={definition.code}
           id={"modif-" + definition.code}
-          className={choisies.length > 1 ? styles.detailsBloc : undefined}
+          className={
+            seul
+              ? undefined
+              : deplie
+                ? `${styles.detailsBloc} ${styles.detailsBlocOuvert}`
+                : styles.detailsBloc
+          }
         >
-          <h3 className={styles.detailsTitre}>
-            {choisies.length > 1 && <span className={styles.etapeNum}>{rang + 1}</span>}
-            {definition.libelle}
-          </h3>
+          {seul ? (
+            <h3 className={styles.detailsTitre}>{definition.libelle}</h3>
+          ) : (
+            <h3 className={styles.detailsTitre}>
+              <button
+                type="button"
+                className={styles.detailsBascule}
+                onClick={() => setOuvert(deplie ? "" : definition.code)}
+                aria-expanded={deplie}
+                aria-controls={"champs-" + definition.code}
+              >
+                <span className={fait ? `${styles.etapeNum} ${styles.etapeNumFait}` : styles.etapeNum}>
+                  {fait ? "✓" : rang + 1}
+                </span>
+                <span className={styles.detailsNom}>{definition.libelle}</span>
+                {/* L'état du bloc, dit quand il est replié : sinon on l'ouvre pour voir. */}
+                {!deplie && (
+                  <span className={fait ? styles.detailsEtatFait : styles.detailsEtat}>
+                    {fait ? "Complété" : "À compléter"}
+                  </span>
+                )}
+                <span className={styles.detailsChevron} aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </span>
+              </button>
+            </h3>
+          )}
+
+          <div id={"champs-" + definition.code} hidden={!deplie}>
 
           {/*
             La cession ne se saisit pas en champs plats.
@@ -1185,7 +1577,7 @@ function EtapeDetails({
           ) : (
           <div className={styles.champs}>
             {definition.champs
-              .filter((champ) => champVisible(champ, etat.valeurs))
+              .filter((champ) => champVisible(champ, etat.valeurs, etat.societe.forme))
               .map((champ, rang, visibles) => (
                 <Fragment key={champ.identifiant}>
                   {/*
@@ -1225,8 +1617,10 @@ function EtapeDetails({
               ))}
           </div>
           )}
+          </div>
         </section>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1246,7 +1640,13 @@ export function Champ({
   surAdresse: (adresse: string, complements?: { codePostal?: string; ville?: string }) => void;
   surSociete: (champ: ChampModification, societe: SocieteTrouvee) => void;
 }) {
-  const classe = champ.pleineLargeur ? `${styles.champ} ${styles.pleineLargeur}` : styles.champ;
+  /* La largeur du champ : pleine ligne, ou le nombre de colonnes qu'il demande. */
+  const largeur = champ.pleineLargeur
+    ? styles.pleineLargeur
+    : champ.colonnes
+      ? styles["colonnes" + champ.colonnes]
+      : "";
+  const classe = largeur ? `${styles.champ} ${largeur}` : styles.champ;
   const id = "champ-" + champ.identifiant;
 
   /*
@@ -1372,17 +1772,49 @@ export function Champ({
 
 /* ------------------------------------------------------- 4. L'assemblée */
 
+/**
+ * Le nom d'un associé, tel qu'on le reconnaît d'un coup d'œil.
+ *
+ * Une société porte sa dénomination, une personne son prénom et son nom. Rien tant
+ * qu'on n'a rien tapé : « Associé 2 -  » ne vaudrait pas mieux qu'« Associé 2 ».
+ */
+function nomDeLAssocie(associe: Associe): string {
+  if ((associe.nature ?? "physique") === "morale") return (associe.denomination ?? "").trim();
+  return [associe.prenom, associe.nom]
+    .map((m) => (m ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
 function EtapeAssemblee({
   etat,
   changer,
+  majAssemblee,
 }: {
   etat: EtatDuDossier;
   changer: (c: Partial<EtatDuDossier>) => void;
+  majAssemblee: (maj: (a: EtatDuDossier["assemblee"]) => EtatDuDossier["assemblee"]) => void;
 }) {
   const associes = etat.assemblee.associes ?? [];
 
+  /*
+   * Une assemblée a au moins un associé : son formulaire est là d'emblée.
+   *
+   * L'étape n'affichait qu'un bouton « Ajouter un associé » sous une date, au-dessus
+   * du vide. Il fallait deviner qu'on devait cliquer pour commencer, et le dossier se
+   * transmettait sans personne au bas de l'acte.
+   *
+   * Le premier associé n'est pas écrit dans l'état tant qu'on n'a rien tapé : un
+   * associé vide inscrit d'office se retrouverait dans le procès-verbal, et il
+   * suffirait de passer l'étape sans la remplir pour le produire.
+   */
+  const montres = associes.length > 0 ? associes : [{}];
+
+  /** Ce qui est effectivement attribué : c'est lui qu'on compare au total déclaré. */
+  const reparties = montres.reduce((somme, a) => somme + (a.parts ?? 0), 0);
+
   function modifierAssocie(rang: number, changement: Partial<Associe>) {
-    const suite = associes.map((a, i) => (i === rang ? { ...a, ...changement } : a));
+    const suite = montres.map((a, i) => (i === rang ? { ...a, ...changement } : a));
     changer({ assemblee: { ...etat.assemblee, associes: suite } });
   }
 
@@ -1402,19 +1834,54 @@ function EtapeAssemblee({
             surChangement={(iso) => changer({ assemblee: { ...etat.assemblee, date: iso } })}
           />
         </div>
+
+        {/*
+          Le total des parts, déclaré avant d'être réparti.
+          Sans lui, rien ne dit qu'on a bien inscrit tous les associés : un dossier
+          part au cabinet avec la moitié du capital représentée, et c'est l'avocat qui
+          s'en aperçoit - ou le greffe.
+        */}
+        <div className={styles.champ}>
+          <label htmlFor="assemblee-total-parts">Nombre total de parts de la société</label>
+          <ChampNombre
+            id="assemblee-total-parts"
+            valeur={etat.assemblee.totalParts ?? ""}
+            decimales={false}
+            surChangement={(nombre) =>
+              changer({
+                assemblee: {
+                  ...etat.assemblee,
+                  totalParts: nombre === "" ? null : nombre,
+                },
+              })
+            }
+          />
+        </div>
       </div>
 
-      {associes.map((associe, rang) => (
+      {montres.map((associe, rang) => (
         <fieldset key={rang} className={styles.personne}>
-          <legend>Associé {rang + 1}</legend>
+          {/*
+            Le titre prend le nom dès qu'on le tape.
+
+            À trois associés, « Associé 1 », « Associé 2 », « Associé 3 » ne disent rien :
+            il faut ouvrir chaque bloc pour retrouver celui qu'on cherchait. Le nom s'y
+            ajoute au fil de la saisie, et le rang reste devant - c'est lui qui compte
+            dans le procès-verbal.
+          */}
+          <legend>
+            Associé {rang + 1}
+            {nomDeLAssocie(associe) && " - " + nomDeLAssocie(associe)}
+          </legend>
 
           {/*
             Un associé peut être une société : une SCI détenue par une holding, une
             SAS dont un fonds est associé. L'acte doit alors la désigner par sa forme,
             son capital, son siège et son numéro, non par un prénom.
           */}
-          <div className={styles.natures}>
-            {(["physique", "morale"] as const).map((nature) => (
+          <div className={styles.natureEtRecherche}>
+            <div className={styles.natures}>
+              {(["physique", "morale"] as const).map((nature) => (
               <label
                 key={nature}
                 className={
@@ -1429,22 +1896,46 @@ function EtapeAssemblee({
                   checked={(associe.nature ?? "physique") === nature}
                   onChange={() => modifierAssocie(rang, { nature })}
                 />
-                {nature === "physique" ? "Une personne" : "Une société"}
-              </label>
-            ))}
+                  {nature === "physique" ? "Une personne" : "Une société"}
+                </label>
+              ))}
+            </div>
+
+            {/* La recherche n'a de sens que pour une société : elle paraît avec elle. */}
+            {(associe.nature ?? "physique") === "morale" && (
+              <RechercheAuRegistre
+                id={"associe-recherche-" + rang}
+                compacte
+                surSelection={async ({ denomination, forme, siren, siege }) => {
+                  /* Le code postal et la commune servent à déduire le greffe compétent,
+                     dont la fiche d'un associé n'a que faire. */
+                  modifierAssocie(rang, { denomination, forme, siren, siege });
+
+                  /*
+                   * Le capital ne figure pas à l'annuaire public : il vient du registre
+                   * national, par notre relais. L'acte désigne une société associée par
+                   * sa forme, son capital, son siège et son numéro - le laisser vide
+                   * obligeait à aller le chercher sur un extrait.
+                   *
+                   * L'écriture passe par `majAssemblee` : elle arrive après un
+                   * aller-retour, et une écriture bâtie sur l'état de ce rendu effacerait
+                   * ce qu'on vient d'inscrire à la ligne au-dessus.
+                   */
+                  const capital = await capitalAuRegistre(siren);
+                  if (capital === null) return;
+                  majAssemblee((assemblee) => ({
+                    ...assemblee,
+                    associes: (assemblee.associes ?? []).map((a, i) =>
+                      i === rang ? { ...a, capital } : a
+                    ),
+                  }));
+                }}
+              />
+            )}
           </div>
 
           {(associe.nature ?? "physique") === "morale" ? (
             <>
-              <RechercheAuRegistre
-                id={"associe-recherche-" + rang}
-                surSelection={({ denomination, forme, siren, siege }) =>
-                  /* Le code postal et la commune servent à déduire le greffe compétent,
-                     dont la fiche d'un associé n'a que faire. */
-                  modifierAssocie(rang, { denomination, forme, siren, siege })
-                }
-              />
-
               <div className={styles.champs}>
                 <div className={styles.champ}>
                   <label htmlFor={"associe-denomination-" + rang}>Dénomination</label>
@@ -1489,7 +1980,9 @@ function EtapeAssemblee({
                     onChange={(e) => modifierAssocie(rang, { siren: e.target.value })}
                   />
                 </div>
-                <div className={styles.champ}>
+                {/* Un capital tient en peu de place ; un siège en demande davantage :
+                    les deux tiennent sur la même ligne, deux colonnes contre quatre. */}
+                <div className={`${styles.champ} ${styles.colonnes2}`}>
                   <label htmlFor={"associe-capital-" + rang}>Capital, en euros</label>
                   <ChampNombre
                     id={"associe-capital-" + rang}
@@ -1500,7 +1993,7 @@ function EtapeAssemblee({
                     }
                   />
                 </div>
-                <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                <div className={`${styles.champ} ${styles.colonnes4}`}>
                   <label htmlFor={"associe-siege-" + rang}>Siège social</label>
                   {/* Le siège part dans l'acte tel quel : il se cherche plutôt que de
                       se recopier depuis un extrait. */}
@@ -1519,44 +2012,74 @@ function EtapeAssemblee({
                     onChange={(e) => modifierAssocie(rang, { representant: e.target.value })}
                   />
                 </div>
+                {/*
+                  Les titres que la forme de l'associé admet.
+
+                  C'était un champ libre avec « Président » en exemple : on l'a recopié
+                  pour des SARL, dont le dirigeant est un gérant. Le titre part dans
+                  l'acte, et le greffe relève celui qui n'existe pas dans la forme.
+
+                  Une valeur déjà saisie reste proposée même hors liste : un dossier
+                  ouvert avant ce changement ne doit pas perdre ce qu'il portait.
+                */}
                 <div className={styles.champ}>
                   <label htmlFor={"associe-qualite-" + rang}>En qualité de</label>
-                  <input
+                  <select
                     id={"associe-qualite-" + rang}
-                    placeholder="Président"
                     value={associe.qualiteRepresentant ?? ""}
                     onChange={(e) =>
                       modifierAssocie(rang, { qualiteRepresentant: e.target.value })
                     }
-                  />
+                  >
+                    <option value="">Choisir</option>
+                    {qualitesDuRepresentant(associe.forme).map((qualite) => (
+                      <option key={qualite} value={qualite}>
+                        {qualite}
+                      </option>
+                    ))}
+                    {associe.qualiteRepresentant &&
+                      !qualitesDuRepresentant(associe.forme).includes(
+                        associe.qualiteRepresentant
+                      ) && (
+                        <option value={associe.qualiteRepresentant}>
+                          {associe.qualiteRepresentant}
+                        </option>
+                      )}
+                  </select>
                 </div>
               </div>
             </>
           ) : (
             <div className={styles.champs}>
-              <div className={styles.champ}>
+              {/*
+                Un associé, une ligne.
+
+                Civilité, prénom, nom et parts tenaient sur deux rangées de deux, avec
+                les parts coincées entre la civilité et le prénom - au milieu de
+                l'identité qu'elles n'ont rien à voir. Chacun prend la largeur qu'il
+                demande : la civilité en tient peu, le nom davantage, et les parts
+                finissent la ligne.
+              */}
+              <div className={`${styles.champ} ${styles.colonnes1}`}>
                 <label htmlFor={"associe-civilite-" + rang}>Civilité</label>
                 <select
                   id={"associe-civilite-" + rang}
                   value={associe.civilite ?? ""}
                   onChange={(e) => modifierAssocie(rang, { civilite: e.target.value })}
                 >
+                  {/*
+                    Abrégée à l'écran, entière dans l'acte.
+
+                    La colonne fait cent dix pixels : « Monsieur » y était coupé en
+                    « Monsie… ». C'est l'affichage qui s'abrège, la valeur envoyée reste
+                    « Monsieur » - un procès-verbal n'écrit pas « M. Jean DUPONT ».
+                  */}
                   <option value="">Choisir</option>
-                  <option value="Monsieur">Monsieur</option>
-                  <option value="Madame">Madame</option>
+                  <option value="Monsieur">M.</option>
+                  <option value="Madame">Mme</option>
                 </select>
               </div>
-              <div className={styles.champ}>
-                <label htmlFor={"associe-parts-" + rang}>Parts détenues</label>
-                <ChampNombre
-                  id={"associe-parts-" + rang}
-                  valeur={associe.parts ?? ""}
-                  surChangement={(nombre) =>
-                    modifierAssocie(rang, { parts: nombre === "" ? null : nombre })
-                  }
-                />
-              </div>
-              <div className={styles.champ}>
+              <div className={`${styles.champ} ${styles.colonnes2}`}>
                 <label htmlFor={"associe-prenom-" + rang}>Prénom</label>
                 <input
                   id={"associe-prenom-" + rang}
@@ -1564,7 +2087,7 @@ function EtapeAssemblee({
                   onChange={(e) => modifierAssocie(rang, { prenom: e.target.value })}
                 />
               </div>
-              <div className={styles.champ}>
+              <div className={`${styles.champ} ${styles.colonnes2}`}>
                 <label htmlFor={"associe-nom-" + rang}>Nom</label>
                 <input
                   id={"associe-nom-" + rang}
@@ -1572,35 +2095,111 @@ function EtapeAssemblee({
                   onChange={(e) => modifierAssocie(rang, { nom: e.target.value })}
                 />
               </div>
+              <div className={`${styles.champ} ${styles.colonnes1}`}>
+                <label htmlFor={"associe-parts-" + rang}>Parts</label>
+                <ChampNombre
+                  id={"associe-parts-" + rang}
+                  valeur={associe.parts ?? ""}
+                  decimales={false}
+                  surChangement={(nombre) =>
+                    modifierAssocie(rang, { parts: nombre === "" ? null : nombre })
+                  }
+                />
+              </div>
             </div>
           )}
         </fieldset>
       ))}
 
-      <div className={styles.actions}>
-        <button
-          type="button"
-          onClick={() =>
-            changer({
-              assemblee: { ...etat.assemblee, associes: [...associes, {}] },
-            })
-          }
+      {/*
+        Le compte des parts, sous les associés.
+
+        C'est le seul endroit où l'on voit si l'on a bien inscrit tout le monde. La
+        somme se lit avant de continuer, et le manque se dit en clair plutôt qu'en
+        laissant compter de tête.
+      */}
+      {typeof etat.assemblee.totalParts === "number" && etat.assemblee.totalParts > 0 && (
+        <p className={reparties === etat.assemblee.totalParts ? styles.compteJuste : styles.compte}>
+          {reparties === etat.assemblee.totalParts ? (
+            <>Les {etat.assemblee.totalParts} parts de la société sont réparties.</>
+          ) : reparties < etat.assemblee.totalParts ? (
+            <>
+              {reparties} part{reparties > 1 ? "s" : ""} réparties sur{" "}
+              {etat.assemblee.totalParts} : il en manque{" "}
+              {etat.assemblee.totalParts - reparties}.
+            </>
+          ) : (
+            <>
+              {reparties} parts réparties pour un capital qui n&apos;en compte que{" "}
+              {etat.assemblee.totalParts}.
+            </>
+          )}
+        </p>
+      )}
+
+      {/*
+        Ajouter se voit, supprimer se cherche.
+
+        Les deux gestes portaient le même bouton blanc, côte à côte, de la même taille :
+        celui qui ajoute est le plus courant, celui qui retire est irréversible d'un
+        clic. L'ajout devient une zone en pointillé sur toute la largeur - la forme d'un
+        emplacement vide qui attend d'être rempli ; la suppression, un lien rouge
+        discret, à droite, avec sa corbeille.
+      */}
+      <button
+        type="button"
+        className={styles.ajouterAssocie}
+        onClick={() =>
+          changer({
+            assemblee: { ...etat.assemblee, associes: [...montres, {}] },
+          })
+        }
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
         >
-          + Ajouter un associé
-        </button>
-        {associes.length > 0 && (
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Ajouter un associé
+      </button>
+
+      {/* Le premier ne se supprime pas : une assemblée sans associé n'existe pas. */}
+      {montres.length > 1 && (
+        <div className={styles.retirerLigne}>
           <button
             type="button"
+            className={styles.retirerAssocie}
             onClick={() =>
               changer({
-                assemblee: { ...etat.assemblee, associes: associes.slice(0, -1) },
+                assemblee: { ...etat.assemblee, associes: montres.slice(0, -1) },
               })
             }
           >
-            Retirer le dernier
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+            </svg>
+            Supprimer l&apos;associé {montres.length}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 }
@@ -1628,6 +2227,14 @@ function EtapeStatuts({
   const [acte, setActe] = useState<ActeDuRegistre | null>(null);
   const [refus, setRefus] = useState<string | null>(null);
   const [depotDemande, setDepotDemande] = useState(false);
+  /*
+   * L'aperçu, avant d'engager la suite.
+   *
+   * On demandait d'affirmer que ces statuts étaient les bons sur la foi d'un intitulé
+   * et d'une date. C'est ce fichier qui sera retouché article par article, puis déposé
+   * au greffe : on l'ouvre avant de le retenir.
+   */
+  const [apercuOuvert, setApercuOuvert] = useState(false);
   const [enCours, demarrer] = useTransition();
 
   useEffect(() => {
@@ -1719,9 +2326,18 @@ function EtapeStatuts({
         <DepotFichier
           id="statuts-remplacement"
           accepte=".pdf"
+          /*
+            Le document se nomme par ce qu'il est.
+
+            On affichait l'intitulé du dépôt au registre - « Procès-verbal d'assemblée
+            générale extraordinaire, Statuts mis à jour » - alors que ce qui a été
+            retenu, et qui sera retouché, ce sont les statuts. La date dit d'où ils
+            viennent.
+          */
           depose={
             etat.statuts.source === "inpi"
-              ? etat.statuts.nature
+              ? "Vos statuts" +
+                (etat.statuts.deposeLe ? ", déposés le " + jourFrancais(etat.statuts.deposeLe) : "")
               : (etat.statuts.fichier ?? "Statuts déposés")
           }
           surFichier={deposer}
@@ -1738,29 +2354,70 @@ function EtapeStatuts({
 
   return (
     <>
+      {/*
+        Le chapeau dit ce qui vient d'arriver, non comment le registre fonctionne.
+
+        « Les statuts en vigueur viennent du registre national, qui diffuse les actes
+        publics d'une société » expliquait un rouage à quelqu'un qui attend une réponse.
+        Il lit maintenant ce qu'on a trouvé et ce qu'on lui demande.
+      */}
       <p className={styles.description}>
-        Les statuts en vigueur viennent du registre national, qui diffuse les actes publics
-        d&apos;une société. Vous n&apos;avez rien à retrouver.
+        {acte
+          ? "Nous avons trouvé vos statuts au registre national. Ouvrez-les et vérifiez qu'il s'agit bien de votre dernière version : c'est ce document que nous retoucherons, article par article."
+          : "Nous avons cherché vos statuts au registre national, sans les y trouver."}
       </p>
 
       {acte ? (
         <div className={styles.statuts}>
-          <div className={styles.statutsTrouves}>
-            <span>
-              <span className={styles.statutsNature}>{acte.nature}</span>
-              <span className={styles.statutsDate}>
-                Dernier dépôt au registre{acte.deposeLe ? " le " + jourFrancais(acte.deposeLe) : ""}
-              </span>
-            </span>
-          </div>
+          {/*
+            Ce qu'on a trouvé, dit en français.
+
+            La carte affichait l'intitulé du registre - « Procès-verbal d'assemblée
+            générale extraordinaire, Statuts mis à jour » - qui nomme le dépôt, non le
+            document qu'on va lire. Le client cherche ses statuts, pas la pièce dans
+            laquelle ils ont voyagé. L'intitulé reste lisible dans la fenêtre d'aperçu,
+            en petit, pour qui veut retrouver le dépôt au registre.
+          */}
+          <p className={styles.statutsPhrase}>
+            {acte.deposeLe
+              ? "Voici les statuts que vous avez déposés le " + jourFrancais(acte.deposeLe) + "."
+              : "Voici les statuts déposés au registre pour votre société."}
+          </p>
 
           {/*
             La date de dépôt ne prouve pas que les statuts sont à jour : une
             modification décidée et jamais déposée les périme. C'est donc au client
             d'affirmer, et son affirmation est datée dans le dossier.
           */}
+          {/* Voir avant de dire oui : le bouton précède la question. */}
+          <button
+            type="button"
+            className={styles.statutsApercu}
+            onClick={() => setApercuOuvert(true)}
+            disabled={enCours}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Ouvrir et vérifier
+          </button>
+
+          {/*
+            La date du dépôt ne prouve rien : une modification décidée et jamais
+            déposée périme les statuts publiés. C'est au client d'affirmer, et son
+            affirmation est datée dans le dossier.
+          */}
           <p className={styles.statutsQuestion}>
-            Est-ce bien la dernière version à jour de vos statuts ?
+            Est-ce votre dernière version ?
           </p>
           <div className={styles.statutsReponses}>
             <button
@@ -1770,7 +2427,7 @@ function EtapeStatuts({
               onClick={confirmer}
               disabled={enCours}
             >
-              {enCours ? "Récupération" : "Oui, ce sont mes statuts en vigueur"}
+              {enCours ? "Récupération" : "Oui, ce sont mes statuts"}
             </button>
             <button
               type="button"
@@ -1784,30 +2441,198 @@ function EtapeStatuts({
               }}
               onClick={() => setDepotDemande(true)}
             >
-              Non, j&apos;ai une version plus récente
+              Non, j&apos;en ai une plus récente
             </button>
           </div>
         </div>
       ) : (
         <p className={styles.description}>
           {refus ??
-            "Le registre ne publie aucun acte de statuts pour ce SIREN. Déposez vos statuts en vigueur."}
+            "Toutes les sociétés n'y déposent pas leurs actes, et un dépôt peut être confidentiel. Déposez vos statuts en vigueur pour continuer."}
         </p>
       )}
 
+      {/* Le dépôt vient après la question, non collé à elle : ce sont deux réponses
+          possibles, pas la suite l'une de l'autre. */}
       {(depotDemande || !acte) && (
-        <DepotFichier
-          id="statuts-depot"
-          accepte=".pdf"
-          invite="Déposez vos statuts à jour"
-          precision="Un seul fichier, au format PDF"
-          surFichier={deposer}
-          desactive={enCours}
-        />
+        <div className={styles.depotSepare}>
+          {/*
+            La croix ne paraît que si l'on peut revenir en arrière.
+
+            Elle referme le dépôt ouvert par « Non, j'en ai une plus récente » : on a
+            changé d'avis, ou l'on veut relire l'acte du registre avant de choisir.
+            Quand le registre n'a rien rendu, le dépôt est le seul chemin - une croix y
+            proposerait de fermer une porte qu'on ne peut pas contourner.
+          */}
+          {depotDemande && acte && (
+            <button
+              type="button"
+              className={styles.depotFermer}
+              onClick={() => setDepotDemande(false)}
+              aria-label="Fermer le dépôt de fichier"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+
+          <DepotFichier
+            id="statuts-depot"
+            accepte=".pdf"
+            invite="Déposez vos statuts à jour"
+            precision="Un seul fichier, au format PDF"
+            surFichier={deposer}
+            desactive={enCours}
+          />
+        </div>
       )}
 
       {refus && acte && <p role="alert">{refus}</p>}
+
+      {/*
+        La fenêtre porte la validation.
+
+        On regarde, et l'on décide sans avoir à refermer pour retrouver le bouton :
+        c'est en lisant qu'on reconnaît ses statuts, pas une fois revenu à la liste.
+      */}
+      {apercuOuvert && acte && (
+        <ApercuStatuts
+          dossier={dossier}
+          acte={acte}
+          enCours={enCours}
+          surFermeture={() => setApercuOuvert(false)}
+          surConfirmation={() => {
+            setApercuOuvert(false);
+            confirmer();
+          }}
+        />
+      )}
     </>
+  );
+}
+
+
+/**
+ * Les statuts trouvés, dans une fenêtre.
+ *
+ * Une fenêtre et non la page entière : on vient vérifier un document, pas travailler
+ * dessus - l'étape reste visible derrière, et fermer ramène là où l'on était. Le plein
+ * écran est réservé à la retouche des articles, qui se fait, elle, sur le document.
+ *
+ * La validation est dans le pied : on reconnaît ses statuts en les lisant, et il
+ * serait absurde de refermer pour retrouver le bouton.
+ */
+function ApercuStatuts({
+  dossier,
+  acte,
+  enCours,
+  surFermeture,
+  surConfirmation,
+}: {
+  dossier: number;
+  acte: ActeDuRegistre;
+  enCours: boolean;
+  surFermeture: () => void;
+  surConfirmation: () => void;
+}) {
+  const fenetre = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function auClavier(e: KeyboardEvent) {
+      if (e.key === "Escape") surFermeture();
+    }
+    document.addEventListener("keydown", auClavier);
+    fenetre.current?.focus();
+
+    // Le fond ne défile pas derrière la fenêtre.
+    const avant = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", auClavier);
+      document.body.style.overflow = avant;
+    };
+  }, [surFermeture]);
+
+  return createPortal(
+    <div className={styles.apercuVoile} onClick={surFermeture}>
+      <div
+        ref={fenetre}
+        className={styles.apercuFenetre}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Vos statuts au registre national"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.apercuTete}>
+          <div className={styles.apercuQuoi}>
+            <span className={styles.apercuTitre}>Vos statuts</span>
+            {/* L'intitulé du registre se lit ici, en petit : il dit dans quel dépôt le
+                document a été trouvé, ce qui sert à qui veut vérifier au registre. */}
+            <span className={styles.apercuDate}>
+              {acte.deposeLe ? "Déposés le " + jourFrancais(acte.deposeLe) + " · " : ""}
+              {acte.nature}
+            </span>
+          </div>
+          <button
+            type="button"
+            className={styles.apercuFermer}
+            onClick={surFermeture}
+            aria-label="Fermer"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <iframe
+          className={styles.apercuCadre}
+          src={
+            "/api/formalites/modification/statuts/apercu?dossier=" +
+            dossier +
+            "&acte=" +
+            encodeURIComponent(acte.id)
+          }
+          title="Statuts au registre national"
+        />
+
+        <div className={styles.apercuPied}>
+          <button type="button" className={styles.apercuSecondaire} onClick={surFermeture}>
+            Ce ne sont pas les bons
+          </button>
+          <button
+            type="button"
+            className={styles.principal}
+            onClick={surConfirmation}
+            disabled={enCours}
+          >
+            {enCours ? "Récupération" : "Oui, ce sont mes statuts"}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -1898,10 +2723,11 @@ function EtapeActes({
         il partait à droite en laissant derrière lui la largeur entière de la carte.
       */}
       <section className={styles.bloc}>
-        <h3 className={styles.blocTitre}>Le procès-verbal et les actes</h3>
+        <h3 className={styles.blocTitre}>Le procès-verbal</h3>
         <p className={styles.blocTexte}>
-          Le procès-verbal porte toutes vos résolutions, numérotées dans l&apos;ordre. Un seul
-          acte pour toute l&apos;assemblée, quel que soit le nombre de décisions.
+          Il porte toutes vos résolutions, numérotées dans l&apos;ordre : un seul acte pour
+          toute l&apos;assemblée, quel que soit le nombre de décisions. Votre avocat le relit
+          avant qu&apos;il vous soit remis.
         </p>
 
         {documents.length > 0 && (
@@ -2027,16 +2853,30 @@ function EtapeReglement({
   dossier,
   etat,
   anomalies,
+  pieces,
+  manquantes,
+  piecesDeposees,
+  payer,
+  enCoursDeReglement,
+  refusDuReglement,
   surCorrection,
 }: {
   dossier: number;
   etat: EtatDuDossier;
   anomalies: { champ: string; message: string }[];
+  /** Les justificatifs attendus, et ceux qui manquent encore : calculés par le parent,
+      qui en a besoin pour la barre du bas. */
+  pieces: PieceAFournir[];
+  manquantes: PieceAFournir[];
+  piecesDeposees: { type: string; nom: string }[];
+  payer: () => void;
+  enCoursDeReglement: boolean;
+  refusDuReglement: string | null;
   /** Ramène à l'étape où se saisit le champ manquant. */
   surCorrection: (champ: string) => void;
 }) {
-  const [refus, setRefus] = useState<string | null>(null);
-  const [enCours, demarrer] = useTransition();
+  const refus = refusDuReglement;
+  const enCours = enCoursDeReglement;
 
   const ressortActuel = etat.societe.ville ?? "";
   const ressortNouveau =
@@ -2050,25 +2890,6 @@ function EtapeReglement({
   });
 
   const publications = publicationsAPrevoir({ codes: etat.codes, ressortActuel, ressortNouveau });
-  const pieces = piecesAFournir(etat.codes, etat.valeurs);
-
-  function payer() {
-    setRefus(null);
-    demarrer(async () => {
-      const reponse = await fetch("/api/formalites/modification/paiement", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier }),
-      });
-      const corps = await reponse.json().catch(() => ({}));
-
-      if (!reponse.ok || !corps.adresse) {
-        setRefus(corps.error ?? "Le règlement n'a pas pu être ouvert");
-        return;
-      }
-      window.location.href = corps.adresse;
-    });
-  }
 
   if (etat.paye) {
     return (
@@ -2110,7 +2931,7 @@ function EtapeReglement({
 
         {definitions(etat.codes).map((definition) => {
           const remplis = definition.champs
-            .filter((champ) => champVisible(champ, etat.valeurs))
+            .filter((champ) => champVisible(champ, etat.valeurs, etat.societe.forme))
             .filter((champ) => {
               const valeur = etat.valeurs[champ.identifiant];
               return typeof valeur === "number" || (typeof valeur === "string" && valeur.trim());
@@ -2164,16 +2985,28 @@ function EtapeReglement({
           )}
         </Bloc>
 
+        {/*
+          Les justificatifs se déposent ici, avant de payer.
+          Ils n'étaient qu'énumérés : le client lisait ce qu'il devait fournir, réglait,
+          et l'avocat découvrait un dossier vide qu'il fallait relancer - après quoi la
+          formalité attend.
+        */}
         {pieces.length > 0 && (
-          <Bloc titre="Justificatifs à fournir">
-            <ul className={styles.puces}>
-              {pieces.map((piece) => (
-                <li key={piece.identifiant}>
-                  {piece.titre}
-                  <span className={styles.faitPrecision}>{piece.explication}</span>
-                </li>
-              ))}
-            </ul>
+          <Bloc titre="Vos justificatifs">
+            <p className={styles.blocTexte}>
+              Ces pièces partent avec votre dossier au guichet unique. Nous produisons le
+              reste - le procès-verbal, les statuts à jour, l&apos;annonce légale.
+            </p>
+            <Pieces
+              dossierId={dossier}
+              pieces={pieces.map((p) => ({
+                identifiant: p.identifiant,
+                titre: p.titre,
+                description: p.explication,
+                formats: p.formats,
+              }))}
+              deposees={piecesDeposees}
+            />
           </Bloc>
         )}
       </div>
@@ -2211,6 +3044,25 @@ function EtapeReglement({
                 onClick={() => surCorrection(anomalies[0].champ)}
               >
                 Corriger
+              </button>
+            </>
+          ) : manquantes.length > 0 ? (
+            /*
+             * Les justificatifs retiennent le règlement.
+             *
+             * Payer sans eux fait partir un dossier que l'avocat ne peut pas déposer :
+             * il relance quelqu'un qui a quitté l'écran, et la formalité attend. Le
+             * bouton dit ce qui manque plutôt que de se désactiver en silence.
+             */
+            <>
+              <p className={styles.paiementManque}>
+                {manquantes.length === 1
+                  ? "Il reste une pièce à déposer : "
+                  : "Il reste " + manquantes.length + " pièces à déposer : "}
+                {manquantes.map((p) => p.titre.toLowerCase()).join(", ")}.
+              </p>
+              <button type="button" className={styles.paiementBouton} disabled>
+                Régler et confier à un avocat
               </button>
             </>
           ) : (
@@ -2375,13 +3227,47 @@ function Obligations({
   if (dites.length === 0) return null;
 
   return (
-    <div className={styles.obligations}>
+    <details className={styles.obligations}>
+      <summary className={styles.obligationsTete}>
+        {/*
+          Une balance, non un triangle d'alerte.
+
+          Ces rappels ne signalent rien d'anormal : ils disent ce que la loi prévoit
+          pour les changements décidés. Le pictogramme du danger promettait un
+          problème à régler, et l'on ouvrait le bloc pour découvrir qu'il n'y en avait
+          aucun.
+        */}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 3v18" />
+          <path d="M5 7h14" />
+          <path d="M8 7l-4 7a4 4 0 008 0z" />
+          <path d="M16 7l-4 7a4 4 0 008 0z" />
+        </svg>
+
+        <span className={styles.obligationsQuoi}>
+          Ce que la loi prévoit pour ces changements
+          <span className={styles.obligationsCompte}>{dites.length}</span>
+        </span>
+
+        {/* Le mot change avec l'état du dépliant : c'est le CSS qui le montre. */}
+        <span className={styles.obligationsAfficher}>Afficher</span>
+        <span className={styles.obligationsMasquer}>Masquer</span>
+      </summary>
+
       <ul>
         {dites.map((dite) => (
           <li key={dite}>{dite}</li>
         ))}
       </ul>
-    </div>
+    </details>
   );
 }
 

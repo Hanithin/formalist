@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { champsASaisir } from "@/domain/modification/types";
 import { piecesAFournir, obligationsParticulieres } from "@/domain/modification/formalites";
-import { verifierChamps } from "@/domain/modification/verification";
+import {
+  verifierChamps,
+  verifierCoherence,
+  verifierLesParts,
+} from "@/domain/modification/verification";
 
 /**
  * L'augmentation de capital, selon son mode.
@@ -108,5 +112,171 @@ describe("les pièces suivent le mode", () => {
     expect(dits.join(" ")).toContain("solidairement");
     expect(dits.join(" ")).toContain("cinq ans");
     expect(dits.join(" ")).toContain("L. 223-9");
+  });
+});
+
+describe("un siège chez une société de domiciliation", () => {
+  /*
+   * L'activité est réglementée : le domiciliataire détient un agrément préfectoral
+   * (articles R. 123-166-2 et suivants du code de commerce) dont les références
+   * figurent au contrat. Le domicilié déclare au registre qui l'héberge.
+   */
+  it("réclame le nom, le SIREN et l'agrément du domiciliataire", () => {
+    const manques = verifierChamps(["transfert_siege"], {
+      nouvelleAdresse: "10 rue de Penthièvre",
+      nouvelleVille: "Paris",
+      nouveauCodePostal: "75008",
+      nouveauModeDomiciliation: "Société de domiciliation",
+      dateEffetTransfert: "2026-09-01",
+    }).map((a) => a.champ);
+
+    expect(manques).toContain("domiciliataireDenomination");
+    expect(manques).toContain("domiciliataireSiren");
+    expect(manques).toContain("domiciliataireAgrement");
+  });
+
+  it("ne les réclame pas pour un bail ou un domicile personnel", () => {
+    for (const mode of ["Bail commercial ou professionnel", "Domicile personnel du dirigeant"]) {
+      const manques = verifierChamps(["transfert_siege"], {
+        nouvelleAdresse: "10 rue de Penthièvre",
+        nouvelleVille: "Paris",
+        nouveauCodePostal: "75008",
+        nouveauModeDomiciliation: mode,
+        dateEffetTransfert: "2026-09-01",
+      }).map((a) => a.champ);
+
+      expect(manques).toEqual([]);
+    }
+  });
+
+  it("contrôle les neuf chiffres du SIREN du domiciliataire", () => {
+    const anomalies = verifierCoherence(["transfert_siege"], {
+      nouveauModeDomiciliation: "Société de domiciliation",
+      domiciliataireSiren: "12345",
+    });
+    expect(anomalies.map((a) => a.champ)).toContain("domiciliataireSiren");
+
+    expect(
+      verifierCoherence(["transfert_siege"], {
+        nouveauModeDomiciliation: "Société de domiciliation",
+        domiciliataireSiren: "908 221 138",
+      })
+    ).toEqual([]);
+  });
+
+  /* Le contrat déposé doit porter l'agrément : la pièce le dit, sinon on l'apprend au greffe. */
+  it("demande le contrat de domiciliation, agrément compris", () => {
+    const piece = piecesAFournir(["transfert_siege"], {
+      nouveauModeDomiciliation: "Société de domiciliation",
+    }).find((p) => p.identifiant === "jouissance-locaux");
+
+    expect(piece?.titre).toBe("Contrat de domiciliation");
+    expect(piece?.explication).toContain("agrément préfectoral");
+  });
+});
+
+describe("les parts de l'assemblée", () => {
+  /*
+   * Le procès-verbal doit représenter tout le capital : un associé oublié ne se voit
+   * pas à la lecture de l'acte, il se découvre au greffe une fois tout signé.
+   */
+  it("laisse passer quand le compte est juste", () => {
+    expect(
+      verifierLesParts({ totalParts: 1000, associes: [{ parts: 700 }, { parts: 300 }] })
+    ).toEqual([]);
+  });
+
+  it("refuse quand il manque des parts, et dit combien", () => {
+    const [anomalie] = verifierLesParts({ totalParts: 1000, associes: [{ parts: 700 }] });
+    expect(anomalie.message).toContain("300");
+  });
+
+  it("refuse aussi quand les associés en détiennent plus que le capital", () => {
+    const [anomalie] = verifierLesParts({
+      totalParts: 100,
+      associes: [{ parts: 80 }, { parts: 40 }],
+    });
+    expect(anomalie.message).toContain("120");
+  });
+
+  /* Sans total déclaré, il n'y a rien à comparer : on ne bloque pas sur une absence. */
+  it("ne vérifie rien tant que le total n'est pas donné", () => {
+    expect(verifierLesParts({ associes: [{ parts: 700 }] })).toEqual([]);
+    expect(verifierLesParts({ totalParts: null, associes: [{ parts: 700 }] })).toEqual([]);
+  });
+});
+
+describe("l'apport d'un bien commun - article 1832-2 du code civil", () => {
+  const APPORT_NATURE = {
+    modeAugmentation: "Apport en nature",
+    descriptionApport: "Un fonds de commerce",
+    valeurApport: 20000,
+    dispenseCommissaire: "Oui, à l'unanimité",
+    capitalActuelAugm: 10000,
+    nouveauCapitalAugm: 30000,
+    dateEffetAugm: "2026-09-01",
+  };
+
+  /*
+   * L'article ne vise que les parts non négociables. Les actions d'une SAS le sont :
+   * poser la question à son associé serait lui demander de trancher une règle qui ne
+   * le concerne pas.
+   */
+  it("ne se pose qu'aux sociétés à parts non négociables", () => {
+    const pour = (forme: string) =>
+      champsASaisir(["augmentation_capital"], APPORT_NATURE, forme).map((c) => c.identifiant);
+
+    expect(pour("SARL")).toContain("apportBienCommun");
+    expect(pour("SCI")).toContain("apportBienCommun");
+    expect(pour("SAS")).not.toContain("apportBienCommun");
+    expect(pour("SA")).not.toContain("apportBienCommun");
+  });
+
+  /* Forme inconnue : mieux vaut une question de trop qu'une mention légale tue. */
+  it("se pose quand la forme n'est pas connue", () => {
+    expect(
+      champsASaisir(["augmentation_capital"], APPORT_NATURE).map((c) => c.identifiant)
+    ).toContain("apportBienCommun");
+  });
+
+  it("réclame le nom du conjoint et sa position quand le bien est commun", () => {
+    const manques = verifierChamps(
+      ["augmentation_capital"],
+      { ...APPORT_NATURE, apportBienCommun: "Oui : le bien apporté est un bien commun" },
+      "SARL"
+    ).map((a) => a.champ);
+
+    expect(manques).toContain("conjointNomComplet");
+    expect(manques).toContain("conjointRevendication");
+  });
+
+  it("ne réclame rien de plus quand le bien est propre", () => {
+    const manques = verifierChamps(
+      ["augmentation_capital"],
+      {
+        ...APPORT_NATURE,
+        apportBienCommun: "Non : apporteur non marié, séparation de biens, ou bien propre",
+      },
+      "SARL"
+    ).map((a) => a.champ);
+
+    expect(manques).not.toContain("conjointNomComplet");
+    expect(manques).not.toContain("conjointRevendication");
+  });
+
+  it("avertit de la nullité encourue, et du sort de la revendication", () => {
+    const dits = obligationsParticulieres(
+      ["augmentation_capital"],
+      {
+        ...APPORT_NATURE,
+        apportBienCommun: "Oui : le bien apporté est un bien commun",
+        conjointRevendication: "Non : il renonce à la qualité d'associé",
+      },
+      "SARL"
+    ).join(" ");
+
+    expect(dits).toContain("1832-2");
+    expect(dits).toContain("deux ans");
+    expect(dits).toContain("revendiquer");
   });
 });

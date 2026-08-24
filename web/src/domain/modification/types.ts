@@ -71,6 +71,26 @@ export interface ChampModification {
    * champ visible dont le groupe change.
    */
   groupe?: string;
+  /**
+   * La largeur du champ, en colonnes sur six.
+   *
+   * Trois par défaut, soit la moitié de la ligne. Un code postal n'a pas besoin de la
+   * moitié d'un écran, et l'imposer à toute la grille repoussait la ville et l'adresse
+   * sur trois lignes distinctes.
+   */
+  colonnes?: 1 | 2 | 4;
+  /**
+   * Les formes juridiques que ce champ concerne.
+   *
+   * L'information du conjoint sur l'apport d'un bien commun (article 1832-2 du code
+   * civil) ne vaut que pour les sociétés dont les titres ne sont pas négociables :
+   * SARL, EURL, SCI, SNC. La poser à une SAS demanderait à quelqu'un de se prononcer
+   * sur une règle qui ne s'applique pas à lui.
+   *
+   * Forme inconnue : le champ paraît. Mieux vaut une question de trop qu'une mention
+   * légale tue parce qu'on ne savait pas à qui l'on parlait.
+   */
+  formes?: string[];
   /** Pour les champs de type « choix ». La valeur vide n'y figure pas. */
   options?: string[];
   /** Pour les champs de type « societe » : où verser ce que le registre rend. */
@@ -107,18 +127,31 @@ export const MODIFICATIONS: DefinitionModification[] = [
     libelleCourt: "Siège social",
     description: "Changer l'adresse officielle de la société.",
     champs: [
+      /*
+       * L'adresse, la ville et le code postal sur une seule ligne.
+       *
+       * Ils s'écrivent ensemble sur une enveloppe et se remplissent ensemble ici : la
+       * complétion de l'adresse pose les deux autres. Sur trois lignes, ils repoussaient
+       * le reste du formulaire sans rien apprendre de plus.
+       */
       {
         identifiant: "nouvelleAdresse",
         libelle: "Nouvelle adresse",
         type: "adresse",
-        pleineLargeur: true,
         obligatoire: true,
       },
-      { identifiant: "nouvelleVille", libelle: "Nouvelle ville", type: "texte", obligatoire: true },
       {
         identifiant: "nouveauCodePostal",
-        libelle: "Nouveau code postal",
+        libelle: "Code postal",
         type: "texte",
+        colonnes: 1,
+        obligatoire: true,
+      },
+      {
+        identifiant: "nouvelleVille",
+        libelle: "Ville",
+        type: "texte",
+        colonnes: 2,
         obligatoire: true,
       },
       {
@@ -131,6 +164,46 @@ export const MODIFICATIONS: DefinitionModification[] = [
           "Domicile personnel du dirigeant",
         ],
       },
+
+      /*
+       * Le domiciliataire, quand le siège part chez une société de domiciliation.
+       *
+       * Ces trois informations ne sont pas de confort. La société de domiciliation
+       * exerce une activité réglementée : elle doit détenir un agrément préfectoral
+       * (articles R. 123-166-2 et suivants du code de commerce), et le contrat de
+       * domiciliation doit en porter les références. Le domicilié déclare au registre
+       * la dénomination et l'immatriculation de celui qui l'héberge ; une attestation
+       * sans numéro d'agrément se fait refuser au dépôt.
+       *
+       * Le parcours de création les demandait déjà - `verifierDomiciliation` dans
+       * domain/formalite/parcours.ts. Le transfert de siège les oubliait, et le
+       * dossier repartait du guichet unique pour cette seule ligne.
+       */
+      {
+        /* À côté du mode qui le fait paraître : les deux se lisent d'un trait. */
+        identifiant: "domiciliataireDenomination",
+        libelle: "Nom de la société de domiciliation",
+        type: "texte",
+        obligatoire: true,
+        visibleSi: { champ: "nouveauModeDomiciliation", vaut: ["Société de domiciliation"] },
+      },
+      {
+        identifiant: "domiciliataireSiren",
+        libelle: "SIREN du domiciliataire",
+        type: "texte",
+        obligatoire: true,
+        visibleSi: { champ: "nouveauModeDomiciliation", vaut: ["Société de domiciliation"] },
+        aide: "Neuf chiffres, sur le contrat.",
+      },
+      {
+        identifiant: "domiciliataireAgrement",
+        libelle: "Numéro d'agrément préfectoral",
+        type: "texte",
+        obligatoire: true,
+        visibleSi: { champ: "nouveauModeDomiciliation", vaut: ["Société de domiciliation"] },
+        aide: "Sur le contrat : sans lui, le greffe refuse.",
+      },
+
       {
         identifiant: "dateEffetTransfert",
         libelle: "Date d'effet du transfert",
@@ -448,6 +521,68 @@ export const MODIFICATIONS: DefinitionModification[] = [
         type: "texte",
         obligatoire: true,
         visibleSi: { champ: "dispenseCommissaire", vaut: ["Non, un commissaire est désigné"] },
+      },
+
+      /*
+       * L'information du conjoint - article 1832-2 du code civil.
+       *
+       * Un époux marié sous un régime de communauté ne peut employer un bien commun
+       * pour apporter à une société dont les parts ne sont pas négociables sans que son
+       * conjoint en soit averti, et sans que cet avertissement soit justifié dans
+       * l'acte. À défaut, l'opération encourt la nullité relative, que le conjoint peut
+       * demander pendant deux ans à compter du jour où il en a eu connaissance
+       * (article 1427 du code civil).
+       *
+       * Le conjoint peut en outre revendiquer la qualité d'associé pour la moitié des
+       * parts souscrites : il faut donc savoir s'il renonce ou s'il revendique, car
+       * l'acte ne dit pas la même chose dans les deux cas.
+       *
+       * La question ne vaut que pour les parts non négociables - SARL, EURL, SCI, SNC.
+       * Les actions d'une SAS ou d'une SA sont négociables : l'article ne s'y applique
+       * pas, et la poser ferait répondre à côté.
+       */
+      {
+        identifiant: "apportBienCommun",
+        libelle: "Le bien apporté est-il un bien commun des époux ?",
+        type: "choix",
+        options: [
+          "Non : apporteur non marié, séparation de biens, ou bien propre",
+          "Oui : le bien apporté est un bien commun",
+        ],
+        pleineLargeur: true,
+        obligatoire: true,
+        visibleSi: { champ: "modeAugmentation", vaut: ["Apport en nature"] },
+        formes: ["SARL", "EURL", "SCI", "SNC"],
+        aide: "Le conjoint doit être averti de l'apport, et l'acte doit en porter la mention : sans cela, il peut en demander la nullité pendant deux ans (article 1832-2 du code civil).",
+      },
+      {
+        identifiant: "conjointNomComplet",
+        libelle: "Civilité, prénom et nom du conjoint averti",
+        type: "texte",
+        obligatoire: true,
+        pleineLargeur: true,
+        visibleSi: {
+          champ: "apportBienCommun",
+          vaut: ["Oui : le bien apporté est un bien commun"],
+        },
+        formes: ["SARL", "EURL", "SCI", "SNC"],
+      },
+      {
+        identifiant: "conjointRevendication",
+        libelle: "Le conjoint revendique-t-il la qualité d'associé ?",
+        type: "choix",
+        options: [
+          "Non : il renonce à la qualité d'associé",
+          "Oui : il revendique la moitié des parts",
+        ],
+        pleineLargeur: true,
+        obligatoire: true,
+        visibleSi: {
+          champ: "apportBienCommun",
+          vaut: ["Oui : le bien apporté est un bien commun"],
+        },
+        formes: ["SARL", "EURL", "SCI", "SNC"],
+        aide: "La revendication peut intervenir plus tard, jusqu'à la dissolution. Recueillie maintenant, elle est acquise et l'acte la constate.",
       },
 
       {
@@ -838,15 +973,29 @@ export type Valeurs = Record<string, string | number | undefined>;
  * Un champ caché n'est jamais exigé : le demander reviendrait à bloquer un dossier
  * sur une case que le formulaire ne montre pas.
  */
-export function champVisible(champ: ChampModification, valeurs: Valeurs): boolean {
+export function champVisible(
+  champ: ChampModification,
+  valeurs: Valeurs,
+  forme?: string | null
+): boolean {
+  if (champ.formes) {
+    const propre = (forme ?? "").trim().toUpperCase();
+    // Forme inconnue : on montre. Forme connue et hors liste : on tait.
+    if (propre && !champ.formes.includes(propre)) return false;
+  }
+
   if (!champ.visibleSi) return true;
   const valeur = valeurs[champ.visibleSi.champ];
   return typeof valeur === "string" && champ.visibleSi.vaut.includes(valeur);
 }
 
-/** Les champs réellement affichés pour cette sélection et ces valeurs. */
-export function champsASaisir(codes: string[], valeurs: Valeurs): ChampModification[] {
+/** Les champs réellement affichés pour cette sélection, ces valeurs et cette forme. */
+export function champsASaisir(
+  codes: string[],
+  valeurs: Valeurs,
+  forme?: string | null
+): ChampModification[] {
   return definitions(codes)
     .flatMap((d) => d.champs)
-    .filter((c) => champVisible(c, valeurs));
+    .filter((c) => champVisible(c, valeurs, forme));
 }

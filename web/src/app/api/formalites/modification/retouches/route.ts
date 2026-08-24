@@ -7,7 +7,7 @@ import {
 } from "@/infrastructure/db/depots/modifications";
 import { lireDocumentProduit, deposerPdfProduit } from "@/infrastructure/documents/depot";
 import {
-  lireLesStatuts,
+  lireLesStatutsEnCache,
   appliquerLesRetouches,
   StatutsIllisibles,
 } from "@/infrastructure/documents/statuts";
@@ -23,6 +23,7 @@ import {
   memeEtat,
   positionValide,
 } from "@/domain/modification/historique";
+import { TITRE_STATUTS_A_JOUR } from "@/domain/modification/formalites";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 import { TITRE_STATUTS } from "../statuts/route";
@@ -39,7 +40,7 @@ import { TITRE_STATUTS } from "../statuts/route";
  * blanc posé au mauvais endroit efface une clause dans un document qui part au greffe.
  */
 
-export const TITRE_A_JOUR = "Statuts mis à jour";
+export const TITRE_A_JOUR = TITRE_STATUTS_A_JOUR;
 
 export const GET = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
@@ -57,7 +58,7 @@ export const GET = route(async (requete: Request) => {
   }
 
   try {
-    const lecture = await lireLesStatuts(statuts);
+    const lecture = await lireLesStatutsEnCache(statuts);
     const { zones, introuvables } = reperage(
       lecture.mots,
       recherchesPour(modification.codes, modification.valeurs, modification.societe)
@@ -291,7 +292,14 @@ export const POST = route(async (requete: Request) => {
      * fois qu'il faut sans jamais perdre le point de départ.
      */
     const produit = await appliquerLesRetouches(statuts, retouches, pagesRetirees);
-    await deposerPdfProduit(dossierId, TITRE_A_JOUR, produit);
+    /*
+     * Les statuts à jour attendent l'avocat, comme le procès-verbal.
+     *
+     * Ce qui sort de la retouche est un projet : c'est le cabinet qui reprend les
+     * articles avant le dépôt au greffe. Ils se téléchargeaient aussitôt produits, et
+     * le client repartait avec une version que personne n'avait relue.
+     */
+    await deposerPdfProduit(dossierId, TITRE_A_JOUR, produit, { aRelire: true });
     await completerModification(utilisateur, dossierId, {
       retouches,
       pagesRetirees,

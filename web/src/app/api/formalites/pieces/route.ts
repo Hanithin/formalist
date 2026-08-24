@@ -6,6 +6,8 @@ import { produireLesActes, DossierIncomplet } from "@/infrastructure/documents/a
 import { TYPE_ATTESTATION_CAPITAL } from "@/infrastructure/db/depots/suivi";
 import { piecesAttendues } from "@/domain/formalite/documents";
 import { piecesDeclaration } from "@/domain/auto-entrepreneur/declaration";
+import { piecesAFournir } from "@/domain/modification/formalites";
+import { lireModification } from "@/infrastructure/db/depots/modifications";
 import { lireDeclaration } from "@/infrastructure/db/depots/auto-entrepreneur";
 import { DepotRefuse } from "@/lib/fichiers";
 import { route } from "@/lib/reponses";
@@ -35,10 +37,29 @@ export const POST = route(async (requete: Request) => {
    * la liste de la création pour un dossier d'auto-entreprise refusait tout dépôt.
    */
   const { dossier: ligne, brouillon } = await ouvrirBrouillon(utilisateur, dossierId);
+
+  /*
+   * La modification a sa propre liste, et elle dépend de ce qui est décidé.
+   *
+   * Un transfert de siège appelle le justificatif de jouissance du nouveau local, une
+   * nomination la pièce d'identité du dirigeant, une augmentation en numéraire
+   * l'attestation de dépôt des fonds. Faute de cette branche, un dossier de
+   * modification était mesuré à l'aune de la liste de la création : tout dépôt s'y
+   * voyait répondre « cette pièce n'est pas attendue ».
+   */
   const attendues =
     ligne.type === "auto-entrepreneur"
       ? piecesDeclaration(lireDeclaration(ligne.data_json))
-      : piecesAttendues(brouillon.forme);
+      : ligne.type === "modification"
+        ? (() => {
+            const modification = lireModification(ligne.data_json);
+            return piecesAFournir(modification.codes ?? [], modification.valeurs ?? {}).map((p) => ({
+              identifiant: p.identifiant,
+              titre: p.titre,
+              formats: p.formats,
+            }));
+          })()
+        : piecesAttendues(brouillon.forme);
 
   const attendue = attendues.find((p) => p.identifiant === identifiant);
   if (!attendue) {

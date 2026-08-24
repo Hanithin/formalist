@@ -12,6 +12,7 @@ import type { Retouche } from "@/domain/modification/edition";
 import type { Cession } from "@/domain/modification/cession";
 import type { EtapeDHistorique } from "@/domain/modification/historique";
 import { journal } from "@/lib/journal";
+import { produireLesActesDeLaModification } from "@/infrastructure/documents/actes-modification";
 import type { UtilisateurConnecte } from "../sessions";
 import { SOCIETE_A_IDENTIFIER } from "@/domain/formalite/liste";
 
@@ -281,6 +282,29 @@ export async function confirmerLeReglement(reference: string, dossierId: number 
     },
   });
 
+  /*
+   * Les actes sont produits à l'encaissement, non par un clic du client.
+   *
+   * Depuis que le règlement précède les actes, le client n'a plus d'écran où appuyer :
+   * il paie, et son dossier passe au cabinet. L'avocat doit y trouver le procès-verbal
+   * et les statuts à jour, qu'il relira et retouchera.
+   *
+   * Un échec ne remet pas le paiement en cause : l'argent est encaissé, le dossier est
+   * confié, et les actes se régénèrent d'un clic côté cabinet. Refuser la confirmation
+   * ici laisserait un dossier payé mais non transmis, ce qui est bien pire qu'un dossier
+   * transmis sans ses actes.
+   */
+  try {
+    await produireLesActesDeLaModification(dossier.id, lireModification(
+      JSON.stringify({ ...modification, paiementRef: reference, paye: true })
+    ));
+  } catch (e) {
+    journal.error(
+      { err: e, dossier: dossier.id },
+      "Actes de modification non produits à l'encaissement"
+    );
+  }
+
   const { proposes } = await proposerAuxAvocats(dossier.id);
   return { dossierId: dossier.id, paye: true, proposes };
 }
@@ -299,7 +323,23 @@ export async function confirmerAuRetour(
 ): Promise<{ paye: boolean }> {
   const dossier = await exigerDossierModifiable(utilisateur, dossierId);
 
-  const encaissement = await relirePaiement(session);
+  /*
+   * Une session illisible ne casse pas la page où l'on revient.
+   *
+   * Le client arrive de la banque sur cette adresse ; une session expirée, recopiée
+   * d'un ancien lien ou envoyée par un relais tardif faisait remonter l'erreur de
+   * Stripe jusqu'au rendu, et l'écran d'arrivée après paiement était une page
+   * d'erreur. On la journalise, et l'on répond simplement « pas confirmé ici » : le
+   * relais confirmera de son côté, et le suivi dira où en est le dossier.
+   */
+  let encaissement: Awaited<ReturnType<typeof relirePaiement>>;
+  try {
+    encaissement = await relirePaiement(session);
+  } catch (e) {
+    journal.warn({ err: e, session, dossier: dossier.id }, "Session de paiement illisible");
+    return { paye: false };
+  }
+
   if (encaissement.dossierId !== null && encaissement.dossierId !== dossier.id) {
     journal.warn({ session }, "Retour de paiement pour un autre dossier, ignoré");
     return { paye: false };

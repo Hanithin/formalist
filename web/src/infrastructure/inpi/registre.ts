@@ -13,7 +13,14 @@ const requerir = createRequire(import.meta.url);
 
 interface ModuleInpi {
   inpiJson: (chemin: string) => Promise<unknown>;
-  httpsBuffer: (chemin: string, entetes: Record<string, string>) => Promise<Buffer>;
+  /*
+   * Le transport rend une enveloppe, non le fichier : `{ status, contentType, buffer }`.
+   * La déclarer telle qu'elle est évite de relire le .cjs pour s'en souvenir.
+   */
+  httpsBuffer: (
+    chemin: string,
+    entetes: Record<string, string>
+  ) => Promise<{ status: number; contentType: string; buffer: Buffer }>;
   getToken: (force?: boolean) => Promise<string>;
   findCapital: (objet: unknown, profondeur: number) => number | null;
   extractRepresentants: (racine: unknown) => unknown[];
@@ -25,6 +32,26 @@ function charger(): ModuleInpi {
   if (module_) return module_;
   module_ = requerir("./inpi.cjs") as ModuleInpi;
   return module_;
+}
+
+/**
+ * Le contenu d'une réponse du registre, sans son enveloppe.
+ *
+ * `inpiJson` rend ce que renvoie le transport : `{ status, json }`. Les lectures qui
+ * cherchaient `racine.actes` ou `racine.formality` tombaient donc sur `undefined`, et
+ * concluaient à un registre muet : « le registre ne publie aucun acte de statuts pour
+ * ce SIREN » s'affichait pour toutes les sociétés, y compris celles qui en publient
+ * une dizaine. La fiche société perdait de même sa dénomination et sa forme - seul le
+ * capital survivait, parce qu'il est cherché en profondeur.
+ *
+ * On déballe donc une fois, ici, plutôt que dans chaque lecture.
+ */
+export function contenuDuRegistre(reponse: unknown): Record<string, unknown> {
+  if (!reponse || typeof reponse !== "object") return {};
+  const enveloppe = reponse as Record<string, unknown>;
+  const dedans = enveloppe.json;
+  if (dedans && typeof dedans === "object") return dedans as Record<string, unknown>;
+  return enveloppe;
 }
 
 export class RegistreIndisponible extends Error {
@@ -79,7 +106,7 @@ export async function societe(sirenBrut: string): Promise<Societe | null> {
 
   if (!donnees) return null;
 
-  const racine = donnees as Record<string, unknown>;
+  const racine = contenuDuRegistre(donnees);
   const personne = (racine.formality as Record<string, unknown> | undefined)?.content as
     | Record<string, unknown>
     | undefined;

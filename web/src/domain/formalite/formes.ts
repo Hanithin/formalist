@@ -232,3 +232,37 @@ export function verifierRepartition(capital: number, parts: number[]): Anomalie[
     },
   ];
 }
+
+/**
+ * Qui peut représenter une société, selon sa forme.
+ *
+ * L'acte désigne une société associée « représentée par X, en qualité de Y ». Le mot
+ * n'est pas au choix : une SAS a un président et des directeurs généraux, une SARL et
+ * une SCI ont des gérants. Écrire « gérant » d'une SAS fait écrire un titre qui
+ * n'existe pas chez elle, et le greffe le relève.
+ *
+ * La forme vient du registre et n'est pas toujours l'une des nôtres - une société
+ * étrangère, une association, une forme rare. On propose alors les quatre titres :
+ * mieux vaut une liste trop large qu'une liste qui exclut le bon.
+ */
+export function qualitesDuRepresentant(forme: string | null | undefined): string[] {
+  const propre = (forme ?? "").trim().toUpperCase();
+
+  /*
+   * Celui qui signe n'est pas toujours un dirigeant.
+   *
+   * Une société peut se faire représenter par quelqu'un qui n'a aucun titre chez elle :
+   * un associé, un tiers, un avocat, porteur d'un pouvoir. Le titre écrit dans l'acte
+   * est alors « Mandataire » ou « Associé », et le pouvoir se joint aux pièces. Sans
+   * ces deux entrées, il fallait choisir un titre faux pour pouvoir continuer.
+   */
+  const sansTitre = ["Associé", "Mandataire"];
+
+  if (/^(SAS|SASU|SA|SCA)$/.test(propre)) {
+    return ["Président", "Directeur général", "Directeur général délégué", ...sansTitre];
+  }
+  if (/^(SARL|EURL|SCI|SNC|SCM|SCP|SELARL|SELAS|SCS|GAEC|SCEA)$/.test(propre)) {
+    return ["Gérant", "Co-gérant", ...sansTitre];
+  }
+  return ["Président", "Directeur général", "Gérant", "Co-gérant", ...sansTitre];
+}

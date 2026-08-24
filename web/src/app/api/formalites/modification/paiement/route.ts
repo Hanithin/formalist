@@ -73,10 +73,16 @@ export const POST = route(async (requete: Request) => {
       intitule: INTITULE,
       montantCentimes: montant.totalTTC,
       email: utilisateur.email,
+      /*
+       * Le retour d'un règlement abouti mène aux actes, l'abandon au règlement.
+       *
+       * Les deux pointaient sur la même étape, du temps où le règlement était le
+       * dernier écran. Depuis que les actes le suivent, revenir de la banque après un
+       * paiement réussi doit montrer ce qu'on vient d'acheter ; revenir d'un abandon
+       * doit ramener là où l'on paie, non sur une étape encore verrouillée.
+       */
       retour: base + "?dossier=" + dossier + "&etape=7&session={SESSION}",
-      // L'abandon se marque dans l'adresse : sans cela on revient sur l'offre sans
-      // savoir si quelque chose a été débité.
-      abandon: base + "?dossier=" + dossier + "&etape=7&paiement=annule",
+      abandon: base + "?dossier=" + dossier + "&etape=6&paiement=annule",
       expireDans: OUVERTURE_SECONDES,
     });
 

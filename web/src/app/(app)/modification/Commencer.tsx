@@ -106,12 +106,17 @@ export function Commencer() {
     <div className={styles.entree}>
       <div className={styles.entreeTete}>
         <h2 className={styles.entreeTitre}>Que voulez-vous changer ?</h2>
+        {/*
+          Deux lignes, non cinq.
+
+          Le chapeau détaillait tout le travail du cabinet - actes, statuts article par
+          article, annonce, dépôt, extrait - au-dessus de neuf cartes qui attendaient
+          d'être lues. Ce détail est vrai, mais il se lit après avoir choisi : il est
+          descendu dans les repères, où il tient sur une ligne.
+        */}
         <p className={styles.entreeTexte}>
-          Cochez tout ce que votre assemblée décide - il n&apos;y a pas de limite, et
-          plusieurs changements groupés coûtent bien moins cher que séparés. Nous
-          rédigeons les actes, mettons les statuts à jour article par article, publions
-          l&apos;annonce légale et déposons au guichet unique, jusqu&apos;à
-          l&apos;extrait à jour.
+          Cochez tout ce que votre assemblée décide : plusieurs changements groupés
+          coûtent bien moins cher que séparés.
         </p>
       </div>
 
@@ -150,13 +155,6 @@ export function Commencer() {
           })}
         </ul>
 
-        <p className={styles.entreeNote}>
-          {compte > 1
-            ? "Ces " +
-              compte +
-              " changements tiennent dans une seule assemblée : un procès-verbal, une annonce légale, un dépôt - les frais ne sont payés qu'une fois."
-            : "Une assemblée qui décide plusieurs changements ne paie qu'une fois les frais d'annonce et de greffe."}
-        </p>
       </div>
 
       {erreur && (
@@ -166,49 +164,79 @@ export function Commencer() {
       )}
 
       {/*
-        Ce qui attend derrière le clic : sept étapes, deux pièces à réunir, et le
-        règlement à la fin. Rien ne le disait, et l'on s'engageait à l'aveugle.
+        Ce qui attend derrière le clic : sept étapes, deux pièces à réunir, le travail
+        du cabinet et le règlement à la fin. Rien ne le disait, et l'on s'engageait à
+        l'aveugle. La note qui répétait « les frais ne sont payés qu'une fois » a
+        rejoint cette bande : elle disait la même chose que la mention du prix, une
+        ligne plus haut.
       */}
       <ul className={styles.entreeRepere}>
         <li>Sept étapes, reprises où vous les laissez</li>
-        <li>Munissez-vous du SIREN et des statuts en vigueur</li>
+        <li>Actes, statuts à jour, annonce légale et dépôt au guichet unique</li>
+        <li>Une seule assemblée : les frais ne sont payés qu&apos;une fois</li>
         <li>Le règlement n&apos;intervient qu&apos;à la dernière étape</li>
       </ul>
 
+      {/*
+        Le pied suit l'écran.
+
+        Neuf cartes et le bouton ne tiennent pas ensemble sur un portable : on cochait,
+        puis on cherchait où continuer en faisant défiler vers le bas. Collé en bas de
+        la fenêtre, le bouton est là au moment où l'on décide.
+      */}
       <div className={styles.entreePied}>
         <div className={styles.entreePrix} aria-live="polite">
-          <span className={styles.entreeMontant}>{montantLisible(honorairesHT)} HT</span>
-          <span className={styles.entreeMention}>
-            {/*
-              Ce qui compose le montant, quand la composition n'est pas évidente.
-              L'apport de titres échappe à la dégressivité : l'annoncer comme un
-              changement de plus, à 49 €, ferait mentir le total affiché au-dessus.
-            */}
-            {aPart.length > 0 ? (
-              <>
-                dont{" "}
-                {aPart
-                  .map((d) => montantLisible(HONORAIRES_PARTICULIERS[d.code]!) + " pour " + d.libelleCourt.toLowerCase())
-                  .join(", ")}
-                , facturé à part car il donne lieu à un acte distinct.
-              </>
-            ) : compte > 1 ? (
-              <>
-                {montantLisible(HONORAIRES_PREMIERE_CENTIMES)} pour le premier
-                changement, puis {montantLisible(HONORAIRES_SUIVANTE_CENTIMES)} pour
-                chacun des {compte - 1} autres.
-              </>
-            ) : (
-              <>
-                pour le premier changement, puis{" "}
-                {montantLisible(HONORAIRES_SUIVANTE_CENTIMES)} HT par changement
-                supplémentaire décidé dans la même assemblée.
-              </>
-            )}{" "}
-            S&apos;y ajoutent les frais d&apos;annonce et de greffe, refacturés à
-            l&apos;euro - environ {montantLisible(fraisTTC)}, quel que soit le nombre de
-            changements.
-          </span>
+          {/*
+            Rien de coché, rien à totaliser.
+
+            Le montant du « cas le plus simple » s'affichait d'entrée - un changement de
+            nom que personne n'avait demandé - avec trois lignes expliquant une
+            dégressivité qui ne s'appliquait à rien. « À partir de » dit la même chose
+            sans inventer de cas, et le vrai total paraît dès la première case cochée.
+          */}
+          {compte === 0 ? (
+            <>
+              <span className={styles.entreeAmorce}>
+                À partir de {montantLisible(HONORAIRES_PREMIERE_CENTIMES)} HT
+              </span>
+              <span className={styles.entreeMention}>
+                Cochez au moins un changement pour voir le total.
+              </span>
+            </>
+          ) : (
+            <>
+              <span className={styles.entreeMontant}>{montantLisible(honorairesHT)} HT</span>
+              <span className={styles.entreeMention}>
+                {/*
+                  Ce qui compose le montant, quand la composition n'est pas évidente.
+                  L'apport de titres échappe à la dégressivité : l'annoncer comme un
+                  changement de plus, à 49 €, ferait mentir le total affiché au-dessus.
+                */}
+                {aPart.length > 0 ? (
+                  <>
+                    dont{" "}
+                    {aPart
+                      .map((d) => montantLisible(HONORAIRES_PARTICULIERS[d.code]!) + " pour " + d.libelleCourt.toLowerCase())
+                      .join(", ")}
+                    , facturé à part.{" "}
+                  </>
+                ) : compte > 1 ? (
+                  <>
+                    {montantLisible(HONORAIRES_PREMIERE_CENTIMES)} pour le premier
+                    changement, puis {montantLisible(HONORAIRES_SUIVANTE_CENTIMES)} pour
+                    chacun des {compte - 1} autres.{" "}
+                  </>
+                ) : (
+                  <>
+                    Puis {montantLisible(HONORAIRES_SUIVANTE_CENTIMES)} HT par changement
+                    supplémentaire décidé dans la même assemblée.{" "}
+                  </>
+                )}
+                + environ {montantLisible(fraisTTC)} de frais d&apos;annonce et de
+                greffe, refacturés à l&apos;euro.
+              </span>
+            </>
+          )}
         </div>
 
         <div className={styles.entreeActions}>

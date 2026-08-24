@@ -161,7 +161,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 22px 48px 10px;
+  padding: 26px 48px 10px;
   background: transparent;
   font-size: 13px;
 }
@@ -209,6 +209,19 @@
   width: 100%;
 }
 
+/*
+ * L'écran d'entrée, plus large que le parcours.
+ *
+ * Les 900 px conviennent à un formulaire, qu'on lit ligne à ligne. Ici on compare neuf
+ * changements : à cette largeur, ils tenaient sur deux colonnes de cinq lignes, et le
+ * bouton tombait sous le pli. À 1180 px, la grille en range trois par ligne.
+ */
+.contentLarge {
+  max-width: 1180px;
+  padding-top: 28px;
+  padding-bottom: 0;
+}
+
 /* Le titre de page existe pour la structure ; à l'écran, c'est le fil d'ariane et le
    titre de l'étape qui situent. */
 .titre {
@@ -233,95 +246,154 @@
  * classe l'emporte pour `display`, mais ne déclarant pas de direction, elle laisse
  * passer la colonne : les sept pastilles s'empilent, les libellés se chevauchent.
  */
-.stepper {
+/*
+ * La frise du parcours, celle du tableau de bord.
+ *
+ * Les deux écrans montraient la même chose de deux façons : ici des pastilles de
+ * 36 px avec des libellés posés en absolu sous elles, là-bas des étapes qui se
+ * partagent la largeur, un trait qui les relie et un halo sur l'étape courante. Un
+ * client qui passe de son tableau de bord à son parcours voyait deux frises.
+ *
+ * Les libellés reviennent dans le flux : posés en absolu, ils se chevauchaient dès
+ * que sept étapes se serraient, et rien ne réservait leur place.
+ */
+.frise {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 48px;
-  position: relative;
-  gap: 0;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0 0 30px;
   padding: 0;
   list-style: none;
 }
 
-.step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 36px;
-  flex-shrink: 0;
+.friseEtape {
   position: relative;
-  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  text-align: center;
 }
 
-.stepCircle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+/* Le trait qui relie une étape à la précédente, sous les pastilles. */
+.friseEtape::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: #ececec;
+  z-index: 0;
+}
+
+.friseEtape:first-child::before {
+  display: none;
+}
+
+.friseEtape.friseFaite::before,
+.friseEtape.friseCourante::before {
+  background: #111;
+}
+
+/* Le geste : un bouton pour ce qui se rouvre, un simple bloc sinon. */
+.friseGeste {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: default;
+}
+
+.friseEtape button.friseGeste {
+  cursor: pointer;
+}
+
+.friseGeste:focus-visible {
+  outline: 2px solid #18181b;
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+
+.friseMarque {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #ececec;
+  color: #a1a1aa;
   font-size: 13px;
   font-weight: 600;
-  background: #f5f5f5;
-  border: 2px solid #e5e5e5;
-  color: #999;
-  transition: all 0.2s ease;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.step.active .stepCircle {
+.friseMarque svg {
+  width: 13px;
+  height: 13px;
+}
+
+.friseFaite .friseMarque {
   background: #111;
   border-color: #111;
   color: #fff;
-  transform: scale(1.05);
 }
 
-.step.done .stepCircle {
-  background: #111;
+/* Le halo dit où l'on est sans épaissir le trait. */
+.friseCourante .friseMarque {
   border-color: #111;
-  color: #fff;
+  color: #111;
+  box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.08);
 }
 
-.step.done .stepCircle svg {
-  width: 16px;
-  height: 16px;
+.friseEtape button.friseGeste:hover .friseMarque {
+  border-color: #111;
 }
 
-.stepLabel {
-  position: absolute;
-  top: 44px;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: 13px;
-  color: #999;
-  transition: color 0.2s ease;
+.friseLibelle {
+  display: block;
+  padding: 0 4px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: #71717a;
   letter-spacing: 0;
 }
 
-.step.active .stepLabel {
+.friseCourante .friseLibelle {
   color: #111;
   font-weight: 600;
 }
 
-.step.done .stepLabel {
-  color: #111;
-}
+/* Sur écran étroit, les étapes se rangent en grille et le trait disparaît. */
+@media (max-width: 760px) {
+  .frise {
+    flex-wrap: wrap;
+    gap: 14px 4px;
+  }
 
-.stepSegment {
-  flex: 1 1 0;
-  height: 2px;
-  min-width: 20px;
-  background: #e5e5e5;
-  border-radius: 1px;
-  margin: 17px 8px 0;
-  align-self: flex-start;
-  transition: background 0.2s ease;
-}
+  .friseEtape {
+    flex: 0 0 33%;
+  }
 
-.stepSegment.done {
-  background: #111;
+  .friseEtape::before {
+    display: none;
+  }
 }
 
 .contenu {
@@ -366,30 +438,106 @@
  * lisible : il dit ce qui a été retenu, et donne le chemin pour y revenir.
  */
 .rappelChoix {
-  margin: 0 0 22px;
-  padding: 12px 16px;
-  border: 1px solid #e8e8ea;
-  border-radius: 12px;
+  margin: 0 0 24px;
+  padding: 14px 16px 15px;
+  border: 1px solid #ececee;
+  border-radius: 14px;
   background: #fafafa;
-  font-size: 13.5px;
-  line-height: 1.55;
+}
+
+.rappelTete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.rappelIntitule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #8a8a92;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+/* Le nombre en pastille : on sait combien avant d'avoir lu la liste. */
+.rappelCompte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 20px;
+  background: #e4e4e7;
+  color: #52525b;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rappelListe {
+  display: flex;
+  /* `main ul` de globals.css impose `column` : une liste en ligne le redit. */
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rappelPastille {
+  margin: 0;
+  padding: 5px 11px;
+  border: 1px solid #e4e4e7;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
   color: #3f3f46;
+  white-space: nowrap;
+}
+
+/*
+ * Les explications d'un parcours : une note, non un paragraphe.
+ *
+ * Elles étaient du texte gris posé entre deux blocs, de la même couleur et presque de
+ * la même taille que les libellés des champs : on ne savait pas si c'était une
+ * consigne à suivre, un avertissement, ou un intitulé de section. Sur un pavé de
+ * seize champs, elles se lisaient comme un début de formulaire.
+ *
+ * Elles portent maintenant la forme d'une note - fond bleuté, liseré, pictogramme -
+ * qui dit « ceci vous renseigne » avant même d'être lue. Le pictogramme vient du CSS
+ * plutôt que du balisage : les vingt-quatre explications des quatre parcours en
+ * héritent sans qu'on retouche chacune.
+ */
+.description {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 12px 14px;
+  border: 1px solid #e4eaf6;
+  border-radius: 12px;
+  background: #f6f8fd;
+  color: #4b5565;
+  font-size: 13.5px;
+  line-height: 1.6;
   text-wrap: pretty;
 }
 
-/* L'intitulé porte le deux-points, pour qu'il ne se répète pas dans le balisage. */
-.rappelIntitule {
-  color: #8a8a92;
-}
-
-.rappelIntitule::after {
-  content: " : ";
-}
-
-.description {
-  margin: 0 0 24px;
-  color: #71717a;
-  font-size: 14.5px;
+.description::before {
+  content: "";
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><line x1='12' y1='16' x2='12' y2='12'/><line x1='12' y1='8' x2='12.01' y2='8'/></svg>")
+      no-repeat center / contain;
 }
 
 /*
@@ -402,15 +550,53 @@
  * `minmax(0, 1fr)` et non `1fr` : une valeur longue imposerait sa largeur minimale
  * et pousserait sa colonne, désalignant tout ce qui suit.
  */
+/*
+ * Six colonnes, et non deux.
+ *
+ * Deux colonnes de largeur égale conviennent à la plupart des champs - un nom, une
+ * date - mais imposent la même largeur à un code postal qu'à une adresse. La nouvelle
+ * adresse prenait donc une ligne entière, la ville et le code postal la suivante :
+ * trois lignes pour ce qui s'écrit sur une enveloppe en deux.
+ *
+ * Un champ occupe trois colonnes par défaut, c'est-à-dire la moitié, comme avant.
+ * `colonnes` permet aux quelques champs qui le méritent d'en prendre moins.
+ */
 .champs {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 20px 24px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px 24px;
   align-items: start;
 }
 
 .champ {
+  grid-column: span 3;
   min-width: 0;
+}
+
+.colonnes1 {
+  grid-column: span 1;
+}
+
+.colonnes2 {
+  grid-column: span 2;
+}
+
+.colonnes4 {
+  grid-column: span 4;
+}
+
+/* À l'étroit, la finesse ne tient plus : tout repasse en pleine largeur. */
+@media (max-width: 720px) {
+  .champs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .champ,
+  .colonnes1,
+  .colonnes2,
+  .colonnes4 {
+    grid-column: 1 / -1;
+  }
 }
 
 /*
@@ -491,6 +677,23 @@
   border-radius: 10px;
   font-family: inherit;
   font-size: 15px;
+}
+
+/*
+ * Le chevron d'un menu déroulant, dessiné plutôt que laissé au navigateur.
+ *
+ * Celui de Chrome se colle au bord droit du champ, à deux ou trois pixels du liseré,
+ * là où les autres contenus respirent de quatorze. Le dessiner nous-mêmes le pose au
+ * même écart que le texte, et donne le même menu sur les trois navigateurs.
+ */
+.champs select {
+  appearance: none;
+  padding-right: 38px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 15px 15px;
 }
 
 .champs input:focus,
@@ -1284,9 +1487,144 @@
 
 /* ---------- Le choix de la société ---------- */
 
+/*
+ * La recherche au registre : le geste principal de l'étape.
+ *
+ * La feuille globale borne les saisies à 460 px, ce qui vaut pour un champ isolé mais
+ * coupait celui-ci au milieu de la carte, alors que les champs qu'il remplit
+ * s'étendent sur deux colonnes juste en dessous. Il prend la ligne entière, et le
+ * filet qui le suit sépare ce qu'on cherche de ce qu'on vérifie.
+ */
 .recherche {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+/*
+ * Les onglets à gauche, la recherche à droite.
+ *
+ * La recherche occupait une rangée entière pour un champ qu'on n'emploie qu'une fois,
+ * au début de la fiche ; les deux onglets en occupaient une autre, à moitié vide. Les
+ * deux tiennent sur la même ligne.
+ */
+.natureEtRecherche {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+/* La marge des onglets appartient à la ligne : sinon la recherche pend en dessous. */
+.natureEtRecherche .natures {
+  margin: 0;
+}
+
+.rechercheCompacte {
+  flex: 0 1 340px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.rechercheCompacte input {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+}
+
+.rechercheCompacte input::placeholder {
+  color: #a1a1aa;
+}
+
+.rechercheCompacte input:focus {
+  outline: none;
+  border-color: #18181b;
+}
+
+/* La liste des résultats s'aligne à droite du champ, et déborde si besoin. */
+.rechercheCompacte .resultats,
+.rechercheCompacte .resultatVide {
+  left: auto;
+  right: 0;
+  min-width: 360px;
+}
+
+/* Lue par les lecteurs d'écran, absente de l'écran. */
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * La recherche qui ouvre une étape, et non celle qui complète une fiche.
+ *
+ * Le filet et son écart séparent ce qu'on cherche de ce qu'on vérifie, à l'étape 1.
+ * Le même composant sert à désigner un associé société ou une société apportée, au
+ * milieu d'un formulaire : là, le filet coupait la fiche en deux et l'écart creusait
+ * quarante-huit pixels entre deux rangées de champs.
+ */
+.recherchePrincipale {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f2f2f4;
+}
+
+.recherche label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.rechercheChamp {
+  position: relative;
+}
+
+.rechercheChamp svg {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  color: #a1a1aa;
+  pointer-events: none;
+}
+
+.rechercheChamp input {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 13px 16px 13px 44px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.rechercheChamp input:focus {
+  outline: none;
+  border-color: #18181b;
+}
+
+.rechercheChamp input:focus + svg,
+.rechercheChamp:focus-within svg {
+  color: #52525b;
 }
 
 .resultats {
@@ -1304,6 +1642,24 @@
   border: 1px solid #e5e5e7;
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Le mot de la liste vide, dans la même boîte flottante que les résultats. */
+.resultatVide {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  font-size: 13px;
+  line-height: 1.55;
+  color: #71717a;
 }
 
 .resultat {
@@ -1559,17 +1915,96 @@
 
 /* ---------- Les obligations, dites en clair ---------- */
 
+/*
+ * Ce que le droit impose, replié.
+ *
+ * Six paragraphes d'articles de code, dépliés en bas de l'étape, prenaient un écran
+ * entier sous un formulaire qu'on venait de remplir - c'est-à-dire après la décision,
+ * quand il n'y a plus rien à en faire. Repliés en tête, ils s'annoncent avant la
+ * saisie, disent combien ils sont, et s'ouvrent d'un clic.
+ */
 .obligations {
-  margin: 20px 0 0;
-  padding: 16px 18px;
+  margin: 0 0 20px;
   border: 1px solid #fde9c8;
   border-radius: 12px;
   background: #fffbeb;
 }
 
+.obligationsTete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  cursor: pointer;
+  list-style: none;
+}
+
+/* Le triangle par défaut de <summary>, dans les deux dialectes. */
+.obligationsTete::-webkit-details-marker {
+  display: none;
+}
+
+.obligationsTete::marker {
+  content: "";
+}
+
+.obligationsTete svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #d97706;
+}
+
+.obligationsQuoi {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Combien de points, sans que la phrase les compte à voix haute. */
+.obligationsCompte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 20px;
+  background: #fde9c8;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.obligationsAfficher,
+.obligationsMasquer {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #b45309;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Un seul des deux mots paraît, selon que le dépliant est ouvert ou fermé. */
+.obligationsMasquer,
+.obligations[open] .obligationsAfficher {
+  display: none;
+}
+
+.obligations[open] .obligationsMasquer {
+  display: inline;
+}
+
 .obligations ul {
   margin: 0;
-  padding-left: 18px;
+  padding: 0 18px 14px 34px;
 }
 
 .obligations li {
@@ -1582,12 +2017,175 @@
   margin-top: 6px;
 }
 
+/* ---------- Ajouter, supprimer un associé ---------- */
+
+/*
+ * L'ajout : un emplacement vide qui attend d'être rempli.
+ *
+ * Le pointillé dit qu'il n'y a rien encore, et la largeur entière qu'il s'agit d'un
+ * bloc de plus - non d'un bouton parmi d'autres.
+ */
+.ajouterAssocie {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border: 1.5px dashed #d4d4d8;
+  border-radius: 14px;
+  background: #fcfcfd;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #52525b;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.ajouterAssocie svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.ajouterAssocie:hover {
+  border-color: #18181b;
+  background: #fff;
+  color: #18181b;
+}
+
+/* La suppression se range à droite, sous l'ajout : elle ne se propose pas, elle se trouve. */
+.retirerLigne {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.retirerAssocie {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #b45309;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.retirerAssocie svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.retirerAssocie:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Le compte des parts, sous la liste des associés. */
+.compte,
+.compteJuste {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.compte {
+  background: #fffbeb;
+  border: 1px solid #fde9c8;
+  color: #92400e;
+}
+
+.compteJuste {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #15803d;
+}
+
 /* ---------- Les statuts ---------- */
 
+/*
+ * Ce qu'on a trouvé, et la question qui suit : au centre.
+ *
+ * Alignés à gauche sous un intitulé de registre, les deux boutons se lisaient comme
+ * une suite de champs. Centré, le bloc se lit comme ce qu'il est : une question posée
+ * une fois, avec deux réponses.
+ */
 .statuts {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 26px 20px;
   border: 1px solid #e5e5e7;
   border-radius: 12px;
+  text-align: center;
+}
+
+/* L'écart entre la carte du registre et la zone de dépôt. */
+.depotSepare {
+  position: relative;
+  margin-top: 18px;
+}
+
+/* La croix se pose dans l'angle de la zone, à l'intérieur du pointillé. */
+.depotFermer {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.depotFermer svg {
+  width: 16px;
+  height: 16px;
+}
+
+.depotFermer:hover {
+  background: #f0f0f2;
+  color: #18181b;
+}
+
+.statutsPhrase {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
 }
 
 .statutsTrouves {
@@ -1611,15 +2209,196 @@
   color: #71717a;
 }
 
-.statutsQuestion {
-  margin: 20px 0 12px;
-  font-size: 15px;
+/* Ouvrir l'acte : un geste discret, avant la question qui engage. */
+.statutsApercu {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
-  color: #111;
+  color: #3f3f46;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.statutsApercu svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.statutsApercu:hover:not(:disabled) {
+  border-color: #18181b;
+  color: #18181b;
+}
+
+/* Le mot qui confirme l'encaissement, en tête du suivi. */
+.reglementConfirme {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  background: #ecfdf5;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #065f46;
+}
+
+/* ---------- L'aperçu des statuts trouvés ---------- */
+
+.apercuVoile {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(17, 17, 17, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+/*
+ * Une fenêtre, non la page entière.
+ *
+ * On vient vérifier un document, pas travailler dessus : l'étape reste visible
+ * derrière, et fermer ramène là où l'on était. Le plein écran est réservé à la retouche
+ * des articles.
+ */
+.apercuFenetre {
+  display: flex;
+  flex-direction: column;
+  width: min(980px, 100%);
+  height: min(86vh, 100%);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.apercuTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #ececee;
+}
+
+.apercuQuoi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.apercuTitre {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.apercuDate {
+  font-size: 12.5px;
+  color: #8a8a92;
+}
+
+.apercuFermer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #71717a;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.apercuFermer svg {
+  width: 17px;
+  height: 17px;
+}
+
+.apercuFermer:hover {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+/* Le PDF prend toute la place restante : on y lit des articles, pas une vignette. */
+.apercuCadre {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: none;
+  background: #f4f4f5;
+}
+
+.apercuPied {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid #ececee;
+}
+
+/* `.principal` pousse d'ordinaire son bouton à droite d'une barre : ici les deux se
+   suivent, et c'est le pied qui les aligne. */
+.apercuPied .principal {
+  margin-left: 0;
+}
+
+.apercuSecondaire {
+  margin: 0;
+  padding: 11px 18px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #52525b;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.apercuSecondaire:hover {
+  background: #f5f5f7;
+  color: #18181b;
+}
+
+.statutsQuestion {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #71717a;
 }
 
 .statutsReponses {
   display: flex;
+  justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -3617,50 +4396,195 @@
  * La page renvoyait à « Mes formalités », d'où l'on venait justement de cliquer sur sa
  * carte : le clic ne faisait rien du tout.
  */
+/*
+ * Le suivi en deux colonnes.
+ *
+ * L'avancement et le mot du cabinet s'empilaient sur toute la largeur : une page de
+ * bandes où il fallait descendre pour trouver un bouton. À gauche ce qui avance, à
+ * droite ce qu'on peut faire - et sur écran étroit, l'un sous l'autre.
+ */
+.suiviColonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  gap: 20px;
+}
+
+.suiviPrincipal {
+  min-width: 0;
+}
+
+.suiviColonne {
+  position: sticky;
+  top: 20px;
+  min-width: 0;
+}
+
+@media (max-width: 1000px) {
+  .suiviColonnes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .suiviColonne {
+    position: static;
+  }
+}
+
 .confie {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
-  padding: 26px 28px;
+  gap: 14px;
+  padding: 20px 22px;
   border: 1px solid #e8e8ea;
   border-radius: 16px;
   background: #fff;
 }
 
+.confieTitre {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+/* Les faits du dossier : deux lignes, l'intitulé au-dessus de sa valeur. */
+.confieFaits {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.confieFaits dt {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.confieFaits dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+  word-break: break-word;
+}
+
+.confieChangements {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.confieChangements li {
+  margin: 0;
+  padding: 5px 11px;
+  border: 1px solid #e4e4e7;
+  border-radius: 100px;
+  background: #fafafa;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #3f3f46;
+}
+
 .confieTexte {
   margin: 0;
-  max-width: 60ch;
-  font-size: 14.5px;
+  padding-top: 14px;
+  border-top: 1px solid #f2f2f4;
+  font-size: 13.5px;
   line-height: 1.6;
-  color: #52525b;
+  color: #71717a;
 }
 
 .confieLiens {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 }
 
+/*
+ * Un chemin, non un bouton.
+ *
+ * Les deux se ressemblaient à s'y méprendre, de même poids, et l'un portait le liseré
+ * noir réservé à l'action principale - qu'aucun des deux n'est : ils mènent ailleurs.
+ * Une icône, un intitulé, ce qu'on y trouve, un chevron.
+ */
 .confieLien {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  padding: 9px 16px;
-  border: 1px solid #e5e5e7;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid #ececee;
+  border-radius: 12px;
   background: #fff;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: #333;
+  color: #18181b;
   text-decoration: none;
   transition:
-    border-color 0.15s,
-    color 0.15s;
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
 }
 
 .confieLien:hover {
-  border-color: #111;
-  color: #111;
+  border-color: #d4d4d8;
+  background: #fafafa;
+}
+
+.confieIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #f4f4f5;
+  color: #52525b;
+}
+
+.confieIcone svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.confieLienTexte {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.confieLienPrecision {
+  font-size: 12px;
+  font-weight: 400;
+  color: #a1a1aa;
+}
+
+.confieChevron {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #c4c4c8;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.confieLien:hover .confieChevron {
+  color: #52525b;
+  transform: translateX(2px);
 }
 
 /* ---------- L'écran d'entrée ---------- */
@@ -3674,14 +4598,21 @@
  * couvert, et ce que ça coûte.
  */
 .entree {
+  /* `overflow: hidden` empêcherait le pied de coller : il rognerait le collage. */
+  margin-bottom: 28px;
   border: 1px solid #e8e8ea;
   border-radius: 18px;
   background: #fff;
-  overflow: hidden;
+}
+
+/* Les coins que `overflow: hidden` arrondissait sont désormais portés par les bandes. */
+.entreeTete {
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
 }
 
 .entreeTete {
-  padding: 32px 34px 26px;
+  padding: 26px 30px 20px;
 }
 
 .entreeTitre {
@@ -3702,7 +4633,7 @@
 }
 
 .entreeBloc {
-  padding: 24px 34px 26px;
+  padding: 20px 30px 22px;
   border-top: 1px solid #f2f2f4;
   background: #fcfcfd;
 }
@@ -3722,7 +4653,7 @@
  */
 .entreeChoix {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 10px;
   margin: 0;
   padding: 0;
@@ -3870,9 +4801,9 @@
 .entreeRepere {
   display: flex;
   flex-flow: row wrap;
-  gap: 8px 26px;
+  gap: 8px 24px;
   margin: 0;
-  padding: 18px 34px;
+  padding: 14px 30px;
   border-top: 1px solid #f2f2f4;
   list-style: none;
   font-size: 12.5px;
@@ -3898,14 +4829,38 @@
 }
 
 /* Le prix se tient près du bouton : c'est là qu'on décide. */
+/*
+ * Le pied suit l'écran.
+ *
+ * Neuf cartes et le bouton ne tiennent pas ensemble sur un portable : on cochait, puis
+ * on cherchait où continuer en faisant défiler. Collé au bas de la fenêtre, le bouton
+ * est là au moment où l'on décide - et il retrouve sa place dans le flux dès que la
+ * page tient à l'écran, la carte s'arrêtant alors avant lui.
+ */
 .entreePied {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px 28px;
-  padding: 22px 34px;
-  border-top: 1px solid #f2f2f4;
+  gap: 12px 28px;
+  padding: 16px 30px;
+  border-top: 1px solid #ececee;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+}
+
+/* Le prix d'appel, tant que rien n'est coché : il n'invente aucun cas. */
+.entreeAmorce {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #71717a;
+  letter-spacing: 0;
 }
 
 /*
@@ -4483,17 +5438,24 @@
   letter-spacing: 0;
 }
 
+/*
+ * Le sommaire tient sur une ligne, jusqu'à six changements.
+ *
+ * À six pastilles, il passait à deux lignes et repoussait le premier formulaire d'un
+ * demi-écran. Quatre pixels de rembourrage, deux d'écart et deux sur la pastille du
+ * rang suffisent à le ramener sur une seule.
+ */
 .sommaire {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sommaireLien {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 13px 6px 7px;
+  gap: 6px;
+  padding: 5px 11px 5px 5px;
   border: 1px solid #e8e8ea;
   border-radius: 100px;
   background: #fff;
@@ -4515,8 +5477,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   border-radius: 50%;
   background: #f1f1f3;
@@ -4534,6 +5496,98 @@
 .sommaireFait {
   border-color: #d7f0dd;
   color: #15803d;
+}
+
+/* ---------- Le bloc d'un changement, replié ou ouvert ---------- */
+
+/*
+ * Un changement ouvert à la fois.
+ *
+ * Six formulaires bout à bout - vingt-six champs pour le seul apport de titres -
+ * faisaient une page où l'on descendait sans savoir où l'on en était. Le titre devient
+ * une bascule : elle porte le rang, le nom, l'état du bloc quand il est fermé, et le
+ * chevron qui dit qu'on peut l'ouvrir.
+ */
+.detailsBascule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.detailsNom {
+  min-width: 0;
+}
+
+/* L'état pousse le chevron au bout, et se lit sans ouvrir le bloc. */
+.detailsEtat,
+.detailsEtatFait {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.detailsEtat {
+  background: #f4f4f5;
+  color: #71717a;
+}
+
+.detailsEtatFait {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+.detailsChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  color: #a1a1aa;
+  transition: transform 0.18s ease;
+}
+
+/* Sans l'état à sa gauche, le chevron a besoin d'y être poussé lui-même. */
+.detailsEtat + .detailsChevron,
+.detailsEtatFait + .detailsChevron {
+  margin-left: 0;
+}
+
+.detailsNom + .detailsChevron {
+  margin-left: auto;
+}
+
+.detailsChevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+.detailsBlocOuvert .detailsChevron {
+  transform: rotate(180deg);
+}
+
+.detailsBascule:hover .detailsChevron {
+  color: #18181b;
+}
+
+/* Renseigné : la pastille du rang se remplit, comme au sommaire. */
+.etapeNumFait {
+  background: #16a34a;
+  color: #fff;
 }
 
 /*

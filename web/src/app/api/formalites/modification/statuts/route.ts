@@ -10,6 +10,7 @@ import { RegistreIndisponible } from "@/infrastructure/inpi/registre";
 import { deposerPdfProduit } from "@/infrastructure/documents/depot";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
+import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
 
 /**
  * Les statuts en vigueur, repris au registre national.
@@ -27,7 +28,8 @@ import { route } from "@/lib/reponses";
  * On le dit, et l'on passe au dépôt manuel.
  */
 
-export const TITRE_STATUTS = "Statuts en vigueur";
+/* Le titre vit dans le domaine : la liste des actes s'en sert pour l'écarter. */
+export const TITRE_STATUTS = TITRE_STATUTS_EN_VIGUEUR;
 
 export const GET = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
@@ -94,7 +96,19 @@ export const POST = route(async (requete: Request) => {
     }
 
     const pdf = await telechargerActe(choisi.id);
-    await deposerPdfProduit(dossierId, TITRE_STATUTS, pdf);
+
+    /*
+     * Le document porte la date du dépôt, non celle d'aujourd'hui.
+     *
+     * Ces statuts ont été déposés au greffe des années plus tôt ; nous n'avons fait
+     * qu'aller les chercher. La bibliothèque annonçait « Généré le 24 août 2026 », ce
+     * qui datait du jour même un acte de deux mille vingt-deux et nous en attribuait la
+     * rédaction. C'est la date du dépôt qui permet au client de reconnaître sa version.
+     */
+    const depose = choisi.deposeLe ? new Date(choisi.deposeLe) : null;
+    await deposerPdfProduit(dossierId, TITRE_STATUTS, pdf, {
+      date: depose && !Number.isNaN(depose.getTime()) ? depose : null,
+    });
 
     await completerModification(utilisateur, dossierId, {
       statuts: {

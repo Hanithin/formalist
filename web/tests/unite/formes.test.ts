@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  qualitesDuRepresentant,
   regle,
   estUnipersonnelle,
   verifierCapital,
@@ -128,5 +129,34 @@ describe("répartition du capital", () => {
     // 0.1 + 0.2 vaut 0.30000000000000004 en virgule flottante : comparer en
     // euros ferait échouer une répartition pourtant juste.
     expect(verifierRepartition(0.3, [0.1, 0.2])).toEqual([]);
+  });
+});
+
+describe("qui représente une société associée", () => {
+  /*
+   * Le titre part dans l'acte : « gérant » d'une SAS ou « président » d'une SARL sont
+   * des fonctions qui n'existent pas dans ces formes, et le greffe les relève.
+   */
+  it("propose les titres de la forme, et eux seuls", () => {
+    expect(qualitesDuRepresentant("SAS")).toContain("Président");
+    expect(qualitesDuRepresentant("SAS")).not.toContain("Gérant");
+    expect(qualitesDuRepresentant("SARL")).toContain("Gérant");
+    expect(qualitesDuRepresentant("SARL")).not.toContain("Président");
+    expect(qualitesDuRepresentant("SCI")).toContain("Gérant");
+  });
+
+  /* Celui qui signe peut n'avoir aucun titre : il porte alors un pouvoir. */
+  it("prévoit le signataire sans fonction, quelle que soit la forme", () => {
+    for (const forme of ["SAS", "SARL", "SCI", "GmbH", null]) {
+      expect(qualitesDuRepresentant(forme)).toContain("Mandataire");
+      expect(qualitesDuRepresentant(forme)).toContain("Associé");
+    }
+  });
+
+  /* Forme inconnue - étrangère, rare : on n'exclut aucun titre. */
+  it("ne tranche pas sur une forme qu'elle ne connaît pas", () => {
+    const inconnue = qualitesDuRepresentant("Limited");
+    expect(inconnue).toContain("Président");
+    expect(inconnue).toContain("Gérant");
   });
 });
