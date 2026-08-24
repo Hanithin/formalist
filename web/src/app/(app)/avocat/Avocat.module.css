@@ -449,6 +449,69 @@
   margin-top: 26px;
 }
 
+/* ---------- Les pièces d'une tâche, en fenêtre ---------- */
+
+/*
+ * « Voir les documents » menait au même onglet depuis trois tâches différentes, et il
+ * fallait ensuite retrouver dans la liste entière les deux pièces dont il s'agissait.
+ * La fenêtre ne montre que celles de la tâche, avec les mêmes gestes.
+ */
+.fenetrePieces {
+  position: fixed;
+  z-index: 60;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 40px));
+  max-height: min(720px, calc(100vh - 60px));
+  border-radius: 16px;
+  background: #fafafa;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.fenetrePiecesTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid #ececee;
+  background: #fff;
+}
+
+.fenetrePiecesTitre {
+  margin: 0 0 3px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.fenetrePiecesDetail {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #71717a;
+}
+
+.fenetrePiecesCorps {
+  padding: 16px 22px 20px;
+  overflow-y: auto;
+}
+
+.fenetrePiecesVide {
+  margin: 0;
+  padding: 20px 0;
+  text-align: center;
+  font-size: 13.5px;
+  color: #a1a1aa;
+}
+
 /* ---------- Demander des corrections au client ---------- */
 
 /*

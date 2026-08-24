@@ -6,7 +6,6 @@ import { dossierPourAvocat } from "@/infrastructure/db/depots/avocat";
 import { etatCabinet } from "@/domain/formalite/avocat";
 import { estPropose } from "@/domain/acces/regles";
 import { libelleEtat } from "@/domain/formalite/transitions";
-import { etatDocument, estStatutsRepris } from "@/domain/document/statuts";
 import { Notes } from "./Notes";
 import { Travail } from "./Travail";
 import { Statuts } from "./Statuts";
@@ -16,17 +15,11 @@ import {
   prochaineTache,
   type TypeDeDossier,
 } from "@/domain/formalite/cabinet";
-import {
-  statutsAMettreAJour,
-  TITRE_STATUTS_A_JOUR,
-  TITRE_STATUTS_EN_VIGUEUR,
-} from "@/domain/modification/formalites";
+import { statutsAMettreAJour, TITRE_STATUTS_A_JOUR } from "@/domain/modification/formalites";
 import { publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
-import { aRelire, A_RELIRE } from "@/domain/document/publication";
-import { Verification } from "./Verification";
-import { OuvrirLaPiece } from "./OuvrirLaPiece";
-import { RelireLActe } from "./RelireLActe";
+import { aRelire } from "@/domain/document/publication";
+import { Piece, type PieceAffichee } from "./Piece";
 import { Avancement } from "./Avancement";
 import { PriseEnCharge } from "./PriseEnCharge";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
@@ -118,11 +111,6 @@ function initiales(nom: string): string {
  * elle. Le format court - 24/08/2026 12:16 - se lisait comme un horodatage de journal
  * au milieu d'une page qui écrit ses dates en toutes lettres partout ailleurs.
  */
-/** La date seule : « 2 septembre 2022 ». */
-function jour(date: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(date);
-}
-
 function quand(date: Date | null): string {
   if (!date) return "";
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(date);
@@ -302,6 +290,23 @@ export default async function DossierAvocat({
       (o !== "statuts" || retoucheDesStatuts) && (o !== "annonce" || annonceAPublier)
   );
 
+  /*
+   * Les pièces telles que le navigateur les reçoit.
+   *
+   * La même liste sert deux écrans : l'onglet du dossier, et les fenêtres que les
+   * tâches ouvrent. Une seule mise en forme, donc, et une seule carte pour les rendre.
+   */
+  const pieces: PieceAffichee[] = documents.map((d) => ({
+    id: d.id,
+    nom: d.name,
+    statut: d.status,
+    motifRejet: d.rejection_reason,
+    fichier: d.file_path,
+    source: d.source_path,
+    depose: d.uploaded_by,
+    creeLe: d.created_at?.toISOString() ?? null,
+  }));
+
   const suivante = prochaineTache(taches);
 
   /*
@@ -459,6 +464,7 @@ export default async function DossierAvocat({
               taches={taches}
               peutProduireLesActes={type === "modification"}
               informationsVerifiees={informationsVerifiees}
+              pieces={pieces}
             />
 
             {/*
@@ -623,109 +629,9 @@ export default async function DossierAvocat({
           (documents.length === 0 && !statutsAProduire ? (
             <Vide ton="encart" texte="Aucune pièce déposée." />
           ) : (
-            documents.map((d) => {
-              const etatPiece = etatDocument({
-                name: d.name,
-                status: d.status,
-                rejection_reason: d.rejection_reason,
-              });
-
-              return (
-                <div
-                  key={d.id}
-                  className={
-                    d.rejection_reason ? `${styles.docCard} ${styles.docRejected}` : styles.docCard
-                  }
-                >
-                  <div className={styles.docIcon}>
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </svg>
-                  </div>
-
-                  <div className={styles.docInfo}>
-                    <div className={styles.docName}>{d.name}</div>
-                    <div className={styles.docMeta}>
-                      {/* L'état porte sa teinte : ce qui attend une décision se voit
-                          sans lire, au milieu d'une liste où tout se ressemble. */}
-                      <span className={`${styles.docEtat} ${styles[etatPiece.ton]}`}>
-                        {etatPiece.libelle}
-                      </span>
-                      {d.created_at && (
-                        <span>
-                          {/*
-                            Un acte repris au registre porte la date de son dépôt
-                            d'origine, sans heure : « à 02:00 » n'est qu'un artefact de
-                            fuseau sur une date sans heure, et laisse croire à un dépôt
-                            de cette nuit.
-                          */}
-                          {estStatutsRepris(d.name)
-                            ? "déposés par la société le " + jour(d.created_at)
-                            : quand(d.created_at)}
-                        </span>
-                      )}
-                    </div>
-                    {etatPiece.motif && (
-                      <div className={styles.docRejectionInfo}>Motif : {etatPiece.motif}</div>
-                    )}
-                  </div>
-
-                  <div className={styles.docActions}>
-                    {d.file_path && <OuvrirLaPiece nom={d.name} fichier={d.file_path} />}
-
-                    {/*
-                      Les statuts à jour ne se corrigent pas dans un traitement de texte.
-                      
-                      Ils sortent de l'éditeur de retouches, qui reprend le document du
-                      greffe passage par passage : c'est là qu'on les modifie, et le
-                      bouton y mène plutôt que de laisser chercher l'onglet.
-                    */}
-                    {d.name === TITRE_STATUTS_A_JOUR && (
-                      <Link href={adresse("statuts")} className={styles.decisionPrincipale}>
-                        Mettre à jour les statuts
-                      </Link>
-                    )}
-
-                    {/*
-                      Un projet d'acte se relit sur le Word qui l'a produit.
-                      
-                      Le PDF est ce qu'on remet, non ce qu'on corrige : l'avocat reprend
-                      le Word, et sa version devient l'acte du dossier.
-                    */}
-                    {d.uploaded_by === "system" &&
-                      d.status === A_RELIRE &&
-                      d.name !== TITRE_STATUTS_A_JOUR &&
-                      d.name !== TITRE_STATUTS_EN_VIGUEUR && (
-                        <RelireLActe
-                          document={d.id}
-                          /*
-                           * Sans LibreOffice, l'acte est gardé en Word plutôt que perdu :
-                           * c'est alors le fichier remis lui-même qu'on corrige, et il n'y
-                           * a pas de source à côté.
-                           */
-                          source={
-                            d.source_path ??
-                            (d.file_path?.endsWith(".docx") ? d.file_path : null)
-                          }
-                        />
-                      )}
-
-                    {d.status === "uploaded" && <Verification documentId={d.id} />}
-                    {/* Une validation se reprend : on se trompe de bouton, ou de pièce. */}
-                    {d.status === "verified" && <Verification documentId={d.id} decidee />}
-                  </div>
-                </div>
-              );
-            })
+            pieces.map((piece) => (
+              <Piece key={piece.id} piece={piece} dossier={dossier.id} />
+            ))
           ))}
 
         {/*

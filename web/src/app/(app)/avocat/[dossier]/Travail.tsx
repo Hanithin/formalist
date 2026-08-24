@@ -4,7 +4,50 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { phasesDuCabinet, type Tache } from "@/domain/formalite/cabinet";
+import {
+  FenetreDesPieces,
+  estUnActeProduit,
+  type PieceAffichee,
+} from "./Piece";
 import styles from "../Avocat.module.css";
+
+/*
+ * Ce qu'une tâche montre quand on lui demande ses pièces.
+ *
+ * Une tâche ne parle jamais de tout le dossier : la vérification porte sur ce que le
+ * client a déposé, la production et la relecture sur ce que le cabinet a écrit.
+ */
+function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[] {
+  if (tache === "pieces" || tache === "attestations") {
+    return pieces.filter((p) => !estUnActeProduit(p));
+  }
+  if (tache === "actes" || tache === "relecture" || tache === "confidentialite") {
+    return pieces.filter(estUnActeProduit);
+  }
+  return pieces;
+}
+
+function libelleDesPieces(tache: string): string {
+  if (tache === "pieces" || tache === "attestations") return "Voir les justificatifs";
+  if (tache === "actes" || tache === "relecture") return "Voir les actes";
+  return "Voir les documents";
+}
+
+function titreDesPieces(tache: string): string {
+  if (tache === "pieces" || tache === "attestations") return "Les justificatifs du client";
+  if (tache === "actes" || tache === "relecture") return "Les actes produits";
+  return "Les documents du dossier";
+}
+
+function explicationDesPieces(tache: string): string {
+  if (tache === "pieces" || tache === "attestations") {
+    return "Ce que le client a déposé. Vous pouvez ouvrir chaque pièce, la valider ou en demander une autre.";
+  }
+  if (tache === "actes" || tache === "relecture") {
+    return "Ce que le cabinet a écrit. Le PDF s'ouvre ici, le Word se corrige et se redépose.";
+  }
+  return "Les documents du dossier.";
+}
 
 /**
  * Ce qu'il reste à faire sur le dossier.
@@ -18,9 +61,12 @@ export function Travail({
   taches,
   peutProduireLesActes,
   informationsVerifiees,
+  pieces,
 }: {
   dossier: number;
   taches: Tache[];
+  /** Les pièces du dossier : les tâches montrent celles dont elles parlent. */
+  pieces: PieceAffichee[];
   /** Les actes se produisent d'ici : c'est une commande, non un écran. */
   peutProduireLesActes: boolean;
   /**
@@ -43,6 +89,13 @@ export function Travail({
    * « toutes repliées », ce qui n'est pas la même chose que « aucune préférence ».
    */
   const [phaseOuverte, setPhaseOuverte] = useState<string | null>(null);
+  /*
+   * La tâche dont on regarde les pièces.
+   *
+   * « Voir les documents » menait au même onglet depuis trois tâches différentes, et il
+   * fallait ensuite retrouver dans la liste entière les deux pièces dont il s'agissait.
+   */
+  const [piecesMontrees, setPiecesMontrees] = useState<string | null>(null);
   const [retour, setRetour] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
@@ -318,12 +371,13 @@ export function Travail({
               */}
               {tache.etat === "faite" && tache.onglet === "pieces" && (
                 <span className={styles.tacheActions}>
-                  <Link
-                    href={"/avocat/" + dossier + "?onglet=pieces"}
+                  <button
+                    type="button"
                     className={styles.travailTertiaire}
+                    onClick={() => setPiecesMontrees(tache.identifiant)}
                   >
-                    Voir les documents
-                  </Link>
+                    {libelleDesPieces(tache.identifiant)}
+                  </button>
                 </span>
               )}
 
@@ -430,6 +484,16 @@ export function Travail({
           </section>
         );
       })}
+
+      {piecesMontrees && (
+        <FenetreDesPieces
+          titre={titreDesPieces(piecesMontrees)}
+          explication={explicationDesPieces(piecesMontrees)}
+          pieces={piecesDeLaTache(pieces, piecesMontrees)}
+          dossier={dossier}
+          surFermeture={() => setPiecesMontrees(null)}
+        />
+      )}
 
       {corrections && (
         <>
