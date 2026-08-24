@@ -14,6 +14,22 @@ export interface DossierCabinet {
   phase: number;
   sousPhase: string | null;
   creePar: "avocat" | "client";
+  /**
+   * Le dossier est proposé au cabinet et personne ne l'a pris.
+   *
+   * Il vaut la peine d'être dit avant tout le reste : c'est le seul état qui appelle un
+   * geste immédiat, et sans lui la colonne annonçait « En traitement » sur un dossier
+   * que personne ne traitait.
+   */
+  libre?: boolean;
+  /**
+   * Le dossier est assigné à celui qui regarde la liste.
+   *
+   * Rien ne permettait de retrouver ce qu'on avait accepté de réviser : les dossiers
+   * pris se mêlaient à ceux de tout le cabinet sous « Tous », et il fallait les
+   * reconnaître à leur nom.
+   */
+  monDossier?: boolean;
 }
 
 const SOUS_PHASES: Record<string, { libelle: string; teinte: Teinte }> = {
@@ -26,6 +42,17 @@ const SOUS_PHASES: Record<string, { libelle: string; teinte: Teinte }> = {
 
 /** Où en est le travail du cabinet, en un mot et une teinte. */
 export function etatCabinet(dossier: DossierCabinet): { libelle: string; teinte: Teinte } {
+  /*
+   * Un dossier que personne n'a pris se dit d'abord.
+   *
+   * Il affichait « En traitement », l'état de tout dossier réglé : rien ne distinguait
+   * celui qu'un confrère révise de celui qui attend qu'on le prenne, et il fallait
+   * ouvrir le panneau de chaque ligne pour savoir laquelle portait le bouton.
+   */
+  if (dossier.libre && dossier.status !== "terminee") {
+    return { libelle: "À prendre", teinte: "orange" };
+  }
+
   const connue = dossier.sousPhase ? SOUS_PHASES[dossier.sousPhase] : undefined;
   if (connue) return connue;
 
@@ -90,10 +117,26 @@ export function passageBloque(vers: string, aLeKbis: boolean): string | null {
   return null;
 }
 
-export type Filtre = "tous" | "verifier" | "encours" | "termines" | "miens";
+export type Filtre =
+  | "tous"
+  | "aprendre"
+  | "assignes"
+  | "verifier"
+  | "encours"
+  | "termines"
+  | "miens";
 
 export const FILTRES: { cle: Filtre; libelle: string }[] = [
   { cle: "tous", libelle: "Tous" },
+  /*
+   * Ce qui attend un preneur passe en tête.
+   *
+   * Aucun onglet ne montrait les dossiers proposés : ils se mêlaient aux autres sous
+   * « Tous », et rien ne disait à l'avocat lesquels il pouvait prendre.
+   */
+  { cle: "aprendre", libelle: "À prendre" },
+  // Ce qu'on a accepté de réviser : sans cet onglet, on ne le retrouvait pas.
+  { cle: "assignes", libelle: "Assignés à moi" },
   { cle: "verifier", libelle: "À vérifier" },
   { cle: "encours", libelle: "En cours" },
   { cle: "termines", libelle: "Terminés" },
@@ -108,6 +151,8 @@ export function estFiltre(valeur: string | undefined): Filtre {
 export function retenir<T extends DossierCabinet>(dossiers: T[], filtre: Filtre): T[] {
   return dossiers.filter((d) => {
     const sp = d.sousPhase;
+    if (filtre === "aprendre") return !!d.libre && d.status !== "terminee";
+    if (filtre === "assignes") return !!d.monDossier;
     if (filtre === "verifier") return sp === "5a" || sp === "5b";
     if (filtre === "encours") return sp === "5c" || sp === "5d";
     if (filtre === "termines") return sp === "5e" || d.status === "terminee";
@@ -120,6 +165,8 @@ export function retenir<T extends DossierCabinet>(dossiers: T[], filtre: Filtre)
 export function comptes<T extends DossierCabinet>(dossiers: T[]): Record<Filtre, number> {
   return {
     tous: dossiers.length,
+    aprendre: retenir(dossiers, "aprendre").length,
+    assignes: retenir(dossiers, "assignes").length,
     verifier: retenir(dossiers, "verifier").length,
     encours: retenir(dossiers, "encours").length,
     termines: retenir(dossiers, "termines").length,

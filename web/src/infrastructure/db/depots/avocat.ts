@@ -1,6 +1,8 @@
 import { prisma } from "../client";
 import { Interdit } from "../utilisateur-courant";
 import { estPropose } from "@/domain/acces/regles";
+import { envoyerMessage } from "./messages";
+import { objetDuDossier, brouillonLisible } from "@/domain/formalite/demande";
 import { exigerDossier, listerDossiers } from "./dossiers";
 import { transitionPermise, libelleEtat } from "@/domain/formalite/transitions";
 import {
@@ -14,6 +16,7 @@ import {
   dossierRejete,
   immatriculee,
   documentRefuse,
+  messageDeRefusDePiece,
   documentValide,
   actesDisponibles,
 } from "@/domain/formalite/avis";
@@ -130,6 +133,14 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
     nonLus: messages.get(d.id) ?? 0,
     payeCentimes: paye.get(d.id) ?? 0,
     monDossier: d.assigned_avocat_id === utilisateur.id,
+    /*
+     * De quoi il s'agit, et pas seulement de quel type.
+     *
+     * « SAS · Modification » ne distingue pas un transfert de siège d'une augmentation
+     * de capital : l'avocat qui décide de prendre le dossier a besoin de savoir ce
+     * qu'on lui demande avant de l'ouvrir.
+     */
+    demande: objetDuDossier(d.type, brouillonLisible(d.data_json)),
     /*
      * Proposé, et non simplement sans avocat.
      *
@@ -389,7 +400,15 @@ export async function supprimerNote(utilisateur: UtilisateurConnecte, noteId: nu
 export async function statuerSurDocument(
   utilisateur: UtilisateurConnecte,
   documentId: number,
-  decision: "valider" | "refuser",
+  /**
+   * Valider, refuser - ou revenir sur ce qu'on vient de décider.
+   *
+   * Une validation donnée trop vite ne se reprenait pas : la pièce passait « Vérifié »
+   * et n'offrait plus aucun geste. « Reprendre » la remet en attente de décision, sans
+   * rien dire au client - il a vu une pièce validée, lui annoncer qu'elle ne l'est plus
+   * avant qu'on ait retranché ne ferait qu'inquiéter. Le journal, lui, garde la trace.
+   */
+  decision: "valider" | "refuser" | "reprendre",
   motif?: string
 ) {
   exigerAvocat(utilisateur);
@@ -405,10 +424,12 @@ export async function statuerSurDocument(
     data:
       decision === "valider"
         ? { status: "verified", rejection_reason: null, rejected_at: null }
-        : {
-            rejection_reason: motif?.slice(0, 500) || "Document non conforme",
-            rejected_at: new Date(),
-          },
+        : decision === "reprendre"
+          ? { status: "uploaded", rejection_reason: null, rejected_at: null }
+          : {
+              rejection_reason: motif?.slice(0, 500) || "Document non conforme",
+              rejected_at: new Date(),
+            },
   });
 
   await prisma.audit_log.create({
@@ -416,7 +437,12 @@ export async function statuerSurDocument(
       formalite_id: document.formalite_id,
       actor_id: utilisateur.id,
       actor_role: utilisateur.roles[0] ?? "avocat",
-      action: decision === "valider" ? "document_valide" : "document_refuse",
+      action:
+        decision === "valider"
+          ? "document_valide"
+          : decision === "reprendre"
+            ? "document_decision_reprise"
+            : "document_refuse",
       target_field: document.name,
       comment: decision === "refuser" ? (motif ?? null) : null,
     },
@@ -434,7 +460,7 @@ export async function statuerSurDocument(
     select: { user_id: true, societe: true },
   });
 
-  if (dossier) {
+  if (dossier && decision !== "reprendre") {
     const societe = dossier.societe || "votre société";
     await prevenir(
       dossier.user_id,
@@ -442,6 +468,21 @@ export async function statuerSurDocument(
       decision === "refuser"
         ? documentRefuse(document.name, societe, misAJour.rejection_reason ?? "Document non conforme")
         : documentValide(document.name, societe)
+    );
+  }
+
+  /*
+   * Un refus ouvre aussi un message, que le client peut discuter.
+   *
+   * L'avis prévient, mais ne se répond pas : celui qui ne comprend pas ce qu'on attend
+   * de lui redéposait la même pièce, et le dossier faisait deux allers-retours de plus.
+   * Le message part du fil du dossier, il n'a qu'à répondre dessous.
+   */
+  if (decision === "refuser") {
+    await envoyerMessage(
+      utilisateur,
+      document.formalite_id,
+      messageDeRefusDePiece(document.name, misAJour.rejection_reason ?? "Document non conforme")
     );
   }
 
@@ -513,6 +554,67 @@ export async function changerSousPhase(
   });
 
   return { inchange: false as const, sousPhase: vers };
+}
+
+/**
+ * L'avocat déclare avoir relu ce que le client a saisi.
+ *
+ * La tâche « Vérifier les informations du dossier » n'avait aucun geste pour
+ * s'accomplir : elle n'était réputée faite qu'une fois le dossier passé en sous-phase
+ * « Vérifié », c'est-à-dire tout à la fin de la révision. On cliquait « Y aller », on
+ * relisait le récapitulatif, on revenait, et la case restait vide - indéfiniment.
+ *
+ * La marque vit dans le brouillon, sous `revue`, avec son auteur et sa date : c'est un
+ * fait de la relecture, non un changement d'état du dossier. Elle se retire aussi bien
+ * qu'elle se pose - on relit parfois deux fois, après une correction du client.
+ */
+export async function marquerLesInformationsVerifiees(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  verifiees: boolean
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  let brouillon: Record<string, unknown> = {};
+  try {
+    const lu: unknown = JSON.parse(dossier.data_json ?? "{}");
+    if (lu && typeof lu === "object") brouillon = lu as Record<string, unknown>;
+  } catch {
+    // Un brouillon illisible n'empêche pas d'inscrire la relecture : on repart de zéro
+    // pour cette clé plutôt que de refuser le geste.
+  }
+
+  const revue = (brouillon.revue ?? {}) as Record<string, unknown>;
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: {
+      data_json: JSON.stringify({
+        ...brouillon,
+        revue: verifiees
+          ? {
+              ...revue,
+              informations: true,
+              par: utilisateur.id,
+              le: new Date().toISOString(),
+            }
+          : { ...revue, informations: false },
+      }),
+      updated_at: new Date(),
+    },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: utilisateur.roles[0] ?? "avocat",
+      action: verifiees ? "informations_verifiees" : "informations_a_revoir",
+    },
+  });
+
+  return { informationsVerifiees: verifiees };
 }
 
 /**

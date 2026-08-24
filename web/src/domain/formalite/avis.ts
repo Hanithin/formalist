@@ -74,6 +74,27 @@ export function partParCourriel(genre: GenreDAvis): boolean {
 /* ---------- Les avis, un par événement ---------- */
 
 
+/**
+ * Le message que le cabinet adresse au client quand il refuse une pièce.
+ *
+ * L'avis suffisait à prévenir, mais il ne se répond pas : le client qui ne comprenait
+ * pas ce qu'on attendait de lui n'avait qu'un bandeau et un motif de quelques mots.
+ * Le même refus ouvre donc un message dans le fil du dossier, où il peut demander.
+ *
+ * Le texte est écrit ici et non dans l'écran qui l'envoie : c'est une parole du
+ * cabinet, elle se relit et se corrige à un seul endroit.
+ */
+export function messageDeRefusDePiece(nom: string, motif: string): string {
+  return (
+    "Bonjour,\n\nJ'ai relu « " +
+    nom +
+    " » et je ne peux pas le retenir en l'état.\n\nMotif : " +
+    motif +
+    "\n\nVous pouvez déposer une nouvelle version depuis vos documents. " +
+    "Si vous avez un doute sur ce qui est attendu, répondez-moi ici."
+  );
+}
+
 export function documentRefuse(nom: string, societe: string, motif: string): Avis {
   return {
     genre: "document_refuse",

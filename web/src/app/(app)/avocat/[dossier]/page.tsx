@@ -4,19 +4,31 @@ import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { dossierPourAvocat } from "@/infrastructure/db/depots/avocat";
 import { etatCabinet } from "@/domain/formalite/avocat";
+import { estPropose } from "@/domain/acces/regles";
 import { libelleEtat } from "@/domain/formalite/transitions";
-import { etatDocument } from "@/domain/document/statuts";
+import { etatDocument, estStatutsRepris } from "@/domain/document/statuts";
 import { Notes } from "./Notes";
 import { Travail } from "./Travail";
 import { Statuts } from "./Statuts";
 import { Annonce } from "./Annonce";
-import { travailDuCabinet, type TypeDeDossier } from "@/domain/formalite/cabinet";
-import { statutsAMettreAJour } from "@/domain/modification/formalites";
+import {
+  travailDuCabinet,
+  prochaineTache,
+  type TypeDeDossier,
+} from "@/domain/formalite/cabinet";
+import {
+  statutsAMettreAJour,
+  TITRE_STATUTS_A_JOUR,
+  TITRE_STATUTS_EN_VIGUEUR,
+} from "@/domain/modification/formalites";
 import { publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
-import { aRelire } from "@/domain/document/publication";
+import { aRelire, A_RELIRE } from "@/domain/document/publication";
 import { Verification } from "./Verification";
+import { OuvrirLaPiece } from "./OuvrirLaPiece";
+import { RelireLActe } from "./RelireLActe";
 import { Avancement } from "./Avancement";
+import { PriseEnCharge } from "./PriseEnCharge";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
 import { Vide } from "@/components/liste/Vide";
 import {
@@ -83,9 +95,21 @@ function initiales(nom: string): string {
     .toUpperCase();
 }
 
+/*
+ * « 24 août 2026 à 12:16 ».
+ *
+ * L'heure reste : deux justificatifs déposés le même jour ne se distinguent que par
+ * elle. Le format court - 24/08/2026 12:16 - se lisait comme un horodatage de journal
+ * au milieu d'une page qui écrit ses dates en toutes lettres partout ailleurs.
+ */
+/** La date seule : « 2 septembre 2022 ». */
+function jour(date: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(date);
+}
+
 function quand(date: Date | null): string {
   if (!date) return "";
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(date);
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(date);
 }
 
 export default async function DossierAvocat({
@@ -131,11 +155,29 @@ export default async function DossierAvocat({
   });
   const manquants = CHAMPS.filter((c) => !renseignes.includes(c));
 
+  /*
+   * Le dossier est-il encore proposé au cabinet ?
+   *
+   * La même règle que dans la liste, appliquée au même endroit du domaine : ni pris,
+   * ni encore côté client, ni clos. C'est elle qui décide de la pastille « À prendre »
+   * et du bandeau de prise en charge.
+   */
+  const libre = estPropose({
+    id: dossier.id,
+    proprietaireId: dossier.user_id,
+    avocatAssigneId: dossier.assigned_avocat_id,
+    equipeId: dossier.team_id,
+    statut: dossier.status,
+  });
+
+  const monDossier = dossier.assigned_avocat_id === utilisateur.id;
+
   const etat = etatCabinet({
     status: dossier.status,
     phase: dossier.phase ?? 1,
     sousPhase: dossier.business_sub_phase,
     creePar: dossier.created_by_avocat ? "avocat" : "client",
+    libre,
   });
 
   const aVerifier = documents.filter((d) => d.status === "uploaded").length;
@@ -171,8 +213,18 @@ export default async function DossierAvocat({
   };
   const valeursDuDossier = (donnees.valeurs ?? {}) as Record<string, string | number | undefined>;
 
+  /*
+   * La relecture déclarée par l'avocat, inscrite dans le brouillon sous `revue`.
+   *
+   * Elle n'est pas un état du dossier - le client n'en voit rien - mais un fait de la
+   * révision : c'est elle qui coche « Vérifier les informations du dossier ».
+   */
+  const revue = (donnees.revue ?? {}) as Record<string, unknown>;
+  const informationsVerifiees = revue.informations === true;
+
   const taches = travailDuCabinet({
     type,
+    informationsVerifiees,
     status: dossier.status,
     sousPhase: dossier.business_sub_phase,
     piecesAVerifier: aVerifier,
@@ -217,6 +269,21 @@ export default async function DossierAvocat({
     statutsConcernes: statutsAMettreAJour(codes),
   });
 
+  const suivante = prochaineTache(taches);
+
+  /*
+   * Les statuts à jour restent à produire.
+   *
+   * Ils ne naissent qu'à la sortie de l'éditeur de retouches : tant qu'ils n'existent
+   * pas, aucune ligne ne les annonce dans les pièces - et l'avocat ne voit pas qu'il
+   * manque au dossier un document que le greffe attend.
+   */
+  const statutsAProduire =
+    type === "modification" &&
+    statutsAMettreAJour(codes) &&
+    !documents.some((d) => d.name === TITRE_STATUTS_A_JOUR);
+  const faites = taches.filter((t) => t.etat === "faite").length;
+
   return (
     <main className={styles.page}>
       <div className={styles.topbar}>
@@ -225,6 +292,10 @@ export default async function DossierAvocat({
           <div className={styles.detailBadges}>
             <span className={styles.detailBadge}>{dossier.forme}</span>
             <span className={`${styles.detailBadge} ${styles.phase}`}>{etat.libelle}</span>
+            {/* Qui s'en occupe se lit dans le titre, comme dans la liste. */}
+            {monDossier && (
+              <span className={`${styles.detailBadge} ${styles.assigne}`}>Assigné à vous</span>
+            )}
             <span className={`${styles.detailBadge} ${styles.muted}`}>
               {libelleEtat(dossier.status)}
             </span>
@@ -239,6 +310,88 @@ export default async function DossierAvocat({
       </div>
 
       <div className={styles.content}>
+        {/* Avant les onglets : on décide de prendre le dossier avant de travailler
+            dedans, et le bandeau dit pourquoi rien n'y répond encore. */}
+        {libre && <PriseEnCharge dossier={dossier.id} />}
+
+        {/*
+          Le dossier est à vous, et voici par quoi commencer.
+          
+          Le bandeau orange disparaît une fois le dossier pris, et rien ne remplaçait
+          l'invitation : l'avocat se retrouvait devant sept tâches dont trois étaient
+          déjà faites, à chercher la première qui l'attendait.
+        */}
+        {monDossier && !libre && (
+          <section className={styles.bandeauAssigne} aria-label="Votre dossier">
+            <div className={styles.bandeauAssigneHaut}>
+              <span className={styles.bandeauAssigneIcone} aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </span>
+
+              <div className={styles.bandeauAssigneTexte}>
+                <p className={styles.bandeauAssigneTitre}>Ce dossier vous est assigné</p>
+                <p className={styles.bandeauAssigneDetail}>
+                  Vous en êtes l&apos;avocat : personne d&apos;autre du cabinet ne le
+                  révise, et le client vous écrit à vous.
+                </p>
+              </div>
+
+              {/* L'avancement en chiffres : ce qui reste se lit sans compter les cases. */}
+              <p className={styles.bandeauAssigneCompte}>
+                <span className={styles.bandeauAssigneChiffre}>
+                  {faites}
+                  <span className={styles.bandeauAssigneSurTotal}>/{taches.length}</span>
+                </span>
+                <span className={styles.bandeauAssigneLegende}>
+                  {faites > 1 ? "tâches faites" : "tâche faite"}
+                </span>
+              </p>
+            </div>
+
+            <div className={styles.jauge} aria-hidden="true">
+              <span style={{ width: Math.round((faites / taches.length) * 100) + "%" }} />
+            </div>
+
+            <div className={styles.bandeauAssigneBas}>
+              <div className={styles.bandeauAssigneEtape}>
+                <span className={styles.bandeauAssigneLegende}>
+                  {suivante ? "Prochaine étape" : "Rien ne vous attend"}
+                </span>
+                <span className={styles.bandeauAssigneEtapeTitre}>
+                  {suivante ? suivante.titre : "Vous avez fait tout ce qui vous revenait."}
+                </span>
+                {suivante?.bloquee && (
+                  <span className={styles.bandeauAssigneBlocage}>{suivante.bloquee}</span>
+                )}
+              </div>
+
+              {/*
+                Le bouton ne s'affiche que s'il mène ailleurs.
+                
+                Sur l'onglet même que la tâche désigne, « Y aller » ramenait où l'on
+                était déjà : un bouton qui ne fait rien apprend à ne plus les lire.
+              */}
+              {suivante?.onglet && suivante.onglet !== onglet && (
+                <Link
+                  href={adresse(suivante.onglet as Onglet)}
+                  className={styles.bandeauAssigneBouton}
+                >
+                  {suivante.titre}
+                </Link>
+              )}
+            </div>
+          </section>
+        )}
+
         <nav className={styles.detailTabs} aria-label="Sections du dossier">
           {ONGLETS.map((o) => (
             <Link
@@ -272,6 +425,7 @@ export default async function DossierAvocat({
             dossier={dossier.id}
             taches={taches}
             peutProduireLesActes={type === "modification"}
+            informationsVerifiees={informationsVerifiees}
           />
         )}
 
@@ -411,11 +565,12 @@ export default async function DossierAvocat({
         )}
 
         {onglet === "pieces" &&
-          (documents.length === 0 ? (
+          (documents.length === 0 && !statutsAProduire ? (
             <Vide ton="encart" texte="Aucune pièce déposée." />
           ) : (
             documents.map((d) => {
               const etatPiece = etatDocument({
+                name: d.name,
                 status: d.status,
                 rejection_reason: d.rejection_reason,
               });
@@ -445,8 +600,24 @@ export default async function DossierAvocat({
                   <div className={styles.docInfo}>
                     <div className={styles.docName}>{d.name}</div>
                     <div className={styles.docMeta}>
-                      <span>{etatPiece.libelle}</span>
-                      {d.created_at && <span>· {quand(d.created_at)}</span>}
+                      {/* L'état porte sa teinte : ce qui attend une décision se voit
+                          sans lire, au milieu d'une liste où tout se ressemble. */}
+                      <span className={`${styles.docEtat} ${styles[etatPiece.ton]}`}>
+                        {etatPiece.libelle}
+                      </span>
+                      {d.created_at && (
+                        <span>
+                          {/*
+                            Un acte repris au registre porte la date de son dépôt
+                            d'origine, sans heure : « à 02:00 » n'est qu'un artefact de
+                            fuseau sur une date sans heure, et laisse croire à un dépôt
+                            de cette nuit.
+                          */}
+                          {estStatutsRepris(d.name)
+                            ? "déposés par la société le " + jour(d.created_at)
+                            : quand(d.created_at)}
+                        </span>
+                      )}
                     </div>
                     {etatPiece.motif && (
                       <div className={styles.docRejectionInfo}>Motif : {etatPiece.motif}</div>
@@ -454,15 +625,96 @@ export default async function DossierAvocat({
                   </div>
 
                   <div className={styles.docActions}>
-                    {d.file_path && (
-                      <a href={"/api/fichier?nom=" + encodeURIComponent(d.file_path)}>Ouvrir</a>
+                    {d.file_path && <OuvrirLaPiece nom={d.name} fichier={d.file_path} />}
+
+                    {/*
+                      Les statuts à jour ne se corrigent pas dans un traitement de texte.
+                      
+                      Ils sortent de l'éditeur de retouches, qui reprend le document du
+                      greffe passage par passage : c'est là qu'on les modifie, et le
+                      bouton y mène plutôt que de laisser chercher l'onglet.
+                    */}
+                    {d.name === TITRE_STATUTS_A_JOUR && (
+                      <Link href={adresse("statuts")} className={styles.decisionPrincipale}>
+                        Mettre à jour les statuts
+                      </Link>
                     )}
+
+                    {/*
+                      Un projet d'acte se relit sur le Word qui l'a produit.
+                      
+                      Le PDF est ce qu'on remet, non ce qu'on corrige : l'avocat reprend
+                      le Word, et sa version devient l'acte du dossier.
+                    */}
+                    {d.uploaded_by === "system" &&
+                      d.status === A_RELIRE &&
+                      d.name !== TITRE_STATUTS_A_JOUR &&
+                      d.name !== TITRE_STATUTS_EN_VIGUEUR && (
+                        <RelireLActe
+                          document={d.id}
+                          /*
+                           * Sans LibreOffice, l'acte est gardé en Word plutôt que perdu :
+                           * c'est alors le fichier remis lui-même qu'on corrige, et il n'y
+                           * a pas de source à côté.
+                           */
+                          source={
+                            d.source_path ??
+                            (d.file_path?.endsWith(".docx") ? d.file_path : null)
+                          }
+                        />
+                      )}
+
                     {d.status === "uploaded" && <Verification documentId={d.id} />}
+                    {/* Une validation se reprend : on se trompe de bouton, ou de pièce. */}
+                    {d.status === "verified" && <Verification documentId={d.id} decidee />}
                   </div>
                 </div>
               );
             })
           ))}
+
+        {/*
+          Les statuts à jour, annoncés avant d'exister.
+          
+          Ils ne sont produits qu'à la sortie de l'éditeur de retouches : la liste des
+          pièces ne les montrait donc pas, et rien n'y disait qu'un document manquait
+          encore au dossier ni où on le fabrique. La ligne dit l'un et mène à l'autre.
+        */}
+        {onglet === "pieces" && statutsAProduire && (
+          <div className={styles.docCard}>
+            <div className={styles.docIcon}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+            </div>
+
+            <div className={styles.docInfo}>
+              <div className={styles.docName}>Statuts mis à jour</div>
+              <div className={styles.docMeta}>
+                <span className={`${styles.docEtat} ${styles.attente}`}>En cours de révision</span>
+                <span>
+                  chaque passage que les décisions changent est repris dans les statuts en
+                  vigueur
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.docActions}>
+              <Link href={adresse("statuts")} className={styles.decisionPrincipale}>
+                Mettre à jour les statuts
+              </Link>
+            </div>
+          </div>
+        )}
 
         {onglet === "notes" && (
           <>

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   travailDuCabinet,
+  prochaineTache,
   tacheEnCours,
   resteAFaire,
   libelleSousPhase,
@@ -153,5 +154,64 @@ describe("les tâches d'une création", () => {
       "final",
     ]);
     expect(taches[taches.length - 1].titre).toContain("extrait kbis");
+  });
+});
+
+describe("la relecture du récapitulatif", () => {
+  it("la tâche reste ouverte tant que rien ne dit qu'on a relu", () => {
+    // Elle n'était réputée faite qu'en sous-phase « Vérifié », tout à la fin : on
+    // cliquait « Y aller », on relisait, et la case restait vide.
+    const [informations] = travailDuCabinet(etat());
+    expect(informations.identifiant).toBe("informations");
+    expect(informations.etat).toBe("a_faire");
+  });
+
+  it("la déclaration de l'avocat la coche", () => {
+    const [informations] = travailDuCabinet(etat({ informationsVerifiees: true }));
+    expect(informations.etat).toBe("faite");
+  });
+
+  it("elle lève aussi ce qui attendait un dossier vérifié", () => {
+    const avant = travailDuCabinet(etat()).find((t) => t.identifiant === "annonce");
+    const apres = travailDuCabinet(etat({ informationsVerifiees: true })).find(
+      (t) => t.identifiant === "annonce"
+    );
+    expect(avant?.bloquee).toBeTruthy();
+    expect(apres?.bloquee).toBeUndefined();
+  });
+});
+
+describe("par quoi commencer", () => {
+  it("nomme la première tâche qui attend, pas la première de la liste", () => {
+    const taches = travailDuCabinet(etat({ piecesAVerifier: 0 }));
+    const suivante = prochaineTache(taches);
+    expect(suivante?.etat).toBe("a_faire");
+    expect(taches.indexOf(suivante!)).toBeGreaterThanOrEqual(0);
+    // Ce qui est déjà fait ne peut pas être ce par quoi commencer.
+    expect(taches.slice(0, taches.indexOf(suivante!)).every((t) => t.etat !== "a_faire")).toBe(
+      true
+    );
+  });
+
+  it("préfère ce qu'on peut faire tout de suite à ce qui est empêché", () => {
+    const taches = [
+      { identifiant: "a", titre: "A", explication: "", etat: "a_faire" as const, bloquee: "en attente" },
+      { identifiant: "b", titre: "B", explication: "", etat: "a_faire" as const },
+    ];
+    expect(prochaineTache(taches)?.identifiant).toBe("b");
+  });
+
+  it("rend quand même la tâche empêchée quand c'est la seule qui reste", () => {
+    // C'est justement ce qui la bloque qu'il faut lire.
+    const taches = [
+      { identifiant: "a", titre: "A", explication: "", etat: "faite" as const },
+      { identifiant: "b", titre: "B", explication: "", etat: "a_faire" as const, bloquee: "en attente" },
+    ];
+    expect(prochaineTache(taches)?.identifiant).toBe("b");
+  });
+
+  it("ne rend rien quand tout est fait", () => {
+    const taches = [{ identifiant: "a", titre: "A", explication: "", etat: "faite" as const }];
+    expect(prochaineTache(taches)).toBeNull();
   });
 });

@@ -271,7 +271,30 @@ export function Statuts({ dossier }: { dossier: number }) {
     );
   }
 
-  if (!lecture) return <p className={styles.tacheExplication}>Lecture des statuts…</p>;
+  /*
+   * L'attente est dite, parce qu'elle est longue.
+   *
+   * Des statuts numérisés n'ont pas de couche texte : les lire, c'est en reconnaître les
+   * caractères page par page - une quarantaine de secondes pour dix-sept pages. L'écran
+   * affichait « Lecture des statuts… » sans rien d'autre, et l'on croyait l'éditeur
+   * cassé. La lecture est maintenant gardée : ce n'est long qu'une fois.
+   */
+  if (!lecture) {
+    return (
+      <div className={styles.lectureEnCours}>
+        <span className={styles.lecturePoint} aria-hidden="true" />
+        <div>
+          <p className={styles.lectureTitre}>Lecture des statuts en cours</p>
+          <p className={styles.lectureDetail}>
+            Chaque page est analysée pour retrouver les passages à remplacer. Sur un
+            document numérisé, la reconnaissance de caractères peut prendre une minute.
+            Elle n&apos;a lieu qu&apos;une fois : les prochaines ouvertures seront
+            immédiates.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   /*
    * L'avancement se compte par changement, non par cadre.

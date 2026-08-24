@@ -424,6 +424,314 @@
   padding: 3px 10px;
   border-radius: 100px;
   font-weight: 500;
+  /* « En traitement » se coupait en deux dans la colonne : une pastille tient sur
+     une ligne, quitte à ce que sa colonne s'élargisse. */
+  white-space: nowrap;
+}
+
+/* ---------- L'attente de la lecture des statuts ---------- */
+
+.lectureEnCours {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* Un point qui bat : la page travaille, elle n'est pas figée. */
+.lecturePoint {
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #7c3aed;
+  animation: battement 1.4s ease-in-out infinite;
+}
+
+@keyframes battement {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.75);
+  }
+}
+
+.lectureTitre {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.lectureDetail {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+/* ---------- Le dossier vous est assigné ---------- */
+
+/*
+ * Le pendant violet du bandeau de prise.
+ *
+ * Une fois le dossier pris, le bandeau orange disparaissait et rien ne le remplaçait :
+ * la page ne disait plus ni à qui appartient le dossier, ni par quoi commencer.
+ */
+.bandeauAssigne {
+  margin-bottom: 20px;
+  padding: 18px 20px 16px;
+  border: 1px solid #e9d5ff;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #faf5ff 0%, #fdfbff 100%);
+}
+
+.bandeauAssigneHaut {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.bandeauAssigneIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #7c3aed;
+  color: #fff;
+}
+
+.bandeauAssigneIcone svg {
+  width: 18px;
+  height: 18px;
+}
+
+.bandeauAssigneTexte {
+  flex: 1;
+  min-width: 0;
+}
+
+.bandeauAssigneTitre {
+  margin: 0 0 2px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #5b21b6;
+}
+
+.bandeauAssigneDetail {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #7e57a4;
+}
+
+/* L'avancement, du même côté que le geste qui le fera avancer. */
+.bandeauAssigneCompte {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.bandeauAssigneChiffre {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #5b21b6;
+}
+
+.bandeauAssigneSurTotal {
+  font-size: 14px;
+  font-weight: 500;
+  color: #a78bda;
+}
+
+.bandeauAssigneLegende {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #a78bda;
+}
+
+.jauge {
+  height: 4px;
+  margin: 14px 0 14px;
+  border-radius: 100px;
+  background: #ede9fe;
+  overflow: hidden;
+}
+
+.jauge span {
+  display: block;
+  height: 100%;
+  border-radius: 100px;
+  background: #7c3aed;
+}
+
+.bandeauAssigneBas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/*
+ * L'étiquette et l'étape se lisent sur une ligne.
+ *
+ * Empilées, elles laissaient un bandeau à moitié vide quand aucun bouton ne venait à
+ * droite - « PROCHAINE ÉTAPE » seul sur sa ligne, puis deux mots sur la suivante.
+ */
+.bandeauAssigneEtape {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.bandeauAssigneEtapeTitre {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b0764;
+}
+
+/* Ce qui empêche la tâche passe à la ligne : c'est une phrase, pas une étiquette. */
+.bandeauAssigneBlocage {
+  flex-basis: 100%;
+  font-size: 12.5px;
+  color: #92400e;
+}
+
+.bandeauAssigneBouton {
+  padding: 9px 18px;
+  border-radius: 100px;
+  border: 1px solid #7c3aed;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.bandeauAssigneBouton:hover {
+  background: #6d28d9;
+  border-color: #6d28d9;
+}
+
+/* ---------- Prendre un dossier depuis sa page ---------- */
+
+/*
+ * Le bandeau se lit avant les onglets.
+ *
+ * Un dossier que personne n'a pris se lit mais ne se travaille pas : mettre le geste
+ * ailleurs ferait cliquer sur des onglets qui ne répondent pas.
+ */
+.bandeauPrise {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  background: #fff7ed;
+}
+
+.bandeauPriseTitre {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #9a3412;
+}
+
+.bandeauPriseDetail {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #9a5b3c;
+}
+
+.bandeauPriseBouton {
+  padding: 9px 18px;
+  border-radius: 100px;
+  border: 1px solid #ea580c;
+  background: #ea580c;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.bandeauPriseBouton:hover:not(:disabled) {
+  background: #c2410c;
+  border-color: #c2410c;
+}
+
+.bandeauPriseBouton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---------- Prendre un dossier depuis la liste ---------- */
+
+.celluleAction {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.badgeAssigne {
+  margin-right: 10px;
+}
+
+.boutonPrise {
+  margin-right: 10px;
+  padding: 5px 12px;
+  border-radius: 100px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.boutonPrise:hover:not(:disabled) {
+  background: #2a2a2c;
+  border-color: #2a2a2c;
+}
+
+.boutonPrise:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .badge.orange {
   background: #fff7ed;
@@ -506,6 +814,11 @@
   font-weight: 500;
   background: #f5f5f7;
   color: #555;
+}
+/* Qui s'en occupe : la même teinte que la pastille de la liste. */
+.detailBadge.assigne {
+  background: #f3e8ff;
+  color: #7c3aed;
 }
 .detailBadge.muted {
   background: #fafafa;
@@ -903,9 +1216,162 @@
   align-items: center;
   flex-wrap: wrap;
 }
+/*
+ * La carte d'une pièce : icône, ce qu'elle est, ce qu'on en fait.
+ *
+ * Les décisions revenaient à la ligne sous le lien « Ouvrir » - leurs boutons, sans
+ * mise en forme, étaient plus hauts que lui - et la rangée d'actions se lisait comme
+ * deux blocs sans rapport. Tout tient sur une ligne, aligné à droite, et repasse à la
+ * ligne d'un bloc quand la place manque.
+ */
 .docActions {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
+  flex-shrink: 0;
+}
+
+.decisions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.decisionPrincipale,
+.decisionSecondaire,
+.decisionRefuser {
+  display: inline-flex;
+  /* Certains de ces gestes sont des liens : un bouton ne se souligne pas. */
+  text-decoration: none;
+  align-items: center;
+  height: 34px;
+  margin: 0;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+/* La décision attendue : valider ce que le client a déposé. */
+.decisionPrincipale {
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+}
+
+.decisionPrincipale:hover:not(:disabled) {
+  background: #333;
+  border-color: #333;
+}
+
+.decisionSecondaire {
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  color: #3f3f46;
+}
+
+.decisionSecondaire:hover:not(:disabled) {
+  border-color: #111;
+  color: #111;
+}
+
+/* Refuser prévient le client : le geste porte la couleur de ce qu'il déclenche. */
+.decisionRefuser {
+  border: 1px solid #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.decisionRefuser:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.decisionPrincipale:disabled,
+.decisionSecondaire:disabled,
+.decisionRefuser:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Un refus de dépôt se lit à côté du bouton qui l'a provoqué. */
+.decisionRefus {
+  flex-basis: 100%;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: #b91c1c;
+  text-align: right;
+}
+
+/* ---------- Le motif du refus ---------- */
+
+.refus {
+  flex: 1;
+  min-width: 260px;
+}
+
+.refusLabel {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #3f3f46;
+}
+
+.refusLigne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.refusChamp {
+  flex: 1;
+  min-width: 200px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #111;
+}
+
+.refusChamp:focus {
+  outline: none;
+  border-color: #111;
+}
+
+.refusNote {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+/* ---------- L'état d'une pièce ---------- */
+
+.docEtat {
+  padding: 2px 9px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f4f4f5;
+  color: #52525b;
+}
+
+.docEtat.attente {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.docEtat.abouti {
+  background: #f0fdf4;
+  color: #15803d;
 }
 .badgeDoc {
   font-size: 11px;
@@ -1234,19 +1700,16 @@
   padding: 1px 6px;
   border-radius: 10px;
 }
-.docActions a {
-  font-size: 13px;
-  color: #333;
-  text-decoration: none;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  padding: 7px 12px;
-  white-space: nowrap;
-}
-.docActions a:hover {
-  border-color: #111;
-  color: #111;
-}
+/*
+ * Plus de mise en forme par la balise dans la rangée d'actions.
+ *
+ * Une règle habillait tout lien qui s'y trouvait - encre grise, cadre clair - et elle
+ * a fait deux dégâts : le bouton « Télécharger » de la fenêtre d'aperçu, rendue depuis
+ * cette rangée, s'affichait en gris foncé sur fond noir, puis « Mettre à jour les
+ * statuts » a subi le même sort, sa couleur propre étant écrasée par un sélecteur plus
+ * spécifique. Les liens d'ici portent tous leur classe - decisionPrincipale ou
+ * decisionSecondaire - et n'ont plus besoin d'être habillés par leur balise.
+ */
 
 /* Les onglets et les filtres sont des liens : ils ne se soulignent pas, sans
    quoi ils cessent de ressembler à des onglets. */
@@ -1578,6 +2041,57 @@
   margin-bottom: 20px;
 }
 
+/*
+ * Les intertitres du panneau.
+ *
+ * Trois blocs se suivaient sans nom : une liste de faits, un encadré jaune, deux
+ * boutons. On ne savait pas ce qu'on lisait avant de l'avoir lu.
+ */
+.panneauSection {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.panneauObjet {
+  margin-bottom: 20px;
+}
+
+/* Une pastille par changement : deux changements se comptent d'un coup d'œil. */
+.panneauPuces {
+  display: flex;
+  /* Toute liste de main est dressée en colonne : une liste qui se lit en ligne le
+     redit, sinon les pastilles s'empilent sur toute la largeur. */
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panneauPuces li {
+  margin: 0;
+  padding: 6px 12px;
+  /* Les listes de main portent le cadre des cartes de contenu ; ici ce sont des
+     pastilles, et le cadre doit être retiré explicitement. */
+  border: none;
+  border-radius: 100px;
+  background: #f5f3ff;
+  font-size: 13px;
+  color: #5b21b6;
+}
+
+.panneauNote {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8a8a8f;
+}
+
 .panneauFaits {
   margin: 0 0 20px;
   padding: 16px;
@@ -1853,8 +2367,41 @@
   color: #78350f;
 }
 
+/* Deux gestes peuvent cohabiter : faire, et aller voir avant de faire. */
 .tacheActions {
-  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/*
+ * Revenir sur une relecture déclarée.
+ *
+ * Discret : c'est un geste de rattrapage sur une tâche déjà faite, pas une action
+ * qu'on propose au même rang que les autres.
+ */
+.travailTertiaire {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: #8a8a8f;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.travailTertiaire:hover:not(:disabled) {
+  color: #3f3f46;
+}
+
+.travailTertiaire:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .travailRetour,

@@ -17,11 +17,20 @@ export function Travail({
   dossier,
   taches,
   peutProduireLesActes,
+  informationsVerifiees,
 }: {
   dossier: number;
   taches: Tache[];
   /** Les actes se produisent d'ici : c'est une commande, non un écran. */
   peutProduireLesActes: boolean;
+  /**
+   * L'avocat a déclaré avoir relu le récapitulatif.
+   *
+   * On le sait pour pouvoir revenir dessus : une tâche cochée par la sous-phase du
+   * dossier ne se décoche pas ici, mais une relecture déclarée, si - le client corrige,
+   * et il faut relire.
+   */
+  informationsVerifiees: boolean;
 }) {
   const [refus, setRefus] = useState<string | null>(null);
   const [retour, setRetour] = useState<string | null>(null);
@@ -71,6 +80,35 @@ export function Travail({
         corps.publies === 1
           ? "L'acte est disponible dans l'espace du client, qui en est prévenu."
           : corps.publies + " actes sont disponibles dans l'espace du client, qui en est prévenu."
+      );
+      router.refresh();
+    });
+  }
+
+  /**
+   * Déclarer la relecture du récapitulatif, ou revenir dessus.
+   *
+   * La tâche n'avait aucun geste pour s'accomplir : « Y aller » menait au récapitulatif,
+   * et rien au retour ne permettait de dire qu'on l'avait lu.
+   */
+  function marquerLaRelecture(verifiees: boolean) {
+    setRefus(null);
+    setRetour(null);
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/dossier", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, informationsVerifiees: verifiees }),
+      });
+
+      if (!reponse.ok) {
+        setRefus("La vérification n'a pas pu être enregistrée");
+        return;
+      }
+      setRetour(
+        verifiees
+          ? "Informations vérifiées : c'est inscrit au journal du dossier."
+          : "Les informations sont de nouveau à relire."
       );
       router.refresh();
     });
@@ -143,6 +181,28 @@ export function Travail({
 
               {tache.bloquee && <span className={styles.tacheBlocage}>{tache.bloquee}</span>}
 
+              {/*
+                Revenir sur une relecture déclarée.
+                
+                Le client corrige parfois après coup, et il faut relire. Seule une
+                relecture déclarée se retire : une tâche cochée parce que le dossier a
+                dépassé l'étape ne se décoche pas d'un lien.
+              */}
+              {tache.identifiant === "informations" &&
+                tache.etat === "faite" &&
+                informationsVerifiees && (
+                  <span className={styles.tacheActions}>
+                    <button
+                      type="button"
+                      className={styles.travailTertiaire}
+                      onClick={() => marquerLaRelecture(false)}
+                      disabled={enCours}
+                    >
+                      Revenir dessus
+                    </button>
+                  </span>
+                )}
+
               {tache.etat !== "faite" && !tache.bloquee && (
                 <span className={styles.tacheActions}>
                   {tache.identifiant === "relecture" ? (
@@ -168,6 +228,30 @@ export function Travail({
                     >
                       {enCours ? "Production" : "Produire les actes"}
                     </button>
+                  ) : tache.identifiant === "informations" ? (
+                    /*
+                      Lire, puis dire qu'on a lu.
+                      
+                      Deux gestes distincts : le récapitulatif s'ouvre dans son onglet,
+                      et la case ne se coche qu'au retour, par une déclaration. Un seul
+                      bouton « Y aller » laissait la tâche ouverte indéfiniment.
+                    */
+                    <>
+                      <button
+                        type="button"
+                        className={styles.travailPrincipal}
+                        onClick={() => marquerLaRelecture(true)}
+                        disabled={enCours}
+                      >
+                        {enCours ? "Enregistrement" : "J'ai vérifié les informations"}
+                      </button>
+                      <Link
+                        href={"/avocat/" + dossier + "?onglet=" + (tache.onglet ?? "recapitulatif")}
+                        className={styles.travailSecondaire}
+                      >
+                        Relire le récapitulatif
+                      </Link>
+                    </>
                   ) : (
                     tache.onglet && (
                       <Link

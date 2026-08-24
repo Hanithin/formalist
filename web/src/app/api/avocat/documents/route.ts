@@ -7,7 +7,8 @@ import { route } from "@/lib/reponses";
 
 const SCHEMA = z.object({
   document: schemas.identifiant,
-  decision: z.enum(["valider", "refuser"]),
+  // « reprendre » revient sur une décision donnée trop vite.
+  decision: z.enum(["valider", "refuser", "reprendre"]),
   motif: z.string().trim().max(500).optional(),
 });
 

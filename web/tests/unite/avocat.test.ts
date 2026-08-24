@@ -33,6 +33,19 @@ describe("où en est le travail du cabinet", () => {
   it("un dossier terminé le dit, quelle que soit sa phase", () => {
     expect(etatCabinet(dossier({ status: "terminee", phase: 2 })).libelle).toBe("Terminé");
   });
+
+  it("un dossier que personne n'a pris appelle un preneur", () => {
+    // Il affichait « En traitement » comme tout dossier réglé : rien ne distinguait
+    // celui qu'un confrère révise de celui qui attend qu'on le prenne.
+    expect(etatCabinet(dossier({ phase: 5, libre: true }))).toEqual({
+      libelle: "À prendre",
+      teinte: "orange",
+    });
+  });
+
+  it("un dossier terminé n'est jamais à prendre", () => {
+    expect(etatCabinet(dossier({ status: "terminee", libre: true })).libelle).toBe("Terminé");
+  });
 });
 
 describe("filtres de la liste", () => {
@@ -42,10 +55,23 @@ describe("filtres de la liste", () => {
     dossier({ sousPhase: "5c" }),
     dossier({ status: "terminee", phase: 6 }),
     dossier({ creePar: "avocat" }),
+    dossier({ phase: 5, libre: true }),
+    dossier({ phase: 5, monDossier: true, sousPhase: "5d" }),
   ];
 
   it("« à vérifier » réunit ce que le cabinet doit relire", () => {
     expect(retenir(liste, "verifier")).toHaveLength(2);
+  });
+
+  it("« à prendre » ne réunit que les dossiers qui attendent un preneur", () => {
+    expect(retenir(liste, "aprendre")).toHaveLength(1);
+    expect(retenir(liste, "aprendre")[0].libre).toBe(true);
+  });
+
+  it("« assignés à moi » retrouve ce qu'on a accepté de réviser", () => {
+    const miens = retenir(liste, "assignes");
+    expect(miens).toHaveLength(1);
+    expect(miens[0].monDossier).toBe(true);
   });
 
   it("un dossier terminé compte comme terminé même sans sous-phase 5e", () => {
@@ -55,6 +81,8 @@ describe("filtres de la liste", () => {
   it("le compte annoncé est celui du filtre, sans quoi il ne sert à rien", () => {
     const n = comptes(liste);
     expect(n.tous).toBe(liste.length);
+    expect(n.aprendre).toBe(retenir(liste, "aprendre").length);
+    expect(n.assignes).toBe(retenir(liste, "assignes").length);
     expect(n.verifier).toBe(retenir(liste, "verifier").length);
     expect(n.encours).toBe(retenir(liste, "encours").length);
     expect(n.termines).toBe(retenir(liste, "termines").length);

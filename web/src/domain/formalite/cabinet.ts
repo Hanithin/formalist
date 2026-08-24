@@ -39,6 +39,14 @@ export interface EtatDuCabinet {
   sousPhase: string | null;
   /** Des documents attendent une décision de l'avocat. */
   piecesAVerifier: number;
+  /**
+   * L'avocat a déclaré avoir relu ce que le client a saisi.
+   *
+   * Sans cette marque, la tâche n'était réputée faite qu'en sous-phase « Vérifié »,
+   * tout à la fin de la révision : on relisait le récapitulatif et la case restait
+   * vide, sans rien pour la cocher.
+   */
+  informationsVerifiees?: boolean;
   /** Les actes ont été produits. */
   actesProduits: boolean;
   /** Combien d'actes attendent encore la relecture de l'avocat. */
@@ -156,9 +164,28 @@ export function libelleSousPhase(type: TypeDeDossier, sousPhase: string): string
  * « Publier l'avis » avant d'avoir vérifié le dossier ferait paraître, au tarif du
  * caractère, un avis qu'il faudra republier.
  */
+/**
+ * Par quoi commencer.
+ *
+ * L'avocat qui prend un dossier arrive devant une liste de sept tâches dont trois sont
+ * déjà faites : la première qui l'attend se cherche à l'œil. On la nomme, pour que
+ * l'écran puisse la dire en haut et y mener.
+ *
+ * Une tâche empêchée n'est pas écartée : elle reste la prochaine, et c'est justement ce
+ * qui la bloque qu'il faut lire - « les statuts en vigueur ne sont pas au dossier ».
+ * Mais elle passe après celles qu'on peut faire tout de suite.
+ */
+export function prochaineTache(taches: Tache[]): Tache | null {
+  return tacheEnCours(taches) ?? taches.find((t) => t.etat === "a_faire") ?? null;
+}
+
 export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
   const taches: Tache[] = [];
-  const verifie = auMoins(etat.sousPhase, "5c") || etat.status === "valide" || etat.status === "terminee";
+  const relu =
+    auMoins(etat.sousPhase, "5c") || etat.status === "valide" || etat.status === "terminee";
+  // Le dossier est vérifié soit parce que l'avocat l'a déclaré, soit parce qu'il a
+  // dépassé l'étape où la question se pose encore.
+  const verifie = relu || etat.informationsVerifiees === true;
   const depose = auMoins(etat.sousPhase, "5d");
 
   taches.push({
