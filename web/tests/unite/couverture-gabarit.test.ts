@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { unzipSync } from "node:zlib";
+import { inflateRawSync } from "node:zlib";
 import { donneesDeGabarit } from "@/domain/formalite/gabarit";
 import type { Brouillon } from "@/domain/formalite/parcours";
 
@@ -56,7 +56,14 @@ function extraireDocumentXml(zip: Buffer): string {
 
     if (nom.equals(cible)) {
       const donnees = zip.subarray(debut, debut + tailleCompressee);
-      return compression === 0 ? donnees.toString("utf8") : unzipSync(donnees).toString("utf8");
+      /*
+       * Une entrée de zip est dégonflée en « deflate brut », sans en-tête zlib.
+       *
+       * unzipSync attend cet en-tête et refusait les gabarits dès qu'ils étaient
+       * réécrits compressés - ce qui ne s'était jamais produit tant qu'ils étaient
+       * stockés tels quels, d'où le test qui passait sur une lecture fausse.
+       */
+      return compression === 0 ? donnees.toString("utf8") : inflateRawSync(donnees).toString("utf8");
     }
     position = debut + tailleCompressee;
   }

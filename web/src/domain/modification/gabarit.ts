@@ -74,6 +74,14 @@ export interface AssociePresent {
 export interface Assemblee {
   /** Date de l'assemblée, au format ISO. */
   date?: string | null;
+  /**
+   * Le nombre total de parts de la société, déclaré.
+   *
+   * Il ne sert pas aux actes - ceux-ci additionnent les parts des associés inscrits -
+   * mais à vérifier qu'on les a tous : un procès-verbal où la moitié du capital
+   * manque à l'appel se fait retoquer, et personne ne s'en aperçoit avant le greffe.
+   */
+  totalParts?: number | null;
   associes?: AssociePresent[];
 }
 
@@ -180,6 +188,31 @@ export function avecElision(ville: string): string {
   return /[aeiouy]/.test(premiere) ? "d'" + nette : "de " + nette;
 }
 
+/**
+ * « PARIS » devient « Paris », « SAINT-DENIS » devient « Saint-Denis ».
+ *
+ * Les villes viennent du registre en capitales : recopiées dans une phrase, elles y
+ * crient. Chaque partie d'un nom composé prend sa majuscule, et les particules la
+ * gardent minuscule - « Le Mans » mais « Aix-en-Provence ».
+ */
+export function enCapitaleInitiale(ville: string): string {
+  const nette = ville.trim();
+  if (!nette) return TIRET;
+  if (nette !== nette.toUpperCase()) return nette; // déjà écrite normalement
+
+  const PETITS = new Set(["de", "du", "des", "la", "le", "les", "sur", "sous", "en", "lès", "aux"]);
+
+  return nette
+    .toLowerCase()
+    .split(/([ -])/)
+    .map((morceau, rang) => {
+      if (morceau === " " || morceau === "-") return morceau;
+      if (rang > 0 && PETITS.has(morceau)) return morceau;
+      return morceau.charAt(0).toUpperCase() + morceau.slice(1);
+    })
+    .join("");
+}
+
 /** « Monsieur Jean DUPONT » : la civilité fait partie du nom dans un acte. */
 export function designationDeLAssocie(associe: AssociePresent): string {
   return nomComplet(associe);
@@ -232,6 +265,31 @@ export function societeDesignee(associe: AssociePresent): string {
 }
 
 /**
+ * Le nom sous lequel un associé signe.
+ *
+ * La ligne de signature reprenait la désignation complète : « La société X, SAS au
+ * capital de 5 000 euros, dont le siège est …, immatriculée … sous le numéro …,
+ * représentée par Y en sa qualité de directeur général ». Cette identification a sa
+ * place dans la liste des présents, où l'acte doit dire qui délibère ; au bas de la
+ * page, sur un trait de signature, elle occupe trois lignes pour redire ce qui est
+ * écrit plus haut.
+ *
+ * Ne restent donc que le nom et, pour une personne morale, la main qui signe pour
+ * elle - sans quoi on ne saurait pas qui a porté le stylo.
+ */
+export function nomPourSignature(associe: AssociePresent): string {
+  if (associe.nature !== "morale") return nomComplet(associe);
+
+  const denomination = ou(associe.denomination, "");
+  if (!denomination) return TIRET;
+
+  const representant = ou(associe.representant, "");
+  return representant
+    ? "La société " + denomination + ", représentée par " + representant
+    : "La société " + denomination;
+}
+
+/**
  * Le jeu de données complet, prêt pour docx.
  *
  * Toutes les clés sont produites, y compris celles des types non choisis : leur
@@ -256,7 +314,19 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     // représentant : c'est elle qui est associée.
     denomination: ou(associe.denomination),
     nomComplet: nomComplet(associe),
+    /*
+     * Le même nom, sous le nom que la liste des présents lui donne.
+     *
+     * Les deux endroits ne demandent pas la même chose : la liste identifie - forme,
+     * capital, siège, numéro - et le bas de page ne fait que nommer le signataire. Deux
+     * clés, donc, pour que l'une puisse changer sans emporter l'autre.
+     */
+    designation: nomComplet(associe),
+    /* Le bas de page ne redit pas l'identification complète : voir nomPourSignature. */
+    nomSignature: nomPourSignature(associe),
     parts: associe.parts ?? 0,
+    /* « 2 000 » : la liste des présents ne s'écrit pas sans séparateur de milliers. */
+    partsFormatees: montant(associe.parts ?? 0),
   }));
   const totalParts = associes.reduce((total, a) => total + a.parts, 0);
 
@@ -308,6 +378,13 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     SIEGE_SOCIAL: siege,
     ADRESSE_ACTUELLE: ou(societe.adresse),
     VILLE_ACTUELLE: ou(societe.ville),
+    /*
+     * La ville où l'acte est signé, écrite comme on l'écrit dans une phrase.
+     *
+     * L'adresse du siège vient du registre en capitales - « 10 RUE DE PENTHIEVRE 75008
+     * PARIS » - et « Fait à PARIS » criait au bas de l'acte.
+     */
+    VILLE_SIGNATURE: enCapitaleInitiale(ou(societe.ville, "")),
     CP_ACTUEL: ou(societe.codePostal),
     CAPITAL_MONTANT: capital,
     CAPITAL_FORMATE: montant(capital),
@@ -363,6 +440,15 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     /* ------------------------------------------------- Ce qui est décidé */
     TYPE_MODIFICATION: codes.join(","),
     LABEL_MODIFICATION: choisies.map((d) => d.libelle).join(", "),
+    /*
+     * L'ordre du jour, point par point.
+     *
+     * Il s'écrivait sur une seule ligne, séparé par des virgules : « transfert de siège
+     * social, changement de dénomination sociale, augmentation de capital ». Un acte se
+     * lit en diagonale avant d'être signé, et l'ordre du jour est ce qu'on y cherche en
+     * premier - il se pose donc en liste, un point par ligne.
+     */
+    MODIFICATIONS: choisies.map((d) => ({ libelle: d.libelle })),
     TYPES_LABEL: choisies.map((d) => d.libelle).join(", "),
     NOMBRE_RESOLUTIONS: choisies.length,
 
@@ -541,6 +627,22 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     IS_COMPENSATION_CREANCES: valeurs.modeAugmentation === "Compensation de créances",
     IS_INCORPORATION_RESERVES: valeurs.modeAugmentation === "Incorporation de réserves",
     IS_APPORT_NATURE: valeurs.modeAugmentation === "Apport en nature",
+
+    /*
+     * L'information du conjoint, portée dans l'acte.
+     *
+     * L'article 1832-2 du code civil exige que l'avertissement du conjoint soit
+     * « justifié dans l'acte » : la mention doit donc figurer au procès-verbal, sans
+     * quoi la clause est réputée absente et l'opération peut être annulée pendant deux
+     * ans. La revendication de la qualité d'associé, si elle est faite, s'y constate
+     * aussi - elle porte sur la moitié des parts souscrites.
+     */
+    IS_APPORT_BIEN_COMMUN:
+      valeurs.modeAugmentation === "Apport en nature" &&
+      valeurs.apportBienCommun === "Oui : le bien apporté est un bien commun",
+    IS_CONJOINT_REVENDIQUE:
+      valeurs.conjointRevendication === "Oui : il revendique la moitié des parts",
+    CONJOINT_NOM: texte(valeurs.conjointNomComplet) || TIRET,
     NB_PARTS_CEDEES: cessions[0]
       ? nombreOuTiret(cessions[0].PARTS as number)
       : nombreOuTiret(valeurs.nbPartsCedees),

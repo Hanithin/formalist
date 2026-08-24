@@ -214,10 +214,18 @@ function improveLayout(docXml) {
         } else {
           p = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="' + before + '" w:after="' + after + '" w:line="312" w:lineRule="auto"/>');
         }
-        // Long ALL CAPS section title → bump font size to 30 (15pt)
-        if (isSectionTitle) {
-          p = p.replace(/<w:sz w:val="\d+"\s*\/>/g, '<w:sz w:val="30"/>');
-          p = p.replace(/<w:szCs w:val="\d+"\s*\/>/g, '<w:szCs w:val="30"/>');
+        /*
+         * Un titre qui ne dit pas sa taille en reçoit une ; celui qui la dit la garde.
+         *
+         * Toute ligne en capitales de plus de douze caractères passait à 15 points : le
+         * nom de la société, le titre de l'acte et chaque intertitre de résolution s'y
+         * retrouvaient à la même taille, et la hiérarchie du document disparaissait. Les
+         * gabarits portent désormais leur propre échelle - société 13 pt, titre 12,5 pt,
+         * intertitres 11 pt - et c'est elle qui décide. Le repli ne sert plus qu'aux
+         * gabarits muets.
+         */
+        if (isSectionTitle && !/<w:sz w:val="\d+"/.test(p)) {
+          p = p.replace(/<w:rPr>/g, '<w:rPr><w:sz w:val="26"/><w:szCs w:val="26"/>');
         }
       }
     }

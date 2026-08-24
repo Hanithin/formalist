@@ -2,6 +2,17 @@
 /**
  * Create DOCX templates for modification module
  * Run: node scripts/create-modif-templates.js
+ *
+ * ATTENTION - ce script est en retard sur les gabarits livrés.
+ *
+ * Les DOCX de templates/ ont reçu depuis des blocs qu'il ne produit pas : l'apport de
+ * titres et sa double augmentation de capital, la cession sans agrément, la mention de
+ * l'article 1832-2 du code civil. Le relancer tel quel les efface - vérifié le
+ * 24 août 2026, sur modif-pv-transfert-siege-sarl.docx.
+ *
+ * Une modification ponctuelle se fait donc par un script dédié qui insère dans les
+ * fichiers existants, sur le modèle de scripts/mention-1832-2.js. Ce générateur ne
+ * reprendra du service que le jour où il rendra ce que les gabarits portent.
  */
 const fs = require("fs");
 const path = require("path");
