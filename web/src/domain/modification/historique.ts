@@ -61,6 +61,14 @@ function memeRetouche(a: Retouche, b: Retouche): boolean {
     a.taille === b.taille &&
     (a.police ?? "serif") === (b.police ?? "serif") &&
     (a.alignement ?? "gauche") === (b.alignement ?? "gauche") &&
+    /*
+     * L'inclinaison compte comme le reste.
+     *
+     * Sans elle, pencher un cadre laissait l'état « inchangé » : l'enregistrement
+     * repartait sans rien écrire, et l'inclinaison disparaissait au premier
+     * rafraîchissement.
+     */
+    (a.angle ?? 0) === (b.angle ?? 0) &&
     !!a.gras === !!b.gras &&
     !!a.italique === !!b.italique &&
     !!a.souligne === !!b.souligne &&

@@ -563,9 +563,9 @@
 .bandeauAssigne {
   margin-bottom: 20px;
   padding: 18px 20px 16px;
-  border: 1px solid #e9d5ff;
+  border: 1px solid #e6e1f2;
   border-radius: 14px;
-  background: linear-gradient(180deg, #faf5ff 0%, #fdfbff 100%);
+  background: linear-gradient(180deg, #f8f6fc 0%, #fdfcfe 100%);
 }
 
 .bandeauAssigneHaut {
@@ -582,7 +582,7 @@
   height: 34px;
   flex-shrink: 0;
   border-radius: 10px;
-  background: #7c3aed;
+  background: #7a6ba8;
   color: #fff;
 }
 
@@ -600,7 +600,7 @@
   margin: 0 0 2px;
   font-size: 14.5px;
   font-weight: 600;
-  color: #5b21b6;
+  color: #55496f;
 }
 
 .bandeauAssigneDetail {
@@ -608,7 +608,7 @@
   max-width: 70ch;
   font-size: 13px;
   line-height: 1.5;
-  color: #7e57a4;
+  color: #7b7291;
 }
 
 /* L'avancement, du même côté que le geste qui le fera avancer. */
@@ -627,13 +627,13 @@
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
-  color: #5b21b6;
+  color: #55496f;
 }
 
 .bandeauAssigneSurTotal {
   font-size: 14px;
   font-weight: 500;
-  color: #a78bda;
+  color: #a29ab5;
 }
 
 .bandeauAssigneLegende {
@@ -641,14 +641,14 @@
   font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
-  color: #a78bda;
+  color: #a29ab5;
 }
 
 .jauge {
   height: 4px;
   margin: 14px 0 14px;
   border-radius: 100px;
-  background: #ede9fe;
+  background: #eae6f4;
   overflow: hidden;
 }
 
@@ -656,7 +656,7 @@
   display: block;
   height: 100%;
   border-radius: 100px;
-  background: #7c3aed;
+  background: #7a6ba8;
 }
 
 .bandeauAssigneBas {
@@ -684,7 +684,7 @@
 .bandeauAssigneEtapeTitre {
   font-size: 14px;
   font-weight: 600;
-  color: #3b0764;
+  color: #3f3a4d;
 }
 
 /* Ce qui empêche la tâche passe à la ligne : c'est une phrase, pas une étiquette. */
@@ -697,8 +697,8 @@
 .bandeauAssigneBouton {
   padding: 9px 18px;
   border-radius: 100px;
-  border: 1px solid #7c3aed;
-  background: #7c3aed;
+  border: 1px solid #6f6193;
+  background: #6f6193;
   color: #fff;
   font-size: 13.5px;
   font-weight: 500;
@@ -708,8 +708,8 @@
 }
 
 .bandeauAssigneBouton:hover {
-  background: #6d28d9;
-  border-color: #6d28d9;
+  background: #5d5180;
+  border-color: #5d5180;
 }
 
 /* ---------- Prendre un dossier depuis sa page ---------- */
@@ -819,8 +819,8 @@
   color: #16a34a;
 }
 .badge.purple {
-  background: #f3e8ff;
-  color: #7c3aed;
+  background: #f4f1fa;
+  color: #6f6193;
 }
 .badge.red {
   background: #fef2f2;
@@ -898,10 +898,16 @@
   color: #52525b;
 }
 /* Qui s'en occupe : la même teinte que la pastille de la liste. */
+/*
+ * Un violet éteint, pas un violet d'écran d'accueil.
+ *
+ * La teinte pleine - #7c3aed - saute au visage sur un écran de travail qu'on regarde
+ * des heures, et donne à l'assignation plus d'importance qu'au dossier lui-même.
+ */
 .detailBadge.assigne {
-  border-color: #e9d5ff;
-  background: #f3e8ff;
-  color: #7c3aed;
+  border-color: #e6e1f2;
+  background: #f4f1fa;
+  color: #6f6193;
 }
 .detailBadge.muted {
   background: #fafafa;

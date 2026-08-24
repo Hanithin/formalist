@@ -100,6 +100,17 @@ describe("les gestes sans effet", () => {
     const gras = etat({ retouches: [cadre({ fragments: [{ texte: "Texte", gras: true }] })] });
     expect(memeEtat(etat(), gras)).toBe(false);
   });
+
+  it("pencher un cadre est un geste, et s'enregistre", () => {
+    /*
+     * L'inclinaison manquait à la comparaison : l'état passait pour inchangé,
+     * l'enregistrement repartait sans rien écrire, et le cadre se redressait tout seul
+     * au premier rafraîchissement.
+     */
+    const penche = etat({ retouches: [cadre({ angle: 1.5 })] });
+    expect(memeEtat(etat(), penche)).toBe(false);
+    expect(memeEtat(penche, penche)).toBe(true);
+  });
 });
 
 describe("l'inscription", () => {
