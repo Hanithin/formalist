@@ -18,7 +18,12 @@ import {
   type DocumentRange,
   type GroupeDeDocuments,
 } from "@/domain/document/bibliotheque";
-import { FILTRES_DOCUMENTS, libelleFiltre } from "@/domain/document/statuts";
+import {
+  FILTRES_DOCUMENTS,
+  filtresUtiles,
+  libelleFiltre,
+  estStatutsRepris,
+} from "@/domain/document/statuts";
 import { formaterDate } from "@/lib/dates";
 import { Apercu } from "./Apercu";
 import styles from "./Documents.module.css";
@@ -218,7 +223,7 @@ export function Bibliotheque({
   return (
     <>
       <div className={styles.barre}>
-        {FILTRES_DOCUMENTS.map((f) => (
+        {filtresUtiles(FILTRES_DOCUMENTS, comptes, filtre).map((f) => (
           <button
             type="button"
             key={f.valeur}
@@ -301,6 +306,23 @@ export function Bibliotheque({
               surRemplacement={setRemplacement}
             />
           ))}
+
+          {/*
+            La sortie vers les formalités, au bout de la liste.
+            
+            Un document naît d'une formalité : celui qui ne trouve pas le sien cherche
+            le dossier qui devrait le produire, et il n'avait pour cela que la barre de
+            gauche. Le pied de liste le dit et y mène.
+          */}
+          <div className={styles.pied}>
+            <span className={styles.piedTexte}>
+              Vos documents apparaissent ici au fil de vos formalités.
+            </span>
+            <Link href="/formalites" className={styles.action}>
+              Voir toutes mes formalités
+              <Chevron />
+            </Link>
+          </div>
         </>
       )}
 
@@ -449,10 +471,39 @@ function Carte({
   const attente = aRemplacer(document);
   // Un document refusé porte cette marque plutôt que son statut : c'est ce qu'on
   // doit en retenir.
-  const etiquette = attente ? "À remplacer" : (ETIQUETTES[document.statut ?? ""] ?? "Document");
+  /*
+   * Les statuts en vigueur sont déposés au greffe, non générés par nous.
+   *
+   * Ils entrent au dossier comme tout ce que la plateforme y écrit, donc avec l'état
+   * « generated », et la pastille les annonçait « Généré le 2 septembre 2022 » : nous
+   * n'avons rien rédigé, nous sommes allés chercher au registre un acte que la société
+   * a déposé. La pastille le dit dans ses mots - « Déposé au greffe le 2 septembre
+   * 2022 » - et la date est celle de ce dépôt.
+   */
+  const repris = estStatutsRepris(document.nom);
+  const etiquette = attente
+    ? "À remplacer"
+    : repris
+      ? "Repris au registre"
+      : (ETIQUETTES[document.statut ?? ""] ?? "Document");
+
+  /*
+   * L'acte que l'avocat relit : présent, mais pas encore remis.
+   *
+   * Il figure ici pour qu'une bibliothèque ne paraisse pas vide après le règlement,
+   * en retrait de ce qui est disponible - sans quoi on cliquerait dessus et l'on
+   * découvrirait qu'il n'y a rien à ouvrir.
+   */
+  const chezLAvocat = document.enRelecture;
 
   return (
-    <div className={styles.carte + (attente ? " " + styles.carteAremplacer : "")}>
+    <div
+      className={
+        styles.carte +
+        (attente ? " " + styles.carteAremplacer : "") +
+        (chezLAvocat ? " " + styles.carteEnRelecture : "")
+      }
+    >
       <span className={styles.icone}>{attente ? <Alerte /> : <Feuille />}</span>
 
       <span className={styles.corps}>
@@ -464,12 +515,33 @@ function Carte({
             comme une échéance, alors que c'est la date du dépôt refusé. Là, la pastille
             ne porte que la demande, et la date reprend sa place à côté.
           */}
-          <span className={styles.etiquette + (attente ? " " + styles.etiquetteAttente : "")}>
+          <span
+            className={
+              styles.etiquette +
+              (attente ? " " + styles.etiquetteAttente : "") +
+              (chezLAvocat ? " " + styles.etiquetteRelecture : "")
+            }
+          >
             {attente
               ? "À remplacer"
-              : etiquette + (document.creeLe ? " le " + formaterDate(document.creeLe) : "")}
+              : chezLAvocat
+                ? "Chez votre avocat"
+                : repris
+                  ? /*
+                      La version qui fait foi aujourd'hui au greffe.
+                      
+                      « Généré le 2 septembre 2022 » nous en attribuait la rédaction ;
+                      « Déposé au greffe le 2 septembre 2022 » se lisait comme un dépôt
+                      que nous venions de faire. C'est la version en vigueur au greffe,
+                      déposée par le client en deux mille vingt-deux.
+                    */
+                    "Version actuellement au greffe"
+                  : etiquette + (document.creeLe ? " le " + formaterDate(document.creeLe) : "")}
           </span>
           {attente && document.creeLe && <span>Déposé le {formaterDate(document.creeLe)}</span>}
+          {repris && document.creeLe && (
+            <span>vous les avez déposés le {formaterDate(document.creeLe)}</span>
+          )}
           {/*
             Le motif du refus se lit à côté du document, et non dans un écran séparé :
             c'est lui qui dit quoi redéposer.
@@ -501,6 +573,10 @@ function Carte({
           >
             Télécharger
           </button>
+        ) : chezLAvocat ? (
+          // Ce qu'on attend, et de qui : « pas encore de fichier » laisserait croire
+          // à un oubli du client.
+          <span className={styles.sansFichier}>En relecture</span>
         ) : (
           // Un document attendu mais pas encore fourni : le dire vaut mieux qu'un
           // bouton qui ne mènerait nulle part.

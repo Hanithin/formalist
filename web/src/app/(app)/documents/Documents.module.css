@@ -426,6 +426,27 @@
   color: #b45309;
 }
 
+/*
+ * L'acte que l'avocat relit : présent, en retrait.
+ *
+ * Il figure dans la liste pour qu'elle ne paraisse pas vide après le règlement, mais
+ * il ne se prend pas pour un document remis : nom en gris, pastille bleutée, et rien
+ * à cliquer - il n'a pas de fichier à ouvrir.
+ */
+.carteEnRelecture .nom {
+  color: #71717a;
+}
+
+.carteEnRelecture .icone {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.etiquetteRelecture {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
 /* Colonne de largeur fixe : sans elle, le bord droit ondule d'une ligne à l'autre. */
 .actions {
   display: flex;
@@ -468,6 +489,38 @@
   background: #2a2a2c;
   border-color: #2a2a2c;
   color: #fff;
+}
+
+/* ---------- Pied de liste ---------- */
+
+/*
+ * Le bout de la liste dit où sont fabriqués les documents.
+ *
+ * Sous le dernier groupe, la page s'arrêtait sur du vide ; celui qui ne trouve pas son
+ * document n'avait que la barre de gauche pour aller voir le dossier qui doit le
+ * produire.
+ */
+.pied {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 22px 0 4px;
+  padding-top: 18px;
+  border-top: 1px solid #ececee;
+}
+
+.piedTexte {
+  font-size: 13px;
+  color: #8a8a8f;
+}
+
+.pied .action svg {
+  width: 14px;
+  height: 14px;
+  margin-right: -3px;
+  color: #9a9aa0;
 }
 
 .sansFichier {
@@ -776,9 +829,18 @@
   background: #fff;
 }
 
-.apercuMessage {
+/*
+ * Le message de l'aperçu, sans la teinte des messages d'état.
+ *
+ * globals.css encadre tout [role="status"] en vert : « L'aperçu n'a pas pu être
+ * préparé » s'affichait donc dans un cadre de réussite. Le sélecteur porte le nom de
+ * la balise pour l'emporter sur la règle générale.
+ */
+p.apercuMessage {
   margin: 0;
   padding: 24px;
+  border: none;
+  background: none;
   text-align: center;
   font-size: 14px;
   color: #71717a;

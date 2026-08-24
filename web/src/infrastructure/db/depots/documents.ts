@@ -1,5 +1,6 @@
 import { prisma } from "../client";
 import { mesDossiers, exigerDossier } from "./dossiers";
+import { paiementDuBrouillon } from "./brouillons";
 import {
   A_RELIRE,
   visibleParLeClient,
@@ -8,6 +9,7 @@ import {
 import type { DossierListe } from "@/domain/formalite/liste";
 import type { DocumentRange } from "@/domain/document/bibliotheque";
 import { piecesAttendues } from "@/domain/formalite/documents";
+import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -28,13 +30,19 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
   const dossiers = await mesDossiers(utilisateur);
   const dossiersParId = new Map(dossiers.map((d) => [d.id, d]));
 
+  /*
+   * Les actes en relecture figurent dans la liste, sans leur fichier.
+   *
+   * On les écartait : la bibliothèque paraissait vide juste après le règlement, et le
+   * client rappelait pour demander où étaient les actes qu'il venait de payer. Il les
+   * voit maintenant, marqués « chez l'avocat » - mais `visibleParLeClient` continue de
+   * décider qui reçoit un chemin de fichier, et un acte non relu n'en a pas.
+   */
   const documents = dossiers.length
-    ? (
-        await prisma.documents.findMany({
-          where: { formalite_id: { in: [...dossiersParId.keys()] } },
-          orderBy: { created_at: "desc" },
-        })
-      ).filter(visibleParLeClient)
+    ? await prisma.documents.findMany({
+        where: { formalite_id: { in: [...dossiersParId.keys()] } },
+        orderBy: { created_at: "desc" },
+      })
     : [];
 
   const coffre = await prisma.user_documents.findMany({
@@ -60,6 +68,7 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
       nom: d.name,
       statut: d.status,
       motifRejet: d.rejection_reason,
+      enRelecture: !visibleParLeClient(d),
       origine: "entreprise" as const,
       societe: dossiersParId.get(d.formalite_id)?.societe ?? null,
       societeId: d.formalite_id,
@@ -68,7 +77,8 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
       remplacable: piecesAttendues(dossiersParId.get(d.formalite_id)?.forme).some(
         (p) => p.identifiant === d.type
       ),
-      fichier: d.file_path,
+      // Pas de chemin tant que l'avocat ne l'a pas rendu : rien avec quoi l'ouvrir.
+      fichier: visibleParLeClient(d) ? d.file_path : null,
       creeLe: d.created_at,
       contratId: null,
     })),
@@ -81,6 +91,8 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
         nom: d.name,
         statut: d.status,
         motifRejet: null,
+        // Un dépôt du client n'attend personne : il est à lui, tout de suite.
+        enRelecture: false,
         origine: (contrat ? "contrat" : "upload") as "contrat" | "upload",
         societe: dossier?.societe ?? null,
         societeId: dossier?.id ?? null,
@@ -151,6 +163,7 @@ export async function formalitesPourListe(
     _count: { _all: true },
   });
   const nonLusPar = new Map(nonLus.map((m) => [m.formalite_id, m._count._all]));
+  const brouillons = await brouillonsParmi(dossiers);
 
   return dossiers.map((d) => ({
     id: d.id,
@@ -164,7 +177,50 @@ export async function formalitesPourListe(
     banque: banqueDuBrouillon(d.data_json),
     modifieLe: d.updated_at,
     nonLus: nonLusPar.get(d.id) ?? 0,
+    brouillon: brouillons.has(d.id),
   }));
+}
+
+/**
+ * Lesquels de ces dossiers ne sont encore que des brouillons ?
+ *
+ * Un brouillon n'a jamais quitté les mains de son propriétaire : rien de réglé, rien
+ * de transmis, aucune signature demandée. La carte le dit, et c'est le seul dossier
+ * que le client peut retirer lui-même.
+ *
+ * Les deux requêtes ne portent que sur les dossiers restés candidats après les
+ * conditions lisibles sur la ligne : sur un compte qui n'a que des dossiers en cours
+ * de traitement, elles ne sont pas envoyées.
+ */
+async function brouillonsParmi(
+  dossiers: { id: number; status: string; assigned_avocat_id: number | null; finalized_at: Date | null; data_json: string | null }[]
+): Promise<Set<number>> {
+  const candidats = dossiers.filter(
+    (d) =>
+      d.status === "en_cours" &&
+      d.assigned_avocat_id === null &&
+      d.finalized_at === null &&
+      !paiementDuBrouillon(d.data_json)
+  );
+  if (candidats.length === 0) return new Set();
+
+  const identifiants = candidats.map((d) => d.id);
+  const [reglements, signatures] = await Promise.all([
+    prisma.payments.findMany({
+      where: { formalite_id: { in: identifiants }, status: "paid" },
+      select: { formalite_id: true },
+    }),
+    prisma.signature_requests.findMany({
+      where: { formalite_id: { in: identifiants } },
+      select: { formalite_id: true },
+    }),
+  ]);
+
+  const engages = new Set<number>();
+  for (const r of reglements) if (r.formalite_id !== null) engages.add(r.formalite_id);
+  for (const s of signatures) engages.add(s.formalite_id);
+
+  return new Set(identifiants.filter((id) => !engages.has(id)));
 }
 
 /** La banque choisie dans le brouillon, s'il en porte une de lisible. */
@@ -223,7 +279,19 @@ export async function actesDuDossier(
   await exigerDossier(utilisateur, dossierId);
 
   const lignes = await prisma.documents.findMany({
-    where: { formalite_id: dossierId, uploaded_by: "system" },
+    where: {
+      formalite_id: dossierId,
+      uploaded_by: "system",
+      /*
+       * Les statuts en vigueur ne sont pas un acte produit.
+       *
+       * Ils sont joints au dossier - l'éditeur de retouches les relit page par page -
+       * mais ils viennent du registre ou du client. Ils s'affichaient parmi « vos
+       * actes », marqués « Relu, à votre disposition », comme si le cabinet les avait
+       * rédigés.
+       */
+      name: { not: TITRE_STATUTS_EN_VIGUEUR },
+    },
     orderBy: { created_at: "asc" },
     select: { id: true, name: true, status: true },
   });

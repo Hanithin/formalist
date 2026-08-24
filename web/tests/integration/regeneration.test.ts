@@ -2,7 +2,15 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/infrastructure/db/client";
-import { remplacerDocumentsProduits } from "@/infrastructure/documents/depot";
+import {
+  remplacerDocumentsProduits,
+  deposerPdfProduit,
+} from "@/infrastructure/documents/depot";
+import {
+  TITRE_STATUTS_EN_VIGUEUR,
+  TITRE_STATUTS_A_JOUR,
+} from "@/domain/modification/formalites";
+import { A_RELIRE } from "@/domain/document/publication";
 import { conversionDisponible } from "@/infrastructure/documents/conversion";
 import { genererDocument } from "@/infrastructure/documents/generation";
 import { hacher } from "@/lib/mots-de-passe";
@@ -221,5 +229,47 @@ avecBase("régénération des actes", () => {
     const apres = await actesDu(dossier);
     expect(apres).toHaveLength(JEU.length + 1);
     expect(apres.find((d) => d.id === piece.id)?.file_path).toBe("piece-essai.pdf");
+  });
+
+  it("les statuts joints au dossier survivent à la production des actes", async () => {
+    const dossier = await nouveauDossier();
+
+    /*
+     * Les statuts entrent au dossier avec le même déposant que les actes.
+     *
+     * Le balayage les emportait donc en produisant le procès-verbal : le fichier repris
+     * au registre disparaissait, et l'étape des retouches n'avait plus rien à ouvrir.
+     */
+    await deposerPdfProduit(dossier, TITRE_STATUTS_EN_VIGUEUR, Buffer.from("%PDF-registre"));
+    await deposerPdfProduit(dossier, TITRE_STATUTS_A_JOUR, Buffer.from("%PDF-retouche"), {
+      aRelire: true,
+    });
+
+    await remplacerDocumentsProduits(dossier, JEU, { aRelire: true });
+
+    const apres = await actesDu(dossier);
+    const enVigueur = apres.find((d) => d.name === TITRE_STATUTS_EN_VIGUEUR);
+    const aJour = apres.find((d) => d.name === TITRE_STATUTS_A_JOUR);
+
+    expect(enVigueur).toBeTruthy();
+    expect(await surLeDisque(enVigueur!.file_path!)).toBe(true);
+    expect(aJour).toBeTruthy();
+    // Ce qui sort de la retouche est un projet : l'avocat le reprend avant le greffe.
+    expect(aJour!.status).toBe(A_RELIRE);
+    expect(apres).toHaveLength(JEU.length + 2);
+  });
+
+  it("les statuts repris au registre portent la date de leur dépôt", async () => {
+    const dossier = await nouveauDossier();
+
+    // Ces statuts ont été déposés au greffe des années plus tôt ; nous n'avons fait
+    // qu'aller les chercher, et la bibliothèque les datait du jour même.
+    const depot = new Date("2022-09-02T00:00:00.000Z");
+    await deposerPdfProduit(dossier, TITRE_STATUTS_EN_VIGUEUR, Buffer.from("%PDF-registre"), {
+      date: depot,
+    });
+
+    const [document] = await actesDu(dossier);
+    expect(document.created_at?.toISOString()).toBe(depot.toISOString());
   });
 });

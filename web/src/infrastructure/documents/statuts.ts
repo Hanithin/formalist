@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, writeFile, rm, readdir } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm, readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -30,6 +31,14 @@ import {
  * sélectionnable, dont le greffe aurait vu qu'il avait été retravaillé.
  */
 const executer = promisify(execFile);
+
+/*
+ * Où sont gardées les lectures déjà faites.
+ *
+ * À côté des dépôts, pour la même raison qu'eux : ce sont des fichiers de travail, et
+ * ils suivront le stockage objet le jour où les dépôts y passeront.
+ */
+const CACHE = join(process.cwd(), "..", "uploads", "lectures");
 
 /** Au-delà, ce n'est plus des statuts : on refuse plutôt que de faire ramer la machine. */
 const PAGES_MAXIMUM = 60;
@@ -187,6 +196,42 @@ async function reconnaissance(
  * toujours une - il vient d'un dépôt numérique - mais les dépôts anciens sont des
  * numérisations.
  */
+/**
+ * La lecture d'un document, gardée d'une fois sur l'autre.
+ *
+ * Lire des statuts numérisés, c'est en reconnaître les caractères page par page : une
+ * quarantaine de secondes pour dix-sept pages. L'écran de retouche relançait ce travail
+ * à chaque ouverture de l'onglet - le même document, le même résultat, et l'avocat
+ * devant « Lecture des statuts… » à chaque aller-retour.
+ *
+ * La clé est l'empreinte du fichier : un document remplacé a une autre empreinte, et sa
+ * lecture ne peut donc pas être servie à sa place. Un cache illisible ou périmé est
+ * ignoré plutôt que fatal - au pire, on relit.
+ */
+export async function lireLesStatutsEnCache(pdf: Buffer): Promise<LectureDesStatuts> {
+  const empreinte = createHash("sha1").update(pdf).digest("hex");
+  const fichier = join(CACHE, empreinte + ".json");
+
+  try {
+    const garde = JSON.parse(await readFile(fichier, "utf8")) as LectureDesStatuts;
+    if (Array.isArray(garde.pages) && Array.isArray(garde.mots)) return garde;
+  } catch {
+    // Rien en cache, ou cache abîmé : on lit.
+  }
+
+  const lecture = await lireLesStatuts(pdf);
+
+  try {
+    await mkdir(CACHE, { recursive: true });
+    await writeFile(fichier, JSON.stringify(lecture));
+  } catch (e) {
+    // Un cache qui ne s'écrit pas ne doit pas faire échouer une lecture réussie.
+    journal.warn({ err: e }, "Lecture des statuts non mise en cache");
+  }
+
+  return lecture;
+}
+
 export async function lireLesStatuts(pdf: Buffer): Promise<LectureDesStatuts> {
   if (pdf.byteLength > OCTETS_MAXIMUM) {
     throw new StatutsIllisibles("Ce document dépasse 25 Mo");

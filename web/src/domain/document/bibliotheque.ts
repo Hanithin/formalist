@@ -23,6 +23,16 @@ export interface DocumentRange {
   /** L'identifiant de la pièce attendue, pour pouvoir la remplacer. */
   type: string | null;
   /**
+   * L'acte est chez l'avocat, qui le relit ou le retouche.
+   *
+   * Il figure dans la bibliothèque sans être remis : la cacher jusqu'à la relecture
+   * donnait une bibliothèque vide juste après le règlement, et l'on rappelait pour
+   * demander où étaient les actes qu'on venait de payer. Sans son fichier, donc :
+   * l'écran n'a rien avec quoi l'ouvrir, la règle tient par ce que la forme ne porte
+   * pas.
+   */
+  enRelecture: boolean;
+  /**
    * Le document répond-il à une pièce que le dossier attend ?
    *
    * Sans cette réponse, l'interface proposait « Remplacer » pour tout document refusé,

@@ -92,9 +92,17 @@ export async function fichierLisible(
     if (await dossierAccessible(utilisateur, registre.formalite_id)) return nom;
   }
 
-  // 2. Document rattaché à un dossier
+  /*
+   * 2. Document rattaché à un dossier - son PDF comme son Word d'origine.
+   *
+   * Un acte produit est stocké deux fois : le PDF qu'on remet, et le Word qui l'a
+   * produit. Seul le premier était reconnu ici, si bien que le cabinet ne pouvait pas
+   * ouvrir le document qu'il doit justement corriger.
+   */
   const document = await prisma.documents.findFirst({
-    where: { file_path: { endsWith: nom } },
+    where: {
+      OR: [{ file_path: { endsWith: nom } }, { source_path: { endsWith: nom } }],
+    },
     select: { formalite_id: true },
   });
   if (document && (await dossierAccessible(utilisateur, document.formalite_id))) return nom;

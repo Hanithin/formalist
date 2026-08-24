@@ -5,6 +5,10 @@ import { exigerDossierModifiable, lireDossier } from "@/infrastructure/db/depots
 import { verifierDepot, nomDeStockage } from "@/lib/fichiers";
 import { convertirEnPdf, ConversionImpossible } from "./conversion";
 import { A_RELIRE } from "@/domain/document/publication";
+import {
+  TITRE_STATUTS_EN_VIGUEUR,
+  TITRE_STATUTS_A_JOUR,
+} from "@/domain/modification/formalites";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "@/infrastructure/db/sessions";
 
@@ -46,6 +50,42 @@ export async function deposerPiece(
       original_name: fichier.name,
     },
   });
+
+  /*
+   * Redéposer une pièce la remplace, au lieu de l'empiler.
+   *
+   * Rien n'écartait le dépôt précédent : un client qui s'était trompé de fichier, ou
+   * qui répondait à un refus, laissait deux « Justificatif de jouissance du nouveau
+   * local » côte à côte. L'avocat devait alors deviner lequel faisait foi, et statuer
+   * deux fois sur la même pièce.
+   *
+   * Une pièce déjà vérifiée ou signée n'est pas touchée : elle est figée, comme les
+   * actes que remplacerDocumentsProduits conserve. Le nouveau dépôt s'ajoute à côté, et
+   * c'est à l'avocat de trancher - nous ne détruisons pas une pièce qu'il a validée.
+   */
+  const remplaces = await prisma.documents.findMany({
+    where: {
+      formalite_id: dossier.id,
+      type: piece.identifiant,
+      status: "uploaded",
+    },
+  });
+
+  if (remplaces.length > 0) {
+    await prisma.documents.deleteMany({
+      where: { id: { in: remplaces.map((d) => d.id) } },
+    });
+
+    for (const ancien of remplaces) {
+      if (!ancien.file_path) continue;
+      try {
+        await rm(path.join(DEPOT, ancien.file_path), { force: true });
+      } catch (e) {
+        // Un fichier qui résiste ne doit pas faire échouer un dépôt réussi.
+        journal.warn({ err: e, fichier: ancien.file_path }, "Pièce remplacée non supprimée");
+      }
+    }
+  }
 
   const document = await prisma.documents.create({
     data: {
@@ -186,9 +226,22 @@ export async function remplacerDocumentsProduits(
    * remplacent quand on reproduit le jeu.
    */
   const remplacables = new Set([A_RELIRE, "generated"]);
-  const conserves = existants.filter((d) => !remplacables.has(d.status));
+
+  /*
+   * Les statuts ne sont pas des actes du jeu : ils y échappent.
+   *
+   * Ils sont enregistrés comme documents du dossier - la retouche relit les statuts en
+   * vigueur page par page, et y écrit les statuts à jour - avec le même déposant que
+   * les actes. Le balayage les emportait donc en régénérant le procès-verbal : le
+   * fichier repris au registre disparaissait, et l'étape des retouches n'avait plus
+   * rien à ouvrir.
+   */
+  const horsDuJeu = new Set([TITRE_STATUTS_EN_VIGUEUR, TITRE_STATUTS_A_JOUR]);
+  const duJeu = existants.filter((d) => !horsDuJeu.has(d.name));
+
+  const conserves = duJeu.filter((d) => !remplacables.has(d.status));
   const figes = new Set(conserves.map((d) => d.name));
-  const remplaces = existants.filter((d) => remplacables.has(d.status));
+  const remplaces = duJeu.filter((d) => remplacables.has(d.status));
 
   await mkdir(DEPOT, { recursive: true });
 
@@ -273,6 +326,114 @@ export async function remplacerDocumentsProduits(
 }
 
 /**
+ * L'avocat remplace un projet d'acte par sa version corrigée.
+ *
+ * Le cabinet produit le procès-verbal en Word puis le fige en PDF ; l'avocat n'avait
+ * accès qu'au PDF, qu'on ne corrige pas. Il télécharge donc le Word, le reprend dans
+ * son traitement de texte, et redépose le fichier ici : le PDF remis au client est
+ * refait à partir de sa version, et le Word corrigé devient la nouvelle source.
+ *
+ * Seul un projet encore en relecture se remplace. Un acte relu, signé ou déposé est
+ * figé - le remplacer en silence détruirait une signature, ou changerait un document
+ * que le greffe a déjà reçu.
+ */
+export async function remplacerLeProjetDActe(
+  utilisateur: UtilisateurConnecte,
+  documentId: number,
+  fichier: File
+) {
+  const document = await prisma.documents.findUnique({ where: { id: documentId } });
+  if (!document) throw new ActeIntrouvable();
+
+  await exigerDossierModifiable(utilisateur, document.formalite_id);
+
+  if (document.uploaded_by !== "system" || document.status !== A_RELIRE) {
+    throw new ActeFige();
+  }
+
+  const contenu = new Uint8Array(await fichier.arrayBuffer());
+  verifierDepot(fichier.name, contenu, [".docx", ".pdf"]);
+
+  await mkdir(DEPOT, { recursive: true });
+  const extension = path.extname(fichier.name).toLowerCase();
+
+  /*
+   * Un Word est refait en PDF ; un PDF est pris tel quel.
+   *
+   * Sans conversion, le client recevrait un .docx là où tout le reste du dossier est
+   * en PDF - et l'aperçu de sa bibliothèque ne saurait pas l'afficher.
+   */
+  let livre: string;
+  let source: string | null = null;
+
+  if (extension === ".docx") {
+    source = nomDeStockage(".docx");
+    await writeFile(path.join(DEPOT, source), contenu);
+
+    try {
+      const pdf = await convertirEnPdf(Buffer.from(contenu));
+      livre = nomDeStockage(".pdf");
+      await writeFile(path.join(DEPOT, livre), pdf);
+    } catch (e) {
+      if (!(e instanceof ConversionImpossible)) throw e;
+      // LibreOffice indisponible : mieux vaut le Word au dossier qu'un remplacement
+      // refusé, la remise le convertira à la demande.
+      journal.warn({ acte: document.name }, "Acte remplacé en Word, conversion PDF indisponible");
+      livre = source;
+      source = null;
+    }
+  } else {
+    livre = nomDeStockage(".pdf");
+    await writeFile(path.join(DEPOT, livre), contenu);
+  }
+
+  const misAJour = await prisma.documents.update({
+    where: { id: documentId },
+    data: { file_path: livre, source_path: source, rejection_reason: null, rejected_at: null },
+  });
+
+  // Les fichiers d'avant, une fois la base à jour : une ligne qui désigne un fichier
+  // absent casse l'aperçu, un fichier sans ligne n'est qu'un octet perdu.
+  for (const ancien of [document.file_path, document.source_path]) {
+    if (!ancien || ancien === livre || ancien === source) continue;
+    try {
+      await rm(path.join(DEPOT, ancien), { force: true });
+    } catch (e) {
+      journal.warn({ err: e, fichier: ancien }, "Version remplacée non supprimée");
+    }
+  }
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: document.formalite_id,
+      actor_id: utilisateur.id,
+      actor_role: utilisateur.roles[0] ?? "avocat",
+      action: "acte_corrige",
+      before_value: document.file_path,
+      after_value: livre,
+    },
+  });
+
+  return { id: misAJour.id, titre: misAJour.name, fichier: livre };
+}
+
+export class ActeIntrouvable extends Error {
+  readonly statut = 404;
+  constructor() {
+    super("Cet acte n'existe pas");
+    this.name = "ActeIntrouvable";
+  }
+}
+
+export class ActeFige extends Error {
+  readonly statut = 400;
+  constructor() {
+    super("Cet acte n'est plus un projet : il ne se remplace pas");
+    this.name = "ActeFige";
+  }
+}
+
+/**
  * Enregistre un PDF déjà constitué comme document du dossier.
  *
  * remplacerDocumentsProduits part d'un Word et le convertit ; ici le PDF existe
@@ -283,7 +444,29 @@ export async function remplacerDocumentsProduits(
  * doit corriger les statuts à jour, non en accumuler quatre versions dont le greffe
  * recevrait la mauvaise.
  */
-export async function deposerPdfProduit(dossierId: number, titre: string, pdf: Buffer) {
+export async function deposerPdfProduit(
+  dossierId: number,
+  titre: string,
+  pdf: Buffer,
+  options: {
+    /**
+     * Le document attend la relecture de l'avocat.
+     *
+     * Les statuts à jour sortent de la retouche : ils ne sont pas remis au client
+     * avant que l'avocat les ait relus, comme le procès-verbal. Sans cela, un document
+     * que le cabinet doit encore corriger se téléchargeait aussitôt.
+     */
+    aRelire?: boolean;
+    /**
+     * La date du document, quand ce n'est pas celle de son enregistrement.
+     *
+     * Les statuts repris au registre datent de leur dépôt - deux mille vingt-deux, par
+     * exemple - et non du jour où nous sommes allés les chercher. « Généré le 24 août
+     * 2026 » leur donnait notre date et notre paternité.
+     */
+    date?: Date | null;
+  } = {}
+) {
   await mkdir(DEPOT, { recursive: true });
 
   const nom = nomDeStockage(".pdf");
@@ -304,8 +487,8 @@ export async function deposerPdfProduit(dossierId: number, titre: string, pdf: B
         type: "pdf",
         file_path: nom,
         uploaded_by: "system",
-        // Produit par le cabinet pour le cabinet : disponible sans attendre.
-        status: "generated",
+        status: options.aRelire ? A_RELIRE : "generated",
+        ...(options.date ? { created_at: options.date } : {}),
       },
     });
   });
@@ -320,6 +503,31 @@ export async function deposerPdfProduit(dossierId: number, titre: string, pdf: B
   }
 
   return { id: document.id, titre: document.name };
+}
+
+/**
+ * Efface des pièces du disque, sans toucher à la base.
+ *
+ * La suppression d'un brouillon retire d'abord ses lignes, en une transaction, puis
+ * appelle ceci : le disque est le seul endroit d'où l'on ne peut pas revenir en
+ * arrière, et il passe donc en dernier. Un fichier qui résiste est inscrit au journal
+ * plutôt que remonté - le dossier a déjà disparu de la base, échouer ici laisserait
+ * l'appelant croire que rien n'a été fait.
+ *
+ * Les noms viennent du registre, jamais d'une saisie : `path.basename` écarte malgré
+ * tout un « ../ » qui s'y serait glissé, car ce module écrit et efface dans un dossier
+ * qui contient les pièces de tous les clients.
+ */
+export async function effacerPieces(noms: (string | null)[]): Promise<void> {
+  for (const nom of noms) {
+    const propre = nom ? path.basename(nom.trim()) : "";
+    if (!propre || propre === "." || propre === "..") continue;
+    try {
+      await rm(path.join(DEPOT, propre), { force: true });
+    } catch (e) {
+      journal.warn({ err: e, fichier: propre }, "Pièce non effacée");
+    }
+  }
 }
 
 /** Le contenu d'un document produit, pour le relire et le retoucher. */
