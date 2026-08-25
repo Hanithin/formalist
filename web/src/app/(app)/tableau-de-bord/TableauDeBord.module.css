@@ -1597,12 +1597,25 @@
   list-style: none;
 }
 
+/*
+ * La rangée entière est un lien : elle se survole, elle se clique.
+ *
+ * Seul le bouton du bout l'était : il fallait viser un rectangle de cent pixels au bord
+ * de l'écran pour reprendre une saisie.
+ */
 .fileLigne {
   padding: 13px 18px;
   border: 0;
   border-bottom: 1px solid #f4f4f5;
   border-radius: 0;
   background: none;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.fileLigne:hover {
+  background: #fafafa;
 }
 
 .fileLignes li:last-child .fileLigne,
@@ -1662,20 +1675,31 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Le geste se lit, il ne se boutonne pas : voir .attentionGeste. */
 .fileGeste {
-  padding: 7px 15px;
-  border: 1px solid #e5e5e7;
-  border-radius: 9px;
-  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
-  font-weight: 600;
-  color: #18181b;
-  text-decoration: none;
+  font-weight: 500;
+  color: #71717a;
   white-space: nowrap;
 }
 
-.fileGeste:hover {
-  border-color: #18181b;
+.fileGeste svg {
+  width: 15px;
+  height: 15px;
+  color: #a1a1aa;
+  transition: transform 0.15s ease;
+}
+
+.fileLigne:hover .fileGeste {
+  color: #18181b;
+}
+
+.fileLigne:hover .fileGeste svg {
+  color: #18181b;
+  transform: translateX(2px);
 }
 
 .filePied {

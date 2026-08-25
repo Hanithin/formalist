@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { ATTENTES_MONTREES } from "@/domain/formalite/actions";
 import type { ActionDeDossier } from "@/domain/formalite/actions";
-import { enRetard, type Echeance, type Indicateurs, type Ton } from "@/domain/formalite/accueil";
+import {
+  enRetard,
+  unParSociete,
+  sansRepetition,
+  type Echeance,
+  type Indicateurs,
+  type Ton,
+} from "@/domain/formalite/accueil";
 import { dateRelative, phraseJournal, seSuffitAElleMeme } from "@/domain/formalite/journal";
 import type { EntreeJournal } from "@/domain/formalite/journal";
 import { ToutesLesAttentes } from "./ToutesLesAttentes";
@@ -264,7 +271,16 @@ export function FileDeTravail({
 
           <ul className={styles.fileLignes}>
             {lignes.map((ligne) => (
-              <li key={ligne.id} className={styles.fileLigne}>
+              /*
+                La rangée entière mène à la formalité.
+                
+                Seul le bouton du bout était cliquable : il fallait viser un rectangle
+                de cent pixels au bord de l'écran pour reprendre une saisie, et cinq
+                rangées faisaient cinq boutons « Reprendre » alignés, plus lourds que
+                ce qu'ils annonçaient.
+              */
+              <li key={ligne.id}>
+                <Link href={ligne.lien} className={styles.fileLigne}>
                 <span className={styles.fileCorps}>
                   <span className={styles.fileType}>{ligne.type}</span>
                   <span className={styles.filePrecision}>{ligne.precision}</span>
@@ -291,8 +307,20 @@ export function FileDeTravail({
                   <span className={styles.filePourcent}>{ligne.pourcentage} %</span>
                 </span>
 
-                <Link href={ligne.lien} className={styles.fileGeste}>
+                <span className={styles.fileGeste}>
                   {ligne.geste}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </span>
                 </Link>
               </li>
             ))}
@@ -319,6 +347,9 @@ export interface DocumentRecent {
   creeLe: Date | string | null;
 }
 
+/** Quatre cartes : au-delà, la rangée se replie et la première ligne perd son sens. */
+const DOCUMENTS_RECENTS = 4;
+
 const JOUR_COURT = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
 
 /** L'extension, en majuscules : c'est ce qu'on cherche d'abord dans une liste de pièces. */
@@ -335,7 +366,15 @@ function extension(nom: string): string {
  * C'est pourtant ce qu'on vient chercher le lendemain d'un dépôt.
  */
 export function DocumentsRecents({ documents }: { documents: DocumentRecent[] }) {
-  if (documents.length === 0) return null;
+  /*
+   * Quatre cartes, quatre sociétés quand c'est possible.
+   *
+   * Une journée passée sur un seul dossier remplissait la rangée du même nom : trois
+   * « GREMLINS COMMUNICATION » sur quatre, alors que le compte en compte vingt et une.
+   * Le plus récent de chaque société d'abord, le reste ensuite.
+   */
+  const montres = unParSociete(documents, (d) => d.societe, DOCUMENTS_RECENTS);
+  if (montres.length === 0) return null;
 
   return (
     <section className={styles.section} aria-labelledby="documents-recents">
@@ -356,9 +395,9 @@ export function DocumentsRecents({ documents }: { documents: DocumentRecent[] })
       */}
       <ul
         className={styles.pieces}
-        style={{ gridTemplateColumns: "repeat(" + documents.length + ", minmax(0, 1fr))" }}
+        style={{ gridTemplateColumns: "repeat(" + montres.length + ", minmax(0, 1fr))" }}
       >
-        {documents.map((document) => (
+        {montres.map((document) => (
           <li key={document.id} className={styles.piece}>
             <Link href="/documents" className={styles.pieceLien}>
               <span className={styles.pieceTete}>
@@ -467,7 +506,28 @@ export function ActiviteRecente({
         <EtatVide texte="Aucune activité récente." />
       ) : (
         <ul className={styles.activites}>
-          {activite.slice(0, 8).map((entree, rang) => {
+          {/*
+            Huit lignes, et pas huit fois le même dossier.
+            
+            Le journal est trié par date : une heure de travail sur une formalité y
+            écrivait huit lignes identiques, et l'activité des vingt autres sociétés
+            disparaissait sous elle.
+          */}
+          {unParSociete(
+            /*
+              La clé est la phrase affichée, non l'action enregistrée.
+              
+              Une dizaine d'actions différentes se rendent par la même ligne - « a mis à
+              jour le dossier » - et se suivaient donc telles quelles à l'écran, quatre
+              fois de suite sur le même dossier. C'est ce qu'on lit qui se répète.
+            */
+            sansRepetition(
+              activite,
+              (e) => e.dossierId + ":" + (seSuffitAElleMeme(e) ? e.valeur : phraseJournal(e, false))
+            ),
+            (e) => e.societe,
+            8
+          ).map((entree, rang) => {
             const cestMoi = entree.auteurRole === "user";
             const qui = cestMoi ? "Vous" : (entree.auteur ?? "Formalist");
 

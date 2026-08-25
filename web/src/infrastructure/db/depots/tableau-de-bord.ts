@@ -255,7 +255,15 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
    * Quatre vignettes suffisent - c'est ce qu'on vient chercher le lendemain d'un dépôt.
    */
   const bibliotheque = await listerDocuments(utilisateur);
-  const documents = bibliotheque.slice(0, 4).map((d) => ({
+  /*
+   * Vingt candidats, quatre montrés.
+   *
+   * L'écran n'en affiche que quatre, mais c'est lui qui choisit lesquels : il prend le
+   * plus récent de chaque société pour ne pas répéter le même nom quatre fois. Découpés
+   * ici à quatre, les candidats manquaient - une journée passée sur un dossier suffisait
+   * à remplir la rangée de son nom.
+   */
+  const documents = bibliotheque.slice(0, 20).map((d) => ({
     id: d.id,
     nom: d.nom,
     societe: d.societe,

@@ -82,6 +82,62 @@ export function dossierAReprendre(societes: DossierDAccueil[]): DossierDAccueil 
  * bandeau, avec leur bouton. Les redire trois lignes plus bas donnait l'impression
  * d'une liste qui ne diminue jamais.
  */
+/**
+ * Une même société ne prend pas toute la page.
+ *
+ * L'accueil range chaque bloc par date : sur un compte qui a vingt et une formalités,
+ * une journée passée sur un seul dossier suffit à ce que trois documents récents sur
+ * quatre et toute l'activité portent le même nom. Le tableau de bord cesse alors de
+ * montrer l'ensemble - ce pour quoi il existe - et répète ce qu'on vient de faire.
+ *
+ * On prend donc d'abord le plus récent de chaque société, puis on complète avec le
+ * reste si la place n'est pas remplie : sur un compte qui n'a qu'une société, rien ne
+ * change.
+ */
+export function unParSociete<T>(
+  elements: T[],
+  societeDe: (element: T) => string | number | null,
+  combien: number
+): T[] {
+  const vues = new Set<string>();
+  const premiers: T[] = [];
+  const reste: T[] = [];
+
+  for (const element of elements) {
+    const cle = String(societeDe(element) ?? "");
+    if (cle && vues.has(cle)) {
+      reste.push(element);
+      continue;
+    }
+    if (cle) vues.add(cle);
+    premiers.push(element);
+  }
+
+  return [...premiers, ...reste].slice(0, combien);
+}
+
+/**
+ * Une rafale de gestes identiques ne fait qu'une ligne.
+ *
+ * Le journal enregistre chaque enregistrement : une heure passée sur un dossier y écrit
+ * huit fois « Hani Madfai a mis à jour le dossier », à la minute près, et l'activité des
+ * autres sociétés disparaît sous cette répétition. Seules les suites immédiates sont
+ * repliées - le même geste refait le lendemain reste un événement.
+ */
+export function sansRepetition<T>(entrees: T[], cleDe: (entree: T) => string): T[] {
+  const gardees: T[] = [];
+  let precedente: string | null = null;
+
+  for (const entree of entrees) {
+    const cle = cleDe(entree);
+    if (cle === precedente) continue;
+    precedente = cle;
+    gardees.push(entree);
+  }
+
+  return gardees;
+}
+
 export function attentionRequise(
   societes: DossierDAccueil[],
   saufDossier: number | null
