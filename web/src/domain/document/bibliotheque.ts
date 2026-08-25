@@ -33,6 +33,14 @@ export interface DocumentRange {
    */
   enRelecture: boolean;
   /**
+   * Le document sort du cabinet, non de la plateforme.
+   *
+   * Un acte relu et remis s'annonçait « Généré le 24 août 2026 », comme s'il était
+   * tombé d'une machine : c'est l'avocat qui l'a établi, et le client doit le lire
+   * ainsi - c'est ce qu'il paie.
+   */
+  parLeCabinet: boolean;
+  /**
    * Le document répond-il à une pièce que le dossier attend ?
    *
    * Sans cette réponse, l'interface proposait « Remplacer » pour tout document refusé,

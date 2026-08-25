@@ -27,6 +27,7 @@ const doc = (p: Partial<DocumentRange> = {}): DocumentRange => ({
   statut: "generated",
   motifRejet: null,
   enRelecture: false,
+  parLeCabinet: false,
   origine: "entreprise",
   societe: "ATELIER MERIDIEN",
   societeId: 1,

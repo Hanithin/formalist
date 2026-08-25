@@ -24,6 +24,7 @@ import {
   libelleFiltre,
   estStatutsRepris,
 } from "@/domain/document/statuts";
+import { TITRE_STATUTS_A_JOUR } from "@/domain/modification/formalites";
 import { formaterDate } from "@/lib/dates";
 import { Apercu } from "./Apercu";
 import styles from "./Documents.module.css";
@@ -481,6 +482,14 @@ function Carte({
    * 2022 » - et la date est celle de ce dépôt.
    */
   const repris = estStatutsRepris(document.nom);
+  /*
+   * Ce que le cabinet a écrit, une fois relu et remis.
+   *
+   * Les statuts repris au registre en sont exclus : ils portent le même déposant - la
+   * plateforme les a inscrits au dossier - mais ils viennent du greffe, et le dire
+   * autrement tromperait le client sur ce qu'il tient.
+   */
+  const etabliParLAvocat = document.parLeCabinet && !repris;
   const etiquette = attente
     ? "À remplacer"
     : repris
@@ -526,7 +535,19 @@ function Carte({
               ? "À remplacer"
               : chezLAvocat
                 ? "Chez votre avocat"
-                : repris
+                : etabliParLAvocat
+                  ? /*
+                      Un acte relu et remis vient du cabinet, non d'une machine.
+                      
+                      « Généré le 24 août 2026 » se lisait comme une sortie
+                      d'imprimante : c'est l'avocat qui l'a établi, après relecture, et
+                      c'est ce que le client paie.
+                    */
+                    (document.nom === TITRE_STATUTS_A_JOUR
+                      ? "Mis à jour par votre avocat"
+                      : "Établi par votre avocat") +
+                    (document.creeLe ? " le " + formaterDate(document.creeLe) : "")
+                  : repris
                   ? /*
                       La version qui fait foi aujourd'hui au greffe.
                       

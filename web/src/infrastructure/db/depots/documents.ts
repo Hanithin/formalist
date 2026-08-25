@@ -69,6 +69,8 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
       statut: d.status,
       motifRejet: d.rejection_reason,
       enRelecture: !visibleParLeClient(d),
+      // Ce que le cabinet a écrit, par opposition à ce que le client a déposé.
+      parLeCabinet: d.uploaded_by === "system",
       origine: "entreprise" as const,
       societe: dossiersParId.get(d.formalite_id)?.societe ?? null,
       societeId: d.formalite_id,
@@ -93,6 +95,7 @@ export async function listerDocuments(utilisateur: UtilisateurConnecte) {
         motifRejet: null,
         // Un dépôt du client n'attend personne : il est à lui, tout de suite.
         enRelecture: false,
+        parLeCabinet: false,
         origine: (contrat ? "contrat" : "upload") as "contrat" | "upload",
         societe: dossier?.societe ?? null,
         societeId: dossier?.id ?? null,
