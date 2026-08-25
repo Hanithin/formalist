@@ -154,6 +154,89 @@ function presentsEnListe(xml) {
   return { xml: xml.slice(0, debut) + liste + xml.slice(fin), fait: true };
 }
 
+/* --------------------------------------------- 6. La forme, en tête de l'acte */
+
+/*
+ * L'en-tête commence par une capitale, comme toute ligne d'identification.
+ *
+ * « société par actions simplifiée au capital de 500 euros » s'écrivait en minuscule
+ * sous le nom de la société, au milieu d'un bloc où chaque autre ligne commence par une
+ * capitale - « Siège social : … », « Immatriculée au registre… ». La forme reste en bas
+ * de casse partout ailleurs, où elle suit une virgule.
+ *
+ * Seule la première occurrence est reprise : c'est celle de l'en-tête. Les suivantes
+ * sont dans des phrases - « La société X est une société par actions simplifiée… ».
+ */
+function formeEnTete(xml) {
+  // Déjà repris : la seconde occurrence appartient à une phrase, elle reste en bas de
+  // casse. Sans ce garde-fou, chaque passage capitalisait celle d'après.
+  if (xml.includes("{{FORME_EN_CLAIR_CAPITALE}}")) return { xml, fait: false };
+
+  const marque = "{{FORME_EN_CLAIR}}";
+  const position = xml.indexOf(marque);
+  if (position === -1) return { xml, fait: false };
+
+  return {
+    xml:
+      xml.slice(0, position) +
+      "{{FORME_EN_CLAIR_CAPITALE}}" +
+      xml.slice(position + marque.length),
+    fait: true,
+  };
+}
+
+/* ------------------------------------------ 7. Deux fautes de rédaction */
+
+/*
+ * « L'assemblée générale, consulté » : l'accord manquait.
+ *
+ * La phrase vient de l'article 1844-6 du code civil, où c'est l'associé qui est
+ * consulté ; recopiée sous « L'assemblée générale », elle laissait un participe au
+ * masculin dans un acte que le greffe lit et que les associés signent.
+ *
+ * « Sa rémunération est fixée comme suit : Fixe. » : la phrase attendait un montant et
+ * recevait le mot d'une liste déroulante. On la tourne autrement, pour que les trois
+ * réponses possibles s'y logent.
+ */
+const FAUTES = [
+  {
+    /*
+     * Deux parenthèses dans un acte signé, et une phrase qui attendait un montant.
+     *
+     * « L'intéressé(e) déclare accepter […] frappé(e) » : la civilité est connue, elle
+     * s'accorde. « Sa rémunération est arrêtée par l'assemblée : Fixe. » recevait le
+     * mot d'un menu déroulant là où une clause était attendue.
+     */
+    avant:
+      "L'intéressé(e) déclare accepter ces fonctions et n'être frappé(e) d'aucune interdiction, incapacité ou déchéance susceptible de lui en interdire l'exercice. Sa rémunération est arrêtée par l'assemblée : {{REMUNERATION_DIRIGEANT}}.",
+    apres: "{{PHRASE_ACCEPTATION}} {{PHRASE_REMUNERATION}}",
+  },
+  {
+    // La même phrase, dans les gabarits qui n'ont pas reçu la reprise précédente.
+    avant:
+      "L'intéressé(e) déclare accepter ces fonctions et n'être frappé(e) d'aucune interdiction, incapacité ou déchéance susceptible de lui en interdire l'exercice. Sa rémunération est fixée comme suit : {{REMUNERATION_DIRIGEANT}}.",
+    apres: "{{PHRASE_ACCEPTATION}} {{PHRASE_REMUNERATION}}",
+  },
+  {
+    avant: "L'assemblée générale, consulté avant l'expiration du terme statutaire",
+    apres: "L'assemblée générale, consultée avant l'expiration du terme statutaire",
+  },
+  {
+    avant: "Sa rémunération est fixée comme suit : {{REMUNERATION_DIRIGEANT}}.",
+    apres: "Sa rémunération est arrêtée par l'assemblée : {{REMUNERATION_DIRIGEANT}}.",
+  },
+];
+
+function fautesCorrigees(xml) {
+  let fait = false;
+  for (const faute of FAUTES) {
+    const essai = remplacerLeTexte(xml, faute.avant, faute.apres);
+    xml = essai.xml;
+    fait = fait || essai.fait;
+  }
+  return { xml, fait };
+}
+
 /* ------------------------------------------------------ 3. Lieu et originaux */
 
 function lieuDeSignature(xml) {
@@ -203,7 +286,19 @@ function clotureRedigee(xml) {
 
 /* ------------------------------------------------------------------ Le passage */
 
-const CONCERNES = [...COLLEGIAUX, ...UNIPERSONNELS, AVENANT];
+const CONCERNES = [
+  ...COLLEGIAUX,
+  ...UNIPERSONNELS,
+  AVENANT,
+  /*
+   * Les autres actes ne reçoivent que la reprise de l'en-tête : leur rédaction n'a pas
+   * été revue ici, mais tous portent le même bloc d'identification.
+   */
+  ...fs
+    .readdirSync(TEMPLATES)
+    .filter((nom) => nom.endsWith(".docx"))
+    .filter((nom) => ![...COLLEGIAUX, ...UNIPERSONNELS, AVENANT].includes(nom)),
+];
 let modifies = 0;
 
 for (const nom of CONCERNES) {
@@ -218,6 +313,8 @@ for (const nom of CONCERNES) {
     ["présents", () => presentsEnListe(xml)],
     ["lieu", () => lieuDeSignature(xml)],
     ["clôture", () => clotureRedigee(xml)],
+    ["en-tête", () => formeEnTete(xml)],
+    ["accords", () => fautesCorrigees(xml)],
   ]) {
     const essai = reprise();
     xml = essai.xml;

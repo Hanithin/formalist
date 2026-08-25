@@ -11,7 +11,7 @@
  */
 
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
-import { formeEnToutesLettres } from "@/domain/modification/annonce";
+import { formeEnToutesLettres, avecMajusculeInitiale } from "@/domain/modification/annonce";
 import { avecElision } from "@/domain/modification/gabarit";
 import { decisionDeDissolution } from "./decision";
 import { resultatDeLaLiquidation } from "./liquidation";
@@ -180,6 +180,15 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
     SOCIETE: ou(texte(societe.denomination)),
     FORME_JURIDIQUE: forme,
     FORME_EN_CLAIR: formeEnToutesLettres(forme).toLowerCase(),
+    /*
+     * La même chose, mais en tête de ligne.
+     *
+     * L'en-tête d'un acte annonçait « société par actions simplifiée au capital de 500
+     * euros » : une ligne d'identification qui commence en minuscule sous le nom de la
+     * société. La forme reste en bas de casse partout ailleurs, où elle suit une
+     * virgule - « La société X, société par actions simplifiée… ».
+     */
+    FORME_EN_CLAIR_CAPITALE: avecMajusculeInitiale(formeEnToutesLettres(forme).toLowerCase()),
     SIREN: ou(texte(societe.siren)),
     SIEGE_SOCIAL: adresseSurUneLigne(societe),
     CAPITAL_FORMATE: montant(societe.capital ?? 0),

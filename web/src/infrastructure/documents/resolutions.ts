@@ -18,6 +18,17 @@ import { createRequire } from "node:module";
  */
 const requerir = createRequire(import.meta.url);
 
+/*
+ * Les ordinaux jusqu'à quinze.
+ *
+ * La table s'arrêtait à huit, et la neuvième résolution s'intitulait « 9e RÉSOLUTION »
+ * au milieu de huit titres en toutes lettres. Une assemblée qui décide neuf choses le
+ * même jour n'a rien d'extraordinaire : transfert, dénomination, objet, dirigeant,
+ * capital, durée, cession, apport - on y arrive vite.
+ *
+ * Au-delà de quinze, le chiffre reprend ses droits : « SEIZIÈME » se lit encore, mais
+ * un acte qui en réunit tant se relit de toute façon autrement.
+ */
 const ORDINAUX = [
   "PREMIÈRE",
   "DEUXIÈME",
@@ -27,6 +38,13 @@ const ORDINAUX = [
   "SIXIÈME",
   "SEPTIÈME",
   "HUITIÈME",
+  "NEUVIÈME",
+  "DIXIÈME",
+  "ONZIÈME",
+  "DOUZIÈME",
+  "TREIZIÈME",
+  "QUATORZIÈME",
+  "QUINZIÈME",
 ];
 
 /**

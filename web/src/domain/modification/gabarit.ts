@@ -1,6 +1,6 @@
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
-import { formeEnToutesLettres } from "./annonce";
+import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
 import { changeDeRessort } from "./formalites";
@@ -169,7 +169,77 @@ export function adresseSurUneLigne(
     .join(" ");
 
   const ligne = [voie, suite].filter(Boolean).join(", ");
-  return ligne || TIRET;
+  return adresseLisible(ligne) || TIRET;
+}
+
+/*
+ * Les mots d'une adresse qui restent en bas de casse.
+ *
+ * Le type de voie n'est pas un nom propre : on écrit « 34 rue Laugier », non « 34 Rue
+ * Laugier », et les particules suivent la même règle - « 12 boulevard de la Villette ».
+ */
+const TYPES_DE_VOIE = new Set([
+  "rue", "avenue", "boulevard", "place", "impasse", "allee", "allees", "chemin",
+  "quai", "route", "cours", "voie", "square", "passage", "esplanade", "faubourg",
+  "villa", "cite", "sentier", "ruelle", "traverse", "montee", "descente", "digue",
+  "hameau", "lieu-dit", "residence", "zone", "parc", "port", "pont", "rond-point",
+  "avenue", "promenade", "galerie", "peripherique", "autoroute", "domaine", "clos",
+  "mail", "sente", "vallon", "corniche", "plage", "batiment", "immeuble", "etage",
+  "bis", "ter", "quater",
+]);
+
+const PARTICULES = new Set(["de", "du", "des", "d", "la", "le", "les", "l", "au", "aux", "et", "sur", "sous", "en", "lez", "les"]);
+
+/** Sans accents ni casse, pour comparer un mot à une liste. */
+function nu(mot: string): string {
+  return mot
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+/**
+ * Une adresse écrite comme on l'écrit dans un acte.
+ *
+ * Le registre rend tout en capitales - « 34 RUE LAUGIER 75017 PARIS » - et l'acte le
+ * recopiait tel quel, au milieu d'une phrase en bas de casse : « dont le siège est 34
+ * RUE LAUGIER 75017 PARIS, immatriculée au registre… ». On rétablit la casse ordinaire
+ * : type de voie et particules en minuscules, noms propres avec leur capitale.
+ *
+ * Une adresse déjà écrite normalement n'est pas retouchée : ce que le client a saisi
+ * lui appartient, et une commune peut porter une casse qu'aucune règle ne devine.
+ */
+export function adresseLisible(adresse: string): string {
+  const nette = adresse.trim();
+  if (!nette) return "";
+
+  // Le registre écrit tout en capitales ; un texte mixte a déjà sa casse.
+  const lettres = nette.replace(/[^A-Za-zÀ-ÿ]/g, "");
+  if (!lettres || lettres !== lettres.toUpperCase()) return nette;
+
+  return nette
+    .toLowerCase()
+    .split(/([ ,'’-]+)/)
+    .map((morceau, rang) => {
+      if (/^[ ,'’-]+$/.test(morceau) || morceau === "") return morceau;
+      if (/^\d/.test(morceau)) return morceau;
+
+      const cle = nu(morceau);
+      /*
+       * Le type de voie garde sa capitale quand il ouvre l'adresse.
+       *
+       * « 34 rue Laugier » mais « Zone industrielle Les Plaines » : le mot est le même,
+       * sa place en fait un nom de lieu ou un simple type de voie.
+       */
+      if (TYPES_DE_VOIE.has(cle)) {
+        return rang === 0 ? morceau.charAt(0).toUpperCase() + morceau.slice(1) : morceau;
+      }
+      // Une particule reste en bas de casse, sauf à ouvrir l'adresse.
+      if (rang > 0 && PARTICULES.has(cle)) return morceau;
+
+      return morceau.charAt(0).toUpperCase() + morceau.slice(1);
+    })
+    .join("");
 }
 
 /**
@@ -213,6 +283,43 @@ export function enCapitaleInitiale(ville: string): string {
     .join("");
 }
 
+/** La clause de rémunération, selon ce que l'assemblée a décidé. */
+export function phraseDeRemuneration(choix: string): string {
+  const dit = choix.trim().toLowerCase();
+  if (dit.startsWith("non")) return "Ces fonctions ne sont pas rémunérées.";
+  if (dit.startsWith("variable")) {
+    return "Ces fonctions sont rémunérées ; le montant et les modalités de cette rémunération variable sont arrêtés par l'assemblée.";
+  }
+  if (dit.startsWith("fixe")) {
+    return "Ces fonctions sont rémunérées ; le montant de cette rémunération fixe est arrêté par l'assemblée.";
+  }
+  return "La rémunération de ces fonctions est arrêtée par l'assemblée.";
+}
+
+/** L'acceptation du mandat, accordée avec la personne nommée. */
+export function phraseDAcceptation(civilite: string, fonction: string): string {
+  const feminin = /^(mme|madame)$/i.test(civilite.trim());
+  const interesse = feminin ? "L'intéressée" : "L'intéressé";
+  const frappe = feminin ? "frappée" : "frappé";
+  const nommee = feminin ? "nommée" : "nommé";
+  const poste = fonction.trim() ? " de " + fonction.trim().toLowerCase() : "";
+
+  return (
+    interesse +
+    ", ici présent" +
+    (feminin ? "e" : "") +
+    ", déclare accepter les fonctions" +
+    poste +
+    " qui viennent de lui être confiées et n'être " +
+    frappe +
+    " d'aucune interdiction, incapacité ou déchéance susceptible de lui en interdire l'exercice. " +
+    "Cette nomination prend effet dans les conditions ci-dessus, et " +
+    (feminin ? "la " : "le ") +
+    nommee +
+    " en accomplira les formalités de publicité."
+  );
+}
+
 /** « Monsieur Jean DUPONT » : la civilité fait partie du nom dans un acte. */
 export function designationDeLAssocie(associe: AssociePresent): string {
   return nomComplet(associe);
@@ -246,7 +353,8 @@ export function societeDesignee(associe: AssociePresent): string {
   else if (forme) morceaux.push(forme);
 
   const siege = ou(associe.siege, "");
-  if (siege) morceaux.push("dont le siège est " + siege);
+  // Le siège vient du registre, donc en capitales : on lui rend sa casse ordinaire.
+  if (siege) morceaux.push("dont le siège est " + adresseLisible(siege));
 
   const siren = ou(associe.siren, "").replace(/\s/g, "");
   if (siren) {
@@ -396,6 +504,15 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     RCS_DE: avecElision((societe.villeRcs ?? societe.ville ?? "").trim()),
     /* La forme en toutes lettres : un acte n'écrit pas « SASU au capital de ». */
     FORME_EN_CLAIR: formeEnToutesLettres(societe.forme).toLowerCase(),
+    /*
+     * La même chose, mais en tête de ligne.
+     *
+     * L'en-tête d'un acte annonçait « société par actions simplifiée au capital de 500
+     * euros » : une ligne d'identification qui commence en minuscule sous le nom de la
+     * société. La forme reste en bas de casse partout ailleurs, où elle suit une
+     * virgule - « La société X, société par actions simplifiée… ».
+     */
+    FORME_EN_CLAIR_CAPITALE: avecMajusculeInitiale(formeEnToutesLettres(societe.forme).toLowerCase()),
 
     /* -------------------------------------------------------- L'assemblée */
     DATE_AGE: dateEnFrancais(assemblee.date),
@@ -471,7 +588,7 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
 
     /* ------------------------------------------------ Transfert de siège */
     NOUVEAU_SIEGE: nouveauSiege,
-    NOUVELLE_ADRESSE: texte(valeurs.nouvelleAdresse),
+    NOUVELLE_ADRESSE: adresseLisible(texte(valeurs.nouvelleAdresse)),
     NOUVELLE_VILLE: texte(valeurs.nouvelleVille),
     NOUVEAU_CP: texte(valeurs.nouveauCodePostal),
     NOUVEAU_MODE_DOMICILIATION: texte(valeurs.nouveauModeDomiciliation),
@@ -529,8 +646,26 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
         : "",
       "française"
     ),
-    NOUVEAU_DIRIGEANT_ADRESSE: texte(valeurs.nouveauDirigeantAdresse),
+    NOUVEAU_DIRIGEANT_ADRESSE: adresseLisible(texte(valeurs.nouveauDirigeantAdresse)),
     REMUNERATION_DIRIGEANT: texte(valeurs.remunerationDirigeant),
+    /*
+     * La rémunération, dite en phrase plutôt qu'en mot de liste.
+     *
+     * L'acte portait « Sa rémunération est fixée comme suit : Fixe. » - la phrase
+     * attendait un montant et recevait le choix d'un menu déroulant. Les trois réponses
+     * possibles s'écrivent chacune comme une clause.
+     */
+    PHRASE_REMUNERATION: phraseDeRemuneration(texte(valeurs.remunerationDirigeant)),
+    /*
+     * L'acceptation, accordée avec la personne nommée.
+     *
+     * « L'intéressé(e) déclare accepter […] et n'être frappé(e) d'aucune interdiction »
+     * : deux parenthèses dans un acte signé, alors que la civilité est connue.
+     */
+    PHRASE_ACCEPTATION: phraseDAcceptation(
+      texte(valeurs.nouveauDirigeantCivilite),
+      texte(valeurs.fonctionDirigeant)
+    ),
     DIRIGEANT_REVOQUE_NOM: texte(valeurs.dirigeantRevoqueNom),
     MOTIF_REVOCATION: texte(valeurs.motifRevocation),
     /*
@@ -602,7 +737,7 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     CEDANT_NOM: cessions[0]?.CEDANT || texte(valeurs.cedantNom),
     CESSIONNAIRE_TYPE: texte(valeurs.cessionnaireType),
     CESSIONNAIRE_NOM: cessions[0]?.CESSIONNAIRE || texte(valeurs.cessionnaireNom),
-    CESSIONNAIRE_ADRESSE: texte(valeurs.cessionnaireAdresse),
+    CESSIONNAIRE_ADRESSE: adresseLisible(texte(valeurs.cessionnaireAdresse)),
     /*
      * Ce que chaque mode d'augmentation apporte au procès-verbal.
      *
@@ -704,7 +839,7 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
       prenom: typeof valeurs.nouveauDirigeantPrenom === "string" ? valeurs.nouveauDirigeantPrenom : "",
       nom: typeof valeurs.nouveauDirigeantNom === "string" ? valeurs.nouveauDirigeantNom : "",
     }),
-    ADRESSE_ASSOCIE_1: texte(valeurs.nouveauDirigeantAdresse),
+    ADRESSE_ASSOCIE_1: adresseLisible(texte(valeurs.nouveauDirigeantAdresse)),
     DATE_NAISSANCE_1: dateEnFrancais(
       typeof valeurs.nouveauDirigeantDateNaissance === "string"
         ? valeurs.nouveauDirigeantDateNaissance
@@ -807,7 +942,22 @@ function donneesDeLApport(
   const valeurApport = nb("apportValeur");
   const numeraire = nb("apportNumeraire");
   const nominale = nb("apportNominaleBeneficiaire");
-  const capitalActuel = societe.capital ?? 0;
+
+  /*
+   * Le capital d'où part l'apport, non celui d'avant l'assemblée.
+   *
+   * Une même assemblée peut augmenter, réduire, puis rémunérer un apport de titres :
+   * l'acte disait alors « le capital est porté de 500 euros à 125 500 » après deux
+   * résolutions qui l'avaient déjà mené à 15 500. Chaque résolution part de ce que la
+   * précédente a laissé - c'est ainsi qu'un acte se lit, de haut en bas.
+   */
+  const capitalApresReduction = nb("nouveauCapitalRed");
+  const capitalApresAugmentation = nb("nouveauCapitalAugm");
+  const capitalActuel =
+    capitalApresReduction ||
+    capitalApresAugmentation ||
+    societe.capital ||
+    0;
 
   const plan = planDeCapital({
     capitalActuelCentimes: enCentimes(capitalActuel),
@@ -848,7 +998,7 @@ function donneesDeLApport(
     APPORTEUR_NE_LE_FR: dateEnFrancais(texteBrut(valeurs.apporteurNeLe)),
     APPORTEUR_NE_A: ou(texte(valeurs.apporteurNeA)),
     APPORTEUR_NATIONALITE: ou(texte(valeurs.apporteurNationalite), "française"),
-    APPORTEUR_ADRESSE: ou(texte(valeurs.apporteurAdresse)),
+    APPORTEUR_ADRESSE: ou(adresseLisible(texte(valeurs.apporteurAdresse))),
     APPORTEUR_QUALITE: ou(qualite),
     /*
      * « en sa qualité d'associé unique », non « de Associé unique ».
@@ -873,7 +1023,7 @@ function donneesDeLApport(
     APPORTEE_FORME: ou(formeApportee),
     APPORTEE_FORME_EN_CLAIR: formeEnToutesLettres(formeApportee).toLowerCase(),
     APPORTEE_SIREN: ou(texte(valeurs.apporteeSiren)),
-    APPORTEE_SIEGE: ou(texte(valeurs.apporteeSiege)),
+    APPORTEE_SIEGE: ou(adresseLisible(texte(valeurs.apporteeSiege))),
     APPORTEE_RCS_VILLE: ou(texte(valeurs.apporteeRcs)),
     APPORTEE_RCS_DE: avecElision(texte(valeurs.apporteeRcs)),
     APPORTEE_CAPITAL_FORMATE: montant(nb("apporteeCapital")),

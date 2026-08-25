@@ -71,6 +71,20 @@ export function sirenLisible(siren: string | null | undefined): string {
 }
 
 /** Le nom complet de la forme, tel qu'un avis l'écrit. */
+/**
+ * La même chaîne, avec sa première lettre en capitale.
+ *
+ * L'en-tête d'un acte annonce la forme sous le nom de la société : « société par
+ * actions simplifiée au capital de 500 euros » y commençait en minuscule, au milieu
+ * d'un bloc où chaque ligne commence par une capitale. Ailleurs la forme suit une
+ * virgule - « La société X, société par actions simplifiée… » - et reste en bas de
+ * casse : c'est l'emploi qui décide, non le mot.
+ */
+export function avecMajusculeInitiale(texte: string): string {
+  const net = texte.trim();
+  return net ? net.charAt(0).toUpperCase() + net.slice(1) : net;
+}
+
 export function formeEnToutesLettres(forme: string | null | undefined): string {
   const f = texte(forme).toUpperCase();
   const noms: Record<string, string> = {

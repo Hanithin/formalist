@@ -140,7 +140,12 @@ describe("l'acte de cession produit", () => {
   });
 
   it("écrit la forme en clair et élide le registre", () => {
-    expect(texte).toContain("société par actions simplifiée");
+    /*
+     * En tête d'acte, la forme ouvre une ligne d'identification : elle y prend sa
+     * capitale, comme « Siège social » et « Immatriculée » qui la suivent. Ailleurs,
+     * après une virgule, elle reste en bas de casse.
+     */
+    expect(texte).toContain("Société par actions simplifiée");
     expect(texte).toContain("d'Antibes");
     expect(texte).not.toContain("de Antibes");
   });
