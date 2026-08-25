@@ -51,6 +51,24 @@ describe("dates en français", () => {
     expect(dateEnFrancais("1990-01-02")).toBe("2 janvier 1990");
   });
 
+  it("retire la marque du pluriel de vingt et cent devant mille", () => {
+    /*
+     * « quatre-vingts » et « deux cents » prennent leur s quand rien ne les suit ; ils
+     * la perdent dès qu'un autre nombre vient après. Le capital d'une société s'écrit
+     * en lettres dans ses statuts et dans chacun de ses actes : la faute s'y lit à
+     * chaque page.
+     */
+    expect(nombreEnFrancais(80)).toBe("quatre-vingts");
+    expect(nombreEnFrancais(200)).toBe("deux cents");
+    expect(nombreEnFrancais(80000)).toBe("quatre-vingt mille");
+    expect(nombreEnFrancais(200000)).toBe("deux cent mille");
+    expect(nombreEnFrancais(280000)).toBe("deux cent quatre-vingt mille");
+    expect(nombreEnFrancais(380500)).toBe("trois cent quatre-vingt mille cinq cents");
+    // Ce qui suit « mille » garde son accord : rien ne vient après.
+    expect(nombreEnFrancais(1080)).toBe("mille quatre-vingts");
+  });
+
+
   it("une entrée absente ou illisible passe sans casser l'acte", () => {
     expect(dateEnFrancais(null)).toBe("-");
     expect(dateEnFrancais("")).toBe("-");

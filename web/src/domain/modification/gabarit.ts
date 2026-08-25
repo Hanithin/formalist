@@ -29,6 +29,16 @@ import { evaluationDesApports, planDeCapital, regimeApport, REMPLOI } from "./ap
 
 const TIRET = "-";
 
+/**
+ * Le procès-verbal d'assemblée du cabinet, employé pour toute décision collective.
+ *
+ * Il remplace les quatre gabarits par forme - SAS, SARL, SCI - écrits au fil des
+ * besoins : un seul modèle, plus rigoureux, dont la terminologie se dérive de la forme
+ * sociale. Voir MAPPING_VARIABLES.md et domain/modification/pv-age.ts.
+ */
+export const MODELE_UNIVERSEL = "modif-pv-age-universel.docx";
+export const MODELE_TRAITE = "modif-traite-apport-universel.docx";
+
 export interface SocieteModifiee {
   denomination?: string | null;
   forme?: string | null;
@@ -730,14 +740,20 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      *
      * Les gabarits existants attendent des clés au singulier : elles sont alimentées
      * par la première cession, et CESSIONS porte la liste pour les actes qui savent
-     * boucler. Un dossier d'avant, saisi en champs plats, garde ses valeurs.
+     * boucler.
+     *
+     * Ces clés se repliaient sur des champs plats - `cedantNom`, `prixCession`,
+     * `dateCession` - hérités du temps où une cession se saisissait en six cases.
+     * Aucun formulaire ne les écrit plus depuis que les cessions sont une liste : le
+     * repli ne rattrapait donc rien, il masquait seulement une liste vide derrière un
+     * blanc au lieu d'un tiret.
      */
     CESSIONS: cessions,
     NB_CESSIONS: cessions.length,
-    CEDANT_NOM: cessions[0]?.CEDANT || texte(valeurs.cedantNom),
-    CESSIONNAIRE_TYPE: texte(valeurs.cessionnaireType),
-    CESSIONNAIRE_NOM: cessions[0]?.CESSIONNAIRE || texte(valeurs.cessionnaireNom),
-    CESSIONNAIRE_ADRESSE: adresseLisible(texte(valeurs.cessionnaireAdresse)),
+    CEDANT_NOM: cessions[0]?.CEDANT ?? "",
+    CESSIONNAIRE_TYPE: cessions[0]?.CESSIONNAIRE_TYPE ?? "",
+    CESSIONNAIRE_NOM: cessions[0]?.CESSIONNAIRE ?? "",
+    CESSIONNAIRE_ADRESSE: adresseLisible(cessions[0]?.ADRESSE ?? ""),
     /*
      * Ce que chaque mode d'augmentation apporte au procès-verbal.
      *
@@ -778,9 +794,7 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     IS_CONJOINT_REVENDIQUE:
       valeurs.conjointRevendication === "Oui : il revendique la moitié des parts",
     CONJOINT_NOM: texte(valeurs.conjointNomComplet) || TIRET,
-    NB_PARTS_CEDEES: cessions[0]
-      ? nombreOuTiret(cessions[0].PARTS as number)
-      : nombreOuTiret(valeurs.nbPartsCedees),
+    NB_PARTS_CEDEES: nombreOuTiret(cessions[0]?.PARTS as number | undefined),
     /*
      * Le prix passe par le formateur, comme tout montant d'un acte.
      *
@@ -788,19 +802,9 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      * gabarit : « moyennant le prix de 24000 euros », dans le procès-verbal comme
      * dans l'acte de cession, quand le capital voisin s'écrivait « 100 000 euros ».
      */
-    PRIX_CESSION: cessions[0]
-      ? nombreOuTiret(cessions[0].PRIX as number)
-      : nombreOuTiret(valeurs.prixCession),
-    DATE_CESSION: cessions[0]?.DATE || texte(valeurs.dateCession),
-    /*
-     * En français, depuis la cession.
-     *
-     * Elle était cherchée dans un champ plat que le formulaire ne remplit plus depuis
-     * que les cessions sont une liste : l'acte portait « prendra effet à compter du - ».
-     */
-    DATE_CESSION_FR: dateEnFrancais(
-      cessions[0]?.DATE || (typeof valeurs.dateCession === "string" ? valeurs.dateCession : null)
-    ),
+    PRIX_CESSION: nombreOuTiret(cessions[0]?.PRIX as number | undefined),
+    DATE_CESSION: cessions[0]?.DATE ?? "",
+    DATE_CESSION_FR: dateEnFrancais(cessions[0]?.DATE),
     AGREMENT_REQUIS: texte(valeurs.agrementRequis),
     /*
      * L'agrément, déduit de la forme et du destinataire.
@@ -902,14 +906,22 @@ export function gabaritProcesVerbal(
   const plusieurs = nombreDAssocies !== undefined && nombreDAssocies > 1;
 
   /*
+   * Une assemblée délibère, un associé unique décide.
+   *
+   * Le modèle universel du cabinet écrit « l'Assemblée », « les associés », une feuille
+   * de présence et un président de séance : il ne convient qu'aux décisions collectives.
+   * Une SASU ou une EURL qui n'a qu'un associé garde donc son procès-verbal de décision,
+   * où rien de tout cela n'a lieu d'être.
+   */
+  if (!unipersonnelle || plusieurs) return MODELE_UNIVERSEL;
+
+  /*
    * L'EURL est une SARL : ses titres sont des parts sociales, non des actions.
    * Elle recevait le procès-verbal de SASU, qui parle d'actions d'un bout à l'autre.
    */
-  if (f === "EURL" && !plusieurs) return "modif-pv-transfert-siege-eurl.docx";
-  if (unipersonnelle && !plusieurs) return "modif-pv-transfert-siege-sasu.docx";
-  if (f === "SCI") return "modif-pv-transfert-siege-sci.docx";
-  if (f === "SARL" || f === "EURL") return "modif-pv-transfert-siege-sarl.docx";
-  return "modif-pv-transfert-siege-sas.docx";
+  return f === "EURL"
+    ? "modif-pv-transfert-siege-eurl.docx"
+    : "modif-pv-transfert-siege-sasu.docx";
 }
 
 /**
@@ -1097,6 +1109,15 @@ function donneesDeLApport(
 export interface ActeAProduire {
   titre: string;
   gabarit: string;
+  /**
+   * Par quel chemin l'acte se rend.
+   *
+   * Les gabarits historiques passent par docx.cjs, qui les rend puis les remet en forme
+   * - ils sont nés sans styles. Les modèles universels du cabinet apportent les leurs,
+   * et cette passe les défairait : ils se rendent seuls, avec leurs délimiteurs à une
+   * accolade et leur propre jeu de balises.
+   */
+  moteur?: "classique" | "pv-age" | "traite-apport";
 }
 
 /**
@@ -1122,6 +1143,10 @@ export function actesAProduire(
           ? "Procès-verbal - " + choisies[0].libelle
           : "Procès-verbal d'assemblée générale extraordinaire",
       gabarit: gabaritProcesVerbal(forme, nombreDAssocies),
+      moteur:
+        gabaritProcesVerbal(forme, nombreDAssocies) === MODELE_UNIVERSEL
+          ? ("pv-age" as const)
+          : ("classique" as const),
     },
   ];
 
@@ -1138,7 +1163,11 @@ export function actesAProduire(
    * d'imposition. Les fondre en un seul acte priverait l'apporteur du sien.
    */
   if (codes.includes("apport_titres")) {
-    actes.push({ titre: "Traité d'apport de titres", gabarit: "modif-traite-apport.docx" });
+    actes.push({
+      titre: "Traité d'apport de titres",
+      gabarit: MODELE_TRAITE,
+      moteur: "traite-apport",
+    });
   }
 
   /*

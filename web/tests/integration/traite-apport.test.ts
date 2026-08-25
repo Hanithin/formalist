@@ -1,30 +1,38 @@
 import { describe, it, expect } from "vitest";
 import PizZip from "pizzip";
 import { genererDocument } from "@/infrastructure/documents/generation";
-import { donneesDuGabarit, actesAProduire } from "@/domain/modification/gabarit";
+import { rendreLeTraiteDApport } from "@/infrastructure/documents/modeles-cabinet";
+import { donneesDuTraite } from "@/domain/modification/traite-apport";
+import { donneesDuGabarit, actesAProduire, MODELE_TRAITE } from "@/domain/modification/gabarit";
 import type { Valeurs } from "@/domain/modification/types";
 
 /**
- * Le traité d'apport de titres.
+ * Le traité d'apport de titres, et le procès-verbal qui l'approuve.
  *
- * Le gabarit est tiré d'un traité réel, dont les valeurs ont été remplacées une à une
- * par des variables. Deux choses peuvent mal tourner là-dedans, et aucune ne se voit à
- * la génération : une valeur restée en dur - le montant d'un autre dossier dans le
- * vôtre - et une section conditionnelle qui ne se referme pas, laissant apparaître une
- * augmentation de capital qui n'a pas lieu ou une dispense qu'on n'a pas prise.
+ * Le premier gabarit était tiré d'un traité réel, dont les valeurs avaient été
+ * remplacées une à une par des variables ; le modèle universel du cabinet l'a
+ * remplacé. Le risque, lui, n'a pas changé : une valeur restée en dur - le montant
+ * d'un autre dossier dans le vôtre - et une section conditionnelle qui ne se referme
+ * pas, laissant apparaître une augmentation de capital qui n'a pas lieu ou une
+ * dispense qu'on n'a pas prise. Aucune des deux ne se voit à la génération.
  *
- * Ces tests lisent donc le texte produit, non sa taille.
+ * Ces tests lisent donc le texte produit, non sa taille. Le détail du traité - sa
+ * numérotation, ses renvois, ses contrôles - est vérifié dans traite-apport-rendu.
  */
 
 function texteDu(docx: Buffer): string {
   const xml = new PizZip(docx).file("word/document.xml")?.asText() ?? "";
-  return xml.replace(/<[^>]+>/g, "");
+  return xml
+    .replace(/<\/w:p>/g, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
 const SOCIETE = {
   denomination: "HOLDING ESSAI",
   forme: "SASU",
-  siren: "992453720",
+  siren: "552100554",
   adresse: "4 rue des Lilas",
   codePostal: "95370",
   ville: "Montigny-lès-Cormeilles",
@@ -36,7 +44,7 @@ const SOCIETE = {
 const BASE: Valeurs = {
   apporteeDenomination: "CIBLE ESSAI",
   apporteeForme: "SAS",
-  apporteeSiren: "890404601",
+  apporteeSiren: "512345678",
   apporteeSiege: "12 rue Paul Vaillant Couturier, 95100 Argenteuil",
   apporteeRcs: "Pontoise",
   apporteeCapital: 1000,
@@ -62,17 +70,20 @@ const BASE: Valeurs = {
   apportDateLimiteCondition: "2026-12-31",
   apportLieuSignature: "Pontoise",
   apportDateSignature: "2026-09-20",
-  apportCourAppel: "de Versailles",
+  beneficiaireObjet: "la prise de participation dans toutes sociétés",
 };
 
-function produire(valeurs: Valeurs, gabarit = "modif-traite-apport.docx"): string {
+function produire(valeurs: Valeurs, gabarit = MODELE_TRAITE): string {
   const codes = ["apport_titres"];
   const acte = actesAProduire(codes, SOCIETE.forme, valeurs, 1).find((a) => a.gabarit === gabarit);
   if (!acte) throw new Error("acte introuvable : " + gabarit);
 
-  return texteDu(
-    genererDocument(acte.gabarit, donneesDuGabarit({ societe: SOCIETE, assemblee: {}, codes, valeurs }))
-  );
+  const contexte = { societe: SOCIETE, assemblee: {}, codes, valeurs };
+  /* Le traité passe par le modèle du cabinet ; le procès-verbal unipersonnel non. */
+  if (acte.gabarit === MODELE_TRAITE) {
+    return texteDu(rendreLeTraiteDApport(donneesDuTraite(contexte)));
+  }
+  return texteDu(genererDocument(acte.gabarit, donneesDuGabarit(contexte)));
 }
 
 describe("le traité d'apport de titres", () => {
@@ -83,6 +94,10 @@ describe("le traité d'apport de titres", () => {
      */
     const texte = produire(BASE);
 
+    /*
+     * Les deux SIREN du dossier d'origine restent dans la liste : le jeu d'essai en
+     * emploie d'autres, et c'est précisément ce qui rend le contrôle utile.
+     */
     for (const trace of [
       "RHERBAOUI",
       "RSJR",
@@ -106,8 +121,8 @@ describe("le traité d'apport de titres", () => {
     expect(texte).toContain("CIBLE ESSAI");
     expect(texte).toContain("Monsieur Jean ESSAI");
 
-    // 15 000 / 30 500 : la part de l'apport ne se saisit pas, elle se déduit.
-    expect(texte).toContain("49,18 %");
+    // 50 titres sur 100 : la part du capital apporté se déduit, elle ne se saisit pas.
+    expect(texte).toContain("représentant 50 % du capital social");
     // 500 + 15 000 + 15 000, à chaque étape.
     expect(texte).toContain("15 500");
     expect(texte).toContain("30 500");
@@ -118,10 +133,11 @@ describe("le traité d'apport de titres", () => {
   it("annonce les seuils de remploi de 2026, non ceux d'avant", () => {
     const texte = produire(BASE);
 
-    expect(texte).toContain("70 %");
-    expect(texte).toContain("36 mois");
-    expect(texte).toContain("5 ans");
-    expect(texte).not.toContain("60%");
+    expect(texte).toContain("au moins 70 % du produit de cession");
+    expect(texte).toContain("dans un délai de trois ans à compter de la cession");
+    expect(texte).toContain("conservés pendant au moins cinq ans");
+    expect(texte).toContain("à compter du 21 février 2026");
+    expect(texte).not.toContain("60 %");
     expect(texte).not.toContain("soixante pour cent");
     expect(texte).not.toContain("vingt-quatre (24) mois");
     expect(texte).not.toContain("dix-huit (18) mois");
@@ -130,10 +146,10 @@ describe("le traité d'apport de titres", () => {
   it("retire l'augmentation en numéraire quand il n'y en a pas", () => {
     const texte = produire({ ...BASE, apportNumeraire: 0 });
 
-    expect(texte).not.toContain("DOUBLE AUGMENTATION DE CAPITAL");
-    expect(texte).not.toContain("TITRE II - AUGMENTATION DE CAPITAL EN NUMÉRAIRE");
-    // L'apport lui-même reste, évidemment.
-    expect(texte).toContain("TITRE III - APPORT EN NATURE DES TITRES");
+    expect(texte).not.toContain("Augmentation de capital en numéraire");
+    expect(texte).not.toContain("Actions Nouvelles en Numéraire");
+    // L'apport lui-même reste, et prend le rang que le numéraire laisse libre.
+    expect(texte).toContain("Titre II. Apport en nature des titres");
   });
 
   it("remplace la dispense par le rapport quand un commissaire intervient", () => {
@@ -183,7 +199,8 @@ describe("le traité d'apport de titres", () => {
      */
     const texte = produire({ ...BASE, apportControle: "Non" });
 
-    expect(texte).toContain("150-0 B du code général des impôts");
-    expect(texte).not.toContain("Événements mettant fin au report d'imposition");
+    expect(texte).toContain("sursis d'imposition prévu à l'article 150-0 B du code général des impôts");
+    expect(texte).not.toContain("Événements mettant fin au report");
+    expect(texte).not.toContain("150-0 B ter");
   });
 });

@@ -6,9 +6,11 @@ import {
   gabaritDeLaDeclaration,
   actesAProduire,
   adresseSurUneLigne,
+  MODELE_UNIVERSEL,
 } from "@/domain/modification/gabarit";
+import { donneesDuPvAge } from "@/domain/modification/pv-age";
 import { genererDocument } from "@/infrastructure/documents/generation";
-import { renumeroterLesResolutions } from "@/infrastructure/documents/resolutions";
+import { rendreLePvAge } from "@/infrastructure/documents/modeles-cabinet";
 
 /**
  * Les actes de modification, lus dans le document produit.
@@ -21,7 +23,15 @@ import { renumeroterLesResolutions } from "@/infrastructure/documents/resolution
  */
 
 function texteDu(docx: Buffer): string {
-  return new PizZip(docx).file("word/document.xml")!.asText().replace(/<[^>]+>/g, "");
+  return new PizZip(docx)
+    .file("word/document.xml")!
+    .asText()
+    .replace(/<[^>]+>/g, "")
+    /*
+     * Word encode l'apostrophe : sans la relire, « l'Assemblée » ne se cherche pas.
+     */
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
 const SOCIETE = {
@@ -43,9 +53,26 @@ const ASSEMBLEE = {
   ],
 };
 
-function produire(codes: string[], valeurs: Record<string, string | number> = {}) {
-  const donnees = donneesDuGabarit({ societe: SOCIETE, assemblee: ASSEMBLEE, codes, valeurs });
-  return texteDu(genererDocument(gabaritProcesVerbal(SOCIETE.forme), donnees));
+/**
+ * Le procès-verbal, produit comme la production le produit.
+ *
+ * Depuis l'arrivée du modèle universel du cabinet, l'acte collégial ne passe plus par
+ * les gabarits par forme ni par la passe de mise en page héritée : c'est la couche
+ * d'adaptation qui écrit ses balises, et un rendu dédié qui les applique. Les tests
+ * empruntent le même chemin, sans quoi ils vérifieraient un document que personne ne
+ * reçoit.
+ */
+function produire(
+  codes: string[],
+  valeurs: Record<string, string | number> = {},
+  societe: typeof SOCIETE = SOCIETE,
+  assemblee: typeof ASSEMBLEE = ASSEMBLEE
+) {
+  const gabarit = gabaritProcesVerbal(societe.forme, (assemblee.associes ?? []).length);
+  if (gabarit === MODELE_UNIVERSEL) {
+    return texteDu(rendreLePvAge(donneesDuPvAge({ societe, assemblee, codes, valeurs })));
+  }
+  return texteDu(genererDocument(gabarit, donneesDuGabarit({ societe, assemblee, codes, valeurs })));
 }
 
 describe("le procès-verbal de modification", () => {
@@ -56,7 +83,8 @@ describe("le procès-verbal de modification", () => {
     });
 
     expect(texte).toContain("ACME CONSEIL");
-    expect(texte).toContain("123456789");
+    // Le numéro s'écrit groupé par trois, comme un extrait Kbis l'écrit.
+    expect(texte).toContain("123 456 789 RCS Paris");
     expect(texte).toContain("12 rue de la Paix, 75002 Paris");
     expect(texte).toContain("15 000");
     // Le blanc qui trahissait l'ancienne version : « au capital de  euros ».
@@ -71,12 +99,12 @@ describe("le procès-verbal de modification", () => {
       dateEffetTransfert: "2026-09-15",
     });
 
-    expect(texte).toContain("TRANSFERT DU SIÈGE SOCIAL");
+    expect(texte).toContain("Transfert du siège social");
     expect(texte).toContain("5 avenue Victor Hugo, 69003 Lyon");
     expect(texte).toContain("15 septembre 2026");
-    // Les sections des autres types ne doivent pas apparaître.
-    expect(texte).not.toContain("RÉDUCTION DU CAPITAL");
-    expect(texte).not.toContain("PROROGATION");
+    // Les blocs des autres types ne doivent laisser aucune trace, pas même un titre.
+    expect(texte).not.toContain("Réduction du capital");
+    expect(texte).not.toContain("Prorogation");
   });
 
   it("porte plusieurs résolutions quand une assemblée en décide plusieurs", () => {
@@ -94,8 +122,10 @@ describe("le procès-verbal de modification", () => {
       dateEffetDenomination: "2026-09-15",
     });
 
-    expect(texte).toContain("TRANSFERT DU SIÈGE SOCIAL");
-    expect(texte).toContain("CHANGEMENT DE DÉNOMINATION");
+    expect(texte).toContain("PREMIÈRE RÉSOLUTION");
+    expect(texte).toContain("Transfert du siège social");
+    expect(texte).toContain("DEUXIÈME RÉSOLUTION");
+    expect(texte).toContain("Changement de dénomination sociale");
     expect(texte).toContain("ACME GROUPE");
   });
 
@@ -265,17 +295,12 @@ describe("le numérotage des résolutions", () => {
      * procès-verbal de déposer la formalité, et le greffe la cherche. Le document ne
      * peut donc jamais annoncer une « résolution unique ».
      */
-    const donnees = donneesDuGabarit({
-      societe: SOCIETE,
-      assemblee: ASSEMBLEE,
-      codes: ["denomination"],
-      valeurs: { nouvelleDenomination: "ACME GROUPE" },
-    });
-    const brut = genererDocument(gabaritProcesVerbal("SAS"), donnees);
-    const texte = texteDu(renumeroterLesResolutions(brut));
+    const texte = produire(["denomination"], { nouvelleDenomination: "ACME GROUPE" });
     expect(texte).not.toContain("RÉSOLUTION UNIQUE");
-    expect(texte).toContain("PREMIÈRE RÉSOLUTION - CHANGEMENT DE DÉNOMINATION");
-    expect(texte).toContain("DEUXIÈME RÉSOLUTION - POUVOIRS");
+    expect(texte).toContain("PREMIÈRE RÉSOLUTION");
+    expect(texte).toContain("Changement de dénomination sociale");
+    expect(texte).toContain("DEUXIÈME RÉSOLUTION");
+    expect(texte).toContain("Pouvoirs pour l'accomplissement des formalités");
   });
 
   it("deux décisions se numérotent, au lieu d'être deux fois uniques", () => {
@@ -283,24 +308,19 @@ describe("le numérotage des résolutions", () => {
      * Un acte qui annonce deux fois une résolution unique se contredit à deux
      * paragraphes d'intervalle, et c'est le greffe qui le lit.
      */
-    const donnees = donneesDuGabarit({
-      societe: SOCIETE,
-      assemblee: ASSEMBLEE,
-      codes: ["transfert_siege", "denomination"],
-      valeurs: {
-        nouvelleAdresse: "5 avenue Victor Hugo",
-        nouvelleVille: "Lyon",
-        nouveauCodePostal: "69003",
-        dateEffetTransfert: "2026-09-15",
-        nouvelleDenomination: "ACME GROUPE",
-        dateEffetDenomination: "2026-09-15",
-      },
+    const texte = produire(["transfert_siege", "denomination"], {
+      nouvelleAdresse: "5 avenue Victor Hugo",
+      nouvelleVille: "Lyon",
+      nouveauCodePostal: "69003",
+      dateEffetTransfert: "2026-09-15",
+      nouvelleDenomination: "ACME GROUPE",
+      dateEffetDenomination: "2026-09-15",
     });
-    const brut = genererDocument(gabaritProcesVerbal("SAS"), donnees);
-    const texte = texteDu(renumeroterLesResolutions(brut));
 
     expect(texte).toContain("PREMIÈRE RÉSOLUTION");
     expect(texte).toContain("DEUXIÈME RÉSOLUTION");
+    // Les pouvoirs closent toujours la liste : trois résolutions pour deux décisions.
+    expect(texte).toContain("TROISIÈME RÉSOLUTION");
     expect(texte).not.toContain("RÉSOLUTION UNIQUE");
   });
 });
@@ -313,37 +333,32 @@ describe("un associé personne morale", () => {
      * numéro, et dire qui la représente. Un acte qui écrirait « Monsieur HOLDING » se
      * ferait refuser.
      */
-    const texte = texteDu(
-      genererDocument(
-        gabaritProcesVerbal("SAS"),
-        donneesDuGabarit({
-          societe: SOCIETE,
-          assemblee: {
-            date: "2026-08-10",
-            associes: [
-              {
-                nature: "morale",
-                denomination: "ACME HOLDING",
-                forme: "Société par actions simplifiée",
-                capital: 50000,
-                siege: "3 rue de la Bourse, 75002 Paris",
-                siren: "552100554",
-                representant: "Monsieur Jean DUPONT",
-                qualiteRepresentant: "Président",
-                parts: 1000,
-              },
-            ],
+    const texte = produire(
+      ["denomination"],
+      { nouvelleDenomination: "ACME GROUPE" },
+      SOCIETE,
+      {
+        date: "2026-08-10",
+        associes: [
+          {
+            nature: "morale",
+            denomination: "ACME HOLDING",
+            forme: "Société par actions simplifiée",
+            capital: 50000,
+            siege: "3 rue de la Bourse, 75002 Paris",
+            siren: "552100554",
+            representant: "Monsieur Jean DUPONT",
+            qualiteRepresentant: "Président",
+            parts: 1000,
           },
-          codes: ["denomination"],
-          valeurs: { nouvelleDenomination: "ACME GROUPE" },
-        })
-      )
+        ],
+      } as unknown as typeof ASSEMBLEE
     );
 
-    expect(texte).toContain("La société ACME HOLDING");
+    expect(texte).toContain("la société ACME HOLDING");
     expect(texte).toContain("au capital de 50 000 euros");
-    expect(texte).toContain("dont le siège est 3 rue de la Bourse");
-    expect(texte).toContain("sous le numéro 552100554");
+    expect(texte).toContain("dont le siège social est situé 3 rue de la Bourse");
+    expect(texte).toContain("sous le numéro 552 100 554");
     expect(texte).toContain("représentée par Monsieur Jean DUPONT en sa qualité de président");
   });
 
@@ -354,18 +369,19 @@ describe("un associé personne morale", () => {
   });
 
   it("une société sans dénomination ne produit pas une phrase à trous", () => {
-    const texte = texteDu(
-      genererDocument(
-        gabaritProcesVerbal("SAS"),
-        donneesDuGabarit({
-          societe: SOCIETE,
-          assemblee: { date: "2026-08-10", associes: [{ nature: "morale", parts: 10 }] },
-          codes: ["denomination"],
-          valeurs: { nouvelleDenomination: "ACME GROUPE" },
-        })
-      )
+    const texte = produire(
+      ["denomination"],
+      { nouvelleDenomination: "ACME GROUPE" },
+      SOCIETE,
+      {
+        date: "2026-08-10",
+        associes: [
+          { nature: "morale", parts: 10 },
+          { civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 90 },
+        ],
+      } as unknown as typeof ASSEMBLEE
     );
-    expect(texte).not.toContain("La société ,");
-    expect(texte).not.toContain("dont le siège est ,");
+    expect(texte).not.toContain("la société ,");
+    expect(texte).not.toContain("dont le siège social est situé ,");
   });
 });

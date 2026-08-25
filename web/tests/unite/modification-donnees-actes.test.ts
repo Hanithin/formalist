@@ -3,6 +3,7 @@ import {
   adresseSurUneLigne,
   donneesDuGabarit,
   gabaritProcesVerbal,
+  MODELE_UNIVERSEL,
 } from "@/domain/modification/gabarit";
 
 /**
@@ -133,14 +134,20 @@ describe("le procès-verbal choisi", () => {
      * détenant chacun des parts : l'acte se contredisait dans sa propre en-tête.
      */
     expect(gabaritProcesVerbal("SASU", 1)).toContain("sasu");
-    expect(gabaritProcesVerbal("SASU", 2)).toContain("sas.docx");
-    expect(gabaritProcesVerbal("EURL", 2)).toContain("sarl.docx");
+    /*
+     * Dès qu'ils sont plusieurs, l'acte devient un procès-verbal d'assemblée, et c'est
+     * le modèle universel du cabinet qui l'écrit - un seul document pour la SAS comme
+     * pour la SARL, la terminologie découlant de la forme.
+     */
+    expect(gabaritProcesVerbal("SASU", 2)).toBe(MODELE_UNIVERSEL);
+    expect(gabaritProcesVerbal("EURL", 2)).toBe(MODELE_UNIVERSEL);
   });
 
   it("sans information sur le nombre d'associés, la forme décide", () => {
     // L'ancien appel, à un seul argument, doit continuer de fonctionner.
     expect(gabaritProcesVerbal("SASU", undefined)).toContain("sasu");
-    expect(gabaritProcesVerbal("SARL", undefined)).toContain("sarl");
+    // Une SARL n'est pas unipersonnelle : elle délibère, donc modèle universel.
+    expect(gabaritProcesVerbal("SARL", undefined)).toBe(MODELE_UNIVERSEL);
   });
 });
 

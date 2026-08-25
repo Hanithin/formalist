@@ -213,6 +213,8 @@ export interface PlanDeCapital {
   /** Augmentation en numéraire décidée avant l'apport, s'il y en a une. */
   numeraireCentimes: number;
   valeurApportCentimes: number;
+  /** La part de la valeur apportée qui va en prime, non au capital. */
+  primeCentimes: number;
   capitalApresNumeraireCentimes: number;
   capitalFinalCentimes: number;
   /** Part de l'apport dans le capital final, en pourcentage. */
@@ -231,18 +233,32 @@ export function planDeCapital(args: {
   capitalActuelCentimes: number;
   numeraireCentimes: number;
   valeurApportCentimes: number;
+  /**
+   * La prime d'apport, quand les titres émis valent moins que ce qui est apporté.
+   *
+   * Elle ne monte pas au capital : elle va en réserve. Un plan qui l'ignorerait
+   * annoncerait un capital final que les statuts ne porteraient pas, et le greffe
+   * verrait l'écart avant nous.
+   */
+  primeCentimes?: number;
 }): PlanDeCapital {
   const capitalActuelCentimes = Math.max(0, args.capitalActuelCentimes || 0);
   const numeraireCentimes = Math.max(0, args.numeraireCentimes || 0);
   const valeurApportCentimes = Math.max(0, args.valeurApportCentimes || 0);
+  const primeCentimes = Math.min(
+    Math.max(0, args.primeCentimes || 0),
+    valeurApportCentimes
+  );
 
   const capitalApresNumeraireCentimes = capitalActuelCentimes + numeraireCentimes;
-  const capitalFinalCentimes = capitalApresNumeraireCentimes + valeurApportCentimes;
+  const capitalFinalCentimes =
+    capitalApresNumeraireCentimes + valeurApportCentimes - primeCentimes;
 
   return {
     capitalActuelCentimes,
     numeraireCentimes,
     valeurApportCentimes,
+    primeCentimes,
     capitalApresNumeraireCentimes,
     capitalFinalCentimes,
     partDeLApport:
@@ -328,14 +344,15 @@ export function verifierApport(valeurs: Valeurs): AnomalieDApport[] {
       champ: "apportNominaleBeneficiaire",
       message: "Indiquez la valeur nominale des titres émis par la société bénéficiaire",
     });
-  } else if (valeurApport > 0) {
+  } else if (valeurApport > 0 && !rempli(valeurs.apportActionsEmises)) {
     /*
-     * L'apport doit se diviser en titres entiers.
+     * L'apport doit se diviser en titres entiers, tant que rien ne dit combien en émettre.
      *
      * Une valeur de 15 000 € rémunérée par des titres de 40 € donnerait 375 titres et
      * tomberait juste ; la même par des titres de 700 € donne 21,43 titres. Le reliquat
-     * appelle une prime d'émission, que l'acte doit alors chiffrer - sans quoi le
-     * capital annoncé ne correspond à rien.
+     * appelle une prime d'apport - et c'est précisément ce que le champ « Nombre de
+     * titres émis » permet de décider. Dès qu'il est rempli, le reste n'est plus un
+     * reliquat mais une prime, que le traité chiffre : le contrôle n'a plus lieu d'être.
      */
     const titresEmis = (valeurApport * 100) / (nominale * 100);
     if (Math.abs(titresEmis - Math.round(titresEmis)) > 1e-9) {
@@ -346,7 +363,7 @@ export function verifierApport(valeurs: Valeurs): AnomalieDApport[] {
           valeurApport +
           " € pour une valeur nominale de " +
           nominale +
-          " €. Ajustez l'une ou l'autre, ou prévoyez une prime d'émission.",
+          " €. Ajustez l'une ou l'autre, ou indiquez le nombre de titres émis - l'écart deviendra une prime d'apport.",
       });
     }
   }

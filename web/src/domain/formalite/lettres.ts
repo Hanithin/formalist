@@ -62,10 +62,23 @@ function tranche(nombre: number): string {
   if (nombre < 2000) return "mille" + (nombre === 1000 ? "" : " " + tranche(nombre - 1000));
 
   return (
-    tranche(Math.floor(nombre / 1000)) +
+    devantMille(tranche(Math.floor(nombre / 1000))) +
     " mille" +
     (nombre % 1000 === 0 ? "" : " " + tranche(nombre % 1000))
   );
+}
+
+/**
+ * « vingt » et « cent » perdent leur s devant « mille ».
+ *
+ * Ils prennent la marque du pluriel quand ils sont multipliés et que rien ne les suit -
+ * quatre-vingts, deux cents - et la perdent dès qu'un autre nombre vient après :
+ * quatre-vingt mille, deux cent mille. « Mille » étant invariable, il ne l'entraîne
+ * jamais. Le capital d'une société s'écrit en lettres dans ses statuts et dans chacun
+ * de ses actes : « quatre-vingts mille euros » s'y lit à chaque page.
+ */
+function devantMille(multiplicateur: string): string {
+  return multiplicateur.replace(/(vingt|cent)s$/, "$1");
 }
 
 /**

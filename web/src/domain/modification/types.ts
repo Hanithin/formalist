@@ -831,6 +831,42 @@ export const MODIFICATIONS: DefinitionModification[] = [
       },
 
       /* ------------------------------------------- Ce que la holding émet en échange */
+      /*
+       * Ce que le traité d'apport dit de la holding, et que rien d'autre ne dit.
+       *
+       * Le procès-verbal se contente de nommer la société : il l'a déjà en tête d'acte.
+       * Le traité, lui, la présente à un tiers - le préambule décrit son objet, et le
+       * corps de l'acte nomme celui qui l'engage. Deux mentions qu'aucun autre champ
+       * ne porte : la société modifiée arrive du registre avec sa dénomination, son
+       * capital et son siège, jamais avec son objet ni son représentant.
+       */
+      {
+        identifiant: "beneficiaireObjet",
+        libelle: "Objet de la holding",
+        groupe: "Ce que la holding émet en échange",
+        type: "long",
+        pleineLargeur: true,
+        obligatoire: true,
+        aide: "En une phrase, tel que les statuts le rédigent : « la prise de participation dans toutes sociétés ». Le traité le reprend dans son préambule.",
+      },
+      {
+        identifiant: "beneficiaireRepresentant",
+        libelle: "Qui représente la holding à la signature",
+        groupe: "Ce que la holding émet en échange",
+        type: "texte",
+        pleineLargeur: true,
+        obligatoire: true,
+        /*
+         * Inutile de le demander quand l'apporteur est lui-même le représentant légal :
+         * le traité le nomme alors des deux côtés, et l'article 1161 du code civil
+         * l'autorise expressément. Le poser quand même ferait retaper le même nom.
+         */
+        visibleSi: {
+          champ: "apporteurQualite",
+          vaut: ["Associé, sans mandat social", "Tiers entrant au capital"],
+        },
+        aide: "Civilité, prénom, nom et qualité : « Monsieur Paul DURAND, en sa qualité de Président ».",
+      },
       {
         identifiant: "apportNominaleBeneficiaire",
         libelle: "Valeur nominale des titres émis, en euros",
@@ -838,6 +874,27 @@ export const MODIFICATIONS: DefinitionModification[] = [
         type: "nombre",
         obligatoire: true,
         aide: "Elle doit diviser exactement la valeur de l'apport : sinon il faut une prime d'émission, et l'acte doit la chiffrer.",
+      },
+      /*
+       * La parité d'échange, et la prime qu'elle dégage.
+       *
+       * Le plus souvent, la valeur de l'apport se divise par le nominal et l'affaire
+       * est close : mille titres de dix euros pour dix mille euros apportés. Mais rien
+       * n'oblige à cette égalité, et il est fréquent de vouloir l'éviter - émettre
+       * moins de titres pour ne pas diluer les autres associés, ou parce que le
+       * nominal de la holding ne divise pas la valeur retenue. L'écart entre ce qui
+       * est apporté et ce qui entre au capital est la prime d'apport : elle va en
+       * réserve, pas au capital, et l'acte doit la chiffrer.
+       *
+       * Laissé vide, le nombre se calcule et la prime est nulle. C'est le cas courant,
+       * et il ne coûte pas une ligne de saisie de plus.
+       */
+      {
+        identifiant: "apportActionsEmises",
+        libelle: "Nombre de titres émis en rémunération",
+        groupe: "Ce que la holding émet en échange",
+        type: "nombre",
+        aide: "Laissez vide pour que la valeur de l'apport entre entièrement au capital. Un nombre plus faible dégage une prime d'apport, que le traité chiffrera.",
       },
       {
         identifiant: "apportNumeraire",
@@ -938,14 +995,15 @@ export const MODIFICATIONS: DefinitionModification[] = [
         obligatoire: true,
         aide: "Au-delà, faute de décision approuvant les augmentations de capital, le traité devient caduc.",
       },
-      {
-        identifiant: "apportCourAppel",
-        libelle: "Cour d'appel compétente",
-        groupe: "Le traité d'apport",
-        type: "texte",
-        obligatoire: true,
-        indication: "Celle du ressort du siège de la holding",
-      },
+      /*
+       * La cour d'appel ne se demande plus : elle se déduit du siège.
+       *
+       * On la faisait saisir, et personne ne la connaît - Nanterre relève de
+       * Versailles, Bobigny de Paris, Marseille d'Aix-en-Provence, et aucune des trois
+       * ne porte le nom de sa cour. Un champ obligatoire qu'on remplit au jugé produit
+       * une clause attributive fausse ; le département, lui, la donne exactement
+       * (voir courDAppel dans traite-apport.ts).
+       */
     ],
   },
 ];
