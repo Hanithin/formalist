@@ -11,6 +11,7 @@
   border-radius: 14px;
   overflow: hidden;
   height: calc(100vh - 180px);
+  height: calc(100dvh - 180px);
   min-height: 420px;
 }
 
@@ -204,6 +205,7 @@
   border-radius: 14px;
   overflow: hidden;
   height: calc(100vh - 220px);
+  height: calc(100dvh - 220px);
   min-height: 380px;
 }
 
@@ -212,3 +214,18 @@
 }
 
 /* .aucune passait par ici : le fil vide prend le ton « discret » de Vide. */
+
+/*
+ * Seize pixels dans un champ, sur un téléphone.
+ *
+ * Safari sur iOS zoome l'écran dès qu'on touche un champ dont la police descend sous
+ * seize pixels, et il ne dézoome pas ensuite. La consigne est posée dans globals.css
+ * pour les champs que personne n'habille ; ceux de cette feuille la portent ici,
+ * parce qu'une classe l'emporte sur un sélecteur d'élément et que la feuille globale
+ * n'impose rien par !important.
+ */
+@media (max-width: 700px) {
+  .saisie textarea {
+    font-size: 16px;
+  }
+}

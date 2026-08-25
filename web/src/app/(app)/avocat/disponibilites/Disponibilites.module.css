@@ -217,6 +217,7 @@
   width: 520px;
   max-width: 100%;
   max-height: 90vh;
+  max-height: 90dvh;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
   overflow: hidden;
   display: flex;
@@ -573,4 +574,17 @@
 .resumeVide {
   font-weight: 400;
   color: #888;
+}
+
+/*
+ * Seize pixels dans un champ, sur un téléphone.
+ *
+ * Ces classes sont posées sur le contrôle lui-même : elles l'emportent sur la consigne
+ * de globals.css, et Safari zoomait l'écran à chaque mise au point. Elles se
+ * reconnaissent à leur règle `:focus` - un libellé n'en a pas.
+ */
+@media (max-width: 700px) {
+  .champ {
+    font-size: 16px;
+  }
 }

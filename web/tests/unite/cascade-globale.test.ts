@@ -33,7 +33,12 @@ describe("spécificité de la feuille globale", () => {
     /*
      * Une déclaration !important dans la feuille globale ne se contourne plus depuis
      * une page : la page n'a aucun recours, quelle que soit sa spécificité.
+     *
+     * Les commentaires sont retirés avant la recherche : un commentaire qui explique
+     * pourquoi la feuille s'en abstient n'impose rien, et faisait pourtant échouer ce
+     * contrôle.
      */
-    expect(GLOBAL).not.toMatch(/!important/);
+    const declarations = GLOBAL.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(declarations).not.toMatch(/!important/);
   });
 });

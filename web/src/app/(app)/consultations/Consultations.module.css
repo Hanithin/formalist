@@ -1666,3 +1666,16 @@
   color: #f87171;
   flex-shrink: 0;
 }
+
+/*
+ * Seize pixels dans un champ, sur un téléphone.
+ *
+ * Ces classes sont posées sur le contrôle lui-même : elles l'emportent sur la consigne
+ * de globals.css, et Safari zoomait l'écran à chaque mise au point. Elles se
+ * reconnaissent à leur règle `:focus` - un libellé n'en a pas.
+ */
+@media (max-width: 700px) {
+  .champTexte {
+    font-size: 16px;
+  }
+}

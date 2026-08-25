@@ -404,3 +404,32 @@ td:has(+ td),
 .nombre {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Seize pixels dans un champ, sur un téléphone, et pas un de moins.
+ *
+ * Ce n'est pas une question de lisibilité mais de comportement : Safari sur iOS zoome
+ * l'écran dès qu'on touche un champ dont la police descend sous seize pixels, et il ne
+ * dézoome pas ensuite. Le client tapait « Prénom », la page sautait en avant, et il
+ * remplissait le reste à l'aveugle en poussant l'écran de gauche à droite.
+ *
+ * La règle ne porte que sur les contrôles de saisie : les libellés, les mentions et
+ * les badges gardent leur taille, ils ne reçoivent pas la mise au point.
+ *
+ * Elle est en fin de feuille, et non dans le bloc mobile du haut, pour une raison qui
+ * a coûté une mesure : elle a la même spécificité que la règle de base des champs, et
+ * c'est donc l'ordre qui tranche. Placée avant, elle se faisait recouvrir par les
+ * quinze pixels qu'elle vient corriger.
+ *
+ * Les feuilles de module habillent leurs propres champs par une classe, qui l'emporte
+ * sur ce sélecteur d'élément : chacune porte la même consigne chez elle. La feuille
+ * globale n'impose rien par !important - une page n'aurait plus aucun recours, et
+ * tests/unite/cascade-globale.test.ts veille sur ce point.
+ */
+@media (max-width: 700px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

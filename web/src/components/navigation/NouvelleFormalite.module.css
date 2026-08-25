@@ -205,6 +205,7 @@
  */
 .fenetre {
   max-height: 88vh;
+  max-height: 88dvh;
   display: flex;
   flex-direction: column;
 }

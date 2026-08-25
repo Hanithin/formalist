@@ -486,6 +486,7 @@
   width: 100%;
   max-width: 560px;
   max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   overflow-y: auto;
   background: #fff;
   border-radius: 16px;
@@ -826,5 +827,18 @@
   .actions {
     margin-left: 0;
     flex-basis: 100%;
+  }
+}
+
+/*
+ * Seize pixels dans un champ, sur un téléphone.
+ *
+ * Ces classes sont posées sur le contrôle lui-même : elles l'emportent sur la consigne
+ * de globals.css, et Safari zoomait l'écran à chaque mise au point. Elles se
+ * reconnaissent à leur règle `:focus` - un libellé n'en a pas.
+ */
+@media (max-width: 700px) {
+  .champ {
+    font-size: 16px;
   }
 }

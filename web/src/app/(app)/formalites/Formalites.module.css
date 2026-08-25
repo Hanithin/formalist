@@ -840,3 +840,15 @@
   opacity: 0.6;
   cursor: default;
 }
+
+/*
+ * Seize pixels dans le champ de recherche, sur un téléphone.
+ *
+ * La classe est posée sur l'input lui-même : elle l'emporte sur la consigne de
+ * globals.css, et Safari zoomait l'écran à chaque recherche.
+ */
+@media (max-width: 700px) {
+  .searchInput {
+    font-size: 16px;
+  }
+}

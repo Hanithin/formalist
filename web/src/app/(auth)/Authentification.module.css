@@ -58,6 +58,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .authLeft {
@@ -756,5 +757,20 @@
   }
   .authProgress span {
     width: 66%;
+  }
+}
+
+/*
+ * Seize pixels dans un champ, sur un téléphone.
+ *
+ * Safari sur iOS zoome l'écran dès qu'on touche un champ dont la police descend sous
+ * seize pixels, et il ne dézoome pas ensuite. La consigne est posée dans globals.css
+ * pour les champs que personne n'habille ; ceux de cette feuille la portent ici,
+ * parce qu'une classe l'emporte sur un sélecteur d'élément et que la feuille globale
+ * n'impose rien par !important.
+ */
+@media (max-width: 700px) {
+  .formGroup input {
+    font-size: 16px;
   }
 }

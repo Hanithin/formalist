@@ -65,6 +65,7 @@
   z-index: 40;
   width: 320px;
   max-height: 60vh;
+  max-height: 60dvh;
   overflow-y: auto;
   background: #fff;
   border: 1px solid #ececef;

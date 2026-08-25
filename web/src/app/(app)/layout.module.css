@@ -8,10 +8,20 @@
  *
  * Le défilement appartient donc à .contenu. Une page plus haute que l'écran défile
  * comme avant, mais dans sa colonne, et la barre latérale reste en place.
+ *
+ * La hauteur se dit en `dvh`, et en `vh` pour les navigateurs qui l'ignorent.
+ *
+ * Sur iOS, `100vh` vaut la hauteur qu'aurait l'écran si la barre d'adresse était
+ * masquée - c'est-à-dire toujours plus que ce qu'on voit en ouvrant une page. Une
+ * coquille qui ne défile pas et qui dépasse par le bas rend inatteignable ce qui s'y
+ * trouve : le pied collant d'un parcours, avec son bouton « Continuer », passait sous
+ * la barre d'outils de Safari, et aucun geste ne pouvait l'en sortir. `dvh` suit la
+ * hauteur réellement visible.
  */
 .page {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: #f5f5f5;
 }
