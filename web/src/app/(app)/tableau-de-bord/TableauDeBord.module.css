@@ -1073,19 +1073,38 @@
   color: #52525b;
 }
 
+/*
+ * Le geste d'une rangée, en texte plutôt qu'en bouton.
+ *
+ * La rangée entière est un lien : le bouton qui s'y trouvait répétait sa fonction, et
+ * vingt rangées donnaient vingt « Reprendre » encadrés, plus lourds à l'œil que ce
+ * qu'ils annonçaient. Le verbe reste, discret, suivi du chevron.
+ */
 .attentionGeste {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   flex-shrink: 0;
-  padding: 8px 16px;
-  border: 1px solid #e5e5e7;
-  border-radius: 9px;
-  background: #fff;
   font-size: 13.5px;
-  font-weight: 600;
-  color: #18181b;
+  font-weight: 500;
+  color: #71717a;
+  white-space: nowrap;
+}
+
+.attentionGeste svg {
+  width: 15px;
+  height: 15px;
+  color: #a1a1aa;
+  transition: transform 0.15s ease;
 }
 
 .attention:hover .attentionGeste {
-  border-color: #18181b;
+  color: #18181b;
+}
+
+.attention:hover .attentionGeste svg {
+  color: #18181b;
+  transform: translateX(2px);
 }
 
 /* ------------------------------------------------- Les formalités en cours */

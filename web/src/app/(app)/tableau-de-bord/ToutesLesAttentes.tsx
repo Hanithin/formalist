@@ -136,7 +136,21 @@ export function ToutesLesAttentes({
                             )}
                           </span>
                         </span>
-                        <span className={styles.attentionGeste}>{a.bouton}</span>
+                        {/* Le geste se lit, il ne se boutonne pas : voir Sections.tsx. */}
+                        <span className={styles.attentionGeste}>
+                          {a.bouton}
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </span>
                       </Link>
                     </li>
                   ))}

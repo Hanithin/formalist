@@ -168,7 +168,29 @@ export function Attention({ actions }: { actions: ActionDeDossier[] }) {
                     <strong>{action.societe}</strong> · {action.precision}
                   </span>
                 </span>
-                <span className={styles.attentionGeste}>{action.bouton}</span>
+                {/*
+                  Le geste se lit, il ne se boutonne pas.
+                  
+                  La rangée entière est déjà un lien : poser un bouton dedans en
+                  répétait la fonction, et vingt rangées faisaient vingt boutons
+                  « Reprendre » alignés, qui pesaient plus que ce qu'ils annonçaient.
+                  Le verbe reste - il n'est pas toujours le même - mais en texte, avec
+                  le chevron qui dit que la ligne mène quelque part.
+                */}
+                <span className={styles.attentionGeste}>
+                  {action.bouton}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </span>
               </Link>
             </li>
           ))}
