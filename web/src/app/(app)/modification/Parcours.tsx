@@ -38,6 +38,8 @@ import {
   obligationsParticulieres,
   statutsAMettreAJour,
 } from "@/domain/modification/formalites";
+import { anomaliesDuPvAge } from "@/domain/modification/pv-age";
+import { anomaliesDuTraite } from "@/domain/modification/traite-apport";
 import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification/offre";
 import type { Retouche, Zone } from "@/domain/modification/edition";
 import type { ActeProduit } from "@/domain/document/publication";
@@ -189,9 +191,33 @@ export function Parcours({
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
+  /*
+   * Les incohérences du procès-verbal se lisent ici, pas à la génération.
+   *
+   * Elles ne portent pas sur un champ vide mais sur deux valeurs qui ne s'accordent
+   * pas - un capital de départ qui n'est pas celui de la société, un nouveau capital
+   * que le nombre de titres ne donne pas. Laissées à la production des actes, elles
+   * arrêtaient un dossier déjà réglé.
+   */
   const anomalies = [
     ...verifierChamps(etat.codes, etat.valeurs, etat.societe.forme),
     ...verifierCoherence(etat.codes, etat.valeurs),
+    ...anomaliesDuPvAge({
+      societe: etat.societe,
+      assemblee: etat.assemblee,
+      codes: etat.codes,
+      valeurs: etat.valeurs,
+      cessions: etat.cessions,
+    }),
+    ...(etat.codes.includes("apport_titres")
+      ? anomaliesDuTraite({
+          societe: etat.societe,
+          assemblee: etat.assemblee,
+          codes: etat.codes,
+          valeurs: etat.valeurs,
+          cessions: etat.cessions,
+        })
+      : []),
   ];
   const anomaliesSociete = verifierSociete(etat.societe);
 
@@ -243,7 +269,15 @@ export function Parcours({
        * concerné, et le cumul de plusieurs cessions se juge sur l'ensemble.
        */
       return etat.codes.includes("cession_parts")
-        ? [...anomalies, ...verifierCessions(etat.assemblee.associes ?? [], etat.cessions ?? [])]
+        ? [
+            ...anomalies,
+            ...verifierCessions(
+              etat.assemblee.associes ?? [],
+              etat.cessions ?? [],
+              etat.societe.forme,
+              typeof etat.valeurs.agrementRequis === "string" ? etat.valeurs.agrementRequis : ""
+            ),
+          ]
         : anomalies;
     }
     /*
@@ -1569,10 +1603,16 @@ function EtapeDetails({
               cessions={etat.cessions ?? []}
               forme={etat.societe.forme}
               anomalies={anomalies}
+              agrementStatutaire={
+                typeof etat.valeurs.agrementRequis === "string" ? etat.valeurs.agrementRequis : ""
+              }
               surAssocies={(associes) =>
                 changer({ assemblee: { ...etat.assemblee, associes } })
               }
               surCessions={(cessions) => changer({ cessions })}
+              surAgrementStatutaire={(reponse) =>
+                majValeurs((valeurs) => ({ ...valeurs, agrementRequis: reponse }))
+              }
             />
           ) : (
           <div className={styles.champs}>

@@ -35,8 +35,11 @@ interface Props {
   cessions: Cession[];
   forme: string | null | undefined;
   anomalies: { champ: string; message: string }[];
+  /** Ce que les statuts prévoient, là où la loi ne l'impose pas. */
+  agrementStatutaire: string | null | undefined;
   surAssocies: (associes: AssociePresent[]) => void;
   surCessions: (cessions: Cession[]) => void;
+  surAgrementStatutaire: (reponse: string) => void;
 }
 
 export function Cessions({
@@ -44,8 +47,10 @@ export function Cessions({
   cessions: recues,
   forme,
   anomalies,
+  agrementStatutaire,
   surAssocies,
   surCessions,
+  surAgrementStatutaire,
 }: Props) {
   /*
    * Jamais zéro ligne.
@@ -349,6 +354,43 @@ export function Cessions({
           </section>
         );
       })}
+
+      {/*
+        La clause d'agrément des statuts, demandée une fois pour toutes.
+
+        Elle appartient à la société, non à chaque cession : la poser sous chaque bloc
+        ferait répondre trois fois à la même question. Elle ne paraît que là où la loi
+        laisse le choix - dans une société par actions, ou entre associés d'une SARL -
+        parce qu'ailleurs la réponse est déjà écrite dans le code de commerce.
+      */}
+      {cessions.some((cession) => !agrementDeDroit(forme, cession.vers).requis) && (
+        <section className={styles.cession}>
+          <div className={styles.champs}>
+            <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+              <label htmlFor="agrement-statutaire">
+                Vos statuts prévoient-ils une clause d&apos;agrément ?
+              </label>
+              <select
+                id="agrement-statutaire"
+                value={agrementStatutaire ?? ""}
+                onChange={(e) => surAgrementStatutaire(e.target.value)}
+              >
+                <option value="">Choisir</option>
+                <option value="Oui">
+                  Oui : la cession doit être agréée par les associés
+                </option>
+                <option value="Non">Non : les titres se cèdent librement</option>
+              </select>
+              <p className={styles.devisPrecision}>
+                La clause figure aux statuts, souvent sous un article « Cession des
+                titres ». Sans réponse, l&apos;acte affirmerait qu&apos;aucun agrément
+                n&apos;est dû, ce que le greffe lit à côté de vos statuts.
+              </p>
+              {refus("agrementRequis") && <p role="alert">{refus("agrementRequis")}</p>}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/*
         Une assemblée peut décider plusieurs cessions. Le bouton ne s'offre qu'une fois

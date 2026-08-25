@@ -41,7 +41,9 @@ export const POST = route(async (requete: Request) => {
   const manques = verifierModification(
     modification.codes,
     modification.valeurs,
-    modification.societe
+    modification.societe,
+    modification.assemblee,
+    modification.cessions
   );
   if (manques.length > 0) {
     return NextResponse.json(

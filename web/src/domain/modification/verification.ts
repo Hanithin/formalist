@@ -1,5 +1,8 @@
 import { champsASaisir, definitions, type Valeurs } from "./types";
 import { verifierApport } from "./apport";
+import { anomaliesDuPvAge } from "./pv-age";
+import { anomaliesDuTraite } from "./traite-apport";
+import type { ContexteGabarit } from "./gabarit";
 
 /**
  * Ce qui manque, et ce qui ne tient pas debout.
@@ -184,11 +187,20 @@ export function verifierCoherence(codes: string[], valeurs: Valeurs): Anomalie[]
   return anomalies;
 }
 
-/** Tout ce qui empêche de produire les actes. */
+/**
+ * Tout ce qui empêche de produire les actes.
+ *
+ * L'assemblée et les cessions ne sont pas toujours connues de l'appelant - la route
+ * de paiement les a, un contrôle de forme isolé non. Sans elles, les contrôles du
+ * procès-verbal qui en dépendent ne se posent pas ; ceux qui n'en dépendent pas -
+ * la chaîne des capitaux, l'accord des montants - se posent toujours.
+ */
 export function verifierModification(
   codes: string[],
   valeurs: Valeurs,
-  societe: Societe
+  societe: Societe,
+  assemblee?: ContexteGabarit["assemblee"],
+  cessions: ContexteGabarit["cessions"] = []
 ): Anomalie[] {
   if (codes.length === 0) {
     return [{ champ: "modifications", message: "Choisissez au moins une modification" }];
@@ -201,6 +213,28 @@ export function verifierModification(
     ...verifierSociete(societe),
     ...verifierChamps(codes, valeurs, societe.forme),
     ...verifierCoherence(codes, valeurs),
+    /*
+     * Sans assemblée transmise, on ne reproche pas son absence.
+     *
+     * « Aucun associé n'est inscrit » est vrai d'un objet vide comme d'une assemblée
+     * réellement vide : un appelant qui ne connaît pas l'assemblée verrait le reproche
+     * sans pouvoir y répondre.
+     */
+    ...anomaliesDuPvAge({
+      societe,
+      assemblee: assemblee ?? {},
+      codes,
+      valeurs,
+      cessions,
+    } as ContexteGabarit).filter((a) => assemblee !== undefined || !a.champ.startsWith("assemblee")),
+    /*
+     * Le traité d'apport a ses propres incohérences, et le même besoin d'être relu
+     * avant le règlement : un nominal qui ne divise pas la valeur de l'apport, un
+     * commissaire aux apports partie à l'opération, une dispense que la loi n'ouvre pas.
+     */
+    ...(codes.includes("apport_titres")
+      ? anomaliesDuTraite({ societe, assemblee: assemblee ?? {}, codes, valeurs, cessions } as ContexteGabarit)
+      : []),
   ];
 }
 

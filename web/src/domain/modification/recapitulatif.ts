@@ -1,4 +1,5 @@
 import { champVisible, definitions, type Valeurs } from "./types";
+import { agrementDeDroit, type Cession } from "./cession";
 import type { SocieteModifiee } from "./gabarit";
 
 /**
@@ -35,6 +36,7 @@ export interface DossierDeModification {
   codes?: string[];
   societe?: SocieteModifiee;
   valeurs?: Valeurs;
+  cessions?: Cession[];
   assemblee?: { date?: string | null; associes?: { civilite?: string | null; prenom?: string | null; nom?: string | null; parts?: number | null }[] };
   statuts?: { source?: string; nature?: string; deposeLe?: string | null; fichier?: string };
   statutsAJour?: boolean;
@@ -90,6 +92,56 @@ export function recapitulatifDeModification(
       .filter((f) => f.valeur);
 
     if (faits.length > 0) sections.push({ titre: definition.libelle, faits });
+  }
+
+  /*
+   * Les cessions, que le récapitulatif ignorait.
+   *
+   * Elles ne se saisissent pas en champs plats - leur écran a son propre bloc - et
+   * elles échappaient donc à la boucle qui rend une section par changement. L'avocat
+   * voyait « Cession de parts ou d'actions » dans ce que le client change, puis plus
+   * rien : ni qui cède, ni combien, ni à quel prix, ni si les statuts imposent un
+   * agrément. Il lui fallait ouvrir les actes pour le savoir.
+   */
+  const cessions = donnees.cessions ?? [];
+  if (cessions.length > 0) {
+    const faitsCession: FaitDuDossier[] = [];
+
+    cessions.forEach((cession, rang) => {
+      const morceaux = [
+        cession.parts ? cession.parts + (cession.parts > 1 ? " parts" : " part") : "",
+        cession.nom ? "au profit de " + cession.nom : "",
+        typeof cession.prix === "number" ? "pour " + ecrit(cession.prix) + " euros" : "",
+        cession.date ? "le " + ecrit(cession.date) : "",
+      ].filter(Boolean);
+
+      if (morceaux.length > 0) {
+        faitsCession.push({
+          libelle: cessions.length > 1 ? "Cession " + (rang + 1) : "Cession",
+          valeur: morceaux.join(", "),
+        });
+      }
+    });
+
+    /*
+     * L'agrément : ce que la loi impose, ou ce que le client a déclaré des statuts.
+     * L'avocat relit l'acte contre les statuts ; il doit savoir sur quoi il repose.
+     */
+    const deDroit = cessions.some((c) => agrementDeDroit(donnees.societe?.forme, c.vers).requis);
+    const declare = ecrit(valeurs.agrementRequis);
+    if (deDroit) {
+      faitsCession.push({ libelle: "Agrément", valeur: "Requis par la loi" });
+    } else if (declare) {
+      faitsCession.push({
+        libelle: "Agrément",
+        valeur:
+          declare === "Oui"
+            ? "Requis par une clause des statuts, déclarée par le client"
+            : "Aucun : le client déclare que les statuts n'en prévoient pas",
+      });
+    }
+
+    if (faitsCession.length > 0) sections.push({ titre: "Les cessions", faits: faitsCession });
   }
 
   const associes = donnees.assemblee?.associes ?? [];

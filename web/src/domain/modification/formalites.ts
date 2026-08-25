@@ -185,13 +185,30 @@ export function piecesAFournir(codes: string[], valeurs: Valeurs = {}): PieceAFo
      */
     const chezUnDomiciliataire = valeurs.nouveauModeDomiciliation === "Société de domiciliation";
 
+    /*
+     * La pièce nomme le domiciliataire déclaré, au lieu de décrire un contrat abstrait.
+     *
+     * Les trois lignes saisies - dénomination, SIREN, agrément - étaient obligatoires
+     * et ne ressortaient nulle part : on les faisait remplir pour les stocker. Elles
+     * ont pourtant exactement leur emploi ici. Le client ne cherche plus « un contrat
+     * de domiciliation » parmi ses fichiers : il cherche celui conclu avec cette
+     * société-là, et vérifie que le numéro qui y figure est bien celui qu'il a déclaré.
+     * Un agrément recopié de travers se voit à ce moment, pas au refus du greffe.
+     */
+    const domiciliataire = (valeurs.domiciliataireDenomination ?? "").toString().trim();
+    const agrement = (valeurs.domiciliataireAgrement ?? "").toString().trim();
+
     pieces.push({
       identifiant: "jouissance-locaux",
       titre: chezUnDomiciliataire
         ? "Contrat de domiciliation"
         : "Justificatif de jouissance du nouveau local",
       explication: chezUnDomiciliataire
-        ? "Au nom de la société, en cours de validité, portant le numéro d'agrément préfectoral du domiciliataire - sans lui, le greffe refuse le transfert."
+        ? "Au nom de la société, en cours de validité" +
+          (domiciliataire ? ", conclu avec " + domiciliataire : "") +
+          ", portant le numéro d'agrément préfectoral du domiciliataire" +
+          (agrement ? " - vous avez déclaré le " + agrement + ", vérifiez qu'il y figure bien" : "") +
+          ". Sans ce numéro, le greffe refuse le transfert."
         : "Bail, contrat de domiciliation ou titre de propriété, au nom de la société et de moins de trois mois.",
       obligatoire: true,
       formats: PDF_OU_IMAGE,

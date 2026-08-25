@@ -197,7 +197,16 @@ export interface AnomalieDeCession {
  */
 export function verifierCessions(
   associes: AssociePresent[],
-  cessions: Cession[]
+  cessions: Cession[],
+  /*
+   * La forme et la réponse sur la clause statutaire.
+   *
+   * Là où la loi n'impose pas l'agrément, ce sont les statuts qui décident, et l'acte
+   * doit dire lequel des deux : « cette cession n'est soumise à aucune procédure
+   * d'agrément » est une affirmation, pas un défaut de réponse.
+   */
+  forme?: string | null,
+  agrementStatutaire?: string | null
 ): AnomalieDeCession[] {
   const anomalies: AnomalieDeCession[] = [];
 
@@ -209,6 +218,25 @@ export function verifierCessions(
    */
   if (cessions.length === 0) {
     return [{ champ: "cessions", message: "Renseignez la cession" }];
+  }
+
+  /*
+   * La clause d'agrément des statuts, quand la loi ne tranche pas.
+   *
+   * Sans la réponse, le procès-verbal écrivait « ni la loi ni les statuts ne
+   * l'imposant » sans que personne n'ait ouvert les statuts - et dans une société par
+   * actions, la clause d'agrément est la règle plutôt que l'exception. Un acte qui la
+   * nie contredit les statuts déposés au greffe.
+   */
+  if (
+    forme !== undefined &&
+    cessions.some((cession) => !agrementDeDroit(forme, cession.vers).requis) &&
+    !(agrementStatutaire ?? "").trim()
+  ) {
+    anomalies.push({
+      champ: "agrementRequis",
+      message: "Dites si vos statuts prévoient une clause d'agrément",
+    });
   }
 
   const repartition = repartitionApres(associes, cessions);
@@ -288,6 +316,10 @@ export function cessionsRedigees(
 ): {
   CEDANT: string;
   CESSIONNAIRE: string;
+  /** « Tiers » ou « Associé » : les actes le disent, et le droit en dépend. */
+  CESSIONNAIRE_TYPE: string;
+  /** L'adresse du cessionnaire tiers, que l'acte de cession lui donne pour domicile. */
+  ADRESSE: string;
   PARTS: number;
   PRIX: number;
   PRIX_PAR_PART: number | null;
@@ -305,6 +337,8 @@ export function cessionsRedigees(
       associes[cession.cessionnaire]
         ? designationDeLAssocie(associes[cession.cessionnaire])
         : (cession.nom ?? "").trim(),
+    CESSIONNAIRE_TYPE: cession.vers === "tiers" ? "Tiers" : "Associé",
+    ADRESSE: (cession.adresse ?? "").trim(),
     PARTS: cession.parts ?? 0,
     PRIX: cession.prix ?? 0,
     PRIX_PAR_PART: prixParPart(cession),

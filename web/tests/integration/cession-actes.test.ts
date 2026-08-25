@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import PizZip from "pizzip";
 import { genererDocument } from "@/infrastructure/documents/generation";
-import { donneesDuGabarit, actesAProduire } from "@/domain/modification/gabarit";
+import { rendreLePvAge } from "@/infrastructure/documents/modeles-cabinet";
+import { donneesDuPvAge, verifierLePvAge } from "@/domain/modification/pv-age";
+import { donneesDuGabarit, actesAProduire, MODELE_UNIVERSEL } from "@/domain/modification/gabarit";
 import type { Cession } from "@/domain/modification/cession";
 
 /**
@@ -15,7 +17,7 @@ import type { Cession } from "@/domain/modification/cession";
 
 function texteDu(docx: Buffer): string {
   const xml = new PizZip(docx).file("word/document.xml")?.asText() ?? "";
-  return xml.replace(/<[^>]+>/g, "");
+  return xml.replace(/<[^>]+>/g, "").replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 }
 
 const ASSOCIES = [
@@ -35,7 +37,7 @@ const CESSION: Cession = {
 function produire(
   forme: string,
   gabarit: string,
-  options: { associes?: typeof ASSOCIES; cessions?: Cession[] } = {}
+  options: { associes?: typeof ASSOCIES; cessions?: Cession[]; valeurs?: Record<string, string> } = {}
 ): string {
   const societe = {
     denomination: "ESSAI CESSION",
@@ -56,10 +58,55 @@ function produire(
   );
   if (!acte) throw new Error("acte introuvable : " + gabarit);
 
-  return texteDu(
-    genererDocument(acte.gabarit, donneesDuGabarit({ societe, assemblee, codes, valeurs: {}, cessions }))
-  );
+  const contexte = { societe, assemblee, codes, valeurs: options.valeurs ?? {}, cessions };
+  /*
+   * Le procès-verbal collégial passe par le modèle universel du cabinet, l'acte de
+   * cession par les gabarits de Formalist : deux moteurs, deux jeux de balises.
+   */
+  if (acte.gabarit === MODELE_UNIVERSEL) {
+    return texteDu(rendreLePvAge(donneesDuPvAge(contexte)));
+  }
+  return texteDu(genererDocument(acte.gabarit, donneesDuGabarit(contexte)));
 }
+
+describe("la clause d'agrément des statuts", () => {
+  /*
+   * Dans une société par actions, la loi n'impose rien : ce sont les statuts qui
+   * décident, et la clause d'agrément y est la règle plutôt que l'exception. Tant que
+   * personne ne pouvait le dire, l'acte affirmait qu'aucun agrément n'était dû -
+   * affirmation que le greffe lit à côté des statuts déposés, qui disent l'inverse.
+   */
+  it("fait agréer la cession dans une SAS quand les statuts le prévoient", () => {
+    const pv = produire("SAS", MODELE_UNIVERSEL, { valeurs: { agrementRequis: "Oui" } });
+
+    expect(pv).toContain("agrée expressément cette cession");
+    expect(pv).toContain("statuant dans les conditions de majorité prévues par les statuts");
+    expect(pv).not.toContain("n'est soumise à aucune procédure d'agrément");
+  });
+
+  it("laisse la cession libre quand les statuts ne prévoient rien", () => {
+    const pv = produire("SAS", MODELE_UNIVERSEL, { valeurs: { agrementRequis: "Non" } });
+
+    expect(pv).toContain("n'est soumise à aucune procédure d'agrément");
+    expect(pv).not.toContain("agrée expressément");
+  });
+
+  it("ne se laisse pas nier là où la loi l'impose", () => {
+    /*
+     * Répondre « Non » sur une SARL cédant à un tiers ne rend pas la cession libre :
+     * l'article L. 223-14 ne se règle pas par une case de formulaire.
+     */
+    const bloquants = verifierLePvAge({
+      societe: { denomination: "ESSAI", forme: "SARL", siren: "552100554", adresse: "12 rue de la Paix", codePostal: "75002", ville: "Paris", capital: 100000, villeRcs: "Paris" },
+      assemblee: { date: "2026-09-15", associes: ASSOCIES },
+      codes: ["cession_parts"],
+      valeurs: { agrementRequis: "Non" },
+      cessions: [CESSION],
+    } as never).filter((a) => a.gravite === "bloquant");
+
+    expect(bloquants.map((a) => a.champ)).toContain("agrementRequis");
+  });
+});
 
 describe("les actes d'une cession", () => {
   it("écrivent le prix avec son séparateur de milliers", () => {
@@ -68,7 +115,7 @@ describe("les actes d'une cession", () => {
      * « 100 000 euros » : le prix sortait du tableau des cessions en nombre brut,
      * sans passer par le formateur des montants.
      */
-    for (const gabarit of ["modif-pv-transfert-siege-sas.docx", "modif-acte-cession.docx"]) {
+    for (const gabarit of [MODELE_UNIVERSEL, "modif-acte-cession.docx"]) {
       const texte = produire("SAS", gabarit);
       expect(texte, gabarit).toContain("24 000 euros");
       expect(texte, gabarit).not.toContain("24000");
@@ -81,21 +128,23 @@ describe("les actes d'une cession", () => {
      * tiers. Le procès-verbal en agréait pourtant le bénéficiaire pendant que l'acte
      * de cession écrivait le contraire, pour la même opération et le même jour.
      */
-    const pv = produire("SAS", "modif-pv-transfert-siege-sas.docx");
+    const pv = produire("SAS", MODELE_UNIVERSEL);
     const acte = produire("SAS", "modif-acte-cession.docx");
 
-    expect(pv).toContain("CONSTATATION DE LA CESSION");
-    expect(pv).not.toContain("AGRÉMENT DE LA CESSION");
+    expect(pv).toContain("(Cession d'actions)");
+    expect(pv).toContain("prend acte de la cession de 200 actions");
+    expect(pv).not.toContain("agrée expressément");
     expect(pv).toContain("n'est soumise à aucune procédure d'agrément");
     expect(acte).toContain("n'est soumise à aucune procédure d'agrément");
   });
 
   it("agréent quand la loi l'exige, en SARL vers un tiers", () => {
-    const pv = produire("SARL", "modif-pv-transfert-siege-sarl.docx");
+    const pv = produire("SARL", MODELE_UNIVERSEL);
 
-    expect(pv).toContain("AGRÉMENT DE LA CESSION");
-    expect(pv).not.toContain("CONSTATATION DE LA CESSION");
-    expect(pv).toContain("agrée en qualité de nouvel associé");
+    expect(pv).toContain("(Cession de parts sociales)");
+    expect(pv).toContain("statuant dans les conditions de majorité prévues par L. 223-14");
+    expect(pv).toContain("agrée expressément cette cession et le cessionnaire en qualité de nouvel associé");
+    expect(pv).not.toContain("n'est soumise à aucune procédure d'agrément");
   });
 });
 
