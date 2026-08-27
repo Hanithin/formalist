@@ -684,7 +684,16 @@ function generateDocxFromBuffer(buf, data) {
       if (!fullText) return m;
       // Skip paragraphs that look like the "Président" / "Gérant" role label, the underscore line,
       // OR the "Signature" label itself (otherwise "Fait à..." triggers border above "Signature").
-      if (/^_+$/.test(fullText) || /^(Pr[ée]sident|G[ée]rant|Directeur|Signature)/i.test(fullText)) return m;
+      //
+      // Les intitulés d'un bloc de signature en font partie : « L'associé unique : » et
+      // « Les associés : » annoncent le nom, ils ne le sont pas. Le trait se posait
+      // au-dessus d'eux, pleine largeur, et le procès-verbal en portait deux - celui-ci
+      // et celui que le gabarit dessine lui-même sous le libellé.
+      if (
+        /^_+$/.test(fullText) ||
+        /^(Pr[ée]sident|G[ée]rant|Directeur|Signature)/i.test(fullText) ||
+        /^(L['’]associ[ée]|Les associ[ée]s|Le[s]? soussign[ée]|Pour la soci[ée]t[ée])/i.test(fullText)
+      ) return m;
       let newPara = namePara;
       // Add top border + right indent so the line is ~3 cm wide (not full page width)
       // + w:before=600 for vertical signing space.
