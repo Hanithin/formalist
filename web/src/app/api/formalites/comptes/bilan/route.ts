@@ -69,13 +69,23 @@ export const POST = route(async (requete: Request) => {
 
   const chiffres = await extraireLesChiffres(lu.texte);
 
+  /*
+   * Le dépôt est rendu à l'écran, non seulement écrit en base.
+   *
+   * L'écran ne l'apprenait qu'au rechargement suivant : on uploadait son bilan, les
+   * chiffres se remplissaient, et la zone de dépôt continuait d'afficher « Uploader mon
+   * bilan » comme si rien n'était arrivé.
+   */
+  const bilan = { fichier: fichier.name, deposeLe: new Date().toISOString() };
+
   await completerComptes(utilisateur, dossierId, {
-    bilan: { fichier: fichier.name, deposeLe: new Date().toISOString() },
+    bilan,
     extraits: chiffres.map((c) => c.champ),
   });
 
   return NextResponse.json({
     chiffres,
+    bilan,
     /* « couche-texte » vaut mieux que « reconnaissance » : l'écran le dit, parce que
        la seconde peut confondre un 8 et un 3 dans un montant. */
     source: lu.source,

@@ -599,6 +599,12 @@
   min-width: 0;
 }
 
+/* Un champ et l'origine de son chiffre : une seule cellule de la grille. */
+.champAvecOrigine {
+  grid-column: span 3;
+  min-width: 0;
+}
+
 .colonnes1 {
   grid-column: span 1;
 }
@@ -6255,6 +6261,8 @@
 
 .depotBilanChemin {
   display: flex;
+  /* Les listes de `main section` sont mises en colonne : l'icône passait au-dessus. */
+  flex-direction: row;
   gap: 10px;
   padding: 12px 14px;
   border-radius: 12px;
@@ -6560,8 +6568,13 @@
  * dont l'un était noir : rien ne disait si le noir marquait le choix retenu ou l'action
  * recommandée, et rien ne disait ce que chacun entraînait.
  */
-.choixConf li,
-.depotBilanChemins li {
+/*
+ * `globals.css` pose une carte sur les éléments de liste de `main section`. Elle ne
+ * vaut pas ici, où la carte est le bouton lui-même. La règle ne vise que `.choixConf` :
+ * dans `.depotBilanChemins`, la carte EST l'élément de liste, et l'annuler l'avait
+ * dépouillé de son fond.
+ */
+.choixConf li {
   margin: 0;
   padding: 0;
   border: 0;

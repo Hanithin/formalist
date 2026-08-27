@@ -33,12 +33,15 @@ export function Chiffres({
   etat,
   majValeurs,
   marquerExtraits,
+  surBilan,
   refusDe,
 }: {
   dossier: number;
   etat: Comptes;
   majValeurs: (maj: (v: Comptes["valeurs"]) => Comptes["valeurs"]) => void;
   marquerExtraits: (champs: string[]) => void;
+  /** Le bilan déposé, pour que la zone passe au vert sans attendre un rechargement. */
+  surBilan: (bilan: Comptes["bilan"]) => void;
   refusDe: (champ: string) => string | undefined;
 }) {
   const [origines, setOrigines] = useState<Record<string, string>>({});
@@ -67,6 +70,9 @@ export function Chiffres({
         setRefus(corps.error ?? "Le document n'a pas pu être lu");
         return;
       }
+
+      /* Le dépôt est acquis même si aucun chiffre n'en sort : le fichier est au dossier. */
+      if (corps.bilan) surBilan(corps.bilan as Comptes["bilan"]);
 
       const chiffres = (corps.chiffres ?? []) as ChiffreExtrait[];
       if (chiffres.length === 0) {
@@ -227,6 +233,14 @@ export function Chiffres({
         {champs.map((champ, rang) => (
           <Fragment key={champ.identifiant}>
             {rang === 0 && <h4 className={styles.champsGroupe}>{GROUPE}</h4>}
+            {/*
+              Le champ et l'origine de son chiffre ne font qu'une cellule.
+
+              La ligne « Lu dans votre document » était posée à côté du champ, enfant
+              direct de la grille : elle prenait la rangée entière, et chaque champ se
+              retrouvait seul sur la sienne. Les six chiffres tombaient en colonne.
+            */}
+            <div className={styles.champAvecOrigine}>
             <Champ
               champ={champ}
               valeur={etat.valeurs[champ.identifiant]}
@@ -244,6 +258,7 @@ export function Chiffres({
                 Lu dans votre document : « {origines[champ.identifiant]} »
               </p>
             )}
+            </div>
           </Fragment>
         ))}
       </div>

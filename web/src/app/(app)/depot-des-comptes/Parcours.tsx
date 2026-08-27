@@ -232,6 +232,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
             etat={etat}
             majValeurs={majValeurs}
             marquerExtraits={(champs) => changer({ extraits: champs })}
+            surBilan={(bilan) => changer({ bilan })}
             refusDe={refusDe}
           />
         )}
