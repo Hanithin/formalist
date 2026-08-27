@@ -967,129 +967,189 @@ function EtapeConfidentialite({
   return (
     <>
       <p className={styles.description}>
-        Déposer n&apos;est pas publier. Vos comptes doivent partir au greffe, mais selon
-        la taille de votre société, ils peuvent y rester inaccessibles au public.
+        {verdict.depose
+          ? "Déposer n'est pas publier. Vos comptes doivent partir au greffe, mais selon la taille de votre société, ils peuvent y rester inaccessibles au public."
+          : "Cette étape ne concerne que les sociétés qui déposent leurs comptes au greffe. Ce n'est pas votre cas."}
       </p>
 
-      <section className={styles.bloc}>
-        <h3 className={styles.blocTitre}>Ce que vous pouvez demander</h3>
+      {/*
+        Une société civile ne dépose rien : la question ne se pose pas.
 
-        {/*
-          Le verdict d'abord, le droit ensuite.
-
-          L'écran ouvrait sur un paragraphe de règle qu'il fallait lire en entier pour
-          savoir si l'on avait droit à quelque chose. La réponse tient en une phrase.
-        */}
-        <div
-          className={[
-            styles.verdictConf,
-            verdict.modele ? styles.verdictConfOuvert : styles.verdictConfFerme,
-          ].join(" ")}
-        >
-          <span className={styles.verdictConfTitre}>{TITRES_DE_PORTEE[verdict.portee]}</span>
-          <p className={styles.verdictConfTexte}>{verdict.explication}</p>
-
-          {/*
-            Qui garde l'accès quoi qu'on décide.
-
-            « Confidentiel » se lit comme « personne ne le verra », ce qui est faux et
-            inquiète à tort : l'administration et la banque y accèdent toujours. Le dire
-            ici évite la question, et évite surtout de le découvrir plus tard.
-          */}
-          <ul className={styles.verdictConfAcces}>
-            <li>Le greffe y accède</li>
-            <li>L&apos;administration fiscale aussi</li>
-            <li>La Banque de France aussi</li>
-            <li>L&apos;autorité judiciaire aussi</li>
-          </ul>
-        </div>
-
-        {verdict.motifs.length > 0 && (
-          <ul className={styles.obligations}>
-            {verdict.motifs.map((motif) => (
-              <li key={motif}>{motif}</li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className={styles.bloc}>
-        <h3 className={styles.blocTitre}>Votre société est-elle dans un de ces cas ?</h3>
-        <p className={styles.blocTexte}>
-          La plupart ne le sont pas : laissez tout décoché si aucun ne vous concerne.
-          Chacun ferme la confidentialité, et ce que vous cochez ici est déclaré sur
-          l&apos;honneur.
-        </p>
-        <ul className={styles.entreeChoix}>
-          {EXCLUSIONS_LISIBLES.map((exclusion) => (
-            <li key={exclusion.cle}>
-              <button
-                type="button"
-                className={styles.entreeCarte}
-                aria-pressed={etat.exclusions.includes(exclusion.cle as never)}
-                onClick={() => basculer(exclusion.cle)}
-              >
-                <span className={styles.entreeCase} aria-hidden="true">
-                  <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="3">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </span>
-                <span className={styles.entreeCarteTitre}>{exclusion.libelle}</span>
-                <span className={styles.entreeCarteTexte}>{exclusion.fondement}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {verdict.modele && (
+        L'écran lui affichait « Vos comptes seront consultables par tous » au-dessus
+        d'une phrase disant qu'ils ne sont jamais publics, puis lui proposait de cocher
+        des cas d'exclusion qui ne la visent pas. Deux contradictions dans une carte.
+      */}
+      {!verdict.depose ? (
         <section className={styles.bloc}>
-          <h3 className={styles.blocTitre}>Votre décision</h3>
-          {/*
-            Deux cartes, non deux boutons.
+          <h3 className={styles.blocTitre}>Vous n&apos;avez rien à demander ici</h3>
+          <div className={`${styles.verdictConf} ${styles.verdictConfOuvert}`}>
+            <span className={styles.verdictConfTitre}>
+              Vos comptes ne sont jamais publiés
+            </span>
+            <p className={styles.verdictConfTexte}>{verdict.explication}</p>
+          </div>
+          <p className={styles.blocNote}>
+            Continuez : le procès-verbal d&apos;approbation sera produit sans déclaration
+            de confidentialité, puisqu&apos;il n&apos;y a rien à rendre confidentiel.
+          </p>
+        </section>
+      ) : (
+        <>
+          <section className={styles.bloc}>
+            <h3 className={styles.blocTitre}>Ce que vous pouvez demander</h3>
 
-            L'écran posait « Demander la confidentialité » et « Publier mes comptes »
-            côte à côte, l'un noir : rien ne disait si le noir marquait le choix retenu
-            ou l'action recommandée, ni ce que chacun entraînait.
-          */}
-          <ul className={styles.choixConf}>
-            {(
-              [
-                [
-                  true,
-                  "Garder mes comptes confidentiels",
-                  verdict.portee === "tout"
-                    ? "Bilan, compte de résultat et annexe deviennent inaccessibles au public. Nous joignons la déclaration au dépôt."
-                    : "Le compte de résultat devient inaccessible au public. Le bilan et l'annexe restent consultables.",
-                ],
-                [
-                  false,
-                  "Publier mes comptes",
-                  "Ils restent consultables par tous, comme n'importe quel document du registre. Rien de plus à signer.",
-                ],
-              ] as const
-            ).map(([valeur, titre, texte]) => (
-              <li key={titre}>
-                <button
-                  type="button"
-                  className={styles.choixConfCarte}
-                  aria-pressed={etat.demandeLaConfidentialite === valeur}
-                  onClick={() => changer({ demandeLaConfidentialite: valeur })}
-                >
-                  <span className={styles.choixConfTitre}>
-                    <span className={styles.choixConfMarque} aria-hidden="true">
-                      <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="3.5">
+            <div
+              className={[
+                styles.verdictConf,
+                verdict.modele ? styles.verdictConfOuvert : styles.verdictConfFerme,
+              ].join(" ")}
+            >
+              <span className={styles.verdictConfTitre}>
+                {TITRES_DE_PORTEE[verdict.portee]}
+              </span>
+              <p className={styles.verdictConfTexte}>{verdict.explication}</p>
+
+              {/*
+                Qui garde l'accès quoi qu'on décide.
+
+                « Confidentiel » se lit comme « personne ne le verra », ce qui est faux
+                et inquiète à tort : l'administration et la banque y accèdent toujours.
+              */}
+              {verdict.modele && (
+                <ul className={styles.verdictConfAcces}>
+                  <li>Le greffe y accède</li>
+                  <li>L&apos;administration fiscale aussi</li>
+                  <li>La Banque de France aussi</li>
+                  <li>L&apos;autorité judiciaire aussi</li>
+                </ul>
+              )}
+            </div>
+
+            {verdict.motifs.length > 0 && (
+              <ul className={styles.obligations}>
+                {verdict.motifs.map((motif) => (
+                  <li key={motif}>{motif}</li>
+                ))}
+              </ul>
+            )}
+
+            {/*
+              Comment cela se passe, concrètement.
+
+              L'écran demandait de choisir sans jamais dire ce que le choix déclenchait :
+              qui rédige la déclaration, qui la signe, où elle va, ni qu'elle ne vaut que
+              pour cet exercice. « Là je comprends rien », et c'était mérité.
+            */}
+            {verdict.modele && (
+              <ol className={styles.marche}>
+                {(
+                  [
+                    ["Vous la demandez ci-dessous", "Rien d'autre à faire de votre côté."],
+                    [
+                      "Nous rédigeons la déclaration",
+                      "Conforme au modèle officiel de l'annexe 1-5 du code de commerce. L'avocat la relit avec vos autres actes.",
+                    ],
+                    [
+                      "Votre dirigeant la signe",
+                      "C'est une attestation sur l'honneur : elle engage celui qui la signe.",
+                    ],
+                    [
+                      "Elle part au greffe avec vos comptes",
+                      "Le greffe cesse alors de délivrer " +
+                        (verdict.portee === "tout"
+                          ? "vos comptes annuels"
+                          : "votre compte de résultat") +
+                        " aux tiers qui les demandent.",
+                    ],
+                    [
+                      "À refaire chaque année",
+                      "La déclaration ne vaut que pour l'exercice qu'elle accompagne.",
+                    ],
+                  ] as const
+                ).map(([titre, texte]) => (
+                  <li key={titre}>
+                    <span className={styles.marcheTitre}>{titre}</span>
+                    <span className={styles.marcheTexte}>{texte}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+
+          <section className={styles.bloc}>
+            <h3 className={styles.blocTitre}>
+              Votre société est-elle dans un de ces cas ?
+            </h3>
+            <p className={styles.blocTexte}>
+              La plupart ne le sont pas : laissez tout décoché si aucun ne vous concerne.
+              Chacun ferme la confidentialité, et ce que vous cochez ici est déclaré sur
+              l&apos;honneur.
+            </p>
+            <ul className={styles.entreeChoix}>
+              {EXCLUSIONS_LISIBLES.map((exclusion) => (
+                <li key={exclusion.cle}>
+                  <button
+                    type="button"
+                    className={styles.entreeCarte}
+                    aria-pressed={etat.exclusions.includes(exclusion.cle as never)}
+                    onClick={() => basculer(exclusion.cle)}
+                  >
+                    <span className={styles.entreeCase} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="3">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
-                    {titre}
-                  </span>
-                  <span className={styles.choixConfTexte}>{texte}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+                    <span className={styles.entreeCarteTitre}>{exclusion.libelle}</span>
+                    <span className={styles.entreeCarteTexte}>{exclusion.fondement}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {verdict.modele && (
+            <section className={styles.bloc}>
+              <h3 className={styles.blocTitre}>Votre décision</h3>
+              <ul className={styles.choixConf}>
+                {(
+                  [
+                    [
+                      true,
+                      "Garder mes comptes confidentiels",
+                      verdict.portee === "tout"
+                        ? "Bilan, compte de résultat et annexe deviennent inaccessibles au public. Nous produisons la déclaration et la joignons au dépôt."
+                        : "Le compte de résultat devient inaccessible au public. Le bilan et l'annexe restent consultables. Nous produisons la déclaration.",
+                    ],
+                    [
+                      false,
+                      "Publier mes comptes",
+                      "Ils restent consultables par tous, comme n'importe quel document du registre. Aucune déclaration à signer.",
+                    ],
+                  ] as const
+                ).map(([valeur, titre, texte]) => (
+                  <li key={titre}>
+                    <button
+                      type="button"
+                      className={styles.choixConfCarte}
+                      aria-pressed={etat.demandeLaConfidentialite === valeur}
+                      onClick={() => changer({ demandeLaConfidentialite: valeur })}
+                    >
+                      <span className={styles.choixConfTitre}>
+                        <span className={styles.choixConfMarque} aria-hidden="true">
+                          <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="3.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </span>
+                        {titre}
+                      </span>
+                      <span className={styles.choixConfTexte}>{texte}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
     </>
   );

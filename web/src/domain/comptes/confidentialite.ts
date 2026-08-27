@@ -100,6 +100,15 @@ export interface Verdict {
   modele: "micro" | "petite" | null;
   /** Ce qui ferme le dispositif, quand il est fermé. */
   motifs: string[];
+  /**
+   * La société dépose-t-elle seulement ses comptes ?
+   *
+   * Sans cette distinction, « portée : aucune » couvrait deux situations opposées : la
+   * grande société qui dépose et publie tout, et la société civile qui ne dépose rien.
+   * L'écran les confondait, et affichait « vos comptes seront consultables par tous »
+   * au-dessus d'une phrase disant qu'ils ne sont jamais publics.
+   */
+  depose: boolean;
   explication: string;
 }
 
@@ -122,6 +131,7 @@ export function confidentialitePossible(args: {
       portee: "aucune",
       modele: null,
       motifs: [],
+      depose: false,
       explication:
         "Une société civile ne dépose pas ses comptes au greffe : ils ne sont donc jamais publics, et il n'y a rien à rendre confidentiel.",
     };
@@ -137,6 +147,7 @@ export function confidentialitePossible(args: {
       portee: "aucune",
       modele: null,
       motifs: bloquantes.map((e) => e.libelle + " (" + e.fondement + ")"),
+      depose: true,
       explication:
         "La société entre dans un cas d'exclusion : ses comptes restent consultables par les tiers.",
     };
@@ -148,6 +159,7 @@ export function confidentialitePossible(args: {
       portee: "tout",
       modele: "micro",
       motifs: [],
+      depose: true,
       explication:
         "La société répond à la définition de la micro-entreprise : bilan, compte de résultat et annexe peuvent être rendus inaccessibles aux tiers.",
     };
@@ -159,6 +171,7 @@ export function confidentialitePossible(args: {
       portee: "compte-de-resultat",
       modele: "petite",
       motifs,
+      depose: true,
       explication:
         taille === "micro"
           ? "La société tient les seuils de la micro-entreprise mais gère des titres de participations : la confidentialité totale lui est fermée. Elle garde celle du compte de résultat, ouverte aux petites entreprises."
@@ -171,6 +184,7 @@ export function confidentialitePossible(args: {
     portee: "aucune",
     modele: null,
     motifs: [],
+    depose: true,
     explication:
       taille === "moyenne"
         ? "La société dépasse les seuils de la petite entreprise. Elle ne peut pas rendre ses comptes confidentiels, mais peut n'en publier qu'une présentation simplifiée."

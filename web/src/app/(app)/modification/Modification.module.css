@@ -6643,3 +6643,74 @@
   color: #71717a;
   letter-spacing: 0;
 }
+
+/*
+ * La marche à suivre, numérotée.
+ *
+ * L'écran demandait de choisir sans dire ce que le choix déclenchait : qui rédige la
+ * déclaration, qui la signe, où elle va, ni qu'elle ne vaut que pour un exercice.
+ */
+.marche {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: marche;
+}
+
+.marche li {
+  /*
+   * `globals.css` met les éléments de liste de `main section` en flex : titre et
+   * explication, tous deux en bloc, devenaient deux colonnes côte à côte, et les cinq
+   * étapes ne se lisaient pas de la même façon selon la longueur de leur phrase.
+   */
+  display: block;
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 32px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #52525b;
+  letter-spacing: 0;
+  counter-increment: marche;
+}
+
+.marche li::before {
+  content: counter(marche);
+  position: absolute;
+  top: 1px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/*
+ * Titre et explication déclarés séparément.
+ *
+ * Le titre était un `strong` au fil du texte : selon la longueur de la phrase, la
+ * suite passait à la ligne juste après lui ou restait collée, et les cinq étapes ne se
+ * lisaient pas de la même façon.
+ */
+.marcheTitre {
+  display: block;
+  color: #18181b;
+  font-weight: 600;
+}
+
+.marcheTexte {
+  display: block;
+  margin-top: 1px;
+}
