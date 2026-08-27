@@ -4,11 +4,19 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   SOUS_PHASES_ORDONNEES,
-  libelleSousPhase,
   sousPhaseSuivante,
   passageSousPhasePermis,
   passageBloque,
 } from "@/domain/formalite/avocat";
+/*
+ * Le nom de l'étape se lit selon le type de dossier.
+ *
+ * La table d'avocat.ts est fixe : elle nomme la dernière étape « KBIS » pour tout le
+ * monde. Sur une modification, la carte annonçait donc « 5 KBIS » pendant que la tâche
+ * voisine demandait de remettre un extrait à jour, et un dépôt de comptes attend un
+ * récépissé. Celle de cabinet.ts les distingue.
+ */
+import { libelleSousPhase, type TypeDeDossier } from "@/domain/formalite/cabinet";
 import styles from "./Avancement.module.css";
 
 interface Props {
@@ -25,16 +33,39 @@ interface Props {
    */
   documentFinal: string;
   aLeRbe: boolean;
+  type: TypeDeDossier;
 }
 
-/** Ce que chaque étape veut dire pour le cabinet, et ce qu'elle déclenche côté client. */
-const EXPLICATIONS: Record<string, string> = {
-  "5a": "Le client a transmis son dossier. Contrôlez les informations et les pièces.",
-  "5b": "Relecture des actes en cours. Le client est invité à déposer son attestation de dépôt de capital.",
-  "5c": "Le dossier est vérifié. Le client est invité à publier son annonce légale.",
-  "5d": "Le dossier est déposé au guichet unique. Le client en est informé.",
-  "5e": "La société est immatriculée. Le document du greffe est remis au client.",
-};
+/**
+ * Ce que l'étape déclenche du côté du client.
+ *
+ * Les cinq phrases étaient écrites pour une création : la deuxième invitait à déposer
+ * une attestation de dépôt de capital, la cinquième annonçait une immatriculation. Un
+ * dépôt de comptes n'immatricule rien, et une modification ne libère aucun capital.
+ */
+function explicationDe(
+  etape: string,
+  type: TypeDeDossier,
+  documentFinal: string
+): string {
+  if (etape === "5a") {
+    return "Le client a transmis son dossier. Contrôlez les informations et les pièces.";
+  }
+  if (etape === "5b") {
+    return type === "creation"
+      ? "Relecture des actes en cours. Le client est invité à déposer son attestation de dépôt de capital."
+      : "Relecture des actes en cours. Le client sait que son dossier est entre vos mains.";
+  }
+  if (etape === "5c") {
+    return "Le dossier est vérifié. Le client est invité à publier son annonce légale.";
+  }
+  if (etape === "5d") {
+    return "Le dossier est déposé au guichet unique. Le client en est informé.";
+  }
+  return type === "creation"
+    ? "La société est immatriculée. " + documentFinal + " est remis au client."
+    : documentFinal + " est remis au client, et le dossier est clos.";
+}
 
 /**
  * L'avancement du travail du cabinet, et les documents qu'il remet.
@@ -46,7 +77,7 @@ const EXPLICATIONS: Record<string, string> = {
  * Un seul bouton d'avancement : celui de l'étape suivante. Offrir les cinq
  * reviendrait à demander de connaître leur ordre, et à permettre d'en sauter une.
  */
-export function Avancement({ dossierId, sousPhase, aLeKbis, aLeRbe, documentFinal }: Props) {
+export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal }: Props) {
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
@@ -81,91 +112,102 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, aLeRbe, documentFina
     });
   }
 
+  const rangCourant = sousPhase ? SOUS_PHASES_ORDONNEES.indexOf(sousPhase as never) : -1;
+  const nom = sousPhase ? libelleSousPhase(type, sousPhase) : "Rien n'est encore annoncé";
+
   return (
-    <div className={styles.bloc}>
-      <section className={styles.carte}>
-        <h2 className={styles.titre}>Avancement du dossier</h2>
-        <p className={styles.sousTitre}>
-          Chaque étape prévient le client de ce qui le concerne. Il n&apos;en est
-          informé qu&apos;ici.
-        </p>
+    <section className={styles.etat} aria-label="Avancement annoncé au client">
+      <span className={styles.legende}>Le client voit</span>
 
-        <ol className={styles.etapes}>
-          {SOUS_PHASES_ORDONNEES.map((etape) => {
-            const rang = SOUS_PHASES_ORDONNEES.indexOf(etape);
-            const rangCourant = sousPhase
-              ? SOUS_PHASES_ORDONNEES.indexOf(sousPhase as never)
-              : -1;
-            const etat = rang < rangCourant ? "faite" : rang === rangCourant ? "courante" : "avenir";
+      {/* Les cinq crans : la position se lit d'un coup, le nom la dit en toutes lettres. */}
+      <span className={styles.crans} aria-hidden="true">
+        {SOUS_PHASES_ORDONNEES.map((etape, rang) => (
+          <span
+            key={etape}
+            className={rang <= rangCourant ? `${styles.cran} ${styles.atteint}` : styles.cran}
+          />
+        ))}
+      </span>
 
-            return (
-              <li key={etape} className={`${styles.etape} ${styles[etat]}`}>
-                <span className={styles.puce} aria-hidden="true">
-                  {rang + 1}
-                </span>
-                <span className={styles.corps}>
-                  <span className={styles.nom}>{libelleSousPhase(etape)}</span>
-                  <span className={styles.explication}>{EXPLICATIONS[etape]}</span>
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+      <span className={styles.nom}>{nom}</span>
 
-        {erreur && (
-          <p className={styles.erreur} role="alert">
-            {erreur}
-          </p>
+      <span className={styles.actions}>
+        {/* Le retour d'un cran corrige une saisie ; il ne défait pas le travail. */}
+        {precedente && (
+          <button
+            type="button"
+            className={styles.secondaire}
+            onClick={() => avancer(precedente)}
+            disabled={enCours}
+          >
+            Revenir à « {libelleSousPhase(type, precedente)} »
+          </button>
         )}
 
-        <div className={styles.actions}>
-          {suivante && passageSousPhasePermis(sousPhase, suivante) && (
-            <button
-              type="button"
-              className={styles.principal}
-              onClick={() => avancer(suivante)}
-              disabled={enCours}
-            >
-              Passer à « {libelleSousPhase(suivante)} »
-            </button>
-          )}
+        {suivante && passageSousPhasePermis(sousPhase, suivante) && (
+          <button
+            type="button"
+            className={styles.principal}
+            onClick={() => avancer(suivante)}
+            disabled={enCours}
+          >
+            Passer à « {libelleSousPhase(type, suivante)} »
+          </button>
+        )}
+      </span>
 
-          {/* Le retour d'un cran corrige une saisie ; il ne défait pas le travail. */}
-          {precedente && (
-            <button
-              type="button"
-              className={styles.secondaire}
-              onClick={() => avancer(precedente)}
-              disabled={enCours}
-            >
-              Revenir à « {libelleSousPhase(precedente)} »
-            </button>
-          )}
-        </div>
-      </section>
+      <p className={styles.explication}>
+        {sousPhase
+          ? explicationDe(sousPhase, type, documentFinal)
+          : "Le client n'est prévenu de rien tant qu'aucune étape n'est marquée."}
+      </p>
 
-      <section className={styles.carte}>
-        <h2 className={styles.titre}>Documents remis au client</h2>
-        <p className={styles.sousTitre}>
-          Ils apparaissent aussitôt dans ses documents. {documentFinal} est exigé pour
-          marquer le dossier abouti ; le registre des bénéficiaires ne l&apos;est pas.
+      {erreur && (
+        <p className={styles.erreur} role="alert">
+          {erreur}
         </p>
+      )}
+    </section>
+  );
+}
 
-        <Livrable
-          dossierId={dossierId}
-          type="kbis"
-          titre={documentFinal}
-          precision="Exigé"
-          depose={aLeKbis}
-        />
-        <Livrable
-          dossierId={dossierId}
-          type="rbe"
-          titre="Registre des bénéficiaires effectifs"
-          precision="Facultatif"
-          depose={aLeRbe}
-        />
-      </section>
+/**
+ * Les documents que le cabinet remet au client.
+ *
+ * Ils vivaient dans leur propre carte, sous l'avancement, au bas de la page. Ce sont
+ * les pièces de l'étape « Déposer » : ils se rangent dans cette étape, avec les tâches
+ * qui les réclament.
+ */
+export function Livrables({
+  dossierId,
+  documentFinal,
+  aLeKbis,
+  aLeRbe,
+}: {
+  dossierId: number;
+  documentFinal: string;
+  aLeKbis: boolean;
+  aLeRbe: boolean;
+}) {
+  return (
+    <div className={styles.livrables}>
+      <p className={styles.livrablesTitre}>
+        Documents remis au client. Ils apparaissent aussitôt dans ses documents.
+      </p>
+      <Livrable
+        dossierId={dossierId}
+        type="kbis"
+        titre={documentFinal}
+        precision="Exigé pour marquer le dossier abouti"
+        depose={aLeKbis}
+      />
+      <Livrable
+        dossierId={dossierId}
+        type="rbe"
+        titre="Registre des bénéficiaires effectifs"
+        precision="Facultatif"
+        depose={aLeRbe}
+      />
     </div>
   );
 }

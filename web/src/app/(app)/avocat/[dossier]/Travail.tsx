@@ -9,6 +9,7 @@ import {
   estUnActeProduit,
   type PieceAffichee,
 } from "./Piece";
+import { Livrables } from "./Avancement";
 import styles from "../Avocat.module.css";
 
 /*
@@ -57,6 +58,7 @@ function explicationDesPieces(tache: string): string {
  * l'ordre, chacune dit pourquoi elle existe, et celle qui attend dit ce qu'elle attend.
  */
 export function Travail({
+  livrables,
   dossier,
   taches,
   peutProduireLesActes,
@@ -67,6 +69,15 @@ export function Travail({
   taches: Tache[];
   /** Les pièces du dossier : les tâches montrent celles dont elles parlent. */
   pieces: PieceAffichee[];
+  /**
+   * Les documents que le cabinet remet au client.
+   *
+   * Ils tenaient leur propre carte au bas de la page : ce sont les pièces de l'étape
+   * « Déposer », et ils se rangent avec les tâches qui les réclament. La page passe ce
+   * qu'il faut pour les décrire, non les éléments eux-mêmes : un élément fabriqué par
+   * la page et rendu ici, dans une liste, fait réclamer une clé à React.
+   */
+  livrables: { documentFinal: string; aLeKbis: boolean; aLeRbe: boolean };
   /** Les actes se produisent d'ici : c'est une commande, non un écran. */
   peutProduireLesActes: boolean;
   /**
@@ -247,61 +258,16 @@ export function Travail({
 
   return (
     <div className={styles.travail}>
-      <div className={styles.travailTete}>
-        <h2 className={styles.titre}>
-          {restantes === 0
-            ? "Tout est fait sur ce dossier"
-            : restantes === 1
-              ? "Une chose à faire"
-              : restantes + " choses à faire"}
-        </h2>
-        <button
-          type="button"
-          className={styles.travailSecondaire}
-          onClick={() => setCorrections(true)}
-          disabled={enCours}
-        >
-          Demander des corrections au client
-        </button>
-      </div>
-
       {/*
-        Le chemin, avant la liste.
-        
-        Huit cartes de même poids ne disaient pas où l'on en était : encore à vérifier,
-        ou déjà à déposer ? Un dossier de cabinet se conduit par temps - vérifier ce qui
-        est déclaré, rédiger ce qui sera signé, publier ce que la loi exige, déposer au
-        guichet - et chacun se ferme avant le suivant.
-      */}
-      <ol className={styles.frise} aria-label="Les étapes du dossier">
-        {phases.map((phase, rang) => (
-          <li
-            key={phase.cle}
-            className={
-              phase.etat === "faite"
-                ? `${styles.friseEtape} ${styles.friseFaite}`
-                : phase.etat === "en_cours"
-                  ? `${styles.friseEtape} ${styles.friseEnCours}`
-                  : styles.friseEtape
-            }
-            aria-current={phase.etat === "en_cours" ? "step" : undefined}
-          >
-            <span className={styles.frisePastille} aria-hidden="true">
-              {phase.etat === "faite" ? "✓" : rang + 1}
-            </span>
-            <span className={styles.friseTexte}>
-              <span className={styles.friseTitre}>{phase.titre}</span>
-              <span className={styles.friseCompte}>
-                {phase.etat === "faite"
-                  ? "fait"
-                  : phase.faites + " sur " + phase.taches.length}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ol>
+        Le compte est dit une fois, en tête de page.
 
-      {phases.map((phase) => {
+        « 5 choses à faire » ici, « 2/7 tâches faites » dans le bandeau, « 1 sur 2 »
+        dans la frise et « 1 / 2 » sur l'accordéon : quatre écritures du même total sur
+        un écran. Seul reste ce qu'on ne lit nulle part ailleurs - que tout est fait.
+      */}
+      {restantes === 0 && <h2 className={styles.titre}>Tout est fait sur ce dossier</h2>}
+
+      {phases.map((phase, rang) => {
         const ouverte = phase.cle === (phaseOuverte ?? enCoursCle);
 
         return (
@@ -312,6 +278,19 @@ export function Travail({
               onClick={() => setPhaseOuverte(ouverte ? "" : phase.cle)}
               aria-expanded={ouverte}
             >
+              {/* Le rang et la coche : ce que la frise disait, là où on le lit. */}
+              <span
+                className={
+                  phase.etat === "faite"
+                    ? `${styles.phasePastille} ${styles.phaseFaite}`
+                    : phase.etat === "en_cours"
+                      ? `${styles.phasePastille} ${styles.phaseEnCours}`
+                      : styles.phasePastille
+                }
+                aria-hidden="true"
+              >
+                {phase.etat === "faite" ? "✓" : rang + 1}
+              </span>
               <span className={styles.phaseTitre}>
                 {phase.titre}
                 {phase.etat === "en_cours" && (
@@ -508,9 +487,36 @@ export function Travail({
                 ))}
               </ol>
             )}
+
+            {/* Les documents remis closent l'étape du dépôt. */}
+            {ouverte && phase.cle === "depot" && (
+              <Livrables
+                dossierId={dossier}
+                documentFinal={livrables.documentFinal}
+                aLeKbis={livrables.aLeKbis}
+                aLeRbe={livrables.aLeRbe}
+              />
+            )}
           </section>
         );
       })}
+
+      {/*
+        Renvoyer le dossier au client ferme le travail : le geste se pose au bout.
+
+        Il occupait une bande à lui seul en tête de l'onglet, au-dessus des étapes -
+        soixante-quinze pixels pour une sortie qu'on emprunte rarement.
+      */}
+      <div className={styles.travailPied}>
+        <button
+          type="button"
+          className={styles.travailSecondaire}
+          onClick={() => setCorrections(true)}
+          disabled={enCours}
+        >
+          Demander des corrections au client
+        </button>
+      </div>
 
       {piecesMontrees && (
         <FenetreDesPieces

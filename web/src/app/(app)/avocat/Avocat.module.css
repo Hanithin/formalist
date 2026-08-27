@@ -446,8 +446,8 @@
 }
 
 /* L'ancre du dépôt : la tâche y conduit, le titre ne doit pas coller au bord. */
+/* L'avancement ouvre l'onglet : il n'a plus de blanc à prendre au-dessus de lui. */
 .ancreAvancement {
-  margin-top: 28px;
   scroll-margin-top: 24px;
 }
 
@@ -658,80 +658,54 @@
  * Une fois le dossier pris, le bandeau orange disparaissait et rien ne le remplaçait :
  * la page ne disait plus ni à qui appartient le dossier, ni par quoi commencer.
  */
+/*
+ * Le dossier assigné, sur une ligne.
+ *
+ * Le bandeau tenait sur quatre étages et se cachait sur l'onglet des tâches pour ne
+ * pas répéter ce qu'ils disaient. Une ligne suffit : à qui le dossier est, où il en
+ * est, et par quoi continuer.
+ */
 .bandeauAssigne {
-  margin-bottom: 20px;
-  padding: 18px 20px 16px;
-  border: 1px solid #e6e1f2;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #f8f6fc 0%, #fdfcfe 100%);
-}
-
-.bandeauAssigneHaut {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 20px;
+  padding: 10px 16px;
+  border: 1px solid #e6e1f2;
+  border-radius: 12px;
+  background: #faf9fd;
 }
 
 .bandeauAssigneIcone {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 50%;
   background: #7a6ba8;
   color: #fff;
 }
 
 .bandeauAssigneIcone svg {
-  width: 18px;
-  height: 18px;
-}
-
-.bandeauAssigneTexte {
-  flex: 1;
-  min-width: 0;
+  width: 12px;
+  height: 12px;
 }
 
 .bandeauAssigneTitre {
-  margin: 0 0 2px;
-  font-size: 14.5px;
+  flex-shrink: 0;
+  font-size: 13.5px;
   font-weight: 600;
   color: #55496f;
 }
 
-.bandeauAssigneDetail {
-  margin: 0;
-  max-width: 70ch;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #7b7291;
-}
-
-/* L'avancement, du même côté que le geste qui le fera avancer. */
 .bandeauAssigneCompte {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
-  margin: 0;
   flex-shrink: 0;
-}
-
-.bandeauAssigneChiffre {
-  font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0;
-  color: #55496f;
-}
-
-.bandeauAssigneSurTotal {
-  font-size: 14px;
-  font-weight: 500;
-  color: #a29ab5;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: #7b7291;
 }
 
 .bandeauAssigneLegende {
@@ -742,9 +716,12 @@
   color: #a29ab5;
 }
 
+/* La jauge sépare l'état du geste : elle prend ce qui reste, sans le remplir. */
 .jauge {
+  flex: 1 1 60px;
+  min-width: 60px;
+  max-width: 120px;
   height: 4px;
-  margin: 14px 0 14px;
   border-radius: 100px;
   background: #eae6f4;
   overflow: hidden;
@@ -757,31 +734,16 @@
   background: #7a6ba8;
 }
 
-.bandeauAssigneBas {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-/*
- * L'étiquette et l'étape se lisent sur une ligne.
- *
- * Empilées, elles laissaient un bandeau à moitié vide quand aucun bouton ne venait à
- * droite - « PROCHAINE ÉTAPE » seul sur sa ligne, puis deux mots sur la suivante.
- */
+/* La prochaine étape pousse le bouton au bout de la ligne. */
 .bandeauAssigneEtape {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: 4px 8px;
   min-width: 0;
-}
-
-.bandeauAssigneEtapeTitre {
-  font-size: 14px;
-  font-weight: 600;
+  margin-left: auto;
+  font-size: 13.5px;
+  font-weight: 500;
   color: #3f3a4d;
 }
 
@@ -789,16 +751,18 @@
 .bandeauAssigneBlocage {
   flex-basis: 100%;
   font-size: 12.5px;
+  font-weight: 400;
   color: #92400e;
 }
 
 .bandeauAssigneBouton {
-  padding: 9px 18px;
+  flex-shrink: 0;
+  padding: 7px 16px;
   border-radius: 100px;
   border: 1px solid #6f6193;
   background: #6f6193;
   color: #fff;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
@@ -809,6 +773,7 @@
   background: #5d5180;
   border-color: #5d5180;
 }
+
 
 /* ---------- Prendre un dossier depuis sa page ---------- */
 
@@ -1696,6 +1661,17 @@
   min-width: 0;
 }
 
+.topbarNom {
+  min-width: 0;
+}
+
+/* La forme et l'état du dossier : des faits d'identité, non des pastilles. */
+.topbarSousTitre {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #888;
+}
+
 /*
  * Les badges se centrent sur le titre.
  *
@@ -2451,6 +2427,12 @@
   gap: 16px;
 }
 
+/* Le renvoi au client ferme la liste : il tient le bord droit, sous les étapes. */
+.travailPied {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .travailPrincipal,
 .travailSecondaire {
   display: inline-flex;
@@ -2603,8 +2585,8 @@
  */
 .phaseTete {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  grid-template-areas: "titre compte chevron" "resume compte chevron";
+  grid-template-columns: auto 1fr auto auto;
+  grid-template-areas: "rang titre compte chevron" "rang resume compte chevron";
   align-items: center;
   gap: 2px 14px;
   width: 100%;
@@ -2619,6 +2601,37 @@
 
 .phaseTete:hover {
   background: #fafafa;
+}
+
+/*
+ * Le rang de l'étape, repris de la frise.
+ *
+ * Trois cartes numérotées surmontaient les accordéons et redisaient mot pour mot
+ * leur titre, leur état et leur compte. La numérotation était la seule chose qu'elles
+ * portaient en propre ; elle tient dans une pastille.
+ */
+.phasePastille {
+  grid-area: rang;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f4f4f5;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.phasePastille.phaseEnCours {
+  background: #f4f1fa;
+  color: #6f6193;
+}
+
+.phasePastille.phaseFaite {
+  background: #ecfdf5;
+  color: #059669;
 }
 
 .phaseTitre {

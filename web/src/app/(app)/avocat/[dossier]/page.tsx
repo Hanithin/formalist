@@ -8,6 +8,7 @@ import { estPropose } from "@/domain/acces/regles";
 import { etatDesPieces } from "@/domain/formalite/pieces";
 import { piecesAttenduesDuDossier } from "@/infrastructure/documents/pieces-attendues";
 import { libelleEtat } from "@/domain/formalite/transitions";
+import { libelleJournal } from "@/domain/formalite/journal";
 import { Notes } from "./Notes";
 import { Travail } from "./Travail";
 import { Statuts } from "./Statuts";
@@ -31,6 +32,7 @@ import {
   estUneModification,
   recapitulatifDeModification,
 } from "@/domain/modification/recapitulatif";
+import { recapitulatifDesComptes } from "@/domain/comptes/recapitulatif";
 import styles from "../Avocat.module.css";
 
 export const metadata: Metadata = {
@@ -154,9 +156,18 @@ export default async function DossierAvocat({
    * dans l'autre faisait annoncer « le client n'a encore rien renseigné » sur un
    * dossier réglé et complet - au moment précis où l'avocat l'ouvre pour le réviser.
    */
-  const sectionsModification = estUneModification(donnees)
+  /*
+   * Un dépôt des comptes non plus.
+   *
+   * Il s'affichait avec la lecture d'une création : huit lignes vides - Dénomination,
+   * Activité, Capital social - sous « Le client n'a encore rien renseigné ». La société
+   * est immatriculée depuis des années ; c'est son exercice qu'on approuve.
+   */
+  const sections = estUneModification(donnees)
     ? recapitulatifDeModification(donnees)
-    : null;
+    : dossier.type === "comptes"
+      ? recapitulatifDesComptes(donnees)
+      : null;
 
   const renseignes = CHAMPS.filter((c) => {
     const valeur = donnees[c.cle];
@@ -235,7 +246,7 @@ export default async function DossierAvocat({
               ? "cessation"
               : "creation";
 
-  const codes = sectionsModification ? ((donnees.codes as string[]) ?? []) : [];
+  const codes = estUneModification(donnees) ? ((donnees.codes as string[]) ?? []) : [];
   const societeDuDossier = (donnees.societe ?? {}) as {
     codePostal?: string | null;
     ville?: string | null;
@@ -349,18 +360,23 @@ export default async function DossierAvocat({
   return (
     <main className={styles.page}>
       <div className={styles.topbar}>
+        {/*
+          Une seule pastille : celle de l'état du travail.
+
+          Quatre se suivaient - la forme, l'état du cabinet, l'assignation, l'état du
+          dossier. La forme et l'état du dossier sont des faits d'identité : ils
+          descendent en sous-titre. L'assignation, elle, est redite mot pour mot par le
+          bandeau qui suit trois lignes plus bas.
+        */}
         <div className={styles.topbarTitre}>
-          <h1>{dossier.societe || "Sans nom"}</h1>
+          <div className={styles.topbarNom}>
+            <h1>{dossier.societe || "Sans nom"}</h1>
+            <p className={styles.topbarSousTitre}>
+              {[dossier.forme, libelleEtat(dossier.status)].filter(Boolean).join(" · ")}
+            </p>
+          </div>
           <div className={styles.detailBadges}>
-            <span className={styles.detailBadge}>{dossier.forme}</span>
             <span className={`${styles.detailBadge} ${styles.phase}`}>{etat.libelle}</span>
-            {/* Qui s'en occupe se lit dans le titre, comme dans la liste. */}
-            {monDossier && (
-              <span className={`${styles.detailBadge} ${styles.assigne}`}>Assigné à vous</span>
-            )}
-            <span className={`${styles.detailBadge} ${styles.muted}`}>
-              {libelleEtat(dossier.status)}
-            </span>
           </div>
         </div>
         <Link href="/avocat" className={styles.topbarBack}>
@@ -377,88 +393,66 @@ export default async function DossierAvocat({
         {libre && <PriseEnCharge dossier={dossier.id} />}
 
         {/*
-          Le dossier est à vous, et voici par quoi commencer.
-          
-          Le bandeau orange disparaît une fois le dossier pris, et rien ne remplaçait
-          l'invitation : l'avocat se retrouvait devant sept tâches dont trois étaient
-          déjà faites, à chercher la première qui l'attendait.
+          Le dossier est à vous : une ligne le dit, et dit par quoi continuer.
+
+          Le bandeau tenait sur quatre étages - une icône, un titre, une phrase
+          d'explication, un compte, une jauge, puis la prochaine étape et son bouton.
+          Il redisait à lui seul ce que la frise, le titre de l'onglet et les compteurs
+          d'accordéon disaient déjà, et il se cachait sur l'onglet des tâches pour ne
+          pas les répéter. Ramené à une ligne, il n'a plus de raison de se cacher : il
+          est le seul endroit qui porte l'avancement d'ensemble.
         */}
-        {/*
-          Le bandeau n'a rien à dire sur l'onglet des tâches.
-          
-          Il y répétait mot pour mot ce que la liste dit dessous : l'avancement, la
-          prochaine étape et son bouton. Trois lignes et une jauge pour redire la
-          première ligne de la page. Ailleurs, il reste le seul endroit qui dise par
-          quoi continuer et qui y mène.
-        */}
-        {monDossier && !libre && onglet !== "travail" && (
+        {monDossier && !libre && (
           <section className={styles.bandeauAssigne} aria-label="Votre dossier">
-            <div className={styles.bandeauAssigneHaut}>
-              <span className={styles.bandeauAssigneIcone} aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-              </span>
+            <span className={styles.bandeauAssigneIcone} aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </span>
 
-              <div className={styles.bandeauAssigneTexte}>
-                <p className={styles.bandeauAssigneTitre}>Ce dossier vous est assigné</p>
-                <p className={styles.bandeauAssigneDetail}>
-                  Vous en êtes l&apos;avocat : personne d&apos;autre du cabinet ne le
-                  révise, et le client vous écrit à vous.
-                </p>
-              </div>
+            <span className={styles.bandeauAssigneTitre}>Assigné à vous</span>
 
-              {/* L'avancement en chiffres : ce qui reste se lit sans compter les cases. */}
-              <p className={styles.bandeauAssigneCompte}>
-                <span className={styles.bandeauAssigneChiffre}>
-                  {faites}
-                  <span className={styles.bandeauAssigneSurTotal}>/{taches.length}</span>
-                </span>
-                <span className={styles.bandeauAssigneLegende}>
-                  {faites > 1 ? "tâches faites" : "tâche faite"}
-                </span>
-              </p>
-            </div>
-
-            <div className={styles.jauge} aria-hidden="true">
+            <span className={styles.jauge} aria-hidden="true">
               <span style={{ width: Math.round((faites / taches.length) * 100) + "%" }} />
-            </div>
+            </span>
 
-            <div className={styles.bandeauAssigneBas}>
-              <div className={styles.bandeauAssigneEtape}>
-                <span className={styles.bandeauAssigneLegende}>
-                  {suivante ? "Prochaine étape" : "Rien ne vous attend"}
-                </span>
-                <span className={styles.bandeauAssigneEtapeTitre}>
-                  {suivante ? suivante.titre : "Vous avez fait tout ce qui vous revenait."}
-                </span>
-                {suivante?.bloquee && (
-                  <span className={styles.bandeauAssigneBlocage}>{suivante.bloquee}</span>
-                )}
-              </div>
+            <span className={styles.bandeauAssigneCompte}>
+              {faites} sur {taches.length} {faites > 1 ? "faites" : "faite"}
+            </span>
 
-              {/*
-                Le bouton ne s'affiche que s'il mène ailleurs.
-                
-                Sur l'onglet même que la tâche désigne, « Y aller » ramenait où l'on
-                était déjà : un bouton qui ne fait rien apprend à ne plus les lire.
-              */}
-              {suivante?.onglet && suivante.onglet !== onglet && (
-                <Link
-                  href={adresse(suivante.onglet as Onglet)}
-                  className={styles.bandeauAssigneBouton}
-                >
+            <span className={styles.bandeauAssigneEtape}>
+              {suivante ? (
+                <>
+                  <span className={styles.bandeauAssigneLegende}>Prochaine étape</span>
                   {suivante.titre}
-                </Link>
+                  {suivante.bloquee && (
+                    <span className={styles.bandeauAssigneBlocage}>{suivante.bloquee}</span>
+                  )}
+                </>
+              ) : (
+                "Vous avez fait tout ce qui vous revenait."
               )}
-            </div>
+            </span>
+
+            {/*
+              Le bouton ne s'affiche que s'il mène ailleurs : sur l'onglet même que la
+              tâche désigne, il ramènerait où l'on est déjà.
+            */}
+            {suivante?.onglet && suivante.onglet !== onglet && (
+              <Link
+                href={adresse(suivante.onglet as Onglet)}
+                className={styles.bandeauAssigneBouton}
+              >
+                Y aller
+              </Link>
+            )}
           </section>
         )}
 
@@ -483,34 +477,38 @@ export default async function DossierAvocat({
 
         {onglet === "travail" && (
           <>
-            <Travail
-              dossier={dossier.id}
-              taches={taches}
-              peutProduireLesActes={type === "modification"}
-              informationsVerifiees={informationsVerifiees}
-              pieces={pieces}
-            />
+            {/*
+              L'avancement au-dessus des tâches, sur une ligne.
 
-            {/*
-              L'avancement sous les tâches, non dans son propre onglet.
-              
-              Les cinq sous-phases disent la même chose que les tâches, en plus court :
-              elles sont le résumé de ce travail, pas un travail à côté.
-            */}
-            {/*
-              Le bloc porte l'ancre, non un titre de plus : le composant a déjà le sien,
-              et deux « Avancement du dossier » l'un sur l'autre se lisaient comme un
-              défaut d'affichage.
+              Il tenait une carte de cinq étages au bas de la page, sous les tâches
+              qu'il résume - cinq intitulés, cinq explications, deux boutons. Le seul
+              geste qu'il porte est le passage d'un cran : le reste se lit en une ligne.
+              Le bloc garde son ancre, où mène la tâche « Déposer au guichet unique ».
             */}
             <div id="avancement" className={styles.ancreAvancement}>
               <Avancement
                 dossierId={dossier.id}
+                type={type}
                 sousPhase={dossier.business_sub_phase}
                 aLeKbis={remis(TYPE_KBIS)}
                 documentFinal={DOCUMENT_FINAL[type]}
                 aLeRbe={remis(TYPE_RBE)}
               />
             </div>
+
+            <Travail
+              dossier={dossier.id}
+              taches={taches}
+              peutProduireLesActes={type === "modification"}
+              informationsVerifiees={informationsVerifiees}
+              pieces={pieces}
+              /* Les documents remis sont les pièces de l'étape « Déposer ». */
+              livrables={{
+                documentFinal: DOCUMENT_FINAL[type],
+                aLeKbis: remis(TYPE_KBIS),
+                aLeRbe: remis(TYPE_RBE),
+              }}
+            />
           </>
         )}
 
@@ -538,8 +536,8 @@ export default async function DossierAvocat({
           <div className={styles.recapGrid}>
             <div className={styles.recapGridLeft}>
               <div className={styles.recapCard}>
-                {sectionsModification ? (
-                  sectionsModification.map((section) => (
+                {sections ? (
+                  sections.map((section) => (
                     <div key={section.titre} className={styles.recapSection}>
                       <h2 className={styles.recapTitle}>{section.titre}</h2>
                       {section.faits.map((fait, rang) => (
@@ -795,11 +793,20 @@ export default async function DossierAvocat({
 
                   <div className={styles.auditBody}>
                     <div className={styles.auditLabel}>
-                      <em>{h.users?.name ?? "Système"}</em> · {h.action}
+                      <em>{h.users?.name ?? "Système"}</em> ·{" "}
+                      {libelleJournal(h.action, type)}
                       {h.target_field ? " · " + h.target_field : ""}
                     </div>
 
-                    {(h.before_value || h.after_value) && (
+                    {/*
+                      Une valeur qui redit l'auteur n'apprend rien.
+
+                      « Dossier pris en charge » inscrit le nom du preneur en valeur :
+                      la ligne l'affichait donc deux fois, une fois en tête et une fois
+                      dans une pastille verte juste dessous.
+                    */}
+                    {(h.before_value ||
+                      (h.after_value && h.after_value !== h.users?.name)) && (
                       <div className={styles.auditDiff}>
                         {h.before_value && (
                           <span className={styles.auditBefore}>{h.before_value}</span>

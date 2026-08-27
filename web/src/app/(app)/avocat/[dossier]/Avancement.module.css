@@ -1,144 +1,89 @@
-.bloc {
+/*
+ * L'avancement annoncé au client, sur une ligne.
+ *
+ * Il tenait une carte de cinq étages : un titre, une phrase, cinq intitulés avec leur
+ * explication, puis deux boutons - quatre cent cinquante pixels pour dire un cran sur
+ * cinq et offrir un geste. La ligne dit le même cran, garde l'explication de l'étape
+ * où l'on est, et pose les deux boutons au bout.
+ */
+.etat {
   display: grid;
-  gap: 16px;
-}
-
-.carte {
-  padding: 24px;
+  grid-template-columns: auto auto auto 1fr;
+  align-items: center;
+  gap: 4px 14px;
+  margin-bottom: 18px;
+  padding: 12px 18px;
   border: 1px solid #e5e5e5;
-  border-radius: 16px;
+  border-radius: 12px;
   background: #fff;
 }
 
-.titre {
-  margin: 0 0 4px;
-  font-size: 16px;
+.legende {
+  font-size: 11.5px;
   font-weight: 600;
-  color: #111;
   letter-spacing: 0;
+  text-transform: uppercase;
+  color: #a1a1aa;
 }
 
-.sousTitre {
-  margin: 0 0 20px;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: #888;
-}
-
-/*
- * Les cinq étapes, verticales.
- *
- * Le trait qui les relie court derrière les puces : c'est lui qui dit qu'il s'agit
- * d'une suite et non d'une liste de cases indépendantes.
- */
-.etapes {
-  position: relative;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.etapes::before {
-  content: "";
-  position: absolute;
-  top: 14px;
-  bottom: 14px;
-  left: 13px;
-  width: 2px;
-  background: #eee;
-}
-
-.etape {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding-bottom: 18px;
-}
-
-.etape:last-child {
-  padding-bottom: 0;
-}
-
-.puce {
-  position: relative;
-  z-index: 1;
+/* Cinq crans : la position se lit sans compter, le nom la dit à côté. */
+.crans {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid #eee;
-  background: #fff;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #bbb;
+  gap: 4px;
 }
 
-.corps {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-top: 3px;
+.cran {
+  width: 18px;
+  height: 4px;
+  border-radius: 100px;
+  background: #ececef;
+}
+
+.cran.atteint {
+  background: #111;
 }
 
 .nom {
   font-size: 14px;
   font-weight: 600;
-  color: #bbb;
-}
-
-.explication {
-  font-size: 13px;
-  line-height: 1.5;
-  color: #aaa;
-}
-
-/* Franchie : la puce se remplit, le texte s'éteint - c'est du passé. */
-.faite .puce {
-  border-color: #111;
-  background: #111;
-  color: #fff;
-}
-
-.faite .nom {
-  color: #555;
-}
-
-.faite .explication {
-  color: #999;
-}
-
-/* Courante : c'est la seule ligne qui se lit en noir plein. */
-.courante .puce {
-  border-color: #111;
   color: #111;
-}
-
-.courante .nom {
-  color: #111;
-}
-
-.courante .explication {
-  color: #666;
 }
 
 .actions {
   display: flex;
+  justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
-  padding-top: 20px;
-  border-top: 1px solid #f0f0f0;
+  gap: 8px;
+}
+
+/* L'explication passe sous la ligne : c'est une phrase, pas une étiquette. */
+.explication {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8a8a8f;
+}
+
+/* ---------- Les documents remis, dans l'étape du dépôt ---------- */
+
+.livrables {
+  margin: 0 18px 18px;
+}
+
+.livrablesTitre {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8a8a8f;
 }
 
 .principal,
 .secondaire,
 .deposer {
   margin: 0;
-  padding: 11px 20px;
+  padding: 8px 16px;
   border-radius: 8px;
   font-family: inherit;
   font-size: 13.5px;
