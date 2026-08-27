@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import { dossierPourAvocat } from "@/infrastructure/db/depots/avocat";
+import { dossierPourAvocat, versionsDuDossier } from "@/infrastructure/db/depots/avocat";
 import { etatCabinet } from "@/domain/formalite/avocat";
 import { estPropose } from "@/domain/acces/regles";
 import { etatDesPieces } from "@/domain/formalite/pieces";
@@ -335,6 +335,9 @@ export default async function DossierAvocat({
    * La même liste sert deux écrans : l'onglet du dossier, et les fenêtres que les
    * tâches ouvrent. Une seule mise en forme, donc, et une seule carte pour les rendre.
    */
+  /* Les versions antérieures des actes produits, rangées par titre. */
+  const versionsParActe = await versionsDuDossier(dossier.id);
+
   const pieces: PieceAffichee[] = documents.map((d) => ({
     id: d.id,
     nom: d.name,
@@ -344,6 +347,7 @@ export default async function DossierAvocat({
     source: d.source_path,
     depose: d.uploaded_by,
     creeLe: d.created_at?.toISOString() ?? null,
+    versions: versionsParActe.get(d.name),
   }));
 
   const suivante = prochaineTache(taches);

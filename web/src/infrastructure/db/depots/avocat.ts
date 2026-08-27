@@ -996,6 +996,120 @@ export async function mettreUnActeADisposition(
 }
 
 /**
+ * Les versions d'un acte, de la plus récente à la plus ancienne.
+ *
+ * Elles se rattachent à l'acte, non au document : reproduire supprime la ligne de
+ * `documents` et en crée une autre, si bien qu'un identifiant de document ne
+ * survivrait pas à la première correction. Dans un dossier, l'identité d'un acte est
+ * son titre.
+ */
+export interface VersionArchivee {
+  id: number;
+  fichier: string | null;
+  produiteLe: string;
+  archiveeLe: string;
+  par: string | null;
+}
+
+/**
+ * Les versions de tous les actes d'un dossier, rangées par titre.
+ *
+ * Lues en une fois : une requête par ligne de document multiplierait les
+ * allers-retours pour une liste presque toujours vide.
+ */
+export async function versionsDuDossier(
+  dossierId: number
+): Promise<Map<string, VersionArchivee[]>> {
+  const versions = await prisma.document_versions.findMany({
+    where: { formalite_id: dossierId },
+    orderBy: { archivee_le: "desc" },
+    include: { users: { select: { name: true } } },
+  });
+
+  const parActe = new Map<string, VersionArchivee[]>();
+  for (const v of versions) {
+    const liste = parActe.get(v.name) ?? [];
+    liste.push({
+      id: v.id,
+      fichier: v.file_path,
+      produiteLe: v.produite_le.toISOString(),
+      archiveeLe: v.archivee_le.toISOString(),
+      par: v.users?.name ?? null,
+    });
+    parActe.set(v.name, liste);
+  }
+  return parActe;
+}
+
+/**
+ * Revenir à une version antérieure d'un acte.
+ *
+ * La version reprend la place du document en cours, lequel devient à son tour une
+ * version : on ne perd jamais ce qu'on quitte, et l'on peut faire l'aller-retour
+ * autant de fois qu'il le faut.
+ *
+ * L'acte revenu repasse en relecture. Une version d'avant n'a pas été validée sous
+ * cette forme, et la remettre au client sans la relire referait le défaut que la
+ * validation corrige.
+ */
+export async function revenirALaVersion(utilisateur: UtilisateurConnecte, versionId: number) {
+  exigerAvocat(utilisateur);
+
+  const version = await prisma.document_versions.findUnique({ where: { id: versionId } });
+  if (!version) throw new Interdit("Version introuvable");
+
+  await exigerDossier(utilisateur, version.formalite_id);
+
+  const actuel = await prisma.documents.findFirst({
+    where: { formalite_id: version.formalite_id, name: version.name, uploaded_by: "system" },
+  });
+  if (!actuel) throw new Interdit("Cet acte n'est plus au dossier");
+
+  if (actuel.status === "signed" || actuel.status === "verified") {
+    throw new Interdit("Un acte signé ou vérifié ne se remplace pas");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    /* Ce qu'on quitte devient une version : l'aller-retour reste possible. */
+    await tx.document_versions.create({
+      data: {
+        formalite_id: version.formalite_id,
+        name: actuel.name,
+        file_path: actuel.file_path,
+        source_path: actuel.source_path,
+        produite_le: actuel.created_at,
+        archivee_par: utilisateur.id,
+      },
+    });
+
+    await tx.documents.update({
+      where: { id: actuel.id },
+      data: {
+        file_path: version.file_path,
+        source_path: version.source_path,
+        status: A_RELIRE,
+        created_at: version.produite_le,
+      },
+    });
+
+    await tx.document_versions.delete({ where: { id: versionId } });
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: version.formalite_id,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "acte_version_retablie",
+      target_field: version.name,
+      after_value: version.produite_le.toISOString(),
+    },
+  });
+
+  return { retablie: version.name };
+}
+
+/**
  * Reprendre un acte, et lui seul.
  *
  * Une coquille se voit parfois après coup. L'acte remis n'avait plus aucun geste sur

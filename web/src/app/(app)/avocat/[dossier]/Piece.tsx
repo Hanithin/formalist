@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { etatDocument, estStatutsRepris } from "@/domain/document/statuts";
 import { A_RELIRE } from "@/domain/document/publication";
@@ -29,6 +31,21 @@ export interface PieceAffichee {
   /** Le déposant : « system » pour ce que la plateforme produit. */
   depose: string | null;
   creeLe: string | null;
+  /**
+   * Les versions antérieures de l'acte, de la plus récente à la plus ancienne.
+   *
+   * Reproduire un acte le détruisait : l'avocat qui corrigeait une coquille perdait la
+   * version d'origine sans pouvoir y revenir.
+   */
+  versions?: VersionDeLActe[];
+}
+
+export interface VersionDeLActe {
+  id: number;
+  fichier: string | null;
+  produiteLe: string;
+  archiveeLe: string;
+  par: string | null;
 }
 
 /** « 24 août 2026 à 12:16 ». L'heure distingue deux dépôts du même jour. */
@@ -107,6 +124,16 @@ export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: numbe
         </div>
         {etat.motif && <div className={styles.docRejectionInfo}>Motif : {etat.motif}</div>}
       </div>
+
+      {/*
+        Les versions, sous la ligne.
+        
+        Elles ne se déplient que si l'acte en a : une mention « 0 version » sur chaque
+        document n'apprendrait rien, et il y en a rarement.
+      */}
+      {piece.versions && piece.versions.length > 0 && (
+        <Versions versions={piece.versions} dossier={dossier} />
+      )}
 
       <div className={styles.docActions}>
         {piece.fichier && <OuvrirLaPiece nom={piece.nom} fichier={piece.fichier} />}
@@ -220,5 +247,73 @@ export function FenetreDesPieces({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * Les versions antérieures d'un acte, repliées.
+ *
+ * On ne les regarde que lorsqu'on se demande ce qui a changé, ou qu'on veut revenir
+ * dessus : elles n'ont pas à occuper la ligne le reste du temps.
+ */
+function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: number }) {
+  const [refus, setRefus] = useState<string | null>(null);
+  const [enCours, demarrer] = useTransition();
+  const router = useRouter();
+
+  function retablir(version: number) {
+    setRefus(null);
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/actes/versions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, version }),
+      });
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "Le rétablissement n'a pas abouti");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  return (
+    <details className={styles.versions}>
+      <summary className={styles.versionsTete}>
+        {versions.length} version{versions.length > 1 ? "s" : ""} antérieure
+        {versions.length > 1 ? "s" : ""}
+      </summary>
+
+      {refus && (
+        <p className={styles.decisionRefus} role="alert">
+          {refus}
+        </p>
+      )}
+
+      <ul className={styles.versionsListe}>
+        {versions.map((version) => (
+          <li key={version.id} className={styles.version}>
+            <span className={styles.versionQuand}>
+              Produite le {quand(version.produiteLe)}
+              {version.par ? " · remplacée par " + version.par : ""}
+            </span>
+            <span className={styles.versionGestes}>
+              {version.fichier && (
+                <OuvrirLaPiece nom={"Version du " + jour(version.produiteLe)} fichier={version.fichier} />
+              )}
+              <button
+                type="button"
+                className={styles.decisionSecondaire}
+                onClick={() => retablir(version.id)}
+                disabled={enCours}
+              >
+                Revenir à celle-ci
+              </button>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

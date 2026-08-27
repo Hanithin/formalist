@@ -105,6 +105,7 @@ export function dateEtHeure(quand: Date, maintenant: Date = new Date()): string 
  */
 const INTERVENTIONS: Record<string, string> = {
   actes_mis_a_disposition: "Actes mis à disposition du client",
+  acte_version_retablie: "Version antérieure d'un acte rétablie",
   actes_retires: "Actes retirés de l'espace du client",
   annonce_relue: "Annonce légale relue",
   auto_entreprise_payee: "Auto-entreprise réglée",

@@ -213,7 +213,7 @@ export async function deposerAuCoffre(
 export async function remplacerDocumentsProduits(
   dossierId: number,
   actes: { titre: string; contenu: Buffer }[],
-  options: { aRelire?: boolean } = {}
+  options: { aRelire?: boolean; par?: number } = {}
 ) {
   const existants = await prisma.documents.findMany({
     where: { formalite_id: dossierId, uploaded_by: "system" },
@@ -273,6 +273,23 @@ export async function remplacerDocumentsProduits(
   // sinon le dossier sans aucun acte, alors qu'il en avait avant le clic.
   const produits = await prisma.$transaction(async (tx) => {
     if (remplaces.length > 0) {
+      /*
+       * Ce qui est remplacé est archivé, non effacé.
+       *
+       * Reproduire un acte le détruisait : la ligne partait, le fichier avec, et
+       * l'avocat qui corrigeait une coquille perdait la version d'origine sans pouvoir
+       * y revenir.
+       */
+      await tx.document_versions.createMany({
+        data: remplaces.map((d) => ({
+          formalite_id: dossierId,
+          name: d.name,
+          file_path: d.file_path,
+          source_path: d.source_path,
+          produite_le: d.created_at,
+          archivee_par: options.par ?? null,
+        })),
+      });
       await tx.documents.deleteMany({ where: { id: { in: remplaces.map((d) => d.id) } } });
     }
 
@@ -305,19 +322,13 @@ export async function remplacerDocumentsProduits(
     return lignes;
   });
 
-  // Les fichiers du jeu précédent, une fois la base à jour. Un fichier qui résiste
-  // ne doit pas faire échouer une régénération réussie par ailleurs. Le Word source
-  // part avec le PDF qu'il a produit : sans son acte, il ne sert plus à rien.
-  for (const ancien of remplaces) {
-    for (const chemin of [ancien.file_path, ancien.source_path]) {
-      if (!chemin) continue;
-      try {
-        await rm(path.join(DEPOT, chemin), { force: true });
-      } catch (e) {
-        journal.warn({ err: e, fichier: chemin }, "Ancien document non supprimé");
-      }
-    }
-  }
+  /*
+   * Les fichiers du jeu précédent restent sur le disque.
+   *
+   * Ils étaient effacés avec la ligne : la version d'origine était perdue, et « revenir
+   * dessus » n'aurait rien eu à ouvrir. Ils appartiennent désormais aux versions
+   * archivées, et ne partent qu'avec le dossier.
+   */
 
   return {
     produits: produits.map((d) => ({ id: d.id, titre: d.name })),
@@ -465,6 +476,8 @@ export async function deposerPdfProduit(
      * 2026 » leur donnait notre date et notre paternité.
      */
     date?: Date | null;
+    /** Qui provoque le remplacement : la version archivée en garde la trace. */
+    par?: number;
   } = {}
 ) {
   await mkdir(DEPOT, { recursive: true });
@@ -478,6 +491,17 @@ export async function deposerPdfProduit(
 
   const document = await prisma.$transaction(async (tx) => {
     if (anciens.length > 0) {
+      /* Ce qui est remplacé est archivé : la version d'origine reste atteignable. */
+      await tx.document_versions.createMany({
+        data: anciens.map((d) => ({
+          formalite_id: dossierId,
+          name: d.name,
+          file_path: d.file_path,
+          source_path: d.source_path,
+          produite_le: d.created_at,
+          archivee_par: options.par ?? null,
+        })),
+      });
       await tx.documents.deleteMany({ where: { id: { in: anciens.map((d) => d.id) } } });
     }
     return tx.documents.create({
@@ -493,14 +517,7 @@ export async function deposerPdfProduit(
     });
   });
 
-  for (const ancien of anciens) {
-    if (!ancien.file_path) continue;
-    try {
-      await rm(path.join(DEPOT, ancien.file_path), { force: true });
-    } catch (e) {
-      journal.warn({ err: e, fichier: ancien.file_path }, "Ancien document non supprimé");
-    }
-  }
+  /* Les fichiers restent : ils appartiennent désormais aux versions archivées. */
 
   return { id: document.id, titre: document.name };
 }

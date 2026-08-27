@@ -107,6 +107,30 @@ model documents {
   formalites       formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
+/// Une version antérieure d'un acte produit par le cabinet.
+///
+/// Reproduire un acte le détruisait : la ligne partait, le fichier était effacé du
+/// disque, et l'avocat qui corrigeait une coquille perdait la version d'origine.
+///
+/// La version se rattache à l'acte, non au document : la reproduction supprime la ligne
+/// de `documents` et en crée une autre, si bien qu'un identifiant de document ne
+/// survivrait pas à la première correction. Dans un dossier, l'identité d'un acte est
+/// son titre.
+model document_versions {
+  id           Int        @id @default(autoincrement())
+  formalite_id Int
+  name         String
+  file_path    String?
+  source_path  String?
+  produite_le  DateTime   @db.Timestamptz(6)
+  archivee_le  DateTime   @default(now()) @db.Timestamptz(6)
+  archivee_par Int?
+  formalites   formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users        users?     @relation(fields: [archivee_par], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([formalite_id, name, archivee_le(sort: Desc)], map: "document_versions_acte")
+}
+
 model email_tokens {
   token      String    @id
   user_id    Int
@@ -151,6 +175,7 @@ model formalites {
   signature_requests                         signature_requests[]
   team_notes                                 team_notes[]
   uploaded_files                             uploaded_files[]
+  document_versions                          document_versions[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -457,6 +482,7 @@ model users {
   uploaded_files                                                  uploaded_files[]
   user_documents                                                  user_documents[]
   user_sessions                                                   user_sessions[]
+  document_versions                                               document_versions[]
 }
 
 model tentatives {
