@@ -103,6 +103,65 @@ export function passageSousPhasePermis(
   return ecart === 1 || ecart === -1;
 }
 
+/* ---------- L'étape que le travail fait justifie ---------- */
+
+/** Ce que le cabinet a accompli, tel que la base le sait. */
+export interface TravailAccompli {
+  informationsVerifiees: boolean;
+  actesProduits: boolean;
+  /** Des pièces du client attendent une décision. */
+  piecesEnAttente: number;
+  /** Des actes produits attendent d'être validés. */
+  actesARelire: number;
+  /** Le document que le greffe délivre est au dossier. */
+  documentFinalRemis: boolean;
+}
+
+/**
+ * L'étape que le travail justifie, sans qu'on ait à la déclarer.
+ *
+ * Les cinq pastilles s'avançaient à la main : l'avocat cliquait « Passer à Révision »,
+ * puis « Passer à Vérifié », pour dire ce que son propre travail disait déjà. Un clic
+ * de plus après chaque geste, et un dossier qui restait « Transmis » des jours après
+ * avoir été relu parce que personne n'avait pensé au bouton.
+ *
+ * Une seule étape ne se déduit pas : le dépôt au guichet se passe hors de
+ * l'application, et rien ici ne peut savoir qu'il a eu lieu. Elle reste déclarée.
+ */
+export function etapeMeritee(fait: TravailAccompli): SousPhase {
+  if (fait.documentFinalRemis) return "5e";
+  if (
+    fait.informationsVerifiees &&
+    fait.actesProduits &&
+    fait.piecesEnAttente === 0 &&
+    fait.actesARelire === 0
+  ) {
+    return "5c";
+  }
+  if (fait.informationsVerifiees || fait.actesProduits) return "5b";
+  return "5a";
+}
+
+/**
+ * Jusqu'où l'automatisme a le droit d'aller.
+ *
+ * Il ne franchit jamais le dépôt : celui-ci se déclare. Tant qu'il n'est pas déclaré,
+ * l'avancement s'arrête à « Vérifié », même si le reste est fait.
+ */
+export function plafondAutomatique(courante: string | null | undefined): SousPhase {
+  return courante === "5d" || courante === "5e" ? "5e" : "5c";
+}
+
+/** L'étape la plus avancée des deux, dans l'ordre du parcours. */
+export function laPlusAvancee(a: SousPhase, b: SousPhase): SousPhase {
+  return SOUS_PHASES_ORDONNEES.indexOf(a) >= SOUS_PHASES_ORDONNEES.indexOf(b) ? a : b;
+}
+
+/** La moins avancée : celle qui borne. */
+export function laMoinsAvancee(a: SousPhase, b: SousPhase): SousPhase {
+  return SOUS_PHASES_ORDONNEES.indexOf(a) <= SOUS_PHASES_ORDONNEES.indexOf(b) ? a : b;
+}
+
 /**
  * Le Kbis conditionne la dernière étape.
  *

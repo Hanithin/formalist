@@ -9,6 +9,12 @@ import {
   passageSousPhasePermis,
   passageBloque,
   libelleSousPhase,
+  etapeMeritee,
+  plafondAutomatique,
+  laMoinsAvancee,
+  estSousPhase,
+  sousPhaseSuivante,
+  SOUS_PHASES_ORDONNEES,
 } from "@/domain/formalite/avocat";
 import {
   correctionsDemandees,
@@ -509,9 +515,86 @@ export async function statuerSurDocument(
     );
   }
 
+  /* L'étape annoncée au client suit le travail : elle n'a plus à être déclarée. */
+  await avancerSelonLeTravail(utilisateur, document.formalite_id);
+
   return misAJour;
 }
 
+
+/**
+ * Fait avancer l'étape annoncée au client, d'elle-même.
+ *
+ * L'avocat cliquait « Passer à Révision », puis « Passer à Vérifié », pour déclarer ce
+ * que son propre travail disait déjà - un clic après chaque geste, et des dossiers
+ * restés « Transmis » des jours après avoir été relus parce que personne n'avait pensé
+ * au bouton.
+ *
+ * L'étape se déduit maintenant du travail fait, et le client est prévenu comme il
+ * l'était. Une seule ne se déduit pas : le dépôt au guichet se passe hors de
+ * l'application. Elle borne l'automatisme, qui ne la franchit jamais.
+ *
+ * L'avancement se fait cran par cran - c'est ce que la règle des passages autorise - et
+ * il ne recule jamais. Un cran refusé arrête la montée sans faire échouer le geste qui
+ * l'a déclenchée : relire une pièce doit rester possible même si l'étape suivante est
+ * bloquée.
+ */
+export async function avancerSelonLeTravail(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number
+) {
+  const dossier = await prisma.formalites.findUnique({ where: { id: dossierId } });
+  if (!dossier) return { sousPhase: null };
+
+  const documents = await prisma.documents.findMany({
+    where: { formalite_id: dossierId },
+    select: { type: true, status: true, uploaded_by: true, rejection_reason: true },
+  });
+
+  /* La relecture des informations vit dans le brouillon, sous « revue ». */
+  let revue: { par?: unknown } | undefined;
+  try {
+    const lu: unknown = JSON.parse(dossier.data_json ?? "{}");
+    if (lu && typeof lu === "object") {
+      revue = (lu as Record<string, unknown>).revue as { par?: unknown } | undefined;
+    }
+  } catch {
+    // Un brouillon illisible ne dit rien de la relecture : on la tient pour non faite.
+  }
+
+  const merite = etapeMeritee({
+    informationsVerifiees: !!revue?.par,
+    actesProduits: documents.some((d) => d.uploaded_by === "system"),
+    piecesEnAttente: documents.filter(
+      (d) => d.uploaded_by !== "system" && d.status === "uploaded"
+    ).length,
+    actesARelire: documents.filter(
+      (d) => d.uploaded_by === "system" && d.status === A_RELIRE
+    ).length,
+    documentFinalRemis: documents.some(
+      (d) => d.type === TYPE_KBIS && !d.rejection_reason
+    ),
+  });
+
+  const vise = laMoinsAvancee(merite, plafondAutomatique(dossier.business_sub_phase));
+  const rang = (etape: string | null | undefined) =>
+    estSousPhase(etape) ? SOUS_PHASES_ORDONNEES.indexOf(etape) : -1;
+
+  let courante = dossier.business_sub_phase;
+  while (rang(courante) < rang(vise)) {
+    const suivante = sousPhaseSuivante(courante);
+    if (!suivante) break;
+    try {
+      await changerSousPhase(utilisateur, dossierId, suivante);
+    } catch {
+      /* Un cran empêché arrête la montée, sans défaire le geste qui l'a déclenchée. */
+      break;
+    }
+    courante = suivante;
+  }
+
+  return { sousPhase: courante };
+}
 
 /**
  * Fait avancer le travail du cabinet d'un cran.
@@ -636,6 +719,8 @@ export async function marquerLesInformationsVerifiees(
       action: verifiees ? "informations_verifiees" : "informations_a_revoir",
     },
   });
+
+  await avancerSelonLeTravail(utilisateur, dossierId);
 
   return { informationsVerifiees: verifiees };
 }
@@ -776,6 +861,9 @@ export async function prendreLeDossier(utilisateur: UtilisateurConnecte, dossier
     },
   });
 
+  /* Prendre un dossier, c'est l'ouvrir : le client le voit passer en « Transmis ». */
+  await avancerSelonLeTravail(utilisateur, dossierId);
+
   return { deja: false as const, dossier: dossier.id };
 }
 
@@ -828,6 +916,8 @@ export async function mettreLesActesADisposition(
   });
 
   await prevenir(dossier.user_id, dossierId, actesDisponibles(dossier.societe || "votre société"));
+
+  await avancerSelonLeTravail(utilisateur, dossierId);
 
   return { publies: count };
 }
@@ -892,6 +982,8 @@ export async function mettreUnActeADisposition(
       actesDisponibles(dossier.societe || "votre société")
     );
   }
+
+  await avancerSelonLeTravail(utilisateur, document.formalite_id);
 
   return { publie: document.name };
 }

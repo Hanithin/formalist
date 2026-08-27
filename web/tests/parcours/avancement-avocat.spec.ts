@@ -68,13 +68,25 @@ test.describe("avancement du cabinet", () => {
     });
     expect(saut.status()).toBe(403);
 
-    await page.getByRole("button", { name: /Passer à . Transmis/ }).click();
-    await expect(page.getByRole("button", { name: /Passer à . Révision/ })).toBeVisible();
+    /*
+     * Un seul geste subsiste : le dépôt au guichet, qui se passe hors de
+     * l'application. Les quatre autres étapes se déduisent du travail fait, et
+     * l'écran n'offre plus de bouton pour les déclarer.
+     */
+    await expect(page.getByRole("button", { name: /Passer à/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /déposé au guichet/i })).toHaveCount(0);
+
+    // Une fois le dossier vérifié, le dépôt se déclare - et lui seul.
+    for (const etape of ["5a", "5b", "5c"]) {
+      await request.put("/api/avocat/dossier", {
+        data: { dossier: dossier.id, sousPhase: etape },
+      });
+    }
+    await page.reload();
+    await expect(page.getByRole("button", { name: /déposé au guichet/i })).toBeVisible();
 
     // Et le retour d'un cran reste possible : c'est une correction de saisie.
-    await expect(page.getByRole("button", { name: /Revenir à/ })).toHaveCount(0);
-    await page.getByRole("button", { name: /Passer à . Révision/ }).click();
-    await expect(page.getByRole("button", { name: /Revenir à . Transmis/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Revenir à . Révision/ })).toBeVisible();
   });
 
   test("« Vérifié » demande au client de publier son annonce légale", async ({ request }) => {

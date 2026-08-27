@@ -131,8 +131,15 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal 
 
       <span className={styles.nom}>{nom}</span>
 
+      {/*
+        Un seul geste : celui qui ne se devine pas.
+
+        Les quatre autres étapes se déduisent du travail fait - le dossier pris, les
+        informations relues, les pièces décidées, les actes validés, le document du
+        greffe déposé - et s'avancent d'elles-mêmes. Le dépôt au guichet, lui, se passe
+        hors de l'application : c'est le seul que l'avocat déclare.
+      */}
       <span className={styles.actions}>
-        {/* Le retour d'un cran corrige une saisie ; il ne défait pas le travail. */}
         {precedente && (
           <button
             type="button"
@@ -144,14 +151,14 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal 
           </button>
         )}
 
-        {suivante && passageSousPhasePermis(sousPhase, suivante) && (
+        {suivante === "5d" && passageSousPhasePermis(sousPhase, suivante) && (
           <button
             type="button"
             className={styles.principal}
             onClick={() => avancer(suivante)}
             disabled={enCours}
           >
-            Passer à « {libelleSousPhase(type, suivante)} »
+            J&apos;ai déposé au guichet
           </button>
         )}
       </span>

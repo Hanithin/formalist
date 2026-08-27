@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { exigerUtilisateur, Interdit } from "@/infrastructure/db/utilisateur-courant";
 import { deposerPiece } from "@/infrastructure/documents/depot";
-import { LIVRABLES, estLivrable } from "@/infrastructure/db/depots/avocat";
+import {
+  LIVRABLES,
+  estLivrable,
+  avancerSelonLeTravail,
+} from "@/infrastructure/db/depots/avocat";
 import { DepotRefuse } from "@/lib/fichiers";
 import { route } from "@/lib/reponses";
 
@@ -47,6 +51,11 @@ export const POST = route(async (requete: Request) => {
       fichier,
       [...livrable.formats]
     );
+    /*
+     * Le document du greffe clôt le parcours : l'étape suit, et le client est prévenu.
+     */
+    await avancerSelonLeTravail(utilisateur, dossierId);
+
     return NextResponse.json({ ok: true, document: depose }, { status: 201 });
   } catch (e) {
     if (e instanceof DepotRefuse) {
