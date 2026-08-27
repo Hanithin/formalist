@@ -49,11 +49,24 @@ export function estUnActeProduit(piece: PieceAffichee): boolean {
 }
 
 export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: number }) {
-  const etat = etatDocument({
+  const brut = etatDocument({
     name: piece.nom,
     status: piece.statut,
     rejection_reason: piece.motifRejet,
   });
+
+  /*
+   * Un acte du cabinet dit s'il est parti, non comment il est né.
+   *
+   * « Généré » nommait la fabrication : l'avocat lisait le même mot sur un acte qu'il
+   * venait de valider et sur un acte que personne n'avait relu, et cherchait où le
+   * valider alors qu'il était déjà chez le client. « Projet à relire » attend, « Remis
+   * au client » est parti.
+   */
+  const etat =
+    estUnActeProduit(piece) && piece.statut === "generated"
+      ? { libelle: "Remis au client", ton: "abouti" as const, motif: null }
+      : brut;
 
   return (
     <div
