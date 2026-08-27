@@ -199,9 +199,15 @@ function improveLayout(docXml) {
           }
         }
         const before = isSectionTitle ? 480 : 360;
-        // If next paragraph is also centered (document title + subtitle), use tight after-spacing.
+        // Un titre se tient plus près de son texte que de celui qu'il quitte.
+        //
+        // Il respirait trente points dessous et vingt-quatre dessus : l'intitulé
+        // flottait entre deux blocs sans qu'on voie lequel il annonçait, et l'acte
+        // paraissait brouillon là où le greffe attend le contraire. Huit points
+        // suffisent à le détacher de son paragraphe ; c'est l'écart d'avant qui dit
+        // la coupure.
         const after = isSectionTitle
-          ? (nextIsCentered ? 0 : 600)
+          ? (nextIsCentered ? 0 : 160)
           : (isShortAllCaps ? 0 : 120);
         if (/<w:spacing\b/.test(p)) {
           p = p.replace(/<w:spacing\b([^/]*?)\/>/, function(_m, attrs) {
@@ -352,7 +358,7 @@ function generateDocxFromBuffer(buf, data) {
   // and other small/medium values.
   docXml = docXml.replace(/w:after="(\d+)"/g, function(m, v) {
     const n = parseInt(v);
-    if (n > 240 && n !== 600 && n !== 720 && n !== 800 && n !== 1200) return 'w:after="120"';
+    if (n > 240 && n !== 720 && n !== 800 && n !== 1200) return 'w:after="120"';
     return m;
   });
   // Force uniform line spacing on every spacing element so titles & bodies look consistent

@@ -1,4 +1,4 @@
-import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
+import { adresseSurUneLigne as adresseDuSiege, adresseLisible } from "@/domain/modification/gabarit";
 import { sirenLisible } from "@/domain/modification/annonce";
 import { natureDeLaForme, fonctionsDuDirigeant } from "@/domain/formalite/formes";
 /**
@@ -227,7 +227,13 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
      * dessine le trait de signature au-dessus du nom quand elle reconnaît « Fait à »,
      * et retire les lignes de tirets qu'on écrirait à la main.
      */
-    VILLE_SIGNATURE: ou(texte(societe.ville)),
+    /*
+     * La ville de signature s'écrit comme un nom propre.
+     *
+     * Le registre la rend en capitales - « PARIS » - et l'acte se datait « Fait à
+     * PARIS ». Une adresse lisible suit la même règle ailleurs dans le document.
+     */
+    VILLE_SIGNATURE: ou(adresseLisible(texte(societe.ville))),
 
     /* -------------------------------------------------------- Qui décide */
     IS_UNIPERSONNELLE: unipersonnelle,
