@@ -279,8 +279,8 @@ function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: 
   }
 
   return (
-    <details className={styles.versions}>
-      <summary className={styles.versionsTete}>
+    <details className={styles.actesVersions}>
+      <summary className={styles.actesVersionsTete}>
         {versions.length} version{versions.length > 1 ? "s" : ""} antérieure
         {versions.length > 1 ? "s" : ""}
       </summary>
@@ -291,14 +291,14 @@ function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: 
         </p>
       )}
 
-      <ul className={styles.versionsListe}>
+      <ul className={styles.actesVersionsListe}>
         {versions.map((version) => (
-          <li key={version.id} className={styles.version}>
-            <span className={styles.versionQuand}>
+          <li key={version.id} className={styles.acteVersion}>
+            <span className={styles.acteVersionQuand}>
               Produite le {quand(version.produiteLe)}
               {version.par ? " · remplacée par " + version.par : ""}
             </span>
-            <span className={styles.versionGestes}>
+            <span className={styles.acteVersionGestes}>
               {version.fichier && (
                 <OuvrirLaPiece nom={"Version du " + jour(version.produiteLe)} fichier={version.fichier} />
               )}

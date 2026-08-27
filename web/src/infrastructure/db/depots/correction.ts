@@ -31,6 +31,7 @@ import {
   brouillonAvecValeurs,
 } from "@/domain/formalite/champs-creation";
 import { champsAffiches as champsDesComptes } from "@/domain/comptes/verification";
+import { fonctionsDuDirigeant } from "@/domain/formalite/formes";
 import { champsAffiches as champsDeLaFermeture } from "@/domain/fermeture/verification";
 import { champsAffiches as champsDeLaCessation } from "@/domain/cessation/verification";
 import { lireBrouillon } from "./brouillons";
@@ -90,8 +91,19 @@ export async function formulaireDuDossier(
 
   if (dossier.type === "comptes") {
     const comptes = lireComptes(json);
+    /*
+     * Le titre du dirigeant tient à la forme, il n'est pas au choix.
+     *
+     * La table déclare les quatre titres pour tout le monde ; l'écran du client les
+     * restreint au moment de les offrir. Sans cette même restriction ici, la fenêtre
+     * proposait « Gérant » à une société par actions - un titre que la vérification
+     * refuse ensuite, après avoir laissé écrire.
+     */
+    const titres = fonctionsDuDirigeant(comptes.societe.forme);
     return {
-      champs: champsDesComptes(comptes.societe.forme, comptes.valeurs),
+      champs: champsDesComptes(comptes.societe.forme, comptes.valeurs).map((champ) =>
+        champ.identifiant === "dirigeantFonction" ? { ...champ, options: titres } : champ
+      ),
       valeurs: comptes.valeurs,
       reproductible: true,
     };

@@ -3150,3 +3150,209 @@ button.ligneCorps:disabled {
   font-size: 12.5px;
   color: #97794b;
 }
+
+/* ---------- Corriger le dossier, et reproduire ses actes ---------- */
+
+/*
+ * La fenêtre de correction.
+ *
+ * Elle rend les champs du parcours, avec les mêmes libellés et les mêmes aides : ce que
+ * le client a rempli, l'avocat le relit sous la même forme.
+ */
+.documentsTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.documentsTete .sectionTitre {
+  margin: 0;
+}
+
+.correction {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(82dvh, 900px);
+  padding: 24px 26px;
+  border: 1px solid #e5e5e7;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+  transform: translate(-50%, -50%);
+}
+
+.correctionTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.correctionTitre {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.correctionDetail {
+  margin: 6px 0 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #71717a;
+}
+
+.correctionRefus {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #fef2f2;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+/*
+ * Les champs défilent ; l'en-tête et les gestes restent en place.
+ *
+ * La grille est celle du parcours - six colonnes - parce que les champs portent ses
+ * classes de largeur : sans elle, un code postal prenait la moitié de la fenêtre et
+ * l'adresse repartait à la ligne.
+ */
+.correctionChamps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px 24px;
+  align-items: start;
+  padding-right: 6px;
+}
+
+.correctionGroupe {
+  grid-column: 1 / -1;
+  margin: 22px 0 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.correctionGroupe:first-child {
+  margin-top: 0;
+}
+
+.correctionActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #f0f0f2;
+}
+
+/* ---------- Les versions antérieures d'un acte ---------- */
+
+/*
+ * Repliées sous la ligne du document.
+ *
+ * On ne les regarde que lorsqu'on se demande ce qui a changé, ou qu'on veut revenir
+ * dessus : elles n'ont pas à occuper la ligne le reste du temps.
+ */
+.actesVersions {
+  flex-basis: 100%;
+  order: 4;
+  margin-top: 4px;
+}
+
+.actesVersionsTete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 12.5px;
+  color: #a1a1aa;
+  cursor: pointer;
+  list-style: none;
+}
+
+.actesVersionsTete::-webkit-details-marker {
+  display: none;
+}
+
+.actesVersionsTete::marker {
+  content: "";
+}
+
+.actesVersionsTete::before {
+  content: "▸";
+  font-size: 10px;
+}
+
+.actesVersions[open] .actesVersionsTete::before {
+  content: "▾";
+}
+
+.actesVersionsListe {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.acteVersion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 8px 0;
+}
+
+.acteVersion + .acteVersion {
+  border-top: 1px solid #f2f2f4;
+}
+
+.acteVersionQuand {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: #71717a;
+}
+
+.acteVersionGestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.correctionRefusTitre {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Les valeurs sont écrites même quand la production échoue : le dire évite de croire
+   que le clic n'a rien fait, et de recommencer. */
+.correctionRefusNote {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: #9a3838;
+}
+
+.correctionManques {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.55;
+}

@@ -124,10 +124,30 @@ export function Corriger({
               </button>
             </div>
 
+            {/*
+              Ce qui manque se lit, et ce qui est écrit se dit.
+              
+              Le message ne disait que « Le dossier est incomplet » : l'avocat ne savait
+              ni quoi corriger, ni que ses valeurs étaient déjà enregistrées. La
+              vérification porte sur tout le dossier - la société, les associés,
+              l'affectation - et ce qui manque n'est pas toujours un champ de cette
+              fenêtre.
+            */}
             {refus && (
-              <p className={styles.correctionRefus} role="alert">
-                {refus}
-              </p>
+              <div className={styles.correctionRefus} role="alert">
+                <p className={styles.correctionRefusTitre}>{refus}</p>
+                <p className={styles.correctionRefusNote}>
+                  Vos corrections sont enregistrées ; les actes n&apos;ont pas pu être
+                  reproduits.
+                </p>
+                {manques.length > 0 && (
+                  <ul className={styles.correctionManques}>
+                    {manques.map((manque) => (
+                      <li key={manque.champ}>{manque.message}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
 
             <div className={styles.correctionChamps}>
