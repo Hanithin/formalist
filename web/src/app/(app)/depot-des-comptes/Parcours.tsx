@@ -842,9 +842,16 @@ function EtapeAffectation({
         les manquements à la loi, qui eux ne se lisent nulle part ailleurs.
       */}
       {restants.length > 0 && (
-        <ul className={styles.obligations}>
+        <ul className={styles.manquementsLegaux}>
           {restants.map((message) => (
-            <li key={message}>{message}</li>
+            <li key={message}>
+              <svg viewBox="0 0 24 24" {...TRAITS} aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v5" />
+                <path d="M12 16.5h.01" />
+              </svg>
+              <span>{message}</span>
+            </li>
           ))}
         </ul>
       )}

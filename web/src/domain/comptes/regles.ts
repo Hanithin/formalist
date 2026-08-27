@@ -192,15 +192,29 @@ export function dotationDeLaReserveLegale(args: {
   const plafondCentimes = Math.round(capitalCentimes * RESERVE_PLAFOND_DU_CAPITAL);
   const manquantCentimes = Math.max(0, plafondCentimes - reserveExistanteCentimes);
 
-  if (estCivile(args.forme)) {
+  /*
+   * Qui doit une réserve légale, exactement.
+   *
+   * L'article L. 232-10 vise « les sociétés à responsabilité limitée et les sociétés
+   * par actions » - et personne d'autre. Le test portait sur la seule société civile :
+   * une société en nom collectif et une commandite simple se voyaient donc imposer un
+   * prélèvement que la loi ne leur demande pas, et l'écran refusait leur affectation
+   * tant qu'elles ne l'avaient pas fait. La commandite par actions, elle, est bien une
+   * société par actions : elle la doit.
+   */
+  const nature = natureDeLaForme(args.forme);
+  const soumise = nature.titres === "actions" || nature.regime === "sarl";
+
+  if (!soumise) {
     return {
       applicable: false,
       dotationCentimes: 0,
       manquantCentimes: 0,
       plafondCentimes: 0,
       apresDotationCentimes: reserveExistanteCentimes,
-      explication:
-        "Une société civile ne dote pas de réserve légale : l'article L. 232-10 du code de commerce ne vise que les sociétés à responsabilité limitée et les sociétés par actions. Cela vaut aussi à l'impôt sur les sociétés.",
+      explication: estCivile(args.forme)
+        ? "Une société civile ne dote pas de réserve légale : l'article L. 232-10 du code de commerce ne vise que les sociétés à responsabilité limitée et les sociétés par actions. Cela vaut aussi à l'impôt sur les sociétés."
+        : "Cette forme ne dote pas de réserve légale : l'article L. 232-10 du code de commerce ne vise que les sociétés à responsabilité limitée et les sociétés par actions.",
     };
   }
 

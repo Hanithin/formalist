@@ -997,9 +997,15 @@
  * La ligne du document, sous le champ qu'elle a rempli. Sans elle, un montant mal lu
  * a l'apparence d'une donnée vérifiée ; avec elle, l'écart se voit sans rouvrir le PDF.
  */
+/*
+ * L'origine du chiffre suit son champ, dans la même cellule.
+ *
+ * Elle était enfant direct de la grille et portait `-12px` de marge haute pour
+ * rattraper l'écart de rangée. Passée dans la cellule du champ, cette marge négative
+ * la faisait remonter contre le bord du champ, texte collé à la bordure.
+ */
 .origineDuChiffre {
-  grid-column: 1 / -1;
-  margin: -12px 0 0;
+  margin: 6px 0 0;
   font-size: 12px;
   line-height: 1.5;
   color: #8a8a92;
@@ -6418,58 +6424,108 @@
 }
 
 /*
- * Le compte de la répartition, à la place d'un bandeau d'alerte.
+ * Le compte de la répartition.
  *
- * L'écart s'affichait dans une ligne jaune collée au dernier champ, sans marge au-
- * dessus ni en dessous, et disparaissait dès que la somme tombait juste - de sorte
- * qu'on ne savait jamais combien il restait avant d'avoir tout saisi. Le compte est
- * maintenant toujours là, et change de ton selon qu'il tombe juste ou non.
+ * Deux pavés de couleur se suivaient - le compte, puis les manquements - dont l'un
+ * jaune pâle bordé de jaune et l'autre jaune pâle bordé de jaune : on ne distinguait
+ * plus le total de l'alerte, et l'ensemble faisait tache au bas d'une carte blanche.
+ * Le compte est un total, il en a l'allure ; l'alerte est ailleurs.
  */
 .repartition {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 6px 18px;
-  margin: 22px 0 0;
-  padding: 14px 16px;
+  gap: 8px 24px;
+  margin: 24px 0 0;
+  padding: 15px 18px;
+  border: 1px solid transparent;
   border-radius: 12px;
-  background: #f7f7f8;
-  font-size: 13.5px;
-  color: #52525b;
+  font-size: 14px;
   letter-spacing: 0;
 }
 
+/* L'affectation tombe juste : un vert discret, le total reste un total. */
 .repartitionJuste {
-  border: 1px solid #bbf7d0;
+  border-color: #bbf7d0;
   background: #f0fdf4;
-  color: #166534;
+  color: #3f6212;
 }
 
+/* Il reste quelque chose à placer : le jaune se voit sans crier. */
 .repartitionReste {
-  border: 1px solid #fde68a;
+  border-color: #fde68a;
   background: #fffbeb;
   color: #92400e;
+}
+
+.repartitionCompte {
+  min-width: 0;
 }
 
 .repartitionCompte b {
   font-weight: 600;
 }
 
+/* Le verdict porte la couleur, non le pavé entier. */
 .repartitionVerdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-weight: 600;
 }
 
-/*
- * Les manquements à la loi respirent sous le compte.
- *
- * `.obligations` porte une marge haute nulle : le bandeau jaune se collait au bas du
- * compte de répartition, les deux formant un seul pavé de couleur où l'on ne
- * distinguait plus ce qui était un total de ce qui était une alerte.
- */
-.repartition + .obligations {
-  margin-top: 14px;
+.repartitionVerdict::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
 }
+
+.repartitionVerdict::before {
+  opacity: 0.75;
+}
+
+/*
+ * Les manquements à la loi : un rappel sobre, aligné sur le reste de la carte.
+ *
+ * Ils héritaient de `.obligations`, un bandeau jaune bordé qui se collait au compte -
+ * deux blocs colorés l'un sur l'autre au bas d'une carte blanche.
+ */
+.manquementsLegaux {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.manquementsLegaux li {
+  display: flex;
+  flex-direction: row;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #92400e;
+  letter-spacing: 0;
+}
+
+.manquementsLegaux svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  stroke-width: 1.9;
+}
+
 
 /* ---------------------------------------------------- La confidentialité */
 

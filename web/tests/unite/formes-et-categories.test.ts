@@ -15,7 +15,7 @@ import {
 } from "@/domain/formalite/formes";
 import { motsDeLaForme } from "@/domain/modification/pv-age";
 import { motsDeLaCession } from "@/domain/modification/acte-cession";
-import { estCivile, estUnipersonnelle } from "@/domain/comptes/regles";
+import { estCivile, estUnipersonnelle, dotationDeLaReserveLegale } from "@/domain/comptes/regles";
 import { motAssocie, motPart } from "@/domain/formalite/parcours";
 import { texteAnnonce } from "@/infrastructure/documents/annonce";
 import { fondementLegalDeLApport, fondementDeLaDispense } from "@/domain/modification/traite-apport";
@@ -306,5 +306,67 @@ describe("le régime dont la forme relève", () => {
     for (const f of ["SAS", "SASU", "SA", "SELAS"]) {
       expect(champ?.formes).not.toContain(f);
     }
+  });
+});
+
+describe("la réserve légale", () => {
+  /**
+   * L'article L. 232-10 du code de commerce vise « les sociétés à responsabilité
+   * limitée et les sociétés par actions » - et personne d'autre. Le prélèvement est
+   * d'un vingtième au moins du bénéfice diminué des pertes antérieures reportées, et
+   * cesse d'être obligatoire quand la réserve atteint le dixième du capital.
+   *
+   * Le code ne testait que la société civile : une société en nom collectif et une
+   * commandite simple se voyaient imposer un prélèvement que la loi ne leur demande
+   * pas, et l'écran refusait leur affectation tant qu'elles ne l'avaient pas fait.
+   */
+  const cas = {
+    resultatCentimes: 3_072_100,
+    reportAnterieurCentimes: 0,
+    capitalCentimes: 2_000_000,
+    reserveExistanteCentimes: 1_500,
+  };
+
+  it("ne vise que les SARL et les sociétés par actions", () => {
+    for (const forme of ["SARL", "EURL", "SELARL", "SAS", "SASU", "SA", "SELAS", "SELAFA"]) {
+      expect(dotationDeLaReserveLegale({ forme, ...cas }).applicable, forme).toBe(true);
+    }
+
+    /* La commandite par actions en est une : elle la doit. La simple, non. */
+    expect(dotationDeLaReserveLegale({ forme: "SCA", ...cas }).applicable).toBe(true);
+    expect(dotationDeLaReserveLegale({ forme: "SCS", ...cas }).applicable).toBe(false);
+
+    for (const forme of ["SNC", "SCI", "SCP", "SCM", "EARL", "GAEC"]) {
+      expect(dotationDeLaReserveLegale({ forme, ...cas }).applicable, forme).toBe(false);
+    }
+  });
+
+  it("prélève un vingtième, plafonné au dixième du capital", () => {
+    const d = dotationDeLaReserveLegale({ forme: "SAS", ...cas });
+    /* 5 % de 30 721 €, soit 1 536,05 €, et la réserve n'atteint pas encore 2 000 €. */
+    expect(d.dotationCentimes).toBe(153_605);
+    expect(d.plafondCentimes).toBe(200_000);
+    expect(d.apresDotationCentimes).toBe(155_105);
+  });
+
+  it("s'arrête au plafond, sans le dépasser", () => {
+    const d = dotationDeLaReserveLegale({
+      ...cas,
+      forme: "SAS",
+      reserveExistanteCentimes: 195_000,
+    });
+    /* Il ne manque que 50 € : le vingtième est ramené à ce qui manque. */
+    expect(d.dotationCentimes).toBe(5_000);
+    expect(d.apresDotationCentimes).toBe(200_000);
+  });
+
+  it("prélève sur le bénéfice diminué des pertes reportées", () => {
+    const d = dotationDeLaReserveLegale({
+      ...cas,
+      forme: "SAS",
+      reportAnterieurCentimes: -1_000_000,
+    });
+    /* 30 721 € de bénéfice, 10 000 € de pertes : 5 % de 20 721 €. */
+    expect(d.dotationCentimes).toBe(103_605);
   });
 });
