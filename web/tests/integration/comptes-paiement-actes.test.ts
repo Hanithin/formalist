@@ -155,7 +155,13 @@ avecBase("le règlement d'un dépôt de comptes", () => {
      * carte débitée, et tombait sur une page d'erreur.
      */
     const retour = await confirmerComptesAuRetour(
-      { id: utilisateurId, roles: ["user"], email: MARQUE + "client@exemple.test" },
+      {
+        id: utilisateurId,
+        email: MARQUE + "client@exemple.test",
+        nom: "Essai règlement",
+        roles: ["user"],
+        jeton: "essai",
+      },
       dossier,
       "cs_reference_qui_nexiste_pas"
     );
