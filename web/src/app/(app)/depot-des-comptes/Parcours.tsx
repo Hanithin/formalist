@@ -2,7 +2,7 @@
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { natureDeLaForme } from "@/domain/formalite/formes";
-import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
+import { NATURES_PROPOSEES, fonctionsDuDirigeant } from "@/domain/formalite/formes";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
@@ -696,7 +696,19 @@ function GroupesDeChamps({
               <h4 className={styles.champsGroupe}>{champ.groupe}</h4>
             )}
             <Champ
-              champ={champ}
+              /*
+               * La fonction du dirigeant suit la forme.
+               *
+               * Les quatre titres étaient offerts à tout le monde : une société
+               * d'exercice libéral par actions simplifiée s'est déposée « en sa qualité
+               * de Gérant », titre qui n'existe pas chez elle, dans une déclaration
+               * signée sur l'honneur et remise au greffe.
+               */
+              champ={
+                champ.identifiant === "dirigeantFonction"
+                  ? { ...champ, options: fonctionsDuDirigeant(etat.societe.forme) }
+                  : champ
+              }
               valeur={etat.valeurs[champ.identifiant]}
               refus={refusDe(champ.identifiant)}
               surChangement={(identifiant, valeur) =>

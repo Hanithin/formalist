@@ -343,6 +343,24 @@ export const NATURES: Record<string, NatureDeForme> = {
 export const NATURES_PROPOSEES: string[] = Object.keys(NATURES);
 
 /**
+ * Les fonctions qu'un dirigeant peut porter dans cette forme.
+ *
+ * Un procès-verbal de SAS écrit « Président », celui d'une SARL « Gérant » : le titre
+ * n'est pas au choix, il tient à la forme. L'écran du dépôt des comptes offrait pourtant
+ * les quatre à tout le monde, et une société d'exercice libéral par actions simplifiée
+ * s'est déposée « en sa qualité de Gérant » - un titre qui n'existe pas chez elle, dans
+ * une déclaration signée sur l'honneur et remise au greffe.
+ *
+ * La liste reste ouverte au second titre de chaque famille : une SAS a des directeurs
+ * généraux, une SARL des co-gérants.
+ */
+export function fonctionsDuDirigeant(forme: string | null | undefined): string[] {
+  return natureDeLaForme(forme).titreDirigeant === "Président"
+    ? ["Président", "Directeur général", "Directeur général délégué"]
+    : ["Gérant", "Co-gérant"];
+}
+
+/**
  * Ce que la forme impose aux actes.
  *
  * Une forme inconnue - une société étrangère, une forme rare - ne doit pas faire échouer

@@ -10,6 +10,7 @@
 
 import { champVisible } from "@/domain/modification/types";
 import { CHAMPS_COMPTES, GROUPE_ASSOCIE_UNIQUE, type Champ } from "./types";
+import { fonctionsDuDirigeant } from "@/domain/formalite/formes";
 import { estCivile, estUnipersonnelle, verifierAffectation, type Affectation } from "./regles";
 import { verifierConventions, type Convention } from "./conventions";
 
@@ -143,6 +144,31 @@ export function verifierComptes(contexte: ContexteVerification): Anomalie[] {
    */
   if (!estCivile(societe.forme)) {
     anomalies.push(...verifierConventions(conventions));
+  }
+
+  /*
+   * La fonction du dirigeant doit exister dans cette forme.
+   *
+   * L'écran n'offre plus que les titres de la forme choisie, mais un dossier commencé
+   * avant en garde un autre - et la déclaration de confidentialité, signée sur
+   * l'honneur, part au greffe avec ce titre. Une société d'exercice libéral par actions
+   * simplifiée s'y est déposée « en sa qualité de Gérant », titre qui n'existe pas chez
+   * elle. Le contrôle se fait ici, où il retient aussi le règlement.
+   */
+  const fonction = typeof valeurs.dirigeantFonction === "string" ? valeurs.dirigeantFonction : "";
+  const admises = fonctionsDuDirigeant(societe.forme);
+  if (fonction && societe.forme && !admises.includes(fonction)) {
+    anomalies.push({
+      champ: "dirigeantFonction",
+      message:
+        "Une " +
+        societe.forme +
+        " n'a pas de " +
+        fonction.toLowerCase() +
+        " : choisissez " +
+        admises.slice(0, 2).join(" ou ").toLowerCase() +
+        ".",
+    });
   }
 
   return anomalies;

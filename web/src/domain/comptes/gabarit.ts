@@ -1,3 +1,4 @@
+import { sirenLisible } from "@/domain/modification/annonce";
 import { natureDeLaForme } from "@/domain/formalite/formes";
 /**
  * Ce que les actes d'approbation ont besoin de savoir.
@@ -153,7 +154,13 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
      * virgule - « La société X, société par actions simplifiée… ».
      */
     FORME_EN_CLAIR_CAPITALE: avecMajusculeInitiale(formeEnToutesLettres(forme).toLowerCase()),
-    SIREN: ou(texte(societe.siren)),
+    /*
+     * Le SIREN se lit par groupes de trois, comme le cabinet l'écrit.
+     *
+     * Il partait d'un bloc - « 899979934 » - dans une déclaration signée sur l'honneur
+     * et déposée au greffe, là où tous les autres actes du cabinet le groupent.
+     */
+    SIREN: ou(sirenLisible(societe.siren)),
     SIEGE_SOCIAL: adresseSurUneLigne(societe),
     CAPITAL_FORMATE: montant(societe.capital ?? 0),
     CAPITAL_LETTRES: nombreEnFrancais(societe.capital ?? 0),

@@ -88,6 +88,16 @@ export function avecMajusculeInitiale(texte: string): string {
 
 export function formeEnToutesLettres(forme: string | null | undefined): string {
   const f = texte(forme).toUpperCase();
+
+  /*
+   * Sept formes étaient nommées ici, et les vingt autres sortaient sous leur sigle :
+   * une déclaration de confidentialité écrivait « La société X, SELAS au capital de… »
+   * là où le greffe attend « société d'exercice libéral par actions simplifiée ».
+   *
+   * Ces sept gardent leur formulation, qui figure déjà dans des actes déposés - « SAS
+   * unipersonnelle » plutôt que « à associé unique ». Les autres viennent de la table
+   * des formes, qui les nomme toutes.
+   */
   const noms: Record<string, string> = {
     SAS: "Société par actions simplifiée",
     SASU: "Société par actions simplifiée unipersonnelle",
@@ -97,7 +107,10 @@ export function formeEnToutesLettres(forme: string | null | undefined): string {
     SA: "Société anonyme",
     SNC: "Société en nom collectif",
   };
-  return noms[f] ?? f;
+  if (noms[f]) return noms[f];
+
+  const nature = natureDeLaForme(f);
+  return nature.code ? avecMajusculeInitiale(nature.libelle) : f;
 }
 
 /**
