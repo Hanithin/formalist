@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
@@ -359,15 +360,12 @@ function EtapeEntreprise({
         <div className={styles.champs}>
           <div className={styles.champ}>
             <label htmlFor="cessation-civilite">Civilité</label>
-            <select
+            <ChampChoix
               id="cessation-civilite"
-              value={etat.entrepreneur.civilite ?? ""}
-              onChange={(e) => majPersonne("civilite", e.target.value)}
-            >
-              <option value="">Choisir</option>
-              <option value="Monsieur">Monsieur</option>
-              <option value="Madame">Madame</option>
-            </select>
+              valeur={etat.entrepreneur.civilite ?? ""}
+              options={["Monsieur", "Madame"]}
+              surChangement={(civilite) => majPersonne("civilite", civilite)}
+            />
           </div>
 
           <div className={styles.champ}>

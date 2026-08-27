@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { Fragment, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -208,15 +209,13 @@ export function Declaration({
         {etape.identifiant === "identite" && (
           <div className={styles.champs}>
             <Champ id="civilite" libelle={<>Civilité</>} anomalie={erreur("civilite")}>
-              <select
+              <ChampChoix
                 id="civilite"
-                value={donnees.civilite ?? ""}
-                onChange={(e) => modifier("civilite", e.target.value)}
-              >
-                <option value="">Choisissez</option>
-                <option value="Madame">Madame</option>
-                <option value="Monsieur">Monsieur</option>
-              </select>
+                valeur={donnees.civilite ?? ""}
+                options={["Madame", "Monsieur"]}
+                invite="Choisissez"
+                surChangement={(v) => modifier("civilite", v)}
+              />
             </Champ>
 
             <Champ
@@ -365,18 +364,13 @@ export function Declaration({
               libelle={<>Situation matrimoniale</>}
               anomalie={erreur("situationMatrimoniale")}
             >
-              <select
+              <ChampChoix
                 id="situationMatrimoniale"
-                value={donnees.situationMatrimoniale ?? ""}
-                onChange={(e) => modifier("situationMatrimoniale", e.target.value)}
-              >
-                <option value="">Choisissez</option>
-                {SITUATIONS.map((situation) => (
-                  <option key={situation} value={situation}>
-                    {situation}
-                  </option>
-                ))}
-              </select>
+                valeur={donnees.situationMatrimoniale ?? ""}
+                options={SITUATIONS}
+                invite="Choisissez"
+                surChangement={(v) => modifier("situationMatrimoniale", v)}
+              />
             </Champ>
 
             <label className={styles.case}>
@@ -461,18 +455,16 @@ export function Declaration({
               libelle={<>Nature de l&apos;activité</>}
               anomalie={erreur("natureActivite")}
             >
-              <select
+              <ChampChoix
                 id="natureActivite"
-                value={donnees.natureActivite ?? ""}
-                onChange={(e) => modifier("natureActivite", e.target.value)}
-              >
-                <option value="">Choisissez</option>
-                {Object.values(ACTIVITES).map((a) => (
-                  <option key={a.code} value={a.code}>
-                    {a.libelle}
-                  </option>
-                ))}
-              </select>
+                valeur={donnees.natureActivite ?? ""}
+                options={Object.values(ACTIVITES).map((a) => ({
+                  valeur: a.code,
+                  libelle: a.libelle,
+                }))}
+                invite="Choisissez"
+                surChangement={(v) => modifier("natureActivite", v)}
+              />
             </Champ>
 
             {regle && (
@@ -526,18 +518,13 @@ export function Declaration({
               libelle={<>Lieu d&apos;exercice</>}
               anomalie={erreur("lieuExercice")}
             >
-              <select
+              <ChampChoix
                 id="lieuExercice"
-                value={donnees.lieuExercice ?? ""}
-                onChange={(e) => modifier("lieuExercice", e.target.value)}
-              >
-                <option value="">Choisissez</option>
-                {LIEUX_EXERCICE.map((lieu) => (
-                  <option key={lieu} value={lieu}>
-                    {lieu}
-                  </option>
-                ))}
-              </select>
+                valeur={donnees.lieuExercice ?? ""}
+                options={LIEUX_EXERCICE}
+                invite="Choisissez"
+                surChangement={(v) => modifier("lieuExercice", v)}
+              />
             </Champ>
 
             <Reglementation
@@ -763,18 +750,16 @@ function Reglementation({
       {choisie === "oui" && (
         <div className={styles.precision}>
           <label htmlFor="categorieReglementee">Laquelle ?</label>
-          <select
+          <ChampChoix
             id="categorieReglementee"
-            value={categorie ?? ""}
-            onChange={(e) => surCategorie(e.target.value)}
-          >
-            <option value="">Choisissez</option>
-            {ACTIVITES_REGLEMENTEES.map((activite) => (
-              <option key={activite.code} value={activite.code}>
-                {activite.exemples[0]} - {activite.intitule}
-              </option>
-            ))}
-          </select>
+            valeur={categorie ?? ""}
+            options={ACTIVITES_REGLEMENTEES.map((activite) => ({
+              valeur: activite.code,
+              libelle: activite.exemples[0] + " - " + activite.intitule,
+            }))}
+            invite="Choisissez"
+            surChangement={surCategorie}
+          />
           {anomalieCategorie && <p role="alert">{anomalieCategorie}</p>}
         </div>
       )}

@@ -1,3 +1,4 @@
+import { choisir } from "./liste";
 import { test, expect } from "@playwright/test";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../src/infrastructure/db/generated/client";
@@ -51,10 +52,21 @@ test.describe("documents", () => {
     const nom = "Bail parcours " + Date.now();
     await fenetre.getByLabel("Nom du document").fill(nom);
 
+    /*
+     * La liste n'est plus un `<select>` : ses choix ne sont lisibles qu'une fois le
+     * menu ouvert - voir ChampChoix, et le calendrier avant lui.
+     */
     const societe = fenetre.getByLabel("Société concernée");
-    const options = await societe.locator("option").allTextContents();
-    const cible = options.find((o) => o.startsWith("PARCOURS"));
-    if (cible) await societe.selectOption({ label: cible });
+    await societe.click();
+    const menu = page.getByRole("listbox");
+    const choix = menu.getByRole("option", { name: /^PARCOURS/ }).first();
+    let cible: string | null = null;
+    if (await choix.count()) {
+      cible = (await choix.innerText()).trim();
+      await choix.click();
+    } else {
+      await page.keyboard.press("Escape");
+    }
 
     await fenetre.getByRole("button", { name: "Déposer", exact: true }).click();
 
@@ -79,7 +91,7 @@ test.describe("documents", () => {
 
     const nom = "Document personnel " + Date.now();
     await fenetre.getByLabel("Nom du document").fill(nom);
-    await fenetre.getByLabel("Société concernée").selectOption("");
+    await choisir(fenetre.getByLabel("Société concernée"), "Aucune - mes dépôts");
     await fenetre.getByRole("button", { name: "Déposer", exact: true }).click();
 
     await expect(page.getByText(nom)).toBeVisible();

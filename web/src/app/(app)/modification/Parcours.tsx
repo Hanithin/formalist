@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
 import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
 import {
@@ -1225,18 +1226,12 @@ function EtapeSociete({
 
         <div className={styles.champ}>
           <label htmlFor="societe-forme">Forme juridique</label>
-          <select
+          <ChampChoix
             id="societe-forme"
-            value={etat.societe.forme ?? ""}
-            onChange={(e) => champSociete("forme", e.target.value)}
-          >
-            <option value="">Choisir</option>
-            {FORMES.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </select>
+            valeur={etat.societe.forme ?? ""}
+            options={FORMES}
+            surChangement={(forme) => champSociete("forme", forme)}
+          />
           {refus("forme") && <p role="alert">{refus("forme")}</p>}
         </div>
 
@@ -1835,18 +1830,12 @@ export function Champ({
       <label htmlFor={id}>{champ.libelle}</label>
 
       {champ.type === "choix" ? (
-        <select
+        <ChampChoix
           id={id}
-          value={typeof valeur === "string" ? valeur : ""}
-          onChange={(e) => surChangement(champ.identifiant, e.target.value)}
-        >
-          <option value="">Choisir</option>
-          {(champ.options ?? []).map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+          valeur={typeof valeur === "string" ? valeur : ""}
+          options={champ.options ?? []}
+          surChangement={(choix) => surChangement(champ.identifiant, choix)}
+        />
       ) : champ.type === "long" ? (
         <textarea
           id={id}
@@ -2085,18 +2074,12 @@ function EtapeAssemblee({
                 </div>
                 <div className={styles.champ}>
                   <label htmlFor={"associe-forme-" + rang}>Forme juridique</label>
-                  <select
+                  <ChampChoix
                     id={"associe-forme-" + rang}
-                    value={associe.forme ?? ""}
-                    onChange={(e) => modifierAssocie(rang, { forme: e.target.value })}
-                  >
-                    <option value="">Choisir</option>
-                    {FORMES.map((f) => (
-                      <option key={f} value={f}>
-                        {f}
-                      </option>
-                    ))}
-                  </select>
+                    valeur={associe.forme ?? ""}
+                    options={FORMES}
+                    surChangement={(forme) => modifierAssocie(rang, { forme })}
+                  />
                 </div>
                 <div className={styles.champ}>
                   <label htmlFor={"associe-siren-" + rang}>SIREN</label>
@@ -2151,28 +2134,25 @@ function EtapeAssemblee({
                 */}
                 <div className={styles.champ}>
                   <label htmlFor={"associe-qualite-" + rang}>En qualité de</label>
-                  <select
+                  <ChampChoix
                     id={"associe-qualite-" + rang}
-                    value={associe.qualiteRepresentant ?? ""}
-                    onChange={(e) =>
-                      modifierAssocie(rang, { qualiteRepresentant: e.target.value })
+                    valeur={associe.qualiteRepresentant ?? ""}
+                    /*
+                     * Une qualité déjà retenue reste offerte même si la forme a changé
+                     * depuis : sans quoi le choix disparaîtrait de la liste tout en
+                     * restant dans les données, et l'écran montrerait « Choisir » sur un
+                     * champ rempli.
+                     */
+                    options={
+                      associe.qualiteRepresentant &&
+                      !qualitesDuRepresentant(associe.forme).includes(associe.qualiteRepresentant)
+                        ? [...qualitesDuRepresentant(associe.forme), associe.qualiteRepresentant]
+                        : qualitesDuRepresentant(associe.forme)
                     }
-                  >
-                    <option value="">Choisir</option>
-                    {qualitesDuRepresentant(associe.forme).map((qualite) => (
-                      <option key={qualite} value={qualite}>
-                        {qualite}
-                      </option>
-                    ))}
-                    {associe.qualiteRepresentant &&
-                      !qualitesDuRepresentant(associe.forme).includes(
-                        associe.qualiteRepresentant
-                      ) && (
-                        <option value={associe.qualiteRepresentant}>
-                          {associe.qualiteRepresentant}
-                        </option>
-                      )}
-                  </select>
+                    surChangement={(qualiteRepresentant) =>
+                      modifierAssocie(rang, { qualiteRepresentant })
+                    }
+                  />
                 </div>
               </div>
             </>
@@ -2189,22 +2169,22 @@ function EtapeAssemblee({
               */}
               <div className={`${styles.champ} ${styles.colonnes1}`}>
                 <label htmlFor={"associe-civilite-" + rang}>Civilité</label>
-                <select
-                  id={"associe-civilite-" + rang}
-                  value={associe.civilite ?? ""}
-                  onChange={(e) => modifierAssocie(rang, { civilite: e.target.value })}
-                >
-                  {/*
-                    Abrégée à l'écran, entière dans l'acte.
+                {/*
+                  Abrégée à l'écran, entière dans l'acte.
 
-                    La colonne fait cent dix pixels : « Monsieur » y était coupé en
-                    « Monsie… ». C'est l'affichage qui s'abrège, la valeur envoyée reste
-                    « Monsieur » - un procès-verbal n'écrit pas « M. Jean DUPONT ».
-                  */}
-                  <option value="">Choisir</option>
-                  <option value="Monsieur">M.</option>
-                  <option value="Madame">Mme</option>
-                </select>
+                  La colonne fait cent dix pixels : « Monsieur » y était coupé en
+                  « Monsie… ». C'est l'affichage qui s'abrège, la valeur envoyée reste
+                  « Monsieur » - un procès-verbal n'écrit pas « M. Jean DUPONT ».
+                */}
+                <ChampChoix
+                  id={"associe-civilite-" + rang}
+                  valeur={associe.civilite ?? ""}
+                  options={[
+                    { valeur: "Monsieur", libelle: "M." },
+                    { valeur: "Madame", libelle: "Mme" },
+                  ]}
+                  surChangement={(civilite) => modifierAssocie(rang, { civilite })}
+                />
               </div>
               <div className={`${styles.champ} ${styles.colonnes2}`}>
                 <label htmlFor={"associe-prenom-" + rang}>Prénom</label>

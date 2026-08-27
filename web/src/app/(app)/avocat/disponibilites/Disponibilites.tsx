@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -388,18 +389,15 @@ export function Disponibilites({
                 <label className={styles.champLabel} htmlFor="duree">
                   Durée d&apos;un créneau
                 </label>
-                <select
+                <ChampChoix
                   id="duree"
-                  className={styles.champ}
-                  value={duree}
-                  onChange={(e) => setDuree(Number(e.target.value))}
-                >
-                  {DUREES_CRENEAU.map((d) => (
-                    <option key={d} value={d}>
-                      {d} minutes
-                    </option>
-                  ))}
-                </select>
+                  valeur={String(duree)}
+                  options={DUREES_CRENEAU.map((d) => ({
+                    valeur: String(d),
+                    libelle: d + " minutes",
+                  }))}
+                  surChangement={(d) => setDuree(Number(d))}
+                />
               </div>
 
               {erreur && (

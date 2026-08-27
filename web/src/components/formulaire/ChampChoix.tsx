@@ -21,13 +21,35 @@ import styles from "./ChampChoix.module.css";
  * - un clic dehors ou la touche d'échappement referment sans rien changer.
  */
 
+/**
+ * Un choix, tel qu'on l'écrit.
+ *
+ * Une chaîne suffit quand la valeur est son propre libellé - « Monsieur », « SARL ».
+ * Le couple sert dès qu'ils diffèrent : un identifiant d'avocat et son nom, un rang
+ * d'associé et le sien, « Oui » et la phrase qui l'explique.
+ */
+export type Choix = string | { valeur: string; libelle: string };
+
 interface Props {
   id: string;
   valeur: string;
-  options: readonly string[];
+  options: readonly Choix[];
   surChangement: (valeur: string) => void;
-  /** Ce qu'on lit tant que rien n'est choisi. */
+  /**
+   * Ce qu'on lit tant que rien n'est choisi.
+   *
+   * Sans objet quand les options portent elles-mêmes la valeur vide - « Aucun »,
+   * « Comptant, par virement le jour de la signature » : la liste dit alors ce que le
+   * vide signifie, et l'invite n'a rien à ajouter.
+   */
   invite?: string;
+  /**
+   * Une liste serrée, pour une barre d'outils.
+   *
+   * Le bouton prend toute la largeur par défaut, ce qui convient dans un formulaire et
+   * fait éclater une barre où les commandes se suivent.
+   */
+  compact?: boolean;
   className?: string;
   "aria-label"?: string;
   "aria-invalid"?: boolean;
@@ -40,10 +62,14 @@ export function ChampChoix({
   options,
   surChangement,
   invite = "Choisir",
+  compact,
   className,
   disabled,
   ...reste
 }: Props) {
+  /* Une seule forme à manipuler ensuite, quelle que soit celle de l'appel. */
+  const choix = options.map((o) => (typeof o === "string" ? { valeur: o, libelle: o } : o));
+  const retenu = choix.find((c) => c.valeur === valeur);
   const [ouvert, setOuvert] = useState(false);
   /* Le choix survolé au clavier, distinct du choix retenu tant qu'on n'a pas validé. */
   const [vise, setVise] = useState(-1);
@@ -82,12 +108,12 @@ export function ChampChoix({
      * seconde flèche pour atteindre la première option, là où un champ natif l'atteint
      * du premier coup.
      */
-    setVise(Math.max(0, options.indexOf(valeur)));
+    setVise(Math.max(0, choix.findIndex((c) => c.valeur === valeur)));
     setOuvert(true);
   }
 
-  function retenir(choix: string) {
-    surChangement(choix);
+  function retenir(valeurRetenue: string) {
+    surChangement(valeurRetenue);
     setOuvert(false);
   }
 
@@ -108,7 +134,7 @@ export function ChampChoix({
     }
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setVise((v) => Math.min(options.length - 1, v + 1));
+      setVise((v) => Math.min(choix.length - 1, v + 1));
       return;
     }
     if (e.key === "ArrowUp") {
@@ -123,12 +149,12 @@ export function ChampChoix({
     }
     if (e.key === "End") {
       e.preventDefault();
-      setVise(options.length - 1);
+      setVise(choix.length - 1);
       return;
     }
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      if (vise >= 0) retenir(options[vise]);
+      if (vise >= 0) retenir(choix[vise].valeur);
       return;
     }
 
@@ -139,9 +165,9 @@ export function ChampChoix({
     if (e.key.length === 1 && /\S/.test(e.key)) {
       const lettre = e.key.toLowerCase();
       const depuis = vise + 1;
-      const ordre = [...options.slice(depuis), ...options.slice(0, depuis)];
-      const trouve = ordre.find((o) => o.toLowerCase().startsWith(lettre));
-      if (trouve) setVise(options.indexOf(trouve));
+      const ordre = [...choix.slice(depuis), ...choix.slice(0, depuis)];
+      const trouve = ordre.find((c) => c.libelle.toLowerCase().startsWith(lettre));
+      if (trouve) setVise(choix.indexOf(trouve));
     }
   }
 
@@ -150,7 +176,12 @@ export function ChampChoix({
       <button
         type="button"
         id={id}
-        className={[styles.bouton, className, valeur ? "" : styles.boutonVide]
+        className={[
+          styles.bouton,
+          compact ? styles.boutonCompact : "",
+          className,
+          retenu ? "" : styles.boutonVide,
+        ]
           .filter(Boolean)
           .join(" ")}
         onClick={() => (ouvert ? setOuvert(false) : ouvrir())}
@@ -172,7 +203,7 @@ export function ChampChoix({
         aria-label={reste["aria-label"]}
         aria-invalid={reste["aria-invalid"]}
       >
-        <span className={styles.libelle}>{valeur || invite}</span>
+        <span className={styles.libelle}>{retenu ? retenu.libelle : invite}</span>
         <svg viewBox="0 0 24 24" className={styles.chevron} aria-hidden="true">
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -187,25 +218,25 @@ export function ChampChoix({
           ref={liste}
           tabIndex={-1}
         >
-          {options.map((option, rang) => (
+          {choix.map((option, rang) => (
             <button
-              key={option}
+              key={option.valeur + option.libelle}
               type="button"
               role="option"
-              aria-selected={option === valeur}
+              aria-selected={option.valeur === valeur}
               className={[
                 styles.option,
                 rang === vise ? styles.optionVisee : "",
-                option === valeur ? styles.optionRetenue : "",
+                option.valeur === valeur ? styles.optionRetenue : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
               onMouseEnter={() => setVise(rang)}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => retenir(option)}
+              onClick={() => retenir(option.valeur)}
             >
-              <span>{option}</span>
-              {option === valeur && (
+              <span>{option.libelle}</span>
+              {option.valeur === valeur && (
                 <svg viewBox="0 0 24 24" className={styles.marque} aria-hidden="true">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>

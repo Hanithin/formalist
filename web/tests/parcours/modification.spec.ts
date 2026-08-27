@@ -1,3 +1,4 @@
+import { choisir, choisirDans } from "./liste";
 import { test, expect } from "@playwright/test";
 import { prisma } from "../../src/infrastructure/db/client";
 
@@ -707,7 +708,7 @@ test("la barre de mise en forme se règle vraiment", async ({ page, request }) =
   await champTaille.type("2");
   expect(await champTaille.inputValue()).toBe("22");
 
-  await barre.locator("select").selectOption("garamond");
+  await choisir(barre.getByLabel("Police"), "EB Garamond");
 
   const apres = await page.evaluate(() => {
     const cadre = document.querySelector("div[class*='repereOuvert']") as HTMLElement;
@@ -986,7 +987,7 @@ test("une cession se compose à partir des associés, et sa répartition se voit
   await page.getByLabel("Parts de l'associé 2").fill("300");
 
   // Le cédant se choisit dans la liste, avec ce qu'il détient.
-  await page.getByLabel("Cédant").selectOption({ label: "Jean DUPONT · 500 parts" });
+  await choisirDans(page, "Cédant", "Jean DUPONT · 500 parts");
   await page.getByLabel("Parts cédées").fill("200");
   await expect(page.getByText("sur 500 détenues")).toBeVisible();
 

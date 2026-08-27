@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { forwardRef, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ALIGNEMENTS,
@@ -369,17 +370,14 @@ function MiseEnForme({
 
   return (
     <div className={styles.forme} data-mise-en-forme>
-      <select
+      <ChampChoix
+        id="editeur-police"
+        compact
         aria-label="Police"
-        value={retouche.police ?? "serif"}
-        onChange={(e) => surChangement({ police: e.target.value as Police })}
-      >
-        {POLICES.map((p) => (
-          <option key={p.valeur} value={p.valeur}>
-            {p.libelle}
-          </option>
-        ))}
-      </select>
+        valeur={retouche.police ?? "serif"}
+        options={POLICES.map((p) => ({ valeur: p.valeur, libelle: p.libelle }))}
+        surChangement={(police) => surChangement({ police: police as Police })}
+      />
 
       <ChampTaille valeur={retouche.taille} surChangement={(taille) => surChangement({ taille })} />
 

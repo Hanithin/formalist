@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -853,21 +854,18 @@ function FenetreDeDepot({
             <label className={styles.champLabel} htmlFor="societe">
               Société concernée
             </label>
-            <select
+            {/* Sans société, le document rejoint les dépôts personnels : c'est une
+                réponse valable, pas un oubli - la liste le dit plutôt que de laisser un
+                vide. */}
+            <ChampChoix
               id="societe"
-              className={styles.champ}
-              value={dossier}
-              onChange={(e) => setDossier(e.target.value)}
-            >
-              {/* Sans société, le document rejoint les dépôts personnels : c'est une
-                  réponse valable, pas un oubli. */}
-              <option value="">Aucune - mes dépôts</option>
-              {societes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nom}
-                </option>
-              ))}
-            </select>
+              valeur={dossier}
+              options={[
+                { valeur: "", libelle: "Aucune - mes dépôts" },
+                ...societes.map((s) => ({ valeur: String(s.id), libelle: s.nom })),
+              ]}
+              surChangement={setDossier}
+            />
           </div>
 
           {erreur && (

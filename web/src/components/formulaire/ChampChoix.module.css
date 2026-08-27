@@ -59,6 +59,25 @@
   border-color: #f0a8a8;
 }
 
+/*
+ * La variante serrée d'une barre d'outils.
+ *
+ * Le bouton prend toute la largeur par défaut - ce qu'il faut dans un formulaire, et ce
+ * qui fait éclater une barre où les commandes se suivent.
+ */
+.boutonCompact {
+  width: auto;
+  min-height: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.boutonCompact .chevron {
+  width: 14px;
+  height: 14px;
+}
+
 /* Rien de choisi : le mot d'invite se lit comme un texte de remplacement. */
 .boutonVide .libelle {
   color: #a1a1aa;
@@ -84,6 +103,11 @@
 
 .bouton[aria-expanded="true"] .chevron {
   transform: rotate(180deg);
+}
+
+.boutonCompact + .menu {
+  right: auto;
+  min-width: 180px;
 }
 
 .menu {

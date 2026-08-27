@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { natureDeLaForme } from "@/domain/formalite/formes";
 import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
 import { Fragment, useMemo, useState, useTransition } from "react";
@@ -462,18 +463,12 @@ function EtapeSociete({
 
         <div className={styles.champ}>
           <label htmlFor="comptes-forme">Forme juridique</label>
-          <select
+          <ChampChoix
             id="comptes-forme"
-            value={etat.societe.forme ?? ""}
-            onChange={(e) => champSociete("forme", e.target.value)}
-          >
-            <option value="">Choisir</option>
-            {NATURES_PROPOSEES.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </select>
+            valeur={etat.societe.forme ?? ""}
+            options={NATURES_PROPOSEES}
+            surChangement={(forme) => champSociete("forme", forme)}
+          />
           {refusDe("forme") && <p role="alert">{refusDe("forme")}</p>}
         </div>
 
@@ -613,15 +608,14 @@ function Associes({
       <ul className={styles.signataires}>
         {associes.map((associe, rang) => (
           <li key={rang} className={styles.signataire}>
-            <select
+            <ChampChoix
+              id={"comptes-civilite-" + rang}
               aria-label={"Civilité de l'" + nature.associeSingulier + " " + (rang + 1)}
-              value={associe.civilite ?? ""}
-              onChange={(e) => modifier(rang, { civilite: e.target.value })}
-            >
-              <option value="">Civilité</option>
-              <option value="Monsieur">Monsieur</option>
-              <option value="Madame">Madame</option>
-            </select>
+              valeur={associe.civilite ?? ""}
+              options={["Monsieur", "Madame"]}
+              invite="Civilité"
+              surChangement={(civilite) => modifier(rang, { civilite })}
+            />
 
             <input
               aria-label={"Prénom de l'" + nature.associeSingulier + " " + (rang + 1)}

@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TRIS } from "@/domain/formalite/avocat";
 import { ChampDate } from "@/components/formulaire/ChampDate";
@@ -64,13 +65,13 @@ export function Recherche() {
 
       <label className={styles.outil}>
         <span className={styles.outilLibelle}>Trier par</span>
-        <select value={tri} onChange={(e) => poser("tri", e.target.value)}>
-          {TRIS.map((t) => (
-            <option key={t.cle} value={t.cle}>
-              {t.libelle}
-            </option>
-          ))}
-        </select>
+        <ChampChoix
+          id="recherche-tri"
+          aria-label="Trier par"
+          valeur={tri}
+          options={TRIS.map((t) => ({ valeur: t.cle, libelle: t.libelle }))}
+          surChangement={(t) => poser("tri", t)}
+        />
       </label>
 
       {/* La période porte sur la création : c'est la date qui ne bouge plus. */}

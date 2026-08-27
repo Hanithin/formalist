@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import {
   agrementDeDroit,
   cessionVide,
@@ -221,21 +222,21 @@ export function Cessions({
             <div className={styles.champs}>
               <div className={styles.champ}>
                 <label htmlFor={"cession-cedant-" + rang}>Cédant</label>
-                <select
+                <ChampChoix
                   id={"cession-cedant-" + rang}
-                  value={cession.cedant ?? ""}
-                  onChange={(e) =>
-                    modifier(rang, { cedant: e.target.value === "" ? null : Number(e.target.value) })
+                  valeur={cession.cedant === null || cession.cedant === undefined ? "" : String(cession.cedant)}
+                  invite={nomme ? "Choisir" : "Renseignez d'abord les associés"}
+                  disabled={!nomme}
+                  options={
+                    nomme
+                      ? associes.map((associe, i) => ({
+                          valeur: String(i),
+                          libelle: nomDeLAssocie(associe, i) + " · " + (associe.parts ?? 0) + " parts",
+                        }))
+                      : []
                   }
-                >
-                  <option value="">{nomme ? "Choisir" : "Renseignez d'abord les associés"}</option>
-                  {nomme &&
-                    associes.map((associe, i) => (
-                      <option key={i} value={i}>
-                        {nomDeLAssocie(associe, i)} · {associe.parts ?? 0} parts
-                      </option>
-                    ))}
-                </select>
+                  surChangement={(v) => modifier(rang, { cedant: v === "" ? null : Number(v) })}
+                />
                 {refus("cession-" + rang + "-cedant") && (
                   <p role="alert">{refus("cession-" + rang + "-cedant")}</p>
                 )}
@@ -294,22 +295,21 @@ export function Cessions({
               {cession.vers === "associe" ? (
                 <div className={styles.champ}>
                   <label htmlFor={"cession-cessionnaire-" + rang}>Cessionnaire</label>
-                  <select
+                  <ChampChoix
                     id={"cession-cessionnaire-" + rang}
-                    value={cession.cessionnaire ?? ""}
-                    onChange={(e) =>
-                      modifier(rang, {
-                        cessionnaire: e.target.value === "" ? null : Number(e.target.value),
-                      })
+                    valeur={
+                      cession.cessionnaire === null || cession.cessionnaire === undefined
+                        ? ""
+                        : String(cession.cessionnaire)
                     }
-                  >
-                    <option value="">Choisir</option>
-                    {associes.map((associe, i) => (
-                      <option key={i} value={i}>
-                        {nomDeLAssocie(associe, i)}
-                      </option>
-                    ))}
-                  </select>
+                    options={associes.map((associe, i) => ({
+                      valeur: String(i),
+                      libelle: nomDeLAssocie(associe, i),
+                    }))}
+                    surChangement={(v) =>
+                      modifier(rang, { cessionnaire: v === "" ? null : Number(v) })
+                    }
+                  />
                   {refus("cession-" + rang + "-cessionnaire") && (
                     <p role="alert">{refus("cession-" + rang + "-cessionnaire")}</p>
                   )}
@@ -318,16 +318,17 @@ export function Cessions({
                 <>
                   <div className={styles.champ}>
                     <label htmlFor={"cession-nature-" + rang}>Le cessionnaire est</label>
-                    <select
+                    <ChampChoix
                       id={"cession-nature-" + rang}
-                      value={cession.nature ?? "physique"}
-                      onChange={(e) =>
-                        modifier(rang, { nature: e.target.value as "physique" | "morale" })
+                      valeur={cession.nature ?? "physique"}
+                      options={[
+                        { valeur: "physique", libelle: "Une personne" },
+                        { valeur: "morale", libelle: "Une société" },
+                      ]}
+                      surChangement={(v) =>
+                        modifier(rang, { nature: v as "physique" | "morale" })
                       }
-                    >
-                      <option value="physique">Une personne</option>
-                      <option value="morale">Une société</option>
-                    </select>
+                    />
                   </div>
 
                   <div className={styles.champ}>
@@ -493,17 +494,15 @@ export function Cessions({
                 <label htmlFor={"cession-origine-" + rang}>
                   Comment le cédant a obtenu ces titres
                 </label>
-                <select
+                <ChampChoix
                   id={"cession-origine-" + rang}
-                  value={cession.origine ?? ""}
-                  onChange={(e) => modifier(rang, { origine: e.target.value })}
-                >
-                  {ORIGINES.map((origine) => (
-                    <option key={origine.valeur} value={origine.valeur}>
-                      {origine.libelle}
-                    </option>
-                  ))}
-                </select>
+                  valeur={cession.origine ?? ""}
+                  options={ORIGINES.map((origine) => ({
+                    valeur: origine.valeur,
+                    libelle: origine.libelle,
+                  }))}
+                  surChangement={(origine) => modifier(rang, { origine })}
+                />
               </div>
 
               <div className={styles.champ}>
@@ -548,17 +547,15 @@ export function Cessions({
               <label htmlFor="agrement-statutaire">
                 Vos statuts prévoient-ils une clause d&apos;agrément ?
               </label>
-              <select
+              <ChampChoix
                 id="agrement-statutaire"
-                value={agrementStatutaire ?? ""}
-                onChange={(e) => surAgrementStatutaire(e.target.value)}
-              >
-                <option value="">Choisir</option>
-                <option value="Oui">
-                  Oui : la cession doit être agréée par les associés
-                </option>
-                <option value="Non">Non : les titres se cèdent librement</option>
-              </select>
+                valeur={agrementStatutaire ?? ""}
+                options={[
+                  { valeur: "Oui", libelle: "Oui : la cession doit être agréée par les associés" },
+                  { valeur: "Non", libelle: "Non : les titres se cèdent librement" },
+                ]}
+                surChangement={surAgrementStatutaire}
+              />
               <p className={styles.devisPrecision}>
                 La clause figure aux statuts, souvent sous un article « Cession des
                 titres ». Sans réponse, l&apos;acte affirmerait qu&apos;aucun agrément
@@ -589,27 +586,29 @@ export function Cessions({
         <div className={styles.champs}>
           <div className={styles.champ}>
             <label htmlFor="cession-paiement">Règlement du prix</label>
-            <select
+            <ChampChoix
               id="cession-paiement"
-              value={lire("cessionModalitePaiement")}
-              onChange={(e) => surValeur("cessionModalitePaiement", e.target.value)}
-            >
-              <option value="">Comptant, par virement, le jour de la signature</option>
-              <option value="Échelonné">Échelonné, selon un échéancier annexé</option>
-              <option value="Séquestre">Consigné entre les mains d&apos;un séquestre</option>
-            </select>
+              valeur={lire("cessionModalitePaiement")}
+              options={[
+                { valeur: "", libelle: "Comptant, par virement, le jour de la signature" },
+                { valeur: "Échelonné", libelle: "Échelonné, selon un échéancier annexé" },
+                { valeur: "Séquestre", libelle: "Consigné entre les mains d'un séquestre" },
+              ]}
+              surChangement={(v) => surValeur("cessionModalitePaiement", v)}
+            />
           </div>
 
           <div className={styles.champ}>
             <label htmlFor="cession-compte-courant">Compte courant d&apos;associé</label>
-            <select
+            <ChampChoix
               id="cession-compte-courant"
-              value={lire("cessionCompteCourant")}
-              onChange={(e) => surValeur("cessionCompteCourant", e.target.value)}
-            >
-              <option value="">Non cédé : il reste au cédant</option>
-              <option value="Cédé séparément">Cédé, par une convention séparée</option>
-            </select>
+              valeur={lire("cessionCompteCourant")}
+              options={[
+                { valeur: "", libelle: "Non cédé : il reste au cédant" },
+                { valeur: "Cédé séparément", libelle: "Cédé, par une convention séparée" },
+              ]}
+              surChangement={(v) => surValeur("cessionCompteCourant", v)}
+            />
           </div>
 
           {/*
@@ -621,18 +620,18 @@ export function Cessions({
           */}
           <div className={`${styles.champ} ${styles.pleineLargeur}`}>
             <label htmlFor="cession-garantie">Garantie d&apos;actif et de passif</label>
-            <select
+            <ChampChoix
               id="cession-garantie"
-              value={lire("cessionGarantiePassif")}
-              onChange={(e) => surValeur("cessionGarantiePassif", e.target.value)}
-            >
-              <option value="Non">
-                Aucune : l&apos;acte l&apos;écarte expressément, en le motivant
-              </option>
-              <option value="Oui">
-                Consentie par le cédant, avec une durée et un plafond éventuel
-              </option>
-            </select>
+              valeur={lire("cessionGarantiePassif")}
+              options={[
+                { valeur: "Non", libelle: "Aucune : l'acte l'écarte expressément, en le motivant" },
+                {
+                  valeur: "Oui",
+                  libelle: "Consentie par le cédant, avec une durée et un plafond éventuel",
+                },
+              ]}
+              surChangement={(v) => surValeur("cessionGarantiePassif", v)}
+            />
           </div>
 
           {lire("cessionGarantiePassif") === "Oui" && (
