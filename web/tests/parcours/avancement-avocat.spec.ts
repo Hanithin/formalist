@@ -89,10 +89,13 @@ test.describe("avancement du cabinet", () => {
     await expect(page.getByRole("button", { name: /Revenir à . Révision/ })).toBeVisible();
   });
 
-  test("« Vérifié » demande au client de publier son annonce légale", async ({ request }) => {
+  test("« Vérifié » dit au client où en est son dossier, sans rien lui demander", async ({
+    request,
+  }) => {
     /*
-     * C'est la démarche qui manquait : personne ne disait au client qu'il devait
-     * publier, ni ce qu'on attendait en retour.
+     * On lui écrivait « à vous de jouer : publiez l'annonce légale », avec un prix à
+     * l'appui. L'avis est rédigé et publié par le cabinet, ici comme partout ailleurs
+     * sur le site : le client n'a jamais eu à choisir un journal.
      */
     const dossier = await dossierDuCabinet("ANNONCE ESSAI " + Date.now());
 
@@ -104,9 +107,15 @@ test.describe("avancement du cabinet", () => {
     }
 
     const avis = await prisma.notifications.findFirst({
+      where: { formalite_id: dossier.id, type: "dossier_verifie" },
+    });
+    expect(avis?.content).toContain("vérifié");
+
+    // Et plus rien ne l'invite à publier quoi que ce soit.
+    const invitation = await prisma.notifications.count({
       where: { formalite_id: dossier.id, type: "annonce_a_publier" },
     });
-    expect(avis?.content).toContain("annonce légale");
+    expect(invitation).toBe(0);
   });
 
   test("le Kbis se dépose et arrive chez le client", async ({ page, request }) => {

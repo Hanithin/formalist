@@ -34,7 +34,7 @@ import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
 import { LONGUEUR_COMMENTAIRE } from "@/domain/formalite/avocat";
 import { TYPE_RBE, TYPE_KBIS, typesDeposes } from "./suivi";
 import {
-  annonceAPublier,
+  dossierVerifie,
   attestationAttendue,
   depotEnCours,
   dossierAPrendre,
@@ -602,9 +602,9 @@ export async function avancerSelonLeTravail(
  * Les cinq pastilles - Transmis, Révision, Vérifié, Dépôt, KBIS - existaient dans
  * l'écran et aucune ne s'allumait : aucune route n'écrivait jamais la colonne.
  *
- * Chaque passage prévient le client quand il le concerne. « Vérifié » est le moment
- * où on lui demande de publier son annonce légale : c'est la seule démarche qui reste
- * de son côté, et personne ne la lui demandait.
+ * Chaque passage prévient le client quand il le concerne - où en est son dossier, et
+ * ce qu'on attend de lui quand quelque chose l'attend. Publier l'annonce légale n'en
+ * fait pas partie : le cabinet la rédige et la fait paraître.
  */
 export async function changerSousPhase(
   utilisateur: UtilisateurConnecte,
@@ -636,11 +636,18 @@ export async function changerSousPhase(
   });
 
   const societe = dossier.societe || "votre société";
+  /*
+   * Ce qu'on annonce au client, et ce qu'on ne lui demande pas.
+   *
+   * « Vérifié » lui disait « à vous de jouer : publiez l'annonce légale ». L'avis est
+   * rédigé et publié par le cabinet, ici comme partout ailleurs : le client n'a jamais
+   * eu à choisir un journal. Et l'attestation de dépôt de capital n'a de sens qu'à la
+   * constitution - une modification ou un dépôt de comptes ne libère aucun capital.
+   */
   const avis =
     vers === "5c"
-      ? // Le dossier est vérifié : la publication de l'annonce revient au client.
-        annonceAPublier(societe)
-      : vers === "5b" && !types.has("depot-capital")
+      ? dossierVerifie(societe)
+      : vers === "5b" && dossier.type === "creation" && !types.has("depot-capital")
         ? attestationAttendue(societe)
         : vers === "5d"
           ? depotEnCours(societe)

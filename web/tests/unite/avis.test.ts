@@ -7,7 +7,7 @@ import {
   documentRefuse,
   immatriculee,
   attestationAttendue,
-  annonceAPublier,
+  dossierVerifie,
   dossierAPrendre,
 } from "@/domain/formalite/avis";
 
@@ -37,7 +37,7 @@ describe("où mène le bouton du courriel", () => {
   it("mène au dossier, à l'adresse que son type commande", () => {
     // Une modification ne se remplit pas à l'adresse d'une création.
     expect(cheminDeLAvis(attestationAttendue("ACME"), creation)).toBe("/creation?dossier=12");
-    expect(cheminDeLAvis(annonceAPublier("ACME"), modification)).toBe("/modification?dossier=13");
+    expect(cheminDeLAvis(dossierVerifie("ACME"), modification)).toBe("/modification?dossier=13");
   });
 
   it("mène au dossier de l'avocat quand l'avis lui est destiné", () => {
@@ -59,7 +59,6 @@ describe("où mène le bouton du courriel", () => {
       documentRefuse("Pièce", "ACME", "flou"),
       correctionsDemandees("ACME"),
       dossierRejete("ACME"),
-      annonceAPublier("ACME"),
       attestationAttendue("ACME"),
       immatriculee("ACME", true),
       dossierAPrendre("ACME", "SASU"),

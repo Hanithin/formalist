@@ -42,6 +42,10 @@ interface Props {
  * Les cinq phrases étaient écrites pour une création : la deuxième invitait à déposer
  * une attestation de dépôt de capital, la cinquième annonçait une immatriculation. Un
  * dépôt de comptes n'immatricule rien, et une modification ne libère aucun capital.
+ *
+ * La troisième disait « le client est invité à publier son annonce légale ». L'avis est
+ * rédigé et publié par le cabinet, ici comme partout ailleurs sur le site - et un dépôt
+ * de comptes n'en publie aucun.
  */
 function explicationDe(
   etape: string,
@@ -57,7 +61,7 @@ function explicationDe(
       : "Relecture des actes en cours. Le client sait que son dossier est entre vos mains.";
   }
   if (etape === "5c") {
-    return "Le dossier est vérifié. Le client est invité à publier son annonce légale.";
+    return "Le dossier est vérifié. Il ne reste qu'à le déposer au guichet.";
   }
   if (etape === "5d") {
     return "Le dossier est déposé au guichet unique. Le client en est informé.";

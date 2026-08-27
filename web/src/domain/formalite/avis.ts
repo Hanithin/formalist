@@ -19,7 +19,7 @@ export type GenreDAvis =
   | "corrections_demandees"
   | "dossier_valide"
   | "dossier_rejete"
-  | "annonce_a_publier"
+  | "dossier_verifie"
   | "attestation_attendue"
   | "depot_en_cours"
   | "immatriculee"
@@ -65,7 +65,6 @@ const PAR_COURRIEL = new Set<GenreDAvis>([
   // n'informent : le retrait se dit, comme la mise à disposition.
   "actes_retires",
   "dossier_rejete",
-  "annonce_a_publier",
   "attestation_attendue",
   "immatriculee",
   "dossier_a_prendre",
@@ -164,25 +163,19 @@ export function dossierRejete(societe: string): Avis {
 }
 
 /**
- * L'annonce légale.
+ * Le dossier est vérifié : le client n'a rien à faire.
  *
- * C'est le message le plus utile du parcours, et celui qui manquait : personne ne
- * disait au client qu'il devait publier, où, ni ce qu'on attendait en retour. Le texte
- * à publier est préparé par l'avocat ; le client achète la parution et rend
- * l'attestation que le journal lui envoie.
+ * On lui écrivait « À vous de jouer : publiez l'annonce légale ». C'est faux : l'avis
+ * est rédigé et publié par le cabinet, ici comme partout ailleurs sur le site, et le
+ * client n'a jamais eu à choisir un journal ni à acheter une parution. Il restait à
+ * l'inviter à une démarche qui n'est pas la sienne, avec un prix à l'appui.
+ *
+ * Ce qui se dit, c'est où en est son dossier.
  */
-export function annonceAPublier(societe: string): Avis {
+export function dossierVerifie(societe: string): Avis {
   return {
-    genre: "annonce_a_publier",
-    contenu: "À vous de jouer : publiez l'annonce légale de " + societe,
-    sujet: "Publiez votre annonce légale - " + societe,
-    corps:
-      "Votre dossier est vérifié. Il reste une démarche de votre côté : publier l'annonce légale de constitution.\n\n" +
-      "1. Le texte à publier est prêt, dans votre dossier.\n" +
-      "2. Choisissez un journal habilité de votre département et achetez la parution (environ 180 € HT).\n" +
-      "3. Le journal vous envoie une attestation de parution : déposez-la ici.\n\n" +
-      "Le greffe réclame cette attestation avec le dossier : sans elle, le dépôt ne peut pas se faire.",
-    bouton: "Déposer l'attestation",
+    genre: "dossier_verifie",
+    contenu: "Le dossier de " + societe + " est vérifié",
     destination: "dossier",
   };
 }
