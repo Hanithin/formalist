@@ -823,6 +823,17 @@
   line-height: 1.6;
 }
 
+/*
+ * Un encadré suivi de champs garde sa respiration.
+ *
+ * `.champsGroupe:first-child` annule la marge haute du premier intitulé de groupe -
+ * ce qui est juste quand il ouvre la carte, et faux quand un encadré gris le précède :
+ * « L'EXERCICE À APPROUVER » venait se coller au bas du cadre.
+ */
+.blocNote + .champs {
+  margin-top: 18px;
+}
+
 .blocNote {
   margin: 14px 0 0;
   padding: 12px 14px;
@@ -1442,6 +1453,25 @@
   padding: 24px;
   background: rgba(17, 17, 17, 0.4);
   animation: paraitre 0.2s ease;
+}
+
+/*
+ * Le règlement vient d'être encaissé.
+ *
+ * Un bandeau, non la carte modale de `.confirmation` : le client arrive sur le suivi de
+ * son dossier, il n'y a rien à interrompre. Le vert dit que quelque chose a abouti sans
+ * qu'il faille lire la phrase pour le savoir.
+ */
+.reglementConfirme {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 14.5px;
+  line-height: 1.55;
+  letter-spacing: 0;
 }
 
 .confirmation {

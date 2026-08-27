@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { ouvrirComptes, confirmerComptesAuRetour } from "@/infrastructure/db/depots/comptes";
-import { actesDuDossier } from "@/infrastructure/db/depots/documents";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import { Suivi } from "@/components/formalite/Suivi";
@@ -25,10 +25,16 @@ export const metadata: Metadata = {
 export default async function DepotDesComptes({
   searchParams,
 }: {
-  searchParams: Promise<{ dossier?: string; etape?: string; session?: string; paiement?: string }>;
+  searchParams: Promise<{
+    dossier?: string;
+    etape?: string;
+    session?: string;
+    paiement?: string;
+    regle?: string;
+  }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { dossier, etape, session, paiement } = await searchParams;
+  const { dossier, etape, session, paiement, regle } = await searchParams;
 
   if (!dossier) {
     return (
@@ -50,10 +56,23 @@ export default async function DepotDesComptes({
    * Sans cela, le client revient de sa banque sur la page du devis, sans savoir si
    * quelque chose a été débité - et paie une seconde fois.
    */
-  let issue: "regle" | "annule" | undefined;
+  let issue: "annule" | "attente" | undefined;
   if (session) {
     const { paye } = await confirmerComptesAuRetour(utilisateur, dossierId, session);
-    if (paye) issue = "regle";
+    /*
+     * Un règlement confirmé quitte le formulaire.
+     *
+     * Le client revenait de sa banque sur l'étape 7, devant le devis qu'il venait de
+     * régler et un bouton « Produire les actes » qu'il lui restait à actionner. Les
+     * actes sont produits par la confirmation elle-même : il n'a plus rien à faire ici,
+     * et la page de suivi est la seule qui ait quelque chose à lui montrer.
+     *
+     * La redirection sert aussi à sortir la référence de session de l'adresse :
+     * rafraîchir la page ne rejoue plus la confirmation, et l'adresse ne se recopie
+     * plus avec une référence de paiement dedans.
+     */
+    if (paye) redirect("/depot-des-comptes?dossier=" + dossierId + "&regle=1");
+    issue = "attente";
   } else if (paiement === "annule") {
     issue = "annule";
   }
@@ -68,12 +87,18 @@ export default async function DepotDesComptes({
    * carte : le clic ne faisait rien, et le client n'avait aucun endroit où voir où en
    * était son dépôt.
    */
-  if (comptes.paye && !issue) {
+  if (comptes.paye) {
     return (
       <main className={styles.page}>
         <Fil nom={nom} />
         <div className={styles.content}>
           <h1 className={styles.titre}>{nom}</h1>
+          {regle === "1" && (
+            <p className={styles.reglementConfirme} role="status">
+              Votre règlement est enregistré et vos actes sont écrits. Un avocat les
+              relit, puis vous les retrouverez dans vos documents.
+            </p>
+          )}
           <Suivi
             etat={await etatDuDossier(ligne)}
             demande={await derniereDemandeDeCorrections(dossierId)}
@@ -113,7 +138,6 @@ export default async function DepotDesComptes({
           initial={comptes}
           etapeInitiale={etapeInitiale}
           issueDuPaiement={issue}
-          actesInitiaux={await actesDuDossier(utilisateur, dossierId)}
         />
       </div>
     </main>

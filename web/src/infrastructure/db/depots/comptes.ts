@@ -6,6 +6,7 @@ import { affectationProposee, type Affectation } from "@/domain/comptes/regles";
 import type { CleExclusion } from "@/domain/comptes/confidentialite";
 import type { Convention } from "@/domain/comptes/conventions";
 import type { AssociePresent, SocieteApprouvante } from "@/domain/comptes/gabarit";
+import { produireLesActesDesComptes } from "@/infrastructure/documents/actes-comptes";
 import { journal } from "@/lib/journal";
 import type { UtilisateurConnecte } from "../sessions";
 import { SOCIETE_A_IDENTIFIER } from "@/domain/formalite/liste";
@@ -272,6 +273,33 @@ export async function confirmerLeReglementDesComptes(
     },
   });
 
+  /*
+   * Les actes se produisent dès que le règlement est confirmé.
+   *
+   * Ils dépendaient d'un bouton « Produire les actes » que le client actionnait
+   * lui-même, à l'étape du devis - donc avant de payer, et rien ne l'obligeait à
+   * l'actionner. Un dossier pouvait ainsi partir en relecture sans qu'aucun acte
+   * n'existe : l'avocat ouvrait un dossier vide, et devait relancer.
+   *
+   * La production suit maintenant le paiement, sur le chemin qui le confirme le
+   * premier - le retour du client ou l'avis de Stripe. Elle n'est pas dans la même
+   * transaction que l'encaissement, et c'est voulu : un acte qui ne se génère pas ne
+   * doit pas défaire un règlement encaissé. L'échec est journalisé, le dossier reste
+   * payé, et l'écran garde de quoi relancer la production.
+   */
+  try {
+    const { produits } = await produireLesActesDesComptes(dossier.id, comptes);
+    journal.info(
+      { dossier: dossier.id, actes: produits.length },
+      "Actes des comptes produits après règlement"
+    );
+  } catch (e) {
+    journal.error(
+      { dossier: dossier.id, err: e },
+      "Actes des comptes non produits après règlement"
+    );
+  }
+
   const { proposes } = await proposerAuxAvocats(dossier.id);
   return { dossierId: dossier.id, paye: true, proposes };
 }
@@ -289,8 +317,28 @@ export async function confirmerComptesAuRetour(
 ): Promise<{ paye: boolean }> {
   await exigerDossierModifiable(utilisateur, dossierId);
 
-  const encaisse = await relirePaiement(session);
-  if (!encaisse) return { paye: false };
+  /*
+   * Une référence de session illisible ne doit pas rendre une page d'erreur.
+   *
+   * Le paramètre vient de l'adresse, et une adresse se recopie, se garde en favori,
+   * se rouvre le lendemain. Une session expirée, tronquée ou reprise d'un ancien lien
+   * faisait remonter l'erreur de Stripe jusqu'au rendu : le client sortait de sa
+   * banque, carte débitée, et tombait sur une page d'erreur. On la journalise, et l'on
+   * répond « pas confirmé ici » - l'avis de Stripe confirmera de son côté, et le suivi
+   * dira où en est le dossier.
+   */
+  let encaisse: Awaited<ReturnType<typeof relirePaiement>>;
+  try {
+    encaisse = await relirePaiement(session);
+  } catch (e) {
+    journal.warn({ err: e, session, dossier: dossierId }, "Session de paiement illisible");
+    return { paye: false };
+  }
+
+  if (encaisse.dossierId !== null && encaisse.dossierId !== dossierId) {
+    journal.warn({ session }, "Retour de paiement pour un autre dossier, ignoré");
+    return { paye: false };
+  }
 
   const { paye } = await confirmerLeReglementDesComptes(session, dossierId);
   return { paye };

@@ -268,8 +268,28 @@ export async function confirmerFermetureAuRetour(
 ): Promise<{ paye: boolean }> {
   await exigerDossierModifiable(utilisateur, dossierId);
 
-  const encaisse = await relirePaiement(session);
-  if (!encaisse) return { paye: false };
+  /*
+   * Une référence de session illisible ne doit pas rendre une page d'erreur.
+   *
+   * Le paramètre vient de l'adresse, et une adresse se recopie, se garde en favori,
+   * se rouvre le lendemain. Une session expirée, tronquée ou reprise d'un ancien lien
+   * faisait remonter l'erreur de Stripe jusqu'au rendu : le client sortait de sa
+   * banque, carte débitée, et tombait sur une page d'erreur. On la journalise, et l'on
+   * répond « pas confirmé ici » - l'avis de Stripe confirmera de son côté, et le suivi
+   * dira où en est le dossier.
+   */
+  let encaisse: Awaited<ReturnType<typeof relirePaiement>>;
+  try {
+    encaisse = await relirePaiement(session);
+  } catch (e) {
+    journal.warn({ err: e, session, dossier: dossierId }, "Session de paiement illisible");
+    return { paye: false };
+  }
+
+  if (encaisse.dossierId !== null && encaisse.dossierId !== dossierId) {
+    journal.warn({ session }, "Retour de paiement pour un autre dossier, ignoré");
+    return { paye: false };
+  }
 
   const { paye } = await confirmerLeReglementDeLaFermeture(session, dossierId);
   return { paye };

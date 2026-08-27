@@ -8,7 +8,6 @@ import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { champVisible } from "@/domain/modification/types";
 import { montantLisible } from "@/domain/modification/offre";
-import type { ActeProduit } from "@/domain/document/publication";
 import type { Comptes } from "@/infrastructure/db/depots/comptes";
 import { CHAMPS_COMPTES, GROUPE_ASSOCIE_UNIQUE } from "@/domain/comptes/types";
 import {
@@ -51,8 +50,7 @@ interface Props {
   dossier: number;
   initial: Comptes;
   etapeInitiale: number;
-  issueDuPaiement?: "regle" | "annule";
-  actesInitiaux: ActeProduit[];
+  issueDuPaiement?: "annule" | "attente";
 }
 
 function nombre(valeur: unknown): number {
@@ -94,7 +92,7 @@ function etapeDe(champ: string): number {
   return 1;
 }
 
-export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, actesInitiaux }: Props) {
+export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: Props) {
   const [etape, setEtape] = useState(etapeInitiale);
   const [etat, setEtat] = useState<Comptes>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -195,7 +193,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
 
   return (
     <div className={styles.parcours}>
-      {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} dossier={dossier} />}
+      {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} />}
 
       <Frise etape={etape} atteinte={atteinte} surChoix={aller} />
 
@@ -265,7 +263,6 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
             dossier={dossier}
             etat={etat}
             anomalies={anomalies}
-            actesInitiaux={actesInitiaux}
             surCorrection={(champ) => {
               setTentative(true);
               aller(etapeDe(champ));
@@ -948,17 +945,14 @@ function EtapeReglement({
   dossier,
   etat,
   anomalies,
-  actesInitiaux,
   surCorrection,
 }: {
   dossier: number;
   etat: Comptes;
   anomalies: { champ: string; message: string }[];
-  actesInitiaux: ActeProduit[];
   /** Le champ en défaut ; l'étape s'en déduit. */
   surCorrection: (champ: string) => void;
 }) {
-  const [documents, setDocuments] = useState<ActeProduit[]>(actesInitiaux);
   const [refus, setRefus] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
 
@@ -970,23 +964,6 @@ function EtapeReglement({
     forme: etat.societe.forme,
     avecCommissaire: etat.valeurs.commissaireAuxComptes === "Oui",
   });
-
-  function produire() {
-    setRefus(null);
-    demarrer(async () => {
-      const reponse = await fetch("/api/formalites/comptes/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier }),
-      });
-      const corps = await reponse.json().catch(() => ({}));
-      if (!reponse.ok) {
-        setRefus(corps.error ?? "Les actes n'ont pas pu être produits");
-        return;
-      }
-      setDocuments(corps.documents ?? []);
-    });
-  }
 
   function payer() {
     setRefus(null);
@@ -1007,40 +984,22 @@ function EtapeReglement({
 
   return (
     <>
+      {/*
+        Ce qui sera écrit, et quand.
+
+        Un bouton « Produire les actes » figurait ici, avant le règlement : le client
+        pouvait produire ses actes sans payer, ou payer sans les produire - et le
+        dossier partait alors en relecture vide, l'avocat devant relancer. Les actes
+        suivent maintenant le paiement, écrits par sa confirmation. L'étape n'a donc
+        plus rien à faire actionner : elle dit ce qui va être écrit.
+      */}
       <section className={styles.bloc}>
         <h3 className={styles.blocTitre}>Vos actes</h3>
         <p className={styles.blocTexte}>{regime.explication}</p>
-
-        {documents.length > 0 && (
-          <ul className={styles.actes}>
-            {documents.map((d) => (
-              <li key={d.id} className={styles.acte}>
-                <span className={styles.acteTitre}>{d.titre}</span>
-                <span className={d.enRelecture ? styles.acteEnRelecture : styles.acteRemis}>
-                  {d.enRelecture ? "En relecture" : "Relu, à votre disposition"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {documents.some((d) => d.enRelecture) && (
-          <p className={styles.blocNote}>
-            Vos actes sont partis en relecture chez l&apos;avocat. Vous les retrouverez
-            dans vos documents une fois relus.
-          </p>
-        )}
-
-        <div className={styles.blocActions}>
-          <button
-            type="button"
-            className={documents.length > 0 ? undefined : styles.blocPrincipal}
-            onClick={produire}
-            disabled={enCours}
-          >
-            {enCours ? "Production" : documents.length > 0 ? "Reproduire les actes" : "Produire les actes"}
-          </button>
-        </div>
+        <p className={styles.blocNote}>
+          Ils sont écrits dès votre règlement, puis relus par un avocat. Vous les
+          retrouverez dans vos documents une fois la relecture faite.
+        </p>
       </section>
 
       <section className={styles.bloc}>
@@ -1121,16 +1080,21 @@ function EtapeReglement({
   );
 }
 
-function FinDePaiement({ issue, dossier }: { issue: "regle" | "annule"; dossier: number }) {
+/**
+ * Ce qu'on dit d'un paiement qui n'a pas abouti.
+ *
+ * Un règlement confirmé ne passe plus par ici : il redirige vers le suivi du dossier,
+ * ses actes déjà écrits. Ne restent que les deux cas où le client se retrouve devant
+ * son formulaire - l'abandon, et l'encaissement que la banque n'a pas encore rendu.
+ */
+function FinDePaiement({ issue }: { issue: "annule" | "attente" }) {
   return (
     <div className={styles.obligations} role="status">
       <ul>
         <li>
-          {issue === "regle"
-            ? "Votre règlement est enregistré. Le dossier " +
-              dossier +
-              " part en relecture chez un avocat."
-            : "Le paiement a été abandonné : rien n'a été débité. Vous pouvez le reprendre quand vous voulez."}
+          {issue === "annule"
+            ? "Le paiement a été abandonné : rien n'a été débité. Vous pouvez le reprendre quand vous voulez."
+            : "Votre banque n'a pas encore confirmé le paiement. Rien n'est perdu : actualisez cette page dans un instant, ou reprenez le règlement ci-dessous."}
         </li>
       </ul>
     </div>

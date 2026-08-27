@@ -82,7 +82,14 @@ export const CHAMPS_COMPTES: Champ[] = [
    */
   {
     identifiant: "dirigeantCivilite",
-    libelle: "Qui préside et reçoit quitus",
+    /*
+     * Un libellé court, l'explication dessous.
+     *
+     * « Qui préside et reçoit quitus » tenait sur deux lignes dans une colonne sur six,
+     * et les trois champs de la rangée ne commençaient plus à la même hauteur.
+     */
+    libelle: "Civilité",
+    indication: "Il préside l'assemblée et reçoit quitus de sa gestion",
     groupe: "Le dirigeant",
     type: "choix",
     options: ["Monsieur", "Madame"],
@@ -91,7 +98,7 @@ export const CHAMPS_COMPTES: Champ[] = [
   },
   {
     identifiant: "dirigeantPrenom",
-    libelle: "Son prénom",
+    libelle: "Prénom",
     groupe: "Le dirigeant",
     type: "texte",
     obligatoire: true,
@@ -99,7 +106,7 @@ export const CHAMPS_COMPTES: Champ[] = [
   },
   {
     identifiant: "dirigeantNomFamille",
-    libelle: "Son nom",
+    libelle: "Nom",
     groupe: "Le dirigeant",
     type: "texte",
     obligatoire: true,
