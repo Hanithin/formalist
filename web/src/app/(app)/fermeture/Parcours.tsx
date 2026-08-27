@@ -489,6 +489,7 @@ function EtapeSociete({
           <label htmlFor="fermeture-capital">Capital social, en euros</label>
           <ChampNombre
             id="fermeture-capital"
+            decimales
             valeur={etat.societe.capital ?? ""}
             surChangement={(n) =>
               changer({ societe: { ...etat.societe, capital: n === "" ? null : n } })
@@ -615,6 +616,7 @@ function Associes({
             />
             <ChampNombre
               id={"fermeture-parts-" + rang}
+              decimales={false}
               aria-label={titresDetenus + " par l'" + nature.associeSingulier + " " + (rang + 1)}
               className={styles.signataireTitres}
               valeur={associe.parts ?? ""}

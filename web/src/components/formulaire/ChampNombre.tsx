@@ -24,8 +24,16 @@ interface Props {
   id: string;
   valeur: number | string | undefined;
   surChangement: (valeur: number | "") => void;
-  /** Deux décimales pour un montant, aucune pour un nombre de parts. */
-  decimales?: boolean;
+  /**
+   * Deux décimales pour un montant, aucune pour un nombre de parts.
+   *
+   * Sans valeur par défaut, et c'est voulu : elle était à `false`, et quatre champs
+   * libellés « en euros » - le capital d'une fermeture, celui d'un dépôt de comptes,
+   * les postes d'affectation, le montant d'une convention - refusaient donc la virgule.
+   * On tapait « 55950 » sans pouvoir écrire les centimes. Un défaut tranchait à la
+   * place de qui écrit le champ ; le compilateur le lui demande maintenant.
+   */
+  decimales: boolean;
   placeholder?: string;
   className?: string;
   "aria-label"?: string;
@@ -47,7 +55,7 @@ export function ChampNombre({
   id,
   valeur,
   surChangement,
-  decimales = false,
+  decimales,
   placeholder,
   className,
   ...reste

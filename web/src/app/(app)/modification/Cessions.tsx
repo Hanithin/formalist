@@ -163,6 +163,7 @@ export function Cessions({
               */}
               <ChampNombre
                 id={"detenteur-parts-" + rang}
+                decimales={false}
                 aria-label={"Parts de l'associé " + (rang + 1)}
                 className={styles.detenteurParts}
                 valeur={associe.parts ?? ""}
@@ -244,6 +245,7 @@ export function Cessions({
                 <label htmlFor={"cession-parts-" + rang}>Parts cédées</label>
                 <ChampNombre
                   id={"cession-parts-" + rang}
+                  decimales={false}
                   valeur={cession.parts ?? ""}
                   surChangement={(nombre) => modifier(rang, { parts: nombre === "" ? null : nombre })}
                 />

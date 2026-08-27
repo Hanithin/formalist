@@ -491,6 +491,7 @@ function EtapeSociete({
           <label htmlFor="comptes-capital">Capital social, en euros</label>
           <ChampNombre
             id="comptes-capital"
+            decimales
             valeur={etat.societe.capital ?? ""}
             surChangement={(n) =>
               changer({ societe: { ...etat.societe, capital: n === "" ? null : n } })
@@ -801,6 +802,7 @@ function EtapeAffectation({
               */}
               <ChampNombre
                 id={"aff-" + champ}
+                decimales
                 valeur={affectation[champ] === 0 ? "" : euros(affectation[champ])}
                 surChangement={(n) => poser(champ, n)}
               />

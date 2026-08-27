@@ -113,6 +113,7 @@ export function Conventions({
               <label htmlFor={"conv-montant-" + rang}>Montant, en euros</label>
               <ChampNombre
                 id={"conv-montant-" + rang}
+                decimales
                 valeur={
                   convention.montantCentimes === 0 ? "" : convention.montantCentimes / 100
                 }
