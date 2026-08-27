@@ -94,13 +94,6 @@ export function Travail({
   const [corrections, setCorrections] = useState(false);
   const [motif, setMotif] = useState("");
   /*
-   * La phase ouverte, quand on veut en rouvrir une autre.
-   *
-   * Par défaut c'est celle en cours : c'est là qu'on travaille. Une chaîne vide dit
-   * « toutes repliées », ce qui n'est pas la même chose que « aucune préférence ».
-   */
-  const [phaseOuverte, setPhaseOuverte] = useState<string | null>(null);
-  /*
    * La tâche dont on regarde les pièces.
    *
    * « Voir les documents » menait au même onglet depuis trois tâches différentes, et il
@@ -254,7 +247,15 @@ export function Travail({
   }
 
   const phases = phasesDuCabinet(taches);
-  const enCoursCle = phases.find((p) => p.etat === "en_cours")?.cle;
+
+  /*
+   * La tâche qui attend maintenant : la première qui n'est ni faite ni empêchée.
+   *
+   * Elle seule porte son explication et un bouton plein. Les six autres répétaient
+   * chacune leur phrase à chaque visite, et sept boutons noirs se disputaient l'œil
+   * sans qu'aucun dise par où commencer.
+   */
+  const suivante = taches.find((t) => t.etat !== "faite" && !t.bloquee);
 
   return (
     <div className={styles.travail}>
@@ -267,53 +268,46 @@ export function Travail({
       */}
       {restantes === 0 && <h2 className={styles.titre}>Tout est fait sur ce dossier</h2>}
 
-      {phases.map((phase, rang) => {
-        const ouverte = phase.cle === (phaseOuverte ?? enCoursCle);
+      {/*
+        Les trois étapes, dépliées.
 
-        return (
-          <section key={phase.cle} className={styles.phase}>
-            <button
-              type="button"
-              className={styles.phaseTete}
-              onClick={() => setPhaseOuverte(ouverte ? "" : phase.cle)}
-              aria-expanded={ouverte}
+        Elles se repliaient : voir « Rédiger » puis « Déposer » demandait deux clics,
+        et ouvrir l'une fermait l'autre. Sept tâches tiennent sur un écran - il n'y
+        avait rien à replier, seulement à cacher.
+      */}
+      {phases.map((phase, rang) => (
+        <section key={phase.cle} className={styles.phase}>
+          <div className={styles.phaseTete}>
+            {/* Le rang et la coche : ce que la frise disait, là où on le lit. */}
+            <span
+              className={
+                phase.etat === "faite"
+                  ? `${styles.phasePastille} ${styles.phaseFaite}`
+                  : phase.etat === "en_cours"
+                    ? `${styles.phasePastille} ${styles.phaseEnCours}`
+                    : styles.phasePastille
+              }
+              aria-hidden="true"
             >
-              {/* Le rang et la coche : ce que la frise disait, là où on le lit. */}
-              <span
-                className={
-                  phase.etat === "faite"
-                    ? `${styles.phasePastille} ${styles.phaseFaite}`
-                    : phase.etat === "en_cours"
-                      ? `${styles.phasePastille} ${styles.phaseEnCours}`
-                      : styles.phasePastille
-                }
-                aria-hidden="true"
-              >
-                {phase.etat === "faite" ? "✓" : rang + 1}
-              </span>
-              <span className={styles.phaseTitre}>
-                {phase.titre}
-                {phase.etat === "en_cours" && (
-                  <span className={styles.phaseMarque}>en cours</span>
-                )}
-              </span>
-              <span className={styles.phaseResume}>{phase.resume}</span>
-              <span className={styles.phaseCompte}>
-                {phase.faites} / {phase.taches.length}
-              </span>
-              <span
-                className={ouverte ? `${styles.phaseChevron} ${styles.ouvert}` : styles.phaseChevron}
-                aria-hidden="true"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </span>
-            </button>
+              {phase.etat === "faite" ? "✓" : rang + 1}
+            </span>
+            <h2 className={styles.phaseTitre}>
+              {phase.titre}
+              {phase.etat === "en_cours" && (
+                <span className={styles.phaseMarque}>en cours</span>
+              )}
+            </h2>
+            <span className={styles.phaseCompte}>
+              {phase.faites} / {phase.taches.length}
+            </span>
+          </div>
 
-            {ouverte && (
-              <ol className={styles.taches}>
-                {phase.taches.map((tache) => (
+            <ol className={styles.taches}>
+                {phase.taches.map((tache) => {
+                  const cestElle = tache.identifiant === suivante?.identifiant;
+                  /* Un seul bouton plein sur l'écran : celui de la tâche qui attend. */
+                  const geste = cestElle ? styles.travailPrincipal : styles.travailSecondaire;
+                  return (
           <li
             key={tache.identifiant}
             className={
@@ -321,7 +315,9 @@ export function Travail({
                 ? `${styles.tache} ${styles.tacheFaite}`
                 : tache.bloquee
                   ? `${styles.tache} ${styles.tacheBloquee}`
-                  : styles.tache
+                  : cestElle
+                    ? `${styles.tache} ${styles.tacheSuivante}`
+                    : styles.tache
             }
           >
             <span className={styles.tacheCoche} aria-hidden="true">
@@ -330,7 +326,10 @@ export function Travail({
 
             <div className={styles.tacheCorps}>
               <span className={styles.tacheTitre}>{tache.titre}</span>
-              <span className={styles.tacheExplication}>{tache.explication}</span>
+              {/* La phrase n'aide que là où l'on va agir. */}
+              {cestElle && (
+                <span className={styles.tacheExplication}>{tache.explication}</span>
+              )}
 
               {tache.bloquee && <span className={styles.tacheBlocage}>{tache.bloquee}</span>}
 
@@ -404,7 +403,7 @@ export function Travail({
                     */
                     <button
                       type="button"
-                      className={styles.travailPrincipal}
+                      className={geste}
                       onClick={mettreADisposition}
                       disabled={enCours}
                     >
@@ -413,7 +412,7 @@ export function Travail({
                   ) : tache.identifiant === "actes" && peutProduireLesActes ? (
                     <button
                       type="button"
-                      className={styles.travailPrincipal}
+                      className={geste}
                       onClick={produire}
                       disabled={enCours}
                     >
@@ -430,7 +429,7 @@ export function Travail({
                     <>
                       <button
                         type="button"
-                        className={styles.travailPrincipal}
+                        className={geste}
                         onClick={() => marquerLaRelecture(true)}
                         disabled={enCours}
                       >
@@ -453,7 +452,7 @@ export function Travail({
                     */
                     <button
                       type="button"
-                      className={styles.travailPrincipal}
+                      className={geste}
                       onClick={() => setPiecesMontrees(tache.identifiant)}
                     >
                       {libelleDesPieces(tache.identifiant)}
@@ -467,14 +466,14 @@ export function Travail({
                       Le dépôt lui-même se fait au guichet de l'INPI, hors d'ici ; ce
                       qui se fait ici, c'est de dire qu'il a eu lieu.
                     */
-                    <a href="#avancement" className={styles.travailPrincipal}>
+                    <a href="#avancement" className={geste}>
                       Marquer l&apos;avancement
                     </a>
                   ) : (
                     tache.onglet && (
                       <Link
                         href={"/avocat/" + dossier + "?onglet=" + tache.onglet}
-                        className={styles.travailPrincipal}
+                        className={geste}
                       >
                         Y aller
                       </Link>
@@ -484,12 +483,12 @@ export function Travail({
               )}
             </div>
                   </li>
-                ))}
-              </ol>
-            )}
+                  );
+                })}
+            </ol>
 
             {/* Les documents remis closent l'étape du dépôt. */}
-            {ouverte && phase.cle === "depot" && (
+            {phase.cle === "depot" && (
               <Livrables
                 dossierId={dossier}
                 documentFinal={livrables.documentFinal}
@@ -497,9 +496,8 @@ export function Travail({
                 aLeRbe={livrables.aLeRbe}
               />
             )}
-          </section>
-        );
-      })}
+        </section>
+      ))}
 
       {/*
         Renvoyer le dossier au client ferme le travail : le geste se pose au bout.

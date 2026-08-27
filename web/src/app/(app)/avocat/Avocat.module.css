@@ -2427,10 +2427,16 @@
   gap: 16px;
 }
 
-/* Le renvoi au client ferme la liste : il tient le bord droit, sous les étapes. */
+/*
+ * Le renvoi au client ferme la liste : il tient le bord droit, sous les étapes.
+ *
+ * La bulle de discussion flotte dans ce coin : sans marge, elle recouvrait la fin du
+ * libellé.
+ */
 .travailPied {
   display: flex;
   justify-content: flex-end;
+  padding-right: 64px;
 }
 
 .travailPrincipal,
@@ -2579,63 +2585,17 @@
   overflow: hidden;
 }
 
-/*
- * L'en-tête d'une phase se clique : on referme celle qu'on vient de finir, on rouvre
- * celle d'avant pour vérifier. Seule la phase en cours est ouverte au chargement.
- */
+/* L'en-tête d'une étape : son rang, son nom, son compte. */
 .phaseTete {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  grid-template-areas: "rang titre compte chevron" "rang resume compte chevron";
-  align-items: center;
-  gap: 2px 14px;
-  width: 100%;
-  margin: 0;
-  padding: 14px 18px;
-  border: none;
-  background: none;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.phaseTete:hover {
-  background: #fafafa;
-}
-
-/*
- * Le rang de l'étape, repris de la frise.
- *
- * Trois cartes numérotées surmontaient les accordéons et redisaient mot pour mot
- * leur titre, leur état et leur compte. La numérotation était la seule chose qu'elles
- * portaient en propre ; elle tient dans une pastille.
- */
-.phasePastille {
-  grid-area: rang;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #f4f4f5;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #a1a1aa;
-}
-
-.phasePastille.phaseEnCours {
-  background: #f4f1fa;
-  color: #6f6193;
-}
-
-.phasePastille.phaseFaite {
-  background: #ecfdf5;
-  color: #059669;
+  gap: 12px;
+  padding: 12px 18px 6px;
 }
 
 .phaseTitre {
-  grid-area: titre;
+  margin: 0;
+  margin-right: auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2661,7 +2621,7 @@
 }
 
 .phaseCompte {
-  grid-area: compte;
+  flex-shrink: 0;
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
   color: #a1a1aa;
@@ -2697,21 +2657,37 @@
 .taches {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
   counter-reset: tache;
 }
 
+/*
+ * Une tâche tient sur une ligne.
+ *
+ * Chacune prenait un pavé de quatre lignes - pastille, titre, phrase, bouton - et la
+ * phrase était la même à chaque visite. Sept pavés faisaient une page qu'on repliait
+ * en accordéon pour la rendre lisible. La ligne porte le titre à gauche, le geste à
+ * droite ; la phrase ne reste que sur la tâche qui attend.
+ */
 .tache {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px 18px;
-  border: 1px solid #e5e5e7;
-  border-radius: 14px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border: 1px solid #efeff1;
+  border-radius: 10px;
   background: #fff;
+}
+
+/* Celle qui attend porte sa phrase et son bouton plein : elle se pose un peu plus. */
+.tacheSuivante {
+  align-items: flex-start;
+  padding: 13px 14px;
+  border-color: #e0dcee;
+  background: #fbfaff;
 }
 
 /* Une tâche faite s'efface, sans disparaître : on doit pouvoir y revenir. */
@@ -2726,13 +2702,14 @@
 
 /* Une tâche qui attend autre chose dit quoi, plutôt que d'être grisée sans mot. */
 .tacheBloquee {
+  align-items: flex-start;
   border-style: dashed;
 }
 
 .tacheCoche {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   margin-top: 1px;
   border: 1.5px solid #d4d4d8;
   border-radius: 50%;
@@ -2748,16 +2725,31 @@
   border-color: #15803d;
 }
 
+/*
+ * Le titre tient la gauche, le geste la droite ; la phrase et le blocage passent à la
+ * ligne, ce sont des phrases et non des étiquettes.
+ */
 .tacheCorps {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
   min-width: 0;
   flex: 1;
 }
 
+.tacheCorps > .tacheTitre {
+  margin-right: auto;
+}
+
+.tacheExplication,
+.tacheBlocage {
+  flex-basis: 100%;
+  order: 3;
+}
+
 .tacheTitre {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #111;
 }
@@ -2768,15 +2760,13 @@
   color: #71717a;
 }
 
+/* Ce qui empêche tient en une phrase : un encadré jaune pleine largeur pesait plus
+   lourd que la tâche qu'il commente. */
 .tacheBlocage {
-  margin: 4px 0 0;
-  padding: 9px 12px;
-  border-radius: 9px;
-  border: 1px solid #fde9c8;
-  background: #fffbeb;
+  margin: 0;
   font-size: 12.5px;
   line-height: 1.45;
-  color: #78350f;
+  color: #92400e;
 }
 
 /* Deux gestes peuvent cohabiter : faire, et aller voir avant de faire. */
@@ -2785,7 +2775,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
 }
 
 /*
