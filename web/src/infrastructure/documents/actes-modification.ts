@@ -76,7 +76,8 @@ function rendu(
 
 export async function produireLesActesDeLaModification(
   dossierId: number,
-  modification: Modification
+  modification: Modification,
+  options: { par?: number } = {}
 ) {
   // Un dossier incomplet produirait des actes troués, qui partiraient au greffe en
   // l'état.
@@ -186,5 +187,5 @@ export async function produireLesActesDeLaModification(
    * Une modification passe toujours par un avocat : ses actes ne sont des documents
    * qu'une fois relus, et le client ne doit pas les voir avant.
    */
-  return remplacerDocumentsProduits(dossierId, actes, { aRelire: true });
+  return remplacerDocumentsProduits(dossierId, actes, { aRelire: true, par: options.par });
 }

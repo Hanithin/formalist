@@ -20,7 +20,7 @@ import type { UtilisateurConnecte } from "../sessions";
  * propriétaire connu du serveur.
  */
 
-function lireBrouillon(dataJson: string | null): Brouillon {
+export function lireBrouillon(dataJson: string | null): Brouillon {
   if (!dataJson) return {};
   try {
     const analyse: unknown = JSON.parse(dataJson);

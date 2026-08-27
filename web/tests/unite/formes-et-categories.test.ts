@@ -15,6 +15,11 @@ import {
   fonctionsDuDirigeant,
   fonctionDuDirigeant,
 } from "@/domain/formalite/formes";
+import {
+  CHAMPS_CREATION,
+  valeursDuBrouillon,
+  brouillonAvecValeurs,
+} from "@/domain/formalite/champs-creation";
 import { motsDeLaForme } from "@/domain/modification/pv-age";
 import { motsDeLaCession } from "@/domain/modification/acte-cession";
 import { estCivile, estUnipersonnelle, dotationDeLaReserveLegale } from "@/domain/comptes/regles";
@@ -405,5 +410,52 @@ describe("le titre du dirigeant", () => {
         expect(fonctionDuDirigeant(forme, titre), forme + " / " + titre).toBe(titre);
       }
     }
+  });
+});
+
+/**
+ * Le formulaire d'une création, déclaré.
+ *
+ * Les quatre autres parcours décrivent leurs champs dans une table ; la création, la
+ * plus ancienne, écrivait les siens à la main dans six composants. L'avocat qui voulait
+ * corriger une valeur pour reproduire les actes n'avait aucune liste à lui montrer.
+ */
+describe("les champs d'une création", () => {
+  it("porte un libellé et un groupe sur chaque champ", () => {
+    for (const champ of CHAMPS_CREATION) {
+      expect(champ.libelle, champ.identifiant).toBeTruthy();
+      expect(champ.groupe, champ.identifiant).toBeTruthy();
+    }
+  });
+
+  it("lit et réécrit le domiciliataire, qui vit dans un sous-objet", () => {
+    /*
+     * Le brouillon le range sous « domiciliataire », avec trois clés ; la table le
+     * déclare à plat pour que la fenêtre le rende comme les autres.
+     */
+    const brouillon = {
+      denomination: "ACME",
+      domiciliataire: { denomination: "SEDOMICILIER", siren: "123", agrement: "A-1" },
+    };
+
+    const valeurs = valeursDuBrouillon(brouillon);
+    expect(valeurs.domiciliataireDenomination).toBe("SEDOMICILIER");
+    expect(valeurs.domiciliataireAgrement).toBe("A-1");
+
+    const repose = brouillonAvecValeurs(brouillon, {
+      denomination: "ACME 2",
+      domiciliataireAgrement: "A-2",
+    });
+    expect(repose.denomination).toBe("ACME 2");
+    expect(repose.domiciliataire).toEqual({
+      denomination: "SEDOMICILIER",
+      siren: "123",
+      agrement: "A-2",
+    });
+  });
+
+  it("n'invente rien quand le brouillon est vide", () => {
+    expect(valeursDuBrouillon({})).toEqual({});
+    expect(brouillonAvecValeurs({}, {}).domiciliataire).toEqual({});
   });
 });

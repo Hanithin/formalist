@@ -40,7 +40,8 @@ function nombre(valeur: unknown): number {
 
 export async function produireLesActesDesComptes(
   dossierId: number,
-  comptes: Comptes
+  comptes: Comptes,
+  options: { par?: number } = {}
 ): Promise<ActesProduits> {
   const manques = verifierComptes(comptes);
   if (manques.length > 0) throw new ComptesIncomplets(manques);
@@ -81,5 +82,5 @@ export async function produireLesActesDesComptes(
    * Une approbation de comptes passe par un avocat : ses actes ne sont des documents
    * qu'une fois relus, et le client ne doit pas les déposer au greffe avant.
    */
-  return remplacerDocumentsProduits(dossierId, actes, { aRelire: true });
+  return remplacerDocumentsProduits(dossierId, actes, { aRelire: true, par: options.par });
 }

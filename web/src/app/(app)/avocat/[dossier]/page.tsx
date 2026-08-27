@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { dossierPourAvocat, versionsDuDossier } from "@/infrastructure/db/depots/avocat";
+import { formulaireDuDossier } from "@/infrastructure/db/depots/correction";
 import { etatCabinet } from "@/domain/formalite/avocat";
 import { estPropose } from "@/domain/acces/regles";
 import { etatDesPieces } from "@/domain/formalite/pieces";
@@ -24,6 +25,7 @@ import { publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { aRelire } from "@/domain/document/publication";
 import { Piece, type PieceAffichee } from "./Piece";
+import { Corriger } from "./Corriger";
 import { Avancement } from "./Avancement";
 import { PriseEnCharge } from "./PriseEnCharge";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
@@ -335,6 +337,14 @@ export default async function DossierAvocat({
    * La même liste sert deux écrans : l'onglet du dossier, et les fenêtres que les
    * tâches ouvrent. Une seule mise en forme, donc, et une seule carte pour les rendre.
    */
+  /*
+   * Les champs du dossier, pour la fenêtre de correction.
+   *
+   * Chaque parcours déclare les siens et range ses valeurs à sa façon : le dépôt fait
+   * la correspondance, l'écran n'a qu'une liste à rendre.
+   */
+  const formulaire = await formulaireDuDossier(utilisateur, dossier.id);
+
   /* Les versions antérieures des actes produits, rangées par titre. */
   const versionsParActe = await versionsDuDossier(dossier.id);
 
@@ -544,7 +554,21 @@ export default async function DossierAvocat({
         */}
         {onglet === "documents" && (
           <>
-            <h3 className={styles.sectionTitre}>Documents du dossier</h3>
+            <div className={styles.documentsTete}>
+              <h3 className={styles.sectionTitre}>Documents du dossier</h3>
+              {/*
+                Corriger la source, plutôt que le document.
+                
+                Reprendre un acte au Word laissait la faute dans le dossier : l'acte
+                suivant la reprenait, et le document remis ne correspondait plus aux
+                données dont il sortait.
+              */}
+              <Corriger
+                dossier={dossier.id}
+                champs={formulaire.champs}
+                valeurs={formulaire.valeurs}
+              />
+            </div>
             {pieces.length === 0 ? (
               <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />
             ) : (
