@@ -61,6 +61,33 @@ const VIDE: Comptes = {
  * dossier resté sur la ligne de départ, et qu'on reprend au lieu d'en ouvrir un second.
  */
 
+/**
+ * Le dirigeant, repris en trois champs.
+ *
+ * Il se saisissait sur une ligne libre - « Monsieur Paul DURAND » - et se saisit
+ * désormais en civilité, prénom et nom. Les dossiers commencés avant portent l'ancienne
+ * valeur : on la découpe à la lecture, plutôt que de rendre un formulaire vide à qui
+ * l'avait déjà rempli. Le découpage est simple parce que la saisie l'était : une
+ * civilité en tête si elle y figure, un prénom, et le reste pour le nom.
+ */
+function dirigeantEnTroisChamps(valeurs: Comptes["valeurs"]): Comptes["valeurs"] {
+  const ancien = typeof valeurs.dirigeantNom === "string" ? valeurs.dirigeantNom.trim() : "";
+  if (!ancien || valeurs.dirigeantNomFamille) return valeurs;
+
+  const mots = ancien.split(/\s+/);
+  const civilite = /^(monsieur|madame)$/i.test(mots[0] ?? "")
+    ? mots[0].replace(/^./, (c) => c.toUpperCase()).toLowerCase().replace(/^./, (c) => c.toUpperCase())
+    : "";
+  const reste = civilite ? mots.slice(1) : mots;
+
+  return {
+    ...valeurs,
+    dirigeantCivilite: valeurs.dirigeantCivilite || civilite,
+    dirigeantPrenom: valeurs.dirigeantPrenom || (reste.length > 1 ? reste[0] : ""),
+    dirigeantNomFamille: reste.length > 1 ? reste.slice(1).join(" ") : reste.join(" "),
+  };
+}
+
 export function lireComptes(dataJson: string | null): Comptes {
   if (!dataJson) return structuredClone(VIDE);
   try {
@@ -70,7 +97,7 @@ export function lireComptes(dataJson: string | null): Comptes {
       ...lu,
       societe: lu.societe ?? {},
       associes: lu.associes ?? [],
-      valeurs: lu.valeurs ?? {},
+      valeurs: dirigeantEnTroisChamps(lu.valeurs ?? {}),
       affectation: lu.affectation ?? structuredClone(VIDE.affectation),
       conventions: lu.conventions ?? [],
       exclusions: lu.exclusions ?? [],

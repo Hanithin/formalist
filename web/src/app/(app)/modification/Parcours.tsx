@@ -1823,10 +1823,16 @@ export function Champ({
 
   return (
     <div className={classe}>
-      <label htmlFor={id}>
-        {champ.libelle}
-        {champ.indication && <span className={styles.devisPrecision}>{champ.indication}</span>}
-      </label>
+      {/*
+        Le libellé seul, sur une ligne.
+
+        L'indication - « 14 heures par défaut », « Au siège social par défaut » - était
+        rendue dans le libellé, l'aide sous le champ. Deux champs voisins, l'un avec
+        indication et l'autre sans, ne commençaient donc pas à la même hauteur : la
+        date de l'assemblée et son heure étaient décalées d'une ligne. Les deux textes
+        disent la même chose au lecteur ; ils se placent au même endroit.
+      */}
+      <label htmlFor={id}>{champ.libelle}</label>
 
       {champ.type === "choix" ? (
         <select
@@ -1881,7 +1887,11 @@ export function Champ({
         />
       )}
 
-      {champ.aide && <p className={styles.devisPrecision}>{champ.aide}</p>}
+      {(champ.indication || champ.aide) && (
+        <p className={styles.devisPrecision}>
+          {[champ.indication, champ.aide].filter(Boolean).join(" - ")}
+        </p>
+      )}
       {refus && <p role="alert">{refus}</p>}
     </div>
   );

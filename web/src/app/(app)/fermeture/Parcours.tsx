@@ -1,5 +1,6 @@
 "use client";
 
+import { natureDeLaForme } from "@/domain/formalite/formes";
 import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
@@ -558,6 +559,15 @@ function Associes({
   etat: Fermeture;
   changer: (c: Partial<Fermeture>) => void;
 }) {
+  /*
+   * Le vocabulaire suit la forme.
+   *
+   * « Titres détenus » ne se dit nulle part : une société par actions a des actions,
+   * les autres des parts sociales, et l'acte qui sortira de cet écran emploie déjà le
+   * bon mot. L'écran qui le saisit disait le mot passe-partout.
+   */
+  const nature = natureDeLaForme(etat.societe.forme);
+  const titresDetenus = nature.titres === "actions" ? "Actions détenues" : "Parts détenues";
   const associes = etat.associes.length > 0 ? etat.associes : [{ parts: null }];
 
   const modifier = (rang: number, changement: Partial<(typeof associes)[number]>) =>
@@ -567,7 +577,7 @@ function Associes({
 
   return (
     <section className={styles.bloc}>
-      <h3 className={styles.blocTitre}>Les associés qui décident</h3>
+      <h3 className={styles.blocTitre}>Les {nature.associesPluriel} qui décident</h3>
       <p className={styles.blocTexte}>
         Ils votent la dissolution, signent les actes et se partagent ce qui reste. Leur
         nombre décide de la majorité applicable et du droit de partage.
@@ -577,7 +587,7 @@ function Associes({
         <span>Civilité</span>
         <span>Prénom</span>
         <span>Nom</span>
-        <span>Titres détenus</span>
+        <span>{titresDetenus}</span>
         <span />
       </div>
 
@@ -585,7 +595,7 @@ function Associes({
         {associes.map((associe, rang) => (
           <li key={rang} className={styles.signataire}>
             <select
-              aria-label={"Civilité de l'associé " + (rang + 1)}
+              aria-label={"Civilité de l'" + nature.associeSingulier + " " + (rang + 1)}
               value={associe.civilite ?? ""}
               onChange={(e) => modifier(rang, { civilite: e.target.value })}
             >
@@ -594,18 +604,18 @@ function Associes({
               <option value="Madame">Madame</option>
             </select>
             <input
-              aria-label={"Prénom de l'associé " + (rang + 1)}
+              aria-label={"Prénom de l'" + nature.associeSingulier + " " + (rang + 1)}
               value={associe.prenom ?? ""}
               onChange={(e) => modifier(rang, { prenom: e.target.value })}
             />
             <input
-              aria-label={"Nom de l'associé " + (rang + 1)}
+              aria-label={"Nom de l'" + nature.associeSingulier + " " + (rang + 1)}
               value={associe.nom ?? ""}
               onChange={(e) => modifier(rang, { nom: e.target.value.toLocaleUpperCase("fr") })}
             />
             <ChampNombre
               id={"fermeture-parts-" + rang}
-              aria-label={"Titres de l'associé " + (rang + 1)}
+              aria-label={titresDetenus + " par l'" + nature.associeSingulier + " " + (rang + 1)}
               className={styles.signataireTitres}
               valeur={associe.parts ?? ""}
               surChangement={(n) => modifier(rang, { parts: n === "" ? null : n })}
@@ -613,7 +623,7 @@ function Associes({
             <button
               type="button"
               className={styles.signataireRetrait}
-              aria-label={"Retirer l'associé " + (rang + 1)}
+              aria-label={"Retirer l'" + nature.associeSingulier + " " + (rang + 1)}
               onClick={() => changer({ associes: associes.filter((_, i) => i !== rang) })}
             >
               ×
@@ -627,7 +637,7 @@ function Associes({
         className={styles.ajouterLigne}
         onClick={() => changer({ associes: [...associes, { parts: null }] })}
       >
-        + Ajouter un associé
+        + Ajouter un {nature.associeSingulier}
       </button>
     </section>
   );

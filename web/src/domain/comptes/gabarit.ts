@@ -188,7 +188,20 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
     IS_UNIPERSONNELLE: unipersonnelle,
     IS_ASSEMBLEE: !unipersonnelle,
     ORGANE: organe,
-    DIRIGEANT_NOM: ou(texte(valeurs.dirigeantNom)),
+    /*
+     * Le dirigeant se saisit en trois champs ; l'acte l'écrit sur une ligne. Les
+     * dossiers commencés avant le découpage gardent leur ligne libre : elle sert de
+     * repli, sans quoi leur procès-verbal sortirait sans dirigeant.
+     */
+    DIRIGEANT_NOM: ou(
+      [
+        texte(valeurs.dirigeantCivilite),
+        texte(valeurs.dirigeantPrenom),
+        texte(valeurs.dirigeantNomFamille),
+      ]
+        .filter(Boolean)
+        .join(" ") || texte(valeurs.dirigeantNom)
+    ),
     DIRIGEANT_FONCTION: ou(texte(valeurs.dirigeantFonction), "Président"),
     ASSOCIE_UNIQUE: ou(nomsDesAssocies[0] ?? ""),
     ASSOCIE_UNIQUE_NE_LE_FR: dateEnFrancais(texte(valeurs.associeUniqueNeLe)),

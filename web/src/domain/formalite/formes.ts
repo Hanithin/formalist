@@ -180,6 +180,8 @@ export interface NatureDeForme {
   titreSingulier: string;
   /** « actionnaires » ou « associés ». */
   associesPluriel: string;
+  /** « actionnaire » ou « associé », pour les libellés au singulier. */
+  associeSingulier: string;
   /** Comment s'appelle celui qui dirige : le mot figure dans les actes. */
   titreDirigeant: "Président" | "Gérant";
   categorie: CategorieDeForme;
@@ -211,6 +213,7 @@ function parActions(
     titres: "actions",
     titreSingulier: "action",
     associesPluriel: "actionnaires",
+    associeSingulier: "actionnaire",
     titreDirigeant: "Président",
     categorie,
     regime,
@@ -233,6 +236,7 @@ function parParts(
     titres: "parts sociales",
     titreSingulier: "part sociale",
     associesPluriel: "associés",
+    associeSingulier: "associé",
     titreDirigeant: "Gérant",
     categorie,
     regime,
@@ -355,6 +359,7 @@ export function natureDeLaForme(forme: string | null | undefined): NatureDeForme
       titres: "parts sociales",
       titreSingulier: "part sociale",
       associesPluriel: "associés",
+      associeSingulier: "associé",
       titreDirigeant: "Gérant",
       categorie: "commerciale",
       regime: "sarl",

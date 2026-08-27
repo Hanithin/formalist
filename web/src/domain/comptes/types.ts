@@ -71,14 +71,38 @@ export const CHAMPS_COMPTES: Champ[] = [
   },
 
   /* -------------------------------------------------------- Les dirigeants */
+  /*
+   * Le dirigeant en trois champs, non en une ligne libre.
+   *
+   * « Qui préside et à qui donner quitus », un seul champ pleine largeur sous-titré
+   * « Civilité, prénom et nom » : le nom partait dans l'acte tel qu'il avait été tapé,
+   * casse comprise, et rien n'obligeait à donner la civilité que le procès-verbal
+   * emploie. Trois champs sur une rangée le demandent séparément - une colonne pour la
+   * civilité, deux pour le prénom, trois pour le nom.
+   */
   {
-    identifiant: "dirigeantNom",
-    libelle: "Qui préside et à qui donner quitus",
+    identifiant: "dirigeantCivilite",
+    libelle: "Qui préside et reçoit quitus",
+    groupe: "Le dirigeant",
+    type: "choix",
+    options: ["Monsieur", "Madame"],
+    obligatoire: true,
+    colonnes: 1,
+  },
+  {
+    identifiant: "dirigeantPrenom",
+    libelle: "Son prénom",
     groupe: "Le dirigeant",
     type: "texte",
     obligatoire: true,
-    pleineLargeur: true,
-    indication: "Civilité, prénom et nom",
+    colonnes: 2,
+  },
+  {
+    identifiant: "dirigeantNomFamille",
+    libelle: "Son nom",
+    groupe: "Le dirigeant",
+    type: "texte",
+    obligatoire: true,
   },
   {
     identifiant: "dirigeantFonction",

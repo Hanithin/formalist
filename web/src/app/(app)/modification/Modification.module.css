@@ -808,9 +808,16 @@
   letter-spacing: 0;
 }
 
+/*
+ * La mesure de lecture ne rétrécit plus la carte.
+ *
+ * 68 caractères est une bonne longueur de ligne sur une page de texte. Ici la carte
+ * fait 722 pixels, soit une centaine de caractères : le cap coupait les phrases en deux
+ * au milieu d'une carte à moitié vide, et l'encadré gris s'arrêtait avant le bord
+ * pendant que les champs sous lui allaient jusqu'au bout.
+ */
 .blocTexte {
   margin: 0;
-  max-width: 68ch;
   color: #71717a;
   font-size: 14.5px;
   line-height: 1.6;
@@ -821,7 +828,6 @@
   padding: 12px 14px;
   border-radius: 10px;
   background: #f7f7f8;
-  max-width: 68ch;
   font-size: 13px;
   line-height: 1.55;
   color: #52525b;
