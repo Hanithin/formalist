@@ -3,6 +3,7 @@ import { verifierApport } from "./apport";
 import { anomaliesDuPvAge } from "./pv-age";
 import { anomaliesDuTraite } from "./traite-apport";
 import { anomaliesDeLActeDeCession } from "./acte-cession";
+import { verifierCessions } from "./cession";
 import type { ContexteGabarit } from "./gabarit";
 
 /**
@@ -242,13 +243,30 @@ export function verifierModification(
      * fiscale regarde - et une garantie qui, si elle est consentie, porte une durée.
      */
     ...(codes.includes("cession_parts")
-      ? anomaliesDeLActeDeCession({
-          societe,
-          assemblee: assemblee ?? {},
-          codes,
-          valeurs,
-          cessions,
-        } as ContexteGabarit)
+      ? [
+          /*
+           * Les cessions elles-mêmes : qui cède, combien, à quel prix, quel jour.
+           *
+           * Ces contrôles ne tournaient que dans l'écran de saisie. La route de
+           * paiement et la production des actes ne les voyaient pas, et un dossier
+           * sans date de cession produisait un procès-verbal annonçant la cession
+           * « avec effet au - ». La date est pourtant réclamée à l'écran : c'est le
+           * contrôle qui manquait, non la saisie.
+           */
+          ...verifierCessions(
+            assemblee?.associes ?? [],
+            cessions ?? [],
+            societe.forme,
+            typeof valeurs.agrementRequis === "string" ? valeurs.agrementRequis : ""
+          ),
+          ...anomaliesDeLActeDeCession({
+            societe,
+            assemblee: assemblee ?? {},
+            codes,
+            valeurs,
+            cessions,
+          } as ContexteGabarit),
+        ]
       : []),
   ];
 }
