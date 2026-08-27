@@ -1,0 +1,13 @@
+import { chromium } from "playwright";
+const nav = await chromium.launch();
+const ctx = await nav.newContext({ viewport: { width: 1440, height: 1000 }, storageState: "./tests/parcours/session.json" });
+const page = await ctx.newPage();
+await page.goto("http://localhost:3000/documents", { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+const boutons = await page.getByRole("button").allInnerTexts();
+console.log("BOUTONS :", boutons.map(b=>b.replace(/\n/g," ").trim()).filter(Boolean).slice(0,14).join(" | "));
+console.log("titre h1 :", await page.locator("h1").first().innerText().catch(()=>"aucun"));
+const t = await page.locator("body").innerText();
+console.log("rangé par société :", /rangé par société/.test(t));
+console.log("extrait :", t.split("\n").filter(Boolean).slice(8, 26).join(" / "));
+await nav.close();

@@ -98,7 +98,13 @@ test.describe("avancement du cabinet", () => {
     const dossier = await dossierDuCabinet("KBIS ESSAI " + Date.now());
 
     await page.goto("/avocat/" + dossier.id + "?onglet=avancement");
-    await page.getByLabel("Déposer Kbis").setInputFiles({
+    /*
+     * Le libellé nomme le document que le greffe délivre pour ce type de dossier :
+     * « Extrait Kbis » pour une création, « Extrait à jour » pour une modification. Il
+     * était écrit « Kbis » en dur, et l'avocat d'une modification lisait qu'il devait
+     * remettre un Kbis, que le greffe ne délivre pas dans ce cas.
+     */
+    await page.getByLabel("Déposer Extrait Kbis").setInputFiles({
       name: "kbis.pdf",
       mimeType: "application/pdf",
       buffer: PDF,

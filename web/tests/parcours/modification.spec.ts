@@ -237,8 +237,14 @@ test("le fil d'étapes se lit en ligne, jamais en colonne", async ({ page, reque
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/modification?dossier=" + dossier + "&etape=2");
 
+  /*
+   * La frise a été réécrite depuis : ses pastilles portent `friseMarque`, non plus
+   * `stepCircle` - laquelle ne subsiste que dans le parcours de création. Le test
+   * cherchait donc zéro élément et ne gardait plus rien : il passait sur une frise
+   * en colonne comme sur une frise en ligne.
+   */
   const cercles = await page.evaluate(() =>
-    [...document.querySelectorAll("[class*='stepCircle']")].map((c) => {
+    [...document.querySelectorAll("[class*='friseMarque']")].map((c) => {
       const boite = c.getBoundingClientRect();
       return { x: Math.round(boite.x), y: Math.round(boite.y) };
     })
@@ -277,9 +283,17 @@ test("l'écran d'entrée fait cocher, et le choix remplit l'étape 2", async ({ 
   await page.getByRole("button", { name: /Continuer/ }).click();
   await page.waitForURL(/\/modification\?dossier=\d+/);
 
-  // On arrive sur la société : les changements sont déjà répondus.
+  /*
+   * On arrive sur la société : les changements sont déjà répondus, et rappelés.
+   *
+   * Le rappel s'écrivait « Vous changez… » en une énumération séparée de virgules ; il
+   * s'intitule « Ce que vous modifiez » et compte ses pastilles. Le test attendait
+   * l'ancienne phrase.
+   */
   await expect(page.getByRole("heading", { name: "La société" })).toBeVisible();
-  await expect(page.getByText(/Vous changez/)).toBeVisible();
+  await expect(page.getByText("Ce que vous modifiez")).toBeVisible();
+  await expect(page.getByText("Siège social", { exact: true })).toBeVisible();
+  await expect(page.getByText("Dénomination", { exact: true }).first()).toBeVisible();
 });
 
 test("qui ne sait pas encore ouvre un dossier vide", async ({ page }) => {

@@ -62,12 +62,25 @@ test.describe("formalités", () => {
     await expect(compteurs.getByText(/formalités? au total/)).toBeVisible();
   });
 
-  test("chaque filtre annonce son décompte", async ({ page }) => {
+  test("chaque filtre annonce son décompte, et aucun n'est offert à vide", async ({ page }) => {
+    /*
+     * Un filtre sans formalité ne s'affiche pas - voir `filtresUtiles` : on n'offre pas
+     * un filtre qui ne rendrait rien. Le test énumérait les quatre et échouait donc dès
+     * que le compte n'avait aucune formalité terminée, ce qui est le cas ordinaire.
+     */
     await page.goto("/formalites");
     const filtres = page.getByRole("navigation", { name: "Filtrer les formalités" });
 
-    for (const libelle of ["Tous", "En cours", "En attente", "Terminées"]) {
-      await expect(filtres.getByRole("link", { name: new RegExp(libelle) })).toContainText(/\d/);
+    await expect(filtres.getByRole("link", { name: /Tous/ })).toBeVisible();
+
+    const offerts = await filtres.getByRole("link").allInnerTexts();
+    expect(offerts.length, "au moins « Tous »").toBeGreaterThan(0);
+
+    for (const libelle of offerts) {
+      const compte = libelle.trim().match(/(\d+)$/);
+      expect(compte, "décompte sur « " + libelle.trim() + " »").not.toBeNull();
+      expect(Number(compte![1]), "« " + libelle.trim() + " » ne serait pas offert à zéro")
+        .toBeGreaterThan(0);
     }
   });
 
@@ -154,11 +167,18 @@ test.describe("documents", () => {
     await expect(page.getByText("Motif : Document illisible")).toBeVisible();
   });
 
-  test("les statuts techniques sont traduits", async ({ page }) => {
+  test("aucun statut technique ne transparaît", async ({ page }) => {
+    /*
+     * Le test attendait « Généré » à l'écran, ce qui suppose qu'un document du compte
+     * porte ce statut-là : il échouait dès que les essais n'en laissaient aucun. Ce
+     * qu'il garde vraiment, c'est qu'aucun mot de la base ne remonte tel quel.
+     */
     await page.goto("/documents");
-    // Les essais de génération ajoutent d'autres documents : on vise le premier.
-    await expect(page.getByText("Généré").first()).toBeVisible();
-    await expect(page.getByText("generated")).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Documents");
+
+    for (const technique of ["generated", "uploaded", "verified", "rejected", "pending"]) {
+      await expect(page.getByText(technique, { exact: false })).toHaveCount(0);
+    }
   });
 });
 
@@ -182,11 +202,25 @@ test.describe("contrats", () => {
     await expect(page.getByText("Accord de confidentialité")).toHaveCount(0);
   });
 
-  test("un filtre sans contrat le dit plutôt que de laisser un vide", async ({ page }) => {
+  test("un filtre sans contrat n'est pas offert", async ({ page }) => {
+    /*
+     * Le test cliquait « En relecture » pour vider l'écran. Ce filtre ne s'affiche que
+     * s'il a des contrats : le clic attendait un bouton qui ne viendrait jamais. La
+     * garantie du jour est en amont - on n'offre pas un filtre qui ne rendrait rien.
+     */
     await page.goto("/contrats");
-    await page.getByRole("button", { name: /^En relecture/ }).click();
+    await expect(page.getByRole("button", { name: /^Tous/ })).toBeVisible();
 
-    await expect(page.getByText("Rien dans cette catégorie")).toBeVisible();
+    const offerts = await page
+      .getByRole("button", { name: /^(Tous|À compléter|En relecture|Prêts|Signés)/ })
+      .allInnerTexts();
+
+    for (const libelle of offerts) {
+      const compte = libelle.trim().match(/(\d+)$/);
+      expect(compte, "décompte sur « " + libelle.trim() + " »").not.toBeNull();
+      expect(Number(compte![1]), "« " + libelle.trim() + " » ne serait pas offert à zéro")
+        .toBeGreaterThan(0);
+    }
   });
 });
 

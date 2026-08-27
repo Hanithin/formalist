@@ -127,11 +127,27 @@ test("l'entrée met la pause à égalité avec la fermeture", async ({ page }) =
   await expect(page.getByRole("button", { name: "Commencer" })).toBeVisible();
 });
 
-test("le prix annonce que la formalité, elle, est gratuite", async ({ page }) => {
+test("l'entrée dit que la formalité est gratuite, et renvoie le tarif au récapitulatif", async ({
+  page,
+}) => {
+  /*
+   * L'écran d'entrée annonçait le montant ; il ne l'annonce plus, et c'est voulu -
+   * l'absence de frais d'État n'est pas un prix, et le tarif se lit là où l'on règle.
+   * Le test attendait « 79,00 € » ici et échouait donc sur un choix délibéré.
+   */
   await page.goto("/cessation");
   await page.getByRole("button", { name: /Fermer définitivement/ }).click();
 
-  await expect(page.getByText("79,00 €", { exact: false })).toBeVisible();
+  await expect(page.getByText(/ni annonce légale, ni frais de greffe/)).toBeVisible();
+  await expect(page.getByText(/tarif s'affiche au récapitulatif/)).toBeVisible();
+  await expect(page.getByText("79,00 €", { exact: false })).toHaveCount(0);
+});
+
+test("le récapitulatif porte le montant, avant tout règlement", async ({ page, request }) => {
+  const { dossier } = await dossierRempli(request);
+  await page.goto("/cessation?dossier=" + dossier + "&etape=3");
+
+  await expect(page.getByText("79,00 €", { exact: false }).first()).toBeVisible();
   await expect(page.getByText(/ni annonce légale, ni frais de greffe/)).toBeVisible();
 });
 

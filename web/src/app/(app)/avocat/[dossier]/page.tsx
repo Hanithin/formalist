@@ -25,6 +25,7 @@ import { Piece, type PieceAffichee } from "./Piece";
 import { Avancement } from "./Avancement";
 import { PriseEnCharge } from "./PriseEnCharge";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
+import { DOCUMENT_FINAL } from "@/domain/formalite/cabinet";
 import { Vide } from "@/components/liste/Vide";
 import {
   estUneModification,
@@ -506,6 +507,7 @@ export default async function DossierAvocat({
                 dossierId={dossier.id}
                 sousPhase={dossier.business_sub_phase}
                 aLeKbis={remis(TYPE_KBIS)}
+                documentFinal={DOCUMENT_FINAL[type]}
                 aLeRbe={remis(TYPE_RBE)}
               />
             </div>

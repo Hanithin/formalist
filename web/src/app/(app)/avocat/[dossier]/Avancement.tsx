@@ -15,6 +15,15 @@ interface Props {
   dossierId: number;
   sousPhase: string | null;
   aLeKbis: boolean;
+  /**
+   * Le nom du document que le greffe délivre pour ce dossier.
+   *
+   * Il était écrit « Kbis » en dur, trois fois : l'avocat d'une modification lisait
+   * qu'il devait remettre un Kbis, que le greffe ne délivre pas dans ce cas - il rend
+   * un extrait à jour. Un dépôt de comptes reçoit un récépissé, une fermeture une
+   * attestation de radiation. Le domaine les nomme déjà, dans DOCUMENT_FINAL.
+   */
+  documentFinal: string;
   aLeRbe: boolean;
 }
 
@@ -24,7 +33,7 @@ const EXPLICATIONS: Record<string, string> = {
   "5b": "Relecture des actes en cours. Le client est invité à déposer son attestation de dépôt de capital.",
   "5c": "Le dossier est vérifié. Le client est invité à publier son annonce légale.",
   "5d": "Le dossier est déposé au guichet unique. Le client en est informé.",
-  "5e": "La société est immatriculée. Le Kbis est remis au client.",
+  "5e": "La société est immatriculée. Le document du greffe est remis au client.",
 };
 
 /**
@@ -37,7 +46,7 @@ const EXPLICATIONS: Record<string, string> = {
  * Un seul bouton d'avancement : celui de l'étape suivante. Offrir les cinq
  * reviendrait à demander de connaître leur ordre, et à permettre d'en sauter une.
  */
-export function Avancement({ dossierId, sousPhase, aLeKbis, aLeRbe }: Props) {
+export function Avancement({ dossierId, sousPhase, aLeKbis, aLeRbe, documentFinal }: Props) {
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
@@ -138,14 +147,14 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, aLeRbe }: Props) {
       <section className={styles.carte}>
         <h2 className={styles.titre}>Documents remis au client</h2>
         <p className={styles.sousTitre}>
-          Ils apparaissent aussitôt dans ses documents. Le Kbis est exigé pour marquer
-          le dossier immatriculé ; le registre des bénéficiaires ne l&apos;est pas.
+          Ils apparaissent aussitôt dans ses documents. {documentFinal} est exigé pour
+          marquer le dossier abouti ; le registre des bénéficiaires ne l&apos;est pas.
         </p>
 
         <Livrable
           dossierId={dossierId}
           type="kbis"
-          titre="Kbis"
+          titre={documentFinal}
           precision="Exigé"
           depose={aLeKbis}
         />

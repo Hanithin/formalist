@@ -249,8 +249,15 @@ test.describe("la liste du cabinet", () => {
   });
 
   test("le tri et la recherche survivent au changement de page", async ({ page }) => {
+    /*
+     * Le tri n'est plus un `<select>` mais une liste écrite - voir ChampChoix :
+     * `toHaveValue` ne s'applique pas à un bouton, et c'est le libellé retenu qui se
+     * lit, non la clé qui voyage dans l'adresse.
+     */
     await page.goto("/avocat?tri=ancien&q=parcours");
-    await expect(page.getByLabel("Trier par")).toHaveValue("ancien");
+    await expect(page.getByLabel("Trier par")).toContainText(
+      "Sans mouvement depuis longtemps"
+    );
 
     // Les liens de pagination reconduisent les critères ; sans page, rien à cliquer.
     const suivant = page.getByRole("link", { name: "Suivant" });
@@ -285,7 +292,12 @@ test.describe("le panneau de détail", () => {
     const panneau = page.getByRole("dialog");
     await expect(panneau).toBeVisible();
     await expect(panneau.getByText("Client")).toBeVisible();
-    await expect(panneau.getByRole("link", { name: "Ouvrir le dossier" })).toBeVisible();
+    /*
+     * Le libellé du lien dépend de l'état du dossier : « Ouvrir le dossier » une fois
+     * pris, « Lire sans le prendre » tant qu'il est libre. Le test attendait le
+     * premier sur un dossier qui attend, donc libre par construction.
+     */
+    await expect(panneau.getByRole("link", { name: "Lire sans le prendre" })).toBeVisible();
 
     // La liste reste derrière, avec ses critères intacts.
     expect(page.url()).toBe(adresse);
@@ -304,7 +316,8 @@ test.describe("le panneau de détail", () => {
     await page.locator("tbody tr").first().click();
 
     const panneau = page.getByRole("dialog");
-    await panneau.getByRole("button", { name: "Accepter la révision" }).click();
+    /* Le bouton dit ce qu'il fait, et où il mène : « Prendre en charge et réviser ». */
+    await panneau.getByRole("button", { name: /Prendre en charge et réviser/ }).click();
 
     /*
      * Accepter mène au dossier.

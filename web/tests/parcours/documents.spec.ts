@@ -26,9 +26,25 @@ test.describe("documents", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Documents");
     await expect(page.getByText(/rangé par société/)).toBeVisible();
 
-    // Les quatre filtres portent chacun leur décompte.
-    for (const libelle of ["Tous", "Actes de société", "Contrats", "Mes dépôts"]) {
-      await expect(page.getByRole("button", { name: new RegExp("^" + libelle) })).toBeVisible();
+    /*
+     * Les filtres vides ne s'affichent pas, et c'est voulu : on n'offre pas un filtre
+     * qui ne rendrait rien - voir `filtresUtiles`. Le test attendait les quatre, et
+     * échouait donc chez un compte sans contrat ni dépôt personnel, ce qui est le cas
+     * ordinaire.
+     */
+    await expect(page.getByRole("button", { name: /^Tous/ })).toBeVisible();
+
+    const filtres = await page
+      .getByRole("button", { name: /^(Tous|Actes de société|Contrats|Mes dépôts)/ })
+      .allInnerTexts();
+    expect(filtres.length, "au moins « Tous »").toBeGreaterThan(0);
+
+    // Chacun porte son décompte, et aucun de ceux qu'on montre n'est à zéro.
+    for (const libelle of filtres) {
+      const compte = libelle.trim().match(/(\d+)$/);
+      expect(compte, "décompte sur « " + libelle.trim() + " »").not.toBeNull();
+      expect(Number(compte![1]), "« " + libelle.trim() + " » ne serait pas offert à zéro")
+        .toBeGreaterThan(0);
     }
   });
 
@@ -208,18 +224,23 @@ test.describe("documents", () => {
     }
   });
 
-  test("un filtre sans document le dit et offre une sortie", async ({ page }) => {
-    await page.goto("/documents");
-    await page.getByRole("button", { name: /^Contrats/ }).click();
+  test("une recherche sans résultat le dit et offre une sortie", async ({ page }) => {
+    /*
+     * Le test cliquait « Contrats » pour vider l'écran. Ce filtre ne s'affiche que
+     * s'il a des documents : chez un compte qui n'en a pas, il n'existe pas, et le
+     * clic attendait un bouton qui ne viendrait jamais. La recherche, elle, vide
+     * l'écran à coup sûr - et c'est le même écran de sortie qui s'affiche.
+     */
+    /*
+     * La recherche est préremplie par l'adresse, non tapée dans le champ : celui-ci ne
+     * s'affiche qu'au-delà de quelques sociétés, et le test dépendrait sinon du nombre
+     * de dossiers du compte d'essai.
+     */
+    await page.goto("/documents?societe=zzz-aucun-document-ne-porte-ce-nom");
 
-    const contrats = await page.getByRole("button", { name: /^Contrats/ }).textContent();
-
-    // Le compte-e n'a pas de contrat signé : le filtre doit rendre l'écran vide.
-    if (contrats?.trim().endsWith("0")) {
-      await expect(page.getByText(/Aucun document dans/)).toBeVisible();
-      await page.getByRole("button", { name: /Voir tous les documents/ }).click();
-      await expect(page.getByText(/Aucun document dans/)).toHaveCount(0);
-    }
+    await expect(page.getByText("Aucun résultat")).toBeVisible();
+    await page.getByRole("button", { name: /Voir tous les documents/ }).click();
+    await expect(page.getByText("Aucun résultat")).toHaveCount(0);
   });
 
   test("un fichier dont le contenu ne correspond pas est refusé, avec son motif", async ({
