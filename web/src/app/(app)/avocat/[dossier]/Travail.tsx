@@ -23,16 +23,6 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
     return pieces.filter((p) => !estUnActeProduit(p));
   }
   /*
-   * La confidentialité ne parle que d'un document.
-   *
-   * La tâche montrait tous les actes produits : « Joindre la déclaration de
-   * confidentialité au dépôt » s'affichait au-dessus du procès-verbal d'approbation,
-   * et le titre ne correspondait pas à ce qu'on lisait.
-   */
-  if (tache === "confidentialite") {
-    return pieces.filter((p) => estUnActeProduit(p) && /confidentialit/i.test(p.nom));
-  }
-  /*
    * Les actes appartiennent à la tâche qui les valide, non à celle qui les produit.
    *
    * Les deux montraient le même jeu : une fois produits, on lisait deux fois la même
@@ -330,16 +320,67 @@ export function Travail({
       return { libelle: "Déposer " + livrables.documentFinal.toLowerCase(), depot: "kbis" };
     }
     /*
-     * Le dépôt se marque plus bas, dans la même page : le dépôt lui-même se fait au
-     * guichet de l'INPI, hors d'ici.
+     * Le dépôt se déclare ici même.
+     *
+     * Le bouton disait « Marquer l'avancement » et menait à la barre du haut, où un
+     * second bouton faisait le geste : deux clics et un aller-retour pour dire une
+     * chose. Le dépôt lui-même se fait au guichet de l'INPI, hors d'ici ; ce qui se
+     * fait ici, c'est de dire qu'il a eu lieu.
      */
     if (tache.onglet === "avancement") {
-      return { libelle: "Marquer l'avancement", href: "#avancement" };
+      return { libelle: "Marquer comme effectué", faire: marquerLeDepot };
     }
     if (tache.onglet) {
       return { libelle: "Y aller", href: "/avocat/" + dossier + "?onglet=" + tache.onglet };
     }
     return null;
+  }
+
+  /*
+   * Clore le dossier quand le greffe ne délivre rien.
+   *
+   * La tâche attendait un document qui n'existe pas toujours : le dossier restait en
+   * suspens, et le client guettait une remise qui ne viendrait jamais.
+   */
+  function conclureSansDocument() {
+    setRefus(null);
+
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/conclure", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier }),
+      });
+
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "Le dossier n'a pas pu être clos.");
+        return;
+      }
+      setRetour("Le dossier est clos : le client sait qu'il ne recevra pas de document.");
+      router.refresh();
+    });
+  }
+
+  /** Déclarer le dépôt au guichet : la seule étape que rien ici ne peut deviner. */
+  function marquerLeDepot() {
+    setRefus(null);
+
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/dossier", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, sousPhase: "5d" }),
+      });
+
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "Le dépôt n'a pas pu être marqué.");
+        return;
+      }
+      setRetour("Le dépôt est marqué : le client en est prévenu.");
+      router.refresh();
+    });
   }
 
   /**
@@ -377,10 +418,23 @@ export function Travail({
       <>
         <span className={styles.ligneTitre}>{tache.titre}</span>
         {tache.bloquee && <span className={styles.ligneBlocage}>{tache.bloquee}</span>}
+        {/*
+          Le libellé du geste appartient au document.
+          
+          La rangée entière était masquée aux lecteurs d'écran : la ligne s'annonçait
+          « Déposer au guichet unique », sans dire ce que le clic ferait. Seul le chevron
+          est décoratif.
+        */}
         {geste && (
-          <span className={styles.ligneGeste} aria-hidden="true">
+          <span className={styles.ligneGeste}>
             {geste.libelle}
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </span>
@@ -502,6 +556,21 @@ export function Travail({
                   {enCours ? "…" : geste.libelle}
                 </button>
               )
+            )}
+
+            {/*
+              Le greffe ne délivre pas toujours de document : le dire clôt le dossier,
+              et le client apprend que le dépôt est fait mais qu'il ne recevra rien.
+            */}
+            {maintenant.identifiant === "final" && (
+              <button
+                type="button"
+                className={styles.travailSecondaire}
+                onClick={conclureSansDocument}
+                disabled={enCours}
+              >
+                Le greffe n&apos;en délivre pas
+              </button>
             )}
 
             {/*

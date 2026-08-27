@@ -69,21 +69,26 @@ test.describe("avancement du cabinet", () => {
     expect(saut.status()).toBe(403);
 
     /*
-     * Un seul geste subsiste : le dépôt au guichet, qui se passe hors de
-     * l'application. Les quatre autres étapes se déduisent du travail fait, et
-     * l'écran n'offre plus de bouton pour les déclarer.
+     * La barre lit, elle n'avance pas.
+     *
+     * Quatre étapes sur cinq se déduisent du travail fait. La cinquième - le dépôt au
+     * guichet - se déclare depuis sa tâche, où elle est expliquée : la barre portait un
+     * second bouton pour le même geste, à trois lignes de distance.
      */
     await expect(page.getByRole("button", { name: /Passer à/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /déposé au guichet/i })).toHaveCount(0);
 
-    // Une fois le dossier vérifié, le dépôt se déclare - et lui seul.
+    // Une fois le dossier vérifié, le dépôt se déclare depuis la tâche.
     for (const etape of ["5a", "5b", "5c"]) {
       await request.put("/api/avocat/dossier", {
         data: { dossier: dossier.id, sousPhase: etape },
       });
     }
     await page.reload();
-    await expect(page.getByRole("button", { name: /déposé au guichet/i })).toBeVisible();
+    /* La ligne entière est le geste : son nom porte le titre de la tâche puis le sien. */
+    await expect(
+      page.getByRole("button", { name: /Marquer comme effectué/ }).first()
+    ).toBeVisible();
 
     // Et le retour d'un cran reste possible : c'est une correction de saisie.
     await expect(page.getByRole("button", { name: /Revenir à . Révision/ })).toBeVisible();

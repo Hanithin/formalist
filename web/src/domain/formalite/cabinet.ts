@@ -116,6 +116,26 @@ function auMoins(sousPhase: string | null, seuil: string): boolean {
  * table plutôt qu'en conditions semées dans les écrans évite qu'un seul des trois
  * endroits soit corrigé.
  */
+/**
+ * Le type d'un dossier, tel que la base le porte.
+ *
+ * La normalisation vivait dans une cascade de ternaires au milieu de l'écran de
+ * l'avocat, seul endroit qui en avait besoin. Deux autres en ont besoin depuis : elle
+ * se déclare ici, avec la table qu'elle indexe.
+ */
+export function typeDeDossier(brut: string | null | undefined): TypeDeDossier {
+  const connus: TypeDeDossier[] = [
+    "creation",
+    "modification",
+    "comptes",
+    "fermeture",
+    "cessation",
+    "auto-entrepreneur",
+  ];
+  const lu = (brut ?? "").trim();
+  return connus.find((t) => t === lu) ?? "creation";
+}
+
 export const DOCUMENT_FINAL: Record<TypeDeDossier, string> = {
   creation: "Extrait Kbis",
   modification: "Extrait à jour",
@@ -336,25 +356,6 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
   }
 
   /*
-   * Le dépôt des comptes ne passe pas par le guichet unique de la même façon.
-   *
-   * Ce sont les comptes eux-mêmes qui se déposent, avec la décision d'approbation et,
-   * le cas échéant, la déclaration de confidentialité. Cette dernière ne se rattrape
-   * pas : sans elle dans l'envoi, les comptes sont publiés, et ils le restent.
-   */
-  if (etat.type === "comptes" && etat.confidentialiteDemandee) {
-    taches.push({
-      identifiant: "confidentialite",
-      titre: "Joindre la déclaration de confidentialité au dépôt",
-      explication:
-        "Elle voyage avec les comptes, dans le même envoi. Déposée après coup, elle ne rattrape rien : les comptes sont déjà consultables.",
-      etat: depose ? "faite" : "a_faire",
-      onglet: "pieces",
-      bloquee: etat.actesProduits ? undefined : "La déclaration n'est pas encore produite.",
-    });
-  }
-
-  /*
    * Les deux attestations de la radiation.
    *
    * Depuis le décret n° 2024-751, le greffe refuse de radier sans elles. Elles ne
@@ -383,7 +384,17 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
           : "Déposer au guichet unique",
     explication:
       etat.type === "comptes"
-        ? "Transmettez les comptes annuels, la décision d'approbation et, s'il y en a une, la déclaration de confidentialité. Un mois après l'approbation, deux par voie électronique."
+        ? /*
+           * La déclaration de confidentialité voyage avec les comptes.
+           *
+           * Elle tenait sa propre tâche, en tête de l'écran, sans aucun geste : on ne
+           * pouvait ni la faire ni la défaire, et elle n'aboutissait qu'au dépôt. C'est
+           * un avertissement sur l'envoi, non un travail - il se lit ici, au moment où
+           * l'on prépare cet envoi.
+           */
+          etat.confidentialiteDemandee
+          ? "Transmettez les comptes annuels, la décision d'approbation et la déclaration de confidentialité, dans le même envoi : déposée après coup, elle ne rattrape rien, les comptes sont déjà consultables. Un mois après l'approbation, deux par voie électronique."
+          : "Transmettez les comptes annuels et la décision d'approbation. Un mois après l'approbation, deux par voie électronique."
         : etat.type === "fermeture"
           ? "Transmettez la décision de dissolution, l'attestation de parution, la déclaration de non-condamnation du liquidateur et sa pièce d'identité. La radiation se demandera à la clôture, avec les deux attestations."
           : etat.type === "cessation"
@@ -398,7 +409,14 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     identifiant: "final",
     titre: "Remettre " + DOCUMENT_FINAL[etat.type].toLowerCase(),
     explication: "Déposez le document délivré par le greffe : le client en est prévenu aussitôt.",
-    etat: etat.finalRemis ? "faite" : "a_faire",
+    /*
+     * Le greffe ne délivre pas toujours de document.
+     *
+     * La tâche attendait un récépissé qui n'existait pas toujours, et le dossier
+     * restait en suspens : l'avocat peut la clore en le disant, et le client est
+     * prévenu que le dépôt est fait mais qu'il ne recevra rien.
+     */
+    etat: etat.finalRemis || etat.sousPhase === "5e" ? "faite" : "a_faire",
     onglet: "avancement",
     bloquee: depose ? undefined : "Le dépôt n'a pas encore eu lieu.",
   });

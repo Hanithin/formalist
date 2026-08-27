@@ -18,6 +18,7 @@ import { Annonce } from "./Annonce";
 import {
   travailDuCabinet,
   prochaineTache,
+  typeDeDossier,
   type TypeDeDossier,
 } from "@/domain/formalite/cabinet";
 import { statutsAMettreAJour, TITRE_STATUTS_A_JOUR } from "@/domain/modification/formalites";
@@ -238,18 +239,7 @@ export default async function DossierAvocat({
    * jour et publie un avis, une création attend un Kbis. Le déduire ici plutôt que de
    * semer des conditions dans l'écran garde les deux parcours lisibles.
    */
-  const type: TypeDeDossier =
-    dossier.type === "modification"
-      ? "modification"
-      : dossier.type === "auto-entrepreneur"
-        ? "auto-entrepreneur"
-        : dossier.type === "comptes"
-          ? "comptes"
-          : dossier.type === "fermeture"
-            ? "fermeture"
-            : dossier.type === "cessation"
-              ? "cessation"
-              : "creation";
+  const type: TypeDeDossier = typeDeDossier(dossier.type);
 
   const codes = estUneModification(donnees) ? ((donnees.codes as string[]) ?? []) : [];
   const societeDuDossier = (donnees.societe ?? {}) as {

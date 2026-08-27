@@ -20,6 +20,7 @@ export type GenreDAvis =
   | "dossier_valide"
   | "dossier_rejete"
   | "dossier_verifie"
+  | "depot_sans_document"
   | "attestation_attendue"
   | "depot_en_cours"
   | "immatriculee"
@@ -159,6 +160,31 @@ export function dossierRejete(societe: string): Avis {
       "L'avocat a refusé le dossier en l'état. Le motif est dans votre messagerie, et le dossier reste modifiable : une fois repris, il repart en vérification.",
     bouton: "Consulter le motif",
     destination: "messagerie",
+  };
+}
+
+/**
+ * Le dépôt a eu lieu, mais aucun document ne suivra.
+ *
+ * Le greffe ne délivre pas toujours de récépissé, et le dossier restait alors en
+ * suspens : la dernière étape attendait un document qui n'existait pas, et le client
+ * guettait une remise qui ne viendrait jamais. Le lui dire vaut mieux que de le laisser
+ * attendre.
+ */
+export function depotSansDocument(societe: string, document: string): Avis {
+  return {
+    genre: "depot_sans_document",
+    contenu: "Le dépôt de " + societe + " est effectué",
+    sujet: "Votre dépôt est effectué - " + societe,
+    corps:
+      "Le dossier de " +
+      societe +
+      " est déposé au greffe : la démarche est terminée.\n\n" +
+      "Le greffe n'a pas délivré de " +
+      document.toLowerCase() +
+      " pour ce dépôt : vous n'en recevrez donc pas. Cela ne change rien à la validité du dépôt.",
+    bouton: "Voir mon dossier",
+    destination: "dossier",
   };
 }
 

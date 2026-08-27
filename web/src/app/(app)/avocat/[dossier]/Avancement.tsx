@@ -2,12 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  SOUS_PHASES_ORDONNEES,
-  sousPhaseSuivante,
-  passageSousPhasePermis,
-  passageBloque,
-} from "@/domain/formalite/avocat";
+import { SOUS_PHASES_ORDONNEES, passageBloque } from "@/domain/formalite/avocat";
 /*
  * Le nom de l'étape se lit selon le type de dossier.
  *
@@ -47,11 +42,7 @@ interface Props {
  * rédigé et publié par le cabinet, ici comme partout ailleurs sur le site - et un dépôt
  * de comptes n'en publie aucun.
  */
-function explicationDe(
-  etape: string,
-  type: TypeDeDossier,
-  documentFinal: string
-): string {
+function explicationDe(etape: string, type: TypeDeDossier, documentFinal: string): string {
   if (etape === "5a") {
     return "Le client a transmis son dossier. Contrôlez les informations et les pièces.";
   }
@@ -86,7 +77,6 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal 
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
-  const suivante = sousPhaseSuivante(sousPhase);
   const precedente =
     sousPhase && SOUS_PHASES_ORDONNEES.indexOf(sousPhase as never) > 0
       ? SOUS_PHASES_ORDONNEES[SOUS_PHASES_ORDONNEES.indexOf(sousPhase as never) - 1]
@@ -136,12 +126,15 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal 
       <span className={styles.nom}>{nom}</span>
 
       {/*
-        Un seul geste : celui qui ne se devine pas.
+        La barre lit, elle n'avance pas.
 
-        Les quatre autres étapes se déduisent du travail fait - le dossier pris, les
-        informations relues, les pièces décidées, les actes validés, le document du
-        greffe déposé - et s'avancent d'elles-mêmes. Le dépôt au guichet, lui, se passe
-        hors de l'application : c'est le seul que l'avocat déclare.
+        Quatre étapes sur cinq se déduisent du travail fait, et s'avancent d'elles-mêmes.
+        La cinquième - le dépôt au guichet - se déclare depuis sa tâche, où elle est
+        expliquée : « Marquer comme effectué ». La barre portait un second bouton pour
+        le même geste, à trois lignes de distance.
+
+        Reste le retour d'un cran : c'est une correction de saisie, elle n'a pas de
+        tâche à elle.
       */}
       <span className={styles.actions}>
         {precedente && (
@@ -152,17 +145,6 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal 
             disabled={enCours}
           >
             Revenir à « {libelleSousPhase(type, precedente)} »
-          </button>
-        )}
-
-        {suivante === "5d" && passageSousPhasePermis(sousPhase, suivante) && (
-          <button
-            type="button"
-            className={styles.principal}
-            onClick={() => avancer(suivante)}
-            disabled={enCours}
-          >
-            J&apos;ai déposé au guichet
           </button>
         )}
       </span>

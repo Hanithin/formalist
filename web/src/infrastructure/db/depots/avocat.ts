@@ -1,6 +1,7 @@
 import { prisma } from "../client";
 import { Interdit } from "../utilisateur-courant";
 import { estPropose } from "@/domain/acces/regles";
+import { DOCUMENT_FINAL, typeDeDossier } from "@/domain/formalite/cabinet";
 import { envoyerMessage } from "./messages";
 import { objetDuDossier, brouillonLisible } from "@/domain/formalite/demande";
 import { exigerDossier, listerDossiers } from "./dossiers";
@@ -35,6 +36,7 @@ import { LONGUEUR_COMMENTAIRE } from "@/domain/formalite/avocat";
 import { TYPE_RBE, TYPE_KBIS, typesDeposes } from "./suivi";
 import {
   dossierVerifie,
+  depotSansDocument,
   attestationAttendue,
   depotEnCours,
   dossierAPrendre,
@@ -993,6 +995,54 @@ export async function mettreUnActeADisposition(
   await avancerSelonLeTravail(utilisateur, document.formalite_id);
 
   return { publie: document.name };
+}
+
+/**
+ * Conclure un dossier qu'aucun document du greffe ne viendra clore.
+ *
+ * La dernière étape attend le document délivré par le greffe, et le refuse tant qu'il
+ * n'est pas au dossier. Or le greffe ne délivre pas toujours de récépissé : le dossier
+ * restait alors en suspens indéfiniment, et le client guettait une remise qui ne
+ * viendrait jamais.
+ *
+ * Le dépôt doit avoir eu lieu : c'est lui qu'on conclut, non le travail.
+ */
+export async function conclureSansDocumentFinal(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  if (!estSousPhase(dossier.business_sub_phase) || dossier.business_sub_phase !== "5d") {
+    throw new Interdit("Le dépôt au guichet n'est pas encore marqué");
+  }
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: { business_sub_phase: "5e", updated_at: new Date() },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "depot_sans_document",
+      after_value: DOCUMENT_FINAL[typeDeDossier(dossier.type)],
+    },
+  });
+
+  await prevenir(
+    dossier.user_id,
+    dossierId,
+    depotSansDocument(
+      dossier.societe || "votre société",
+      DOCUMENT_FINAL[typeDeDossier(dossier.type)]
+    )
+  );
+
+  return { conclu: true as const };
 }
 
 /**
