@@ -669,9 +669,26 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
 
     donnees.r_dirigeant = {
       ...commun("r_dirigeant", dateEnFrancais(texte(valeurs.dateEffetDirigeant))),
+      /*
+       * On ne nomme pas toujours.
+       *
+       * Le modèle rendait la nomination sans condition : une révocation seule sortait
+       * avec quatre paragraphes nommant un président sans nom - « , né le - à , de
+       * nationalité , demeurant . » - sous le quitus du sortant. Un acte qui ne nomme
+       * personne, déposé au greffe.
+       */
+      nomination: changement === "Nomination" || !!texte(valeurs.nouveauDirigeantNom),
       fin_mandat: sortie
         ? {
-            modalite_fin_mandat: changement === "Révocation" ? "décide de révoquer" : "prend acte de la démission",
+            /*
+             * La préposition appartient à la formule, non au modèle.
+             *
+             * « prend acte de la démission de Untel » la réclame, « décide de révoquer
+             * Untel » l'interdit. Écrite en dur, elle donnait « décide de révoquer de
+             * Untel ».
+             */
+            modalite_fin_mandat:
+              changement === "Révocation" ? "décide de révoquer" : "prend acte de la démission de",
             identification_dirigeant_sortant:
               texte(valeurs.dirigeantRevoqueNom) || texte(valeurs.dirigeantDemissionnaireNom),
             fonction_sortant: texte(valeurs.fonctionDirigeant).toLowerCase(),
@@ -708,7 +725,34 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
       capital_apres: montant(apres),
       nb_titres_nouveaux: montant(parts),
       valeur_nominale: montant(nominale),
-      mention_prime: prime > 0 ? "assorties d'une prime d'émission de " + montant(prime) + " euros" : "sans prime d'émission",
+      mention_prime:
+        prime > 0
+          ? "assorties d'une prime d'émission de " + montant(prime) + " euros"
+          : "sans prime d'émission",
+      /*
+       * Comment le capital augmente : par création de titres, ou par élévation.
+       *
+       * Le nombre de titres et leur nominal sont facultatifs au formulaire, et à
+       * raison : une augmentation peut se faire en élevant la valeur nominale des
+       * titres existants, sans en créer un seul. Le modèle affirmait toujours une
+       * création, et l'écrivait à zéro - « par la création de 0 actions nouvelles
+       * d'une valeur nominale de 0 euros chacune ». Il fallait le lire pour le voir.
+       */
+      modalite_emission:
+        parts > 0 && nominale > 0
+          ? "par la création de " +
+            montant(parts) +
+            " " +
+            mots.titres +
+            " nouvelles d'une valeur nominale de " +
+            montant(nominale) +
+            " euros chacune, émises " +
+            (prime > 0
+              ? "assorties d'une prime d'émission de " + montant(prime) + " euros"
+              : "sans prime d'émission") +
+            /* La libération qualifie les titres qu'on crée, non ceux qu'on élève. */
+            " et entièrement libérées"
+          : "par élévation de la valeur nominale des " + mots.titres + " existantes",
     };
 
     if (augmentation === "r_augmentation_numeraire") {
