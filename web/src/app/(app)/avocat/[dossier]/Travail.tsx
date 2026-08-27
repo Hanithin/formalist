@@ -4,11 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { type Tache } from "@/domain/formalite/cabinet";
-import {
-  Piece,
-  estUnActeProduit,
-  type PieceAffichee,
-} from "./Piece";
+import { Piece, estUnActeProduit, type PieceAffichee } from "./Piece";
 import { deposerUnLivrable } from "./Avancement";
 import styles from "../Avocat.module.css";
 
@@ -46,6 +42,8 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
  */
 export function Travail({
   dossiersAPrendre,
+  etapePrecedente,
+  termineLe,
   livrables,
   dossier,
   taches,
@@ -65,7 +63,20 @@ export function Travail({
    * qu'il faut pour les décrire, non les éléments eux-mêmes : un élément fabriqué par
    * la page et rendu ici, dans une liste, fait réclamer une clé à React.
    */
-  livrables: { documentFinal: string; aLeKbis: boolean; aLeRbe: boolean };
+  livrables: {
+    documentFinal: string;
+    aLeKbis: boolean;
+    aLeRbe: boolean;
+    /**
+     * Le registre des bénéficiaires effectifs concerne-t-il ce dossier ?
+     *
+     * Il se dépose à la constitution et se met à jour quand la détention change : un
+     * dépôt de comptes annuels n'y touche pas, une cessation d'auto-entreprise non
+     * plus. La ligne s'y affichait pourtant, et proposait de déposer un registre que
+     * personne n'attendait.
+     */
+    registreConcerne: boolean;
+  };
   /** Les actes se produisent d'ici : c'est une commande, non un écran. */
   peutProduireLesActes: boolean;
   /**
@@ -83,6 +94,14 @@ export function Travail({
    * repartait à la liste pour découvrir s'il restait du travail.
    */
   dossiersAPrendre: number;
+  /**
+   * L'étape d'avant, pour rouvrir un dossier clos.
+   *
+   * Nulle quand il n'y a rien à défaire : le dossier n'a pas encore commencé.
+   */
+  etapePrecedente: string | null;
+  /** Quand le dossier s'est achevé, lu au journal. */
+  termineLe: string | null;
 }) {
   const [refus, setRefus] = useState<string | null>(null);
   /** La demande de corrections, et ce qu'on y écrit. */
@@ -128,9 +147,7 @@ export function Travail({
         setRefus(corps.error ?? "Les actes n'ont pas pu être produits");
         return;
       }
-      setRetour(
-        (corps.documents?.length ?? 0) + " actes produits, visibles dans l'onglet Pièces."
-      );
+      setRetour((corps.documents?.length ?? 0) + " actes produits, visibles dans l'onglet Pièces.");
       router.refresh();
     });
   }
@@ -275,9 +292,7 @@ export function Travail({
    * disparaître de l'écran à la seconde du clic - mais leur place est l'onglet des
    * documents, où ils vivent avec tous les autres. Une ligne y renvoie.
    */
-  const actesValides = taches.some(
-    (t) => t.identifiant === "relecture" && t.etat === "faite"
-  );
+  const actesValides = taches.some((t) => t.identifiant === "relecture" && t.etat === "faite");
 
   /**
    * Le geste d'une tâche, quelle que soit sa forme.
@@ -286,9 +301,7 @@ export function Travail({
    * fenêtre - et le rendu portait cinq branches imbriquées. Le geste se décrit ici une
    * fois ; la ligne et le bouton le rendent chacun à leur façon.
    */
-  function gesteDe(
-    tache: Tache
-  ): {
+  function gesteDe(tache: Tache): {
     libelle: string;
     faire?: () => void;
     href?: string;
@@ -370,15 +383,35 @@ export function Travail({
     });
   }
 
-  /** Déclarer le dépôt au guichet : la seule étape que rien ici ne peut deviner. */
-  function marquerLeDepot() {
+  /** Rouvrir un dossier clos : il revient d'un cran, et le travail reprend. */
+  function reprendre(vers: string) {
     setRefus(null);
 
     demarrer(async () => {
       const reponse = await fetch("/api/avocat/dossier", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier, sousPhase: "5d" }),
+        body: JSON.stringify({ dossier, sousPhase: vers }),
+      });
+
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "Le dossier n'a pas pu être rouvert.");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  /** Déclarer le dépôt au guichet : la seule étape que rien ici ne peut deviner. */
+  function marquerLeDepot() {
+    setRefus(null);
+
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/depot", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier }),
       });
 
       if (!reponse.ok) {
@@ -645,10 +678,13 @@ export function Travail({
             </svg>
           </span>
 
-          <h2 className={styles.acheveTitre}>Dossier terminé</h2>
+          <h2 className={styles.acheveTitre}>
+            Dossier terminé{termineLe ? " le " + termineLe : ""}
+          </h2>
           <p className={styles.achevePhrase}>
-            Tout ce qui vous revenait est fait. Le client a ses documents et suit la
-            suite depuis son espace.
+            Tout ce qui vous revenait est fait.
+            <br />
+            Le client a ses documents et suit la suite depuis son espace.
           </p>
 
           <div className={styles.acheveActions}>
@@ -664,10 +700,23 @@ export function Travail({
               </Link>
             )}
 
-            {/* Un dossier clos se rouvre : une coquille se voit parfois après coup. */}
-            <a href="#avancement" className={styles.travailSecondaire}>
-              Reprendre ce dossier
-            </a>
+            {/*
+              Un dossier clos se rouvre : une coquille se voit parfois après coup.
+              
+              Le geste menait à l'ancre de la barre d'avancement, trois lignes plus haut,
+              où un second bouton le faisait : on cliquait, la page sursautait, et rien
+              n'avait bougé.
+            */}
+            {etapePrecedente && (
+              <button
+                type="button"
+                className={styles.acheveReprendre}
+                onClick={() => reprendre(etapePrecedente)}
+                disabled={enCours}
+              >
+                {enCours ? "…" : "Reprendre ce dossier"}
+              </button>
+            )}
           </div>
         </section>
       )}
@@ -678,8 +727,6 @@ export function Travail({
           <ul className={styles.suite}>{aVenir.map((tache) => ligne(tache))}</ul>
         </section>
       )}
-
-
 
       {/*
         Le pied de l'onglet, en une zone.
@@ -693,9 +740,7 @@ export function Travail({
           {actesValides && (
             <p className={styles.renvoi}>
               Les actes du dossier sont dans{" "}
-              <Link href={"/avocat/" + dossier + "?onglet=documents"}>
-                l&apos;onglet Documents
-              </Link>
+              <Link href={"/avocat/" + dossier + "?onglet=documents"}>l&apos;onglet Documents</Link>
               .
             </p>
           )}
@@ -704,25 +749,22 @@ export function Travail({
             Le registre des bénéficiaires effectifs n'est pas une tâche : le greffe ne
             l'exige pas, et aucune tâche ne le réclame.
           */}
-          <p className={styles.facultatif}>
-            Registre des bénéficiaires effectifs, facultatif.
-            <label className={styles.travailTertiaire}>
-              {livrables.aLeRbe ? "Remplacer" : "Déposer"}
-              {champDeDepot("rbe")}
-            </label>
-          </p>
+          {livrables.registreConcerne && (
+            <p className={styles.facultatif}>
+              Registre des bénéficiaires effectifs, facultatif.
+              <label className={styles.travailTertiaire}>
+                {livrables.aLeRbe ? "Remplacer" : "Déposer"}
+                {champDeDepot("rbe")}
+              </label>
+            </p>
+          )}
         </div>
-
       </footer>
 
       {corrections && (
         <>
           {/* Le voile ne masque pas la liste : on écrit en regardant ce qui cloche. */}
-          <div
-            className={styles.voile}
-            onClick={() => setCorrections(false)}
-            aria-hidden="true"
-          />
+          <div className={styles.voile} onClick={() => setCorrections(false)} aria-hidden="true" />
 
           <div
             className={styles.fenetreCorrections}
@@ -732,9 +774,8 @@ export function Travail({
           >
             <h3 className={styles.fenetreCorrectionsTitre}>Demander des corrections au client</h3>
             <p className={styles.fenetreCorrectionsDetail}>
-              Le dossier repasse de son côté et il en est prévenu par courriel. Ce que
-              vous écrivez ici est ce qu&apos;il lira : dites ce qui cloche et ce que
-              vous attendez de lui.
+              Le dossier repasse de son côté et il en est prévenu par courriel. Ce que vous écrivez
+              ici est ce qu&apos;il lira : dites ce qui cloche et ce que vous attendez de lui.
             </p>
 
             <label className={styles.fenetreCorrectionsLabel} htmlFor="motif-corrections">

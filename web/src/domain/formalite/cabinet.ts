@@ -393,8 +393,8 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
            * l'on prépare cet envoi.
            */
           etat.confidentialiteDemandee
-          ? "Transmettez les comptes annuels, la décision d'approbation et la déclaration de confidentialité, dans le même envoi : déposée après coup, elle ne rattrape rien, les comptes sont déjà consultables. Un mois après l'approbation, deux par voie électronique."
-          : "Transmettez les comptes annuels et la décision d'approbation. Un mois après l'approbation, deux par voie électronique."
+          ? "Envoyez trois documents au greffe : les comptes annuels, la décision d'approbation et la déclaration de confidentialité. Les trois ensemble - une déclaration envoyée plus tard n'a plus d'effet, les comptes sont déjà publics. Vous avez un mois après l'approbation, deux si vous déposez en ligne."
+          : "Envoyez deux documents au greffe : les comptes annuels et la décision d'approbation. Vous avez un mois après l'approbation, deux si vous déposez en ligne."
         : etat.type === "fermeture"
           ? "Transmettez la décision de dissolution, l'attestation de parution, la déclaration de non-condamnation du liquidateur et sa pièce d'identité. La radiation se demandera à la clôture, avec les deux attestations."
           : etat.type === "cessation"

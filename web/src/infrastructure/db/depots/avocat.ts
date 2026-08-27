@@ -223,8 +223,19 @@ export async function dossierPourAvocat(utilisateur: UtilisateurConnecte, dossie
    * Un dossier fini laisse l'avocat devant un écran qui n'a plus rien à lui dire : il
    * repartait à la liste pour découvrir s'il restait du travail. Le compte le lui dit.
    */
+  /*
+   * La même règle que le filtre « À prendre » de la liste.
+   *
+   * Le compte s'en écartait - il bornait la phase et n'écartait que les dossiers
+   * terminés - et le bouton annonçait sept dossiers là où la liste en montrait neuf.
+   * Un dossier proposé est un dossier sans avocat, transmis, et non clos : voir
+   * estPropose, dans le domaine.
+   */
   const aPrendre = await prisma.formalites.count({
-    where: { assigned_avocat_id: null, phase: { gte: 5 }, status: { not: "terminee" } },
+    where: {
+      assigned_avocat_id: null,
+      status: { notIn: ["en_cours", "terminee", "archive", "rejete"] },
+    },
   });
 
   return {
@@ -1027,6 +1038,37 @@ export async function mettreUnActeADisposition(
   await avancerSelonLeTravail(utilisateur, document.formalite_id);
 
   return { publie: document.name };
+}
+
+/**
+ * Déclarer le dépôt au guichet, d'où que l'on parte.
+ *
+ * Le geste posait « Dépôt » directement. Un dossier qu'on venait de rouvrir était
+ * revenu à « Transmis » : le passage était refusé - on ne saute pas trois crans - et
+ * l'avocat se retrouvait devant un bouton qui ne faisait rien, sans autre chemin.
+ *
+ * On monte donc cran par cran jusqu'au dépôt, comme le fait l'avancement automatique.
+ * Chaque passage prévient le client de ce qui le concerne, dans l'ordre.
+ */
+export async function marquerLeDepotAuGuichet(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  const rang = (etape: string | null | undefined) =>
+    estSousPhase(etape) ? SOUS_PHASES_ORDONNEES.indexOf(etape) : -1;
+
+  let courante = dossier.business_sub_phase;
+  while (rang(courante) < rang("5d")) {
+    const suivante = sousPhaseSuivante(courante);
+    if (!suivante) break;
+    await changerSousPhase(utilisateur, dossierId, suivante);
+    courante = suivante;
+  }
+
+  return { sousPhase: courante };
 }
 
 /**

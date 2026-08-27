@@ -4,12 +4,14 @@ import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { dossierPourAvocat, versionsDuDossier } from "@/infrastructure/db/depots/avocat";
 import { formulaireDuDossier } from "@/infrastructure/db/depots/correction";
+import { messagesDuDossier } from "@/infrastructure/db/depots/messages";
 import { etatCabinet } from "@/domain/formalite/avocat";
 import { estPropose } from "@/domain/acces/regles";
 import { etatDesPieces } from "@/domain/formalite/pieces";
 import { piecesAttenduesDuDossier } from "@/infrastructure/documents/pieces-attendues";
 import { libelleDuType } from "@/domain/formalite/liste";
 import { libelleJournal } from "@/domain/formalite/journal";
+import { SOUS_PHASES_ORDONNEES, estSousPhase } from "@/domain/formalite/avocat";
 import { Notes } from "./Notes";
 import { Travail } from "./Travail";
 import { Statuts } from "./Statuts";
@@ -27,6 +29,7 @@ import { aRelire } from "@/domain/document/publication";
 import { Piece, type PieceAffichee } from "./Piece";
 import { Corriger } from "./Corriger";
 import { Historique, type EntreeDuJournal } from "./Historique";
+import { Communication, type MessageDuFil } from "./Communication";
 import { Avancement } from "./Avancement";
 import { PriseEnCharge } from "./PriseEnCharge";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
@@ -70,10 +73,20 @@ const CHAMPS: { cle: string; libelle: string }[] = [
  * les cachait derrière un mot qui ne dit rien. Les deux rejoignent le bas du
  * récapitulatif, où l'on relit le dossier.
  */
-const ONGLETS = ["travail", "documents", "dossier", "statuts", "annonce"] as const;
+const ONGLETS = [
+  "travail",
+  "documents",
+  "dossier",
+  "statuts",
+  "annonce",
+  "communication",
+  "historique",
+] as const;
 type Onglet = (typeof ONGLETS)[number];
 
 const NOMS: Record<Onglet, string> = {
+  historique: "Historique",
+  communication: "Communication",
   dossier: "Récapitulatif",
   travail: "À faire",
   documents: "Documents",
@@ -346,13 +359,42 @@ export default async function DossierAvocat({
     auteur: h.users?.name ?? "Système",
     libelle: libelleJournal(h.action, type),
     champ: h.target_field,
-    avant: h.before_value,
+    /*
+     * Les codes d'étape ne se montrent pas.
+     *
+     * Un changement d'étape inscrit « 5c » et « 5d » : la ligne affichait « 5e → 5d »
+     * sous un libellé qui dit déjà « Étape annoncée au client : Dépôt ». Personne n'a
+     * jamais tapé ces codes, et ils ne veulent rien dire pour qui les lit.
+     */
+    avant: h.action.startsWith("sous_phase_") || h.action.startsWith("etat_")
+      ? null
+      : h.before_value,
     /* Une valeur qui redit l'auteur n'apprend rien : « Dossier pris en charge » y
        inscrit le nom du preneur, que la ligne porte déjà. */
-    apres: h.after_value && h.after_value !== h.users?.name ? h.after_value : null,
+    apres:
+      h.action.startsWith("sous_phase_") || h.action.startsWith("etat_")
+        ? null
+        : h.after_value && h.after_value !== h.users?.name
+          ? h.after_value
+          : null,
     commentaire: h.comment,
     quand: quand(h.created_at),
     teinte: teinteJournal(h.action),
+  }));
+
+  /*
+   * Le fil du dossier, le même que celui de la messagerie.
+   *
+   * Écrire au client demandait de quitter le dossier, d'y retrouver le bon fil, puis de
+   * revenir : on écrivait de mémoire, sans ce qu'on voulait commenter sous les yeux.
+   */
+  const fil: MessageDuFil[] = (await messagesDuDossier(utilisateur, dossier.id)).map((m) => ({
+    id: m.id,
+    expediteurId: m.expediteurId,
+    expediteur: m.expediteur,
+    contenu: m.contenu,
+    fichier: m.fichier,
+    quand: quand(m.envoyeLe),
   }));
 
   /* Les versions antérieures des actes produits, rangées par titre. */
@@ -384,6 +426,30 @@ export default async function DossierAvocat({
     statutsAMettreAJour(codes) &&
     !documents.some((d) => d.name === TITRE_STATUTS_A_JOUR);
   const faites = taches.filter((t) => t.etat === "faite").length;
+  /*
+   * Quand le dossier s'est achevé.
+   *
+   * La date se lit au journal, à l'entrée qui a posé la dernière étape - qu'un document
+   * du greffe l'ait close ou que l'avocat ait déclaré qu'il n'en viendrait aucun.
+   * « Dossier terminé » sans date ne dit pas si c'était ce matin ou l'an dernier.
+   */
+  const cloture = historique.find(
+    (h) => h.action === "sous_phase_5e" || h.action === "depot_sans_document"
+  );
+  const termineLe = cloture?.created_at ? quand(cloture.created_at) : null;
+
+  /*
+   * L'étape d'avant : rouvrir un dossier clos le ramène d'un cran.
+   *
+   * Nulle au départ - il n'y a rien à défaire tant que rien n'a été annoncé.
+   */
+  const rang = estSousPhase(dossier.business_sub_phase)
+    ? SOUS_PHASES_ORDONNEES.indexOf(dossier.business_sub_phase)
+    : -1;
+  const etapePrecedente = rang > 0 ? SOUS_PHASES_ORDONNEES[rang - 1] : null;
+
+  /* Ce qu'il reste à faire, pour la pastille de l'onglet. */
+  const restantes = taches.length - faites;
 
   return (
     <main className={styles.page}>
@@ -516,6 +582,16 @@ export default async function DossierAvocat({
             >
               {NOMS[o]}
               {/*
+                Ce qu'il reste à faire se compte sur l'onglet.
+                
+                « À faire » n'en portait aucun : il fallait l'ouvrir pour savoir s'il
+                restait quelque chose, alors que c'est la question qu'on se pose en
+                arrivant.
+              */}
+              {o === "travail" && restantes > 0 && (
+                <span className={styles.tabCount}>{restantes}</span>
+              )}
+              {/*
                 Un compte sur un onglet dit de quoi il s'agit.
                 
                 « Récapitulatif 1 » ne disait pas ce qu'était ce 1 - une note ? une
@@ -570,12 +646,19 @@ export default async function DossierAvocat({
               peutProduireLesActes={type === "modification"}
               informationsVerifiees={informationsVerifiees}
               dossiersAPrendre={dossiersAPrendre}
+              etapePrecedente={etapePrecedente}
+              termineLe={termineLe}
               pieces={pieces}
               /* Les documents remis sont les pièces de l'étape « Déposer ». */
               livrables={{
                 documentFinal: DOCUMENT_FINAL[type],
                 aLeKbis: remis(TYPE_KBIS),
                 aLeRbe: remis(TYPE_RBE),
+                /*
+                 * Le registre se dépose à la constitution et se met à jour quand la
+                 * détention change : un dépôt de comptes n'y touche pas.
+                 */
+                registreConcerne: type === "creation" || type === "modification",
               }}
             />
           </>
@@ -697,6 +780,32 @@ export default async function DossierAvocat({
 
           </>
         )}
+
+        {/*
+          Écrire au client sans quitter le dossier.
+
+          Il fallait passer par la messagerie, y retrouver le bon fil, puis revenir :
+          on écrivait de mémoire, sans ce qu'on voulait commenter sous les yeux. C'est
+          le même fil - la même table, le même point d'entrée.
+        */}
+        {onglet === "communication" && (
+          <Communication
+            dossier={dossier.id}
+            moi={utilisateur.id}
+            messages={fil}
+            client={{ nom: client?.name ?? "Client", courriel: client?.email ?? null }}
+            documents={documents.length}
+            aVerifier={aVerifier}
+          />
+        )}
+
+        {/*
+          Le journal du dossier, dans son onglet.
+          
+          Il s'ouvrait en fenêtre depuis les gestes rapides du récapitulatif : on le
+          cherchait dans une colonne, alors qu'il se lit comme le reste du dossier.
+        */}
+        {onglet === "historique" && <Historique entrees={entreesDuJournal} />}
 
         {onglet === "statuts" &&
           (type === "modification" ? (
@@ -868,11 +977,11 @@ export default async function DossierAvocat({
                 */}
                 <div className={styles.recapQuickActions}>
                   <Link href={adresse("documents")}>Voir les documents</Link>
-                  <Link href={"/messagerie?dossier=" + dossier.id}>
-                    Ouvrir la messagerie
+                  <Link href={adresse("communication")}>
+                    Écrire au client
                     {nonLus > 0 && <span className={styles.pastilleRouge}>{nonLus}</span>}
                   </Link>
-                  <Historique entrees={entreesDuJournal} />
+                  <Link href={adresse("historique")}>Voir l&apos;historique</Link>
                 </div>
               </div>
             </div>

@@ -285,16 +285,31 @@
 }
 /* DOSSIERS TABLE */
 /* ===== Notes internes d'équipe ===== */
-/* Le compte se pose sur une pastille : nu, il flottait comme une coquille. */
+/*
+ * Le compte se pose sur une pastille.
+ *
+ * Nu, il flottait comme une coquille à côté du nom de l'onglet. À #f4f4f5 il se
+ * confondait avec le fond de la page : une pastille qu'on ne voit pas n'en est pas une.
+ */
 .tabCount {
-  margin-left: 7px;
-  padding: 2px 7px;
+  display: inline-block;
+  min-width: 20px;
+  margin-left: 8px;
+  padding: 2px 8px;
   border-radius: 100px;
-  background: #f4f4f5;
+  background: #e4e4e7;
   font-size: 11px;
-  font-weight: 500;
-  color: #71717a;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  color: #52525b;
   vertical-align: 1px;
+}
+
+/* Sur l'onglet ouvert, elle suit le texte : le gris pâle y paraissait éteint. */
+.detailTab.active .tabCount {
+  background: #111;
+  color: #fff;
 }
 .notesIntro {
   display: flex;
@@ -569,9 +584,10 @@
   color: #111;
 }
 
+/* La phrase prend la largeur de la fenêtre : bornée à 62 caractères, elle se coupait
+   au milieu d'une ligne à moitié vide. */
 .fenetreCorrectionsDetail {
   margin: 0 0 20px;
-  max-width: 62ch;
   font-size: 13.5px;
   line-height: 1.55;
   color: #71717a;
@@ -588,6 +604,9 @@
 .fenetreCorrectionsChamp {
   display: block;
   width: 100%;
+  /* La feuille globale plafonne les zones de texte à 460 px, pour les formulaires en
+     colonne : dans une fenêtre, le champ s'arrêtait bien avant ses propres boutons. */
+  max-width: none;
   padding: 11px 13px;
   border: 1px solid #e5e5e7;
   border-radius: 10px;
@@ -3428,9 +3447,9 @@ button.ligneCorps:disabled {
 .acheve {
   margin-bottom: 28px;
   padding: 28px 26px 26px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid #e5e5e7;
   border-radius: 14px;
-  background: #f0fdf4;
+  background: #fafafa;
   text-align: center;
 }
 
@@ -3442,7 +3461,7 @@ button.ligneCorps:disabled {
   height: 44px;
   margin-bottom: 14px;
   border-radius: 50%;
-  background: #16a34a;
+  background: #111;
   color: #fff;
 }
 
@@ -3456,7 +3475,7 @@ button.ligneCorps:disabled {
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 0;
-  color: #14532d;
+  color: #111;
 }
 
 .achevePhrase {
@@ -3464,7 +3483,7 @@ button.ligneCorps:disabled {
   max-width: 56ch;
   font-size: 14px;
   line-height: 1.55;
-  color: #3f6b4c;
+  color: #71717a;
 }
 
 .acheveActions {
@@ -3556,6 +3575,7 @@ button.ligneCorps:disabled {
 
 .formNote textarea {
   width: 100%;
+  max-width: none;
   padding: 9px 11px;
   border: 1px solid #e5e5e7;
   border-radius: 10px;
@@ -3643,4 +3663,469 @@ button.ligneCorps:disabled {
 .travailRenvoi:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+/* ---------- La conversation avec le client ---------- */
+
+/*
+ * Le même fil que la messagerie, dans le dossier.
+ *
+ * Écrire au client demandait de le quitter, d'y retrouver le bon fil, puis de revenir :
+ * on écrivait de mémoire, sans ce qu'on voulait commenter sous les yeux.
+ */
+/*
+ * La conversation dans un panneau, et ce qu'il faut savoir à côté.
+ *
+ * Les bulles flottaient sur le fond de la page, la barre d'écriture plus bas, sans
+ * rien qui les tienne ensemble : deux messages et l'écran paraissait vide.
+ */
+.filGrille {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: start;
+  gap: 20px;
+}
+
+.fil {
+  display: flex;
+  flex-direction: column;
+  min-height: 460px;
+  padding: 18px 20px;
+  border: 1px solid #ececee;
+  border-radius: 16px;
+  background: #fff;
+}
+
+/* Le fil pousse la barre d'écriture au bas du panneau. */
+.fil > .filMessages {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1100px) {
+  .filGrille {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Ce qu'on a sous les yeux en écrivant ---------- */
+
+.filColonne {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filFiche {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid #ececee;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.filFicheNom {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.filFicheMail {
+  font-size: 12.5px;
+  color: #a1a1aa;
+  overflow-wrap: anywhere;
+}
+
+.filFicheLigne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #71717a;
+}
+
+.filFicheNombre {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #111;
+}
+
+.filFicheNote {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a1a1aa;
+}
+
+.filVide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 22px;
+  max-width: 44ch;
+  align-self: center;
+  font-size: 13.5px;
+  line-height: 1.55;
+  text-align: center;
+  color: #a1a1aa;
+}
+
+.filMessages {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 4px 2px;
+  list-style: none;
+}
+
+/*
+ * Une ligne par message, du côté de qui l'écrit.
+ *
+ * Les bulles occupaient une carte chacune, l'auteur, le texte et l'heure espacés de
+ * douze pixels : deux messages remplissaient l'écran, et la conversation se lisait
+ * comme une pile de fiches.
+ */
+/* Même remarque que pour le journal : la carte globale encadrait chaque bulle. */
+.filLigne {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: min(68%, 520px);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
+.filDeNous {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+/* Le nom ne se répète pas d'une bulle à l'autre du même auteur. */
+.filAuteur {
+  margin: 10px 0 3px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.filBulle {
+  padding: 9px 13px;
+  border: 1px solid #ececee;
+  border-radius: 14px 14px 14px 5px;
+  background: #fff;
+}
+
+.filDeNous .filBulle {
+  border-color: #e6e6e9;
+  border-radius: 14px 14px 5px 14px;
+  background: #f1f1f3;
+}
+
+.filTexte {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* L'heure sous la bulle, à peine visible : on la cherche, on ne la lit pas. */
+.filQuand {
+  margin: 3px 12px 8px;
+  font-size: 11px;
+  color: #b4b4bb;
+}
+
+.filPiece {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  padding: 4px 9px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  font-size: 12px;
+  color: #3f3f46;
+  text-decoration: none;
+}
+
+.filDeNous .filPiece {
+  background: #fff;
+}
+
+.filPiece svg {
+  width: 13px;
+  height: 13px;
+  color: #a1a1aa;
+}
+
+.filPiece:hover {
+  background: #e4e4e7;
+}
+
+/*
+ * Une barre, non un formulaire.
+ *
+ * La zone d'écriture tenait une carte à elle seule, un champ de trois lignes et deux
+ * boutons alignés à droite : écrire un mot au client y paraissait un acte.
+ */
+.filEcrire {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 6px 6px 6px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 22px;
+  background: #fafafa;
+}
+
+.filEcrire:focus-within {
+  border-color: #d4d4d8;
+  background: #fff;
+}
+
+.filEcrire textarea {
+  flex: 1;
+  min-width: 160px;
+  max-width: none;
+  min-height: 36px;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111;
+  resize: none;
+}
+
+.filEcrire textarea:focus {
+  outline: none;
+}
+
+.filGestes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filRefus {
+  flex-basis: 100%;
+  margin: 0 0 4px 2px;
+  font-size: 12.5px;
+  color: #dc2626;
+}
+
+/* Joindre une pièce : un geste, non un lien perdu à côté du bouton d'envoi. */
+/* Le trombone suffit : le mot doublait le dessin. */
+.filJoindre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #71717a;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.filJoindre svg {
+  width: 17px;
+  height: 17px;
+}
+
+.filJoindre:hover {
+  background: #f4f4f5;
+  color: #111;
+}
+
+/* Le bouton d'envoi tient dans la barre : il n'a pas à en sortir. */
+.filEcrire .travailPrincipal {
+  height: 36px;
+  border-radius: 100px;
+}
+
+/* Rouvrir un dossier clos est un rattrapage, non une suite : le geste reste discret. */
+.acheveReprendre {
+  height: 38px;
+  margin: 0;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #71717a;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: #d4d4d8;
+  cursor: pointer;
+}
+
+.acheveReprendre:hover:not(:disabled) {
+  color: #111;
+  text-decoration-color: #111;
+}
+
+.acheveReprendre:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---------- L'historique du dossier ---------- */
+
+/*
+ * Le journal, dans son panneau.
+ *
+ * Il occupait le bas du récapitulatif, déroulé quel que soit son âge, puis une fenêtre
+ * ouverte depuis les gestes rapides - où on ne la cherchait pas. Il a son onglet.
+ */
+.journal {
+  padding: 22px 24px;
+  border: 1px solid #ececee;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.journalTete {
+  padding-bottom: 18px;
+  border-bottom: 1px solid #f2f2f4;
+}
+
+.journalTitre {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.journalDetail {
+  margin: 6px 0 0;
+  max-width: 70ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #a1a1aa;
+}
+
+.journalVide {
+  margin: 22px 0 4px;
+  font-size: 13.5px;
+  color: #a1a1aa;
+}
+
+.journalListe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * Une ligne par intervention, tenue par un filet.
+ *
+ * Chaque entrée portait une pastille de trente pixels et trois lignes d'écart : lire
+ * trente interventions demandait de faire défiler deux écrans.
+ */
+/*
+ * La feuille globale fait une carte de tout élément de liste posé dans une section :
+ * chaque intervention se retrouvait encadrée de blanc dans un panneau déjà blanc.
+ */
+.journalEntree {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0 14px 4px;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
+.journalEntree + .journalEntree {
+  border-top: 1px solid #f5f5f7;
+}
+
+.journalPoint {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #d4d4d8;
+}
+
+/* La teinte dit ce que l'intervention a fait, sans qu'on ait lu. */
+.journalPoint.green {
+  background: #16a34a;
+}
+
+.journalPoint.red {
+  background: #dc2626;
+}
+
+.journalPoint.blue {
+  background: #2563eb;
+}
+
+.journalPoint.violet {
+  background: #7c3aed;
+}
+
+.journalCorps {
+  min-width: 0;
+}
+
+.journalLigne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+}
+
+.journalQuoi {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.journalChamp {
+  padding: 1px 7px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  font-size: 11.5px;
+  color: #71717a;
+}
+
+.journalValeurs {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+}
+
+.journalCommentaire {
+  margin: 5px 0 0;
+  max-width: 78ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #52525b;
+}
+
+.journalQui {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: #a1a1aa;
 }

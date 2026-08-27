@@ -10,18 +10,74 @@ import crypto from "node:crypto";
 
 export const TAILLE_MAXIMALE = 10 * 1024 * 1024;
 
+const ZIP: number[][] = [
+  [0x50, 0x4b, 0x03, 0x04],
+  [0x50, 0x4b, 0x05, 0x06],
+];
+
+/** Les vieux formats de bureautique : un conteneur OLE2. */
+const OLE2: number[][] = [[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]];
+
 const SIGNATURES: Record<string, number[][]> = {
   ".pdf": [[0x25, 0x50, 0x44, 0x46]], // %PDF
   ".jpg": [[0xff, 0xd8, 0xff]],
   ".jpeg": [[0xff, 0xd8, 0xff]],
   ".png": [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
-  ".docx": [
-    [0x50, 0x4b, 0x03, 0x04],
-    [0x50, 0x4b, 0x05, 0x06],
-  ], // conteneur ZIP
+  ".docx": ZIP,
 };
 
+/**
+ * Ce qu'on accepte en pièce jointe d'une conversation.
+ *
+ * Les pièces d'un dossier sont bornées à quatre formats : elles partent au greffe, et
+ * une photo prise au téléphone n'est pas un justificatif. Une conversation, elle, ne va
+ * nulle part - un client envoie ce qu'il a sous la main, et son iPhone produit du HEIC.
+ *
+ * On élargit donc largement, sans lâcher le contrôle : chaque format garde sa signature
+ * quand il en a une, et les formats de texte, qui n'en ont pas, sont nommés à part. Ce
+ * qui reste dehors est ce qui s'exécute.
+ */
+const SIGNATURES_JOINTES: Record<string, number[][]> = {
+  ...SIGNATURES,
+  ".gif": [[0x47, 0x49, 0x46, 0x38]],
+  ".webp": [[0x52, 0x49, 0x46, 0x46]], // RIFF, « WEBP » à l'octet 8
+  ".tif": [
+    [0x49, 0x49, 0x2a, 0x00],
+    [0x4d, 0x4d, 0x00, 0x2a],
+  ],
+  ".tiff": [
+    [0x49, 0x49, 0x2a, 0x00],
+    [0x4d, 0x4d, 0x00, 0x2a],
+  ],
+  ".bmp": [[0x42, 0x4d]],
+  ".zip": ZIP,
+  ".xlsx": ZIP,
+  ".pptx": ZIP,
+  ".odt": ZIP,
+  ".ods": ZIP,
+  ".odp": ZIP,
+  ".doc": OLE2,
+  ".xls": OLE2,
+  ".ppt": OLE2,
+  ".rtf": [[0x7b, 0x5c, 0x72, 0x74, 0x66]], // {\rtf
+};
+
+/**
+ * Les formats sans en-tête : un fichier de texte commence par son texte.
+ *
+ * Le HEIC des iPhone en fait partie de notre point de vue : sa signature ne tient pas
+ * aux premiers octets mais à la marque « ftyp » du quatrième au huitième, et un
+ * conteneur ISO-BMFF porte des marques trop variées pour être énumérées ici.
+ */
+const SANS_SIGNATURE = [".txt", ".csv", ".md", ".heic", ".heif", ".json", ".xml"];
+
 export const EXTENSIONS_ACCEPTEES = Object.keys(SIGNATURES);
+
+/** Ce qu'une conversation accepte : tout ce qui ne s'exécute pas. */
+export const EXTENSIONS_JOINTES = [
+  ...Object.keys(SIGNATURES_JOINTES),
+  ...SANS_SIGNATURE,
+];
 
 export function extensionDe(nom: string): string {
   const point = nom.lastIndexOf(".");
@@ -30,7 +86,10 @@ export function extensionDe(nom: string): string {
 
 /** Le contenu correspond-il vraiment à l'extension annoncée ? */
 export function signatureValide(contenu: Uint8Array, extension: string): boolean {
-  const attendues = SIGNATURES[extension];
+  /* Un format de texte n'a pas d'en-tête : il n'y a rien à comparer. */
+  if (SANS_SIGNATURE.includes(extension)) return true;
+
+  const attendues = SIGNATURES_JOINTES[extension];
   // Format non listé : on refuse plutôt que de supposer.
   if (!attendues) return false;
   return attendues.some((sig) => sig.every((octet, i) => contenu[i] === octet));

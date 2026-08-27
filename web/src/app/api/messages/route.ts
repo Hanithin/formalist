@@ -4,6 +4,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { messagesDuDossier, envoyerMessage } from "@/infrastructure/db/depots/messages";
 import { exigerDossier } from "@/infrastructure/db/depots/dossiers";
 import { ecrirePieceJointe } from "@/infrastructure/documents/depot";
+import { EXTENSIONS_JOINTES } from "@/lib/fichiers";
 import { LONGUEUR_MAXIMALE } from "@/domain/messagerie/messages";
 import { validerCorps, validerParametres, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
@@ -18,8 +19,14 @@ const ENVOI = z.object({
   repondA: schemas.identifiant.nullable().optional(),
 });
 
-/** Les formats qu'une conversation accepte, ceux de l'input d'origine. */
-const FORMATS = [".pdf", ".jpg", ".jpeg", ".png", ".docx"];
+/*
+ * Ce qu'une conversation accepte.
+ *
+ * Elle se bornait aux quatre formats des pièces du dossier - celles qui partent au
+ * greffe. Un client envoie ce qu'il a sous la main, et son iPhone produit du HEIC :
+ * son message était refusé sans qu'il comprenne pourquoi.
+ */
+const FORMATS = EXTENSIONS_JOINTES;
 
 export const GET = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
