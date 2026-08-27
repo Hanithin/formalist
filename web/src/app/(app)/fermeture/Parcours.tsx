@@ -110,6 +110,17 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
     setEtat((actuel) => ({ ...actuel, ...changement }));
   }
 
+  /*
+   * La société se met à jour depuis son état courant, non depuis celui de son rendu.
+   *
+   * Le capital arrive du registre après un aller-retour, et l'écriture qui le posait
+   * repartait de la société capturée au rendu : la forme, le siège et la ville qu'on
+   * venait d'inscrire repassaient à blanc au moment même où le capital s'affichait.
+   */
+  function majSociete(maj: (societe: Fermeture["societe"]) => Fermeture["societe"]) {
+    setEtat((actuel) => ({ ...actuel, societe: maj(actuel.societe) }));
+  }
+
   function majValeurs(maj: (valeurs: Fermeture["valeurs"]) => Fermeture["valeurs"]) {
     setEtat((actuel) => ({ ...actuel, valeurs: maj(actuel.valeurs) }));
   }
@@ -187,6 +198,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
             actesInitiaux={actesInitiaux}
             changer={changer}
             majValeurs={majValeurs}
+            majSociete={majSociete}
             refusDe={refusDe}
           />
         ) : (
@@ -199,6 +211,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
             actesInitiaux={actesInitiaux}
             changer={changer}
             majValeurs={majValeurs}
+            majSociete={majSociete}
             refusDe={refusDe}
           />
         )}
@@ -312,6 +325,7 @@ interface PhaseProps {
   actesInitiaux: ActeProduit[];
   changer: (c: Partial<Fermeture>) => void;
   majValeurs: (maj: (v: Fermeture["valeurs"]) => Fermeture["valeurs"]) => void;
+  majSociete: (maj: (societe: Fermeture["societe"]) => Fermeture["societe"]) => void;
   refusDe: (champ: string) => string | undefined;
 }
 
@@ -325,10 +339,11 @@ function PhaseDissolution({
   actesInitiaux,
   changer,
   majValeurs,
+  majSociete,
   refusDe,
 }: PhaseProps & { voie: "liquidation-amiable" | "tup" }) {
   if (etape === 1) {
-    return <EtapeSociete etat={etat} changer={changer} refusDe={refusDe} />;
+    return <EtapeSociete etat={etat} changer={changer} majSociete={majSociete} refusDe={refusDe} />;
   }
 
   if (etape === 2) {
@@ -369,49 +384,45 @@ function PhaseDissolution({
 function EtapeSociete({
   etat,
   changer,
+  majSociete,
   refusDe,
 }: {
   etat: Fermeture;
   changer: (c: Partial<Fermeture>) => void;
+  majSociete: (maj: (societe: Fermeture["societe"]) => Fermeture["societe"]) => void;
   refusDe: (champ: string) => string | undefined;
 }) {
   function retenir(trouvee: SocieteTrouvee) {
-    changer({
-      societe: {
-        ...etat.societe,
-        denomination: trouvee.denomination,
-        forme: trouvee.forme || etat.societe.forme,
-        siren: trouvee.siren,
-        adresse: trouvee.siege,
-        codePostal: trouvee.codePostal,
-        ville: trouvee.commune,
-      },
-    });
+    majSociete((societe) => ({
+      ...societe,
+      denomination: trouvee.denomination,
+      forme: trouvee.forme || societe.forme,
+      siren: trouvee.siren,
+      adresse: trouvee.siege,
+      codePostal: trouvee.codePostal,
+      ville: trouvee.commune,
+    }));
 
     if (!trouvee.siren) return;
     fetch("/api/societe/" + encodeURIComponent(trouvee.siren))
       .then((r) => (r.ok ? r.json() : null))
       .then((corps: { societe?: { capital?: number | null } } | null) => {
         const capital = corps?.societe?.capital;
-        if (typeof capital === "number") {
-          changer({
-            societe: { ...etat.societe, ...trouvee, adresse: trouvee.siege, capital },
-          });
-        }
+        if (typeof capital === "number") majSociete((societe) => ({ ...societe, capital }));
       })
       .catch(() => {
         /* Capital non publié : il se saisit à la main, ci-dessous. */
       });
   }
 
-  const majSociete = (champ: string, valeur: string | number) =>
+  const champSociete = (champ: string, valeur: string | number) =>
     changer({ societe: { ...etat.societe, [champ]: valeur } });
 
   /*
    * Plusieurs champs de la société d'un coup.
    *
    * Retenir une adresse écrit la voie, le code postal et la ville dans le même cycle.
-   * Trois appels à majSociete partiraient tous de la même société capturée, et les
+   * Trois appels à champSociete partiraient tous de la même société capturée, et les
    * deux derniers effaceraient le premier.
    */
   const majSocietes = (champs: Record<string, string>) =>
@@ -433,7 +444,7 @@ function EtapeSociete({
           <input
             id="fermeture-denomination"
             value={etat.societe.denomination ?? ""}
-            onChange={(e) => majSociete("denomination", e.target.value)}
+            onChange={(e) => champSociete("denomination", e.target.value)}
           />
           {refusDe("denomination") && <p role="alert">{refusDe("denomination")}</p>}
         </div>
@@ -443,7 +454,7 @@ function EtapeSociete({
           <select
             id="fermeture-forme"
             value={etat.societe.forme ?? ""}
-            onChange={(e) => majSociete("forme", e.target.value)}
+            onChange={(e) => champSociete("forme", e.target.value)}
           >
             <option value="">Choisir</option>
             {["SAS", "SASU", "SARL", "EURL", "SA", "SCI", "SNC"].map((f) => (
@@ -460,7 +471,7 @@ function EtapeSociete({
           <input
             id="fermeture-siren"
             value={etat.societe.siren ?? ""}
-            onChange={(e) => majSociete("siren", e.target.value)}
+            onChange={(e) => champSociete("siren", e.target.value)}
           />
           {refusDe("siren") && <p role="alert">{refusDe("siren")}</p>}
         </div>
@@ -488,7 +499,7 @@ function EtapeSociete({
           <Adresse
             id="fermeture-adresse"
             valeur={etat.societe.adresse ?? ""}
-            surChangement={(voie) => majSociete("adresse", voie)}
+            surChangement={(voie) => champSociete("adresse", voie)}
             surCompletion={(codePostal, ville, voie) =>
               majSocietes({ adresse: voie, codePostal, ville })
             }
@@ -504,7 +515,7 @@ function EtapeSociete({
             value={etat.societe.codePostal ?? ""}
             inputMode="numeric"
             maxLength={5}
-            onChange={(e) => majSociete("codePostal", e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => champSociete("codePostal", e.target.value.replace(/\D/g, ""))}
           />
         </div>
 
@@ -514,7 +525,7 @@ function EtapeSociete({
           <Ville
             id="fermeture-ville"
             valeur={etat.societe.ville ?? ""}
-            surChangement={(ville) => majSociete("ville", ville)}
+            surChangement={(ville) => champSociete("ville", ville)}
             surCompletion={(codePostal, ville) => majSocietes({ codePostal, ville })}
           />
         </div>

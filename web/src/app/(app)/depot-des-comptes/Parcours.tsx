@@ -122,6 +122,19 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
     setEtat((actuel) => ({ ...actuel, ...changement }));
   }
 
+  /*
+   * La société se met à jour depuis son état courant, non depuis celui de son rendu.
+   *
+   * `changer({ societe: { ...etat.societe } })` fige la société telle qu'elle était au
+   * moment du rendu. Or deux allers-retours suivent la recherche au registre - le
+   * capital d'un côté, le greffe compétent de l'autre - et chacun repartait de cet
+   * état d'avant : la ville reprise du registre repassait à blanc, et celle des deux
+   * réponses qui arrivait la seconde effaçait la première.
+   */
+  function majSociete(maj: (societe: Comptes["societe"]) => Comptes["societe"]) {
+    setEtat((actuel) => ({ ...actuel, societe: maj(actuel.societe) }));
+  }
+
   function majValeurs(maj: (valeurs: Comptes["valeurs"]) => Comptes["valeurs"]) {
     setEtat((actuel) => ({ ...actuel, valeurs: maj(actuel.valeurs) }));
   }
@@ -193,7 +206,12 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
         </div>
 
         {etape === 1 && (
-          <EtapeSociete etat={etat} changer={changer} refusDe={refusDe} />
+          <EtapeSociete
+            etat={etat}
+            changer={changer}
+            majSociete={majSociete}
+            refusDe={refusDe}
+          />
         )}
 
         {etape === 2 && (
@@ -353,62 +371,62 @@ function Frise({
 function EtapeSociete({
   etat,
   changer,
+  majSociete,
   refusDe,
 }: {
   etat: Comptes;
   changer: (c: Partial<Comptes>) => void;
+  majSociete: (maj: (societe: Comptes["societe"]) => Comptes["societe"]) => void;
   refusDe: (champ: string) => string | undefined;
 }) {
   function retenir(trouvee: SocieteTrouvee) {
-    changer({
-      societe: {
-        ...etat.societe,
-        denomination: trouvee.denomination,
-        forme: trouvee.forme || etat.societe.forme,
-        siren: trouvee.siren,
-        adresse: trouvee.siege,
-        codePostal: trouvee.codePostal,
-        ville: trouvee.commune,
-      },
-    });
+    majSociete((societe) => ({
+      ...societe,
+      denomination: trouvee.denomination,
+      forme: trouvee.forme || societe.forme,
+      siren: trouvee.siren,
+      adresse: trouvee.siege,
+      codePostal: trouvee.codePostal,
+      ville: trouvee.commune,
+    }));
 
     if (!trouvee.siren) return;
     fetch("/api/societe/" + encodeURIComponent(trouvee.siren))
       .then((r) => (r.ok ? r.json() : null))
       .then((corps: { societe?: { capital?: number | null } } | null) => {
         const capital = corps?.societe?.capital;
-        if (typeof capital === "number") {
-          changer({ societe: { ...etat.societe, ...trouvee, adresse: trouvee.siege, capital } });
-        }
+        if (typeof capital === "number") majSociete((societe) => ({ ...societe, capital }));
       })
       .catch(() => {
         /* Capital non publié : il se saisit à la main, ci-dessous. */
       });
 
-    if (trouvee.codePostal) {
-      fetch(
-        "/api/rcs?codePostal=" +
-          encodeURIComponent(trouvee.codePostal) +
-          "&ville=" +
-          encodeURIComponent(trouvee.commune)
-      )
-        .then((r) => (r.ok ? r.json() : null))
-        .then((corps: { villeRcs?: string } | null) => {
-          const villeRcs = corps?.villeRcs || trouvee.commune;
-          if (villeRcs) changer({ societe: { ...etat.societe, ...trouvee, adresse: trouvee.siege, villeRcs } });
-        })
-        .catch(() => {});
-    }
+    if (!trouvee.codePostal) return;
+    fetch(
+      "/api/rcs?codePostal=" +
+        encodeURIComponent(trouvee.codePostal) +
+        "&ville=" +
+        encodeURIComponent(trouvee.commune)
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((corps: { villeRcs?: string } | null) => {
+        /* À défaut de greffe reconnu, la commune du siège est la meilleure réponse. */
+        const villeRcs = corps?.villeRcs || trouvee.commune;
+        if (villeRcs) majSociete((societe) => ({ ...societe, villeRcs }));
+      })
+      .catch(() => {
+        /* Greffe non déterminé : la ville du RCS se saisit à la main, ci-dessous. */
+      });
   }
 
-  const majSociete = (champ: string, valeur: string | number) =>
+  const champSociete = (champ: string, valeur: string | number) =>
     changer({ societe: { ...etat.societe, [champ]: valeur } });
 
   /*
    * Plusieurs champs de la société d'un coup.
    *
    * Retenir une adresse écrit la voie, le code postal et la ville dans le même cycle.
-   * Trois appels à majSociete partiraient tous de la même société capturée, et les
+   * Trois appels à champSociete partiraient tous de la même société capturée, et les
    * deux derniers effaceraient le premier - on choisissait une adresse, et la voie
    * disparaissait.
    */
@@ -430,7 +448,7 @@ function EtapeSociete({
           <input
             id="comptes-denomination"
             value={etat.societe.denomination ?? ""}
-            onChange={(e) => majSociete("denomination", e.target.value)}
+            onChange={(e) => champSociete("denomination", e.target.value)}
           />
           {refusDe("denomination") && <p role="alert">{refusDe("denomination")}</p>}
         </div>
@@ -440,7 +458,7 @@ function EtapeSociete({
           <select
             id="comptes-forme"
             value={etat.societe.forme ?? ""}
-            onChange={(e) => majSociete("forme", e.target.value)}
+            onChange={(e) => champSociete("forme", e.target.value)}
           >
             <option value="">Choisir</option>
             {["SAS", "SASU", "SARL", "EURL", "SA", "SCI", "SNC"].map((f) => (
@@ -457,7 +475,7 @@ function EtapeSociete({
           <input
             id="comptes-siren"
             value={etat.societe.siren ?? ""}
-            onChange={(e) => majSociete("siren", e.target.value)}
+            onChange={(e) => champSociete("siren", e.target.value)}
           />
           {refusDe("siren") && <p role="alert">{refusDe("siren")}</p>}
         </div>
@@ -484,7 +502,7 @@ function EtapeSociete({
           <Adresse
             id="comptes-adresse"
             valeur={etat.societe.adresse ?? ""}
-            surChangement={(voie) => majSociete("adresse", voie)}
+            surChangement={(voie) => champSociete("adresse", voie)}
             surCompletion={(codePostal, ville, voie) =>
               majSocietes({ adresse: voie, codePostal, ville })
             }
@@ -500,7 +518,7 @@ function EtapeSociete({
             value={etat.societe.codePostal ?? ""}
             inputMode="numeric"
             maxLength={5}
-            onChange={(e) => majSociete("codePostal", e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => champSociete("codePostal", e.target.value.replace(/\D/g, ""))}
           />
         </div>
 
@@ -510,7 +528,7 @@ function EtapeSociete({
           <Ville
             id="comptes-ville"
             valeur={etat.societe.ville ?? ""}
-            surChangement={(ville) => majSociete("ville", ville)}
+            surChangement={(ville) => champSociete("ville", ville)}
             surCompletion={(codePostal, ville) => majSocietes({ codePostal, ville })}
           />
         </div>
@@ -520,7 +538,7 @@ function EtapeSociete({
           <input
             id="comptes-rcs"
             value={etat.societe.villeRcs ?? ""}
-            onChange={(e) => majSociete("villeRcs", e.target.value)}
+            onChange={(e) => champSociete("villeRcs", e.target.value)}
           />
         </div>
       </div>
