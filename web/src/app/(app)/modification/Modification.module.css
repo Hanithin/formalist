@@ -830,7 +830,8 @@
  * ce qui est juste quand il ouvre la carte, et faux quand un encadré gris le précède :
  * « L'EXERCICE À APPROUVER » venait se coller au bas du cadre.
  */
-.blocNote + .champs {
+.blocNote + .champs,
+.bloc + .champs {
   margin-top: 18px;
 }
 
@@ -6137,4 +6138,508 @@
   .content {
     padding: 16px 20px 40px;
   }
+}
+
+/* ------------------------------------------------------- Le dépôt du bilan */
+
+/*
+ * Une zone de dépôt, non un bouton perdu sous un paragraphe.
+ *
+ * L'écran offrait un bouton noir « Déposer mon bilan » sous quatre lignes de texte, et
+ * rien ne disait qu'on pouvait aussi y glisser un fichier - le glisser-déposer est le
+ * geste que tout le monde essaie d'abord. Rien ne disait non plus que la saisie à la
+ * main restait possible : le bouton avait l'air d'un passage obligé.
+ */
+.depotBilan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 14px 0 0;
+  padding: 30px 24px;
+  border: 1.5px dashed #d4d4d8;
+  border-radius: 16px;
+  background: #fafafa;
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.depotBilan:hover {
+  border-color: #a1a1aa;
+  background: #f6f6f7;
+}
+
+.depotBilan:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
+/* Le survol d'un fichier tiré : la cible doit se voir avant qu'on lâche. */
+.depotBilanSurvol {
+  border-color: #111;
+  border-style: solid;
+  background: #f4f4f5;
+}
+
+.depotBilan[disabled] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.depotBilanIcone {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 4px;
+  color: #71717a;
+  stroke-width: 1.5;
+}
+
+.depotBilanTitre {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.depotBilanAide {
+  max-width: 44ch;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #71717a;
+  letter-spacing: 0;
+}
+
+/* Un bilan déjà déposé : la zone dit ce qu'elle porte, sans changer de place. */
+.depotBilanFait {
+  border-style: solid;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.depotBilanNom {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #166534;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.depotBilanRemplacer {
+  font-size: 13px;
+  color: #52525b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  letter-spacing: 0;
+}
+
+/*
+ * Ce que devient le document, dit une fois pour toutes.
+ *
+ * Deux chemins mènent aux chiffres - la lecture du bilan, la saisie à la main - et
+ * l'écran n'en présentait qu'un.
+ */
+.depotBilanChemins {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.depotBilanChemin {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f7f7f8;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+.depotBilanChemin svg {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  color: #71717a;
+  stroke-width: 1.8;
+}
+
+.depotBilanChemin strong {
+  display: block;
+  color: #18181b;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .depotBilan {
+    padding: 24px 16px;
+  }
+}
+
+/* ------------------------------------------------- L'affectation du résultat */
+
+/*
+ * La réserve légale, montrée plutôt qu'expliquée.
+ *
+ * L'écran posait un encadré gris de trois lignes de droit - « l'article L. 232-10 ne
+ * vise que les sociétés à responsabilité limitée » - puis quatre champs vides. Rien ne
+ * disait le montant à doter cette année, ni où en était la réserve par rapport au
+ * dixième du capital, ni s'il restait quelque chose à faire. Le client devait calculer
+ * un vingtième d'un bénéfice diminué des pertes reportées, plafonné, pour remplir une
+ * case que nous savions déjà remplir.
+ */
+.reserve {
+  margin: 16px 0 0;
+  padding: 16px 18px;
+  border: 1px solid #e4e4e7;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.reserveTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.reserveTitre {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.reserveEtat {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Ce qui reste dû cette année. */
+.reserveEtatDu {
+  color: #92400e;
+}
+
+/* Rien à faire : la réserve est au plafond, ou l'exercice ne s'y prête pas. */
+.reserveEtatFait {
+  color: #166534;
+}
+
+/*
+ * Où en est la réserve par rapport au dixième du capital.
+ *
+ * Un chiffre seul ne dit pas s'il reste beaucoup ou presque rien à doter ; la barre le
+ * dit sans qu'on ait à comparer deux montants.
+ */
+.reserveJauge {
+  position: relative;
+  height: 6px;
+  margin: 12px 0 10px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  overflow: hidden;
+}
+
+.reserveJaugeAcquise {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: #16a34a;
+}
+
+/* La part que la dotation de cette année ajoutera, posée à la suite de l'acquise. */
+.reserveJaugeDotation {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: #fbbf24;
+}
+
+.reserveChiffres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  color: #71717a;
+  letter-spacing: 0;
+}
+
+.reserveChiffres b {
+  color: #18181b;
+  font-weight: 600;
+}
+
+.reserveTexte {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+.reserveAction {
+  margin-top: 12px;
+  padding: 8px 14px;
+  border: 1px solid #111;
+  border-radius: 10px;
+  background: #111;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.reserveAction:hover {
+  background: #27272a;
+}
+
+/*
+ * Le compte de la répartition, à la place d'un bandeau d'alerte.
+ *
+ * L'écart s'affichait dans une ligne jaune collée au dernier champ, sans marge au-
+ * dessus ni en dessous, et disparaissait dès que la somme tombait juste - de sorte
+ * qu'on ne savait jamais combien il restait avant d'avoir tout saisi. Le compte est
+ * maintenant toujours là, et change de ton selon qu'il tombe juste ou non.
+ */
+.repartition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 18px;
+  margin: 22px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f7f7f8;
+  font-size: 13.5px;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+.repartitionJuste {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.repartitionReste {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.repartitionCompte b {
+  font-weight: 600;
+}
+
+.repartitionVerdict {
+  font-weight: 600;
+}
+
+/*
+ * Les manquements à la loi respirent sous le compte.
+ *
+ * `.obligations` porte une marge haute nulle : le bandeau jaune se collait au bas du
+ * compte de répartition, les deux formant un seul pavé de couleur où l'on ne
+ * distinguait plus ce qui était un total de ce qui était une alerte.
+ */
+.repartition + .obligations {
+  margin-top: 14px;
+}
+
+/* ---------------------------------------------------- La confidentialité */
+
+/*
+ * Le verdict d'abord, le droit ensuite.
+ *
+ * L'écran ouvrait sur « Votre situation » suivi d'un paragraphe de règle - « la société
+ * répond à la définition de la petite entreprise : seul le compte de résultat peut être
+ * rendu inaccessible aux tiers » - qu'il fallait lire en entier pour savoir si l'on
+ * avait droit à quelque chose. La réponse tient en une phrase : elle passe devant.
+ */
+.verdictConf {
+  margin: 12px 0 0;
+  padding: 16px 18px;
+  border: 1px solid #e4e4e7;
+  border-radius: 14px;
+  background: #fafafa;
+}
+
+.verdictConfOuvert {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.verdictConfFerme {
+  border-color: #e4e4e7;
+  background: #fafafa;
+}
+
+.verdictConfTitre {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.verdictConfOuvert .verdictConfTitre {
+  color: #166534;
+}
+
+.verdictConfTexte {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+/* Qui garde l'accès, quoi qu'on décide : c'est la question qu'on se pose ensuite. */
+.verdictConfAcces {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  /*
+   * La direction est redressée explicitement.
+   *
+   * `globals.css` met les listes de `main section` en colonne : sans cette ligne, les
+   * quatre pastilles s'empilaient en bandes pleine largeur, la déclaration de
+   * `flex-wrap` ne pouvant rien contre une direction héritée.
+   */
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+/*
+ * `globals.css` pose une carte sur `main section > ul > li` : bordure, fond, pleine
+ * largeur. Les pastilles s'y étaient étalées en quatre bandes empilées.
+ */
+.verdictConfAcces li {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: #f4f4f5;
+  box-shadow: none;
+  font-size: 12.5px;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+.verdictConfOuvert .verdictConfAcces li {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/*
+ * Le choix, avec sa conséquence écrite.
+ *
+ * Deux boutons côte à côte - « Demander la confidentialité », « Publier mes comptes » -
+ * dont l'un était noir : rien ne disait si le noir marquait le choix retenu ou l'action
+ * recommandée, et rien ne disait ce que chacun entraînait.
+ */
+.choixConf li,
+.depotBilanChemins li {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.choixConf {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choixConfCarte {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 14px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.choixConfCarte:hover {
+  border-color: #a1a1aa;
+}
+
+.choixConfCarte[aria-pressed="true"] {
+  border-color: #111;
+  background: #fafafa;
+}
+
+.choixConfTitre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.choixConfMarque {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid #d4d4d8;
+  border-radius: 999px;
+}
+
+.choixConfMarque svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0;
+  color: #fff;
+}
+
+.choixConfCarte[aria-pressed="true"] .choixConfMarque {
+  border-color: #111;
+  background: #111;
+}
+
+.choixConfCarte[aria-pressed="true"] .choixConfMarque svg {
+  opacity: 1;
+}
+
+.choixConfTexte {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #71717a;
+  letter-spacing: 0;
 }

@@ -44,6 +44,7 @@ export function Chiffres({
   const [origines, setOrigines] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [refus, setRefus] = useState<string | null>(null);
+  const [survol, setSurvol] = useState(false);
   const [enCours, demarrer] = useTransition();
   const entree = useRef<HTMLInputElement>(null);
 
@@ -102,11 +103,42 @@ export function Chiffres({
       <section className={styles.bloc}>
         <h3 className={styles.blocTitre}>Votre bilan</h3>
         <p className={styles.blocTexte}>
-          Déposez la liasse ou le bilan de l&apos;exercice : nous y relevons le résultat,
-          le report à nouveau, la réserve légale et les chiffres qui décident de la
-          confidentialité. Le document reste au dossier, c&apos;est lui que l&apos;avocat
-          relira.
+          Deux façons d&apos;arriver aux chiffres : nous les lisons dans votre bilan, ou
+          vous les remplissez vous-même juste en dessous.
         </p>
+
+        {/*
+          Les deux chemins, côte à côte.
+
+          L'écran n'en présentait qu'un : un bouton noir sous quatre lignes de texte,
+          qui avait l'air d'un passage obligé. Qui n'a pas son bilan sous la main
+          refermait la page.
+        */}
+        <ul className={styles.depotBilanChemins}>
+          <li className={styles.depotBilanChemin}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path d="M12 3v12" />
+              <path d="m7 10 5 5 5-5" />
+              <path d="M5 21h14" />
+            </svg>
+            <span>
+              <strong>Vous l&apos;uploadez</strong>
+              Nous l&apos;analysons et remplissons les chiffres pour vous. Vous les
+              vérifiez, vous corrigez ce qu&apos;il faut.
+            </span>
+          </li>
+          <li className={styles.depotBilanChemin}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+            <span>
+              <strong>Vous les saisissez</strong>
+              Quatre montants à recopier, si vous préférez ou si vous n&apos;avez pas le
+              document sous la main.
+            </span>
+          </li>
+        </ul>
 
         <input
           ref={entree}
@@ -120,24 +152,69 @@ export function Chiffres({
           }}
         />
 
-        <div className={styles.blocActions}>
-          <button
-            type="button"
-            className={etat.bilan ? undefined : styles.blocPrincipal}
-            onClick={() => entree.current?.click()}
-            disabled={enCours}
-          >
-            {enCours
-              ? "Lecture du document…"
-              : etat.bilan
-                ? "Déposer un autre bilan"
-                : "Déposer mon bilan"}
-          </button>
-        </div>
+        {/*
+          Le glisser-déposer est le geste que tout le monde essaie d'abord.
+          Rien ne l'offrait, et rien ne disait qu'il était possible.
+        */}
+        <button
+          type="button"
+          className={[
+            styles.depotBilan,
+            survol ? styles.depotBilanSurvol : "",
+            etat.bilan ? styles.depotBilanFait : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          onClick={() => entree.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setSurvol(true);
+          }}
+          onDragLeave={() => setSurvol(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setSurvol(false);
+            const fichier = e.dataTransfer.files?.[0];
+            if (fichier) deposer(fichier);
+          }}
+          disabled={enCours}
+        >
+          {enCours ? (
+            <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={styles.depotBilanIcone} aria-hidden="true">
+                <path d="M21 12a9 9 0 1 1-6.2-8.6" />
+              </svg>
+              <span className={styles.depotBilanTitre}>Analyse de votre bilan</span>
+              <span className={styles.depotBilanAide}>
+                Nous y cherchons le résultat, le report à nouveau et la réserve légale.
+              </span>
+            </>
+          ) : etat.bilan ? (
+            <>
+              <span className={styles.depotBilanNom}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" width="17" height="17">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                {etat.bilan.fichier}
+              </span>
+              <span className={styles.depotBilanRemplacer}>Uploader un autre bilan</span>
+            </>
+          ) : (
+            <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={styles.depotBilanIcone} aria-hidden="true">
+                <path d="M12 16V4" />
+                <path d="m7 9 5-5 5 5" />
+                <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+              </svg>
+              <span className={styles.depotBilanTitre}>Uploader mon bilan</span>
+              <span className={styles.depotBilanAide}>
+                Glissez votre PDF ici, ou cliquez pour le choisir. Il reste au dossier :
+                c&apos;est lui que l&apos;avocat relira.
+              </span>
+            </>
+          )}
+        </button>
 
-        {etat.bilan && (
-          <p className={styles.blocNote}>Document au dossier : {etat.bilan.fichier}</p>
-        )}
         {message && <p className={styles.blocNote}>{message}</p>}
         {refus && (
           <p className={styles.paiementManque} role="alert">

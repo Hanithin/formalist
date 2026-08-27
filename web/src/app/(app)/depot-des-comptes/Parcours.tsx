@@ -756,6 +756,15 @@ function EtapeAffectation({
   const poser = (champ: keyof Affectation, valeur: number | "") =>
     surAffectation({ ...affectation, [champ]: valeur === "" ? 0 : Math.round(valeur * 100) });
 
+  /*
+   * Ce qu'il reste à répartir, et son signe.
+   *
+   * L'écart se lisait dans une ligne jaune qui n'apparaissait qu'en cas d'erreur : on
+   * ne savait jamais combien il restait tant qu'on n'avait pas fini de se tromper.
+   */
+  const reste = verdict.aRepartirCentimes - verdict.reparti;
+  const restants = verdict.anomalies.filter((a) => !a.startsWith("L'affectation ne tombe pas juste"));
+
   return (
     <>
       <p className={styles.description}>
@@ -764,7 +773,11 @@ function EtapeAffectation({
         postes doit tomber juste.
       </p>
 
-      <p className={styles.blocNote}>{dotation.explication}</p>
+      <ReserveLegale
+        dotation={dotation}
+        saisie={affectation.reserveLegaleCentimes}
+        surReport={() => poser("reserveLegaleCentimes", dotation.dotationCentimes / 100)}
+      />
 
       <div className={styles.champs}>
         {(
@@ -794,19 +807,133 @@ function EtapeAffectation({
           ))}
       </div>
 
-      {verdict.anomalies.length > 0 ? (
+      {/*
+        Le compte, toujours visible.
+
+        Il dit ce qui a été réparti sur ce qu'il y avait, et ce qui reste - même à zéro
+        saisi, où il vaut mieux voir le total à placer qu'une carte muette.
+      */}
+      <div
+        className={[
+          styles.repartition,
+          verdict.equilibre ? styles.repartitionJuste : styles.repartitionReste,
+        ].join(" ")}
+        role="status"
+      >
+        <span className={styles.repartitionCompte}>
+          Réparti <b>{montantLisible(verdict.reparti)}</b> sur{" "}
+          <b>{montantLisible(verdict.aRepartirCentimes)}</b>
+        </span>
+        <span className={styles.repartitionVerdict}>
+          {verdict.equilibre
+            ? "L'affectation tombe juste"
+            : reste > 0
+              ? "Il reste " + montantLisible(reste) + " à placer"
+              : "Vous avez placé " + montantLisible(-reste) + " de trop"}
+        </span>
+      </div>
+
+      {/*
+        Ce que le compte ci-dessus ne dit pas déjà.
+
+        La première anomalie répétait mot pour mot l'écart que le compte affiche - « il
+        reste 57 487,00 € à répartir » - dans un bandeau jaune collé dessous. Restent
+        les manquements à la loi, qui eux ne se lisent nulle part ailleurs.
+      */}
+      {restants.length > 0 && (
         <ul className={styles.obligations}>
-          {verdict.anomalies.map((message) => (
+          {restants.map((message) => (
             <li key={message}>{message}</li>
           ))}
         </ul>
-      ) : (
-        <p className={styles.blocNote}>
-          L&apos;affectation tombe juste. Elle sera reprise telle quelle dans le
-          procès-verbal.
-        </p>
       )}
     </>
+  );
+}
+
+/**
+ * Où en est la réserve légale, et ce qu'il reste à doter.
+ *
+ * L'écran posait trois lignes de droit puis un champ vide, laissant au client le soin
+ * de calculer un vingtième du bénéfice diminué des pertes reportées, plafonné au
+ * dixième du capital - pour remplir une case que nous savions déjà remplir. Le montant
+ * est calculé, montré, et se reporte d'un clic.
+ */
+function ReserveLegale({
+  dotation,
+  saisie,
+  surReport,
+}: {
+  dotation: ReturnType<typeof dotationDeLaReserveLegale>;
+  saisie: number;
+  surReport: () => void;
+}) {
+  /* Une société civile n'en dote pas : l'explication suffit, sans jauge ni montant. */
+  if (!dotation.applicable) {
+    return <p className={styles.blocNote}>{dotation.explication}</p>;
+  }
+
+  const plafond = dotation.plafondCentimes;
+  const acquise = plafond > 0 ? Math.min(1, dotation.apresDotationCentimes / plafond) : 0;
+  const avant =
+    plafond > 0
+      ? Math.min(1, (dotation.apresDotationCentimes - dotation.dotationCentimes) / plafond)
+      : 0;
+
+  const aFaire = dotation.dotationCentimes > 0;
+  const dejaSaisie = saisie === dotation.dotationCentimes;
+
+  return (
+    <section className={styles.reserve}>
+      <div className={styles.reserveTete}>
+        <h4 className={styles.reserveTitre}>La réserve légale</h4>
+        <span
+          className={[
+            styles.reserveEtat,
+            aFaire ? styles.reserveEtatDu : styles.reserveEtatFait,
+          ].join(" ")}
+        >
+          {aFaire
+            ? "À doter cette année : " + montantLisible(dotation.dotationCentimes)
+            : dotation.manquantCentimes === 0
+              ? "Complète : rien à doter"
+              : "Rien à doter cette année"}
+        </span>
+      </div>
+
+      <div className={styles.reserveJauge} aria-hidden="true">
+        <div className={styles.reserveJaugeAcquise} style={{ width: avant * 100 + "%" }} />
+        {aFaire && (
+          <div
+            className={styles.reserveJaugeDotation}
+            style={{ left: avant * 100 + "%", width: (acquise - avant) * 100 + "%" }}
+          />
+        )}
+      </div>
+
+      <p className={styles.reserveChiffres}>
+        <span>
+          Après dotation : <b>{montantLisible(dotation.apresDotationCentimes)}</b>
+        </span>
+        <span>
+          Plafond légal, un dixième du capital : <b>{montantLisible(plafond)}</b>
+        </span>
+        {dotation.manquantCentimes > 0 && (
+          <span>
+            Restera à doter les années suivantes :{" "}
+            <b>{montantLisible(Math.max(0, plafond - dotation.apresDotationCentimes))}</b>
+          </span>
+        )}
+      </p>
+
+      <p className={styles.reserveTexte}>{dotation.explication}</p>
+
+      {aFaire && !dejaSaisie && (
+        <button type="button" className={styles.reserveAction} onClick={surReport}>
+          Reporter {montantLisible(dotation.dotationCentimes)} dans le champ
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -840,14 +967,43 @@ function EtapeConfidentialite({
   return (
     <>
       <p className={styles.description}>
-        Déposer n&apos;est pas publier. Selon votre taille, vos comptes peuvent rester
-        inaccessibles aux tiers - le greffe, l&apos;administration et la Banque de France
-        y accèdent toujours.
+        Déposer n&apos;est pas publier. Vos comptes doivent partir au greffe, mais selon
+        la taille de votre société, ils peuvent y rester inaccessibles au public.
       </p>
 
       <section className={styles.bloc}>
-        <h3 className={styles.blocTitre}>Votre situation</h3>
-        <p className={styles.blocTexte}>{verdict.explication}</p>
+        <h3 className={styles.blocTitre}>Ce que vous pouvez demander</h3>
+
+        {/*
+          Le verdict d'abord, le droit ensuite.
+
+          L'écran ouvrait sur un paragraphe de règle qu'il fallait lire en entier pour
+          savoir si l'on avait droit à quelque chose. La réponse tient en une phrase.
+        */}
+        <div
+          className={[
+            styles.verdictConf,
+            verdict.modele ? styles.verdictConfOuvert : styles.verdictConfFerme,
+          ].join(" ")}
+        >
+          <span className={styles.verdictConfTitre}>{TITRES_DE_PORTEE[verdict.portee]}</span>
+          <p className={styles.verdictConfTexte}>{verdict.explication}</p>
+
+          {/*
+            Qui garde l'accès quoi qu'on décide.
+
+            « Confidentiel » se lit comme « personne ne le verra », ce qui est faux et
+            inquiète à tort : l'administration et la banque y accèdent toujours. Le dire
+            ici évite la question, et évite surtout de le découvrir plus tard.
+          */}
+          <ul className={styles.verdictConfAcces}>
+            <li>Le greffe y accède</li>
+            <li>L&apos;administration fiscale aussi</li>
+            <li>La Banque de France aussi</li>
+            <li>L&apos;autorité judiciaire aussi</li>
+          </ul>
+        </div>
+
         {verdict.motifs.length > 0 && (
           <ul className={styles.obligations}>
             {verdict.motifs.map((motif) => (
@@ -858,11 +1014,11 @@ function EtapeConfidentialite({
       </section>
 
       <section className={styles.bloc}>
-        <h3 className={styles.blocTitre}>Cas d&apos;exclusion</h3>
+        <h3 className={styles.blocTitre}>Votre société est-elle dans un de ces cas ?</h3>
         <p className={styles.blocTexte}>
-          Cochez ce qui s&apos;applique. La déclaration se signe sur l&apos;honneur : une
-          fausse déclaration est un faux, passible d&apos;amende et
-          d&apos;emprisonnement.
+          La plupart ne le sont pas : laissez tout décoché si aucun ne vous concerne.
+          Chacun ferme la confidentialité, et ce que vous cochez ici est déclaré sur
+          l&apos;honneur.
         </p>
         <ul className={styles.entreeChoix}>
           {EXCLUSIONS_LISIBLES.map((exclusion) => (
@@ -888,28 +1044,63 @@ function EtapeConfidentialite({
 
       {verdict.modele && (
         <section className={styles.bloc}>
-          <h3 className={styles.blocTitre}>Votre choix</h3>
-          <div className={styles.blocActions}>
-            <button
-              type="button"
-              className={etat.demandeLaConfidentialite ? styles.blocPrincipal : undefined}
-              onClick={() => changer({ demandeLaConfidentialite: true })}
-            >
-              Demander la confidentialité
-            </button>
-            <button
-              type="button"
-              className={!etat.demandeLaConfidentialite ? styles.blocPrincipal : undefined}
-              onClick={() => changer({ demandeLaConfidentialite: false })}
-            >
-              Publier mes comptes
-            </button>
-          </div>
+          <h3 className={styles.blocTitre}>Votre décision</h3>
+          {/*
+            Deux cartes, non deux boutons.
+
+            L'écran posait « Demander la confidentialité » et « Publier mes comptes »
+            côte à côte, l'un noir : rien ne disait si le noir marquait le choix retenu
+            ou l'action recommandée, ni ce que chacun entraînait.
+          */}
+          <ul className={styles.choixConf}>
+            {(
+              [
+                [
+                  true,
+                  "Garder mes comptes confidentiels",
+                  verdict.portee === "tout"
+                    ? "Bilan, compte de résultat et annexe deviennent inaccessibles au public. Nous joignons la déclaration au dépôt."
+                    : "Le compte de résultat devient inaccessible au public. Le bilan et l'annexe restent consultables.",
+                ],
+                [
+                  false,
+                  "Publier mes comptes",
+                  "Ils restent consultables par tous, comme n'importe quel document du registre. Rien de plus à signer.",
+                ],
+              ] as const
+            ).map(([valeur, titre, texte]) => (
+              <li key={titre}>
+                <button
+                  type="button"
+                  className={styles.choixConfCarte}
+                  aria-pressed={etat.demandeLaConfidentialite === valeur}
+                  onClick={() => changer({ demandeLaConfidentialite: valeur })}
+                >
+                  <span className={styles.choixConfTitre}>
+                    <span className={styles.choixConfMarque} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="3.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                    {titre}
+                  </span>
+                  <span className={styles.choixConfTexte}>{texte}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </>
   );
 }
+
+/** Ce que la portée ouvre, dit en une phrase plutôt qu'en un article. */
+const TITRES_DE_PORTEE: Record<string, string> = {
+  tout: "Vos comptes peuvent rester entièrement confidentiels",
+  "compte-de-resultat": "Votre compte de résultat peut rester confidentiel",
+  aucune: "Vos comptes seront consultables par tous",
+};
 
 const EXCLUSIONS_LISIBLES = [
   {
