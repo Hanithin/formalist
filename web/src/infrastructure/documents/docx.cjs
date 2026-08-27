@@ -307,7 +307,20 @@ function improveLayout(docXml) {
   return prefix + newBody + suffix;
 }
 
-function generateDocxFromBuffer(buf, data) {
+/**
+ * Les gabarits dont les intitulés « ARTICLE n » sont ceux de statuts.
+ *
+ * La normalisation qui suit - Cambria, douze points d'écart dessous, paragraphe suivant
+ * collé - a été écrite pour les statuts d'une société, où les articles se suivent en
+ * cascade. Une déclaration de confidentialité en a aussi, quatre, mais ce sont ceux du
+ * modèle de l'annexe 1-5 : ils prenaient la police et l'espacement des statuts au milieu
+ * d'un acte composé autrement, et leur premier paragraphe se collait au titre.
+ */
+function articlesDeStatuts(nom) {
+  return !nom || /statuts/i.test(nom);
+}
+
+function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   const zip = new PizZip(buf);
   const doc = new Docxtemplater(zip, {
     paragraphLoop: true,
@@ -403,7 +416,7 @@ function generateDocxFromBuffer(buf, data) {
     const texts = [];
     p.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, function(_, t) { texts.push(t); });
     const txt = texts.join('').trim();
-    if (/^(ARTICLE|TITRE|ANNEXE)\b/i.test(txt)) {
+    if (articlesDeStatuts(nomDuGabarit) && /^(ARTICLE|TITRE|ANNEXE)\b/i.test(txt)) {
       // Normalize the entire pPr block to a canonical form so every title
       // renders identically. TITRE/ANNEXE = centered; ARTICLE = left.
       const isCentered = /^(TITRE|ANNEXE)\b/i.test(txt);
@@ -710,7 +723,7 @@ function generateDocxFromBuffer(buf, data) {
       // au-dessus d'eux, pleine largeur, et le procès-verbal en portait deux - celui-ci
       // et celui que le gabarit dessine lui-même sous le libellé.
       if (
-        /^_+$/.test(fullText) ||
+        /^_{5,}/.test(fullText) ||
         /^(Pr[ée]sident|G[ée]rant|Directeur|Signature)/i.test(fullText) ||
         /^(L['’]associ[ée]|Les associ[ée]s|Le[s]? soussign[ée]|Pour la soci[ée]t[ée])/i.test(fullText)
       ) return m;
@@ -728,10 +741,14 @@ function generateDocxFromBuffer(buf, data) {
         }
       }
       // Add or replace w:ind to constrain border width
+      //
+      // Seulement s'il en porte déjà un : le retrait borne le trait, mais il borne
+      // aussi le texte, et un nom s'y coupait en trois lignes. Un gabarit qui veut un
+      // trait court le dessine lui-même, en tirets bas - c'est ce que font les
+      // procès-verbaux, et le paragraphe qui ne contient que des tirets est écarté
+      // plus haut.
       if (/<w:ind\b/.test(newPara)) {
         newPara = newPara.replace(/<w:ind\b[^/]*\/>/, indent);
-      } else {
-        newPara = newPara.replace(/<w:pPr>/, '<w:pPr>' + indent);
       }
       // Bump w:before to 600 for signing space
       if (/<w:spacing\b/.test(newPara)) {
@@ -1015,6 +1032,11 @@ function generateDocxFromBuffer(buf, data) {
 
   // Also remove single empty paragraphs that immediately precede article titles
   // (otherwise the empty para's line height stacks with the title's w:before, creating an extra gap).
+  //
+  // Ces deux passes appartiennent aux statuts, comme la normalisation des intitulés
+  // plus haut : elles collent au titre le paragraphe qui le suit, ce qui convient à un
+  // article de statuts et ferme la respiration d'un acte composé autrement.
+  if (articlesDeStatuts(nomDuGabarit)) {
   docXml = docXml.replace(
     /(<w:p[ >](?:(?!<w:t[ >])[\s\S])*?<\/w:p>)(<w:p[ >][\s\S]*?<w:t[^>]*>(?:ARTICLE|TITRE|ANNEXE)[^<]*<\/w:t>)/g,
     '$2'
@@ -1036,6 +1058,7 @@ function generateDocxFromBuffer(buf, data) {
       return title + b;
     }
   );
+  }
   // Also strip TRAILING <w:br/> (right before </w:r>) from body paragraphs that immediately
   // follow article titles. We must NOT touch <w:br/> between two <w:t> (legitimate line break).
   docXml = docXml.replace(
@@ -1110,7 +1133,16 @@ function generateDocxFromBuffer(buf, data) {
       // 1 536,05 euros ; » - perdaient leur retrait et revenaient contre la marge, au
       // même rang que la phrase qui les annonce.
       const tiretEnTete = /^[-–—]\s+\S/.test(full);
-      if (!/<w:numPr\b/.test(result) && !tiretEnTete) {
+      /*
+       * Une énumération en « a) », « b) »… en est une aussi. Les attestations sur
+       * l'honneur d'une déclaration de confidentialité s'écrivent ainsi, et la ligne
+       * qui revenait à la ligne repartait contre la marge, sous la lettre au lieu du
+       * texte.
+       */
+      const lettreEnTete = /^[a-z0-9]{1,3}\)(\s|$)/i.test(full);
+      /* Le retrait d'un paragraphe bordé donne la largeur de son trait de signature. */
+      const porteUnTrait = /<w:pBdr\b/.test(result);
+      if (!/<w:numPr\b/.test(result) && !tiretEnTete && !lettreEnTete && !porteUnTrait) {
         result = result.replace(/<w:ind\b[^/]*\/>/g, '');
       }
       // X.Y. paragraphs ("8.1.", "10.3.", "19.1"...) often have a <w:tab/> after the prefix
@@ -1237,7 +1269,7 @@ function generateDocxFromBuffer(buf, data) {
 
 function generateDocx(templateName, data) {
   const buf = loadTemplate(templateName);
-  return generateDocxFromBuffer(buf, data);
+  return generateDocxFromBuffer(buf, data, templateName);
 }
 
 /** Inject a signature image into a DOCX buffer near signer's name */

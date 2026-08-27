@@ -125,6 +125,48 @@ describe("la déclaration de confidentialité", () => {
     expect(texte).not.toContain("qualité de Président");
   });
 
+  it("signe sous le titre du dirigeant, non sous un titre écrit en dur", () => {
+    /*
+     * Le modèle du cabinet est arrivé sous forme de rendu : sous le trait de signature,
+     * « Gérant » y était écrit en toutes lettres. La déclaration d'une SELAS partait
+     * donc au greffe avec un président en haut et un gérant en bas.
+     */
+    for (const [forme, titre, autre] of [
+      ["SELAS", "Président", "Gérant"],
+      ["SELARL", "Gérant", "Président"],
+    ] as const) {
+      const texte = rendre("comptes-confidentialite-micro.docx", {
+        societe: { ...DOSSIER.societe, forme },
+        valeurs: { ...DOSSIER.valeurs, dirigeantFonction: titre },
+      });
+      const signature = texte.slice(texte.lastIndexOf("Monsieur Paul DURAND"));
+      expect(signature, forme).toContain(titre);
+      expect(signature, forme).not.toContain(autre);
+    }
+  });
+
+  it("porte un trait de signature, et un seul", () => {
+    /*
+     * Le trait vit dans le paragraphe du nom, séparé par un saut de ligne : seul, il
+     * serait effacé à la génération, et une bordure de paragraphe courrait sur toute la
+     * largeur du texte - ou, bornée par un retrait, couperait le nom en trois lignes.
+     */
+    const brut = new PizZip(
+      genererDocument(
+        "comptes-confidentialite-micro.docx",
+        donneesDesComptes(DOSSIER as never)
+      )
+    )
+      .file("word/document.xml")!
+      .asText();
+    expect(brut.match(/_{6,}/g) ?? []).toHaveLength(1);
+
+    const paragraphes = brut.split("</w:p>");
+    const celuiDuTrait = paragraphes.find((p) => /_{6,}/.test(p))!;
+    expect(celuiDuTrait).toContain("Monsieur Paul DURAND");
+    expect(celuiDuTrait).not.toContain("<w:pBdr");
+  });
+
   it("nomme la forme au long, non son sigle", () => {
     expect(rendre("comptes-confidentialite-micro.docx")).toContain(
       "société d'exercice libéral par actions simplifiée"
