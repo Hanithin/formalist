@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { etatCabinet, dateCourte, depuis } from "@/domain/formalite/avocat";
+import { etatCabinet, dateCourte, dateEtHeure, depuis } from "@/domain/formalite/avocat";
 import { libelleDuType } from "@/domain/formalite/liste";
 import styles from "./Avocat.module.css";
 
@@ -290,6 +290,7 @@ function Panneau({
               {[
                 dossier.forme,
                 libelleDuType(dossier.type),
+                majuscule(dossier.offre ?? "starter"),
                 dossier.capital ? "capital de " + Number(dossier.capital).toLocaleString("fr-FR") + " €" : null,
               ]
                 .filter(Boolean)
@@ -317,11 +318,15 @@ function Panneau({
           </button>
         </div>
 
+        {/*
+          Deux pastilles, non trois.
+
+          L'état, l'offre et l'assignation s'affichaient côte à côte en bleu, gris et
+          violet : trois couleurs pour trois choses de poids différent. L'offre est un
+          fait d'identité - elle a rejoint la ligne qui donne la forme et le type.
+        */}
         <div className={styles.panneauBadges}>
           <span className={`${styles.badge} ${styles[etat.teinte]}`}>{etat.libelle}</span>
-          <span className={`${styles.badge} ${styles[dossier.offre ?? "starter"] ?? ""}`}>
-            {majuscule(dossier.offre ?? "starter")}
-          </span>
           {dossier.monDossier && (
             <span className={`${styles.badge} ${styles.purple}`}>Assigné à vous</span>
           )}
@@ -352,7 +357,7 @@ function Panneau({
         <dl className={styles.panneauFaits}>
           <Fait libelle="Client" valeur={dossier.client} />
           {dossier.clientEmail && <Fait libelle="Courriel" valeur={dossier.clientEmail} />}
-          <Fait libelle="Ouverte le" valeur={dateCourte(new Date(dossier.creeLe))} />
+          <Fait libelle="Ouverte le" valeur={dateEtHeure(new Date(dossier.creeLe))} />
           <Fait libelle="Dernier mouvement" valeur={depuis(new Date(dossier.majLe))} />
           {/*
             Réglé ou non : c'est ce qui dit si le dossier est vraiment à traiter.
@@ -414,7 +419,14 @@ function Panneau({
             </button>
           )}
 
-          <Link href={"/avocat/" + dossier.id} className={styles.panneauSecondaire}>
+          {/*
+            Quand « Prendre en charge » ne s'affiche pas, ouvrir le dossier est le seul
+            geste offert : il portait pourtant le dessin d'un bouton de second rang.
+          */}
+          <Link
+            href={"/avocat/" + dossier.id}
+            className={dossier.libre ? styles.panneauSecondaire : styles.panneauPrincipal}
+          >
             {dossier.libre ? "Lire sans le prendre" : "Ouvrir le dossier"}
           </Link>
         </div>

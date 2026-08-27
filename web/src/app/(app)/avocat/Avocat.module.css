@@ -2280,11 +2280,16 @@
   color: #8a8a8f;
 }
 
+/*
+ * Les faits du dossier se lisent en lignes, non dans une carte.
+ *
+ * Un aplat gris de douze pixels de rayon portait cinq lignes espacées de dix : le
+ * panneau y perdait un tiers de sa hauteur, et le bloc pesait plus lourd que ce qu'il
+ * contenait. Un filet entre les lignes suffit à les séparer.
+ */
 .panneauFaits {
   margin: 0 0 20px;
-  padding: 16px;
-  border-radius: 12px;
-  background: #fafafa;
+  padding: 0;
 }
 
 .fait {
@@ -2292,10 +2297,11 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
+  padding: 7px 0;
 }
 
 .fait + .fait {
-  margin-top: 10px;
+  border-top: 1px solid #f2f2f2;
 }
 
 .fait dt {
@@ -2312,15 +2318,37 @@
   overflow-wrap: anywhere;
 }
 
-/* Ce qui attend un geste, avant tout le reste. */
+/*
+ * Ce qui attend un geste, avant tout le reste.
+ *
+ * L'encadré jaune plein disait l'urgence par sa surface, et une seule ligne y flottait
+ * au milieu de quatorze pixels de marge. Une pastille ambre en tête suffit : la couleur
+ * reste, la masse s'en va.
+ */
 .panneauAttentes {
   margin: 0 0 20px;
-  padding: 14px 16px 14px 32px;
-  border-radius: 12px;
-  background: #fffbeb;
+  padding: 0;
+  list-style: none;
   font-size: 13.5px;
-  line-height: 1.7;
-  color: #92400e;
+  color: #111;
+}
+
+.panneauAttentes li {
+  position: relative;
+  margin: 0;
+  padding: 5px 0 5px 18px;
+  line-height: 1.5;
+}
+
+.panneauAttentes li::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  left: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
 }
 
 .panneauErreur {

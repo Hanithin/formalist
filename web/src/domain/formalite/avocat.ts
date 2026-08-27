@@ -186,7 +186,22 @@ export function depuis(quand: Date, maintenant: Date = new Date()): string {
 }
 
 export function dateCourte(quand: Date): string {
-  return quand.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" });
+  return quand.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/**
+ * « 27 août 2026 à 22:55 ».
+ *
+ * L'année tenait sur deux chiffres, et « 27 août 26 » se lisait mal - on y voyait un
+ * second quantième. L'heure compte aussi : deux dossiers ouverts le même jour se
+ * suivent dans un ordre qu'on ne pouvait pas lire.
+ */
+export function dateEtHeure(quand: Date): string {
+  return (
+    dateCourte(quand) +
+    " à " +
+    quand.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+  );
 }
 
 /* ---------- Chercher, trier, paginer ---------- */
