@@ -32,7 +32,16 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
   if (tache === "confidentialite") {
     return pieces.filter((p) => estUnActeProduit(p) && /confidentialit/i.test(p.nom));
   }
-  if (tache === "actes" || tache === "relecture") {
+  /*
+   * Les actes appartiennent à la tâche qui les valide, non à celle qui les produit.
+   *
+   * Les deux montraient le même jeu : une fois produits, on lisait deux fois la même
+   * liste, sous deux titres. « Produire les actes » ne montre donc rien - et le dire
+   * explicitement importe : sans cette ligne, elle retombait sur le cas par défaut, qui
+   * rend toutes les pièces du dossier.
+   */
+  if (tache === "actes") return [];
+  if (tache === "relecture") {
     return pieces.filter(estUnActeProduit);
   }
   return pieces;
@@ -261,7 +270,16 @@ export function Travail({
   const aVenir = taches.filter(
     (t) => t.etat !== "faite" && t.identifiant !== maintenant?.identifiant
   );
-  const faites = taches.filter((t) => t.etat === "faite");
+  /*
+   * Ce qui est fait se replie, sauf les actes.
+   *
+   * Valider le procès-verbal achevait la tâche qui le portait, et l'acte disparaissait
+   * de l'écran à la seconde où l'on cliquait : il fallait déplier « N faites » ou
+   * changer d'onglet pour retrouver ce qu'on venait de valider. Les actes du dossier
+   * restent là où on les a laissés, quel que soit leur état.
+   */
+  const gardees = taches.filter((t) => t.etat === "faite" && t.identifiant === "relecture");
+  const faites = taches.filter((t) => t.etat === "faite" && t.identifiant !== "relecture");
 
   /**
    * Le geste d'une tâche, quelle que soit sa forme.
@@ -509,11 +527,13 @@ export function Travail({
         </section>
       )}
 
-      {aVenir.length > 0 && (
+      {(aVenir.length > 0 || gardees.length > 0) && (
         <section>
           <h3 className={styles.suiteTitre}>Ensuite</h3>
           <ul className={styles.suite}>
             {aVenir.map((tache) => ligne(tache))}
+            {/* Les actes du dossier ferment la liste : c'est là qu'ils vivent. */}
+            {gardees.map((tache) => ligne(tache))}
           </ul>
         </section>
       )}
