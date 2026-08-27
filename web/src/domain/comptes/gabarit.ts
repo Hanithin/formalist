@@ -1,6 +1,6 @@
 import { adresseSurUneLigne as adresseDuSiege, adresseLisible } from "@/domain/modification/gabarit";
 import { sirenLisible } from "@/domain/modification/annonce";
-import { natureDeLaForme, fonctionsDuDirigeant } from "@/domain/formalite/formes";
+import { natureDeLaForme, fonctionDuDirigeant } from "@/domain/formalite/formes";
 /**
  * Ce que les actes d'approbation ont besoin de savoir.
  *
@@ -253,21 +253,8 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
         .filter(Boolean)
         .join(" ") || texte(valeurs.dirigeantNom)
     ),
-    /*
-     * Un titre que la forme ne connaît pas ne part pas dans l'acte.
-     *
-     * L'écran restreint désormais les choix et la vérification refuse un titre qui ne
-     * va pas avec la forme - mais un dossier déjà réglé garde le sien, et une société
-     * d'exercice libéral par actions simplifiée s'est ainsi déposée « en qualité
-     * d'associé unique et de Gérant ». Un tel titre n'existe pas chez elle : le sien
-     * est certain, et c'est lui qu'on écrit.
-     *
-     * Le repli n'est pas une correction silencieuse d'un choix possible : il ne joue
-     * que sur un titre impossible, où l'ancienne valeur ne pouvait qu'être fausse.
-     */
-    DIRIGEANT_FONCTION: fonctionsDuDirigeant(forme).includes(texte(valeurs.dirigeantFonction))
-      ? texte(valeurs.dirigeantFonction)
-      : natureDeLaForme(forme).titreDirigeant,
+    /* Un titre que la forme ne connaît pas ne part pas dans l'acte. */
+    DIRIGEANT_FONCTION: fonctionDuDirigeant(forme, texte(valeurs.dirigeantFonction)),
     ASSOCIE_UNIQUE: ou(nomsDesAssocies[0] ?? ""),
     ASSOCIE_UNIQUE_NE_LE_FR: dateEnFrancais(texte(valeurs.associeUniqueNeLe)),
     ASSOCIE_UNIQUE_NE_A: ou(texte(valeurs.associeUniqueNeA)),

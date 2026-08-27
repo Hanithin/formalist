@@ -361,6 +361,28 @@ export function fonctionsDuDirigeant(forme: string | null | undefined): string[]
 }
 
 /**
+ * Le titre qui sera écrit, corrigé de ce que la forme interdit.
+ *
+ * L'écran restreint désormais les choix et la vérification refuse un titre qui ne va
+ * pas avec la forme - mais un dossier déjà réglé garde le sien, et une société
+ * d'exercice libéral par actions simplifiée s'est déposée « en qualité de Gérant ».
+ *
+ * Le repli n'est pas une correction silencieuse d'un choix possible : il ne joue que
+ * sur un titre impossible, où l'ancienne valeur ne pouvait qu'être fausse. Et il vaut
+ * partout où le titre se lit - l'acte comme le récapitulatif que l'avocat relit avant
+ * de l'envoyer : les deux doivent dire la même chose.
+ */
+export function fonctionDuDirigeant(
+  forme: string | null | undefined,
+  choisie: string | null | undefined
+): string {
+  const titre = (choisie ?? "").trim();
+  return fonctionsDuDirigeant(forme).includes(titre)
+    ? titre
+    : natureDeLaForme(forme).titreDirigeant;
+}
+
+/**
  * Ce que la forme impose aux actes.
  *
  * Une forme inconnue - une société étrangère, une forme rare - ne doit pas faire échouer

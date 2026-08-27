@@ -12,6 +12,8 @@ import {
   formeConnue,
   formeSelonAssocies,
   qualitesDuRepresentant,
+  fonctionsDuDirigeant,
+  fonctionDuDirigeant,
 } from "@/domain/formalite/formes";
 import { motsDeLaForme } from "@/domain/modification/pv-age";
 import { motsDeLaCession } from "@/domain/modification/acte-cession";
@@ -368,5 +370,40 @@ describe("la réserve légale", () => {
     });
     /* 30 721 € de bénéfice, 10 000 € de pertes : 5 % de 20 721 €. */
     expect(d.dotationCentimes).toBe(103_605);
+  });
+});
+
+/**
+ * Le titre du dirigeant, corrigé de ce que la forme interdit.
+ *
+ * L'écran restreint les choix depuis, et la vérification refuse un titre qui ne va pas
+ * avec la forme - mais un dossier réglé avant garde le sien. Une SELAS s'est ainsi
+ * déposée « en qualité de Gérant ».
+ */
+describe("le titre du dirigeant", () => {
+  it("remplace un titre que la forme ne connaît pas", () => {
+    expect(fonctionDuDirigeant("SELAS", "Gérant")).toBe("Président");
+    expect(fonctionDuDirigeant("SELARL", "Président")).toBe("Gérant");
+    expect(fonctionDuDirigeant("SAS", "Co-gérant")).toBe("Président");
+  });
+
+  it("laisse un titre que la forme connaît", () => {
+    expect(fonctionDuDirigeant("SELAS", "Directeur général")).toBe("Directeur général");
+    expect(fonctionDuDirigeant("SARL", "Co-gérant")).toBe("Co-gérant");
+    expect(fonctionDuDirigeant("SAS", "Président")).toBe("Président");
+  });
+
+  it("donne le titre de la forme quand rien n'est choisi", () => {
+    expect(fonctionDuDirigeant("SELAS", "")).toBe("Président");
+    expect(fonctionDuDirigeant("SARL", null)).toBe("Gérant");
+  });
+
+  /* Le repli ne vaut que sur l'impossible : un titre offert n'est jamais réécrit. */
+  it("ne réécrit jamais un titre que l'écran offrait", () => {
+    for (const forme of ["SAS", "SASU", "SELAS", "SARL", "EURL", "SELARL", "SCI"]) {
+      for (const titre of fonctionsDuDirigeant(forme)) {
+        expect(fonctionDuDirigeant(forme, titre), forme + " / " + titre).toBe(titre);
+      }
+    }
   });
 });

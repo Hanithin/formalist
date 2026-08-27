@@ -11,6 +11,7 @@
  */
 
 import type { SectionDuDossier } from "@/domain/modification/recapitulatif";
+import { fonctionDuDirigeant } from "@/domain/formalite/formes";
 import type { ContexteComptes } from "./gabarit";
 
 /** Un dossier de dépôt des comptes, tel que data_json le porte. */
@@ -120,7 +121,20 @@ export function recapitulatifDesComptes(donnees: DossierDeComptes): SectionDuDos
           .filter(Boolean)
           .join(" "),
       },
-      { libelle: "En qualité de", valeur: texte(valeurs.dirigeantFonction) },
+      {
+        /*
+         * Le titre corrigé de ce que la forme interdit - le même que l'acte porte.
+         *
+         * Un dossier réglé avant que l'écran ne restreigne les choix garde le sien :
+         * cette société d'exercice libéral par actions simplifiée avait « Gérant »
+         * enregistré. L'acte écrit « Président » ; le récapitulatif que l'avocat relit
+         * avant de l'envoyer doit dire la même chose.
+         */
+        libelle: "En qualité de",
+        valeur: texte(valeurs.dirigeantFonction)
+          ? fonctionDuDirigeant(texte(societe.forme), texte(valeurs.dirigeantFonction))
+          : "",
+      },
       {
         libelle: "Associés présents",
         valeur: donnees.associes?.length ? String(donnees.associes.length) : "",
