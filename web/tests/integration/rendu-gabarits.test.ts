@@ -132,9 +132,30 @@ describe("le rendu des gabarits", () => {
   );
 
   it("l'attestation de domiciliation s'accorde aussi", () => {
-    // Le même bloc de code réécrit sa phrase d'ouverture.
-    const femme = texteDe(genererDocument("sasu-attestation-domicile.docx", donneesDeGabarit(brouillon("Madame", 1000, 100))));
-    expect(femme).toContain("Je soussignée,");
-    expect(femme).not.toContain("Je soussigné,");
+    /*
+     * L'attestation s'ouvre désormais sur « La soussignée : » plutôt que sur « Je
+     * soussigné(e), » - c'est la forme du modèle du cabinet. L'accord, lui, reste ce
+     * qui compte : un acte qui appelle une femme « le soussigné » se lit comme un
+     * formulaire mal rempli, et c'est elle qui le signe.
+     */
+    const femme = texteDe(
+      genererDocument(
+        "sasu-attestation-domicile.docx",
+        donneesDeGabarit(brouillon("Madame", 1000, 100))
+      )
+    );
+    expect(femme).toContain("La soussignée");
+    expect(femme).toContain("dont elle est");
+    expect(femme).not.toContain("Le soussigné");
+    expect(femme).not.toContain("dont il est");
+
+    const homme = texteDe(
+      genererDocument(
+        "sasu-attestation-domicile.docx",
+        donneesDeGabarit(brouillon("Monsieur", 1000, 100))
+      )
+    );
+    expect(homme).toContain("Le soussigné");
+    expect(homme).not.toContain("La soussignée");
   });
 });

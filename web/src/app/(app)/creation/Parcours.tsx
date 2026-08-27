@@ -10,6 +10,7 @@ import {
   motAssocie,
   BANQUES,
   MODES_DOMICILIATION,
+  OCCUPATIONS_DOMICILE,
   OPTIONS_FISCALES,
   REGIMES_TVA,
   type Brouillon,
@@ -136,6 +137,14 @@ export function Parcours({
     setBrouillon((actuel) => ({
       ...actuel,
       banqueAutre: { ...actuel.banqueAutre, [champ]: valeur },
+    }));
+  }
+
+  /* Plusieurs champs de la banque d'un coup, quand une commune est retenue. */
+  function modifierBanquePlusieurs(champs: Record<string, string>) {
+    setBrouillon((actuel) => ({
+      ...actuel,
+      banqueAutre: { ...actuel.banqueAutre, ...champs },
     }));
   }
 
@@ -309,6 +318,51 @@ export function Parcours({
               </Champ>
 
               {/*
+               * Le domicile du dirigeant : à quel titre il l'occupe, et si quelque
+               * chose s'y oppose.
+               *
+               * L'attestation écrivait « propriétaire » pour tout le monde, locataires
+               * compris, et annonçait une durée bornée à cinq ans tout en certifiant
+               * que rien ne s'y opposait : les deux ne peuvent pas être vrais ensemble.
+               * L'article L. 123-11-1 du code de commerce ne borne que le cas où un
+               * bail ou un règlement de copropriété l'interdit.
+               */}
+              {brouillon.modeDomiciliation === "Domicile personnel du dirigeant" && (
+                <>
+                  <Champ id="occupationDomicile" libelle="Vous occupez ce logement en tant que">
+                    <Choix
+                      id="occupationDomicile"
+                      valeur={brouillon.occupationDomicile ?? ""}
+                      options={OCCUPATIONS_DOMICILE.map((o) => ({ valeur: o, libelle: o }))}
+                      surChangement={(v) => modifier("occupationDomicile", v)}
+                    />
+                  </Champ>
+
+                  <Champ
+                    id="domiciliationRestreinte"
+                    libelle="Votre bail ou votre règlement de copropriété l'interdit-il ?"
+                    pleineLargeur
+                  >
+                    <Choix
+                      id="domiciliationRestreinte"
+                      valeur={brouillon.domiciliationRestreinte === true ? "Oui" : "Non"}
+                      options={[
+                        { valeur: "Non", libelle: "Non : rien ne s'y oppose" },
+                        { valeur: "Oui", libelle: "Oui : une clause l'interdit ou le restreint" },
+                      ]}
+                      surChangement={(v) => modifier("domiciliationRestreinte", v === "Oui")}
+                    />
+                  </Champ>
+
+                  <p className={styles.note} role="note">
+                    Si rien ne s&apos;y oppose, la domiciliation n&apos;a pas de terme. Dans le
+                    cas contraire, la loi la borne à cinq ans et vous devrez prévenir votre
+                    bailleur ou votre syndic dans le mois de l&apos;immatriculation.
+                  </p>
+                </>
+              )}
+
+              {/*
                * Une société de domiciliation engage trois informations que le greffe
                * exige : le domicilié déclare au registre la dénomination et
                * l'immatriculation de son domiciliataire, et l'agrément préfectoral
@@ -428,10 +482,14 @@ export function Parcours({
                   </Champ>
 
                   <Champ id="banqueVille" libelle="Ville de la banque">
-                    <input
+                    {/* Comme ailleurs : la commune rapporte son code postal. */}
+                    <Ville
                       id="banqueVille"
-                      value={brouillon.banqueAutre?.ville ?? ""}
-                      onChange={(e) => modifierBanque("ville", e.target.value)}
+                      valeur={brouillon.banqueAutre?.ville ?? ""}
+                      surChangement={(ville) => modifierBanque("ville", ville)}
+                      surCompletion={(codePostal, ville) =>
+                        modifierBanquePlusieurs({ ville, codePostal })
+                      }
                     />
                   </Champ>
 

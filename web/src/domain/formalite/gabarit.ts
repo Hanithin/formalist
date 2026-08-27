@@ -315,8 +315,25 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     VILLE_SOCIETE: ou(brouillon.ville),
     VILLE_SIGNATURE: ou(brouillon.ville),
     RCS_VILLE: ou(contexte.villeRcs ?? brouillon.ville),
-    // Le gabarit d'attestation de domicile suppose le siège occupé en propre.
-    STATUT_OCCUPATION: "propriétaire",
+    /*
+     * À quel titre le dirigeant occupe son domicile, et ce que la loi en tire.
+     *
+     * L'attestation écrivait « propriétaire » pour tout le monde. Elle annonçait aussi
+     * une durée bornée à cinq ans tout en certifiant que rien ne s'y opposait : les
+     * deux ne peuvent pas être vrais ensemble. L'article L. 123-11-1 du code de
+     * commerce ne borne que le cas où un bail ou un règlement de copropriété
+     * l'interdit - hors de ce cas, la mise à disposition n'a pas de terme.
+     */
+    STATUT_OCCUPATION: brouillon.occupationDomicile ?? "propriétaire",
+    DUREE_LIMITEE: brouillon.domiciliationRestreinte === true,
+    MENTION_DUREE_TITRE:
+      brouillon.domiciliationRestreinte === true
+        ? "à durée limitée"
+        : "sans limitation de durée",
+    MENTION_DUREE:
+      brouillon.domiciliationRestreinte === true
+        ? "pour la durée précisée ci-après"
+        : "sans limitation de durée",
     MODE_DOMICILIATION: brouillon.modeDomiciliation ?? "",
     // Le domiciliataire, quand il y en a un : sa dénomination et son immatriculation
     // sont déclarées au registre, son agrément est la mention qui rend le contrat
@@ -445,6 +462,17 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   donnees.GERANT_EST_FEMME = dirigeant.civilite === "Madame";
   donnees.EST_HOMME = dirigeant.civilite === "Monsieur";
   donnees.EST_FEMME = dirigeant.civilite === "Madame";
+
+  /*
+   * « Le soussigné » ou « La soussignée », selon qui signe.
+   *
+   * L'attestation de domiciliation ouvrait sur une forme figée. Un acte qui appelle
+   * une femme « le soussigné » se lit comme un formulaire mal rempli, et c'est elle
+   * qui le signe.
+   */
+  const dirigeanteEstUneFemme = dirigeant.civilite === "Madame";
+  donnees.LE_SOUSSIGNE = dirigeanteEstUneFemme ? "La soussignée" : "Le soussigné";
+  donnees.DONT_IL_EST = dirigeanteEstUneFemme ? "dont elle est" : "dont il est";
 
   // La société associée, quand le premier associé est une personne morale.
   societeSous("", premier?.societe ?? {}, donnees);

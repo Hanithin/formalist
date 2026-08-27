@@ -143,6 +143,10 @@ export const MODES_DOMICILIATION = [
 ] as const;
 export type ModeDomiciliation = (typeof MODES_DOMICILIATION)[number];
 
+/** À quel titre le dirigeant occupe le logement qu'il met à disposition. */
+export const OCCUPATIONS_DOMICILE = ["propriétaire", "locataire", "hébergé"] as const;
+export type OccupationDomicile = (typeof OCCUPATIONS_DOMICILE)[number];
+
 /** Les banques proposées, « Autre » ouvrant la saisie libre. */
 export const BANQUES = ["Qonto", "Shine", "Revolut Business", "Autre"] as const;
 export type Banque = (typeof BANQUES)[number];
@@ -224,6 +228,19 @@ export interface Brouillon {
    * l'attestation est refusée.
    */
   domiciliataire?: { denomination?: string; siren?: string; agrement?: string };
+  /**
+   * Le domicile personnel du dirigeant : à quel titre il l'occupe, et si quelque chose
+   * s'oppose à la domiciliation.
+   *
+   * L'attestation écrivait « propriétaire » pour tout le monde, locataires compris, et
+   * annonçait une domiciliation bornée à cinq ans tout en certifiant que rien ne s'y
+   * opposait - deux affirmations qui se contredisent. L'article L. 123-11-1 du code de
+   * commerce ne borne à cinq ans que le cas où un bail ou un règlement de copropriété
+   * l'interdit ; ailleurs, la domiciliation est libre et sans terme.
+   */
+  occupationDomicile?: OccupationDomicile;
+  /** Un bail ou un règlement de copropriété s'y oppose-t-il ? */
+  domiciliationRestreinte?: boolean;
   capital?: number;
   /** Nom de la banque du dépôt. La clé de gabarit reste NOM_BANQUE. */
   banque?: Banque;
