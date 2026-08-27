@@ -1,3 +1,4 @@
+import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
 /**
  * Ce qu'on peut changer dans une société, et ce qu'il faut saisir pour chaque
  * changement.
@@ -705,7 +706,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
         libelle: "Forme juridique",
         groupe: "La société dont les titres sont apportés",
         type: "choix",
-        options: ["SAS", "SASU", "SARL", "EURL", "SA", "SCI", "SNC"],
+        options: NATURES_PROPOSEES,
         obligatoire: true,
       },
       {

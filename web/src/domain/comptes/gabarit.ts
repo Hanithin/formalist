@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 /**
  * Ce que les actes d'approbation ont besoin de savoir.
  *
@@ -158,8 +159,13 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
     CAPITAL_LETTRES: nombreEnFrancais(societe.capital ?? 0),
     RCS_VILLE: ou(texte(societe.villeRcs) || texte(societe.ville)),
     RCS_DE: avecElision(texte(societe.villeRcs) || texte(societe.ville)),
-    /* Une société par actions a des actions, les autres des parts sociales. */
-    MOT_TITRES: forme === "SAS" || forme === "SASU" || forme === "SA" ? "actions" : "parts sociales",
+    /*
+     * Une société par actions a des actions, les autres des parts sociales.
+     *
+     * Trois formes étaient nommées ici, et le procès-verbal d'approbation d'une SELAS
+     * parlait donc de parts sociales. La nature de la forme est déclarée une fois.
+     */
+    MOT_TITRES: natureDeLaForme(forme).titres,
 
     /* -------------------------------------------------------- L'exercice */
     DATE_OUVERTURE_FR: dateEnFrancais(texte(valeurs.dateOuverture)),

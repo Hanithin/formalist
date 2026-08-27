@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
@@ -456,7 +457,12 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
    * sociales. La liste des présents écrivait « détenant 700 parts » dans un
    * procès-verbal de SAS qui parlait d'actions partout ailleurs.
    */
-  const titres = forme === "SAS" || forme === "SASU" ? "actions" : "parts sociales";
+  /*
+   * Cette comparaison oubliait la SA : une société anonyme lisait « détenant 700 parts
+   * sociales » dans sa feuille de présence, et « actions » partout ailleurs dans le
+   * même procès-verbal.
+   */
+  const titres = natureDeLaForme(forme).titres;
 
   const nouveauSiege = adresseSurUneLigne(
     typeof valeurs.nouvelleAdresse === "string" ? valeurs.nouvelleAdresse : "",
@@ -900,8 +906,7 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
  */
 /** « actions » ou « parts sociales », pour intituler l'acte de cession. */
 function motTitres(forme: string | null | undefined): string {
-  const f = (forme ?? "").trim().toUpperCase();
-  return f === "SAS" || f === "SASU" || f === "SA" ? "actions" : "parts sociales";
+  return natureDeLaForme(forme).titres;
 }
 
 export function gabaritProcesVerbal(
@@ -1005,9 +1010,11 @@ function donneesDeLApport(
       : 0;
 
   const formeApportee = texte(valeurs.apporteeForme);
-  const motTitresApportee = /^(SARL|EURL|SCI|SNC|SCP)/i.test(formeApportee)
-    ? "parts sociales"
-    : "actions";
+  /*
+   * L'expression régulière ne connaissait que cinq formes, et rendait « actions » pour
+   * toutes les autres - une SCM ou une EARL apportée voyait ses parts appelées actions.
+   */
+  const motTitresApportee = natureDeLaForme(formeApportee).titres;
 
   const qualite = texte(valeurs.apporteurQualite);
 

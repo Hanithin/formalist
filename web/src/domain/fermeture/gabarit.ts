@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 /**
  * Ce que les actes de fermeture ont besoin de savoir.
  *
@@ -196,8 +197,8 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
     RCS_VILLE: ou(texte(societe.villeRcs) || texte(societe.ville)),
     RCS_DE: avecElision(texte(societe.villeRcs) || texte(societe.ville)),
     VILLE_SIGNATURE: ou(texte(societe.ville)),
-    MOT_TITRES:
-      forme === "SAS" || forme === "SASU" || forme === "SA" ? "actions" : "parts sociales",
+    /* Même table que partout ailleurs : trois formes nommées ici en oubliaient douze. */
+    MOT_TITRES: natureDeLaForme(forme).titres,
 
     /* -------------------------------------------------------- Qui décide */
     IS_UNIPERSONNELLE: unipersonnelle,

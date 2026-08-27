@@ -128,6 +128,242 @@ export function regle(forme: string | null | undefined): RegleForme | null {
   return estForme(forme) ? FORMES[forme] : null;
 }
 
+/* ------------------------------------------------------------ La nature d'une forme */
+
+/**
+ * Ce qu'une forme impose aux actes, indépendamment de ce qu'il faut pour la créer.
+ *
+ * Deux choses étaient confondues sous le mot « forme ». Créer une société demande des
+ * gabarits de statuts, un capital minimum, une part à libérer : seules cinq formes en
+ * disposent, et c'est ce que décrit `FORMES` ci-dessus. Mais une société qui existe
+ * déjà - qu'elle transfère son siège, cède ses titres ou dépose ses comptes - ne
+ * demande à sa forme que du vocabulaire : ses titres sont-ils des actions ou des parts
+ * sociales, dirige-t-elle par un président ou un gérant, est-elle civile ou
+ * commerciale. Une SELAS n'a pas de gabarit de statuts chez nous, et n'en a pas besoin
+ * pour déposer ses comptes.
+ *
+ * Ce vocabulaire était décidé à cinq endroits, chacun avec sa propre liste écrite à la
+ * main : un ensemble dans `pv-age.ts` contenant un « SASU » avec une espace de trop, un
+ * autre dans `acte-cession.ts`, et trois comparaisons dans `gabarit.ts` dont l'une
+ * oubliait la SA - si bien qu'une société anonyme lisait « détenant 700 parts sociales »
+ * dans sa feuille de présence et « actions » partout ailleurs, dans le même acte.
+ *
+ * Une seule table, donc, que ces cinq endroits lisent.
+ */
+export type CategorieDeForme =
+  | "commerciale"
+  | "exercice-liberal"
+  | "civile"
+  | "civile-agricole"
+  | "holding";
+
+export interface NatureDeForme {
+  /** Le sigle, tel qu'un acte l'écrit. */
+  code: string;
+  /** Le nom entier, pour les écrans et les messages. */
+  libelle: string;
+  /** « actions » ou « parts sociales ». */
+  titres: "actions" | "parts sociales";
+  /** « action » ou « part sociale ». */
+  titreSingulier: string;
+  /** « actionnaires » ou « associés ». */
+  associesPluriel: string;
+  /** Comment s'appelle celui qui dirige : le mot figure dans les actes. */
+  titreDirigeant: "Président" | "Gérant";
+  categorie: CategorieDeForme;
+  /** N'admet qu'un associé, par construction. */
+  unipersonnelle: boolean;
+  /**
+   * Sa jumelle unipersonnelle, ou pluripersonnelle.
+   *
+   * Le registre ne distingue pas les deux - une SASU y est immatriculée comme une SAS -
+   * et le nombre d'associés, lui, le dit. C'est ce lien qui permet de passer de l'une à
+   * l'autre sans table supplémentaire.
+   */
+  jumelle?: string;
+}
+
+/** Une forme par actions : président, actionnaires, actions. */
+function parActions(
+  code: string,
+  libelle: string,
+  categorie: CategorieDeForme,
+  extra: Partial<NatureDeForme> = {}
+): NatureDeForme {
+  return {
+    code,
+    libelle,
+    titres: "actions",
+    titreSingulier: "action",
+    associesPluriel: "actionnaires",
+    titreDirigeant: "Président",
+    categorie,
+    unipersonnelle: false,
+    ...extra,
+  };
+}
+
+/** Une forme par parts : gérant, associés, parts sociales. */
+function parParts(
+  code: string,
+  libelle: string,
+  categorie: CategorieDeForme,
+  extra: Partial<NatureDeForme> = {}
+): NatureDeForme {
+  return {
+    code,
+    libelle,
+    titres: "parts sociales",
+    titreSingulier: "part sociale",
+    associesPluriel: "associés",
+    titreDirigeant: "Gérant",
+    categorie,
+    unipersonnelle: false,
+    ...extra,
+  };
+}
+
+/**
+ * Toutes les formes que Formalist sait nommer dans un acte.
+ *
+ * Les commandites dirigent par un gérant bien que leurs titres soient des actions :
+ * c'est la commandite qui commande le titre, non la nature des titres. De même une
+ * SELAS est une SAS d'exercice libéral - actions et président - là où une SELARL suit
+ * la SARL. Le contraire figurait dans `qualitesDuRepresentant`, qui rangeait la SELAS
+ * parmi les gérants.
+ */
+export const NATURES: Record<string, NatureDeForme> = {
+  /* Commerciales */
+  SA: parActions("SA", "société anonyme", "commerciale"),
+  SAS: parActions("SAS", "société par actions simplifiée", "commerciale", { jumelle: "SASU" }),
+  SASU: parActions("SASU", "société par actions simplifiée à associé unique", "commerciale", {
+    unipersonnelle: true,
+    jumelle: "SAS",
+  }),
+  SE: parActions("SE", "société européenne", "commerciale"),
+  SCA: parActions("SCA", "société en commandite par actions", "commerciale", {
+    titreDirigeant: "Gérant",
+  }),
+  SARL: parParts("SARL", "société à responsabilité limitée", "commerciale", { jumelle: "EURL" }),
+  EURL: parParts("EURL", "entreprise unipersonnelle à responsabilité limitée", "commerciale", {
+    unipersonnelle: true,
+    jumelle: "SARL",
+  }),
+  SNC: parParts("SNC", "société en nom collectif", "commerciale"),
+  SCS: parParts("SCS", "société en commandite simple", "commerciale"),
+
+  /* Exercice libéral */
+  SELAS: parActions("SELAS", "société d'exercice libéral par actions simplifiée", "exercice-liberal", {
+    jumelle: "SELASU",
+  }),
+  SELASU: parActions(
+    "SELASU",
+    "société d'exercice libéral par actions simplifiée à associé unique",
+    "exercice-liberal",
+    { unipersonnelle: true, jumelle: "SELAS" }
+  ),
+  SELAFA: parActions("SELAFA", "société d'exercice libéral à forme anonyme", "exercice-liberal"),
+  SELCA: parActions(
+    "SELCA",
+    "société d'exercice libéral en commandite par actions",
+    "exercice-liberal",
+    { titreDirigeant: "Gérant" }
+  ),
+  SELARL: parParts(
+    "SELARL",
+    "société d'exercice libéral à responsabilité limitée",
+    "exercice-liberal",
+    { jumelle: "SELARLU" }
+  ),
+  SELARLU: parParts(
+    "SELARLU",
+    "société d'exercice libéral à responsabilité limitée à associé unique",
+    "exercice-liberal",
+    { unipersonnelle: true, jumelle: "SELARL" }
+  ),
+
+  /* Civiles */
+  SC: parParts("SC", "société civile", "civile"),
+  SCI: parParts("SCI", "société civile immobilière", "civile"),
+  SCM: parParts("SCM", "société civile de moyens", "civile"),
+  SCP: parParts("SCP", "société civile professionnelle", "civile"),
+
+  /* Civiles agricoles */
+  SCEA: parParts("SCEA", "société civile d'exploitation agricole", "civile-agricole"),
+  EARL: parParts("EARL", "exploitation agricole à responsabilité limitée", "civile-agricole"),
+  GAEC: parParts("GAEC", "groupement agricole d'exploitation en commun", "civile-agricole"),
+
+  /* Holdings de profession libérale : la forme support commande le vocabulaire. */
+  "SPFPL SARL": parParts(
+    "SPFPL SARL",
+    "société de participations financières de profession libérale à responsabilité limitée",
+    "holding"
+  ),
+  "SPFPL SAS": parActions(
+    "SPFPL SAS",
+    "société de participations financières de profession libérale par actions simplifiée",
+    "holding"
+  ),
+  "SPFPL SA": parActions(
+    "SPFPL SA",
+    "société de participations financières de profession libérale à forme anonyme",
+    "holding"
+  ),
+  "SPFPL SCA": parActions(
+    "SPFPL SCA",
+    "société de participations financières de profession libérale en commandite par actions",
+    "holding",
+    { titreDirigeant: "Gérant" }
+  ),
+};
+
+/** Les formes proposées à qui décrit une société existante, dans l'ordre d'usage. */
+export const NATURES_PROPOSEES: string[] = Object.keys(NATURES);
+
+/**
+ * Ce que la forme impose aux actes.
+ *
+ * Une forme inconnue - une société étrangère, une forme rare - ne doit pas faire échouer
+ * la rédaction : on rend alors la nature la plus répandue, en le signalant par un code
+ * vide. Les écrans qui savent quoi en faire le vérifient ; les autres écrivent des
+ * parts sociales et un gérant, ce qui est le cas le plus fréquent.
+ */
+export function natureDeLaForme(forme: string | null | undefined): NatureDeForme {
+  const nette = (forme ?? "").trim().toUpperCase();
+  return (
+    NATURES[nette] ?? {
+      code: "",
+      libelle: nette || "forme non précisée",
+      titres: "parts sociales",
+      titreSingulier: "part sociale",
+      associesPluriel: "associés",
+      titreDirigeant: "Gérant",
+      categorie: "commerciale",
+      unipersonnelle: false,
+    }
+  );
+}
+
+/** La forme est-elle l'une de celles que nous savons nommer ? */
+export function formeConnue(forme: string | null | undefined): boolean {
+  return !!NATURES[(forme ?? "").trim().toUpperCase()];
+}
+
+/**
+ * La forme ajustée au nombre d'associés.
+ *
+ * Le registre ne peut pas dire « SASU » : l'unipersonnalité n'est pas une catégorie
+ * juridique. Une fois les associés saisis, la forme se précise d'elle-même.
+ */
+export function formeSelonAssocies(forme: string | null | undefined, nombreAssocies: number): string {
+  const nature = natureDeLaForme(forme);
+  if (!nature.code || !nature.jumelle) return nature.code || (forme ?? "");
+
+  const doitEtreUnique = nombreAssocies === 1;
+  if (doitEtreUnique === nature.unipersonnelle) return nature.code;
+  return nature.jumelle;
+}
+
 /** Une forme unipersonnelle n'admet qu'un associé : l'écran s'y adapte. */
 export function estUnipersonnelle(forme: string | null | undefined, nombreAssocies = 0): boolean {
   const r = regle(forme);
@@ -258,11 +494,17 @@ export function qualitesDuRepresentant(forme: string | null | undefined): string
    */
   const sansTitre = ["Associé", "Mandataire"];
 
-  if (/^(SAS|SASU|SA|SCA)$/.test(propre)) {
+  /*
+   * Ces deux expressions régulières rangeaient la SELAS parmi les gérants, alors qu'une
+   * société d'exercice libéral par actions simplifiée est une SAS : elle a un
+   * président. Et une SCA, commandite par actions, figurait chez les présidents alors
+   * qu'une commandite est dirigée par un gérant. La table des natures tranche les deux.
+   */
+  const nature = NATURES[propre];
+  if (!nature) return ["Président", "Directeur général", "Gérant", "Co-gérant", ...sansTitre];
+
+  if (nature.titreDirigeant === "Président") {
     return ["Président", "Directeur général", "Directeur général délégué", ...sansTitre];
   }
-  if (/^(SARL|EURL|SCI|SNC|SCM|SCP|SELARL|SELAS|SCS|GAEC|SCEA)$/.test(propre)) {
-    return ["Gérant", "Co-gérant", ...sansTitre];
-  }
-  return ["Président", "Directeur général", "Gérant", "Co-gérant", ...sansTitre];
+  return ["Gérant", "Co-gérant", ...sansTitre];
 }

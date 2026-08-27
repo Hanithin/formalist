@@ -1,5 +1,6 @@
 "use client";
 
+import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
@@ -383,7 +384,14 @@ function EtapeSociete({
     majSociete((societe) => ({
       ...societe,
       denomination: trouvee.denomination,
-      forme: trouvee.forme || societe.forme,
+      /*
+       * La forme ne s'hérite pas d'une autre société.
+       *
+       * `|| societe.forme` gardait la précédente quand la catégorie du registre n'était
+       * pas traduite : chercher une société après une autre lui collait la forme de
+       * celle d'avant, sans rien signaler.
+       */
+      forme: trouvee.forme,
       siren: trouvee.siren,
       adresse: trouvee.siege,
       codePostal: trouvee.codePostal,
@@ -461,7 +469,7 @@ function EtapeSociete({
             onChange={(e) => champSociete("forme", e.target.value)}
           >
             <option value="">Choisir</option>
-            {["SAS", "SASU", "SARL", "EURL", "SA", "SCI", "SNC"].map((f) => (
+            {NATURES_PROPOSEES.map((f) => (
               <option key={f} value={f}>
                 {f}
               </option>

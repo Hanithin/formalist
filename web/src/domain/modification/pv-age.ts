@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
@@ -56,16 +57,20 @@ export interface MotsDeLaForme {
   partsNonNegociables: boolean;
 }
 
-const PAR_ACTIONS = new Set(["SAS", "SASU", "SA", "SASU "]);
-
 export function motsDeLaForme(forme: string | null | undefined): MotsDeLaForme {
-  const nette = (forme ?? "").trim().toUpperCase();
-  const parActions = PAR_ACTIONS.has(nette);
-  const civile = nette === "SCI" || nette === "SC";
+  /*
+   * L'ensemble tenu ici listait « SAS », « SASU », « SA » - et « SASU » une seconde
+   * fois, avec une espace de trop, entrée morte qui n'a jamais rien apparié. Il
+   * ignorait toutes les autres formes par actions : une SELAS y parlait de parts
+   * sociales. La nature de la forme est déclarée une fois, dans le domaine.
+   */
+  const nature = natureDeLaForme(forme);
+  const parActions = nature.titres === "actions";
+  const civile = nature.categorie === "civile" || nature.categorie === "civile-agricole";
 
   return {
-    associesPluriel: parActions ? "actionnaires" : "associés",
-    titres: parActions ? "actions" : "parts sociales",
+    associesPluriel: nature.associesPluriel,
+    titres: nature.titres,
     convocationPar: parActions ? "du Président" : "de la gérance",
     presidentSeance: parActions ? "le Président de la Société" : "le gérant",
     articleCapitauxPropres: parActions ? "L. 225-248" : "L. 223-42",

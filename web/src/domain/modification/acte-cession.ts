@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { formeEnToutesLettres } from "./annonce";
 import { agrementDeDroit, nomDeLAssocie, type Cession } from "./cession";
@@ -47,28 +48,29 @@ export interface MotsDeLaCession {
 }
 
 export function motsDeLaCession(forme: string | null | undefined): MotsDeLaCession {
-  const f = (forme ?? "").trim().toUpperCase();
-
-  if (f === "SAS" || f === "SASU" || f === "SA") {
-    return {
-      titres: "actions",
-      titreSingulier: "action",
-      deTitres: "d'actions",
-      associesPluriel: "actionnaires",
-      /*
-       * L'agrément d'une société par actions simplifiée ne vient pas de la loi mais
-       * d'une clause : l'article L. 227-14 renvoie aux statuts, il ne l'impose pas.
-       */
-      fondementAgrement: "l'article L. 227-14 du code de commerce",
-    };
-  }
+  /*
+   * Cette fonction tenait sa propre liste - SAS, SASU, SA - et une SELAS y cédait des
+   * parts sociales. La nature de la forme est déclarée une fois, dans le domaine.
+   */
+  const nature = natureDeLaForme(forme);
+  const parActions = nature.titres === "actions";
+  const civile = nature.categorie === "civile" || nature.categorie === "civile-agricole";
 
   return {
-    titres: "parts sociales",
-    titreSingulier: "part sociale",
-    associesPluriel: "associés",
-    deTitres: "de parts sociales",
-    fondementAgrement: "l'article L. 223-14 du code de commerce",
+    titres: nature.titres,
+    titreSingulier: nature.titreSingulier,
+    deTitres: parActions ? "d'actions" : "de parts sociales",
+    associesPluriel: nature.associesPluriel,
+    /*
+     * L'agrément d'une société par actions simplifiée ne vient pas de la loi mais d'une
+     * clause : l'article L. 227-14 renvoie aux statuts, il ne l'impose pas. Une société
+     * civile, elle, le tient de l'article 1861 du code civil.
+     */
+    fondementAgrement: civile
+      ? "l'article 1861 du code civil"
+      : parActions
+        ? "l'article L. 227-14 du code de commerce"
+        : "l'article L. 223-14 du code de commerce",
   };
 }
 

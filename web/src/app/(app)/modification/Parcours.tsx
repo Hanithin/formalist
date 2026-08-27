@@ -1,5 +1,6 @@
 "use client";
 
+import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
 import {
   Fragment,
   useEffect,
@@ -766,18 +767,6 @@ interface ResultatRecherche {
   siege?: { adresse?: string; code_postal?: string; libelle_commune?: string };
 }
 
-const FORMES_JURIDIQUES: Record<string, string> = {
-  "5710": "SAS",
-  "5720": "SASU",
-  "5499": "SARL",
-  "5498": "EURL",
-  "5410": "SA",
-  "6540": "SCI",
-  "6533": "SCI",
-  "6534": "SCI",
-  "6532": "SCI",
-  "5202": "SNC",
-};
 
 /**
  * La recherche au registre, partagée.
@@ -789,7 +778,18 @@ const FORMES_JURIDIQUES: Record<string, string> = {
  */
 export interface SocieteTrouvee {
   denomination: string;
+  /**
+   * La forme, si la catégorie du registre en désigne une.
+   *
+   * Vide sinon - une société étrangère, un GIE, une association n'en ont pas au sens de
+   * nos actes. Vide ne veut pas dire « garde la précédente » : c'est ce contresens qui
+   * faisait porter à une SELAS la forme de la société cherchée juste avant.
+   */
   forme: string;
+  /** Le code à quatre chiffres du registre, tel quel. */
+  categorie: string;
+  /** Ce que ce code veut dire, en toutes lettres, pour pouvoir le montrer. */
+  libelleCategorie: string;
   siren: string;
   /** Le siège sur une ligne, tel qu'un acte l'écrit. */
   siege: string;
@@ -880,6 +880,7 @@ export function RechercheAuRegistre({
   };
   const [resultats, setResultats] = useState<ResultatRecherche[]>([]);
   const [ouvert, setOuvert] = useState(false);
+  const [remarque, setRemarque] = useState<string | null>(null);
   const frappe = useRef(false);
 
   useEffect(() => {
@@ -911,9 +912,30 @@ export function RechercheAuRegistre({
     setOuvert(false);
     setResultats([]);
 
+    const categorie = resultat.nature_juridique ?? "";
+    const forme = formeDeLaCategorie(categorie) ?? "";
+    const libelleCategorie = libelleDeLaCategorie(categorie) ?? "";
+
+    /*
+     * Dire ce qu'on a lu quand on ne sait pas le traduire.
+     *
+     * Une catégorie sans forme correspondante laissait le champ vide, sans rien dire :
+     * on ne pouvait pas savoir si le registre n'avait rien répondu ou si sa réponse
+     * n'avait pas été comprise. La nommer permet de choisir en connaissance de cause.
+     */
+    setRemarque(
+      forme || !libelleCategorie
+        ? null
+        : "Le registre indique « " +
+            libelleCategorie +
+            " » : choisissez la forme à écrire dans les actes."
+    );
+
     surSelection({
       denomination: nom,
-      forme: FORMES_JURIDIQUES[resultat.nature_juridique ?? ""] ?? "",
+      forme,
+      categorie,
+      libelleCategorie,
       siren: resultat.siren ?? "",
       siege: siegeSurUneLigne(siege),
       codePostal: siege.code_postal ?? "",
@@ -966,6 +988,16 @@ export function RechercheAuRegistre({
           SIREN, ou remplissez les champs à la main.
         </p>
       )}
+
+      {/*
+        La catégorie lue, quand elle ne désigne aucune de nos formes.
+
+        Le champ restait vide sans rien dire : on ne pouvait pas distinguer une réponse
+        absente d'une réponse incomprise. Le registre parle en codes à quatre chiffres,
+        et tous ne désignent pas une société - un GIE, une association, une société
+        étrangère n'ont pas de forme au sens de nos actes.
+      */}
+      {remarque && <p className={styles.resultatVide}>{remarque}</p>}
     </div>
   );
 }
@@ -1031,15 +1063,33 @@ function EtapeSociete({
      * forme juridique, l'adresse et la ville qu'on venait d'inscrire repassaient à
      * blanc au moment même où le capital s'affichait.
      */
+    /*
+     * La forme ne s'hérite pas.
+     *
+     * `?? societe.forme` gardait la forme en place quand la catégorie du registre
+     * n'était pas traduite : chercher une société après une autre lui collait la forme
+     * de la précédente. Une SELAS devenait la SARL cherchée juste avant, sans que rien
+     * ne le signale. Une catégorie non traduite laisse le champ à choisir.
+     */
+    const categorie = resultat.nature_juridique ?? "";
+    const forme = formeDeLaCategorie(categorie) ?? "";
+    const libelleCategorie = libelleDeLaCategorie(categorie);
+
     majSociete((societe) => ({
       ...societe,
       denomination: nom,
-      forme: FORMES_JURIDIQUES[resultat.nature_juridique ?? ""] ?? societe.forme ?? "",
+      forme,
       siren: resultat.siren ?? "",
       adresse: siege.adresse ?? "",
       codePostal: siege.code_postal ?? "",
       ville: siege.libelle_commune ?? "",
     }));
+
+    if (!forme && libelleCategorie) {
+      setMessage(
+        "Le registre indique « " + libelleCategorie + " » : choisissez la forme à écrire dans les actes."
+      );
+    }
 
     if (!resultat.siren) return;
     try {

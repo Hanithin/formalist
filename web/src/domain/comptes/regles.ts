@@ -1,3 +1,5 @@
+import { natureDeLaForme, NATURES_PROPOSEES } from "@/domain/formalite/formes";
+
 /**
  * L'approbation des comptes annuels : ce que la loi impose, et ce qui se calcule.
  *
@@ -14,19 +16,19 @@
 
 /* ------------------------------------------------------------- Les formes */
 
-/** Les formes que le parcours sait traiter. */
-export const FORMES_COMPTES = ["SAS", "SASU", "SARL", "EURL", "SA", "SCI", "SNC"] as const;
-
-export type FormeComptes = (typeof FORMES_COMPTES)[number];
-
-function normaliser(forme: string | null | undefined): string {
-  return (forme ?? "").toUpperCase().trim();
-}
+/**
+ * Les formes que le parcours sait traiter.
+ *
+ * Il n'en connaissait que sept, écrites ici. Une société d'exercice libéral, une
+ * commandite, une société civile de moyens n'y figuraient pas : elles déposent pourtant
+ * leurs comptes comme les autres. La liste vient désormais des formes déclarées, une
+ * fois, dans le domaine.
+ */
+export const FORMES_COMPTES = NATURES_PROPOSEES;
 
 /** Une seule personne décide : il n'y a pas d'assemblée, mais une décision. */
 export function estUnipersonnelle(forme: string | null | undefined): boolean {
-  const f = normaliser(forme);
-  return f === "SASU" || f === "EURL";
+  return natureDeLaForme(forme).unipersonnelle;
 }
 
 /**
@@ -37,7 +39,13 @@ export function estUnipersonnelle(forme: string | null | undefined): boolean {
  * puisqu'il n'y a rien de publié.
  */
 export function estCivile(forme: string | null | undefined): boolean {
-  return normaliser(forme).startsWith("SC");
+  /*
+   * Le test portait sur les deux premières lettres du sigle. Il rangeait donc parmi les
+   * sociétés civiles la SCA et la SCS, qui sont des commandites commerciales : elles
+   * auraient perdu leur réserve légale et leur dépôt au greffe sur la foi d'un préfixe.
+   */
+  const categorie = natureDeLaForme(forme).categorie;
+  return categorie === "civile" || categorie === "civile-agricole";
 }
 
 /* ------------------------------------------------------------- Les délais */
