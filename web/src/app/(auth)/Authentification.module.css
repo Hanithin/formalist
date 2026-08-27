@@ -365,6 +365,50 @@
   margin-bottom: 16px;
 }
 
+/*
+ * L'issue offerte à qui n'a jamais reçu son lien de confirmation.
+ *
+ * Elle paraît sous le refus, discrète : c'est une porte de secours, non l'action
+ * principale de l'écran, qui reste de se connecter. Bordée plutôt que pleine, pour
+ * qu'elle ne concurrence pas le bouton noir juste en dessous.
+ */
+.btnRenvoi {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 11px;
+  border: 1px solid #e5e5e5;
+  border-radius: 100px;
+  background: #fff;
+  color: #3f3f46;
+  font-family: var(--police-texte), sans-serif;
+  font-size: 13.5px;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btnRenvoi:hover:not(:disabled) {
+  border-color: #111;
+  color: #111;
+}
+
+.btnRenvoi:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* La réponse au renvoi : ni un refus, ni une réussite bruyante. */
+.authInfo {
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border: 1px solid #e4eaf6;
+  border-radius: 10px;
+  background: #f6f8fd;
+  color: #4b5565;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .authInlineAction a {
   color: #111;
   border-bottom: 1px solid #c9c9cd;

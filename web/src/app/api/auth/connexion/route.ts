@@ -35,8 +35,24 @@ export const POST = route(async (requete: Request) => {
     return NextResponse.json({ error: "Ce compte est désactivé. Contactez le support." }, { status: 403 });
   }
   if (!compte.email_verified) {
+    /*
+     * L'écran doit pouvoir proposer un nouveau lien, et il ne peut pas le déduire
+     * d'un message.
+     *
+     * Le refus se lisait « ouvrez le lien reçu par email » à quelqu'un qui n'avait
+     * rien reçu - parce que l'envoi avait échoué, ou parce qu'une seconde tentative
+     * d'inscription n'envoie rien du tout, l'adresse étant déjà prise. Sans issue,
+     * il fallait écrire au support pour un compte qu'on venait de créer.
+     *
+     * Le drapeau ne révèle rien de plus que le message : on ne le rend qu'après avoir
+     * vérifié le mot de passe.
+     */
     return NextResponse.json(
-      { error: "Votre adresse email n'est pas encore confirmée. Ouvrez le lien reçu par email." },
+      {
+        error:
+          "Votre adresse email n'est pas encore confirmée. Ouvrez le lien reçu par email, ou demandez-en un nouveau.",
+        adresseNonConfirmee: true,
+      },
       { status: 403 }
     );
   }

@@ -18,9 +18,23 @@ export const POST = route(async (requete: Request) => {
 
   await renvoyerConfirmation(email);
 
-  // Réponse identique dans tous les cas : ce formulaire est ouvert à tous.
+  /*
+   * Une panne d'envoi se dit, mais sans rien révéler du compte.
+   *
+   * Elle se lit sur la configuration, non sur le résultat de l'envoi : sans clé, aucun
+   * courriel ne part pour personne, et le dire n'apprend rien sur l'existence de
+   * l'adresse. Lire l'échec de l'envoi lui-même, en revanche, distinguerait un compte
+   * inconnu - pour lequel on n'a rien tenté - d'un compte existant.
+   *
+   * Sans cela, le client redemandait un lien qui ne partait pas, et recommençait.
+   */
+  const courrielPossible = !!process.env.RESEND_API_KEY;
+
   return NextResponse.json({
     ok: true,
-    message: "Si un compte existe avec cette adresse, un nouveau lien vient d'être envoyé.",
+    courrielPossible,
+    message: courrielPossible
+      ? "Si un compte existe avec cette adresse, un nouveau lien vient d'être envoyé. Il est valable 24 heures."
+      : "L'envoi des emails est momentanément indisponible. Écrivez-nous et nous confirmerons votre adresse.",
   });
 });
