@@ -4,9 +4,10 @@ import { genererDocument } from "./generation";
 import { renumeroterLesResolutions } from "./resolutions";
 import { typographierLeDocument } from "./typographie-docx";
 import { remplacerDocumentsProduits } from "./depot";
-import { rendreLePvAge, rendreLeTraiteDApport } from "./modeles-cabinet";
+import { rendreLePvAge, rendreLeTraiteDApport, rendreLActeDeCession } from "./modeles-cabinet";
 import { donneesDuPvAge, verifierLePvAge } from "@/domain/modification/pv-age";
 import { donneesDuTraite } from "@/domain/modification/traite-apport";
+import { actesDeCession, donneesDeLActeDeCession } from "@/domain/modification/acte-cession";
 import { villeDuRcs } from "./rcs";
 import { journal } from "@/lib/journal";
 import type { Modification } from "@/infrastructure/db/depots/modifications";
@@ -48,13 +49,28 @@ export class AucunActeAProduire extends Error {
  * docx.cjs puis par la renumérotation des résolutions.
  */
 function rendu(
-  acte: { gabarit: string; moteur?: string },
+  acte: { gabarit: string; moteur?: string; groupe?: number },
   donneesDuPv: Record<string, unknown>,
   contexte: Parameters<typeof donneesDuTraite>[0],
   donnees: Record<string, unknown>
 ): Buffer {
   if (acte.moteur === "pv-age") return rendreLePvAge(donneesDuPv);
   if (acte.moteur === "traite-apport") return rendreLeTraiteDApport(donneesDuTraite(contexte));
+
+  if (acte.moteur === "acte-cession") {
+    /*
+     * Chaque acte rend le groupe de cessions qui lui revient.
+     *
+     * Les cessions se groupent par acquéreur : deux acquéreurs distincts n'ont rien à
+     * faire dans le même contrat, et la clause de confidentialité s'en trouverait
+     * vidée de sens.
+     */
+    const groupes = actesDeCession(contexte);
+    const groupe = groupes[acte.groupe ?? 0];
+    if (!groupe) throw new AucunActeAProduire();
+    return rendreLActeDeCession(donneesDeLActeDeCession(contexte, groupe));
+  }
+
   return renumeroterLesResolutions(genererDocument(acte.gabarit, donnees));
 }
 
@@ -107,7 +123,8 @@ export async function produireLesActesDeLaModification(
      * s'intitulait « DÉCISION DE L'ASSOCIÉ UNIQUE » et listait deux noms détenant
      * chacun des parts.
      */
-    (modification.assemblee.associes ?? []).length
+    (modification.assemblee.associes ?? []).length,
+    modification.cessions ?? []
   );
   if (aProduire.length === 0) throw new AucunActeAProduire();
 

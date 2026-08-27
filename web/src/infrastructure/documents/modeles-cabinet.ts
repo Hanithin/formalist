@@ -23,6 +23,7 @@ const GABARITS = path.join(process.cwd(), "..", "templates");
 
 export const MODELE_PV_AGE = "modif-pv-age-universel.docx";
 export const MODELE_TRAITE_APPORT = "modif-traite-apport-universel.docx";
+export const MODELE_ACTE_CESSION = "modif-acte-cession-universel.docx";
 
 export class ModeleDuCabinetIllisible extends Error {
   readonly statut = 500;
@@ -80,6 +81,11 @@ export function rendreLePvAge(donnees: Record<string, unknown>): Buffer {
 /** Le traité d'apport de titres. */
 export function rendreLeTraiteDApport(donnees: Record<string, unknown>): Buffer {
   return rendreUnModeleDuCabinet(MODELE_TRAITE_APPORT, donnees);
+}
+
+/** L'acte de cession de titres. */
+export function rendreLActeDeCession(donnees: Record<string, unknown>): Buffer {
+  return rendreUnModeleDuCabinet(MODELE_ACTE_CESSION, donnees);
 }
 
 /**

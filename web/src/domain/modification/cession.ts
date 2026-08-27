@@ -29,6 +29,29 @@ export interface Cession {
   /** Son identité, quand c'est un tiers. */
   nom?: string | null;
   adresse?: string | null;
+
+  /*
+   * L'identité complète du tiers qui entre au capital.
+   *
+   * Un nom et une adresse suffisaient tant que l'acte se contentait de désigner les
+   * parties. Un acte de cession se présente à l'enregistrement au service des impôts,
+   * et il identifie l'acquéreur comme le ferait un notaire : état civil complet pour
+   * une personne, forme, capital, immatriculation et représentant pour une société.
+   */
+  nature?: "physique" | "morale";
+  /** Personne physique : ce que réclame l'état civil. */
+  neLe?: string | null;
+  neA?: string | null;
+  nationalite?: string | null;
+  /** Personne morale : ce qui l'identifie au registre. */
+  forme?: string | null;
+  capital?: number | null;
+  siren?: string | null;
+  villeRcs?: string | null;
+  representant?: string | null;
+
+  /** D'où le cédant tient les titres qu'il cède. */
+  origine?: string | null;
 }
 
 export function cessionVide(): Cession {

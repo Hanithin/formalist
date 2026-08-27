@@ -38,6 +38,7 @@ const TIRET = "-";
  */
 export const MODELE_UNIVERSEL = "modif-pv-age-universel.docx";
 export const MODELE_TRAITE = "modif-traite-apport-universel.docx";
+export const MODELE_CESSION = "modif-acte-cession-universel.docx";
 
 export interface SocieteModifiee {
   denomination?: string | null;
@@ -897,6 +898,12 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
  *
  * Le nombre d'associés, quand on le connaît, l'emporte donc sur le sigle.
  */
+/** « actions » ou « parts sociales », pour intituler l'acte de cession. */
+function motTitres(forme: string | null | undefined): string {
+  const f = (forme ?? "").trim().toUpperCase();
+  return f === "SAS" || f === "SASU" || f === "SA" ? "actions" : "parts sociales";
+}
+
 export function gabaritProcesVerbal(
   forme: string | null | undefined,
   nombreDAssocies?: number
@@ -1117,7 +1124,14 @@ export interface ActeAProduire {
    * et cette passe les défairait : ils se rendent seuls, avec leurs délimiteurs à une
    * accolade et leur propre jeu de balises.
    */
-  moteur?: "classique" | "pv-age" | "traite-apport";
+  moteur?: "classique" | "pv-age" | "traite-apport" | "acte-cession";
+  /**
+   * Le rang de l'acte, quand une même formalité en produit plusieurs.
+   *
+   * Une assemblée peut décider des cessions vers deux acquéreurs différents : ce sont
+   * deux contrats, non un seul, et l'appelant doit savoir lequel rendre.
+   */
+  groupe?: number;
 }
 
 /**
@@ -1131,7 +1145,15 @@ export function actesAProduire(
   codes: string[],
   forme: string | null | undefined,
   valeurs: Valeurs = {},
-  nombreDAssocies?: number
+  nombreDAssocies?: number,
+  /**
+   * Les cessions décidées, quand il y en a.
+   *
+   * Elles décident du nombre d'actes de cession : un par acquéreur. Sans elles, on en
+   * produit un seul, comme avant - un appelant qui ne les connaît pas ne peut pas
+   * savoir qu'il en faudrait deux.
+   */
+  cessions: Cession[] = []
 ): ActeAProduire[] {
   if (codes.length === 0) return [];
 
@@ -1151,7 +1173,35 @@ export function actesAProduire(
   ];
 
   if (codes.includes("cession_parts")) {
-    actes.push({ titre: "Acte de cession de parts", gabarit: "modif-acte-cession.docx" });
+    /*
+     * Un acte par acquéreur, non un acte par cession.
+     *
+     * Trois associés qui cèdent au même acquéreur signent un contrat : un prix global,
+     * un enregistrement. L'acte d'avant n'employait que des balises au singulier,
+     * alimentées par la première cession - les suivantes n'avaient aucun acte.
+     */
+    const acquereurs = [
+      ...new Set(
+        cessions.map((cession) =>
+          cession.vers === "associe"
+            ? "associe:" + String(cession.cessionnaire ?? "")
+            : "tiers:" + (cession.nom ?? "").trim().toLowerCase()
+        )
+      ),
+    ];
+    const combien = Math.max(1, acquereurs.length);
+
+    for (let rang = 0; rang < combien; rang += 1) {
+      actes.push({
+        titre:
+          "Acte de cession " +
+          (motTitres(forme) === "actions" ? "d'actions" : "de parts sociales") +
+          (combien > 1 ? " (" + (rang + 1) + " sur " + combien + ")" : ""),
+        gabarit: MODELE_CESSION,
+        moteur: "acte-cession",
+        groupe: rang,
+      });
+    }
   }
 
   /*

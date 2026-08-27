@@ -10,7 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Adresse, AdresseUneLigne } from "@/components/formulaire/Adresse";
+import { Adresse, AdresseUneLigne, Ville } from "@/components/formulaire/Adresse";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { DepotFichier } from "@/components/formulaire/DepotFichier";
@@ -40,6 +40,7 @@ import {
 } from "@/domain/modification/formalites";
 import { anomaliesDuPvAge } from "@/domain/modification/pv-age";
 import { anomaliesDuTraite } from "@/domain/modification/traite-apport";
+import { anomaliesDeLActeDeCession } from "@/domain/modification/acte-cession";
 import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification/offre";
 import type { Retouche, Zone } from "@/domain/modification/edition";
 import type { ActeProduit } from "@/domain/document/publication";
@@ -211,6 +212,15 @@ export function Parcours({
     }),
     ...(etat.codes.includes("apport_titres")
       ? anomaliesDuTraite({
+          societe: etat.societe,
+          assemblee: etat.assemblee,
+          codes: etat.codes,
+          valeurs: etat.valeurs,
+          cessions: etat.cessions,
+        })
+      : []),
+    ...(etat.codes.includes("cession_parts")
+      ? anomaliesDeLActeDeCession({
           societe: etat.societe,
           assemblee: etat.assemblee,
           codes: etat.codes,
@@ -1219,10 +1229,15 @@ function EtapeSociete({
 
         <div className={styles.champ}>
           <label htmlFor="societe-ville">Ville</label>
-          <input
+          {/* La commune se cherche, et rapporte son code postal - comme l'adresse
+              au-dessus rapporte les deux. */}
+          <Ville
             id="societe-ville"
-            value={etat.societe.ville ?? ""}
-            onChange={(e) => champSociete("ville", e.target.value)}
+            valeur={etat.societe.ville ?? ""}
+            surChangement={(ville) => champSociete("ville", ville)}
+            surCompletion={(codePostal, ville) =>
+              majSociete((societe) => ({ ...societe, codePostal, ville }))
+            }
           />
         </div>
       </div>
@@ -1610,8 +1625,12 @@ function EtapeDetails({
                 changer({ assemblee: { ...etat.assemblee, associes } })
               }
               surCessions={(cessions) => changer({ cessions })}
+              valeurs={etat.valeurs}
               surAgrementStatutaire={(reponse) =>
                 majValeurs((valeurs) => ({ ...valeurs, agrementRequis: reponse }))
+              }
+              surValeur={(champ, valeur) =>
+                majValeurs((valeurs) => ({ ...valeurs, [champ]: valeur }))
               }
             />
           ) : (

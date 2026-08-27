@@ -2,6 +2,7 @@ import { champsASaisir, definitions, type Valeurs } from "./types";
 import { verifierApport } from "./apport";
 import { anomaliesDuPvAge } from "./pv-age";
 import { anomaliesDuTraite } from "./traite-apport";
+import { anomaliesDeLActeDeCession } from "./acte-cession";
 import type { ContexteGabarit } from "./gabarit";
 
 /**
@@ -234,6 +235,20 @@ export function verifierModification(
      */
     ...(codes.includes("apport_titres")
       ? anomaliesDuTraite({ societe, assemblee: assemblee ?? {}, codes, valeurs, cessions } as ContexteGabarit)
+      : []),
+    /*
+     * L'acte de cession a ses propres exigences : un acquéreur nommé, un nombre total
+     * de titres pour calculer le pourcentage cédé - la mention que l'administration
+     * fiscale regarde - et une garantie qui, si elle est consentie, porte une durée.
+     */
+    ...(codes.includes("cession_parts")
+      ? anomaliesDeLActeDeCession({
+          societe,
+          assemblee: assemblee ?? {},
+          codes,
+          valeurs,
+          cessions,
+        } as ContexteGabarit)
       : []),
   ];
 }

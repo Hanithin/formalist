@@ -16,6 +16,29 @@ import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { AdresseUneLigne } from "@/components/formulaire/Adresse";
 import styles from "./Modification.module.css";
 
+/*
+ * D'où le cédant tient les titres qu'il cède.
+ *
+ * L'acte l'écrit à l'article « Origine de propriété », et la phrase se poursuit :
+ * « lesquelles ont été souscrites lors de la constitution ». Chaque valeur est donc
+ * rédigée pour s'y insérer telle quelle.
+ */
+const ORIGINES = [
+  { valeur: "", libelle: "Souscription à la constitution de la société" },
+  {
+    valeur: "ont été souscrites lors d'une augmentation de capital",
+    libelle: "Souscription à une augmentation de capital",
+  },
+  {
+    valeur: "ont été acquises auprès d'un précédent titulaire",
+    libelle: "Acquisition auprès d'un tiers",
+  },
+  {
+    valeur: "ont été reçues par voie de transmission à titre gratuit",
+    libelle: "Donation ou succession",
+  },
+] as const;
+
 /**
  * Les cessions de parts.
  *
@@ -37,9 +60,12 @@ interface Props {
   anomalies: { champ: string; message: string }[];
   /** Ce que les statuts prévoient, là où la loi ne l'impose pas. */
   agrementStatutaire: string | null | undefined;
+  /** Les conditions de l'acte, communes à toutes les cessions de l'assemblée. */
+  valeurs: Record<string, string | number | boolean | null | undefined>;
   surAssocies: (associes: AssociePresent[]) => void;
   surCessions: (cessions: Cession[]) => void;
   surAgrementStatutaire: (reponse: string) => void;
+  surValeur: (champ: string, valeur: string) => void;
 }
 
 export function Cessions({
@@ -48,10 +74,13 @@ export function Cessions({
   forme,
   anomalies,
   agrementStatutaire,
+  valeurs,
   surAssocies,
   surCessions,
   surAgrementStatutaire,
+  surValeur,
 }: Props) {
+  const lire = (champ: string) => String(valeurs[champ] ?? "");
   /*
    * Jamais zéro ligne.
    *
@@ -284,17 +313,40 @@ export function Cessions({
                   )}
                 </div>
               ) : (
-                <div className={styles.champ}>
-                  <label htmlFor={"cession-nom-" + rang}>Nom du cessionnaire</label>
-                  <input
-                    id={"cession-nom-" + rang}
-                    value={cession.nom ?? ""}
-                    onChange={(e) => modifier(rang, { nom: e.target.value })}
-                  />
-                  {refus("cession-" + rang + "-nom") && (
-                    <p role="alert">{refus("cession-" + rang + "-nom")}</p>
-                  )}
-                </div>
+                <>
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-nature-" + rang}>Le cessionnaire est</label>
+                    <select
+                      id={"cession-nature-" + rang}
+                      value={cession.nature ?? "physique"}
+                      onChange={(e) =>
+                        modifier(rang, { nature: e.target.value as "physique" | "morale" })
+                      }
+                    >
+                      <option value="physique">Une personne</option>
+                      <option value="morale">Une société</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-nom-" + rang}>
+                      {cession.nature === "morale" ? "Dénomination" : "Civilité, prénom et nom"}
+                    </label>
+                    <input
+                      id={"cession-nom-" + rang}
+                      placeholder={
+                        cession.nature === "morale"
+                          ? "MERCIER PARTICIPATIONS"
+                          : "Monsieur Paul DURAND"
+                      }
+                      value={cession.nom ?? ""}
+                      onChange={(e) => modifier(rang, { nom: e.target.value })}
+                    />
+                    {refus("cession-" + rang + "-nom") && (
+                      <p role="alert">{refus("cession-" + rang + "-nom")}</p>
+                    )}
+                  </div>
+                </>
               )}
 
               <div className={styles.champ}>
@@ -317,7 +369,9 @@ export function Cessions({
 
               {cession.vers === "tiers" && (
                 <div className={`${styles.champ} ${styles.pleineLargeur}`}>
-                  <label htmlFor={"cession-adresse-" + rang}>Adresse du cessionnaire</label>
+                  <label htmlFor={"cession-adresse-" + rang}>
+                    {cession.nature === "morale" ? "Siège social" : "Adresse personnelle"}
+                  </label>
                   {/* L'acte nomme le cessionnaire par son adresse complète : elle se
                       cherche, comme les autres, plutôt que de se taper de mémoire. */}
                   <AdresseUneLigne
@@ -327,6 +381,128 @@ export function Cessions({
                   />
                 </div>
               )}
+
+              {/*
+                L'état civil du tiers qui entre au capital.
+
+                Un nom et une adresse suffisaient tant que l'acte se contentait de
+                désigner les parties. Un acte de cession se présente à l'enregistrement
+                au service des impôts, et il identifie l'acquéreur comme le ferait un
+                notaire : état civil pour une personne, immatriculation et représentant
+                pour une société.
+              */}
+              {cession.vers === "tiers" && cession.nature !== "morale" && (
+                <>
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-ne-le-" + rang}>Né(e) le</label>
+                    <ChampDate
+                      id={"cession-ne-le-" + rang}
+                      valeur={cession.neLe ?? ""}
+                      surChangement={(iso) => modifier(rang, { neLe: iso })}
+                    />
+                  </div>
+
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-ne-a-" + rang}>Né(e) à</label>
+                    <input
+                      id={"cession-ne-a-" + rang}
+                      placeholder="Lyon (Rhône)"
+                      value={cession.neA ?? ""}
+                      onChange={(e) => modifier(rang, { neA: e.target.value })}
+                    />
+                  </div>
+
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-nationalite-" + rang}>Nationalité</label>
+                    <input
+                      id={"cession-nationalite-" + rang}
+                      placeholder="Française"
+                      value={cession.nationalite ?? ""}
+                      onChange={(e) => modifier(rang, { nationalite: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
+
+              {cession.vers === "tiers" && cession.nature === "morale" && (
+                <>
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-forme-" + rang}>Forme juridique</label>
+                    <input
+                      id={"cession-forme-" + rang}
+                      placeholder="SASU"
+                      value={cession.forme ?? ""}
+                      onChange={(e) => modifier(rang, { forme: e.target.value })}
+                    />
+                  </div>
+
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-capital-" + rang}>Capital social, en euros</label>
+                    <ChampNombre
+                      id={"cession-capital-" + rang}
+                      valeur={cession.capital ?? ""}
+                      decimales
+                      surChangement={(n) => modifier(rang, { capital: n === "" ? null : n })}
+                    />
+                  </div>
+
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-siren-" + rang}>SIREN</label>
+                    <input
+                      id={"cession-siren-" + rang}
+                      inputMode="numeric"
+                      maxLength={9}
+                      placeholder="9 chiffres"
+                      value={cession.siren ?? ""}
+                      onChange={(e) =>
+                        modifier(rang, { siren: e.target.value.replace(/\D/g, "") })
+                      }
+                    />
+                  </div>
+
+                  <div className={styles.champ}>
+                    <label htmlFor={"cession-rcs-" + rang}>Ville du RCS</label>
+                    <input
+                      id={"cession-rcs-" + rang}
+                      placeholder="Lyon"
+                      value={cession.villeRcs ?? ""}
+                      onChange={(e) => modifier(rang, { villeRcs: e.target.value })}
+                    />
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                    <label htmlFor={"cession-representant-" + rang}>Représentée par</label>
+                    <input
+                      id={"cession-representant-" + rang}
+                      placeholder="son Président, Monsieur Paul DURAND"
+                      value={cession.representant ?? ""}
+                      onChange={(e) => modifier(rang, { representant: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/*
+                D'où le cédant tient ses titres.
+                L'acte l'écrit à l'article « Origine de propriété » : sans elle, il
+                affirme une souscription à la constitution qui peut être fausse.
+              */}
+              <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                <label htmlFor={"cession-origine-" + rang}>
+                  Comment le cédant a obtenu ces titres
+                </label>
+                <select
+                  id={"cession-origine-" + rang}
+                  value={cession.origine ?? ""}
+                  onChange={(e) => modifier(rang, { origine: e.target.value })}
+                >
+                  {ORIGINES.map((origine) => (
+                    <option key={origine.valeur} value={origine.valeur}>
+                      {origine.libelle}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className={styles.champ}>
                 <label htmlFor={"cession-date-" + rang}>Date de cession</label>
@@ -391,6 +567,147 @@ export function Cessions({
           </div>
         </section>
       )}
+
+      {/*
+        Les conditions de l'acte, communes à toutes les cessions de cette assemblée.
+
+        Elles ne se répètent pas par cession : c'est un seul contrat par acquéreur, avec
+        un seul régime de garantie et une seule modalité de paiement. Les laisser au
+        défaut revenait à faire signer une cession sans garantie et payée comptant sans
+        que personne ne l'ait décidé.
+      */}
+      <section className={styles.cession}>
+        <div className={styles.cessionTete}>
+          <h4 className={styles.cessionTitre}>
+            <span className={styles.etapeNum}>3</span>
+            Les conditions
+          </h4>
+        </div>
+
+        <div className={styles.champs}>
+          <div className={styles.champ}>
+            <label htmlFor="cession-paiement">Règlement du prix</label>
+            <select
+              id="cession-paiement"
+              value={lire("cessionModalitePaiement")}
+              onChange={(e) => surValeur("cessionModalitePaiement", e.target.value)}
+            >
+              <option value="">Comptant, par virement, le jour de la signature</option>
+              <option value="Échelonné">Échelonné, selon un échéancier annexé</option>
+              <option value="Séquestre">Consigné entre les mains d&apos;un séquestre</option>
+            </select>
+          </div>
+
+          <div className={styles.champ}>
+            <label htmlFor="cession-compte-courant">Compte courant d&apos;associé</label>
+            <select
+              id="cession-compte-courant"
+              value={lire("cessionCompteCourant")}
+              onChange={(e) => surValeur("cessionCompteCourant", e.target.value)}
+            >
+              <option value="">Non cédé : il reste au cédant</option>
+              <option value="Cédé séparément">Cédé, par une convention séparée</option>
+            </select>
+          </div>
+
+          {/*
+            La garantie d'actif et de passif, ou son absence assumée.
+
+            Le silence n'est pas neutre : il laisse les parties découvrir après coup
+            qu'aucune garantie n'a été stipulée. L'acte le dit désormais, dans un sens
+            ou dans l'autre.
+          */}
+          <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+            <label htmlFor="cession-garantie">Garantie d&apos;actif et de passif</label>
+            <select
+              id="cession-garantie"
+              value={lire("cessionGarantiePassif")}
+              onChange={(e) => surValeur("cessionGarantiePassif", e.target.value)}
+            >
+              <option value="Non">
+                Aucune : l&apos;acte l&apos;écarte expressément, en le motivant
+              </option>
+              <option value="Oui">
+                Consentie par le cédant, avec une durée et un plafond éventuel
+              </option>
+            </select>
+          </div>
+
+          {lire("cessionGarantiePassif") === "Oui" && (
+            <>
+              <div className={styles.champ}>
+                <label htmlFor="cession-duree-garantie">Durée de la garantie</label>
+                <input
+                  id="cession-duree-garantie"
+                  placeholder="trois ans"
+                  value={lire("cessionDureeGarantie")}
+                  onChange={(e) => surValeur("cessionDureeGarantie", e.target.value)}
+                />
+                {refus("cessionDureeGarantie") && (
+                  <p role="alert">{refus("cessionDureeGarantie")}</p>
+                )}
+                <p className={styles.devisPrecision}>
+                  En matière fiscale et sociale, elle est prorogée d&apos;office jusqu&apos;au
+                  terme du délai de reprise.
+                </p>
+              </div>
+
+              <div className={styles.champ}>
+                <label htmlFor="cession-plafond-garantie">Plafond, s&apos;il y en a un</label>
+                <input
+                  id="cession-plafond-garantie"
+                  placeholder="50 000 euros"
+                  value={lire("cessionPlafondGarantie")}
+                  onChange={(e) => surValeur("cessionPlafondGarantie", e.target.value)}
+                />
+              </div>
+            </>
+          )}
+
+          {lire("cessionGarantiePassif") !== "Oui" && (
+            <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+              <label htmlFor="cession-motif-absence">
+                Pourquoi aucune garantie n&apos;est consentie
+              </label>
+              <textarea
+                id="cession-motif-absence"
+                rows={2}
+                placeholder="Opération intragroupe, l'acquéreur connaissant la situation de la société."
+                value={lire("cessionMotifAbsenceGarantie")}
+                onChange={(e) => surValeur("cessionMotifAbsenceGarantie", e.target.value)}
+              />
+              <p className={styles.devisPrecision}>
+                Laissé vide, l&apos;acte écrit une formule générale : la connaissance que
+                l&apos;acquéreur a de la société.
+              </p>
+            </div>
+          )}
+
+          <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+            <label htmlFor="cession-contexte">Le contexte de l&apos;opération</label>
+            <textarea
+              id="cession-contexte"
+              rows={2}
+              placeholder="Réorganisation patrimoniale, entrée d'un investisseur, transmission familiale…"
+              value={lire("cessionContexte")}
+              onChange={(e) => surValeur("cessionContexte", e.target.value)}
+            />
+            <p className={styles.devisPrecision}>
+              Il ouvre le préambule de l&apos;acte et explique pourquoi la cession a lieu.
+            </p>
+          </div>
+
+          <div className={styles.champ}>
+            <label htmlFor="cession-lieu">Lieu de signature</label>
+            <input
+              id="cession-lieu"
+              placeholder="Lyon"
+              value={lire("cessionLieuSignature")}
+              onChange={(e) => surValeur("cessionLieuSignature", e.target.value)}
+            />
+          </div>
+        </div>
+      </section>
 
       {/*
         Une assemblée peut décider plusieurs cessions. Le bouton ne s'offre qu'une fois

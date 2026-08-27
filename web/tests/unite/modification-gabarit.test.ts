@@ -218,13 +218,42 @@ describe("les actes produits", () => {
     );
   });
 
-  it("l'acte de cession n'existe que s'il y a cession", () => {
+  it("l'acte de cession n'existe que s'il y a cession, et parle la langue de la forme", () => {
+    /*
+     * Une SAS cède des actions, une SARL des parts sociales. L'acte d'avant écrivait
+     * « parts sociales » jusque dans son titre, quelle que soit la société.
+     */
     expect(actesAProduire(["cession_parts"], "SARL").map((a) => a.titre)).toContain(
-      "Acte de cession de parts"
+      "Acte de cession de parts sociales"
+    );
+    expect(actesAProduire(["cession_parts"], "SAS").map((a) => a.titre)).toContain(
+      "Acte de cession d'actions"
     );
     expect(actesAProduire(["denomination"], "SARL").map((a) => a.titre)).not.toContain(
-      "Acte de cession de parts"
+      "Acte de cession de parts sociales"
     );
+  });
+
+  it("produit un acte par acquéreur, non un par cession", () => {
+    /*
+     * Trois associés qui cèdent au même acquéreur signent un contrat, pas trois : un
+     * prix global, un enregistrement. Deux acquéreurs distincts, en revanche, ne
+     * peuvent pas partager le même acte.
+     */
+    const versUnSeul = actesAProduire(["cession_parts"], "SAS", {}, 3, [
+      { cedant: 0, parts: 100, prix: 100, vers: "tiers", nom: "HOLDING A" },
+      { cedant: 1, parts: 200, prix: 200, vers: "tiers", nom: "HOLDING A" },
+    ]);
+    expect(versUnSeul.filter((a) => a.moteur === "acte-cession")).toHaveLength(1);
+
+    const versDeux = actesAProduire(["cession_parts"], "SAS", {}, 3, [
+      { cedant: 0, parts: 100, prix: 100, vers: "tiers", nom: "HOLDING A" },
+      { cedant: 1, parts: 200, prix: 200, vers: "tiers", nom: "HOLDING B" },
+    ]);
+    const deux = versDeux.filter((a) => a.moteur === "acte-cession");
+    expect(deux).toHaveLength(2);
+    expect(deux.map((a) => a.groupe)).toEqual([0, 1]);
+    expect(deux[0].titre).toContain("1 sur 2");
   });
 
   it("la déclaration de non-condamnation n'est produite que si le gabarit dit la bonne fonction", () => {

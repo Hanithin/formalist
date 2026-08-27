@@ -3,7 +3,14 @@ import PizZip from "pizzip";
 import { genererDocument } from "@/infrastructure/documents/generation";
 import { rendreLePvAge } from "@/infrastructure/documents/modeles-cabinet";
 import { donneesDuPvAge, verifierLePvAge } from "@/domain/modification/pv-age";
-import { donneesDuGabarit, actesAProduire, MODELE_UNIVERSEL } from "@/domain/modification/gabarit";
+import {
+  donneesDuGabarit,
+  actesAProduire,
+  MODELE_UNIVERSEL,
+  MODELE_CESSION,
+} from "@/domain/modification/gabarit";
+import { actesDeCession, donneesDeLActeDeCession } from "@/domain/modification/acte-cession";
+import { rendreLActeDeCession } from "@/infrastructure/documents/modeles-cabinet";
 import type { Cession } from "@/domain/modification/cession";
 
 /**
@@ -53,7 +60,7 @@ function produire(
   const assemblee = { date: "2026-09-15", associes: options.associes ?? ASSOCIES };
   const cessions = options.cessions ?? [CESSION];
 
-  const acte = actesAProduire(codes, forme, {}, assemblee.associes.length).find(
+  const acte = actesAProduire(codes, forme, {}, assemblee.associes.length, cessions).find(
     (a) => a.gabarit === gabarit
   );
   if (!acte) throw new Error("acte introuvable : " + gabarit);
@@ -65,6 +72,10 @@ function produire(
    */
   if (acte.gabarit === MODELE_UNIVERSEL) {
     return texteDu(rendreLePvAge(donneesDuPvAge(contexte)));
+  }
+  if (acte.gabarit === MODELE_CESSION) {
+    const groupes = actesDeCession(contexte);
+    return texteDu(rendreLActeDeCession(donneesDeLActeDeCession(contexte, groupes[0])));
   }
   return texteDu(genererDocument(acte.gabarit, donneesDuGabarit(contexte)));
 }
@@ -115,9 +126,11 @@ describe("les actes d'une cession", () => {
      * « 100 000 euros » : le prix sortait du tableau des cessions en nombre brut,
      * sans passer par le formateur des montants.
      */
-    for (const gabarit of [MODELE_UNIVERSEL, "modif-acte-cession.docx"]) {
+    for (const gabarit of [MODELE_UNIVERSEL, MODELE_CESSION]) {
       const texte = produire("SAS", gabarit);
-      expect(texte, gabarit).toContain("24 000 euros");
+      // Le procès-verbal écrit « 24 000 euros », l'acte « (24 000 €) » : le séparateur
+      // est ce qui compte, et il ne doit jamais manquer.
+      expect(texte, gabarit).toContain("24 000");
       expect(texte, gabarit).not.toContain("24000");
     }
   });
@@ -129,13 +142,17 @@ describe("les actes d'une cession", () => {
      * de cession écrivait le contraire, pour la même opération et le même jour.
      */
     const pv = produire("SAS", MODELE_UNIVERSEL);
-    const acte = produire("SAS", "modif-acte-cession.docx");
+    const acte = produire("SAS", MODELE_CESSION);
 
     expect(pv).toContain("(Cession d'actions)");
     expect(pv).toContain("prend acte de la cession de 200 actions");
     expect(pv).not.toContain("agrée expressément");
     expect(pv).toContain("n'est soumise à aucune procédure d'agrément");
-    expect(acte).toContain("n'est soumise à aucune procédure d'agrément");
+
+    /* L'acte dit la même chose, avec ses mots : les statuts ne l'imposent pas. */
+    expect(acte).toContain("Absence de procédure d'agrément");
+    expect(acte).toContain("ne subordonnent pas la cession des actions à une procédure");
+    expect(acte).not.toContain("a été soumise à l'agrément préalable");
   });
 
   it("agréent quand la loi l'exige, en SARL vers un tiers", () => {
