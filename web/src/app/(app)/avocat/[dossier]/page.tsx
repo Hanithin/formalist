@@ -8,6 +8,7 @@ import { estPropose } from "@/domain/acces/regles";
 import { etatDesPieces } from "@/domain/formalite/pieces";
 import { piecesAttenduesDuDossier } from "@/infrastructure/documents/pieces-attendues";
 import { libelleEtat } from "@/domain/formalite/transitions";
+import { libelleDuType } from "@/domain/formalite/liste";
 import { libelleJournal } from "@/domain/formalite/journal";
 import { Notes } from "./Notes";
 import { Travail } from "./Travail";
@@ -369,15 +370,24 @@ export default async function DossierAvocat({
           bandeau qui suit trois lignes plus bas.
         */}
         <div className={styles.topbarTitre}>
-          <div className={styles.topbarNom}>
-            <h1>{dossier.societe || "Sans nom"}</h1>
-            <p className={styles.topbarSousTitre}>
-              {[dossier.forme, libelleEtat(dossier.status)].filter(Boolean).join(" · ")}
-            </p>
-          </div>
+          <h1>{dossier.societe || "Sans nom"}</h1>
           <div className={styles.detailBadges}>
+            {/*
+              De quelle formalité s'agit-il ?
+
+              Rien ne le disait : « STERLING PEAK - exercice 2026 » se lit comme un nom
+              de société, et l'avocat qui ouvre un dossier ne savait pas s'il tenait un
+              dépôt de comptes, une modification ou une fermeture avant d'avoir lu les
+              tâches.
+            */}
+            <span className={styles.detailBadge}>{libelleDuType(dossier.type)}</span>
             <span className={`${styles.detailBadge} ${styles.phase}`}>{etat.libelle}</span>
           </div>
+          {/* La forme et l'état du dossier restent sur la ligne : ce sont des faits,
+              et une ligne de plus décalerait la barre entière. */}
+          <p className={styles.topbarSousTitre}>
+            {[dossier.forme, libelleEtat(dossier.status)].filter(Boolean).join(" · ")}
+          </p>
         </div>
         <Link href="/avocat" className={styles.topbarBack}>
           <span className={styles.topbarBackFleche} aria-hidden="true">
@@ -423,36 +433,41 @@ export default async function DossierAvocat({
               <span style={{ width: Math.round((faites / taches.length) * 100) + "%" }} />
             </span>
 
+            {/* « 4 sur 7 faites » se lisait comme un résultat d'examen : ce qui compte
+                est ce qui reste. */}
             <span className={styles.bandeauAssigneCompte}>
-              {faites} sur {taches.length} {faites > 1 ? "faites" : "faite"}
-            </span>
-
-            <span className={styles.bandeauAssigneEtape}>
-              {suivante ? (
-                <>
-                  <span className={styles.bandeauAssigneLegende}>Prochaine étape</span>
-                  {suivante.titre}
-                  {suivante.bloquee && (
-                    <span className={styles.bandeauAssigneBlocage}>{suivante.bloquee}</span>
-                  )}
-                </>
-              ) : (
-                "Vous avez fait tout ce qui vous revenait."
-              )}
+              {taches.length - faites === 0
+                ? "Tout est fait"
+                : taches.length - faites === 1
+                  ? "1 tâche restante"
+                  : taches.length - faites + " tâches restantes"}
             </span>
 
             {/*
-              Le bouton ne s'affiche que s'il mène ailleurs : sur l'onglet même que la
-              tâche désigne, il ramènerait où l'on est déjà.
+              La barre dit ce qu'il y a à faire, et rien d'autre.
+
+              Elle portait un bouton « Y aller » qui menait à l'onglet nommé par la
+              tâche - « pieces », un ancien nom qui retombait sur celui d'où l'on
+              venait. Un bouton qui ne mène nulle part apprend à ne plus les lire. Le
+              nom de la tâche suffit, et il conduit à la liste quand on n'y est pas.
             */}
-            {suivante?.onglet && suivante.onglet !== onglet && (
-              <Link
-                href={adresse(suivante.onglet as Onglet)}
-                className={styles.bandeauAssigneBouton}
-              >
-                Y aller
-              </Link>
-            )}
+            <span className={styles.bandeauAssigneEtape}>
+              <span className={styles.bandeauAssigneLegende}>À faire</span>
+              {suivante ? (
+                onglet === "travail" ? (
+                  suivante.titre
+                ) : (
+                  <Link href={adresse("travail")} className={styles.bandeauAssigneLien}>
+                    {suivante.titre}
+                  </Link>
+                )
+              ) : (
+                "rien, vous avez fait tout ce qui vous revenait"
+              )}
+              {suivante?.bloquee && (
+                <span className={styles.bandeauAssigneBlocage}>{suivante.bloquee}</span>
+              )}
+            </span>
           </section>
         )}
 

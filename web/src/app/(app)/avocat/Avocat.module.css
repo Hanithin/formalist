@@ -672,9 +672,9 @@
   gap: 10px 14px;
   margin-bottom: 20px;
   padding: 10px 16px;
-  border: 1px solid #e6e1f2;
+  border: 1px solid #e8e8ea;
   border-radius: 12px;
-  background: #faf9fd;
+  background: #fff;
 }
 
 .bandeauAssigneIcone {
@@ -685,7 +685,7 @@
   height: 20px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #7a6ba8;
+  background: #111;
   color: #fff;
 }
 
@@ -698,14 +698,14 @@
   flex-shrink: 0;
   font-size: 13.5px;
   font-weight: 600;
-  color: #55496f;
+  color: #111;
 }
 
 .bandeauAssigneCompte {
   flex-shrink: 0;
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
-  color: #7b7291;
+  color: #71717a;
 }
 
 .bandeauAssigneLegende {
@@ -713,7 +713,7 @@
   font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
-  color: #a29ab5;
+  color: #a1a1aa;
 }
 
 /* La jauge sépare l'état du geste : elle prend ce qui reste, sans le remplir. */
@@ -723,7 +723,7 @@
   max-width: 120px;
   height: 4px;
   border-radius: 100px;
-  background: #eae6f4;
+  background: #e8e8ea;
   overflow: hidden;
 }
 
@@ -731,7 +731,7 @@
   display: block;
   height: 100%;
   border-radius: 100px;
-  background: #7a6ba8;
+  background: #111;
 }
 
 /* La prochaine étape pousse le bouton au bout de la ligne. */
@@ -744,7 +744,7 @@
   margin-left: auto;
   font-size: 13.5px;
   font-weight: 500;
-  color: #3f3a4d;
+  color: #3f3f46;
 }
 
 /* Ce qui empêche la tâche passe à la ligne : c'est une phrase, pas une étiquette. */
@@ -755,12 +755,24 @@
   color: #92400e;
 }
 
+/* Le nom de la tâche conduit à la liste : c'est un lien, non un bouton de plus. */
+.bandeauAssigneLien {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #d4d4d8;
+}
+
+.bandeauAssigneLien:hover {
+  text-decoration-color: #111;
+}
+
 .bandeauAssigneBouton {
   flex-shrink: 0;
   padding: 7px 16px;
   border-radius: 100px;
-  border: 1px solid #6f6193;
-  background: #6f6193;
+  border: 1px solid #111;
+  background: #111;
   color: #fff;
   font-size: 13px;
   font-weight: 500;
@@ -770,8 +782,8 @@
 }
 
 .bandeauAssigneBouton:hover {
-  background: #5d5180;
-  border-color: #5d5180;
+  background: #333;
+  border-color: #333;
 }
 
 
@@ -881,9 +893,10 @@
   background: #f0fdf4;
   color: #16a34a;
 }
+/* « Assigné à vous » : un fait, non une alerte - il se dit en gris. */
 .badge.purple {
-  background: #f4f1fa;
-  color: #6f6193;
+  background: #f4f4f5;
+  color: #52525b;
 }
 .badge.red {
   background: #fef2f2;
@@ -961,17 +974,6 @@
   color: #52525b;
 }
 /* Qui s'en occupe : la même teinte que la pastille de la liste. */
-/*
- * Un violet éteint, pas un violet d'écran d'accueil.
- *
- * La teinte pleine - #7c3aed - saute au visage sur un écran de travail qu'on regarde
- * des heures, et donne à l'assignation plus d'importance qu'au dossier lui-même.
- */
-.detailBadge.assigne {
-  border-color: #e6e1f2;
-  background: #f4f1fa;
-  color: #6f6193;
-}
 .detailBadge.muted {
   background: #fafafa;
   color: #777;
@@ -1335,6 +1337,7 @@
   margin-bottom: 12px;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
 }
 .docIcon {
@@ -1464,9 +1467,17 @@
 
 /* ---------- Le motif du refus ---------- */
 
+/*
+ * Le motif du refus prend sa propre ligne.
+ *
+ * Le formulaire s'ouvrait dans la rangée des gestes, à côté du nom : il grandissait la
+ * carte, l'étiquette poussait le champ vers le bas et « Ouvrir », resté centré, se
+ * décalait d'une demi-hauteur. La ligne entière lui revient.
+ */
 .refus {
-  flex: 1;
-  min-width: 260px;
+  flex-basis: 100%;
+  order: 3;
+  margin-top: 2px;
 }
 
 .refusLabel {
@@ -1661,13 +1672,9 @@
   min-width: 0;
 }
 
-.topbarNom {
-  min-width: 0;
-}
-
 /* La forme et l'état du dossier : des faits d'identité, non des pastilles. */
 .topbarSousTitre {
-  margin: 2px 0 0;
+  margin: 0;
   font-size: 13px;
   color: #888;
 }
@@ -2484,297 +2491,240 @@
   cursor: default;
 }
 
-/* ---------- Le chemin du dossier ---------- */
-
 /*
- * Quatre temps, dans l'ordre où le travail se fait.
+ * Deux styles de texte que d'autres écrans du cabinet empruntent.
  *
- * Les tâches s'affichaient à plat, huit cartes de même poids : rien ne disait qu'on
- * était encore à vérifier ou déjà à déposer. La frise porte cette lecture-là, et les
- * phases qui suivent la détaillent une à une.
+ * Ils venaient des cartes de tâche, qui n'existent plus : les statuts et l'annonce
+ * légale s'en servent pour leurs phrases d'explication et leurs blocages.
  */
-.frise {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  margin: 0 0 22px;
-  padding: 0;
-  list-style: none;
-  flex-direction: row;
-  flex-wrap: wrap;
-}
-
-.friseEtape {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1 1 180px;
-  margin: 0;
-  padding: 11px 14px;
-  border: 1px solid #ececee;
-  border-radius: 12px;
-  background: #fff;
-}
-
-.frisePastille {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #f4f4f5;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #a1a1aa;
-}
-
-.friseTexte {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.friseTitre {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #a1a1aa;
-}
-
-.friseCompte {
-  font-size: 11.5px;
-  color: #b4b4bb;
-}
-
-/* Ce qui est fait s'éteint ; ce qui se fait maintenant se voit. */
-.friseFaite .frisePastille {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.friseFaite .friseTitre {
-  color: #52525b;
-}
-
-.friseEnCours {
-  border-color: #d8d2ea;
-  background: #f8f6fc;
-}
-
-.friseEnCours .frisePastille {
-  background: #6f6193;
-  color: #fff;
-}
-
-.friseEnCours .friseTitre {
-  color: #3f3a4d;
-}
-
-.friseEnCours .friseCompte {
-  color: #7b7291;
-}
-
-/* ---------- Une phase, dépliée ou repliée ---------- */
-
-.phase {
-  margin-bottom: 10px;
-  border: 1px solid #ececee;
-  border-radius: 14px;
-  background: #fff;
-  overflow: hidden;
-}
-
-/* L'en-tête d'une étape : son rang, son nom, son compte. */
-.phaseTete {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 18px 6px;
-}
-
-.phaseTitre {
-  margin: 0;
-  margin-right: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14.5px;
-  font-weight: 600;
-  color: #111;
-}
-
-.phaseMarque {
-  padding: 2px 8px;
-  border-radius: 100px;
-  background: #f4f1fa;
-  font-size: 11px;
-  font-weight: 600;
-  color: #6f6193;
-}
-
-.phaseResume {
-  grid-area: resume;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: #8a8a8f;
-}
-
-.phaseCompte {
-  flex-shrink: 0;
-  font-size: 12.5px;
-  font-variant-numeric: tabular-nums;
-  color: #a1a1aa;
-}
-
-.phaseChevron {
-  grid-area: chevron;
-  display: inline-flex;
-  color: #a1a1aa;
-  transition: transform 0.15s;
-}
-
-.phaseChevron svg {
-  width: 18px;
-  height: 18px;
-}
-
-.phaseChevron.ouvert {
-  transform: rotate(180deg);
-}
-
-/* Les tâches d'une phase ouverte : dans le cadre, sans double bordure. */
-.phase .taches {
-  padding: 0 18px 16px;
-}
-
-.phase .tache {
-  border-color: #f0f0f2;
-}
-
-/* ---------- Les tâches ---------- */
-
-.taches {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: tache;
-}
-
-/*
- * Une tâche tient sur une ligne.
- *
- * Chacune prenait un pavé de quatre lignes - pastille, titre, phrase, bouton - et la
- * phrase était la même à chaque visite. Sept pavés faisaient une page qu'on repliait
- * en accordéon pour la rendre lisible. La ligne porte le titre à gauche, le geste à
- * droite ; la phrase ne reste que sur la tâche qui attend.
- */
-.tache {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 14px;
-  border: 1px solid #efeff1;
-  border-radius: 10px;
-  background: #fff;
-}
-
-/* Celle qui attend porte sa phrase et son bouton plein : elle se pose un peu plus. */
-.tacheSuivante {
-  align-items: flex-start;
-  padding: 13px 14px;
-  border-color: #e0dcee;
-  background: #fbfaff;
-}
-
-/* Une tâche faite s'efface, sans disparaître : on doit pouvoir y revenir. */
-.tacheFaite {
-  background: #fafafa;
-  border-color: #ececef;
-}
-
-.tacheFaite .tacheTitre {
-  color: #71717a;
-}
-
-/* Une tâche qui attend autre chose dit quoi, plutôt que d'être grisée sans mot. */
-.tacheBloquee {
-  align-items: flex-start;
-  border-style: dashed;
-}
-
-.tacheCoche {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  margin-top: 1px;
-  border: 1.5px solid #d4d4d8;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: #fff;
-}
-
-.tacheFaite .tacheCoche {
-  background: #15803d;
-  border-color: #15803d;
-}
-
-/*
- * Le titre tient la gauche, le geste la droite ; la phrase et le blocage passent à la
- * ligne, ce sont des phrases et non des étiquettes.
- */
-.tacheCorps {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  min-width: 0;
-  flex: 1;
-}
-
-.tacheCorps > .tacheTitre {
-  margin-right: auto;
-}
-
-.tacheExplication,
-.tacheBlocage {
-  flex-basis: 100%;
-  order: 3;
-}
-
-.tacheTitre {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
-}
-
 .tacheExplication {
   font-size: 13.5px;
   line-height: 1.5;
   color: #71717a;
 }
 
-/* Ce qui empêche tient en une phrase : un encadré jaune pleine largeur pesait plus
-   lourd que la tâche qu'il commente. */
 .tacheBlocage {
-  margin: 0;
+  margin: 4px 0 0;
   font-size: 12.5px;
   line-height: 1.45;
   color: #92400e;
 }
 
-/* Deux gestes peuvent cohabiter : faire, et aller voir avant de faire. */
-.tacheActions {
+/*
+ * Une chose à faire, et le reste en dessous.
+ *
+ * L'écran racontait l'organisation du travail : trois étapes numérotées, sept tâches
+ * en cartes, quatre compteurs, huit boutons de même poids. Il n'y a qu'une chose à
+ * faire à un instant donné - elle prend la tête, en grand, avec son geste.
+ */
+.maintenant {
+  margin-bottom: 28px;
+  padding: 22px 24px 24px;
+  border: 1px solid #d9d9dd;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.maintenantLegende {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.maintenantTitre {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+/* La phrase prend la largeur de la carte : bornée à 68 caractères, elle se coupait
+   en deux au milieu d'une ligne à moitié vide. */
+.maintenantPhrase {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+.maintenantActions {
   display: flex;
   flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* ---------- Ce qui vient après ---------- */
+
+.suiteTitre {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.suite {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * La ligne entière est le geste.
+ *
+ * Un bouton par tâche en faisait huit sur l'écran, tous de même poids, dont aucun ne
+ * disait par où commencer. La ligne se clique ; son libellé se lit à droite, en gris.
+ */
+.ligne + .ligne {
+  border-top: 1px solid #f2f2f4;
+}
+
+.ligneCorps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  width: 100%;
+  margin: 0;
+  padding: 11px 4px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Une ligne sans geste ne se clique pas : elle ne doit pas s'y prêter. */
+button.ligneCorps,
+a.ligneCorps,
+label.ligneCorps {
+  cursor: pointer;
+}
+
+button.ligneCorps:hover,
+a.ligneCorps:hover,
+label.ligneCorps:hover {
+  background: #fafafa;
+}
+
+button.ligneCorps:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.ligneTitre {
+  margin-right: auto;
+  color: #111;
+}
+
+/* Ce qui empêche tient en une phrase, sous le titre. */
+.ligneBlocage {
+  flex-basis: 100%;
+  order: 3;
+  font-size: 12.5px;
+  color: #92400e;
+}
+
+.ligneGeste {
+  display: inline-flex;
   align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #8a8a8f;
+}
+
+.ligneGeste svg {
+  width: 14px;
+  height: 14px;
+}
+
+/*
+ * Les documents d'une tâche, dans la tâche.
+ *
+ * Ils vivaient dans une fenêtre qu'un bouton ouvrait : on cliquait pour découvrir
+ * trois lignes, puis on refermait. Ils se lisent maintenant sous le titre.
+ */
+.maintenantDocuments {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  margin-top: 16px;
+}
+
+.ligneDocuments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding-left: 4px;
+}
+
+/* ---------- Ce qui est fait, replié ---------- */
+
+.faites {
+  margin-top: 18px;
+}
+
+.faitesTete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #a1a1aa;
+  cursor: pointer;
+  list-style: none;
+}
+
+/* Le chevron est dessiné ici : celui du navigateur laissait un point devant. */
+.faitesTete::-webkit-details-marker {
+  display: none;
+}
+
+.faitesTete::marker {
+  content: "";
+}
+
+.faitesTete::before {
+  content: "▸";
+  font-size: 10px;
+}
+
+.faites[open] .faitesTete::before {
+  content: "▾";
+}
+
+/* Le registre des bénéficiaires : facultatif, et aucune tâche ne le réclame. */
+.facultatif {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: #a1a1aa;
+}
+
+/* Le champ de fichier reste dans le document pour l'accessibilité, mais hors de vue. */
+.champFichier {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /*

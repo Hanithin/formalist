@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   SOUS_PHASES_ORDONNEES,
@@ -172,118 +172,28 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal 
 }
 
 /**
- * Les documents que le cabinet remet au client.
+ * Déposer un document que le cabinet remet au client.
  *
- * Ils vivaient dans leur propre carte, sous l'avancement, au bas de la page. Ce sont
- * les pièces de l'étape « Déposer » : ils se rangent dans cette étape, avec les tâches
- * qui les réclament.
+ * Les deux livrables tenaient leur propre carte, sous l'avancement : « Récépissé de
+ * dépôt » y attendait un fichier pendant que la tâche « Remettre récépissé de dépôt »
+ * demandait la même chose vingt lignes plus haut. Le dépôt appartient à la tâche ; il
+ * ne reste ici que le chemin vers le serveur.
+ *
+ * Rend le motif du refus, ou rien du tout quand c'est passé.
  */
-export function Livrables({
-  dossierId,
-  documentFinal,
-  aLeKbis,
-  aLeRbe,
-}: {
-  dossierId: number;
-  documentFinal: string;
-  aLeKbis: boolean;
-  aLeRbe: boolean;
-}) {
-  return (
-    <div className={styles.livrables}>
-      <p className={styles.livrablesTitre}>
-        Documents remis au client. Ils apparaissent aussitôt dans ses documents.
-      </p>
-      <Livrable
-        dossierId={dossierId}
-        type="kbis"
-        titre={documentFinal}
-        precision="Exigé pour marquer le dossier abouti"
-        depose={aLeKbis}
-      />
-      <Livrable
-        dossierId={dossierId}
-        type="rbe"
-        titre="Registre des bénéficiaires effectifs"
-        precision="Facultatif"
-        depose={aLeRbe}
-      />
-    </div>
-  );
-}
+export async function deposerUnLivrable(
+  dossierId: number,
+  type: "kbis" | "rbe",
+  fichier: File
+): Promise<string | null> {
+  const corps = new FormData();
+  corps.append("dossier", String(dossierId));
+  corps.append("type", type);
+  corps.append("fichier", fichier);
 
-function Livrable({
-  dossierId,
-  type,
-  titre,
-  precision,
-  depose,
-}: {
-  dossierId: number;
-  type: string;
-  titre: string;
-  precision: string;
-  depose: boolean;
-}) {
-  const champ = useRef<HTMLInputElement>(null);
-  const [erreur, setErreur] = useState<string | null>(null);
-  const [enCours, demarrer] = useTransition();
-  const router = useRouter();
+  const reponse = await fetch("/api/avocat/livrables", { method: "POST", body: corps });
+  if (reponse.ok) return null;
 
-  function deposer(fichier: File) {
-    setErreur(null);
-
-    demarrer(async () => {
-      const corps = new FormData();
-      corps.append("dossier", String(dossierId));
-      corps.append("type", type);
-      corps.append("fichier", fichier);
-
-      const reponse = await fetch("/api/avocat/livrables", { method: "POST", body: corps });
-      if (!reponse.ok) {
-        const donnees = await reponse.json().catch(() => ({}));
-        setErreur((donnees.error as string) ?? "Le dépôt n'a pas abouti.");
-        return;
-      }
-      router.refresh();
-    });
-  }
-
-  return (
-    <div className={depose ? `${styles.livrable} ${styles.remis}` : styles.livrable}>
-      <span className={styles.livrableCorps}>
-        <span className={styles.livrableTitre}>{titre}</span>
-        <span className={styles.livrableEtat}>
-          {depose ? "Déposé - le client y a accès" : precision}
-        </span>
-        {erreur && (
-          <span className={styles.erreur} role="alert">
-            {erreur}
-          </span>
-        )}
-      </span>
-
-      <button
-        type="button"
-        className={styles.deposer}
-        onClick={() => champ.current?.click()}
-        disabled={enCours}
-      >
-        {depose ? "Remplacer" : "Déposer"}
-      </button>
-
-      <input
-        ref={champ}
-        type="file"
-        className={styles.fichier}
-        accept=".pdf,.jpg,.jpeg,.png"
-        aria-label={"Déposer " + titre}
-        onChange={(e) => {
-          const fichier = e.target.files?.[0];
-          if (fichier) deposer(fichier);
-          e.target.value = "";
-        }}
-      />
-    </div>
-  );
+  const donnees = await reponse.json().catch(() => ({}));
+  return (donnees.error as string) ?? "Le dépôt n'a pas abouti.";
 }

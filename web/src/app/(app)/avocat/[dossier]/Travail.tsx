@@ -3,13 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { phasesDuCabinet, type Tache } from "@/domain/formalite/cabinet";
+import { type Tache } from "@/domain/formalite/cabinet";
 import {
-  FenetreDesPieces,
+  Piece,
   estUnActeProduit,
   type PieceAffichee,
 } from "./Piece";
-import { Livrables } from "./Avancement";
+import { deposerUnLivrable } from "./Avancement";
 import styles from "../Avocat.module.css";
 
 /*
@@ -26,28 +26,6 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
     return pieces.filter(estUnActeProduit);
   }
   return pieces;
-}
-
-function libelleDesPieces(tache: string): string {
-  if (tache === "pieces" || tache === "attestations") return "Voir les justificatifs";
-  if (tache === "actes" || tache === "relecture") return "Voir les actes";
-  return "Voir les documents";
-}
-
-function titreDesPieces(tache: string): string {
-  if (tache === "pieces" || tache === "attestations") return "Les justificatifs du client";
-  if (tache === "actes" || tache === "relecture") return "Les actes produits";
-  return "Les documents du dossier";
-}
-
-function explicationDesPieces(tache: string): string {
-  if (tache === "pieces" || tache === "attestations") {
-    return "Ce que le client a déposé. Vous pouvez ouvrir chaque pièce, la valider ou en demander une autre.";
-  }
-  if (tache === "actes" || tache === "relecture") {
-    return "Ce que le cabinet a écrit. Le PDF s'ouvre ici, le Word se corrige et se redépose.";
-  }
-  return "Les documents du dossier.";
 }
 
 /**
@@ -93,18 +71,30 @@ export function Travail({
   /** La demande de corrections, et ce qu'on y écrit. */
   const [corrections, setCorrections] = useState(false);
   const [motif, setMotif] = useState("");
-  /*
-   * La tâche dont on regarde les pièces.
-   *
-   * « Voir les documents » menait au même onglet depuis trois tâches différentes, et il
-   * fallait ensuite retrouver dans la liste entière les deux pièces dont il s'agissait.
-   */
-  const [piecesMontrees, setPiecesMontrees] = useState<string | null>(null);
+
   const [retour, setRetour] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
-  const restantes = taches.filter((t) => t.etat !== "faite").length;
+  /*
+   * Déposer le document du greffe.
+   *
+   * Le champ de fichier vit dans un label, non derrière une référence : le clic sur le
+   * libellé ouvre le sélecteur de lui-même, sans qu'aucun code n'ait à le simuler.
+   */
+  function deposer(type: "kbis" | "rbe", fichier: File) {
+    setRefus(null);
+
+    demarrer(async () => {
+      const motifDuRefus = await deposerUnLivrable(dossier, type, fichier);
+      if (motifDuRefus) {
+        setRefus(motifDuRefus);
+        return;
+      }
+      setRetour("Le document est déposé : le client y a accès.");
+      router.refresh();
+    });
+  }
 
   function produire() {
     setRefus(null);
@@ -246,264 +236,312 @@ export function Travail({
     });
   }
 
-  const phases = phasesDuCabinet(taches);
-
   /*
-   * La tâche qui attend maintenant : la première qui n'est ni faite ni empêchée.
+   * Une chose à faire maintenant, le reste en dessous.
    *
-   * Elle seule porte son explication et un bouton plein. Les six autres répétaient
-   * chacune leur phrase à chaque visite, et sept boutons noirs se disputaient l'œil
-   * sans qu'aucun dise par où commencer.
+   * L'écran racontait l'organisation du travail : trois étapes numérotées, sept
+   * tâches en cartes, quatre compteurs, huit boutons de même poids. L'avocat devait
+   * reconstituer où il en était avant de faire quoi que ce soit.
+   *
+   * Il n'y a qu'une chose à faire à un instant donné : la première tâche qui n'est ni
+   * faite ni empêchée. Elle prend la tête de l'écran, avec sa phrase et son geste. Ce
+   * qui vient après se lit en lignes, sans bouton ; ce qui est fait se replie.
    */
-  const suivante = taches.find((t) => t.etat !== "faite" && !t.bloquee);
+  const maintenant = taches.find((t) => t.etat !== "faite" && !t.bloquee);
+  const aVenir = taches.filter(
+    (t) => t.etat !== "faite" && t.identifiant !== maintenant?.identifiant
+  );
+  const faites = taches.filter((t) => t.etat === "faite");
+
+  /**
+   * Le geste d'une tâche, quelle que soit sa forme.
+   *
+   * Chacune se faisait à sa manière - une commande, un lien d'onglet, une ancre, une
+   * fenêtre - et le rendu portait cinq branches imbriquées. Le geste se décrit ici une
+   * fois ; la ligne et le bouton le rendent chacun à leur façon.
+   */
+  function gesteDe(
+    tache: Tache
+  ): {
+    libelle: string;
+    faire?: () => void;
+    href?: string;
+    /** Le geste est un dépôt de fichier : la ligne devient un label. */
+    depot?: "kbis" | "rbe";
+  } | null {
+    if (tache.bloquee) return null;
+    /* Une tâche qui montre ses documents n'a pas de geste : ils portent les leurs. */
+    if (documentsDe(tache).length > 0) return null;
+
+    if (tache.etat === "faite") {
+      if (tache.identifiant === "relecture") {
+        return { libelle: "Retirer de l'espace du client", faire: retirerDeLEspaceClient };
+      }
+      if (tache.identifiant === "informations" && informationsVerifiees) {
+        return { libelle: "Revenir dessus", faire: () => marquerLaRelecture(false) };
+      }
+      return null;
+    }
+
+    if (tache.identifiant === "relecture") {
+      return { libelle: "Mettre à disposition du client", faire: mettreADisposition };
+    }
+    if (tache.identifiant === "actes" && peutProduireLesActes) {
+      return { libelle: "Produire les actes", faire: produire };
+    }
+    if (tache.identifiant === "informations") {
+      return { libelle: "J'ai vérifié les informations", faire: () => marquerLaRelecture(true) };
+    }
+    /*
+     * Remettre le document du greffe, c'est déposer un fichier.
+     *
+     * La tâche menait à l'ancre de l'avancement, où une carte « Documents remis au
+     * client » redemandait le même document : deux endroits pour un seul geste.
+     */
+    if (tache.identifiant === "final") {
+      return { libelle: "Déposer " + livrables.documentFinal.toLowerCase(), depot: "kbis" };
+    }
+    /*
+     * Le dépôt se marque plus bas, dans la même page : le dépôt lui-même se fait au
+     * guichet de l'INPI, hors d'ici.
+     */
+    if (tache.onglet === "avancement") {
+      return { libelle: "Marquer l'avancement", href: "#avancement" };
+    }
+    if (tache.onglet) {
+      return { libelle: "Y aller", href: "/avocat/" + dossier + "?onglet=" + tache.onglet };
+    }
+    return null;
+  }
+
+  /**
+   * Les documents d'une tâche, posés dans la page.
+   *
+   * Ils vivaient dans une fenêtre qu'un bouton « Voir les documents » ouvrait : on
+   * cliquait pour découvrir trois lignes, puis on refermait. La tâche les porte.
+   */
+  function documentsDe(tache: Tache): PieceAffichee[] {
+    return tache.onglet === "pieces" ? piecesDeLaTache(pieces, tache.identifiant) : [];
+  }
+
+  /** Le champ de fichier caché d'un label de dépôt. */
+  function champDeDepot(type: "kbis" | "rbe") {
+    return (
+      <input
+        type="file"
+        className={styles.champFichier}
+        accept=".pdf,.jpg,.jpeg,.png"
+        disabled={enCours}
+        onChange={(e) => {
+          const fichier = e.target.files?.[0];
+          if (fichier) deposer(type, fichier);
+          e.target.value = "";
+        }}
+      />
+    );
+  }
+
+  /** Une tâche en ligne : le titre, ce qui l'empêche, et son geste au bout. */
+  function ligne(tache: Tache) {
+    const geste = gesteDe(tache);
+    const documents = documentsDe(tache);
+    const corps = (
+      <>
+        <span className={styles.ligneTitre}>{tache.titre}</span>
+        {tache.bloquee && <span className={styles.ligneBlocage}>{tache.bloquee}</span>}
+        {geste && (
+          <span className={styles.ligneGeste} aria-hidden="true">
+            {geste.libelle}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </span>
+        )}
+      </>
+    );
+
+    /*
+     * La ligne entière est le geste : un bouton par tâche en faisait huit sur l'écran,
+     * tous de même poids, dont aucun ne disait par où commencer.
+     */
+    if (documents.length > 0) {
+      return (
+        <li key={tache.identifiant} className={styles.ligne}>
+          <span className={styles.ligneCorps}>{corps}</span>
+          <div className={styles.ligneDocuments}>
+            {documents.map((piece) => (
+              <Piece key={piece.id} piece={piece} dossier={dossier} />
+            ))}
+          </div>
+        </li>
+      );
+    }
+    if (geste?.depot) {
+      return (
+        <li key={tache.identifiant} className={styles.ligne}>
+          <label className={styles.ligneCorps}>
+            {corps}
+            {champDeDepot(geste.depot)}
+          </label>
+        </li>
+      );
+    }
+    if (geste?.href) {
+      return geste.href.startsWith("#") ? (
+        <li key={tache.identifiant} className={styles.ligne}>
+          <a href={geste.href} className={styles.ligneCorps}>
+            {corps}
+          </a>
+        </li>
+      ) : (
+        <li key={tache.identifiant} className={styles.ligne}>
+          <Link href={geste.href} className={styles.ligneCorps}>
+            {corps}
+          </Link>
+        </li>
+      );
+    }
+    if (geste?.faire) {
+      return (
+        <li key={tache.identifiant} className={styles.ligne}>
+          <button
+            type="button"
+            className={styles.ligneCorps}
+            onClick={geste.faire}
+            disabled={enCours}
+          >
+            {corps}
+          </button>
+        </li>
+      );
+    }
+    return (
+      <li key={tache.identifiant} className={styles.ligne}>
+        <span className={styles.ligneCorps}>{corps}</span>
+        {documents.length > 0 && (
+          <div className={styles.ligneDocuments}>
+            {documents.map((piece) => (
+              <Piece key={piece.id} piece={piece} dossier={dossier} />
+            ))}
+          </div>
+        )}
+      </li>
+    );
+  }
+
+  const geste = maintenant ? gesteDe(maintenant) : null;
 
   return (
     <div className={styles.travail}>
-      {/*
-        Le compte est dit une fois, en tête de page.
+      {maintenant ? (
+        <section className={styles.maintenant} aria-label="À faire maintenant">
+          <p className={styles.maintenantLegende}>À faire maintenant</p>
+          <h2 className={styles.maintenantTitre}>{maintenant.titre}</h2>
+          <p className={styles.maintenantPhrase}>{maintenant.explication}</p>
 
-        « 5 choses à faire » ici, « 2/7 tâches faites » dans le bandeau, « 1 sur 2 »
-        dans la frise et « 1 / 2 » sur l'accordéon : quatre écritures du même total sur
-        un écran. Seul reste ce qu'on ne lit nulle part ailleurs - que tout est fait.
-      */}
-      {restantes === 0 && <h2 className={styles.titre}>Tout est fait sur ce dossier</h2>}
-
-      {/*
-        Les trois étapes, dépliées.
-
-        Elles se repliaient : voir « Rédiger » puis « Déposer » demandait deux clics,
-        et ouvrir l'une fermait l'autre. Sept tâches tiennent sur un écran - il n'y
-        avait rien à replier, seulement à cacher.
-      */}
-      {phases.map((phase, rang) => (
-        <section key={phase.cle} className={styles.phase}>
-          <div className={styles.phaseTete}>
-            {/* Le rang et la coche : ce que la frise disait, là où on le lit. */}
-            <span
-              className={
-                phase.etat === "faite"
-                  ? `${styles.phasePastille} ${styles.phaseFaite}`
-                  : phase.etat === "en_cours"
-                    ? `${styles.phasePastille} ${styles.phaseEnCours}`
-                    : styles.phasePastille
-              }
-              aria-hidden="true"
-            >
-              {phase.etat === "faite" ? "✓" : rang + 1}
-            </span>
-            <h2 className={styles.phaseTitre}>
-              {phase.titre}
-              {phase.etat === "en_cours" && (
-                <span className={styles.phaseMarque}>en cours</span>
-              )}
-            </h2>
-            <span className={styles.phaseCompte}>
-              {phase.faites} / {phase.taches.length}
-            </span>
-          </div>
-
-            <ol className={styles.taches}>
-                {phase.taches.map((tache) => {
-                  const cestElle = tache.identifiant === suivante?.identifiant;
-                  /* Un seul bouton plein sur l'écran : celui de la tâche qui attend. */
-                  const geste = cestElle ? styles.travailPrincipal : styles.travailSecondaire;
-                  return (
-          <li
-            key={tache.identifiant}
-            className={
-              tache.etat === "faite"
-                ? `${styles.tache} ${styles.tacheFaite}`
-                : tache.bloquee
-                  ? `${styles.tache} ${styles.tacheBloquee}`
-                  : cestElle
-                    ? `${styles.tache} ${styles.tacheSuivante}`
-                    : styles.tache
-            }
-          >
-            <span className={styles.tacheCoche} aria-hidden="true">
-              {tache.etat === "faite" ? "✓" : ""}
-            </span>
-
-            <div className={styles.tacheCorps}>
-              <span className={styles.tacheTitre}>{tache.titre}</span>
-              {/* La phrase n'aide que là où l'on va agir. */}
-              {cestElle && (
-                <span className={styles.tacheExplication}>{tache.explication}</span>
-              )}
-
-              {tache.bloquee && <span className={styles.tacheBlocage}>{tache.bloquee}</span>}
-
-              {/*
-                Revenir sur une relecture déclarée.
-                
-                Le client corrige parfois après coup, et il faut relire. Seule une
-                relecture déclarée se retire : une tâche cochée parce que le dossier a
-                dépassé l'étape ne se décoche pas d'un lien.
-              */}
-              {/*
-                Une tâche faite se relit.
-                
-                Elle ne portait plus rien : « Produire les actes » cochée, on n'avait
-                aucun chemin vers ce qui avait été produit, et il fallait deviner que
-                cela vivait dans l'onglet des pièces.
-              */}
-              {tache.etat === "faite" && tache.onglet === "pieces" && (
-                <span className={styles.tacheActions}>
-                  <button
-                    type="button"
-                    className={styles.travailTertiaire}
-                    onClick={() => setPiecesMontrees(tache.identifiant)}
-                  >
-                    {libelleDesPieces(tache.identifiant)}
-                  </button>
-                </span>
-              )}
-
-              {/*
-                Ce qui est fait peut se défaire, quand cela a un sens.
-                
-                Un acte publié par erreur restait chez le client : le geste le remet en
-                relecture et l'en prévient.
-              */}
-              {tache.identifiant === "relecture" && tache.etat === "faite" && (
-                <span className={styles.tacheActions}>
-                  <button
-                    type="button"
-                    className={styles.travailTertiaire}
-                    onClick={retirerDeLEspaceClient}
-                    disabled={enCours}
-                  >
-                    Retirer de l&apos;espace du client
-                  </button>
-                </span>
-              )}
-
-              {tache.identifiant === "informations" &&
-                tache.etat === "faite" &&
-                informationsVerifiees && (
-                  <span className={styles.tacheActions}>
-                    <button
-                      type="button"
-                      className={styles.travailTertiaire}
-                      onClick={() => marquerLaRelecture(false)}
-                      disabled={enCours}
-                    >
-                      Revenir dessus
-                    </button>
-                  </span>
-                )}
-
-              {tache.etat !== "faite" && !tache.bloquee && (
-                <span className={styles.tacheActions}>
-                  {tache.identifiant === "relecture" ? (
-                    /*
-                      Le geste qui rend les actes visibles au client.
-                      Jusque-là, ce qui sort du gabarit n'a été lu par personne : le
-                      client pouvait le signer ou l'envoyer à sa banque tel quel.
-                    */
-                    <button
-                      type="button"
-                      className={geste}
-                      onClick={mettreADisposition}
-                      disabled={enCours}
-                    >
-                      {enCours ? "Mise à disposition" : "Mettre à disposition du client"}
-                    </button>
-                  ) : tache.identifiant === "actes" && peutProduireLesActes ? (
-                    <button
-                      type="button"
-                      className={geste}
-                      onClick={produire}
-                      disabled={enCours}
-                    >
-                      {enCours ? "Production" : "Produire les actes"}
-                    </button>
-                  ) : tache.identifiant === "informations" ? (
-                    /*
-                      Lire, puis dire qu'on a lu.
-                      
-                      Deux gestes distincts : le récapitulatif s'ouvre dans son onglet,
-                      et la case ne se coche qu'au retour, par une déclaration. Un seul
-                      bouton « Y aller » laissait la tâche ouverte indéfiniment.
-                    */
-                    <>
-                      <button
-                        type="button"
-                        className={geste}
-                        onClick={() => marquerLaRelecture(true)}
-                        disabled={enCours}
-                      >
-                        {enCours ? "Enregistrement" : "J'ai vérifié les informations"}
-                      </button>
-                      <Link
-                        href={"/avocat/" + dossier + "?onglet=" + (tache.onglet ?? "recapitulatif")}
-                        className={styles.travailSecondaire}
-                      >
-                        Relire le récapitulatif
-                      </Link>
-                    </>
-                  ) : tache.onglet === "pieces" ? (
-                    /*
-                      Les pièces s'ouvrent en fenêtre, faite ou non.
-                      
-                      « Y aller » emmenait dans l'onglet du dossier, devant l'ensemble
-                      des documents : on quittait sa liste pour retrouver ensuite les
-                      deux pièces dont la tâche parlait.
-                    */
-                    <button
-                      type="button"
-                      className={geste}
-                      onClick={() => setPiecesMontrees(tache.identifiant)}
-                    >
-                      {libelleDesPieces(tache.identifiant)}
-                    </button>
-                  ) : tache.onglet === "avancement" ? (
-                    /*
-                      Le dépôt se marque plus bas, dans la même page.
-                      
-                      « Y aller » menait à l'onglet de l'avancement, qui a rejoint
-                      celui-ci : le bouton rechargeait donc l'écran où l'on était déjà.
-                      Le dépôt lui-même se fait au guichet de l'INPI, hors d'ici ; ce
-                      qui se fait ici, c'est de dire qu'il a eu lieu.
-                    */
-                    <a href="#avancement" className={geste}>
-                      Marquer l&apos;avancement
-                    </a>
-                  ) : (
-                    tache.onglet && (
-                      <Link
-                        href={"/avocat/" + dossier + "?onglet=" + tache.onglet}
-                        className={geste}
-                      >
-                        Y aller
-                      </Link>
-                    )
-                  )}
-                </span>
-              )}
+          {documentsDe(maintenant).length > 0 && (
+            <div className={styles.maintenantDocuments}>
+              {documentsDe(maintenant).map((piece) => (
+                <Piece key={piece.id} piece={piece} dossier={dossier} />
+              ))}
             </div>
-                  </li>
-                  );
-                })}
-            </ol>
+          )}
 
-            {/* Les documents remis closent l'étape du dépôt. */}
-            {phase.cle === "depot" && (
-              <Livrables
-                dossierId={dossier}
-                documentFinal={livrables.documentFinal}
-                aLeKbis={livrables.aLeKbis}
-                aLeRbe={livrables.aLeRbe}
-              />
+          <div className={styles.maintenantActions}>
+            {geste?.depot ? (
+              <label className={styles.travailPrincipal}>
+                {geste.libelle}
+                {champDeDepot(geste.depot)}
+              </label>
+            ) : geste?.href ? (
+              geste.href.startsWith("#") ? (
+                <a href={geste.href} className={styles.travailPrincipal}>
+                  {geste.libelle}
+                </a>
+              ) : (
+                <Link href={geste.href} className={styles.travailPrincipal}>
+                  {geste.libelle}
+                </Link>
+              )
+            ) : (
+              geste?.faire && (
+                <button
+                  type="button"
+                  className={styles.travailPrincipal}
+                  onClick={geste.faire}
+                  disabled={enCours}
+                >
+                  {enCours ? "…" : geste.libelle}
+                </button>
+              )
             )}
+
+            {/*
+              Lire, puis dire qu'on a lu : deux gestes distincts. Le récapitulatif
+              s'ouvre dans son onglet, et la case ne se coche qu'au retour.
+            */}
+            {maintenant.identifiant === "informations" && (
+              <Link
+                href={"/avocat/" + dossier + "?onglet=" + (maintenant.onglet ?? "dossier")}
+                className={styles.travailSecondaire}
+              >
+                Relire le récapitulatif
+              </Link>
+            )}
+          </div>
         </section>
-      ))}
+      ) : (
+        <section className={styles.maintenant} aria-label="À faire maintenant">
+          <h2 className={styles.maintenantTitre}>Tout est fait sur ce dossier</h2>
+          <p className={styles.maintenantPhrase}>
+            Rien ne vous attend ici. Le client suit la suite depuis son espace.
+          </p>
+        </section>
+      )}
+
+      {aVenir.length > 0 && (
+        <section>
+          <h3 className={styles.suiteTitre}>Ensuite</h3>
+          <ul className={styles.suite}>
+            {aVenir.map((tache) => ligne(tache))}
+          </ul>
+        </section>
+      )}
+
+      {/*
+        Le registre des bénéficiaires effectifs n'est pas une tâche.
+
+        Le greffe ne l'exige pas, et aucune tâche ne le réclame : il tenait pourtant
+        une ligne dans la carte des documents remis, au même rang que le récépissé.
+        Une ligne discrète en pied de liste suffit.
+      */}
+      <p className={styles.facultatif}>
+        Registre des bénéficiaires effectifs, facultatif.
+        <label className={styles.travailTertiaire}>
+          {livrables.aLeRbe ? "Remplacer" : "Déposer"}
+          {champDeDepot("rbe")}
+        </label>
+      </p>
+
+      {/*
+        Ce qui est fait se replie.
+        
+        Cela reste atteignable - on revient sur une relecture, on relit les actes
+        produits - mais cela n'a plus à occuper l'écran de celui qui travaille.
+      */}
+      {faites.length > 0 && (
+        <details className={styles.faites}>
+          <summary className={styles.faitesTete}>
+            {faites.length} {faites.length > 1 ? "faites" : "faite"}
+          </summary>
+          <ul className={styles.suite}>
+            {faites.map((tache) => ligne(tache))}
+          </ul>
+        </details>
+      )}
 
       {/*
         Renvoyer le dossier au client ferme le travail : le geste se pose au bout.
-
-        Il occupait une bande à lui seul en tête de l'onglet, au-dessus des étapes -
-        soixante-quinze pixels pour une sortie qu'on emprunte rarement.
       */}
       <div className={styles.travailPied}>
         <button
@@ -515,16 +553,6 @@ export function Travail({
           Demander des corrections au client
         </button>
       </div>
-
-      {piecesMontrees && (
-        <FenetreDesPieces
-          titre={titreDesPieces(piecesMontrees)}
-          explication={explicationDesPieces(piecesMontrees)}
-          pieces={piecesDeLaTache(pieces, piecesMontrees)}
-          dossier={dossier}
-          surFermeture={() => setPiecesMontrees(null)}
-        />
-      )}
 
       {corrections && (
         <>

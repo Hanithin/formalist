@@ -11,7 +11,6 @@ import {
   type ResumeColonne,
 } from "@/domain/navigation/colonne";
 import { EVENEMENT_COLONNE } from "@/lib/colonne";
-import { libelleDuType } from "@/domain/formalite/liste";
 import { icone } from "@/domain/navigation/icones";
 import type { Role } from "@/domain/acces/regles";
 import { Cloche } from "./Cloche";
@@ -173,17 +172,14 @@ export function Sidebar({ utilisateur, resume }: Props) {
         {estAdmin && <span className={styles.badgeAdmin}>Admin</span>}
       </div>
 
-      {/* Le bloc de contexte n'apparaît qu'une fois une société ouverte, comme à
-          l'origine où il restait en display:none jusque-là. Avec une seule, il
-          n'ouvre rien : il situe. Avec plusieurs, il mène à la liste. */}
-      {resumeCourant.societe && (
-        <Contexte
-          nom={resumeCourant.societe}
-          type={resumeCourant.type}
-          plusieurs={resumeCourant.plusieurs}
-        />
-      )}
+      {/*
+        Le bloc « Vous travaillez sur » a disparu.
 
+        Il nommait le dernier dossier ouvert, quel que soit l'écran : on lisait
+        « GREMLINS COMMUNICATION » en marge d'un dossier STERLING PEAK, et il fallait
+        se rappeler que ce n'était pas celui qu'on avait sous les yeux. Chaque écran
+        dit de quoi il parle ; la marge n'a pas à en désigner un autre.
+      */}
       <NouvelleFormalite />
 
       <Navigation>
@@ -369,60 +365,3 @@ function Navigation({ children }: { children: ReactNode }) {
   );
 }
 
-function Contexte({
-  nom,
-  type,
-  plusieurs,
-}: {
-  nom: string;
-  type: string | null;
-  plusieurs: boolean;
-}) {
-  /*
-   * Le nom seul ne dit pas ce qu'on fait de la société : « ATELIER MERIDIEN » se lit
-   * pareillement qu'on soit en train de la créer ou de la fermer. Le badge nomme la
-   * nature du dossier en cours.
-   */
-  const nature = libelleDuType(type);
-
-  const dedans = (
-    <>
-      <span className={styles.ctxIcone} aria-hidden="true">
-        {initiales(nom) || "?"}
-      </span>
-
-      <span className={styles.ctxCorps}>
-        <span className={styles.ctxEntete}>
-          <span className={styles.ctxLibelle}>Vous travaillez sur</span>
-          {nature && <span className={styles.ctxNature}>{nature}</span>}
-        </span>
-        <span className={styles.ctxNom}>{nom}</span>
-      </span>
-
-      {plusieurs && (
-        <svg
-          className={styles.ctxChevron}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      )}
-    </>
-  );
-
-  if (!plusieurs) {
-    return <div className={`${styles.contexte} ${styles.contexteSeul}`}>{dedans}</div>;
-  }
-
-  return (
-    <Link href="/formalites" className={styles.contexte}>
-      {dedans}
-    </Link>
-  );
-}

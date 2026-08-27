@@ -57,7 +57,10 @@ test.describe("avancement du cabinet", () => {
     const dossier = await dossierDuCabinet("AVANCEMENT ESSAI " + Date.now());
 
     await page.goto("/avocat/" + dossier.id + "?onglet=avancement");
-    await expect(page.getByRole("heading", { name: "Avancement du dossier" })).toBeVisible();
+    /* La carte de cinq étages est devenue une ligne : « Le client voit … ». */
+    await expect(
+      page.getByRole("region", { name: "Avancement annoncé au client" })
+    ).toBeVisible();
 
     // Un dossier neuf n'entre qu'en 5a.
     const saut = await request.put("/api/avocat/dossier", {
@@ -97,20 +100,35 @@ test.describe("avancement du cabinet", () => {
   test("le Kbis se dépose et arrive chez le client", async ({ page, request }) => {
     const dossier = await dossierDuCabinet("KBIS ESSAI " + Date.now());
 
-    await page.goto("/avocat/" + dossier.id + "?onglet=avancement");
+    /*
+     * Le dépôt d'abord, le document du greffe ensuite.
+     *
+     * Les deux livrables tenaient leur propre carte, déposable à tout moment : ils sont
+     * devenus la tâche « Remettre extrait Kbis », que le domaine empêche tant que le
+     * dossier n'est pas déposé au guichet - on n'a pas de récépissé avant d'avoir
+     * déposé.
+     */
+    for (const etape of ["5a", "5b", "5c", "5d"]) {
+      await request.put("/api/avocat/dossier", {
+        data: { dossier: dossier.id, sousPhase: etape },
+      });
+    }
+
+    await page.goto("/avocat/" + dossier.id);
     /*
      * Le libellé nomme le document que le greffe délivre pour ce type de dossier :
      * « Extrait Kbis » pour une création, « Extrait à jour » pour une modification. Il
      * était écrit « Kbis » en dur, et l'avocat d'une modification lisait qu'il devait
      * remettre un Kbis, que le greffe ne délivre pas dans ce cas.
      */
-    await page.getByLabel("Déposer Extrait Kbis").setInputFiles({
+    await page.getByLabel(/Déposer extrait kbis/i).setInputFiles({
       name: "kbis.pdf",
       mimeType: "application/pdf",
       buffer: PDF,
     });
 
-    await expect(page.getByText("Déposé - le client y a accès")).toBeVisible();
+    // Le dépôt aboutit, et le dire est ce qui permet d'attendre qu'il ait eu lieu.
+    await expect(page.getByRole("status")).toContainText("déposé", { timeout: 20_000 });
 
     const depose = await prisma.documents.findFirstOrThrow({
       where: { formalite_id: dossier.id, type: "kbis" },

@@ -94,8 +94,14 @@ test("le dossier s'ouvre sur ce qu'il reste à faire", async ({ page }) => {
   const dossier = await dossierDeModification();
   await page.goto("/avocat/" + dossier);
 
-  await expect(page.getByRole("heading", { name: /choses à faire/ })).toBeVisible();
-  await expect(page.getByText("Vérifier les informations du dossier")).toBeVisible();
+  /*
+   * L'écran s'ouvre sur une seule chose : celle à faire maintenant. Les autres se
+   * lisent dessous, sans avoir à déplier quoi que ce soit.
+   */
+  await expect(page.getByText("À faire maintenant")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Vérifier les informations du dossier" })
+  ).toBeVisible();
   await expect(page.getByText("Mettre les statuts à jour")).toBeVisible();
 });
 
@@ -104,22 +110,13 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
   await page.goto("/avocat/" + dossier);
 
   /*
-   * Le greffe délivre un extrait à jour : la société existe déjà.
-   *
-   * Les tâches sont désormais groupées par phase, et celles du dépôt ne sont pas
-   * dépliées sur un dossier qui commence : le test attendait un titre de tâche qui ne
-   * s'affiche plus d'emblée. Ce qu'il garde est ailleurs, et vaut sur toute la page -
-   * le mot « Kbis » appartient à une création, jamais à une modification.
+   * Le greffe délivre un extrait à jour : la société existe déjà, et le mot « Kbis »
+   * appartient à une création. Toutes les tâches sont à l'écran, y compris celles du
+   * dépôt : rien n'est replié.
    */
-  await expect(page.getByRole("heading", { name: /choses à faire/ })).toBeVisible();
+  await expect(page.getByText("À faire maintenant")).toBeVisible();
   await expect(page.getByText(/[Kk]bis/)).toHaveCount(0);
-
-  // Et la phase de dépôt, une fois ouverte, nomme le bon document.
-  const depot = page.getByRole("button", { name: /^Déposer/ }).first();
-  if (await depot.count()) {
-    await depot.click();
-    await expect(page.getByText(/extrait à jour/i).first()).toBeVisible();
-  }
+  await expect(page.getByText(/extrait à jour/i).first()).toBeVisible();
 });
 
 test("une tâche qui attend autre chose dit quoi", async ({ page }) => {
@@ -130,16 +127,7 @@ test("une tâche qui attend autre chose dit quoi", async ({ page }) => {
   const dossier = await dossierDeModification();
   await page.goto("/avocat/" + dossier);
 
-  /*
-   * Les tâches sont groupées par phase, et une phase repliée ne montre pas ses
-   * blocages : le test lisait la page d'accueil du dossier, où seule la phase en cours
-   * est ouverte. On déplie les quatre, puisque c'est bien de toutes qu'il s'agit.
-   */
-  for (const phase of ["Vérifier", "Rédiger", "Publier", "Déposer"]) {
-    const bouton = page.getByRole("button", { name: new RegExp("^" + phase) }).first();
-    if (await bouton.count()) await bouton.click();
-  }
-
+  /* Les tâches sont toutes à l'écran : un blocage se lit sans rien déplier. */
   await expect(page.getByText(/Vérifiez d'abord le dossier/)).toBeVisible();
   await expect(page.getByText(/Les statuts en vigueur ne sont pas au dossier/)).toBeVisible();
 });

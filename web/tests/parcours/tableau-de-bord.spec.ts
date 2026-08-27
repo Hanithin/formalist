@@ -261,7 +261,7 @@ test.describe("espace avocat", () => {
      * le prendre veut savoir par où commencer, non relire une fiche. Le récapitulatif
      * est à un clic.
      */
-    await expect(page.getByRole("heading", { name: /choses à faire|chose à faire|Tout est fait/ })).toBeVisible();
+    await expect(page.getByText(/À faire maintenant|Tout est fait sur ce dossier/)).toBeVisible();
     /*
       Les onglets ont été regroupés : le récapitulatif et les pièces forment « Le
       dossier », les notes et le journal « Coulisses ». Les anciennes adresses mènent
