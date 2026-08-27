@@ -17,6 +17,16 @@
  */
 const CORPS = 24;
 
+/**
+ * L'interligne, en vingtièmes de ligne : 276 valent 1,15.
+ *
+ * Il valait 312 - un tiers de ligne en plus - et le commentaire d'origine le calibrait
+ * « ≈ 1.2x with 13pt font ». Le corps est passé à douze points : le même chiffre y vaut
+ * 1,3, et l'acte respirait au point de ne plus paraître tenu. Un procès-verbal se
+ * compose serré ; c'est ce qui le distingue d'une note.
+ */
+const INTERLIGNE = 276;
+
 const fs = require("fs");
 const path = require("path");
 const PizZip = require("pizzip");
@@ -117,6 +127,8 @@ function enrichData(data) {
 function improveLayout(docXml) {
   // Split body into paragraphs while keeping structure
   const bodyMatch = docXml.match(/^([\s\S]*?<w:body>)([\s\S]*?)(<\/w:body>[\s\S]*)$/);
+  /* Le premier intitulé de l'acte porte un blanc plus large que les suivants. */
+  let titreVu = false;
   if (!bodyMatch) return docXml;
   const [, prefix, body, suffix] = bodyMatch;
 
@@ -207,16 +219,24 @@ function improveLayout(docXml) {
             break;
           }
         }
-        const before = isSectionTitle ? 480 : 360;
+        // Deux poids de titre, selon qu'il ouvre l'acte ou une de ses parties.
+        //
+        // Le premier titre sépare l'en-tête du corps : il prend vingt-quatre points.
+        // Ceux qui suivent découpent le corps sans le rompre, et dix-huit suffisent -
+        // au-delà, chaque partie flotte dans sa page. Le critère est le rang, non
+        // l'alignement : « ORDRE DU JOUR » est centré lui aussi, et prenait le blanc
+        // du titre principal au milieu d'une page.
+        const before = isSectionTitle ? (titreVu ? 360 : 480) : 360;
+        if (isSectionTitle) titreVu = true;
+
         // Un titre se tient plus près de son texte que de celui qu'il quitte.
         //
         // Il respirait trente points dessous et vingt-quatre dessus : l'intitulé
-        // flottait entre deux blocs sans qu'on voie lequel il annonçait, et l'acte
-        // paraissait brouillon là où le greffe attend le contraire. Huit points
-        // suffisent à le détacher de son paragraphe ; c'est l'écart d'avant qui dit
-        // la coupure.
+        // flottait entre deux blocs sans qu'on voie lequel il annonçait. Son écart
+        // dessous vaut maintenant celui de deux paragraphes ; c'est l'écart d'avant
+        // qui dit la coupure, et une seule valeur donne le rythme.
         const after = isSectionTitle
-          ? (nextIsCentered ? 0 : 160)
+          ? (nextIsCentered ? 0 : 120)
           : (isShortAllCaps ? 0 : 120);
         if (/<w:spacing\b/.test(p)) {
           p = p.replace(/<w:spacing\b([^/]*?)\/>/, function(_m, attrs) {
@@ -227,7 +247,7 @@ function improveLayout(docXml) {
             return '<w:spacing w:before="' + before + '" w:after="' + after + '"' + cleaned + '/>';
           });
         } else {
-          p = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="' + before + '" w:after="' + after + '" w:line="312" w:lineRule="auto"/>');
+          p = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="' + before + '" w:after="' + after + '" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>');
         }
         /*
          * Un titre qui ne dit pas sa taille en reçoit une ; celui qui la dit la garde.
@@ -371,11 +391,11 @@ function generateDocxFromBuffer(buf, data) {
     return m;
   });
   // Force uniform line spacing on every spacing element so titles & bodies look consistent
-  // (some paragraphs had no w:line; others had 276 or 240). w:line="312" ≈ 1.2x with 13pt font.
+  // (some paragraphs had no w:line; others had 276 or 240).
   docXml = docXml.replace(/<w:spacing\b([^/]*?)\/>/g, function(m, attrs) {
     // Strip any existing w:line / w:lineRule (could be missing or duplicated)
     let a = attrs.replace(/\s*w:line="\d+"/g, '').replace(/\s*w:lineRule="[^"]+"/g, '');
-    return '<w:spacing' + a + ' w:line="312" w:lineRule="auto"/>';
+    return '<w:spacing' + a + ' w:line="' + INTERLIGNE + '" w:lineRule="auto"/>';
   });
   // Ensure consistent gap below ARTICLE titles by bumping their w:after to 240 (12pt)
   // and removing any redundant empty paragraph that follows
@@ -397,7 +417,7 @@ function generateDocxFromBuffer(buf, data) {
       const jc = isCentered ? '<w:jc w:val="center"/>' : '';
       const pageBreak = (isAnnexe || hadPageBreak) ? '<w:pageBreakBefore/>' : '';
       let q = p.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/,
-        '<w:pPr>' + pageBreak + '<w:keepLines/><w:keepNext/><w:spacing w:before="360" w:after="240" w:line="312" w:lineRule="auto"/>' +
+        '<w:pPr>' + pageBreak + '<w:keepLines/><w:keepNext/><w:spacing w:before="360" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>' +
         jc +
         '<w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>'
       );
@@ -538,7 +558,7 @@ function generateDocxFromBuffer(buf, data) {
         return '<w:spacing w:before="240"' + cleaned + '/>';
       });
     } else {
-      p = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="240" w:after="120" w:line="312" w:lineRule="auto"/>');
+      p = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="240" w:after="120" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>');
     }
     return p;
   });
@@ -561,7 +581,7 @@ function generateDocxFromBuffer(buf, data) {
         return '<w:spacing w:before="480" w:after="120"' + cleaned + '/>';
       });
     } else {
-      p = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="480" w:after="120" w:line="312" w:lineRule="auto"/>');
+      p = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="480" w:after="120" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>');
     }
     if (!/<w:keepNext\b/.test(p)) {
       p = p.replace(/<w:pPr>/, '<w:pPr><w:keepNext/>');
@@ -633,7 +653,7 @@ function generateDocxFromBuffer(buf, data) {
           return '<w:spacing w:before="4000" w:after="240"' + cleaned + '/>';
         });
       } else {
-        q = q.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="4000" w:after="240" w:line="312" w:lineRule="auto"/>');
+        q = q.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="4000" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>');
       }
       return q;
     }
@@ -771,7 +791,7 @@ function generateDocxFromBuffer(buf, data) {
       // Build the canonical paragraph
       function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
       const newPara =
-        '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="312" w:lineRule="auto"/>' +
+        '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>' +
         '<w:jc w:val="both"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
         '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>' +
         '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
@@ -884,7 +904,7 @@ function generateDocxFromBuffer(buf, data) {
       function(_, soussignePara, followingParas) {
         // Build a fresh paragraph with our text, justified, not bold
         const newPara =
-          '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="312" w:lineRule="auto"/>' +
+          '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>' +
           '<w:jc w:val="both"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
           '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>' +
           '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
@@ -983,10 +1003,10 @@ function generateDocxFromBuffer(buf, data) {
     const full = txt.join('').trim();
     if (full.length < 60 && /^«[\s ]*\S/.test(full) && /»\s*$/.test(full)) {
       // Replace spacing on this paragraph
-      let q = p.replace(/<w:spacing\b[^/]*\/>/, '<w:spacing w:before="240" w:after="240" w:line="312" w:lineRule="auto"/>');
+      let q = p.replace(/<w:spacing\b[^/]*\/>/, '<w:spacing w:before="240" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>');
       // If no spacing existed, inject one
       if (q === p) {
-        q = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="240" w:after="240" w:line="312" w:lineRule="auto"/>');
+        q = p.replace(/<w:pPr>/, '<w:pPr><w:spacing w:before="240" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>');
       }
       return q;
     }
@@ -1026,7 +1046,7 @@ function generateDocxFromBuffer(buf, data) {
   );
   doc.getZip().file("word/document.xml", docXml);
 
-  // Bump default font size 11pt → 13pt and line spacing to 312 (1.3x) for readability
+  // Bump default font size and line spacing for readability
   const stylesFile = doc.getZip().file("word/styles.xml");
   if (stylesFile) {
     let stylesXml = stylesFile.asText();
@@ -1038,13 +1058,13 @@ function generateDocxFromBuffer(buf, data) {
           .replace(/<w:szCs w:val="22"\/>/g, '<w:szCs w:val="26"/>');
       }
     );
-    // Normalize pPrDefault: line=312 (1.3x) and w:after=0 so paragraphs without their own
-    // <w:spacing> don't inherit a large gap.
+    // Normalize pPrDefault: interligne courant et w:after=0, pour que les paragraphes
+    // sans <w:spacing> propre n'héritent pas d'un grand écart.
     stylesXml = stylesXml.replace(
       /(<w:pPrDefault>[\s\S]*?<\/w:pPrDefault>)/,
       function(block) {
         return block.replace(/<w:spacing\b[^/]*\/>/,
-          '<w:spacing w:after="0" w:line="312" w:lineRule="auto"/>'
+          '<w:spacing w:after="0" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>'
         );
       }
     );
