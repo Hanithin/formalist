@@ -34,6 +34,14 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      # L'expéditeur des emails transactionnels, et le domaine à vérifier dans
+      # Resend. Sans lui, envoi.ts retombe sur onboarding@resend.dev - l'adresse
+      # du bac à sable, qui ne livre qu'au titulaire du compte Resend et rejette
+      # tous les autres destinataires. Un client s'inscrivait alors sans jamais
+      # recevoir son lien de confirmation, et l'inscription semblait avoir
+      # abouti : rien ne remontait.
+      - key: MAIL_FROM
+        value: Formalist <contact@formalist.fr>
       - key: ADMIN_EMAIL
         sync: false
       # Paiement des consultations juridiques. La clé de production n'est acceptée

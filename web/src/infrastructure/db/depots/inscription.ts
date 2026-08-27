@@ -18,12 +18,16 @@ export interface Demande {
 }
 
 /**
- * @returns `deja` quand l'adresse est prise. L'appelant répond la même chose
- * dans les deux cas : distinguer permettrait d'énumérer les comptes.
+ * @returns `cree` dit si un compte a été ouvert, `courrielParti` si le lien de
+ * confirmation a réellement quitté le serveur. L'appelant répond la même chose que
+ * l'adresse soit libre ou prise - distinguer permettrait d'énumérer les comptes -
+ * mais il ne promet plus un email qui n'est pas parti.
  */
-export async function inscrire(demande: Demande): Promise<{ cree: boolean }> {
+export async function inscrire(
+  demande: Demande
+): Promise<{ cree: boolean; courrielParti: boolean }> {
   const existant = await prisma.users.findUnique({ where: { email: demande.email } });
-  if (existant) return { cree: false };
+  if (existant) return { cree: false, courrielParti: true };
 
   const empreinte = hacher(demande.motDePasse);
 
@@ -46,8 +50,8 @@ export async function inscrire(demande: Demande): Promise<{ cree: boolean }> {
     },
   });
 
-  await envoyerJeton(compte.id, demande.email, demande.prenom);
-  return { cree: true };
+  const envoi = await envoyerJeton(compte.id, demande.email, demande.prenom);
+  return { cree: true, courrielParti: envoi.ok && !envoi.simule };
 }
 
 async function envoyerJeton(compteId: number, email: string, prenom: string) {
@@ -65,7 +69,7 @@ async function envoyerJeton(compteId: number, email: string, prenom: string) {
     },
   });
 
-  await emailDeVerification(prenom, email, valeur);
+  return emailDeVerification(prenom, email, valeur);
 }
 
 export async function confirmer(valeur: string): Promise<EtatJeton> {

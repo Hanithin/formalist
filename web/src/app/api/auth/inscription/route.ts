@@ -31,15 +31,24 @@ export const POST = route(async (requete: Request) => {
   await verifierQuota("inscription", ip, QUOTA_INSCRIPTION);
   await enregistrerTentative("inscription", ip);
 
-  await inscrire(demande);
+  const { courrielParti } = await inscrire(demande);
 
-  // Même réponse que l'adresse soit libre ou déjà prise : distinguer
-  // permettrait d'énumérer les comptes existants.
+  /*
+   * Même réponse que l'adresse soit libre ou déjà prise : distinguer permettrait
+   * d'énumérer les comptes existants.
+   *
+   * En revanche, on ne promet plus un email qui n'est pas parti. La plateforme
+   * annonçait « un lien de confirmation vous attend » alors que l'envoi avait
+   * échoué faute de configuration : l'inscrit surveillait une boîte vide, et la
+   * panne ne se découvrait qu'en s'entendant dire qu'on ne recevait rien.
+   */
   return NextResponse.json(
     {
       ok: true,
-      message:
-        "Vérifiez votre boîte email : un lien de confirmation vous attend. Il est valable 24 heures.",
+      courrielParti,
+      message: courrielParti
+        ? "Vérifiez votre boîte email : un lien de confirmation vous attend. Il est valable 24 heures."
+        : "Votre compte est créé, mais l'email de confirmation n'a pas pu être envoyé. Écrivez-nous et nous confirmerons votre adresse.",
     },
     { status: 201 }
   );

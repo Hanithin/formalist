@@ -11,6 +11,12 @@ import type { Avis } from "@/domain/formalite/avis";
  *
  * Un envoi ne lève jamais. Ne pas avoir prévenu quelqu'un est un problème ;
  * empêcher son inscription parce que l'email n'est pas parti en est un plus grand.
+ *
+ * Il ne se tait pas pour autant. Un envoi qui échoue en silence produit une panne
+ * qu'on ne découvre qu'en s'entendant dire « je ne reçois rien » : le compte est
+ * créé, l'écran annonce qu'un lien est parti, et rien n'est parti. L'appelant reçoit
+ * donc de quoi le dire, et le journal de quoi le comprendre - le motif du refus,
+ * pas seulement son numéro.
  */
 const RESEND = "https://api.resend.com/emails";
 
@@ -27,6 +33,8 @@ export interface Resultat {
   ok: boolean;
   /** Vrai quand aucune clé n'est configurée : le message n'est pas parti. */
   simule?: boolean;
+  /** Ce que le fournisseur a répondu, quand il a refusé. */
+  motif?: string;
 }
 
 export async function envoyer(message: {
@@ -39,10 +47,38 @@ export async function envoyer(message: {
   const expediteur = process.env.MAIL_FROM ?? "Formalist <onboarding@resend.dev>";
 
   if (!cle) {
-    // On ne consigne ni l'adresse ni le corps : le journal masque déjà les
-    // champs personnels, et un email en clair y échapperait.
-    journal.info({ sujet: message.sujet }, "Email non envoyé : aucune clé configurée");
-    return { ok: true, simule: true };
+    /*
+     * En développement, c'est une commodité : on travaille sans compte Resend.
+     * En production, c'est une panne - personne ne peut confirmer son adresse, ni
+     * réinitialiser son mot de passe, ni recevoir une invitation. Le niveau du
+     * journal le dit, faute de quoi la ligne se perd parmi les informations.
+     *
+     * On ne consigne ni l'adresse ni le corps : le journal masque déjà les champs
+     * personnels, et un email en clair y échapperait.
+     */
+    if (process.env.NODE_ENV === "production") {
+      journal.error(
+        { sujet: message.sujet },
+        "Aucune clé Resend en production : aucun email transactionnel ne part"
+      );
+    } else {
+      journal.info({ sujet: message.sujet }, "Email non envoyé : aucune clé configurée");
+    }
+    return { ok: true, simule: true, motif: "aucune clé configurée" };
+  }
+
+  /*
+   * L'expéditeur du bac à sable ne livre qu'au titulaire du compte Resend.
+   *
+   * C'est la valeur de repli, et elle passe inaperçue : les envois partent, Resend
+   * les accepte pour une adresse et les refuse pour toutes les autres. En
+   * production, la mention doit sauter aux yeux dans le journal.
+   */
+  if (process.env.NODE_ENV === "production" && expediteur.includes("resend.dev")) {
+    journal.error(
+      { expediteur },
+      "MAIL_FROM n'est pas configuré : l'expéditeur du bac à sable ne livre qu'au titulaire du compte Resend"
+    );
   }
 
   try {
@@ -59,13 +95,25 @@ export async function envoyer(message: {
     });
 
     if (!reponse.ok) {
-      journal.error({ statut: reponse.status }, "Envoi refusé par Resend");
-      return { ok: false };
+      /*
+       * Le motif, et pas seulement le numéro.
+       *
+       * « 403 » ne dit pas quoi corriger ; « You can only send testing emails to
+       * your own email address » désigne l'expéditeur du bac à sable, et « domain
+       * is not verified » désigne le domaine. Sans lui, on relit le code au lieu
+       * de lire la réponse.
+       */
+      const motif = await reponse.text().catch(() => "");
+      journal.error(
+        { statut: reponse.status, motif: motif.slice(0, 300) },
+        "Envoi refusé par Resend"
+      );
+      return { ok: false, motif: motif.slice(0, 300) };
     }
     return { ok: true };
   } catch (e) {
     journal.error({ err: e }, "Envoi interrompu");
-    return { ok: false };
+    return { ok: false, motif: "envoi interrompu" };
   }
 }
 
