@@ -1,5 +1,6 @@
 "use client";
 
+import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import {
   conventionVide,
@@ -92,18 +93,17 @@ export function Conventions({
           <div className={styles.champs}>
             <div className={styles.champ}>
               <label htmlFor={"conv-nature-" + rang}>Nature</label>
-              <select
+              {/*
+                Le menu d'un `<select>` est dessiné par le système, et rien ne l'habille :
+                gris ardoise et surlignage bleu sur macOS au milieu d'un formulaire clair.
+                Celui-ci suit la feuille de l'application, comme le calendrier.
+              */}
+              <ChampChoix
                 id={"conv-nature-" + rang}
-                value={convention.nature}
-                onChange={(e) => modifier(rang, { nature: e.target.value })}
-              >
-                <option value="">Choisir</option>
-                {NATURES_DE_CONVENTION.map((nature) => (
-                  <option key={nature} value={nature}>
-                    {nature}
-                  </option>
-                ))}
-              </select>
+                valeur={convention.nature}
+                options={NATURES_DE_CONVENTION}
+                surChangement={(nature) => modifier(rang, { nature })}
+              />
               {refus("convention-" + rang + "-nature") && (
                 <p role="alert">{refus("convention-" + rang + "-nature")}</p>
               )}

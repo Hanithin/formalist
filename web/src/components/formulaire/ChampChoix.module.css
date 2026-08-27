@@ -1,0 +1,166 @@
+/*
+ * La liste de choix, et son menu.
+ *
+ * Le menu d'un `<select>` est dessiné par le système : gris ardoise et surlignage bleu
+ * sur macOS, blanc et bleu sur Windows. Rien ne l'habille. Celui-ci suit la feuille de
+ * l'application, partout de la même façon - comme le calendrier de ChampDate, remplacé
+ * pour la même raison.
+ */
+
+.cadre {
+  position: relative;
+}
+
+/*
+ * Le bouton reprend l'apparence d'un champ.
+ *
+ * Il vit au milieu d'entrées de texte : s'il ne leur ressemblait pas, la rangée
+ * paraîtrait bancale. Les valeurs sont reprises de la feuille globale des champs.
+ */
+.bouton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  background: #fff;
+  color: #18181b;
+  font: inherit;
+  font-size: 14.5px;
+  text-align: left;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.bouton:hover:not([disabled]) {
+  border-color: #d4d4d8;
+}
+
+.bouton:focus-visible,
+.bouton[aria-expanded="true"] {
+  outline: none;
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+
+.bouton[disabled] {
+  background: #fafafa;
+  color: #a1a1aa;
+  cursor: not-allowed;
+}
+
+.bouton[aria-invalid="true"] {
+  border-color: #f0a8a8;
+}
+
+/* Rien de choisi : le mot d'invite se lit comme un texte de remplacement. */
+.boutonVide .libelle {
+  color: #a1a1aa;
+}
+
+.libelle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: #71717a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s;
+}
+
+.bouton[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 292px;
+  padding: 6px;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
+  overflow-y: auto;
+  animation: paraitreChoix 0.12s ease;
+}
+
+@keyframes paraitreChoix {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #18181b;
+  font: inherit;
+  font-size: 14.5px;
+  text-align: left;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+/*
+ * Un seul état de survol, à la souris comme au clavier.
+ *
+ * Deux marques concurrentes - une au survol, une au parcours - laissent croire à deux
+ * sélections quand on passe de l'un à l'autre.
+ */
+.optionVisee {
+  background: #f4f4f5;
+}
+
+.optionRetenue {
+  font-weight: 600;
+}
+
+.marque {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #111;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 760px) {
+  .bouton {
+    /* Sous 16 px, Safari agrandit la page à l'ouverture du champ. */
+    font-size: 16px;
+  }
+
+  .option {
+    font-size: 15.5px;
+    padding: 11px 10px;
+  }
+}

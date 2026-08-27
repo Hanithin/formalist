@@ -1119,7 +1119,22 @@ function EtapeConfidentialite({
 
           {verdict.modele && (
             <section className={styles.bloc}>
-              <h3 className={styles.blocTitre}>Votre décision</h3>
+              <div className={styles.blocTete}>
+                <h3 className={styles.blocTitre}>Votre décision</h3>
+                {/*
+                  Le droit acquis se voit avant qu'on lise.
+
+                  La carte de gauche décrit ce qu'on obtient, sans dire qu'on y a droit :
+                  il fallait remonter à la carte du verdict pour le savoir. Le badge le
+                  dit à l'endroit où l'on clique.
+                */}
+                <span className={styles.badgeDroit}>
+                  <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="3" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Vous remplissez les conditions
+                </span>
+              </div>
               <ul className={styles.choixConf}>
                 {(
                   [
@@ -1300,9 +1315,48 @@ function EtapeReglement({
           ))}
         </dl>
 
-        <p className={styles.blocNote}>
-          Total à régler : {montantLisible(montant.totalTTC)} TTC. {DELAI}
-        </p>
+        {/*
+          Le total, seul, en évidence.
+
+          Il se lisait au fil d'une note grise - « Total à régler : 223,80 € TTC. Vos
+          actes sous 48 heures ouvrées » - au même corps que les lignes de détail
+          au-dessus, entre lesquelles il se perdait.
+        */}
+        <div className={styles.total}>
+          <span className={styles.totalLibelle}>Total à régler</span>
+          <span className={styles.totalMontant}>{montantLisible(montant.totalTTC)} TTC</span>
+        </div>
+
+        {/*
+          Ce qui se passe après le paiement.
+
+          L'écran s'arrêtait au montant : on payait sans savoir ce qui suivait, ni qui
+          relisait, ni qui déposait. Trois lignes le disent, à l'endroit où l'on hésite.
+        */}
+        <ol className={styles.apresPaiement}>
+          <li>
+            <span className={styles.marcheTitre}>Vos actes sont écrits</span>
+            <span className={styles.marcheTexte}>
+              Dès votre règlement, à partir de ce que vous venez de renseigner.
+            </span>
+          </li>
+          <li>
+            <span className={styles.marcheTitre}>Un avocat les vérifie</span>
+            <span className={styles.marcheTexte}>
+              Il les relit un par un et vous écrit si quelque chose doit être repris.
+              {" " + DELAI}
+            </span>
+          </li>
+          <li>
+            <span className={styles.marcheTitre}>
+              Ils sont déposés au greffe du tribunal de commerce
+            </span>
+            <span className={styles.marcheTexte}>
+              Nous suivons le dépôt jusqu&apos;au récépissé, que vous retrouverez dans vos
+              documents.
+            </span>
+          </li>
+        </ol>
 
         {anomalies.length > 0 ? (
           <>
@@ -1319,16 +1373,23 @@ function EtapeReglement({
             </div>
           </>
         ) : (
-          <div className={styles.blocActions}>
-            <button
-              type="button"
-              className={styles.blocPrincipal}
-              onClick={payer}
-              disabled={enCours}
-            >
-              {enCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
-            </button>
-          </div>
+          <button
+            type="button"
+            className={styles.reglementBouton}
+            onClick={payer}
+            disabled={enCours}
+          >
+            {enCours ? (
+              "Ouverture du paiement"
+            ) : (
+              <>
+                Procéder au règlement
+                <span className={styles.reglementMontant}>
+                  {montantLisible(montant.totalTTC)} TTC
+                </span>
+              </>
+            )}
+          </button>
         )}
 
         {refus && (

@@ -6783,3 +6783,165 @@
   display: block;
   margin-top: 1px;
 }
+
+/* Un intitulé de bloc et sa marque, sur la même ligne. */
+.blocTete {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+/*
+ * Le droit acquis, dit là où l'on clique.
+ *
+ * La carte de décision décrivait ce qu'on obtient sans dire qu'on y avait droit : il
+ * fallait remonter au verdict, deux blocs plus haut, pour le savoir.
+ */
+.badgeDroit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.badgeDroit svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ------------------------------------------------------------- Le règlement */
+
+/*
+ * Le total, seul, en évidence.
+ *
+ * Il se lisait au fil d'une note grise, au même corps que les lignes de détail
+ * au-dessus, entre lesquelles il se perdait.
+ */
+.total {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 18px;
+  margin: 18px 0 0;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.totalLibelle {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.totalMontant {
+  font-size: 21px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+/*
+ * Ce qui se passe après le paiement.
+ *
+ * L'écran s'arrêtait au montant : on payait sans savoir ce qui suivait, ni qui relisait,
+ * ni qui déposait au greffe.
+ */
+.apresPaiement {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: apres;
+}
+
+.apresPaiement li {
+  display: block;
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 32px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #52525b;
+  letter-spacing: 0;
+  counter-increment: apres;
+}
+
+.apresPaiement li::before {
+  content: counter(apres);
+  position: absolute;
+  top: 1px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* Le bouton porte le montant : on sait ce qu'on engage en cliquant. */
+.reglementBouton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin: 22px 0 0;
+  padding: 15px 22px;
+  border: 0;
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.reglementBouton:hover:not([disabled]) {
+  background: #27272a;
+}
+
+.reglementBouton[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.reglementMontant {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .totalMontant {
+    font-size: 19px;
+  }
+}
