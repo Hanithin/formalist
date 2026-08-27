@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 import type { AssociePresent } from "./gabarit";
 import { designationDeLAssocie } from "./gabarit";
 
@@ -184,8 +185,15 @@ export function agrementDeDroit(
   forme: string | null | undefined,
   vers: Cession["vers"]
 ): { requis: boolean; motif: string } {
-  const f = (forme ?? "").toUpperCase();
-  const societeDePersonnes = f.startsWith("SARL") || f.startsWith("EURL") || f.startsWith("SC");
+  /*
+   * Le test portait sur le préfixe du sigle. « SC » attrapait donc la SCA et la SCS,
+   * deux commandites par actions ou commerciales, et manquait la SELARL et la SNC.
+   * L'agrément d'un tiers est imposé par la loi dans les régimes de la SARL
+   * (L. 223-14), de la société en nom collectif (L. 221-13) et des sociétés civiles
+   * (article 1861 du code civil) ; ailleurs, il tient aux statuts.
+   */
+  const regime = natureDeLaForme(forme).regime;
+  const societeDePersonnes = regime === "sarl" || regime === "snc" || regime === "civile";
 
   if (societeDePersonnes && vers === "tiers") {
     return {

@@ -15,6 +15,7 @@
  * ce qui relève du document dans gabarit.ts.
  */
 
+import { natureDeLaForme } from "@/domain/formalite/formes";
 import type { Valeurs } from "./types";
 
 /* ------------------------------------------------------------ Régime fiscal */
@@ -129,8 +130,8 @@ export interface VerdictEvaluation {
 
 /** Les formes où la dispense vaut expressément pour une augmentation de capital. */
 function dispenseEcriteAuTexte(forme: string | null | undefined): boolean {
-  const f = (forme ?? "").toUpperCase().trim();
-  return f.startsWith("SARL") || f.startsWith("EURL");
+  /* Le préfixe du sigle laissait de côté la SELARL, qui relève pourtant du même régime. */
+  return natureDeLaForme(forme).regime === "sarl";
 }
 
 /**

@@ -1,5 +1,6 @@
 "use client";
 
+import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
 import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
 import {
   Fragment,
@@ -84,7 +85,14 @@ const ETAPES = [
   { numero: 7, titre: "Vos actes", court: "Actes" },
 ];
 
-const FORMES = ["SAS", "SASU", "SARL", "EURL", "SCI", "SA", "SNC"];
+/*
+ * Les formes proposées viennent du domaine.
+ *
+ * Cette liste en tenait sept, une autre au dépôt des comptes en tenait sept autres, et
+ * une troisième dans les types du domaine. Une société d'exercice libéral, une
+ * commandite, une société civile de moyens n'y figuraient nulle part.
+ */
+const FORMES = NATURES_PROPOSEES;
 
 /** Les champs que l'étape « La société » porte : ils s'y corrigent, et nulle part ailleurs. */
 const CHAMPS_DE_SOCIETE = ["denomination", "forme", "siren", "adresse", "codePostal", "ville"];

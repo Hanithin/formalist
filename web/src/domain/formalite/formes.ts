@@ -150,6 +150,18 @@ export function regle(forme: string | null | undefined): RegleForme | null {
  *
  * Une seule table, donc, que ces cinq endroits lisent.
  */
+/**
+ * Le régime dont la forme relève, pour citer le bon article.
+ *
+ * Une société d'exercice libéral n'a pas de droit propre : la loi du 31 décembre 1990
+ * la soumet au livre II du code de commerce, sous réserve de ses particularités. Une
+ * SELARL suit donc la SARL - article L. 223-33 pour l'apport en nature, L. 223-9 pour
+ * la dispense de commissaire - et une SELAS suit la SAS. Trois fonctions le devinaient
+ * en comparant le sigle à « SARL » et « EURL », si bien qu'une SELARL se voyait citer
+ * l'article des sociétés par actions. Un mauvais article dans un acte déposé se voit.
+ */
+export type RegimeDeForme = "sarl" | "sas" | "sa" | "commandite" | "snc" | "civile";
+
 export type CategorieDeForme =
   | "commerciale"
   | "exercice-liberal"
@@ -171,6 +183,8 @@ export interface NatureDeForme {
   /** Comment s'appelle celui qui dirige : le mot figure dans les actes. */
   titreDirigeant: "Président" | "Gérant";
   categorie: CategorieDeForme;
+  /** Le régime du code de commerce dont elle relève, pour les articles cités. */
+  regime: RegimeDeForme;
   /** N'admet qu'un associé, par construction. */
   unipersonnelle: boolean;
   /**
@@ -188,6 +202,7 @@ function parActions(
   code: string,
   libelle: string,
   categorie: CategorieDeForme,
+  regime: RegimeDeForme,
   extra: Partial<NatureDeForme> = {}
 ): NatureDeForme {
   return {
@@ -198,6 +213,7 @@ function parActions(
     associesPluriel: "actionnaires",
     titreDirigeant: "Président",
     categorie,
+    regime,
     unipersonnelle: false,
     ...extra,
   };
@@ -208,6 +224,7 @@ function parParts(
   code: string,
   libelle: string,
   categorie: CategorieDeForme,
+  regime: RegimeDeForme,
   extra: Partial<NatureDeForme> = {}
 ): NatureDeForme {
   return {
@@ -218,6 +235,7 @@ function parParts(
     associesPluriel: "associés",
     titreDirigeant: "Gérant",
     categorie,
+    regime,
     unipersonnelle: false,
     ...extra,
   };
@@ -234,85 +252,85 @@ function parParts(
  */
 export const NATURES: Record<string, NatureDeForme> = {
   /* Commerciales */
-  SA: parActions("SA", "société anonyme", "commerciale"),
-  SAS: parActions("SAS", "société par actions simplifiée", "commerciale", { jumelle: "SASU" }),
-  SASU: parActions("SASU", "société par actions simplifiée à associé unique", "commerciale", {
+  SA: parActions("SA", "société anonyme", "commerciale", "sa"),
+  SAS: parActions("SAS", "société par actions simplifiée", "commerciale", "sas", { jumelle: "SASU" }),
+  SASU: parActions("SASU", "société par actions simplifiée à associé unique", "commerciale", "sas", {
     unipersonnelle: true,
     jumelle: "SAS",
   }),
-  SE: parActions("SE", "société européenne", "commerciale"),
-  SCA: parActions("SCA", "société en commandite par actions", "commerciale", {
+  SE: parActions("SE", "société européenne", "commerciale", "sa"),
+  SCA: parActions("SCA", "société en commandite par actions", "commerciale", "commandite", {
     titreDirigeant: "Gérant",
   }),
-  SARL: parParts("SARL", "société à responsabilité limitée", "commerciale", { jumelle: "EURL" }),
-  EURL: parParts("EURL", "entreprise unipersonnelle à responsabilité limitée", "commerciale", {
+  SARL: parParts("SARL", "société à responsabilité limitée", "commerciale", "sarl", { jumelle: "EURL" }),
+  EURL: parParts("EURL", "entreprise unipersonnelle à responsabilité limitée", "commerciale", "sarl", {
     unipersonnelle: true,
     jumelle: "SARL",
   }),
-  SNC: parParts("SNC", "société en nom collectif", "commerciale"),
-  SCS: parParts("SCS", "société en commandite simple", "commerciale"),
+  SNC: parParts("SNC", "société en nom collectif", "commerciale", "snc"),
+  SCS: parParts("SCS", "société en commandite simple", "commerciale", "commandite"),
 
   /* Exercice libéral */
-  SELAS: parActions("SELAS", "société d'exercice libéral par actions simplifiée", "exercice-liberal", {
+  SELAS: parActions("SELAS", "société d'exercice libéral par actions simplifiée", "exercice-liberal", "sas", {
     jumelle: "SELASU",
   }),
   SELASU: parActions(
     "SELASU",
     "société d'exercice libéral par actions simplifiée à associé unique",
-    "exercice-liberal",
+    "exercice-liberal", "sas",
     { unipersonnelle: true, jumelle: "SELAS" }
   ),
-  SELAFA: parActions("SELAFA", "société d'exercice libéral à forme anonyme", "exercice-liberal"),
+  SELAFA: parActions("SELAFA", "société d'exercice libéral à forme anonyme", "exercice-liberal", "sa"),
   SELCA: parActions(
     "SELCA",
     "société d'exercice libéral en commandite par actions",
-    "exercice-liberal",
+    "exercice-liberal", "commandite",
     { titreDirigeant: "Gérant" }
   ),
   SELARL: parParts(
     "SELARL",
     "société d'exercice libéral à responsabilité limitée",
-    "exercice-liberal",
+    "exercice-liberal", "sarl",
     { jumelle: "SELARLU" }
   ),
   SELARLU: parParts(
     "SELARLU",
     "société d'exercice libéral à responsabilité limitée à associé unique",
-    "exercice-liberal",
+    "exercice-liberal", "sarl",
     { unipersonnelle: true, jumelle: "SELARL" }
   ),
 
   /* Civiles */
-  SC: parParts("SC", "société civile", "civile"),
-  SCI: parParts("SCI", "société civile immobilière", "civile"),
-  SCM: parParts("SCM", "société civile de moyens", "civile"),
-  SCP: parParts("SCP", "société civile professionnelle", "civile"),
+  SC: parParts("SC", "société civile", "civile", "civile"),
+  SCI: parParts("SCI", "société civile immobilière", "civile", "civile"),
+  SCM: parParts("SCM", "société civile de moyens", "civile", "civile"),
+  SCP: parParts("SCP", "société civile professionnelle", "civile", "civile"),
 
   /* Civiles agricoles */
-  SCEA: parParts("SCEA", "société civile d'exploitation agricole", "civile-agricole"),
-  EARL: parParts("EARL", "exploitation agricole à responsabilité limitée", "civile-agricole"),
-  GAEC: parParts("GAEC", "groupement agricole d'exploitation en commun", "civile-agricole"),
+  SCEA: parParts("SCEA", "société civile d'exploitation agricole", "civile-agricole", "civile"),
+  EARL: parParts("EARL", "exploitation agricole à responsabilité limitée", "civile-agricole", "civile"),
+  GAEC: parParts("GAEC", "groupement agricole d'exploitation en commun", "civile-agricole", "civile"),
 
   /* Holdings de profession libérale : la forme support commande le vocabulaire. */
   "SPFPL SARL": parParts(
     "SPFPL SARL",
     "société de participations financières de profession libérale à responsabilité limitée",
-    "holding"
+    "holding", "sarl"
   ),
   "SPFPL SAS": parActions(
     "SPFPL SAS",
     "société de participations financières de profession libérale par actions simplifiée",
-    "holding"
+    "holding", "sas"
   ),
   "SPFPL SA": parActions(
     "SPFPL SA",
     "société de participations financières de profession libérale à forme anonyme",
-    "holding"
+    "holding", "sa"
   ),
   "SPFPL SCA": parActions(
     "SPFPL SCA",
     "société de participations financières de profession libérale en commandite par actions",
-    "holding",
+    "holding", "commandite",
     { titreDirigeant: "Gérant" }
   ),
 };
@@ -339,6 +357,7 @@ export function natureDeLaForme(forme: string | null | undefined): NatureDeForme
       associesPluriel: "associés",
       titreDirigeant: "Gérant",
       categorie: "commerciale",
+      regime: "sarl",
       unipersonnelle: false,
     }
   );

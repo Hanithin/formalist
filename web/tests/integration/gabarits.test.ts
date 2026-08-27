@@ -5,7 +5,7 @@ import { documentsAProduire } from "@/domain/formalite/documents";
 import {
   documentsModification,
   MODIFICATIONS,
-  formesModifiables,
+  formesAvecGabaritHistorique,
 } from "@/domain/formalite/modifications";
 import { FORMES_PROPOSEES } from "@/domain/formalite/formes";
 
@@ -34,7 +34,7 @@ describe("gabarits de création", () => {
 });
 
 describe("gabarits de modification", () => {
-  for (const forme of formesModifiables()) {
+  for (const forme of formesAvecGabaritHistorique()) {
     it("chaque modification d'une " + forme + " a ses gabarits", () => {
       for (const modification of MODIFICATIONS) {
         const documents = documentsModification(modification.code, forme);

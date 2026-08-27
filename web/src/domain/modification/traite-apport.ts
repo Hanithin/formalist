@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { evaluationDesApports, planDeCapital } from "./apport";
 import { formeEnToutesLettres } from "./annonce";
@@ -138,9 +139,15 @@ export function numerotationDuTraite(options: {
  * mauvais article dans un acte déposé au greffe se voit.
  */
 export function fondementLegalDeLApport(forme: string | null | undefined): string {
-  const f = (forme ?? "").trim().toUpperCase();
-  if (f === "SARL" || f === "EURL") return "l'article L. 223-33 du code de commerce";
-  if (f === "SA") return "l'article L. 225-147 du code de commerce";
+  /*
+   * Comparer le sigle à « SARL » et « EURL » laissait la SELARL, qui suit pourtant le
+   * régime de la SARL, se voir citer l'article des sociétés par actions.
+   */
+  const regime = natureDeLaForme(forme).regime;
+  if (regime === "sarl") return "l'article L. 223-33 du code de commerce";
+  if (regime === "sa" || regime === "commandite") {
+    return "l'article L. 225-147 du code de commerce";
+  }
   return "les articles L. 227-1 et L. 225-147 du code de commerce";
 }
 
@@ -151,8 +158,8 @@ export function fondementLegalDeLApport(forme: string | null | undefined): strin
  * simplifiées par L. 227-1. La citer de travers priverait la clause de fondement.
  */
 export function fondementDeLaDispense(forme: string | null | undefined): string {
-  const f = (forme ?? "").trim().toUpperCase();
-  if (f === "SARL" || f === "EURL") return "l'article L. 223-9 du code de commerce";
+  const regime = natureDeLaForme(forme).regime;
+  if (regime === "sarl") return "l'article L. 223-9 du code de commerce";
   return "l'article L. 227-1 du code de commerce, renvoyant à l'article L. 223-9 du même code";
 }
 
@@ -894,6 +901,5 @@ function aLieu(lieu: string): string {
 
 /** Actions ou parts sociales, selon la forme. */
 function naturDesTitres(forme: string): string {
-  const f = forme.trim().toUpperCase();
-  return f === "SAS" || f === "SASU" || f === "SA" ? "actions" : "parts sociales";
+  return natureDeLaForme(forme).titres;
 }

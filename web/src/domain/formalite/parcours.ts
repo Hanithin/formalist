@@ -1,5 +1,6 @@
 import {
   estUnipersonnelle,
+  natureDeLaForme,
   regle,
   verifierAssocies,
   verifierCapital,
@@ -97,10 +98,13 @@ export const ETAPES: Etape[] = [
  * updateAssocieLabel() dans associes.js, et le fil d'étapes d'origine portait pour
  * cela un identifiant sur ce seul libellé.
  */
-const FORMES_PAR_ACTIONS = new Set(["SAS", "SASU", "SELAS", "SELASU", "SCA", "SE", "SA"]);
-
 export function motAssocie(forme: string | null | undefined): "Actionnaire" | "Associé" {
-  return FORMES_PAR_ACTIONS.has((forme ?? "").toUpperCase()) ? "Actionnaire" : "Associé";
+  /*
+   * Cet ensemble listait sept formes et oubliait la SELAFA, la SELCA et les holdings de
+   * profession libérale, qui ont pourtant des actionnaires. La nature de la forme est
+   * déclarée une fois, dans formes.ts.
+   */
+  return natureDeLaForme(forme).titres === "actions" ? "Actionnaire" : "Associé";
 }
 
 /**
@@ -110,7 +114,7 @@ export function motAssocie(forme: string | null | undefined): "Actionnaire" | "A
  * figure dans les statuts et dans la liste des souscripteurs : il ne s'invente pas.
  */
 export function motPart(forme: string | null | undefined, pluriel = false): string {
-  const mot = FORMES_PAR_ACTIONS.has((forme ?? "").toUpperCase()) ? "action" : "part";
+  const mot = natureDeLaForme(forme).titres === "actions" ? "action" : "part";
   return pluriel ? mot + "s" : mot;
 }
 

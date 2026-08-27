@@ -16,6 +16,11 @@ import {
 import { motsDeLaForme } from "@/domain/modification/pv-age";
 import { motsDeLaCession } from "@/domain/modification/acte-cession";
 import { estCivile, estUnipersonnelle } from "@/domain/comptes/regles";
+import { motAssocie, motPart } from "@/domain/formalite/parcours";
+import { texteAnnonce } from "@/infrastructure/documents/annonce";
+import { fondementLegalDeLApport, fondementDeLaDispense } from "@/domain/modification/traite-apport";
+import { estUnipersonnelle as fermetureUnipersonnelle } from "@/domain/fermeture/voie";
+import { MODIFICATIONS } from "@/domain/modification/types";
 import { donneesDesComptes } from "@/domain/comptes/gabarit";
 
 /**
@@ -206,6 +211,100 @@ describe("les règles du dépôt des comptes", () => {
   it("accepte les formes que le parcours refusait", () => {
     for (const f of ["SELAS", "SELARL", "SCP", "SCM", "SCA", "EARL"]) {
       expect(NATURES_PROPOSEES).toContain(f);
+    }
+  });
+});
+
+describe("les autres écrans et documents", () => {
+  it("dit « actionnaire » pour toutes les formes par actions", () => {
+    /*
+     * Un ensemble de sept formes servait ici, et oubliait la SELAFA, la SELCA et les
+     * holdings de profession libérale : leurs actionnaires y étaient des associés.
+     */
+    for (const f of ["SELAFA", "SELCA", "SPFPL SAS", "SCA", "SE"]) {
+      expect(motAssocie(f)).toBe("Actionnaire");
+      expect(motPart(f, true)).toBe("actions");
+    }
+    for (const f of ["SELARL", "SCP", "SCM", "SNC"]) {
+      expect(motAssocie(f)).toBe("Associé");
+      expect(motPart(f, true)).toBe("parts");
+    }
+  });
+
+  it("ne publie plus « Représentant légal » au journal d'annonces légales", () => {
+    /*
+     * Le module d'annonce déduisait le titre d'une liste de cinq formes et rendait
+     * « Représentant légal » pour toutes les autres - un titre qui n'existe chez
+     * personne, et qui partait tel quel à la publication.
+     */
+    const annonce = (forme: string) =>
+      texteAnnonce({
+        type: "creation",
+        forme,
+        societe: "CABINET ESSAI",
+        capital: 20000,
+        data_json: JSON.stringify({
+          adresse: "34 rue Laugier",
+          code_postal: "75017",
+          ville: "Paris",
+          dirigeant_nom_complet: "Madame Claire MERCIER",
+        }),
+      });
+
+    expect(annonce("SELAS")).toContain("Président");
+    expect(annonce("SELARL")).toContain("Gérant");
+    expect(annonce("SCP")).toContain("Gérant");
+    expect(annonce("SCA")).toContain("Gérant");
+    for (const f of ["SELAS", "SELARL", "SCP", "SCA", "SCM", "EARL"]) {
+      expect(annonce(f)).not.toContain("Représentant légal");
+    }
+  });
+});
+
+describe("le régime dont la forme relève", () => {
+  it("cite l'article de la SARL pour une SELARL", () => {
+    /*
+     * Une société d'exercice libéral n'a pas de droit propre : la loi du 31 décembre
+     * 1990 la soumet au livre II du code de commerce. Une SELARL suit donc la SARL.
+     * Les fonctions comparaient le sigle à « SARL » et « EURL », et citaient à la
+     * SELARL l'article des sociétés par actions.
+     */
+    expect(fondementLegalDeLApport("SELARL")).toContain("L. 223-33");
+    expect(fondementLegalDeLApport("SELARLU")).toContain("L. 223-33");
+    expect(fondementLegalDeLApport("SARL")).toContain("L. 223-33");
+    expect(fondementDeLaDispense("SELARL")).toBe("l'article L. 223-9 du code de commerce");
+
+    /* Une SELAS suit la SAS, une SELAFA la SA. */
+    expect(fondementLegalDeLApport("SELAS")).toContain("L. 227-1");
+    expect(fondementLegalDeLApport("SELAFA")).toContain("L. 225-147");
+    expect(fondementLegalDeLApport("SELAFA")).not.toContain("L. 227-1");
+  });
+
+  it("reconnaît l'associé unique d'une SELASU", () => {
+    /* Deux sigles étaient nommés : la SELASU convoquait donc une assemblée d'un seul. */
+    expect(fermetureUnipersonnelle("SELASU")).toBe(true);
+    expect(fermetureUnipersonnelle("SELARLU")).toBe(true);
+    expect(fermetureUnipersonnelle("SASU")).toBe(true);
+    expect(fermetureUnipersonnelle("SELAS")).toBe(false);
+  });
+
+  it("avertit le conjoint dans toutes les sociétés à parts", () => {
+    /*
+     * L'article 1832-2 du code civil vise les parts non négociables. Quatre formes
+     * étaient nommées : l'apport d'un bien commun à une SELARL ou à une SCP se faisait
+     * sans avertissement, et le conjoint pouvait en demander la nullité deux ans durant.
+     */
+    const champ = MODIFICATIONS.flatMap((m) => m.champs ?? []).find(
+      (c) => c.identifiant === "apportBienCommun"
+    );
+
+    expect(champ?.formes).toBeDefined();
+    for (const f of ["SARL", "EURL", "SELARL", "SCP", "SCM", "SNC", "SCI", "EARL"]) {
+      expect(champ?.formes).toContain(f);
+    }
+    /* Les sociétés par actions en sont exclues : leurs titres sont négociables. */
+    for (const f of ["SAS", "SASU", "SA", "SELAS"]) {
+      expect(champ?.formes).not.toContain(f);
     }
   });
 });

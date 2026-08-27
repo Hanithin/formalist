@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 /**
  * Qui décide la dissolution, et à quelle majorité.
  *
@@ -70,8 +71,9 @@ export function decisionDeDissolution(contexte: ContexteDecision): Decision {
     return {
       organe: "L'associé unique",
       majorite: "par décision de l'associé unique",
+      /* Une SELARL relève du régime de la SARL : c'est son article qu'il faut citer. */
       fondement:
-        forme === "EURL" || forme === "SARL"
+        natureDeLaForme(forme).regime === "sarl"
           ? "l'article L. 223-1 du code de commerce"
           : "l'article L. 227-1 du code de commerce",
       auxStatuts: false,
@@ -126,7 +128,7 @@ export function decisionDeDissolution(contexte: ContexteDecision): Decision {
     };
   }
 
-  if (forme === "SAS" || forme === "SASU") {
+  if (natureDeLaForme(forme).regime === "sas") {
     return {
       organe: "La collectivité des associés",
       majorite: contexte.majoriteStatutaire?.trim() || UNANIMITE,

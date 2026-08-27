@@ -1,4 +1,17 @@
-import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
+import { NATURES_PROPOSEES, natureDeLaForme } from "@/domain/formalite/formes";
+
+/**
+ * Les formes dont les titres ne sont pas négociables.
+ *
+ * L'article 1832-2 du code civil impose d'avertir le conjoint quand un bien commun est
+ * apporté contre des parts sociales : elles ne se revendent pas librement, à la
+ * différence des actions. Quatre formes étaient nommées ici, et une SELARL, une SCP ou
+ * une société civile de moyens y échappaient - l'apport se faisait sans l'avertissement,
+ * et le conjoint pouvait en demander la nullité pendant deux ans.
+ */
+const FORMES_A_PARTS = NATURES_PROPOSEES.filter(
+  (f) => natureDeLaForme(f).titres === "parts sociales"
+);
 /**
  * Ce qu'on peut changer dans une société, et ce qu'il faut saisir pour chaque
  * changement.
@@ -553,7 +566,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
         pleineLargeur: true,
         obligatoire: true,
         visibleSi: { champ: "modeAugmentation", vaut: ["Apport en nature"] },
-        formes: ["SARL", "EURL", "SCI", "SNC"],
+        formes: FORMES_A_PARTS,
         aide: "Le conjoint doit être averti de l'apport, et l'acte doit en porter la mention : sans cela, il peut en demander la nullité pendant deux ans (article 1832-2 du code civil).",
       },
       {
@@ -566,7 +579,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
           champ: "apportBienCommun",
           vaut: ["Oui : le bien apporté est un bien commun"],
         },
-        formes: ["SARL", "EURL", "SCI", "SNC"],
+        formes: FORMES_A_PARTS,
       },
       {
         identifiant: "conjointRevendication",
@@ -582,7 +595,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
           champ: "apportBienCommun",
           vaut: ["Oui : le bien apporté est un bien commun"],
         },
-        formes: ["SARL", "EURL", "SCI", "SNC"],
+        formes: FORMES_A_PARTS,
         aide: "La revendication peut intervenir plus tard, jusqu'à la dissolution. Recueillie maintenant, elle est acquise et l'acte la constate.",
       },
 

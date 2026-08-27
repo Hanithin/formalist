@@ -1,5 +1,6 @@
 "use client";
 
+import { FORME_PAR_CATEGORIE } from "@/domain/formalite/categories-juridiques";
 import { useEffect, useRef, useState } from "react";
 import type { PersonneMorale } from "@/domain/formalite/etat-civil";
 import styles from "./Parcours.module.css";
@@ -19,40 +20,6 @@ import styles from "./Parcours.module.css";
  * exactement là où l'erreur se glisse, et elle se paie au greffe.
  */
 
-/** Les codes de nature juridique de l'INSEE, tels que la page d'origine les traduisait. */
-const FORMES_JURIDIQUES: Record<string, string> = {
-  "5710": "SAS",
-  "5720": "SASU",
-  "5499": "SARL",
-  "5498": "EURL",
-  "5410": "SA",
-  "5415": "SA",
-  "5422": "SA",
-  "5430": "SA",
-  "5505": "SA",
-  "5510": "SA",
-  "5515": "SA",
-  "5520": "SA",
-  "5530": "SA",
-  "5599": "SA",
-  "6540": "SCI",
-  "6533": "SCI",
-  "6534": "SCI",
-  "6532": "SCI",
-  "6521": "SCPI",
-  "6585": "SC",
-  "6588": "SC",
-  "5202": "SNC",
-  "5306": "SCS",
-  "5307": "SCA",
-  "5385": "SELARL",
-  "5470": "SELAFA",
-  "5485": "SELAS",
-  "5460": "SCP",
-  "5480": "SELCA",
-  "6220": "GIE",
-  "5370": "SE",
-};
 
 const MINIMUM = 3;
 const ATTENTE_MS = 280;
@@ -154,7 +121,7 @@ export function RechercheSociete({
       denomination: nom,
       // La forme est réécrite même vide : sinon celle d'une société précédemment
       // choisie resterait affichée.
-      forme: FORMES_JURIDIQUES[resultat.nature_juridique ?? ""] ?? "",
+      forme: FORME_PAR_CATEGORIE[resultat.nature_juridique ?? ""] ?? "",
       siret: siege.siret ?? resultat.siren ?? "",
       numeroRcs: resultat.siren ?? "",
       adresse: siege.adresse ?? "",

@@ -61,10 +61,18 @@ function generateAnnonceText(formalite) {
   const dirigeantPrenom = pick("dirigeant_prenom") || "";
   const dirigeantNom = pick("dirigeant_nom") || "";
   const dirigeantAdresse = pick("GERANT_ADRESSE", "ADRESSE_DIRIGEANT", "dirigeant_adresse") || "[ADRESSE DU DIRIGEANT]";
-  const titreDirigeant = ["SAS", "SASU"].includes(forme) ? "Président"
-    : ["SARL", "EURL"].includes(forme) ? "Gérant"
-    : ["SCI"].includes(forme) ? "Gérant"
-    : "Représentant légal";
+  // Le titre du dirigeant vient du domaine, qui déclare la nature de chaque forme.
+  //
+  // Cette liste ne connaissait que cinq formes : une SELAS, une SCP, une commandite y
+  // devenaient « Représentant légal », un titre qui n'existe chez personne, publié tel
+  // quel au journal d'annonces légales. Ce fichier ne peut pas importer le domaine -
+  // il est en CommonJS, repris du serveur d'origine - donc le titre lui est passé.
+  // La déduction ci-dessous ne sert plus que si l'appelant ne l'a pas fourni.
+  // Le titre du dirigeant est fourni par l'appelant, qui le tient de la table des
+  // formes. Il était déduit ici d'une liste de cinq sigles : une SELAS, une SCP, une
+  // commandite y devenaient « Représentant légal », un titre qui n'existe chez
+  // personne, et qui partait tel quel au journal d'annonces légales.
+  const titreDirigeant = formalite.titreDirigeant;
 
   // Construction du nom du dirigeant : on prend le "complet" en priorité, sinon prenom+nom
   const dirigeantStr = dirigeantComplet || (dirigeantPrenom + " " + dirigeantNom).trim() || "[NOM DU DIRIGEANT]";

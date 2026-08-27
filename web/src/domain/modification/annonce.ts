@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais } from "@/domain/formalite/lettres";
 import { changeDeRessort } from "./formalites";
 import type { Valeurs } from "./types";
@@ -106,9 +107,14 @@ export function formeEnToutesLettres(forme: string | null | undefined): string {
  * changement de dirigeant rende l'avis faux au moment où il paraît.
  */
 export function signature(forme: string | null | undefined): string {
-  const f = texte(forme).toUpperCase();
-  if (f === "SARL" || f === "EURL" || f === "SCI" || f === "SNC") return "Pour avis, la Gérance.";
-  if (f === "SA") return "Pour avis, le Conseil d'administration.";
+  /*
+   * Quatre formes signaient « la Gérance » et une seule « le Conseil d'administration ».
+   * Une SELARL, une SCP, une société civile de moyens signaient donc « le Président »,
+   * un organe qu'elles n'ont pas, dans un avis publié au journal.
+   */
+  const nature = natureDeLaForme(forme);
+  if (nature.regime === "sa") return "Pour avis, le Conseil d'administration.";
+  if (nature.titreDirigeant === "Gérant") return "Pour avis, la Gérance.";
   return "Pour avis, le Président.";
 }
 

@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { natureDeLaForme } from "@/domain/formalite/formes";
 
 /**
  * Texte d'annonce légale.
@@ -16,6 +17,8 @@ interface ModuleAnnonce {
     societe: string | null;
     capital: number | null;
     data_json: string | null;
+    /** Le titre du dirigeant : le module ne le déduit plus, il le reçoit. */
+    titreDirigeant: string;
   }) => string;
 }
 
@@ -29,5 +32,13 @@ export function texteAnnonce(formalite: {
   data_json: string | null;
 }): string {
   module_ ??= requerir("./annonce.cjs") as ModuleAnnonce;
-  return module_.generateAnnonceText(formalite);
+  /*
+   * Le module déduisait le titre d'une liste de cinq formes, et publiait « Représentant
+   * légal » pour toutes les autres - un titre qui n'existe chez personne. On le lui
+   * donne, depuis la table qui le déclare.
+   */
+  return module_.generateAnnonceText({
+    ...formalite,
+    titreDirigeant: natureDeLaForme(formalite.forme).titreDirigeant,
+  });
 }

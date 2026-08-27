@@ -1,3 +1,4 @@
+import { natureDeLaForme } from "@/domain/formalite/formes";
 /**
  * Par quelle voie une société se ferme.
  *
@@ -41,17 +42,21 @@ export interface Orientation {
   fondement: string;
 }
 
-/** Les formes dont l'associé unique ne peut être qu'une personne, jamais deux. */
-const UNIPERSONNELLES = ["SASU", "EURL"];
-
+/**
+ * Les formes dont l'associé unique ne peut être qu'une personne, jamais deux.
+ *
+ * Deux sigles étaient nommés ici : une SELASU ou une SELARLU, tout aussi
+ * unipersonnelles, se voyaient traitées comme des sociétés à plusieurs - convocation
+ * d'une assemblée là où l'associé unique décide seul.
+ */
 export function estUnipersonnelle(forme: string | null | undefined): boolean {
-  return UNIPERSONNELLES.includes((forme ?? "").trim().toUpperCase());
+  return natureDeLaForme(forme).unipersonnelle;
 }
 
-const CIVILES = ["SCI", "SC", "SCP", "SCM", "SCCV", "SCEA", "GFA"];
-
 export function estCivile(forme: string | null | undefined): boolean {
-  return CIVILES.includes((forme ?? "").trim().toUpperCase());
+  /* Sept sigles étaient nommés ici, et l'EARL comme le GAEC n'en étaient pas. */
+  const categorie = natureDeLaForme(forme).categorie;
+  return categorie === "civile" || categorie === "civile-agricole";
 }
 
 export function orientationDe(situation: Situation): Orientation {

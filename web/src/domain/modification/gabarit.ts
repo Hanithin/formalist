@@ -451,7 +451,8 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
   const totalParts = associes.reduce((total, a) => total + a.parts, 0);
 
   const forme = ou(societe.forme, "SAS");
-  const unipersonnelle = forme === "SASU" || forme === "EURL";
+  /* Deux sigles nommés ici laissaient la SELASU et la SELARLU convoquer une assemblée. */
+  const unipersonnelle = natureDeLaForme(forme).unipersonnelle;
   /*
    * Les titres portent le nom de la forme : une SAS a des actions, une SARL des parts
    * sociales. La liste des présents écrivait « détenant 700 parts » dans un
@@ -914,7 +915,7 @@ export function gabaritProcesVerbal(
   nombreDAssocies?: number
 ): string {
   const f = (forme ?? "").trim().toUpperCase();
-  const unipersonnelle = f === "SASU" || f === "EURL";
+  const unipersonnelle = natureDeLaForme(f).unipersonnelle;
   const plusieurs = nombreDAssocies !== undefined && nombreDAssocies > 1;
 
   /*

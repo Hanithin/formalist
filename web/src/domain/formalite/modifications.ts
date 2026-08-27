@@ -111,6 +111,21 @@ export function definitionModification(code: string): DefinitionModification | n
  * sans mention de président ni de gérant. C'est pourquoi une EURL l'emploie
  * aussi, là où sa création utilise les gabarits SARL.
  */
+/**
+ * Les formes dont un gabarit de procès-verbal existe sur le disque.
+ *
+ * Ce n'est pas la liste des formes qu'on sait traiter - le modèle universel les traite
+ * toutes - mais l'inventaire des cinq gabarits hérités, par forme, qui subsistent dans
+ * templates/. Elle sert au test qui vérifie qu'aucun gabarit annoncé ne manque. Son
+ * ancien nom, `formesModifiables`, laissait croire qu'une SELAS ne pouvait pas modifier
+ * ses statuts.
+ */
+export function formesAvecGabaritHistorique(): Forme[] {
+  return (["SASU", "SAS", "EURL", "SARL", "SCI"] as Forme[]).filter((f) =>
+    gabaritProcesVerbal(f)
+  );
+}
+
 export function gabaritProcesVerbal(forme: string | null | undefined): string | null {
   const r = regle(forme);
   if (!r) return null;
@@ -178,7 +193,3 @@ export function verifierModification(
   return anomalies;
 }
 
-/** Formes pour lesquelles une modification est proposable. */
-export function formesModifiables(): Forme[] {
-  return (["SASU", "SAS", "EURL", "SARL", "SCI"] as Forme[]).filter((f) => gabaritProcesVerbal(f));
-}
