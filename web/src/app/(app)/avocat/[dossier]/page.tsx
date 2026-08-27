@@ -60,21 +60,22 @@ const CHAMPS: { cle: string; libelle: string }[] = [
  * création qui n'en a pas à retoucher, « Annonce légale » sur une cession qui n'en
  * publie aucune. Chercher où l'on travaille prenait plus de temps que le travail.
  *
- * Trois regroupements. L'avancement rejoint « À faire » : les sous-phases disent la
- * même chose que les tâches, en plus court. Le récapitulatif et les pièces forment
- * « Le dossier » - ce que le client a déclaré, puis ce qu'il a déposé. Les notes
- * internes et le journal forment « Coulisses » : deux écrits que le client ne voit
- * jamais, qu'on relit rarement, et jamais l'un sans l'autre.
+ * Le récapitulatif d'abord : on lit ce dont il s'agit avant de décider quoi en faire.
+ * Puis « À faire ». Puis les documents du dossier, qu'on ouvre, corrige ou reprend.
+ *
+ * « Coulisses » nommait mal ce qu'il contenait - des notes internes et un journal - et
+ * les cachait derrière un mot qui ne dit rien. Les deux rejoignent le bas du
+ * récapitulatif, où l'on relit le dossier.
  */
-const ONGLETS = ["travail", "dossier", "statuts", "annonce", "coulisses"] as const;
+const ONGLETS = ["dossier", "travail", "documents", "statuts", "annonce"] as const;
 type Onglet = (typeof ONGLETS)[number];
 
 const NOMS: Record<Onglet, string> = {
+  dossier: "Récapitulatif",
   travail: "À faire",
-  dossier: "Le dossier",
+  documents: "Documents",
   statuts: "Statuts",
   annonce: "Annonce légale",
-  coulisses: "Coulisses",
 };
 
 /*
@@ -86,10 +87,11 @@ const NOMS: Record<Onglet, string> = {
  */
 const ALIAS: Record<string, Onglet> = {
   recapitulatif: "dossier",
-  pieces: "dossier",
+  pieces: "documents",
   avancement: "travail",
-  notes: "coulisses",
-  journal: "coulisses",
+  notes: "dossier",
+  journal: "dossier",
+  coulisses: "dossier",
 };
 
 /** La teinte du picto d'une entrée de journal, selon ce qu'elle raconte. */
@@ -481,7 +483,7 @@ export default async function DossierAvocat({
               aria-current={o === onglet ? "page" : undefined}
             >
               {NOMS[o]}
-              {o === "coulisses" && notes.length > 0 && (
+              {o === "dossier" && notes.length > 0 && (
                 <span className={styles.tabCount}>{notes.length}</span>
               )}
               {o === "dossier" && aVerifier > 0 && (
@@ -525,6 +527,27 @@ export default async function DossierAvocat({
                 aLeRbe: remis(TYPE_RBE),
               }}
             />
+          </>
+        )}
+
+        {/*
+          Tous les documents du dossier, avec ce qu'on peut en faire.
+
+          Ils n'étaient atteignables que par les tâches qui les nomment : celui qu'on
+          veut relire ou reprendre hors de son étape - un acte déjà validé, une pièce
+          déjà décidée - n'avait aucun chemin. Ici, chacun porte ses gestes : ouvrir,
+          corriger le Word, déposer sa version, valider, revenir sur la décision.
+        */}
+        {onglet === "documents" && (
+          <>
+            <h3 className={styles.sectionTitre}>Documents du dossier</h3>
+            {pieces.length === 0 ? (
+              <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />
+            ) : (
+              pieces.map((piece) => (
+                <Piece key={piece.id} piece={piece} dossier={dossier.id} />
+              ))
+            )}
           </>
         )}
 
@@ -656,8 +679,8 @@ export default async function DossierAvocat({
                     Ouvrir la messagerie
                     {nonLus > 0 && <span className={styles.pastilleRouge}>{nonLus}</span>}
                   </Link>
-                  <Link href={adresse("coulisses")}>Écrire une note interne</Link>
-                  <Link href={adresse("coulisses") + "#journal"}>Voir le journal</Link>
+                  <Link href={adresse("dossier") + "#journal"}>Écrire une note interne</Link>
+                  <Link href={adresse("dossier") + "#journal"}>Voir le journal</Link>
                 </div>
               </div>
             </div>
@@ -761,7 +784,7 @@ export default async function DossierAvocat({
           </div>
         )}
 
-        {onglet === "coulisses" && (
+        {onglet === "dossier" && (
           <>
             <h3 className={styles.sectionTitre}>Notes internes</h3>
             <div className={styles.notesIntro}>
@@ -779,13 +802,13 @@ export default async function DossierAvocat({
           </>
         )}
 
-        {onglet === "coulisses" && (
+        {onglet === "dossier" && (
           <h3 className={styles.sectionTitre} id="journal">
             Journal du dossier
           </h3>
         )}
 
-        {onglet === "coulisses" &&
+        {onglet === "dossier" &&
           (historique.length === 0 ? (
             <Vide ton="encart" texte="Aucune intervention enregistrée." />
           ) : (

@@ -8,50 +8,52 @@
 
 /* ---------- Le bouton ---------- */
 
+/*
+ * Une entrée de colonne, non un pavé.
+ *
+ * Le bouton occupait un rectangle blanc pleine largeur en tête de marge, plus lourd
+ * que le logo : la seule action de la colonne y pesait plus que la colonne entière. Il
+ * prend la géométrie des entrées, juste au-dessus de « Mes formalités » - ce qu'il
+ * crée va s'y ranger - et se distingue par un filet et un signe, non par un aplat.
+ */
 .action {
-  /* Le signe et le libellé sur une ligne, espacés : sans cela ils se touchent. */
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex-shrink: 0;
-  margin: 4px 12px 20px;
-  padding: 13px 18px;
-  border: none;
-  border-radius: 12px;
-  background: #fff;
-  color: #18181b;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: none;
+  color: #fff;
   font-family: inherit;
-  /*
-   * 15,5 px, comme les entrées de la colonne juste en dessous.
-   *
-   * À 14,5 px, le bouton principal était écrit plus petit que « Tableau de bord » ou
-   * « Documents » : l'action la plus importante de la colonne paraissait la plus
-   * secondaire. La graisse suffit à la distinguer.
-   */
   font-size: 15.5px;
-  font-weight: 600;
-  text-align: center;
+  font-weight: 550;
+  line-height: 1.2;
+  text-align: left;
   text-decoration: none;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  box-shadow: none;
   transition:
     background 0.15s,
-    transform 0.05s,
-    box-shadow 0.15s;
+    border-color 0.15s;
 }
 
 .action:hover {
-  background: #ececec;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.07);
 }
 
-.action:active {
-  transform: scale(0.99);
+/* Le signe tient la place de l'icône des entrées voisines : la colonne reste alignée. */
+.action .signe {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 /* ---------- La fenêtre ---------- */

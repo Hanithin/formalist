@@ -727,21 +727,51 @@ test("les actes attendent la relecture avant d'atteindre le client", async ({ pa
   });
   expect(enAttente).toBeGreaterThan(0);
 
-  // Le client ne les voit pas : sa bibliothèque n'en montre aucun.
+  /*
+   * Le client sait qu'un acte existe, mais ne l'a pas.
+   *
+   * Sa bibliothèque paraissait vide juste après le règlement, et il rappelait pour
+   * demander où étaient ses actes : elle nomme donc ce qui est en cours de relecture.
+   * Ce qu'elle ne donne pas, c'est le fichier - ni lien, ni archive.
+   */
   const client = await browser.newContext({ storageState: "./tests/parcours/session.json" });
   const sonEcran = await client.newPage();
   await sonEcran.goto("/documents");
-  await expect(sonEcran.getByText("Procès-verbal", { exact: false })).toHaveCount(0);
 
-  // L'avocat relit et met à disposition.
+  const aTelecharger = sonEcran
+    .locator("li, article, div")
+    .filter({ hasText: "Procès-verbal" })
+    .getByRole("link", { name: /Télécharger/ });
+  await expect(aTelecharger).toHaveCount(0);
+
+  /*
+   * L'avocat valide acte par acte.
+   *
+   * Un bouton unique publiait le jeu entier : celui qui n'avait relu qu'un acte sur
+   * trois publiait les trois. Chaque ligne porte sa décision.
+   */
   await page.reload();
-  await page.getByRole("button", { name: "Mettre à disposition du client" }).click();
-  await expect(page.getByRole("status")).toContainText("disponible", { timeout: 20_000 });
 
-  const restants = await prisma.documents.count({
-    where: { formalite_id: dossier, uploaded_by: "system", status: "a_relire" },
-  });
-  expect(restants).toBe(0);
+  const enRelecture = () =>
+    prisma.documents.count({
+      where: { formalite_id: dossier, uploaded_by: "system", status: "a_relire" },
+    });
+
+  /*
+   * On compte en base entre deux clics, non à l'écran.
+   *
+   * La validation rafraîchit la page : compter les boutons restants revenait à courir
+   * après un rendu en cours, et le second clic tombait sur un élément détaché.
+   */
+  for (let tour = 0; tour < 5; tour += 1) {
+    const restants = await enRelecture();
+    if (restants === 0) break;
+
+    await page.getByRole("button", { name: "Valider", exact: true }).first().click();
+    await expect.poll(enRelecture, { timeout: 20_000 }).toBe(restants - 1);
+  }
+
+  expect(await enRelecture()).toBe(0);
 
   await client.close();
 });

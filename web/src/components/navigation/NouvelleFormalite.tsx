@@ -66,6 +66,12 @@ export function NouvelleFormalite({
         aria-haspopup="dialog"
         aria-expanded={ouverte}
       >
+        {/* Dans la colonne, le signe tient la place de l'icône des entrées voisines. */}
+        {apparence === "colonne" && (
+          <span className={styles.signe} aria-hidden="true">
+            +
+          </span>
+        )}
         {libelle}
       </button>
 

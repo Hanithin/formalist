@@ -264,10 +264,11 @@ test.describe("espace avocat", () => {
     await expect(page.getByText(/À faire maintenant|Tout est fait sur ce dossier/)).toBeVisible();
     /*
       Les onglets ont été regroupés : le récapitulatif et les pièces forment « Le
-      dossier », les notes et le journal « Coulisses ». Les anciennes adresses mènent
-      toujours au bon endroit, mais aucun lien ne porte plus les anciens noms.
+      dossier », devenu « Récapitulatif », qui accueille aussi les notes internes et le
+      journal - « Coulisses » nommait mal ce qu'il contenait. Les anciennes adresses
+      mènent toujours au bon endroit, mais aucun lien ne porte plus les anciens noms.
     */
-    await page.getByRole("link", { name: "Le dossier" }).click();
+    await page.getByRole("link", { name: /^Récapitulatif/ }).first().click();
     await page.waitForURL(/onglet=dossier/);
 
     await expect(page.getByRole("heading", { name: "Informations du dossier" })).toBeVisible();
@@ -277,8 +278,9 @@ test.describe("espace avocat", () => {
 
   test("une note interne s'ajoute et s'affiche", async ({ page }) => {
     await ouvrirLeDossier(page, "PARCOURS EN COURS");
-    await page.getByRole("link", { name: "Coulisses" }).click();
-    await page.waitForURL(/onglet=coulisses/);
+    /* Les notes ont rejoint le récapitulatif : on les écrit là où l'on relit. */
+    await page.getByRole("link", { name: /^Récapitulatif/ }).first().click();
+    await page.waitForURL(/onglet=dossier/);
 
     const texte = "Point de vigilance " + Date.now();
     await page.getByLabel("Ajouter une note").fill(texte);
@@ -290,7 +292,7 @@ test.describe("espace avocat", () => {
 
   test("une pièce déposée peut être refusée avec son motif", async ({ page }) => {
     await ouvrirLeDossier(page, "PARCOURS EN COURS");
-    await page.getByRole("link", { name: "Le dossier" }).click();
+    await page.getByRole("link", { name: /^Récapitulatif/ }).first().click();
     await page.waitForURL(/onglet=dossier/);
 
     const boutons = page.getByRole("button", { name: "Demander une autre pièce" });
@@ -307,10 +309,11 @@ test.describe("espace avocat", () => {
 
     await expect(page.getByText("Document périmé").first()).toBeVisible();
 
-    // L'intervention est tracée : c'est ce qui permet d'instruire un litige.
-    await page.getByRole("link", { name: "Coulisses" }).click();
-    await page.waitForURL(/onglet=coulisses/);
-    await expect(page.getByText("document_refuse").first()).toBeVisible();
+    /*
+     * L'intervention est tracée : c'est ce qui permet d'instruire un litige. Le journal
+     * la dit en français - il affichait sa clé de base, « document_refuse ».
+     */
+    await expect(page.getByText("Justificatif refusé").first()).toBeVisible();
   });
 });
 

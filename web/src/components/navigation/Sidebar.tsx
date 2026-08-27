@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -180,8 +180,6 @@ export function Sidebar({ utilisateur, resume }: Props) {
         se rappeler que ce n'était pas celui qu'on avait sous les yeux. Chaque écran
         dit de quoi il parle ; la marge n'a pas à en désigner un autre.
       */}
-      <NouvelleFormalite />
-
       <Navigation>
         {menu.map((element, i) => {
           if (element === SEPARATEUR) {
@@ -206,6 +204,19 @@ export function Sidebar({ utilisateur, resume }: Props) {
           }
 
           const lienNu = element.lien.split("?")[0];
+
+          /*
+           * Le geste au-dessus de la liste qu'il alimente.
+           *
+           * Il occupait un pavé blanc pleine largeur en tête de colonne, plus lourd que
+           * le logo : la seule action de la marge y pesait plus que la marge entière.
+           * Il tient à la même hauteur que les entrées, juste au-dessus de « Mes
+           * formalités » - ce qu'il crée va s'y ranger.
+           */
+          const avantLesFormalites = lienNu === "/formalites" && (
+            <NouvelleFormalite key="nouvelle" />
+          );
+
           const dessin = (
             <span
               className={styles.icone}
@@ -231,16 +242,18 @@ export function Sidebar({ utilisateur, resume }: Props) {
             : null;
 
           return (
-            <Link
-              key={element.lien}
-              href={element.lien}
-              className={estActive ? styles.lienActif : styles.lien}
-              aria-current={estActive ? "page" : undefined}
-            >
-              {dessin}
-              {libelleDeLEntree(element.lien, element.libelle, resumeCourant)}
-              {compteur && <span className={styles.compteur}>{compteur}</span>}
-            </Link>
+            <Fragment key={element.lien}>
+              {avantLesFormalites}
+              <Link
+                href={element.lien}
+                className={estActive ? styles.lienActif : styles.lien}
+                aria-current={estActive ? "page" : undefined}
+              >
+                {dessin}
+                {libelleDeLEntree(element.lien, element.libelle, resumeCourant)}
+                {compteur && <span className={styles.compteur}>{compteur}</span>}
+              </Link>
+            </Fragment>
           );
         })}
       </Navigation>
