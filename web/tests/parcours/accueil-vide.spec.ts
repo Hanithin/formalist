@@ -135,9 +135,20 @@ test("l'amorce n'impose pas la création à qui vient pour autre chose", async (
    * « Première étape : créez votre société » contredisait la carte « Fermer ma
    * société » posée trois lignes plus bas.
    */
-  const amorce = page.getByText(/Vous n'avez encore aucune formalité/);
-  await expect(amorce).toBeVisible();
+  /*
+   * L'amorce s'écrit désormais « Aucune formalité en cours / Lancez votre première
+   * démarche depuis le bouton de la colonne ». Ce que le test garde ne change pas :
+   * elle n'impose aucun parcours, et surtout pas la création.
+   */
+  /*
+   * L'accueil d'un compte sans dossier montre le catalogue entier, où figurent aussi
+   * « Fermer ma société » et « Déposer mes comptes annuels ». Rien de ce qui l'entoure
+   * ne doit présumer qu'on vient créer : ni l'amorce, ni la salutation.
+   */
+  await expect(page.getByText(/Voici tout ce que Formalist sait faire/)).toBeVisible();
   await expect(page.getByText(/Première étape/)).toHaveCount(0);
+  await expect(page.getByText(/première société/i)).toHaveCount(0);
+  await expect(page.getByText(/créez votre société/i)).toHaveCount(0);
 });
 
 test("une seule carte porte la recommandation", async ({ page }) => {

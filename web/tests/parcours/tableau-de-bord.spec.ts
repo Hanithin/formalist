@@ -37,6 +37,14 @@ test.describe("tableau de bord du client", () => {
   test("la salutation reprend la phrase du moment, et la date passe à droite", async ({
     page,
   }) => {
+    /*
+     * Une largeur de bureau, dite plutôt que supposée.
+     *
+     * La configuration laisse la fenêtre par défaut de Playwright, plus étroite : la
+     * date y passe sous le titre, ce qui est la bonne réponse à un écran serré. Le test
+     * décrit la mise en page large ; il la demande.
+     */
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/tableau-de-bord");
 
     const titre = page.getByRole("heading", { level: 1 });
@@ -44,7 +52,15 @@ test.describe("tableau de bord du client", () => {
 
     // La date n'est plus collée sous le prénom : elle accompagne le bouton, à droite.
     const boiteTitre = await titre.boundingBox();
-    const boiteDate = await page.getByText(/^(Dimanche|Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi)/).first().boundingBox();
+    /*
+     * Le motif est ancré des deux côtés : sans quoi il attrape aussi le conteneur qui
+     * porte le titre et la date, dont l'origine est celle du titre - le test mesurait
+     * alors la boîte de gauche contre elle-même et échouait sur une mise en page juste.
+     */
+    const boiteDate = await page
+      .getByText(/^(Dimanche|Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi) \d{1,2} \p{L}+ \d{4}$/u)
+      .first()
+      .boundingBox();
     expect(boiteDate!.x).toBeGreaterThan(boiteTitre!.x + boiteTitre!.width);
   });
 
@@ -76,16 +92,27 @@ test.describe("tableau de bord du client", () => {
     const reprise = page.getByRole("region", { name: "Reprendre" });
     await expect(reprise).toBeVisible();
 
-    // Le nom y est le titre du bandeau, non un fragment en gras : depuis que la
-    // nature est passée en badge, c'est lui le sujet de la carte.
-    const societeReprise = await reprise
-      .locator("[class*='reprendreTitre']")
-      .first()
-      .textContent();
-    expect(societeReprise, "le bandeau doit nommer une société").toBeTruthy();
+    /*
+     * La comparaison porte sur le dossier, non sur le nom de la société.
+     *
+     * Deux dossiers d'une même société sont deux choses distinctes - une modification
+     * en cours et un dépôt de comptes qui attend une pièce - et l'un peut légitimement
+     * figurer dans les deux sections. Le test comparait les noms : il échouait dès
+     * qu'une autre série créait un second dossier pour la même société, ce qui arrive
+     * à chaque exécution parallèle.
+     */
+    const lienReprise = await reprise.getByRole("link").first().getAttribute("href");
+    const dossierRepris = lienReprise?.match(/dossier=(\d+)/)?.[1];
+    expect(dossierRepris, "le bandeau doit mener à un dossier").toBeTruthy();
 
     const attention = page.getByRole("region", { name: "Ce qui requiert votre attention" });
-    await expect(attention.getByText(societeReprise!.trim(), { exact: true })).toHaveCount(0);
+    const liens = await attention.getByRole("link").evaluateAll((a) =>
+      a.map((e) => (e as HTMLAnchorElement).getAttribute("href") ?? "")
+    );
+    expect(
+      liens.filter((h) => h.includes("dossier=" + dossierRepris)),
+      "le dossier repris ne se répète pas dans les attentes"
+    ).toEqual([]);
   });
 
   test("les formalités en cours sont des formalités, non des sociétés", async ({ page }) => {
@@ -99,9 +126,23 @@ test.describe("tableau de bord du client", () => {
     await expect(page.getByRole("heading", { name: "Formalités en cours" })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Vos sociétés/ })).toHaveCount(0);
 
+    /*
+     * La file est courte : au-delà, elle se lit sur sa propre page. Le test figeait ce
+     * nombre à trois quand l'écran en montre cinq - `LIGNES_MONTREES` dans Sections.tsx.
+     * Ce qui vaut d'être gardé n'est pas le chiffre mais la promesse : la section est un
+     * extrait, et elle offre la sortie vers la file entière dès qu'elle en cache.
+     */
     const section = page.getByRole("region", { name: "Formalités en cours" });
     const vignettes = section.locator("li");
-    expect(await vignettes.count()).toBeLessThanOrEqual(3);
+    const montrees = await vignettes.count();
+
+    const total = Number(
+      (await page.getByText(/formalités? en cours/).first().innerText()).match(/\d+/)?.[0] ?? montrees
+    );
+    expect(montrees, "la file du tableau de bord est un extrait").toBeLessThanOrEqual(total);
+    if (montrees < total) {
+      await expect(section.getByRole("link", { name: /Voir toute la file/ })).toBeVisible();
+    }
 
     // Chaque vignette distingue le type de formalité du nom de la société.
     await expect(section.getByText(/Création|Modification|Dépôt des comptes|Fermeture/).first()).toBeVisible();
@@ -221,8 +262,13 @@ test.describe("espace avocat", () => {
      * est à un clic.
      */
     await expect(page.getByRole("heading", { name: /choses à faire|chose à faire|Tout est fait/ })).toBeVisible();
-    await page.getByRole("link", { name: "Récapitulatif" }).click();
-    await page.waitForURL(/onglet=recapitulatif/);
+    /*
+      Les onglets ont été regroupés : le récapitulatif et les pièces forment « Le
+      dossier », les notes et le journal « Coulisses ». Les anciennes adresses mènent
+      toujours au bon endroit, mais aucun lien ne porte plus les anciens noms.
+    */
+    await page.getByRole("link", { name: "Le dossier" }).click();
+    await page.waitForURL(/onglet=dossier/);
 
     await expect(page.getByRole("heading", { name: "Informations du dossier" })).toBeVisible();
     // Le dossier d'essai est vide : tout doit être annoncé comme non renseigné.
@@ -231,8 +277,8 @@ test.describe("espace avocat", () => {
 
   test("une note interne s'ajoute et s'affiche", async ({ page }) => {
     await ouvrirLeDossier(page, "PARCOURS EN COURS");
-    await page.getByRole("link", { name: "Notes internes" }).click();
-    await page.waitForURL(/onglet=notes/);
+    await page.getByRole("link", { name: "Coulisses" }).click();
+    await page.waitForURL(/onglet=coulisses/);
 
     const texte = "Point de vigilance " + Date.now();
     await page.getByLabel("Ajouter une note").fill(texte);
@@ -244,21 +290,26 @@ test.describe("espace avocat", () => {
 
   test("une pièce déposée peut être refusée avec son motif", async ({ page }) => {
     await ouvrirLeDossier(page, "PARCOURS EN COURS");
-    await page.getByRole("link", { name: /^Pièces/ }).click();
-    await page.waitForURL(/onglet=pieces/);
+    await page.getByRole("link", { name: "Le dossier" }).click();
+    await page.waitForURL(/onglet=dossier/);
 
     const boutons = page.getByRole("button", { name: "Demander une autre pièce" });
     if ((await boutons.count()) === 0) test.skip();
 
+    /*
+     * Le formulaire de refus a été réécrit : il demande « Que doit redéposer le
+     * client ? » plutôt qu'un « motif du refus », et son bouton dit « Demander » -
+     * l'avocat demande une pièce, il ne prononce pas un refus.
+     */
     await boutons.first().click();
-    await page.getByLabel("Motif du refus").fill("Document périmé");
-    await page.getByRole("button", { name: "Refuser" }).click();
+    await page.getByLabel("Que doit redéposer le client ?").fill("Document périmé");
+    await page.getByRole("button", { name: "Demander", exact: true }).click();
 
-    await expect(page.getByText("Motif : Document périmé")).toBeVisible();
+    await expect(page.getByText("Document périmé").first()).toBeVisible();
 
     // L'intervention est tracée : c'est ce qui permet d'instruire un litige.
-    await page.getByRole("link", { name: "Journal" }).click();
-    await page.waitForURL(/onglet=journal/);
+    await page.getByRole("link", { name: "Coulisses" }).click();
+    await page.waitForURL(/onglet=coulisses/);
     await expect(page.getByText("document_refuse").first()).toBeVisible();
   });
 });

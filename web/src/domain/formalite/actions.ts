@@ -250,10 +250,19 @@ export function phraseDAccueil(
 
   let phrases: string[];
   if (nombreDeDossiers === 0) {
+    /*
+     * Aucune de ces phrases ne présume du parcours.
+     *
+     * « Prêt à lancer votre première société ? » s'affichait au-dessus d'un catalogue
+     * où figurent « Fermer ma société » et « Déposer mes comptes annuels » : on
+     * accueillait par une question qui contredit la moitié des cartes proposées, et qui
+     * se trompe pour qui vient gérer une société qu'il a déjà. C'est la faute qu'un
+     * ancien « Première étape : créez votre société » avait déjà values.
+     */
     phrases = [
       "bienvenue sur Formalist !",
       "ravi de vous accueillir.",
-      "prêt à lancer votre première société ?",
+      "par quoi commençons-nous ?",
       "on commence quand vous voulez.",
     ];
   } else if (heure >= 5 && heure < 12) {

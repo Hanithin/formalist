@@ -7,6 +7,7 @@
  * faire une fois notre travail terminé.
  */
 
+import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
 import { dateEnFrancais } from "@/domain/formalite/lettres";
 import { echeancesDe, type Nature, type Periodicite } from "./regles";
 
@@ -54,9 +55,15 @@ function ou(valeur: string, defaut = TIRET): string {
   return valeur.trim() || defaut;
 }
 
+/*
+ * L'adresse du registre porte déjà son code postal et sa commune.
+ *
+ * On les recollait derrière : le siège s'écrivait « 34 RUE LAUGIER 75017 PARIS, 75017
+ * PARIS » en tête d'un acte déposé au greffe. Le parcours modification avait résolu ce
+ * cas, et sa fonction est exportée - trois autres la recopiaient sans sa garde.
+ */
 function adresseSurUneLigne(entreprise: EntrepriseCessee): string {
-  const fin = [texte(entreprise.codePostal), texte(entreprise.ville)].filter(Boolean).join(" ");
-  return [texte(entreprise.adresse), fin].filter(Boolean).join(", ") || TIRET;
+  return adresseDuSiege(entreprise.adresse, entreprise.codePostal, entreprise.ville);
 }
 
 export function donneesDeLaCessation(contexte: ContexteCessation): Record<string, unknown> {

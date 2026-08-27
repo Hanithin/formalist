@@ -231,8 +231,14 @@ test.describe("une modification réglée", () => {
     await page.getByRole("list", { name: "Formalités" }).getByText("MODIF REGLEE").click();
 
     await expect(page).toHaveURL(new RegExp("/modification\\?dossier=" + reglee.id));
+    /*
+     * La phrase du dossier réglé a été réécrite : elle disait « réglée et suivie par le
+     * cabinet », elle dit ce que le client a maintenant à faire - c'est-à-dire rien.
+     * Ce que le test garde reste le même : la carte mène au suivi, non à la saisie.
+     */
     await expect(page.getByRole("heading", { name: "Où en est votre dossier" })).toBeVisible();
-    await expect(page.getByText(/réglée et suivie par le cabinet/)).toBeVisible();
+    await expect(page.getByText(/Vous n'avez rien à remplir/)).toBeVisible();
+    await expect(page.getByText(/où en est votre modification/)).toBeVisible();
   });
 });
 

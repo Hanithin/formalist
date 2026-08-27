@@ -45,9 +45,22 @@ test.describe("contrats", () => {
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Contrats");
 
-    // Les filtres posent des questions, ils ne récitent pas des états techniques.
-    for (const libelle of ["Tous", "À compléter", "En relecture", "Prêts"]) {
-      await expect(page.getByRole("button", { name: new RegExp("^" + libelle) })).toBeVisible();
+    /*
+     * Les filtres posent des questions, ils ne récitent pas des états techniques - et
+     * un filtre sans contrat ne s'affiche pas. Le test énumérait les quatre et échouait
+     * dès que le compte n'avait rien en relecture, ce qui est le cas ordinaire.
+     */
+    await expect(page.getByRole("button", { name: /^Tous/ })).toBeVisible();
+
+    const offerts = await page
+      .getByRole("button", { name: /^(Tous|À compléter|En relecture|Prêts|Signés)/ })
+      .allInnerTexts();
+
+    for (const libelle of offerts) {
+      const compte = libelle.trim().match(/(\d+)$/);
+      expect(compte, "décompte sur « " + libelle.trim() + " »").not.toBeNull();
+      expect(Number(compte![1]), "« " + libelle.trim() + " » ne serait pas offert à zéro")
+        .toBeGreaterThan(0);
     }
 
     // Et nulle part le vocabulaire de la base.

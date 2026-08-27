@@ -1,3 +1,4 @@
+import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
 import { sirenLisible } from "@/domain/modification/annonce";
 import { natureDeLaForme } from "@/domain/formalite/formes";
 /**
@@ -84,9 +85,15 @@ function euros(valeurCentimes: number): number {
   return valeurCentimes / 100;
 }
 
+/*
+ * L'adresse du registre porte déjà son code postal et sa commune.
+ *
+ * On les recollait derrière : le siège s'écrivait « 34 RUE LAUGIER 75017 PARIS, 75017
+ * PARIS » en tête d'un acte déposé au greffe. Le parcours modification avait résolu ce
+ * cas, et sa fonction est exportée - trois autres la recopiaient sans sa garde.
+ */
 function adresseSurUneLigne(societe: SocieteApprouvante): string {
-  const fin = [texte(societe.codePostal), texte(societe.ville)].filter(Boolean).join(" ");
-  return [texte(societe.adresse), fin].filter(Boolean).join(", ") || TIRET;
+  return adresseDuSiege(societe.adresse, societe.codePostal, societe.ville);
 }
 
 /** « L'an deux mille vingt-six » : un acte écrit l'année en lettres. */
