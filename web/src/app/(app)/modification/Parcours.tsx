@@ -1,7 +1,7 @@
 "use client";
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
-import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
+import { NATURES_PROPOSEES, fonctionsDuDirigeant } from "@/domain/formalite/formes";
 import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
 import {
   Fragment,
@@ -1702,7 +1702,18 @@ function EtapeDetails({
                     <h4 className={styles.champsGroupe}>{champ.groupe}</h4>
                   )}
                 <Champ
-                  champ={champ}
+                  /*
+                   * La fonction d'un dirigeant suit la forme de la société.
+                   *
+                   * Les quatre titres étaient offerts à tout le monde : une société par
+                   * actions pouvait nommer un gérant, une SARL un président - titres qui
+                   * n'existent pas chez elles, dans un acte déposé au greffe.
+                   */
+                  champ={
+                    champ.identifiant === "fonctionDirigeant"
+                      ? { ...champ, options: fonctionsDuDirigeant(etat.societe.forme) }
+                      : champ
+                  }
                   valeur={etat.valeurs[champ.identifiant]}
                   refus={anomalies.find((a) => a.champ === champ.identifiant)?.message}
                   surChangement={valeur}

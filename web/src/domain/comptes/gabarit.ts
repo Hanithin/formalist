@@ -1,6 +1,6 @@
 import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
 import { sirenLisible } from "@/domain/modification/annonce";
-import { natureDeLaForme } from "@/domain/formalite/formes";
+import { natureDeLaForme, fonctionsDuDirigeant } from "@/domain/formalite/formes";
 /**
  * Ce que les actes d'approbation ont besoin de savoir.
  *
@@ -96,6 +96,29 @@ function adresseSurUneLigne(societe: SocieteApprouvante): string {
   return adresseDuSiege(societe.adresse, societe.codePostal, societe.ville);
 }
 
+/**
+ * « 14 heures », « 14 heures 30 » : l'heure d'une assemblée s'écrit en toutes lettres.
+ *
+ * La saisie est libre et vaut ce qu'elle vaut - « 14 », « 14h », « 14h30 », « 14:30 »,
+ * ou déjà « 14 heures ». Un acte ne peut pas porter « à 14, ».
+ */
+function heureEnFrancais(saisie: string): string {
+  const nette = saisie.trim();
+  if (!nette) return "14 heures";
+  /* Déjà écrite en lettres : on n'y touche pas. */
+  if (/heures?/i.test(nette)) return nette;
+
+  const lu = nette.match(/^(\d{1,2})\s*(?:[h:.]\s*(\d{1,2}))?$/);
+  if (!lu) return nette;
+
+  const heures = Number(lu[1]);
+  const minutes = lu[2] ? Number(lu[2]) : 0;
+  if (!Number.isFinite(heures) || heures > 23 || minutes > 59) return nette;
+
+  const mot = heures <= 1 ? " heure" : " heures";
+  return heures + mot + (minutes > 0 ? " " + minutes : "");
+}
+
 /** « L'an deux mille vingt-six » : un acte écrit l'année en lettres. */
 function anneeEnLettres(iso: string): string {
   const annee = Number(iso.slice(0, 4));
@@ -186,7 +209,15 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
     DATE_CLOTURE_FR: dateEnFrancais(texte(valeurs.dateCloture)),
     DATE_ASSEMBLEE_FR: dateEnFrancais(texte(valeurs.dateAssemblee)),
     ANNEE_LETTRES: anneeEnLettres(texte(valeurs.dateAssemblee)),
-    HEURE_ASSEMBLEE: ou(texte(valeurs.heureAssemblee), "14 heures"),
+    /*
+     * L'heure s'écrit en toutes lettres, quoi qu'on ait tapé.
+     *
+     * Le champ annonce « 14 heures par défaut » et se saisit librement : qui tape « 14 »
+     * obtenait « le 30 août 2026 à 14, » dans un acte déposé au greffe, et qui tape
+     * « 14h30 » obtenait « à 14h30, ». La valeur est mise en forme ici plutôt que de
+     * compter sur ce que le client aura écrit.
+     */
+    HEURE_ASSEMBLEE: heureEnFrancais(texte(valeurs.heureAssemblee)),
     LIEU_ASSEMBLEE: ou(texte(valeurs.lieuAssemblee), "au siège social"),
     /*
      * La ville de signature, pour la formule « Fait à … ».
@@ -216,7 +247,21 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
         .filter(Boolean)
         .join(" ") || texte(valeurs.dirigeantNom)
     ),
-    DIRIGEANT_FONCTION: ou(texte(valeurs.dirigeantFonction), "Président"),
+    /*
+     * Un titre que la forme ne connaît pas ne part pas dans l'acte.
+     *
+     * L'écran restreint désormais les choix et la vérification refuse un titre qui ne
+     * va pas avec la forme - mais un dossier déjà réglé garde le sien, et une société
+     * d'exercice libéral par actions simplifiée s'est ainsi déposée « en qualité
+     * d'associé unique et de Gérant ». Un tel titre n'existe pas chez elle : le sien
+     * est certain, et c'est lui qu'on écrit.
+     *
+     * Le repli n'est pas une correction silencieuse d'un choix possible : il ne joue
+     * que sur un titre impossible, où l'ancienne valeur ne pouvait qu'être fausse.
+     */
+    DIRIGEANT_FONCTION: fonctionsDuDirigeant(forme).includes(texte(valeurs.dirigeantFonction))
+      ? texte(valeurs.dirigeantFonction)
+      : natureDeLaForme(forme).titreDirigeant,
     ASSOCIE_UNIQUE: ou(nomsDesAssocies[0] ?? ""),
     ASSOCIE_UNIQUE_NE_LE_FR: dateEnFrancais(texte(valeurs.associeUniqueNeLe)),
     ASSOCIE_UNIQUE_NE_A: ou(texte(valeurs.associeUniqueNeA)),

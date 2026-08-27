@@ -4,6 +4,7 @@ import { donneesDesComptes } from "@/domain/comptes/gabarit";
 import { genererDocument } from "@/infrastructure/documents/generation";
 import { verifierComptes } from "@/domain/comptes/verification";
 import { fonctionsDuDirigeant } from "@/domain/formalite/formes";
+import { donneesDuGabarit } from "@/domain/modification/gabarit";
 
 /**
  * La déclaration de confidentialité, telle qu'elle part au greffe.
@@ -174,5 +175,101 @@ describe("la fonction du dirigeant", () => {
   it("laisse passer un titre qui convient", () => {
     const anomalies = verifierComptes(DOSSIER as never);
     expect(anomalies.find((a) => a.champ === "dirigeantFonction")).toBeUndefined();
+  });
+});
+
+describe("le titre écrit dans l'acte", () => {
+  /**
+   * Un dossier réglé avant que l'écran ne restreigne les choix garde son titre : la
+   * vérification le retient désormais, mais elle ne peut plus rien sur ce qui est déjà
+   * payé. L'acte, lui, ne doit jamais écrire un titre qui n'existe pas dans la forme -
+   * une société d'exercice libéral par actions simplifiée s'est déposée « en qualité
+   * d'associé unique et de Gérant ».
+   *
+   * Le repli ne corrige pas un choix possible : il ne joue que sur un titre impossible,
+   * où l'ancienne valeur ne pouvait qu'être fausse.
+   */
+  it("remplace un titre impossible par celui de la forme", () => {
+    const donnees = donneesDesComptes({
+      ...DOSSIER,
+      valeurs: { ...DOSSIER.valeurs, dirigeantFonction: "Gérant" },
+    } as never);
+
+    expect(donnees.DIRIGEANT_FONCTION).toBe("Président");
+  });
+
+  it("garde un titre que la forme admet", () => {
+    const donnees = donneesDesComptes({
+      ...DOSSIER,
+      valeurs: { ...DOSSIER.valeurs, dirigeantFonction: "Directeur général" },
+    } as never);
+
+    expect(donnees.DIRIGEANT_FONCTION).toBe("Directeur général");
+  });
+
+  it("vaut aussi pour les actes de modification", () => {
+    const contexte = (forme: string, fonction: string) => ({
+      societe: {
+        denomination: "CABINET ESSAI",
+        forme,
+        siren: "552100554",
+        adresse: "8 place des Vosges",
+        codePostal: "75004",
+        ville: "Paris",
+        capital: 20000,
+      },
+      assemblee: { date: "2026-06-15", totalParts: 100, associes: [] },
+      codes: ["dirigeant"],
+      valeurs: { fonctionDirigeant: fonction },
+    });
+
+    expect(donneesDuGabarit(contexte("SELAS", "Gérant") as never).FONCTION_DIRIGEANT).toBe(
+      "Président"
+    );
+    expect(donneesDuGabarit(contexte("SELARL", "Président") as never).FONCTION_DIRIGEANT).toBe(
+      "Gérant"
+    );
+    expect(donneesDuGabarit(contexte("SARL", "Co-gérant") as never).FONCTION_DIRIGEANT).toBe(
+      "Co-gérant"
+    );
+  });
+});
+
+describe("l'heure de l'assemblée", () => {
+  /**
+   * Le champ annonce « 14 heures par défaut » et se saisit librement. Qui tapait « 14 »
+   * obtenait « le 30 août 2026 à 14, » dans un acte déposé au greffe.
+   */
+  const heure = (saisie: unknown) =>
+    donneesDesComptes({
+      ...DOSSIER,
+      valeurs: { ...DOSSIER.valeurs, heureAssemblee: saisie },
+    } as never).HEURE_ASSEMBLEE;
+
+  it("écrit les heures en toutes lettres", () => {
+    expect(heure("14")).toBe("14 heures");
+    expect(heure("9")).toBe("9 heures");
+    expect(heure("1")).toBe("1 heure");
+  });
+
+  it("garde les minutes quand il y en a", () => {
+    expect(heure("14h30")).toBe("14 heures 30");
+    expect(heure("14:05")).toBe("14 heures 5");
+    expect(heure("18 h 45")).toBe("18 heures 45");
+  });
+
+  it("ne retouche pas une heure déjà écrite", () => {
+    expect(heure("14 heures")).toBe("14 heures");
+    expect(heure("14 heures 30")).toBe("14 heures 30");
+  });
+
+  it("se replie sur l'heure d'usage quand rien n'est saisi", () => {
+    expect(heure("")).toBe("14 heures");
+    expect(heure(undefined)).toBe("14 heures");
+  });
+
+  it("laisse passer ce qu'elle ne sait pas lire", () => {
+    /* « en fin de matinée » n'est pas une heure, mais c'est une réponse. */
+    expect(heure("en fin de matinée")).toBe("en fin de matinée");
   });
 });

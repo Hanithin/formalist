@@ -1,4 +1,4 @@
-import { natureDeLaForme } from "@/domain/formalite/formes";
+import { natureDeLaForme, fonctionsDuDirigeant } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
@@ -639,7 +639,18 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
 
     /* ---------------------------------------------------------- Dirigeant */
     TYPE_CHANGEMENT_DIRIGEANT: ou(changement),
-    FONCTION_DIRIGEANT: texte(valeurs.fonctionDirigeant),
+    /*
+     * Un titre que la forme ne connaît pas ne part pas dans l'acte.
+     *
+     * L'écran restreint désormais les choix, mais un dossier commencé avant garde le
+     * sien. Le repli ne joue que sur un titre impossible, où l'ancienne valeur ne
+     * pouvait qu'être fausse.
+     */
+    FONCTION_DIRIGEANT: fonctionsDuDirigeant(societe.forme).includes(
+      texte(valeurs.fonctionDirigeant)
+    )
+      ? texte(valeurs.fonctionDirigeant)
+      : natureDeLaForme(societe.forme).titreDirigeant,
     DATE_EFFET_DIRIGEANT: texte(valeurs.dateEffetDirigeant),
     DATE_EFFET_DIRIGEANT_FR: dateEnFrancais(
       typeof valeurs.dateEffetDirigeant === "string" ? valeurs.dateEffetDirigeant : null
