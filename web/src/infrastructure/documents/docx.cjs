@@ -8,6 +8,15 @@
  * Dépendances : pizzip, docxtemplater
  */
 
+/**
+ * Le corps d'un acte, en demi-points : vingt-quatre valent douze points.
+ *
+ * La valeur est reprise du modèle repassé par le cabinet. Elle vaut pour tous les
+ * documents produits : ils sortent de la même chaîne, et deux corps différents d'un
+ * dossier à l'autre se verraient.
+ */
+const CORPS = 24;
+
 const fs = require("fs");
 const path = require("path");
 const PizZip = require("pizzip");
@@ -231,7 +240,7 @@ function improveLayout(docXml) {
          * gabarits muets.
          */
         if (isSectionTitle && !/<w:sz w:val="\d+"/.test(p)) {
-          p = p.replace(/<w:rPr>/g, '<w:rPr><w:sz w:val="26"/><w:szCs w:val="26"/>');
+          p = p.replace(/<w:rPr>/g, '<w:rPr><w:sz w:val="24"/><w:szCs w:val="24"/>');
         }
       }
     }
@@ -390,7 +399,7 @@ function generateDocxFromBuffer(buf, data) {
       let q = p.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/,
         '<w:pPr>' + pageBreak + '<w:keepLines/><w:keepNext/><w:spacing w:before="360" w:after="240" w:line="312" w:lineRule="auto"/>' +
         jc +
-        '<w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr></w:pPr>'
+        '<w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>'
       );
       // Strip empty trailing runs (no <w:t> inside) - these create phantom characters
       // that inflate the title's line height in LibreOffice, causing inconsistent gaps.
@@ -755,9 +764,9 @@ function generateDocxFromBuffer(buf, data) {
       const newPara =
         '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="312" w:lineRule="auto"/>' +
         '<w:jc w:val="both"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
-        '<w:b w:val="0"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr></w:pPr>' +
+        '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>' +
         '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
-        '<w:b w:val="0"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr>' +
+        '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>' +
         '<w:t xml:space="preserve">' + esc(combined) + '</w:t></w:r></w:p>';
       // Remaining paragraphs not consumed
       const remaining = allParas.slice(consumed).join('');
@@ -868,9 +877,9 @@ function generateDocxFromBuffer(buf, data) {
         const newPara =
           '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="312" w:lineRule="auto"/>' +
           '<w:jc w:val="both"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
-          '<w:b w:val="0"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr></w:pPr>' +
+          '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>' +
           '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
-          '<w:b w:val="0"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr>' +
+          '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>' +
           '<w:t xml:space="preserve">' + fnEsc(finalText) + '</w:t></w:r></w:p>';
         // Walk through followingParas, consume those matching intro keywords.
         // SKIP empty paragraphs (residual Mustache control tags become empty after render)
@@ -1016,7 +1025,7 @@ function generateDocxFromBuffer(buf, data) {
       /(<w:rPrDefault>[\s\S]*?<\/w:rPrDefault>)/,
       function(block) {
         return block
-          .replace(/<w:sz w:val="22"\/>/g, '<w:sz w:val="26"/>')
+          .replace(/<w:sz w:val="22"\/>/g, '<w:sz w:val="24"/>')
           .replace(/<w:szCs w:val="22"\/>/g, '<w:szCs w:val="26"/>');
       }
     );
@@ -1165,21 +1174,26 @@ function generateDocxFromBuffer(buf, data) {
   });
   doc.getZip().file("word/document.xml", docXml);
 
-  // LibreOffice fallback: inject <w:sz w:val="26"/> in every <w:rPr> that lacks one
-  // and bump any "small" sizes (between 4 and 25 = 2-12pt) → 13pt (sz=26) for body-text consistency.
-  // We keep <w:sz w:val="2"/> (hidden markers) and 28+ (titles) as-is.
+  // Le corps d'un acte se compose en douze points.
+  //
+  // Cette normalisation portait tout ce qui était plus petit à treize, et posait treize
+  // là où rien n'était dit : la taille écrite dans un gabarit ne survivait donc pas au
+  // rendu, et le douze points repris par le cabinet ressortait en treize. Le seuil
+  // s'arrête sous vingt-quatre, de sorte que douze points et les titres passent intacts.
+  //
+  // Les marqueurs cachés (sz=2) restent hors d'atteinte, comme avant.
   docXml = doc.getZip().file("word/document.xml").asText();
   docXml = docXml.replace(/<w:sz w:val="(\d+)"\s*\/>/g, function(m, v) {
     const n = parseInt(v);
-    return (n >= 4 && n <= 25) ? '<w:sz w:val="26"/>' : m;
+    return (n >= 4 && n < CORPS) ? '<w:sz w:val="' + CORPS + '"/>' : m;
   });
   docXml = docXml.replace(/<w:szCs w:val="(\d+)"\s*\/>/g, function(m, v) {
     const n = parseInt(v);
-    return (n >= 4 && n <= 25) ? '<w:szCs w:val="26"/>' : m;
+    return (n >= 4 && n < CORPS) ? '<w:szCs w:val="' + CORPS + '"/>' : m;
   });
   docXml = docXml.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/g, function(m, inner) {
     if (/<w:sz\b/.test(inner)) return m; // already has a size
-    return '<w:rPr>' + inner + '<w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr>';
+    return '<w:rPr>' + inner + '<w:sz w:val="' + CORPS + '"/><w:szCs w:val="' + CORPS + '"/></w:rPr>';
   });
   doc.getZip().file("word/document.xml", docXml);
 
