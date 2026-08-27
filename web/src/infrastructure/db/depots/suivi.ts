@@ -37,8 +37,25 @@ export async function etatDuDossier(dossier: {
   status: string | null;
   business_sub_phase: string | null;
   data_json?: string | null;
+  /** L'avocat qui a pris le dossier, quand il y en a un. */
+  assigned_avocat_id?: number | null;
 }): Promise<EtatDuDossier> {
   const types = await typesDeposes(dossier.id);
+
+  /*
+   * Qui s'occupe du dossier, et depuis quand.
+   *
+   * Le suivi cochait « Dossier confié à un avocat » sur le seul règlement : le client
+   * lisait qu'un avocat s'en occupait alors que le dossier attendait dans la file. Le
+   * nom, quand il est connu, vaut mieux qu'une formule - c'est quelqu'un, pas un
+   * service.
+   */
+  const avocat = dossier.assigned_avocat_id
+    ? await prisma.users.findUnique({
+        where: { id: dossier.assigned_avocat_id },
+        select: { name: true },
+      })
+    : null;
 
   return {
     type: dossier.type ?? null,
@@ -56,6 +73,8 @@ export async function etatDuDossier(dossier: {
     // Le règlement vit dans la déclaration : c'est lui qui met l'auto-entreprise en
     // route, là où une société part sur une transmission.
     paye: estPayee(dossier.data_json),
+    avocatAssigne: !!dossier.assigned_avocat_id,
+    nomDeLAvocat: avocat?.name ?? null,
   };
 }
 

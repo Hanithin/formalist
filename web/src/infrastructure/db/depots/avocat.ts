@@ -20,6 +20,7 @@ import {
   documentValide,
   actesDisponibles,
   actesRetires,
+  dossierPrisEnCharge,
 } from "@/domain/formalite/avis";
 import { prevenir } from "./avis";
 import { A_RELIRE } from "@/domain/document/publication";
@@ -358,9 +359,10 @@ export async function assignerAvocat(
     throw new Interdit("Ce compte n'est pas un avocat");
   }
 
-  await prisma.formalites.update({
+  const ligne = await prisma.formalites.update({
     where: { id: dossierId },
     data: { assigned_avocat_id: avocatId, updated_at: new Date() },
+    select: { user_id: true, societe: true },
   });
 
   await prisma.audit_log.create({
@@ -372,6 +374,25 @@ export async function assignerAvocat(
       after_value: cible.name,
     },
   });
+
+  /*
+   * Le client apprend qui s'occupe de son dossier.
+   *
+   * C'était le seul geste du parcours qui ne prévenait personne : le refus d'une
+   * pièce, la mise à disposition des actes, leur retrait, tous écrivent au client.
+   * Celui-ci le laissait devant un écran qui annonçait un avocat sans jamais dire
+   * quand il était arrivé.
+   *
+   * L'avis ne fait pas échouer l'assignation : l'avocat a pris le dossier, et un
+   * courriel qui ne part pas ne doit pas le lui reprendre.
+   */
+  if (ligne.user_id && ligne.user_id !== utilisateur.id) {
+    await prevenir(
+      ligne.user_id,
+      dossierId,
+      dossierPrisEnCharge(ligne.societe || "votre société", cible.name)
+    );
+  }
 
   return { avocat: cible.name };
 }

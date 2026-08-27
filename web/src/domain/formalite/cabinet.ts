@@ -46,6 +46,16 @@ export interface EtatDuCabinet {
   /** Des documents attendent une décision de l'avocat. */
   piecesAVerifier: number;
   /**
+   * Des pièces obligatoires manquent, ou ont été refusées sans remplacement.
+   *
+   * Sans ce compte, la tâche des justificatifs se cochait dès qu'il n'y avait rien en
+   * attente de vérification. Or une pièce jamais déposée n'attend rien : elle valait
+   * zéro, et le cabinet lisait « pièces vérifiées » sur un dossier qu'aucun greffe
+   * n'aurait accepté. Un refus produisait le même effet - le document quittait la file
+   * d'attente, et la tâche redevenait faite pendant qu'on attendait la nouvelle pièce.
+   */
+  piecesManquantes?: number;
+  /**
    * L'avocat a déclaré avoir relu ce que le client a saisi.
    *
    * Sans cette marque, la tâche n'était réputée faite qu'en sous-phase « Vérifié »,
@@ -203,15 +213,28 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     onglet: "recapitulatif",
   });
 
+  /*
+   * Les justificatifs : ce qui manque autant que ce qui attend.
+   *
+   * Le titre dit ce qui bloque en premier. Une pièce absente se réclame au client ; une
+   * pièce déposée se regarde. Les deux empêchent le dossier de partir, et aucun des
+   * deux ne doit se cacher derrière une case cochée.
+   */
+  const manquantes = etat.piecesManquantes ?? 0;
   taches.push({
     identifiant: "pieces",
     titre:
-      etat.piecesAVerifier > 0
-        ? etat.piecesAVerifier + (etat.piecesAVerifier === 1 ? " pièce à vérifier" : " pièces à vérifier")
-        : "Vérifier les pièces justificatives",
+      manquantes > 0
+        ? manquantes + (manquantes === 1 ? " pièce manquante" : " pièces manquantes")
+        : etat.piecesAVerifier > 0
+          ? etat.piecesAVerifier +
+            (etat.piecesAVerifier === 1 ? " pièce à vérifier" : " pièces à vérifier")
+          : "Vérifier les pièces justificatives",
     explication:
-      "Validez ou refusez chaque justificatif, avec un motif. Un refus prévient le client, qui peut remplacer la pièce.",
-    etat: etat.piecesAVerifier > 0 ? "a_faire" : "faite",
+      manquantes > 0
+        ? "Le client n'a pas fourni tout ce que le dépôt réclame. Écrivez-lui pour la réclamer : le dossier ne peut pas partir sans elle."
+        : "Validez ou refusez chaque justificatif, avec un motif. Un refus prévient le client, qui peut remplacer la pièce.",
+    etat: manquantes > 0 || etat.piecesAVerifier > 0 ? "a_faire" : "faite",
     onglet: "pieces",
   });
 

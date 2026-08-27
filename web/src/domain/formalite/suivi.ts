@@ -36,6 +36,18 @@ export interface EtatDuDossier {
   aLeKbis: boolean;
   /** L'auto-entreprise se confie en la réglant : c'est ce qui la met en route. */
   paye?: boolean;
+  /**
+   * Un avocat a-t-il réellement pris le dossier ?
+   *
+   * L'étape « Dossier confié à un avocat » se cochait sur le seul règlement, et le
+   * client lisait aussitôt « Vérification par l'avocat - l'avocat s'en occupe » alors
+   * que personne ne l'avait encore ouvert. Il attendait devant un écran qui lui disait
+   * poliment le contraire de la vérité. Entre les deux, il y a une file d'attente, et
+   * elle mérite d'être nommée.
+   */
+  avocatAssigne?: boolean;
+  /** Son nom, quand il est connu : « Maître Untel a pris votre dossier ». */
+  nomDeLAvocat?: string | null;
 }
 
 export type Main = "vous" | "avocat";
@@ -215,9 +227,16 @@ const MODIFICATION: Definition[] = [
     identifiant: "confie",
     titre: "Dossier confié à un avocat",
     explication:
-      "Votre modification est réglée et partie chez nos avocats. Le premier disponible la prend en charge.",
+      "Votre modification est réglée et proposée à nos avocats. Le premier disponible la prend en charge, généralement dans la journée.",
     main: "avocat",
-    faite: (e) => !!e.paye,
+    /*
+     * Confié veut dire pris, non payé.
+     *
+     * Le règlement met le dossier dans la file ; c'est la prise en charge qui le confie.
+     * Cocher l'un pour l'autre faisait croire au client qu'un avocat travaillait déjà
+     * sur son dossier alors qu'il attendait son tour.
+     */
+    faite: (e) => !!e.avocatAssigne,
   },
   {
     identifiant: "verification",

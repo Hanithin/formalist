@@ -24,6 +24,7 @@ export type GenreDAvis =
   | "depot_en_cours"
   | "immatriculee"
   | "dossier_a_prendre"
+  | "dossier_pris_en_charge"
   | "actes_disponibles"
   | "actes_retires";
 
@@ -68,6 +69,15 @@ const PAR_COURRIEL = new Set<GenreDAvis>([
   "attestation_attendue",
   "immatriculee",
   "dossier_a_prendre",
+  /*
+   * La prise en charge se dit par courriel.
+   *
+   * C'est le moment où l'attente devient un travail : le client a réglé, puis plus
+   * rien pendant des heures. Une ligne dans la cloche ne suffit pas - il faut être
+   * revenu sur l'application pour la voir, et c'est justement ce qu'il ne fait pas
+   * tant qu'il ne sait pas que quelque chose a bougé.
+   */
+  "dossier_pris_en_charge",
   "actes_disponibles",
 ]);
 
@@ -285,6 +295,26 @@ export function actesRetires(societe: string): Avis {
       "L'avocat a repris vos actes pour les corriger : ils ne sont plus dans vos documents.\n\nVous serez prévenu dès qu'ils y reviendront. Si vous en aviez déjà transmis un exemplaire, attendez la nouvelle version avant de vous en servir.",
     bouton: "Voir mes documents",
     destination: "documents",
+  };
+}
+
+/**
+ * Un avocat a pris le dossier en charge.
+ *
+ * C'était le seul geste du parcours qui ne prévenait personne. Le client avait réglé,
+ * son écran annonçait qu'un avocat s'en occupait, et rien ne lui disait quand cela
+ * devenait vrai. Le nom compte : il transforme une attente anonyme en un interlocuteur.
+ */
+export function dossierPrisEnCharge(societe: string, avocat: string): Avis {
+  return {
+    genre: "dossier_pris_en_charge",
+    contenu: avocat + " a pris en charge votre dossier " + societe,
+    sujet: "Votre dossier est pris en charge - " + societe,
+    corps:
+      avocat +
+      " a pris votre dossier en charge et commence sa révision.\n\nVous serez prévenu dès que vos actes seront prêts, ou si une pièce doit être complétée.",
+    bouton: "Suivre mon dossier",
+    destination: "dossier",
   };
 }
 

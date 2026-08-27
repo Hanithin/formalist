@@ -5,6 +5,8 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { dossierPourAvocat } from "@/infrastructure/db/depots/avocat";
 import { etatCabinet } from "@/domain/formalite/avocat";
 import { estPropose } from "@/domain/acces/regles";
+import { etatDesPieces } from "@/domain/formalite/pieces";
+import { piecesAttenduesDuDossier } from "@/infrastructure/documents/pieces-attendues";
 import { libelleEtat } from "@/domain/formalite/transitions";
 import { Notes } from "./Notes";
 import { Travail } from "./Travail";
@@ -187,6 +189,26 @@ export default async function DossierAvocat({
   });
 
   const aVerifier = documents.filter((d) => d.status === "uploaded").length;
+
+  /*
+   * Ce que le dossier réclame, comparé à ce qu'il porte.
+   *
+   * Le décompte des pièces ne regardait que les documents déposés : une pièce
+   * obligatoire jamais fournie ne comptait nulle part, et l'écran comme la liste des
+   * tâches donnaient un dossier incomplet pour complet.
+   */
+  const pieces_ = etatDesPieces(
+    piecesAttenduesDuDossier({
+      type: dossier.type,
+      data_json: dossier.data_json,
+      forme: typeof donnees.forme === "string" ? donnees.forme : null,
+    }),
+    documents.map((d) => ({
+      type: d.type,
+      status: d.status,
+      rejection_reason: d.rejection_reason,
+    }))
+  );
   // Un document refusé ne compte pas comme remis : il attend son remplacement.
   const remis = (type: string) =>
     documents.some((d) => d.type === type && !d.rejection_reason);
@@ -234,6 +256,7 @@ export default async function DossierAvocat({
     status: dossier.status,
     sousPhase: dossier.business_sub_phase,
     piecesAVerifier: aVerifier,
+    piecesManquantes: pieces_.manquantes.length + pieces_.refusees.length,
     /*
      * Produits, relus ou non : c'est la production qui compte ici, non la mise à
      * disposition. Un acte à relire est bien un acte produit.
@@ -630,6 +653,45 @@ export default async function DossierAvocat({
             Pièces du dossier
           </h3>
         )}
+
+        {/*
+          Ce que le dossier réclame et qui n'y est pas.
+
+          La liste ne montrait que les documents présents : rien n'y disait qu'il
+          manquait le rapport du commissaire aux apports, et il fallait connaître par
+          cœur la liste attendue de chaque type de formalité pour s'en apercevoir. Un
+          dossier incomplet avait exactement l'air d'un dossier complet.
+        */}
+        {onglet === "dossier" &&
+          (pieces_.manquantes.length > 0 || pieces_.refusees.length > 0) && (
+            <div className={styles.piecesManquantes} role="status">
+              <p className={styles.piecesManquantesTitre}>
+                {pieces_.manquantes.length + pieces_.refusees.length === 1
+                  ? "Une pièce empêche le dépôt"
+                  : pieces_.manquantes.length + pieces_.refusees.length +
+                    " pièces empêchent le dépôt"}
+              </p>
+              <ul className={styles.piecesManquantesListe}>
+                {pieces_.manquantes.map((piece) => (
+                  <li key={piece.identifiant}>
+                    {piece.titre}
+                    <span className={styles.piecesManquantesMotif}>jamais déposée</span>
+                  </li>
+                ))}
+                {pieces_.refusees.map((piece) => (
+                  <li key={piece.identifiant}>
+                    {piece.titre}
+                    <span className={styles.piecesManquantesMotif}>
+                      refusée, en attente de remplacement
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className={styles.piecesManquantesNote}>
+                Le client la voit manquante de son côté. Écrivez-lui si elle tarde.
+              </p>
+            </div>
+          )}
 
         {onglet === "dossier" &&
           (documents.length === 0 && !statutsAProduire ? (

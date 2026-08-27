@@ -59,8 +59,22 @@ export function Suivi({ etat, lienAction, lienMessagerie, demande }: Props) {
       {/* L'étape du moment, détachée : c'est la seule qu'on vient lire. */}
       {courante && (
         <div className={courante.main === "vous" ? `${styles.focus} ${styles.aVous}` : styles.focus}>
+          {/*
+            Qui a la main, et son nom quand on le connaît.
+
+            « L'avocat s'en occupe » se lisait dès le règlement, alors que le dossier
+            attendait encore dans la file : personne ne s'en occupait. Tant qu'il n'est
+            pas pris, on le dit ; une fois pris, on nomme celui qui l'a pris - c'est
+            quelqu'un, pas un service.
+          */}
           <span className={styles.main}>
-            {courante.main === "vous" ? "À vous de jouer" : "L'avocat s'en occupe"}
+            {courante.main === "vous"
+              ? "À vous de jouer"
+              : etat.avocatAssigne
+                ? etat.nomDeLAvocat
+                  ? etat.nomDeLAvocat + " s'en occupe"
+                  : "L'avocat s'en occupe"
+                : "En attente d'un avocat"}
           </span>
           <p className={styles.focusTitre}>{courante.titre}</p>
           <p className={styles.focusTexte}>{courante.explication}</p>

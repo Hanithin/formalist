@@ -12,6 +12,7 @@ import { ouvrirPaiement, PaiementIndisponible } from "@/infrastructure/paiement/
 import { adresseDeRetour } from "@/lib/site";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
+import { cequiRetientLeReglement } from "@/infrastructure/documents/verifier-pieces";
 
 const SCHEMA = z.object({ dossier: schemas.identifiant });
 
@@ -63,6 +64,20 @@ export const POST = route(async (requete: Request) => {
       { error: "Complétez votre dossier avant de le confier", manques },
       { status: 400 }
     );
+  }
+
+
+  /*
+   * Les justificatifs retiennent le règlement, ici aussi.
+   *
+   * L'écran de saisie le disait déjà, mais le contrôle vivait dans la page - et une
+   * page se contourne. Payer sans les pièces fait partir un dossier que l'avocat ne
+   * peut pas déposer : il relance quelqu'un qui a quitté l'application, et la
+   * formalité attend.
+   */
+  const manquePiece = await cequiRetientLeReglement(dossier);
+  if (manquePiece) {
+    return NextResponse.json({ error: manquePiece }, { status: 400 });
   }
 
   const montant = devisDeFermeture({
