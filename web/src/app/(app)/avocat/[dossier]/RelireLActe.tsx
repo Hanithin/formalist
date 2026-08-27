@@ -122,3 +122,52 @@ export function RelireLActe({
     </>
   );
 }
+
+/**
+ * Reprendre un acte déjà remis, pour le corriger.
+ *
+ * Une coquille se voit parfois après coup, et l'acte remis n'avait plus aucun geste sur
+ * sa ligne : il fallait retirer le jeu entier depuis une tâche accomplie et repliée, ce
+ * qui remettait en relecture des actes qu'on n'avait pas à toucher.
+ */
+export function ReprendreLActe({ document, dossier }: { document: number; dossier: number }) {
+  const [refus, setRefus] = useState<string | null>(null);
+  const [enCours, demarrer] = useTransition();
+  const router = useRouter();
+
+  function reprendre() {
+    setRefus(null);
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/actes", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, document }),
+      });
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "La reprise n'a pas abouti");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className={styles.decisionSecondaire}
+        onClick={reprendre}
+        disabled={enCours}
+      >
+        {enCours ? "…" : "Reprendre pour corriger"}
+      </button>
+
+      {refus && (
+        <span className={styles.decisionRefus} role="alert">
+          {refus}
+        </span>
+      )}
+    </>
+  );
+}

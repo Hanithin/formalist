@@ -6,7 +6,7 @@ import { A_RELIRE } from "@/domain/document/publication";
 import { TITRE_STATUTS_A_JOUR, TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
 import { Verification } from "./Verification";
 import { OuvrirLaPiece } from "./OuvrirLaPiece";
-import { RelireLActe } from "./RelireLActe";
+import { RelireLActe, ReprendreLActe } from "./RelireLActe";
 import styles from "../Avocat.module.css";
 
 /**
@@ -143,6 +143,14 @@ export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: numbe
               source={piece.source ?? (piece.fichier?.endsWith(".docx") ? piece.fichier : null)}
             />
           )}
+
+        {/*
+          Un acte remis se reprend : la coquille se voit parfois après coup, et il
+          quitte alors l'espace du client pour redevenir un projet.
+        */}
+        {estUnActeProduit(piece) && piece.statut === "generated" && (
+          <ReprendreLActe document={piece.id} dossier={dossier} />
+        )}
 
         {piece.statut === "uploaded" && <Verification documentId={piece.id} />}
         {/* Une validation se reprend : on se trompe de bouton, ou de pièce. */}

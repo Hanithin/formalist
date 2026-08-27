@@ -996,6 +996,64 @@ export async function mettreUnActeADisposition(
 }
 
 /**
+ * Reprendre un acte, et lui seul.
+ *
+ * Une coquille se voit parfois après coup. L'acte remis n'avait plus aucun geste sur
+ * sa ligne : il fallait retirer le jeu entier depuis une tâche accomplie et repliée,
+ * ce qui remettait en relecture des actes que l'on n'avait pas à toucher.
+ *
+ * Repris, l'acte redevient un projet : il quitte l'espace du client, se corrige, puis
+ * se valide à nouveau. Le client en est prévenu - un document qui disparaît sans un
+ * mot inquiète plus qu'il n'informe.
+ */
+export async function reprendreUnActe(utilisateur: UtilisateurConnecte, documentId: number) {
+  exigerAvocat(utilisateur);
+
+  const document = await prisma.documents.findUnique({ where: { id: documentId } });
+  if (!document?.formalite_id) throw new Interdit("Document introuvable");
+
+  const dossier = await exigerDossier(utilisateur, document.formalite_id);
+
+  /*
+   * Trois réserves, les mêmes que pour le jeu entier. Les statuts en vigueur ne sont
+   * pas un acte du cabinet - ils viennent du registre ou du client, et les retirer lui
+   * ôterait son propre document. Un acte signé ou vérifié ne se reprend pas non plus :
+   * la signature est un fait, elle ne s'annule pas d'un clic.
+   */
+  if (
+    document.uploaded_by !== "system" ||
+    document.status !== "generated" ||
+    document.name === TITRE_STATUTS_EN_VIGUEUR
+  ) {
+    throw new Interdit("Cet acte ne se reprend pas");
+  }
+
+  await prisma.documents.update({
+    where: { id: documentId },
+    data: { status: A_RELIRE },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: document.formalite_id,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "actes_retires",
+      target_field: document.name,
+      after_value: "1",
+    },
+  });
+
+  await prevenir(
+    dossier.user_id,
+    document.formalite_id,
+    actesRetires(dossier.societe || "votre société")
+  );
+
+  return { repris: document.name };
+}
+
+/**
  * Retirer de l'espace du client les actes qu'on venait d'y mettre.
  *
  * La mise à disposition n'avait pas d'envers : un acte publié par erreur - le mauvais

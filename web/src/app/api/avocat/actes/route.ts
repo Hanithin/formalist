@@ -5,6 +5,7 @@ import {
   mettreLesActesADisposition,
   mettreUnActeADisposition,
   retirerLesActesDeLEspaceClient,
+  reprendreUnActe,
 } from "@/infrastructure/db/depots/avocat";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
@@ -48,7 +49,16 @@ export const PUT = route(async (requete: Request) => {
  */
 export const DELETE = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
-  const { dossier } = await validerCorps(z.object({ dossier: schemas.identifiant }), requete);
+  /* Un acte, ou le jeu entier - comme pour la mise à disposition. */
+  const { dossier, document } = await validerCorps(
+    z.object({ dossier: schemas.identifiant, document: schemas.identifiant.optional() }),
+    requete
+  );
+
+  if (document) {
+    const { repris } = await reprendreUnActe(utilisateur, document);
+    return NextResponse.json({ retires: 1, repris });
+  }
 
   const { retires } = await retirerLesActesDeLEspaceClient(utilisateur, dossier);
   return NextResponse.json({ retires });
