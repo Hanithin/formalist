@@ -285,10 +285,16 @@
 }
 /* DOSSIERS TABLE */
 /* ===== Notes internes d'équipe ===== */
+/* Le compte se pose sur une pastille : nu, il flottait comme une coquille. */
 .tabCount {
-  margin-left: 6px;
-  font-size: 11.5px;
-  color: #a1a1aa;
+  margin-left: 7px;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  font-size: 11px;
+  font-weight: 500;
+  color: #71717a;
+  vertical-align: 1px;
 }
 .notesIntro {
   display: flex;
@@ -539,16 +545,23 @@
   /* Centrée par les marges : voir .fenetrePieces, une transformation ferait bloc. */
   inset: 0;
   margin: auto;
-  width: min(560px, calc(100vw - 40px));
+  /*
+   * Assez large pour la phrase qu'on y écrit.
+   *
+   * À cinq cent soixante pixels, le message au client se tapait dans une fenêtre plus
+   * étroite que la ligne d'un dossier, et le champ y tenait trois mots par ligne.
+   */
+  width: min(680px, calc(100vw - 40px));
   height: fit-content;
-  padding: 22px 24px 20px;
+  padding: 26px 28px 22px;
+  border: 1px solid #e5e5e7;
   border-radius: 16px;
   background: #fff;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
 }
 
 .fenetreCorrectionsTitre {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 17px;
   font-weight: 600;
@@ -557,7 +570,8 @@
 }
 
 .fenetreCorrectionsDetail {
-  margin: 0 0 16px;
+  margin: 0 0 20px;
+  max-width: 62ch;
   font-size: 13.5px;
   line-height: 1.55;
   color: #71717a;
@@ -1157,9 +1171,13 @@
   color: #888;
   flex: 1;
 }
+/* Les chiffres s'alignent : sans chasse fixe, un 1 et un 3 ne tombaient pas au
+   même endroit et la colonne paraissait de travers. */
 .recapSideRow .val {
   color: #111;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 .recapTitleIcon {
   font-family: var(--police-titre), var(--police-texte), sans-serif;
@@ -3480,4 +3498,149 @@ button.ligneCorps:disabled {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* ---------- Les notes internes, dans la colonne ---------- */
+
+.notesMention {
+  margin: -6px 0 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #a1a1aa;
+}
+
+.notes {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.noteItem {
+  padding: 10px 0;
+}
+
+.noteItem + .noteItem {
+  border-top: 1px solid #f2f2f4;
+}
+
+.noteTexte {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #111;
+  overflow-wrap: anywhere;
+}
+
+.noteSignature {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: #a1a1aa;
+}
+
+/*
+ * La saisie ferme la carte.
+ *
+ * Elle l'ouvrait, avec une étiquette, un champ de trois lignes et un bouton noir large
+ * comme la colonne : écrire une note paraissait la chose principale à faire d'un
+ * dossier. Le champ pousse le bouton au bout de sa ligne.
+ */
+.formNote {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f2f2f4;
+}
+
+.formNote textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #111;
+  resize: vertical;
+}
+
+.formNote textarea:focus {
+  outline: none;
+  border-color: #111;
+}
+
+.formNote button {
+  height: 32px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.formNote button:hover:not(:disabled) {
+  background: #fafafa;
+  border-color: #d4d4d8;
+}
+
+.formNote button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.noteRefus {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12.5px;
+  color: #dc2626;
+}
+
+/*
+ * Renvoyer le dossier au client, en tête de l'onglet.
+ *
+ * Le geste fermait la liste, sous le repli de ce qui est fait : on le découvrait au bas
+ * de l'écran, après avoir fait défiler ce qu'on venait de faire.
+ */
+.travailRenvoi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3f3f46;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.travailRenvoi svg {
+  width: 15px;
+  height: 15px;
+  color: #a1a1aa;
+}
+
+.travailRenvoi:hover:not(:disabled) {
+  border-color: #d4d4d8;
+  background: #fafafa;
+  color: #111;
+}
+
+.travailRenvoi:disabled {
+  opacity: 0.55;
+  cursor: default;
 }

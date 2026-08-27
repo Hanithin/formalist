@@ -268,7 +268,6 @@ export function Travail({
   const aVenir = taches.filter(
     (t) => t.etat !== "faite" && t.identifiant !== maintenant?.identifiant
   );
-  const faites = taches.filter((t) => t.etat === "faite");
   /*
    * Les actes validés ne s'affichent plus ici.
    *
@@ -524,6 +523,34 @@ export function Travail({
 
   return (
     <div className={styles.travail}>
+      {/*
+        Renvoyer le dossier au client se décide en le lisant, non après l'avoir lu.
+        
+        Le geste fermait la liste, sous le repli de ce qui est fait : on le découvrait
+        au bas de l'écran, après avoir fait défiler ce qu'on venait de faire.
+      */}
+      <div className={styles.travailTete}>
+        <button
+          type="button"
+          className={styles.travailRenvoi}
+          onClick={() => setCorrections(true)}
+          disabled={enCours}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="9 14 4 9 9 4" />
+            <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+          </svg>
+          Demander des corrections au client
+        </button>
+      </div>
       {maintenant ? (
         <section className={styles.maintenant} aria-label="À faire maintenant">
           <p className={styles.maintenantLegende}>À faire maintenant</p>
@@ -663,15 +690,6 @@ export function Travail({
       */}
       <footer className={styles.travailPied}>
         <div className={styles.travailPiedNotes}>
-          {faites.length > 0 && (
-            <details className={styles.faites}>
-              <summary className={styles.faitesTete}>
-                {faites.length} {faites.length > 1 ? "faites" : "faite"}
-              </summary>
-              <ul className={styles.suite}>{faites.map((tache) => ligne(tache))}</ul>
-            </details>
-          )}
-
           {actesValides && (
             <p className={styles.renvoi}>
               Les actes du dossier sont dans{" "}
@@ -695,15 +713,6 @@ export function Travail({
           </p>
         </div>
 
-        {/* Renvoyer le dossier au client ferme le travail : le geste se pose au bout. */}
-        <button
-          type="button"
-          className={styles.travailSecondaire}
-          onClick={() => setCorrections(true)}
-          disabled={enCours}
-        >
-          Demander des corrections au client
-        </button>
       </footer>
 
       {corrections && (

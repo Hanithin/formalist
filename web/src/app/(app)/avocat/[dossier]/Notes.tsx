@@ -38,27 +38,26 @@ export function Notes({ dossierId, notes }: { dossierId: number; notes: Note[] }
 
   return (
     <>
-      <form action={ajouter} className={styles.formNote}>
-        <label htmlFor="note">Ajouter une note</label>
-        <textarea id="note" name="contenu" rows={3} placeholder="Point de vigilance, relance…" />
-        <button type="submit" disabled={enCours}>
-          {enCours ? "Enregistrement" : "Ajouter la note"}
-        </button>
-        {erreur && <p role="alert">{erreur}</p>}
-      </form>
-
+      {/*
+        Les notes d'abord, la saisie ensuite.
+        
+        Le formulaire ouvrait la carte et la note qu'on venait d'écrire tombait sous le
+        bouton, sans cadre : elle ressemblait à un débordement plutôt qu'à une note.
+      */}
       {notes.length > 0 && (
         <ul className={styles.notes}>
           {notes.map((n) => (
-            <li key={n.id}>
-              <p>{n.contenu}</p>
-              <span className={styles.quand}>
+            <li key={n.id} className={styles.noteItem}>
+              <p className={styles.noteTexte}>{n.contenu}</p>
+              <span className={styles.noteSignature}>
                 {n.auteur}
                 {n.date
                   ? " · " +
                     new Intl.DateTimeFormat("fr-FR", {
-                      dateStyle: "short",
-                      timeStyle: "short",
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     }).format(new Date(n.date))
                   : ""}
               </span>
@@ -66,6 +65,24 @@ export function Notes({ dossierId, notes }: { dossierId: number; notes: Note[] }
           ))}
         </ul>
       )}
+
+      <form action={ajouter} className={styles.formNote}>
+        <textarea
+          id="note"
+          name="contenu"
+          rows={2}
+          placeholder="Point de vigilance, relance…"
+          aria-label="Ajouter une note interne"
+        />
+        <button type="submit" disabled={enCours}>
+          {enCours ? "Enregistrement…" : "Ajouter"}
+        </button>
+        {erreur && (
+          <p role="alert" className={styles.noteRefus}>
+            {erreur}
+          </p>
+        )}
+      </form>
     </>
   );
 }

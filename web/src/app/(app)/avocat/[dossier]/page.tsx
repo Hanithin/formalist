@@ -515,12 +515,30 @@ export default async function DossierAvocat({
               aria-current={o === onglet ? "page" : undefined}
             >
               {NOMS[o]}
+              {/*
+                Un compte sur un onglet dit de quoi il s'agit.
+                
+                « Récapitulatif 1 » ne disait pas ce qu'était ce 1 - une note ? une
+                pièce ? Les pièces à vérifier appartiennent aux documents depuis qu'ils
+                ont leur onglet.
+              */}
               {o === "dossier" && notes.length > 0 && (
-                <span className={styles.tabCount}>{notes.length}</span>
+                <span className={styles.tabCount}>
+                  {notes.length} note{notes.length > 1 ? "s" : ""}
+                </span>
               )}
-              {o === "dossier" && aVerifier > 0 && (
-                <span className={styles.tabCount}>{aVerifier} à vérifier</span>
-              )}
+              {/*
+                Ce qui attend une décision passe avant le décompte : « 3 documents »
+                n'apprend rien à qui doit en vérifier un.
+              */}
+              {o === "documents" &&
+                (aVerifier > 0 ? (
+                  <span className={styles.tabCount}>{aVerifier} à vérifier</span>
+                ) : (
+                  documents.length > 0 && (
+                    <span className={styles.tabCount}>{documents.length}</span>
+                  )
+                ))}
             </Link>
           ))}
         </nav>
@@ -822,8 +840,13 @@ export default async function DossierAvocat({
               */}
               <div className={styles.recapSideCard}>
                 <h3>Notes internes</h3>
-                <p className={styles.notesIntro}>
-                  Visibles de votre équipe seulement. Le client ne les voit jamais.
+                {/*
+                  L'avertissement tenait dans un encadré violet de trois lignes, en tête
+                  d'une carte de colonne large de trois cents pixels : il pesait plus que
+                  les notes qu'il annonce. Une ligne grise suffit.
+                */}
+                <p className={styles.notesMention}>
+                  Votre équipe seulement. Le client ne les voit jamais.
                 </p>
                 <Notes
                   dossierId={dossier.id}

@@ -111,7 +111,11 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal 
 
   return (
     <section className={styles.etat} aria-label="Avancement annoncé au client">
-      <span className={styles.legende}>Le client voit</span>
+      {/*
+        « Le client voit » se lisait comme une mise en garde, et faisait de l'étape une
+        affaire de regard plutôt que d'avancement. C'est l'avancement du dossier.
+      */}
+      <span className={styles.legende}>Avancement</span>
 
       {/* Les cinq crans : la position se lit d'un coup, le nom la dit en toutes lettres. */}
       <span className={styles.crans} aria-hidden="true">

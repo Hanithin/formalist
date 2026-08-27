@@ -283,8 +283,13 @@ test.describe("espace avocat", () => {
     await page.waitForURL(/onglet=dossier/);
 
     const texte = "Point de vigilance " + Date.now();
-    await page.getByLabel("Ajouter une note").fill(texte);
-    await page.getByRole("button", { name: "Ajouter la note" }).click();
+    /*
+     * La carte des notes a été resserrée pour la colonne : l'étiquette « Ajouter une
+     * note » a cédé la place à un champ qui porte son propre nom, et le bouton dit
+     * simplement « Ajouter ».
+     */
+    await page.getByLabel("Ajouter une note interne").fill(texte);
+    await page.getByRole("button", { name: "Ajouter", exact: true }).click();
 
     await expect(page.getByText(texte)).toBeVisible();
     await expect(page.getByText("Maître Dupont").first()).toBeVisible();
