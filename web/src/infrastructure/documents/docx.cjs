@@ -1084,7 +1084,13 @@ function generateDocxFromBuffer(buf, data) {
 
       // Strip <w:ind> from non-bulleted paragraphs (X.Y. items + continuations flush left)
       // Bulleted lists keep their indent because they have <w:numPr>.
-      if (!/<w:numPr\b/.test(result)) {
+      //
+      // Une énumération écrite au tiret en est une aussi, sans porter de numérotation
+      // Word : les postes d'affectation d'un procès-verbal - « - à la réserve légale :
+      // 1 536,05 euros ; » - perdaient leur retrait et revenaient contre la marge, au
+      // même rang que la phrase qui les annonce.
+      const tiretEnTete = /^[-–—]\s+\S/.test(full);
+      if (!/<w:numPr\b/.test(result) && !tiretEnTete) {
         result = result.replace(/<w:ind\b[^/]*\/>/g, '');
       }
       // X.Y. paragraphs ("8.1.", "10.3.", "19.1"...) often have a <w:tab/> after the prefix
