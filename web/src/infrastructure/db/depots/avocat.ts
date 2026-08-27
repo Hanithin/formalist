@@ -205,7 +205,39 @@ export async function dossierPourAvocat(utilisateur: UtilisateurConnecte, dossie
     donnees = {};
   }
 
-  return { dossier, client, documents, notes, historique, donnees, nonLus };
+  /*
+   * Ce que le client a réglé.
+   *
+   * La liste des dossiers le savait, l'écran d'un dossier non : l'avocat y lisait
+   * l'offre - « Starter » - sans savoir ce qu'elle avait coûté, ni même si elle avait
+   * été payée.
+   */
+  const encaisse = await prisma.payments.aggregate({
+    where: { formalite_id: dossierId, status: "paid" },
+    _sum: { amount_cents: true },
+  });
+
+  /*
+   * Ce qui attend un preneur, ailleurs.
+   *
+   * Un dossier fini laisse l'avocat devant un écran qui n'a plus rien à lui dire : il
+   * repartait à la liste pour découvrir s'il restait du travail. Le compte le lui dit.
+   */
+  const aPrendre = await prisma.formalites.count({
+    where: { assigned_avocat_id: null, phase: { gte: 5 }, status: { not: "terminee" } },
+  });
+
+  return {
+    dossier,
+    client,
+    documents,
+    notes,
+    historique,
+    donnees,
+    nonLus,
+    payeCentimes: encaisse._sum.amount_cents ?? 0,
+    dossiersAPrendre: aPrendre,
+  };
 }
 
 /**

@@ -117,6 +117,7 @@ const INTERVENTIONS: Record<string, string> = {
   document_decision_reprise: "Décision reprise sur un justificatif",
   document_refuse: "Justificatif refusé",
   document_valide: "Justificatif validé",
+  depot_sans_document: "Dossier clos sans document du greffe",
   dossier_corrige: "Dossier corrigé et actes reproduits",
   dossier_pris: "Dossier pris en charge",
   dossier_transmis: "Dossier transmis au cabinet",

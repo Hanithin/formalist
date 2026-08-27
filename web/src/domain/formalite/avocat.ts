@@ -37,7 +37,15 @@ const SOUS_PHASES: Record<string, { libelle: string; teinte: Teinte }> = {
   "5b": { libelle: "Révision", teinte: "orange" },
   "5c": { libelle: "Vérifié", teinte: "blue" },
   "5d": { libelle: "Dépôt", teinte: "blue" },
-  "5e": { libelle: "KBIS", teinte: "green" },
+  /*
+   * La dernière étape se dit « Terminé », non « KBIS ».
+   *
+   * Le greffe ne délivre un Kbis qu'à une immatriculation : un dépôt de comptes reçoit
+   * un récépissé, une fermeture une attestation de radiation, et un dossier terminé
+   * s'affichait pourtant « KBIS ». Ce qui compte à cette étape n'est pas le nom du
+   * document, c'est que le travail est fini.
+   */
+  "5e": { libelle: "Terminé", teinte: "green" },
 };
 
 /** Où en est le travail du cabinet, en un mot et une teinte. */

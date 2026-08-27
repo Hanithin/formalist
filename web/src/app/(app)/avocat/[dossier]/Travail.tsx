@@ -45,6 +45,7 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
  * l'ordre, chacune dit pourquoi elle existe, et celle qui attend dit ce qu'elle attend.
  */
 export function Travail({
+  dossiersAPrendre,
   livrables,
   dossier,
   taches,
@@ -75,6 +76,13 @@ export function Travail({
    * et il faut relire.
    */
   informationsVerifiees: boolean;
+  /**
+   * Ce qui attend un preneur, ailleurs.
+   *
+   * Un dossier fini laissait l'avocat devant un écran qui n'a plus rien à lui dire : il
+   * repartait à la liste pour découvrir s'il restait du travail.
+   */
+  dossiersAPrendre: number;
 }) {
   const [refus, setRefus] = useState<string | null>(null);
   /** La demande de corrections, et ce qu'on y écrit. */
@@ -260,16 +268,17 @@ export function Travail({
   const aVenir = taches.filter(
     (t) => t.etat !== "faite" && t.identifiant !== maintenant?.identifiant
   );
+  const faites = taches.filter((t) => t.etat === "faite");
   /*
-   * Ce qui est fait se replie, sauf les actes.
+   * Les actes validés ne s'affichent plus ici.
    *
-   * Valider le procès-verbal achevait la tâche qui le portait, et l'acte disparaissait
-   * de l'écran à la seconde où l'on cliquait : il fallait déplier « N faites » ou
-   * changer d'onglet pour retrouver ce qu'on venait de valider. Les actes du dossier
-   * restent là où on les a laissés, quel que soit leur état.
+   * Ils y sont restés le temps de comprendre le défaut - valider un acte le faisait
+   * disparaître de l'écran à la seconde du clic - mais leur place est l'onglet des
+   * documents, où ils vivent avec tous les autres. Une ligne y renvoie.
    */
-  const gardees = taches.filter((t) => t.etat === "faite" && t.identifiant === "relecture");
-  const faites = taches.filter((t) => t.etat === "faite" && t.identifiant !== "relecture");
+  const actesValides = taches.some(
+    (t) => t.identifiant === "relecture" && t.etat === "faite"
+  );
 
   /**
    * Le geste d'une tâche, quelle que soit sa forme.
@@ -588,61 +597,105 @@ export function Travail({
           </div>
         </section>
       ) : (
-        <section className={styles.maintenant} aria-label="À faire maintenant">
-          <h2 className={styles.maintenantTitre}>Tout est fait sur ce dossier</h2>
-          <p className={styles.maintenantPhrase}>
-            Rien ne vous attend ici. Le client suit la suite depuis son espace.
+        /*
+         * Le dossier est fini, et cela se voit.
+         *
+         * L'écran annonçait « Tout est fait » dans le même cadre blanc que le reste, et
+         * laissait l'avocat sans rien à faire ni où aller : il repartait à la liste
+         * pour découvrir s'il restait du travail.
+         */
+        <section className={styles.acheve} aria-label="Dossier terminé">
+          <span className={styles.acheveIcone} aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </span>
+
+          <h2 className={styles.acheveTitre}>Dossier terminé</h2>
+          <p className={styles.achevePhrase}>
+            Tout ce qui vous revenait est fait. Le client a ses documents et suit la
+            suite depuis son espace.
           </p>
+
+          <div className={styles.acheveActions}>
+            {dossiersAPrendre > 0 ? (
+              <Link href="/avocat?filtre=aprendre" className={styles.travailPrincipal}>
+                {dossiersAPrendre === 1
+                  ? "Un dossier attend un preneur"
+                  : dossiersAPrendre + " dossiers attendent un preneur"}
+              </Link>
+            ) : (
+              <Link href="/tableau-de-bord" className={styles.travailPrincipal}>
+                Retour au tableau de bord
+              </Link>
+            )}
+
+            {/* Un dossier clos se rouvre : une coquille se voit parfois après coup. */}
+            <a href="#avancement" className={styles.travailSecondaire}>
+              Reprendre ce dossier
+            </a>
+          </div>
         </section>
       )}
 
-      {(aVenir.length > 0 || gardees.length > 0) && (
+      {aVenir.length > 0 && (
         <section>
           <h3 className={styles.suiteTitre}>Ensuite</h3>
-          <ul className={styles.suite}>
-            {aVenir.map((tache) => ligne(tache))}
-            {/* Les actes du dossier ferment la liste : c'est là qu'ils vivent. */}
-            {gardees.map((tache) => ligne(tache))}
-          </ul>
+          <ul className={styles.suite}>{aVenir.map((tache) => ligne(tache))}</ul>
         </section>
       )}
 
-      {/*
-        Le registre des bénéficiaires effectifs n'est pas une tâche.
 
-        Le greffe ne l'exige pas, et aucune tâche ne le réclame : il tenait pourtant
-        une ligne dans la carte des documents remis, au même rang que le récépissé.
-        Une ligne discrète en pied de liste suffit.
-      */}
-      <p className={styles.facultatif}>
-        Registre des bénéficiaires effectifs, facultatif.
-        <label className={styles.travailTertiaire}>
-          {livrables.aLeRbe ? "Remplacer" : "Déposer"}
-          {champDeDepot("rbe")}
-        </label>
-      </p>
 
       {/*
-        Ce qui est fait se replie.
-        
-        Cela reste atteignable - on revient sur une relecture, on relit les actes
-        produits - mais cela n'a plus à occuper l'écran de celui qui travaille.
-      */}
-      {faites.length > 0 && (
-        <details className={styles.faites}>
-          <summary className={styles.faitesTete}>
-            {faites.length} {faites.length > 1 ? "faites" : "faite"}
-          </summary>
-          <ul className={styles.suite}>
-            {faites.map((tache) => ligne(tache))}
-          </ul>
-        </details>
-      )}
+        Le pied de l'onglet, en une zone.
 
-      {/*
-        Renvoyer le dossier au client ferme le travail : le geste se pose au bout.
+        Trois lignes y flottaient, séparées par de grands blancs : le renvoi vers les
+        documents, le registre facultatif, le repli de ce qui est fait, et le renvoi au
+        client tout seul à droite. Elles tiennent sur une bande, sous un filet.
       */}
-      <div className={styles.travailPied}>
+      <footer className={styles.travailPied}>
+        <div className={styles.travailPiedNotes}>
+          {faites.length > 0 && (
+            <details className={styles.faites}>
+              <summary className={styles.faitesTete}>
+                {faites.length} {faites.length > 1 ? "faites" : "faite"}
+              </summary>
+              <ul className={styles.suite}>{faites.map((tache) => ligne(tache))}</ul>
+            </details>
+          )}
+
+          {actesValides && (
+            <p className={styles.renvoi}>
+              Les actes du dossier sont dans{" "}
+              <Link href={"/avocat/" + dossier + "?onglet=documents"}>
+                l&apos;onglet Documents
+              </Link>
+              .
+            </p>
+          )}
+
+          {/*
+            Le registre des bénéficiaires effectifs n'est pas une tâche : le greffe ne
+            l'exige pas, et aucune tâche ne le réclame.
+          */}
+          <p className={styles.facultatif}>
+            Registre des bénéficiaires effectifs, facultatif.
+            <label className={styles.travailTertiaire}>
+              {livrables.aLeRbe ? "Remplacer" : "Déposer"}
+              {champDeDepot("rbe")}
+            </label>
+          </p>
+        </div>
+
+        {/* Renvoyer le dossier au client ferme le travail : le geste se pose au bout. */}
         <button
           type="button"
           className={styles.travailSecondaire}
@@ -651,7 +704,7 @@ export function Travail({
         >
           Demander des corrections au client
         </button>
-      </div>
+      </footer>
 
       {corrections && (
         <>

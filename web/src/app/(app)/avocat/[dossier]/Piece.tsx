@@ -281,6 +281,20 @@ function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: 
   return (
     <details className={styles.actesVersions}>
       <summary className={styles.actesVersionsTete}>
+        {/* L'horloge dit de quoi il s'agit avant qu'on ait lu : c'est du passé. */}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+          <polyline points="3 3 3 8 8 8" />
+          <polyline points="12 7 12 12 15 14" />
+        </svg>
         {versions.length} version{versions.length > 1 ? "s" : ""} antérieure
         {versions.length > 1 ? "s" : ""}
       </summary>

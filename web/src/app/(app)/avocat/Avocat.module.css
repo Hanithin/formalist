@@ -2444,15 +2444,36 @@
 }
 
 /*
- * Le renvoi au client ferme la liste : il tient le bord droit, sous les étapes.
+ * Le pied de l'onglet, en une zone.
  *
- * La bulle de discussion flotte dans ce coin : sans marge, elle recouvrait la fin du
- * libellé.
+ * Trois lignes y flottaient, séparées par de grands blancs : le repli de ce qui est
+ * fait, le renvoi vers les documents, le registre facultatif, et le renvoi au client
+ * tout seul à droite. Elles tiennent sur une bande, sous un filet.
  */
 .travailPied {
   display: flex;
-  justify-content: flex-end;
-  padding-right: 64px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-top: 24px;
+  /* La bulle de discussion flotte dans le coin droit : sans marge, elle recouvrait la
+     fin du libellé du bouton. */
+  padding: 18px 64px 0 0;
+  border-top: 1px solid #ececee;
+}
+
+.travailPiedNotes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.travailPied .faites,
+.travailPied .renvoi,
+.travailPied .facultatif {
+  margin: 0;
 }
 
 .travailPrincipal,
@@ -3272,21 +3293,34 @@ button.ligneCorps:disabled {
  * On ne les regarde que lorsqu'on se demande ce qui a changé, ou qu'on veut revenir
  * dessus : elles n'ont pas à occuper la ligne le reste du temps.
  */
+/* L'historique tient sur la ligne du document, en retrait de son icône. */
 .actesVersions {
   flex-basis: 100%;
   order: 4;
-  margin-top: 4px;
+  margin: 2px 0 -4px 56px;
 }
 
 .actesVersionsTete {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 0;
-  font-size: 12.5px;
+  padding: 3px 8px 3px 6px;
+  border-radius: 100px;
+  font-size: 12px;
   color: #a1a1aa;
   cursor: pointer;
   list-style: none;
+  transition: background 0.12s, color 0.12s;
+}
+
+.actesVersionsTete:hover {
+  background: #f4f4f5;
+  color: #52525b;
+}
+
+.actesVersionsTete svg {
+  width: 13px;
+  height: 13px;
 }
 
 .actesVersionsTete::-webkit-details-marker {
@@ -3295,15 +3329,6 @@ button.ligneCorps:disabled {
 
 .actesVersionsTete::marker {
   content: "";
-}
-
-.actesVersionsTete::before {
-  content: "▸";
-  font-size: 10px;
-}
-
-.actesVersions[open] .actesVersionsTete::before {
-  content: "▾";
 }
 
 .actesVersionsListe {
@@ -3355,4 +3380,104 @@ button.ligneCorps:disabled {
   padding-left: 18px;
   font-size: 12.5px;
   line-height: 1.55;
+}
+
+/* Où sont passés les actes : la question se pose au moment où l'on valide. */
+.renvoi {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  color: #a1a1aa;
+}
+
+.renvoi a {
+  color: #52525b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #d4d4d8;
+}
+
+.renvoi a:hover {
+  text-decoration-color: #111;
+}
+
+/*
+ * Le dossier est fini, et cela se voit.
+ *
+ * L'écran annonçait « Tout est fait » dans le même cadre blanc que le reste, et
+ * laissait l'avocat sans rien à faire ni où aller : il repartait à la liste pour
+ * découvrir s'il restait du travail.
+ */
+.acheve {
+  margin-bottom: 28px;
+  padding: 28px 26px 26px;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  background: #f0fdf4;
+  text-align: center;
+}
+
+.acheveIcone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+}
+
+.acheveIcone svg {
+  width: 22px;
+  height: 22px;
+}
+
+.acheveTitre {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #14532d;
+}
+
+.achevePhrase {
+  margin: 8px auto 0;
+  max-width: 56ch;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #3f6b4c;
+}
+
+.acheveActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Le compte des interventions, sur le bouton qui les ouvre. */
+.historiqueCompte {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  font-size: 11.5px;
+  color: #71717a;
+}
+
+/* La fenêtre de l'historique défile, comme celle de la correction. */
+.historiqueCorps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+/* Les gestes rapides s'espacent : quatre liens collés se lisaient comme un bloc. */
+.recapQuickActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

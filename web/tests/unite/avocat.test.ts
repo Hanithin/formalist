@@ -18,7 +18,11 @@ describe("où en est le travail du cabinet", () => {
       libelle: "Transmis",
       teinte: "orange",
     });
-    expect(etatCabinet(dossier({ sousPhase: "5e" })).libelle).toBe("KBIS");
+    /*
+     * La dernière étape se dit « Terminé », non « KBIS » : le greffe ne délivre un
+     * Kbis qu'à une immatriculation, quand un dépôt de comptes reçoit un récépissé.
+     */
+    expect(etatCabinet(dossier({ sousPhase: "5e" })).libelle).toBe("Terminé");
   });
 
   it("sans sous-phase, le dossier est encore côté client", () => {
