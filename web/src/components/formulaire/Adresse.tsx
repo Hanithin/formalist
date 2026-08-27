@@ -30,8 +30,17 @@ interface Props {
   id: string;
   valeur: string;
   surChangement: (voie: string) => void;
-  /** Appelé quand une proposition est retenue, pour remplir le CP et la ville. */
-  surCompletion?: (codePostal: string, ville: string) => void;
+  /**
+   * Appelé quand une proposition est retenue, pour remplir le CP et la ville.
+   *
+   * La voie est rendue une seconde fois, en troisième argument. Retenir une
+   * proposition déclenche deux appels dans le même cycle - la voie, puis le couple
+   * code postal et ville - et un écran qui compose son état à partir d'une valeur
+   * capturée verrait le second effacer le premier. Recevoir la voie ici permet de
+   * tout écrire en une fois. Les écrans qui mettent à jour par fonction peuvent
+   * l'ignorer, comme avant.
+   */
+  surCompletion?: (codePostal: string, ville: string, voie: string) => void;
   placeholder?: string;
 }
 
@@ -103,7 +112,7 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
 
   function retenir(proposition: Proposition) {
     surChangement(proposition.voie);
-    surCompletion?.(proposition.codePostal, proposition.ville);
+    surCompletion?.(proposition.codePostal, proposition.ville, proposition.voie);
     setOuvert(false);
     setPropositions([]);
   }
@@ -231,7 +240,15 @@ export function Ville({
   id: string;
   valeur: string;
   surChangement: (ville: string) => void;
-  surCompletion?: (codePostal: string) => void;
+  /**
+   * Le code postal de la commune retenue, et son nom en second argument.
+   *
+   * Comme pour l'adresse : retenir une commune déclenche deux appels dans le même
+   * cycle, et un écran qui compose son état à partir d'une valeur capturée voyait le
+   * second effacer le premier - on choisissait « Villeurbanne », le code postal
+   * arrivait, et le nom restait celui qu'on avait tapé à moitié.
+   */
+  surCompletion?: (codePostal: string, ville: string) => void;
 }) {
   const [communes, setCommunes] = useState<{ nom: string; codePostal: string }[]>([]);
   const [ouvert, setOuvert] = useState(false);
@@ -300,7 +317,7 @@ export function Ville({
                 onMouseDown={(e) => {
                   e.preventDefault();
                   surChangement(c.nom);
-                  if (c.codePostal) surCompletion?.(c.codePostal);
+                  if (c.codePostal) surCompletion?.(c.codePostal, c.nom);
                   setOuvert(false);
                   setCommunes([]);
                 }}

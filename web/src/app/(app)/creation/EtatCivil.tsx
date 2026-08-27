@@ -8,7 +8,7 @@ import {
   type Conjoint,
   type PersonnePhysique,
 } from "@/domain/formalite/etat-civil";
-import { Adresse } from "@/components/formulaire/Adresse";
+import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { Choix } from "./Choix";
 import { DateChoisie } from "./DateChoisie";
 import styles from "./Parcours.module.css";
@@ -168,10 +168,15 @@ export function EtatCivil({
       </Champ>
 
       <Champ id={"villeNaissance-" + rang} libelle="Ville de naissance">
-        <input
+        {/* La commune se cherche : elle rapporte son code postal, que la ligne
+            suivante demandait de retrouver soi-même. */}
+        <Ville
           id={"villeNaissance-" + rang}
-          value={personne.villeDeNaissance ?? ""}
-          onChange={(e) => surChangement({ villeDeNaissance: e.target.value })}
+          valeur={personne.villeDeNaissance ?? ""}
+          surChangement={(villeDeNaissance) => surChangement({ villeDeNaissance })}
+          surCompletion={(codePostalDeNaissance, villeDeNaissance) =>
+            surChangement({ villeDeNaissance, codePostalDeNaissance })
+          }
         />
       </Champ>
 

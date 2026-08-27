@@ -3,6 +3,7 @@
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
+import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { montantLisible } from "@/domain/modification/offre";
 import type { ActeProduit } from "@/domain/document/publication";
 import type { Fermeture } from "@/infrastructure/db/depots/fermeture";
@@ -406,6 +407,16 @@ function EtapeSociete({
   const majSociete = (champ: string, valeur: string | number) =>
     changer({ societe: { ...etat.societe, [champ]: valeur } });
 
+  /*
+   * Plusieurs champs de la société d'un coup.
+   *
+   * Retenir une adresse écrit la voie, le code postal et la ville dans le même cycle.
+   * Trois appels à majSociete partiraient tous de la même société capturée, et les
+   * deux derniers effaceraient le premier.
+   */
+  const majSocietes = (champs: Record<string, string>) =>
+    changer({ societe: { ...etat.societe, ...champs } });
+
   return (
     <>
       <p className={styles.description}>
@@ -468,10 +479,20 @@ function EtapeSociete({
 
         <div className={`${styles.champ} ${styles.pleineLargeur}`}>
           <label htmlFor="fermeture-adresse">Siège social</label>
-          <input
+          {/*
+            L'adresse se cherche à la Base Adresse Nationale, comme partout ailleurs.
+            Elle se tapait ici à la main pendant que la recherche au registre, juste
+            au-dessus, savait la remplir : une commune qui ne correspond pas à son code
+            postal fait refuser le dépôt, et c'est en recopiant que l'écart se glisse.
+          */}
+          <Adresse
             id="fermeture-adresse"
-            value={etat.societe.adresse ?? ""}
-            onChange={(e) => majSociete("adresse", e.target.value)}
+            valeur={etat.societe.adresse ?? ""}
+            surChangement={(voie) => majSociete("adresse", voie)}
+            surCompletion={(codePostal, ville, voie) =>
+              majSocietes({ adresse: voie, codePostal, ville })
+            }
+            placeholder="Rechercher l'adresse..."
           />
           {refusDe("adresse") && <p role="alert">{refusDe("adresse")}</p>}
         </div>
@@ -481,16 +502,20 @@ function EtapeSociete({
           <input
             id="fermeture-cp"
             value={etat.societe.codePostal ?? ""}
-            onChange={(e) => majSociete("codePostal", e.target.value)}
+            inputMode="numeric"
+            maxLength={5}
+            onChange={(e) => majSociete("codePostal", e.target.value.replace(/\D/g, ""))}
           />
         </div>
 
         <div className={styles.champ}>
           <label htmlFor="fermeture-ville">Ville</label>
-          <input
+          {/* La commune se cherche aussi, et rapporte son code postal. */}
+          <Ville
             id="fermeture-ville"
-            value={etat.societe.ville ?? ""}
-            onChange={(e) => majSociete("ville", e.target.value)}
+            valeur={etat.societe.ville ?? ""}
+            surChangement={(ville) => majSociete("ville", ville)}
+            surCompletion={(codePostal, ville) => majSocietes({ codePostal, ville })}
           />
         </div>
       </div>

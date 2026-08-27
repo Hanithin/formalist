@@ -3,6 +3,7 @@
 import { Fragment, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
+import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { montantLisible } from "@/domain/modification/offre";
 import type { ActeProduit } from "@/domain/document/publication";
 import type { Cessation } from "@/infrastructure/db/depots/cessation";
@@ -255,6 +256,15 @@ function EtapeEntreprise({
   const maj = (champ: string, valeur: string) =>
     changer({ entreprise: { ...etat.entreprise, [champ]: valeur } });
 
+  /*
+   * Plusieurs champs de l'entreprise d'un coup.
+   *
+   * Retenir une adresse écrit la voie, le code postal et la ville dans le même cycle :
+   * trois appels à maj partiraient tous de la même entreprise capturée.
+   */
+  const majPlusieurs = (champs: Record<string, string>) =>
+    changer({ entreprise: { ...etat.entreprise, ...champs } });
+
   const majPersonne = (champ: string, valeur: string) =>
     changer({ entrepreneur: { ...etat.entrepreneur, [champ]: valeur } });
 
@@ -299,10 +309,15 @@ function EtapeEntreprise({
 
         <div className={`${styles.champ} ${styles.pleineLargeur}`}>
           <label htmlFor="cessation-adresse">Adresse de l&apos;entreprise</label>
-          <input
+          {/* Cherchée à la Base Adresse Nationale, comme partout ailleurs. */}
+          <Adresse
             id="cessation-adresse"
-            value={etat.entreprise.adresse ?? ""}
-            onChange={(e) => maj("adresse", e.target.value)}
+            valeur={etat.entreprise.adresse ?? ""}
+            surChangement={(voie) => maj("adresse", voie)}
+            surCompletion={(codePostal, ville, voie) =>
+              majPlusieurs({ adresse: voie, codePostal, ville })
+            }
+            placeholder="Rechercher l'adresse..."
           />
         </div>
 
@@ -311,16 +326,20 @@ function EtapeEntreprise({
           <input
             id="cessation-cp"
             value={etat.entreprise.codePostal ?? ""}
-            onChange={(e) => maj("codePostal", e.target.value)}
+            inputMode="numeric"
+            maxLength={5}
+            onChange={(e) => maj("codePostal", e.target.value.replace(/\D/g, ""))}
           />
         </div>
 
         <div className={styles.champ}>
           <label htmlFor="cessation-ville">Ville</label>
-          <input
+          {/* La commune se cherche aussi, et rapporte son code postal. */}
+          <Ville
             id="cessation-ville"
-            value={etat.entreprise.ville ?? ""}
-            onChange={(e) => maj("ville", e.target.value)}
+            valeur={etat.entreprise.ville ?? ""}
+            surChangement={(ville) => maj("ville", ville)}
+            surCompletion={(codePostal, ville) => majPlusieurs({ codePostal, ville })}
           />
         </div>
       </div>
