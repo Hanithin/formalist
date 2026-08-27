@@ -195,14 +195,19 @@ export function Commencer() {
             sans inventer de cas, et le vrai total paraît dès la première case cochée.
           */}
           {compte === 0 ? (
-            <>
-              <span className={styles.entreeAmorce}>
-                À partir de {montantLisible(HONORAIRES_PREMIERE_CENTIMES)} HT
-              </span>
-              <span className={styles.entreeMention}>
-                Cochez au moins un changement pour voir le total.
-              </span>
-            </>
+            /*
+             * Rien de coché, rien à annoncer.
+             *
+             * « À partir de » restait un prix d'accueil, posé avant que le client ait
+             * rien demandé. Le total, lui, répond à un geste : il paraît dès la
+             * première case cochée, et il est exact. On dit donc seulement où le tarif
+             * apparaîtra - un prix qu'on ne trouve pas inquiète plus qu'un prix qu'on
+             * voit.
+             */
+            <span className={styles.entreeMention}>
+              Cochez vos changements : le total s&apos;affiche ici, et rien n&apos;est
+              réglé avant le récapitulatif.
+            </span>
           ) : (
             <>
               <span className={styles.entreeMontant}>{montantLisible(honorairesHT)} HT</span>

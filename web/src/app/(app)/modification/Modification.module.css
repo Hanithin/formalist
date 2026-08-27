@@ -381,18 +381,44 @@
 }
 
 /* Sur écran étroit, les étapes se rangent en grille et le trait disparaît. */
+/*
+ * Sur un téléphone, la frise se réduit à sa ligne de pastilles.
+ *
+ * Elle passait à la ligne tous les trois pas : sept étapes faisaient quatre rangées de
+ * cercles et d'intitulés, soit la hauteur entière du premier écran. On ouvrait « Dépôt
+ * des comptes » et l'on ne voyait pas un seul champ - il fallait faire défiler pour
+ * trouver le formulaire, avant même d'avoir rien saisi.
+ *
+ * Les intitulés partent, les pastilles restent sur une seule ligne. Rien ne se perd :
+ * l'en-tête de la carte, juste en dessous, porte le titre de l'étape et son rang -
+ * « La société », « Étape 1 sur 7 ». Et les pastilles restent des boutons : une étape
+ * déjà franchie se rouvre d'un doigt, comme sur un écran large.
+ */
 @media (max-width: 760px) {
   .frise {
-    flex-wrap: wrap;
-    gap: 14px 4px;
+    gap: 0;
+    margin-bottom: 22px;
   }
 
-  .friseEtape {
-    flex: 0 0 33%;
-  }
-
-  .friseEtape::before {
+  .friseLibelle {
     display: none;
+  }
+
+  .friseMarque {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 0;
+    font-size: 12.5px;
+  }
+
+  .friseMarque svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  /* Le trait de liaison reprend sa place : c'est lui qui dit le chemin parcouru. */
+  .friseEtape::before {
+    top: 13px;
   }
 }
 
@@ -852,25 +878,49 @@
  * dernière étape qu'on n'y a pas droit est une déception qu'un tableau de trois lignes
  * évite. Une ligne par taille, avec ce qu'elle ouvre.
  */
+/*
+ * Les seuils de confidentialité, en tableau plutôt qu'en cartes.
+ *
+ * Trois pavés encadrés pesaient comme une grille tarifaire et occupaient les deux
+ * tiers de l'écran d'entrée, alors qu'ils ne font qu'informer. Un cadre unique, des
+ * lignes séparées d'un filet : la même information, au poids qu'elle mérite.
+ */
 .seuils {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 16px 0 0;
+  margin: 14px 0 0;
   padding: 0;
+  border: 1px solid #ececee;
+  border-radius: 12px;
+  background: #fff;
   list-style: none;
 }
 
+/*
+ * Une largeur de colonne fixe, et non « au plus large ».
+ *
+ * Chaque ligne étant sa propre grille, `auto` la dimensionnait sur son propre contenu :
+ * « Moyenne entreprise » poussait sa colonne plus loin que « Micro-entreprise », et
+ * les valeurs de droite ne s'alignaient plus d'une ligne à l'autre. Quelques pixels,
+ * mais un tableau qui tremble.
+ */
 .seuil {
   display: grid;
-  grid-template-columns: minmax(140px, auto) minmax(0, 1fr);
+  grid-template-columns: 152px minmax(0, 1fr);
   align-items: baseline;
-  row-gap: 2px;
+  row-gap: 3px;
   column-gap: 14px;
-  padding: 11px 14px;
-  border: 1px solid #e8e8ea;
-  border-radius: 11px;
-  background: #fff;
+  padding: 12px 15px;
+}
+
+/* Sur un téléphone, deux colonnes ne tiennent pas : chaque mention prend sa ligne. */
+@media (max-width: 700px) {
+  .seuil,
+  .seuilOuvre {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.seuil + .seuil {
+  border-top: 1px solid #f2f2f4;
 }
 
 .seuilTaille {
@@ -887,11 +937,34 @@
   color: #8a8a92;
 }
 
-/* Ce que la taille ouvre : la seule chose qu'on retient de la ligne. */
+/*
+ * Ce que la taille permet de soustraire au public.
+ *
+ * La ligne n'était pas nommée : on lisait « Micro-entreprise … Bilan, compte de
+ * résultat et annexe » sans savoir si c'était ce qui restait public ou ce qui
+ * pouvait rester caché - la question même qui amène ici. Elle porte donc son
+ * intitulé, au lieu de le laisser deviner.
+ */
 .seuilOuvre {
+  display: grid;
   grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  column-gap: 14px;
+  margin-top: 2px;
+}
+
+.seuilOuvreLabel {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.seuilOuvreValeur {
   font-size: 12.5px;
-  color: #52525b;
+  line-height: 1.5;
+  color: #3f3f46;
 }
 
 /*
@@ -4959,20 +5032,27 @@
  * une quatrième ligne. C'est au prix de prendre ce qui reste, non de deviner sa
  * largeur.
  */
-.entreePrix {
-  display: flex;
-  flex: 1 1 340px;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
 
-.entreeMontant {
-  font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 19px;
-  font-weight: 700;
-  color: #111;
-  letter-spacing: 0;
+
+/*
+ * Ce que le pied dit à la place du prix.
+ *
+ * Le tarif s'affichait ici, avant toute saisie, et il était calculé sur une forme
+ * supposée : les frais de greffe annoncés ne valaient pas pour une société civile,
+ * qui ne dépose pas. On le montre désormais au récapitulatif, où la forme est connue
+ * et où le devis est juste.
+ *
+ * Reste à le dire. Un prix qu'on ne trouve pas inquiète davantage qu'un prix qu'on
+ * voit : la ligne annonce où il apparaîtra, et qu'on n'aura rien réglé d'ici là.
+ */
+.entreeAssurance {
+  flex: 1 1 340px;
+  min-width: 0;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #71717a;
+  text-wrap: pretty;
 }
 
 .entreeMention {
@@ -5959,3 +6039,66 @@
   }
 }
 
+/*
+ * Ce que le téléphone impose, en fin de feuille.
+ *
+ * Ces règles ont la même spécificité que celles qu'elles corrigent : c'est donc
+ * l'ordre qui tranche. Placées plus haut, elles se faisaient recouvrir par la
+ * déclaration de base, et la mesure dans le navigateur était le seul moyen de s'en
+ * apercevoir - la feuille avait l'air juste.
+ */
+@media (max-width: 760px) {
+  /*
+   * La carte respire moins, parce qu'il n'y a pas la place.
+   *
+   * Quarante pixels de marge intérieure, sur un écran de trois cent soixante-quinze,
+   * c'est un cinquième de la largeur perdu de chaque côté et quatre-vingts pixels de
+   * hauteur avant le premier mot. Un champ de saisie n'a plus la place d'exister.
+   */
+  .contenu {
+    padding: 22px 18px 26px;
+    border-radius: 14px;
+  }
+
+  /*
+   * L'explication d'entrée, resserrée.
+   *
+   * Une phrase de vingt mots occupait six lignes et cent soixante-dix pixels - le quart
+   * de l'écran pour dire au client que la recherche remplit les champs. Elle reste,
+   * mais à sa taille.
+   */
+  .description {
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* Le titre de l'étape et son rang tiennent sur deux lignes plutôt que trois. */
+  .etapeTete {
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+}
+
+/*
+ * La coquille de page, sur un téléphone.
+ *
+ * Quarante-huit pixels de marge de chaque côté : sur un écran de trois cent
+ * soixante-quinze, c'est près du tiers de la largeur perdu avant le premier mot, et
+ * les champs de saisie n'avaient plus la place d'exister. Les autres écrans de
+ * l'application resserrent déjà à vingt ; ceux-ci l'avaient oublié.
+ *
+ * Le bloc est en fin de feuille : il a la même spécificité que la déclaration qu'il
+ * corrige, et c'est donc l'ordre qui tranche.
+ */
+@media (max-width: 760px) {
+  .topbar {
+    padding: 20px 20px 8px;
+  }
+
+  .content {
+    padding: 16px 20px 40px;
+  }
+}

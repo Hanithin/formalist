@@ -858,3 +858,24 @@
     font-size: 16px;
   }
 }
+
+/*
+ * La coquille de page, sur un téléphone.
+ *
+ * Quarante-huit pixels de marge de chaque côté : sur un écran de trois cent
+ * soixante-quinze, c'est près du tiers de la largeur perdu avant le premier mot, et
+ * les champs de saisie n'avaient plus la place d'exister. Les autres écrans de
+ * l'application resserrent déjà à vingt ; ceux-ci l'avaient oublié.
+ *
+ * Le bloc est en fin de feuille : il a la même spécificité que la déclaration qu'il
+ * corrige, et c'est donc l'ordre qui tranche.
+ */
+@media (max-width: 760px) {
+  .topbar {
+    padding: 20px 20px 8px;
+  }
+
+  .content {
+    padding: 16px 20px 40px;
+  }
+}

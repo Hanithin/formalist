@@ -2,8 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { devisDesComptes, PRESTATIONS } from "@/domain/comptes/offre";
-import { montantLisible } from "@/domain/modification/offre";
+import { PRESTATIONS } from "@/domain/comptes/offre";
 import { seuilsLisibles } from "@/domain/comptes/confidentialite";
 import styles from "../modification/Modification.module.css";
 
@@ -14,7 +13,15 @@ import styles from "../modification/Modification.module.css";
  * faire, et la seule question qui vaille - ce qu'on peut rendre confidentiel - dépend
  * de chiffres qu'on n'a pas encore. On dit donc ce qui attend, et l'on ouvre.
  *
- * Les seuils de confidentialité sont montrés ici plutôt qu'à l'étape qui les applique :
+ * Deux choses ont changé de place. Ce que nous produisons - le procès-verbal,
+ * l'affectation du résultat, le rapport sur les conventions - passait en petits
+ * caractères gris sous le tableau des seuils, alors que c'est ce qu'on achète : il
+ * vient maintenant en premier. Et le tarif a quitté le pied : il s'y calculait sur une
+ * forme supposée, si bien que les frais de greffe annoncés ne valaient pas pour une
+ * société civile, qui ne dépose pas. Il s'affiche au récapitulatif, où la forme est
+ * connue et le devis juste.
+ *
+ * Les seuils de confidentialité restent ici plutôt qu'à l'étape qui les applique :
  * c'est souvent la raison pour laquelle on vient, et découvrir à la fin qu'on n'y a pas
  * droit est une déception qu'un tableau de trois lignes évite.
  */
@@ -22,8 +29,6 @@ export function Commencer() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
-
-  const montant = devisDesComptes({ forme: "SAS" });
 
   function ouvrir() {
     if (enCours) return;
@@ -52,6 +57,17 @@ export function Commencer() {
         </p>
       </div>
 
+      {/*
+        Ce que nous produisons, avant ce qui peut rester confidentiel.
+        Les actes étaient relégués sous le tableau des seuils, en gris : on lisait
+        d'abord une grille de chiffres, et l'on découvrait ensuite ce qu'on achetait.
+      */}
+      <ul className={styles.entreeRepere}>
+        {PRESTATIONS.slice(0, 3).map((prestation) => (
+          <li key={prestation}>{prestation}</li>
+        ))}
+      </ul>
+
       <div className={styles.entreeBloc}>
         <h3 className={styles.blocTitre}>Ce que vous pouvez garder confidentiel</h3>
         <p className={styles.blocTexte}>
@@ -66,7 +82,15 @@ export function Commencer() {
               <span className={styles.seuilChiffres}>
                 bilan {seuil.bilan} · chiffre d&apos;affaires {seuil.ca} · {seuil.effectif}
               </span>
-              <span className={styles.seuilOuvre}>{seuil.ouvre}</span>
+              {/*
+                La ligne portait sa valeur sans son intitulé : on lisait « Bilan, compte
+                de résultat et annexe » sans savoir si c'était ce qui restait public ou
+                ce qui pouvait rester caché - la question même qui amène ici.
+              */}
+              <span className={styles.seuilOuvre}>
+                <span className={styles.seuilOuvreLabel}>Reste confidentiel</span>
+                <span className={styles.seuilOuvreValeur}>{seuil.ouvre}</span>
+              </span>
             </li>
           ))}
         </ul>
@@ -83,24 +107,12 @@ export function Commencer() {
         </p>
       )}
 
-      <ul className={styles.entreeRepere}>
-        {PRESTATIONS.slice(0, 3).map((prestation) => (
-          <li key={prestation}>{prestation}</li>
-        ))}
-      </ul>
-
       <div className={styles.entreePied}>
-        <div className={styles.entreePrix}>
-          <span className={styles.entreeMontant}>
-            {montantLisible(montant.honorairesHT)} HT
-          </span>
-          <span className={styles.entreeMention}>
-            quel que soit le résultat et le nombre d&apos;associés. S&apos;y ajoutent les
-            frais de greffe, refacturés à l&apos;euro -{" "}
-            {montantLisible(montant.fraisTTC)} pour le dépôt, et rien pour une société
-            civile, qui ne dépose pas.
-          </span>
-        </div>
+        <p className={styles.entreeAssurance}>
+          Le tarif s&apos;affiche au récapitulatif, avant tout règlement. S&apos;y
+          ajoutent les frais de greffe, refacturés à l&apos;euro - et rien pour une
+          société civile, qui ne dépose pas.
+        </p>
 
         <div className={styles.entreeActions}>
           <button

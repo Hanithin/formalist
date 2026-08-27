@@ -42,5 +42,14 @@
 @media (max-width: 900px) {
   .contenu {
     padding-top: 58px;
+    /*
+     * De quoi passer sous la bulle de discussion.
+     *
+     * Elle est fixée en bas à droite, sur cinquante-quatre pixels de côté. Arrivé au
+     * bas d'une étape, le bouton « Continuer » se rangeait exactement dessous : on
+     * visait le bouton du pouce et l'on ouvrait la conversation. Le dernier élément de
+     * la colonne garde donc la hauteur de la bulle sous lui.
+     */
+    padding-bottom: 84px;
   }
 }

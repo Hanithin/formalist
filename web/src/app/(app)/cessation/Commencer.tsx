@@ -2,8 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { montantLisible } from "@/domain/modification/offre";
-import { devisDeCessation, PRESTATIONS } from "@/domain/cessation/offre";
+import { PRESTATIONS } from "@/domain/cessation/offre";
 import {
   CESSATION_EST_DEFINITIVE,
   FORMALITE_GRATUITE,
@@ -29,8 +28,6 @@ export function Commencer() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
-
-  const devis = devisDeCessation(nature ?? "definitive");
 
   function ouvrir() {
     if (enCours || !nature) return;
@@ -149,12 +146,15 @@ export function Commencer() {
           )}
 
           <div className={styles.entreePied}>
-            <div className={styles.entreePrix}>
-              <span className={styles.entreeMontant}>
-                {montantLisible(devis.honorairesHT)} HT
-              </span>
-              <span className={styles.entreeMention}>{FORMALITE_GRATUITE}</span>
-            </div>
+            {/*
+              L'absence de frais d'État n'est pas un prix, c'est un fait : ni annonce
+              légale, ni greffe. Il reste, le montant des honoraires part au
+              récapitulatif comme sur les autres entrées.
+            */}
+            <p className={styles.entreeAssurance}>
+              {FORMALITE_GRATUITE} Le tarif s&apos;affiche au récapitulatif, avant tout
+              règlement.
+            </p>
 
             <div className={styles.entreeActions}>
               <button

@@ -3,8 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { montantLisible } from "@/domain/modification/offre";
-import { devisDeFermeture, HORS_FORFAIT } from "@/domain/fermeture/offre";
+import { HORS_FORFAIT } from "@/domain/fermeture/offre";
 import {
   orientationDe,
   CE_QUE_FAIT_UN_AVOCAT,
@@ -50,11 +49,6 @@ export function Commencer() {
         : null,
     [repondu, dettes, associeSociete]
   );
-
-  const devis = devisDeFermeture({
-    voie: orientation?.voie === "tup" ? "tup" : "liquidation-amiable",
-    associeUniqueDirigeant: false,
-  });
 
   function ouvrir() {
     if (enCours || !orientation?.possible) return;
@@ -159,17 +153,19 @@ export function Commencer() {
           )}
 
           <div className={styles.entreePied}>
-            <div className={styles.entreePrix}>
-              <span className={styles.entreeMontant}>
-                {montantLisible(devis.honorairesHT)} HT
-              </span>
-              <span className={styles.entreeMention}>
-                pour la fermeture entière, réglés une seule fois : la clôture de la
-                liquidation est comprise. S&apos;y ajoutent environ{" "}
-                {montantLisible(devis.fraisTTC)} de frais réglementés - annonces légales
-                et greffe - refacturés à l&apos;euro. {HORS_FORFAIT[0]}.
-              </span>
-            </div>
+            {/*
+              Le tarif s'affiche au récapitulatif, non ici.
+
+              Ce qu'il faut savoir avant de commencer, en revanche, ce n'est pas le
+              montant : c'est qu'on ne paie qu'une fois pour les deux étapes, et que des
+              frais réglementés s'y ajouteront. Ces deux faits restent.
+            */}
+            <p className={styles.entreeAssurance}>
+              Un seul règlement pour la fermeture entière, clôture de la liquidation
+              comprise. Le tarif s&apos;affiche au récapitulatif, avant tout paiement ;
+              s&apos;y ajoutent des frais réglementés - annonces légales et greffe -
+              refacturés à l&apos;euro. {HORS_FORFAIT[0]}.
+            </p>
 
             <div className={styles.entreeActions}>
               <button
