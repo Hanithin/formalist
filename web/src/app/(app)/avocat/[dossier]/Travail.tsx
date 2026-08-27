@@ -22,7 +22,17 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
   if (tache === "pieces" || tache === "attestations") {
     return pieces.filter((p) => !estUnActeProduit(p));
   }
-  if (tache === "actes" || tache === "relecture" || tache === "confidentialite") {
+  /*
+   * La confidentialité ne parle que d'un document.
+   *
+   * La tâche montrait tous les actes produits : « Joindre la déclaration de
+   * confidentialité au dépôt » s'affichait au-dessus du procès-verbal d'approbation,
+   * et le titre ne correspondait pas à ce qu'on lisait.
+   */
+  if (tache === "confidentialite") {
+    return pieces.filter((p) => estUnActeProduit(p) && /confidentialit/i.test(p.nom));
+  }
+  if (tache === "actes" || tache === "relecture") {
     return pieces.filter(estUnActeProduit);
   }
   return pieces;

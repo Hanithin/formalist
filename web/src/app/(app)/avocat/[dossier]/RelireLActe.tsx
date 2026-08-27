@@ -17,9 +17,11 @@ import styles from "../Avocat.module.css";
  */
 export function RelireLActe({
   document,
+  dossier,
   source,
 }: {
   document: number;
+  dossier: number;
   /** Le nom de stockage du Word d'origine, quand la conversion a réussi. */
   source: string | null;
 }) {
@@ -46,8 +48,41 @@ export function RelireLActe({
     });
   }
 
+  /*
+   * Valider l'acte, et lui seul.
+   *
+   * La mise à disposition était collective, sur une autre tâche : un bouton publiait le
+   * jeu entier, et l'avocat qui n'avait relu qu'un acte publiait les trois. La ligne du
+   * document porte sa propre décision.
+   */
+  function valider() {
+    setRefus(null);
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/actes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, document }),
+      });
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "La validation n'a pas abouti");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   return (
     <>
+      <button
+        type="button"
+        className={styles.decisionValider}
+        onClick={valider}
+        disabled={enCours}
+      >
+        {enCours ? "…" : "Valider"}
+      </button>
+
       {source && (
         <a
           className={styles.decisionSecondaire}

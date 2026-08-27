@@ -25,6 +25,7 @@ const NEUF: EtatDuCabinet = {
   piecesAVerifier: 0,
   actesProduits: false,
   actesARelire: 0,
+  nomsDesActesARelire: [],
   statutsAuDossier: true,
   statutsAJour: false,
   avisAPublier: 1,

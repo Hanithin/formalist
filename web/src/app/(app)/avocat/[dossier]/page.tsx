@@ -276,6 +276,7 @@ export default async function DossierAvocat({
      */
     actesProduits: documents.some((d) => d.uploaded_by === "system"),
     actesARelire: aRelire(documents).length,
+    nomsDesActesARelire: aRelire(documents).map((d) => d.name),
     statutsAuDossier: documents.some((d) => d.name === "Statuts en vigueur"),
     statutsAJour: donnees.statutsAJour === true,
     avisAPublier:

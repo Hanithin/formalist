@@ -833,6 +833,70 @@ export async function mettreLesActesADisposition(
 }
 
 /**
+ * Valider un acte, et lui seul.
+ *
+ * La mise à disposition était collective : un bouton publiait le jeu entier, et un
+ * avocat qui n'avait relu qu'un acte sur trois publiait les trois. Chaque acte se
+ * valide désormais depuis sa ligne, et c'est cette validation - et elle seule - qui le
+ * rend visible au client.
+ *
+ * Le client n'est prévenu qu'une fois : au premier acte validé du dossier. Trois
+ * messages pour trois actes relus dans la même minute ne lui apprendraient rien de
+ * plus.
+ */
+export async function mettreUnActeADisposition(
+  utilisateur: UtilisateurConnecte,
+  documentId: number
+) {
+  exigerAvocat(utilisateur);
+
+  const document = await prisma.documents.findUnique({ where: { id: documentId } });
+  if (!document?.formalite_id) throw new Interdit("Document introuvable");
+
+  const dossier = await exigerDossier(utilisateur, document.formalite_id);
+
+  if (document.uploaded_by !== "system" || document.status !== A_RELIRE) {
+    throw new Interdit("Cet acte n'attend pas de relecture");
+  }
+
+  /* Un acte déjà chez le client vaut annonce faite : on ne la répète pas. */
+  const dejaChezLui = await prisma.documents.count({
+    where: {
+      formalite_id: document.formalite_id,
+      uploaded_by: "system",
+      status: "generated",
+      name: { not: TITRE_STATUTS_EN_VIGUEUR },
+    },
+  });
+
+  await prisma.documents.update({
+    where: { id: documentId },
+    data: { status: "generated" },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: document.formalite_id,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "actes_mis_a_disposition",
+      target_field: document.name,
+      after_value: "1",
+    },
+  });
+
+  if (dejaChezLui === 0) {
+    await prevenir(
+      dossier.user_id,
+      document.formalite_id,
+      actesDisponibles(dossier.societe || "votre société")
+    );
+  }
+
+  return { publie: document.name };
+}
+
+/**
  * Retirer de l'espace du client les actes qu'on venait d'y mettre.
  *
  * La mise à disposition n'avait pas d'envers : un acte publié par erreur - le mauvais

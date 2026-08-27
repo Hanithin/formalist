@@ -122,6 +122,7 @@ export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: numbe
           piece.nom !== TITRE_STATUTS_EN_VIGUEUR && (
             <RelireLActe
               document={piece.id}
+              dossier={dossier}
               /*
                * Sans LibreOffice, l'acte est gardé en Word plutôt que perdu : c'est
                * alors le fichier remis lui-même qu'on corrige.

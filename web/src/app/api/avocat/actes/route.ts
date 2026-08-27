@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import {
   mettreLesActesADisposition,
+  mettreUnActeADisposition,
   retirerLesActesDeLEspaceClient,
 } from "@/infrastructure/db/depots/avocat";
 import { validerCorps, schemas } from "@/lib/valider";
@@ -18,7 +19,21 @@ import { route } from "@/lib/reponses";
  */
 export const PUT = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
-  const { dossier } = await validerCorps(z.object({ dossier: schemas.identifiant }), requete);
+  /*
+   * Un acte, ou le jeu entier.
+   *
+   * La relecture se fait acte par acte : c'est la ligne du document qui la déclare.
+   * Le geste collectif reste pour les dossiers où les trois se relisent d'un coup.
+   */
+  const { dossier, document } = await validerCorps(
+    z.object({ dossier: schemas.identifiant, document: schemas.identifiant.optional() }),
+    requete
+  );
+
+  if (document) {
+    const { publie } = await mettreUnActeADisposition(utilisateur, document);
+    return NextResponse.json({ publies: 1, publie });
+  }
 
   const { publies } = await mettreLesActesADisposition(utilisateur, dossier);
   return NextResponse.json({ publies });

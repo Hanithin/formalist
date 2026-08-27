@@ -67,6 +67,16 @@ export interface EtatDuCabinet {
   actesProduits: boolean;
   /** Combien d'actes attendent encore la relecture de l'avocat. */
   actesARelire: number;
+  /**
+   * Le nom des actes qui attendent une relecture.
+   *
+   * La tâche disait « Relire les actes et les mettre à disposition » : l'avocat ne
+   * savait pas lesquels sans ouvrir la liste, et le titre ne se distinguait pas de
+   * celui de la tâche qui les produit.
+   *
+   * Facultatif : sans la liste, le titre compte les actes au lieu de les nommer.
+   */
+  nomsDesActesARelire?: string[];
   /** Les statuts en vigueur sont au dossier. */
   statutsAuDossier: boolean;
   /** Les statuts à jour ont été produits. */
@@ -289,11 +299,11 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     taches.push({
       identifiant: "relecture",
       titre:
-        etat.actesARelire > 0
-          ? "Relire les actes et les mettre à disposition"
-          : "Actes mis à disposition",
+        etat.actesARelire === 0
+          ? "Actes mis à disposition"
+          : "Validez " + enumerer(etat.nomsDesActesARelire ?? [], etat.actesARelire),
       explication:
-        "Le client ne voit rien tant que vous n'avez pas relu. Corrigez ce qu'il faut, puis rendez tout disponible d'un coup dans son espace.",
+        "Le client ne voit rien tant que vous n'avez pas validé. Chaque acte porte sa décision : celui que vous validez part dans son espace, les autres attendent.",
       etat: etat.actesARelire > 0 ? "a_faire" : "faite",
       onglet: "pieces",
       /*
@@ -394,6 +404,19 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
   });
 
   return taches;
+}
+
+/**
+ * « le procès-verbal et la déclaration de confidentialité », ou « les trois actes ».
+ *
+ * Au-delà de deux, l'énumération est plus longue que la liste qu'elle annonce - et
+ * cette liste est juste en dessous.
+ */
+function enumerer(noms: string[], combien: number): string {
+  const courts = noms.map((nom) => nom.charAt(0).toLowerCase() + nom.slice(1));
+  if (courts.length === 1) return courts[0];
+  if (courts.length === 2) return courts[0] + " et " + courts[1];
+  return "les " + combien + " actes produits";
 }
 
 /* ---------- Les phases du travail du cabinet ---------- */

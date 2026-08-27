@@ -1395,6 +1395,7 @@
   gap: 8px;
 }
 
+.decisionValider,
 .decisionPrincipale,
 .decisionSecondaire,
 .decisionRefuser {
@@ -1415,12 +1416,20 @@
 }
 
 /* La décision attendue : valider ce que le client a déposé. */
+/*
+ * Valider un acte : le geste qui le rend visible au client.
+ *
+ * Il est le seul plein de sa ligne - « Corriger le Word » et « Déposer ma version »
+ * sont des détours, lui est la décision.
+ */
+.decisionValider,
 .decisionPrincipale {
   border: 1px solid #111;
   background: #111;
   color: #fff;
 }
 
+.decisionValider:hover:not(:disabled),
 .decisionPrincipale:hover:not(:disabled) {
   background: #333;
   border-color: #333;
