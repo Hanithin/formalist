@@ -37,7 +37,8 @@ import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./AutoEntrepreneur.module.css";
 
 interface Props {
-  dossierId: number;
+  /** Nul tant que rien n'a été saisi : la déclaration naît au premier enregistrement. */
+  dossierId: number | null;
   etapes: Etape[];
   etapeCourante: number;
   declarationInitiale: Donnees;
@@ -112,6 +113,16 @@ export function Declaration({
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
+  /*
+   * L'identifiant du dossier, une fois qu'il existe.
+   *
+   * Il arrive nul quand on entre sur le parcours : rien n'est écrit tant que rien
+   * n'est saisi. Le premier enregistrement l'ouvre et le retient ici, parce que
+   * `router.push` ne rafraîchit pas la page tout de suite - sans cette mémoire, un
+   * second « Continuer » arrivé entre-temps ouvrirait un deuxième dossier.
+   */
+  const [dossier, setDossier] = useState<number | null>(dossierId);
+
   const etape = etapes.find((e) => e.numero === etapeCourante) ?? etapes[0];
   const regle = regleActivite(donnees.natureActivite);
 
@@ -131,6 +142,9 @@ export function Declaration({
   }
 
   function aller(suite: number) {
+    // Un enregistrement déjà parti suffit : le second ouvrirait un dossier de plus.
+    if (enCours) return;
+
     const manques = verifierEtape(etape.numero, donnees);
     if (manques.length > 0 && suite > etape.numero) {
       setAnomalies(Object.fromEntries(manques.map((a) => [a.champ, a.message])));
@@ -139,12 +153,26 @@ export function Declaration({
     setAnomalies({});
 
     demarrer(async () => {
+      // La déclaration s'ouvre au premier enregistrement, une fois les règles de
+      // l'étape passées : ce qui est écrit en base porte alors une information.
+      let identifiant = dossier;
+      if (identifiant === null) {
+        const reponse = await fetch("/api/auto-entrepreneur", { method: "POST" });
+        const corps = await reponse.json().catch(() => ({}));
+        if (!reponse.ok || typeof corps.dossier !== "number") {
+          setAnomalies({ activite: "La déclaration n'a pas pu être ouverte" });
+          return;
+        }
+        identifiant = corps.dossier;
+        setDossier(identifiant);
+      }
+
       await fetch("/api/auto-entrepreneur", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier: dossierId, modifications: donnees }),
+        body: JSON.stringify({ dossier: identifiant, modifications: donnees }),
       });
-      router.push("/auto-entrepreneur?dossier=" + dossierId + "&etape=" + suite);
+      router.push("/auto-entrepreneur?dossier=" + identifiant + "&etape=" + suite);
       router.refresh();
     });
   }
@@ -156,8 +184,10 @@ export function Declaration({
       {/* Le paiement mérite d'être annoncé : sans cela on revient sur l'offre qu'on
           vient de régler, et on doute d'avoir payé. Un abandon aussi : revenir sur
           l'offre sans un mot laisse craindre un débit. */}
-      {regleALInstant && <FinDePaiement dossierId={dossierId} issue="regle" />}
-      {paiementAnnule && !regleALInstant && <FinDePaiement dossierId={dossierId} issue="annule" />}
+      {regleALInstant && dossier !== null && <FinDePaiement dossierId={dossier} issue="regle" />}
+      {paiementAnnule && !regleALInstant && dossier !== null && (
+        <FinDePaiement dossierId={dossier} issue="annule" />
+      )}
 
       {/*
         Le même fil que la création : horizontal, au-dessus du formulaire.
@@ -597,11 +627,15 @@ export function Declaration({
 
             {/* Le même dépôt que la création de société : glisser-déposer, contrôle du
                 format à l'arrivée, et la carte passe au vert. */}
-            <Pieces
-              dossierId={dossierId}
-              pieces={piecesDeclaration(donnees)}
-              deposees={piecesDeposees}
-            />
+            {/* Le dossier existe forcément ici : on n'atteint pas cette étape sans
+                avoir franchi la première, qui l'ouvre. La garde est un filet. */}
+            {dossier !== null && (
+              <Pieces
+                dossierId={dossier}
+                pieces={piecesDeclaration(donnees)}
+                deposees={piecesDeposees}
+              />
+            )}
           </div>
         )}
 
@@ -650,8 +684,8 @@ export function Declaration({
 
         {etape.identifiant === "recapitulatif" && <Recapitulatif donnees={donnees} />}
 
-        {etape.identifiant === "paiement" && (
-          <Paiement dossierId={dossierId} declaration={donnees} />
+        {etape.identifiant === "paiement" && dossier !== null && (
+          <Paiement dossierId={dossier} declaration={donnees} />
         )}
 
         {/* Une déclaration réglée ne se reprend plus : elle est chez l'avocat. */}

@@ -5,19 +5,29 @@ import { retirerDossiers } from "./nettoyage";
 /**
  * Les dossiers ouverts par ce fichier, retirés une fois la série passée.
  *
- * Chaque visite de /creation ouvre un dossier - c'est le comportement voulu - mais
- * les specs partagent un compte, et l'espace avocat n'affiche que les trente
+ * Les specs partagent un compte, et l'espace avocat n'affiche que les trente
  * dossiers les plus récents. Sans ce nettoyage, les dossiers d'exemple sortaient de
  * la liste et faisaient échouer des tests qui n'avaient pas changé.
  */
 const ouverts: number[] = [];
 
-/** Ouvre la création et retient le dossier créé. */
-async function ouvrirCreation(page: import("@playwright/test").Page) {
-  await page.goto("/creation");
-  const dossier = new URL(page.url()).searchParams.get("dossier")!;
+/**
+ * Ouvre un dossier, puis la page de création dessus.
+ *
+ * Visiter /creation n'ouvre plus rien : le dossier naît au premier enregistrement,
+ * pour qu'un visiteur qui regarde l'écran et repart ne laisse pas derrière lui une
+ * formalité « Sans nom » dans la file de l'avocat. Un test qui a besoin d'un dossier
+ * le demande donc à l'API, comme le fait le parcours lui-même.
+ */
+async function ouvrirCreation(
+  page: import("@playwright/test").Page,
+  request: import("@playwright/test").APIRequestContext
+) {
+  const reponse = await request.post("/api/formalites/brouillon");
+  const { dossier } = await reponse.json();
   ouverts.push(Number(dossier));
-  return dossier;
+  await page.goto("/creation?dossier=" + dossier);
+  return String(dossier);
 }
 
 /**
@@ -75,14 +85,61 @@ function libreOfficePresent(): Promise<boolean> {
  * d'origine il était dans le navigateur, donc perdu en changeant d'appareil.
  */
 
-test("ouvrir la création crée un dossier et le met dans l'adresse", async ({ page }) => {
-  await ouvrirCreation(page);
-  // Sans identifiant dans l'adresse, un rechargement créerait un dossier de plus.
-  await expect(page).toHaveURL(/dossier=\d+/);
+/**
+ * Regarder l'écran n'ouvre pas de dossier.
+ *
+ * La page en ouvrait un à chaque affichage. Un visiteur qui la regardait et repartait
+ * laissait une formalité « Sans nom » comptée « en cours », réclamée par le tableau de
+ * bord, et posée en tête de la file de travail de l'avocat - qui ouvrait sa journée sur
+ * quatre dossiers vides. Le dossier naît maintenant au premier enregistrement.
+ */
+test("visiter la création n'ouvre aucun dossier", async ({ page }) => {
+  /*
+   * On observe l'ouverture, non le nombre de dossiers du compte : les specs tournent
+   * en parallèle sur le même compte, et le total bouge sous le test. Un dossier ne
+   * peut naître que de deux façons - le serveur qui redirige avec un identifiant, ce
+   * que l'adresse dirait, ou le navigateur qui appelle la route d'ouverture.
+   */
+  const ouvertures: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.url().includes("/api/formalites/brouillon")) {
+      ouvertures.push(r.url());
+    }
+  });
+
+  await page.goto("/creation");
+  await page.goto("/creation");
+
+  await expect(page).not.toHaveURL(/dossier=/);
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Informations de la société");
+  expect(ouvertures).toEqual([]);
 });
 
-test("l'étape 1 refuse de passer tant qu'elle est incomplète", async ({ page }) => {
-  await ouvrirCreation(page);
+test("le dossier naît au premier enregistrement, sous son nom", async ({ page, request }) => {
+  await page.goto("/creation");
+
+  await choisir(page, "Forme juridique", /^SASU/);
+  await page.getByLabel("Nom de la société").fill("NAISSANCE DIFFEREE");
+  await page.getByLabel("Adresse du siège").fill("12 rue des Lilas");
+  await page.getByRole("option", { name: /Paris/ }).first().click();
+  await page.getByLabel("Capital social").fill("10000");
+  await page.getByLabel(/Objet social/).fill("Conseil en informatique");
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  // L'adresse porte l'identifiant : un rechargement ne rouvrira pas un dossier.
+  await expect(page).toHaveURL(/dossier=\d+/);
+  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  ouverts.push(dossier);
+
+  // Et il arrive nommé chez l'avocat, non « Sans nom ».
+  const { dossiers } = await (await request.get("/api/formalites")).json();
+  expect(dossiers.find((d: { id: number }) => d.id === dossier)?.societe).toBe(
+    "NAISSANCE DIFFEREE"
+  );
+});
+
+test("l'étape 1 refuse de passer tant qu'elle est incomplète", async ({ page, request }) => {
+  await ouvrirCreation(page, request);
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expect(page.getByText("Choisissez une forme juridique")).toBeVisible();
@@ -91,27 +148,27 @@ test("l'étape 1 refuse de passer tant qu'elle est incomplète", async ({ page }
   await expect(page.getByRole("heading", { level: 2 })).toContainText("Informations de la société");
 });
 
-test("les réponses courantes sont déjà écrites, et se relisent", async ({ page }) => {
+test("les réponses courantes sont déjà écrites, et se relisent", async ({ page, request }) => {
   /*
    * Laissés vides, ces champs partaient vides dans les actes : des statuts sans
    * durée, sans date de clôture, sans option fiscale. La réponse courante est écrite
    * d'avance, en pleine vue et modifiable - pas appliquée en douce à la génération.
    */
-  await ouvrirCreation(page);
+  await ouvrirCreation(page, request);
 
   await expect(page.getByLabel("Durée de vie (années)")).toHaveValue("99");
   await expect(page.locator("#optionFiscale")).toHaveText("IS");
   await expect(page.locator("#dateCloturePremierExercice")).toContainText("31 décembre");
 });
 
-test("une société de domiciliation demande ce que le greffe exige", async ({ page }) => {
+test("une société de domiciliation demande ce que le greffe exige", async ({ page, request }) => {
   /*
    * Le domicilié déclare au registre la dénomination et l'immatriculation de son
    * domiciliataire, et l'agrément préfectoral doit figurer au contrat : sans ce
    * numéro, l'attestation est refusée. Les demander ici évite de le découvrir au
    * dépôt du dossier.
    */
-  await ouvrirCreation(page);
+  await ouvrirCreation(page, request);
   await choisir(page, "Mode de domiciliation", "Société de domiciliation");
 
   await page.getByLabel("Nom de la société de domiciliation").fill("SEDOMICILIER");
@@ -143,15 +200,15 @@ test("une société de domiciliation demande ce que le greffe exige", async ({ p
   await expect(page.getByLabel("SIREN de la société de domiciliation")).toHaveValue("493242106");
 });
 
-test("un code postal incomplet est signalé", async ({ page }) => {
-  await ouvrirCreation(page);
+test("un code postal incomplet est signalé", async ({ page, request }) => {
+  await ouvrirCreation(page, request);
   await page.getByLabel("Code postal").fill("750");
   await page.getByRole("button", { name: "Continuer" }).click();
   await expect(page.getByText("Le code postal comporte cinq chiffres")).toBeVisible();
 });
 
-test("le brouillon est retrouvé après un rechargement complet", async ({ page }) => {
-  await ouvrirCreation(page);
+test("le brouillon est retrouvé après un rechargement complet", async ({ page, request }) => {
+  await ouvrirCreation(page, request);
   const adresse = page.url();
 
   await choisir(page, "Forme juridique", /^SASU/);
@@ -172,7 +229,7 @@ test("le brouillon est retrouvé après un rechargement complet", async ({ page 
 });
 
 test("le mot employé pour le dirigeant suit la forme choisie", async ({ page, request }) => {
-  const dossier = await ouvrirCreation(page);
+  const dossier = await ouvrirCreation(page, request);
 
   const societe = {
     forme: "SARL",
@@ -206,8 +263,8 @@ test("le mot employé pour le dirigeant suit la forme choisie", async ({ page, r
   await expect(page.getByRole("button", { name: /Ajouter un gérant/ })).toBeVisible();
 });
 
-test("on ne saute pas par-dessus une étape incomplète", async ({ page }) => {
-  const dossier = await ouvrirCreation(page);
+test("on ne saute pas par-dessus une étape incomplète", async ({ page, request }) => {
+  const dossier = await ouvrirCreation(page, request);
 
   // Demander l'étape 4 directement dans l'adresse
   await page.goto("/creation?dossier=" + dossier + "&etape=4");
@@ -268,7 +325,7 @@ test.describe("pièces et documents", () => {
     page: import("@playwright/test").Page,
     requete: import("@playwright/test").APIRequestContext
   ) {
-    const dossier = await ouvrirCreation(page);
+    const dossier = await ouvrirCreation(page, requete);
 
     const enregistre = await requete.put("/api/formalites/brouillon", {
       data: { dossier: Number(dossier), modifications: SASU_COMPLETE },
@@ -435,8 +492,7 @@ test.describe("pièces et documents", () => {
   });
 
   test("un dossier incomplet ne produit pas de documents troués", async ({ page, request }) => {
-    await page.goto("/creation");
-    const dossier = new URL(page.url()).searchParams.get("dossier")!;
+    const dossier = await ouvrirCreation(page, request);
 
     const reponse = await request.post("/api/formalites/documents", {
       data: { dossier: Number(dossier) },

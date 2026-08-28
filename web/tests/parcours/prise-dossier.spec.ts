@@ -197,9 +197,9 @@ test.describe("prise d'un dossier", () => {
 
     test("un dossier vide ne se transmet pas", async ({ page, request }) => {
       // L'avocat relirait des blancs, et le dossier occuperait la file pour rien.
-      await page.goto("/creation");
-      const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+      const dossier = Number((await (await request.post("/api/formalites/brouillon")).json()).dossier);
       ouverts.push(dossier);
+      await page.goto("/creation?dossier=" + dossier);
 
       const reponse = await request.post("/api/formalites/transmission", { data: { dossier } });
       expect(reponse.status()).toBe(400);

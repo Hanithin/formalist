@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import { ouvrirBrouillon, commencerFormalite } from "@/infrastructure/db/depots/brouillons";
+import { ouvrirBrouillon, lireBrouillon } from "@/infrastructure/db/depots/brouillons";
 import { documentsDuDossier } from "@/infrastructure/db/depots/documents";
 import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
@@ -25,14 +25,21 @@ export default async function Creation({
   const utilisateur = await exigerUtilisateur();
   const { dossier, etape } = await searchParams;
 
-  // Pas de dossier : on en ouvre un et on redirige, pour que l'adresse porte
-  // l'identifiant. Sans ça, un rechargement créerait un dossier de plus.
-  if (!dossier) {
-    const nouveau = await commencerFormalite(utilisateur);
-    redirect("/creation?dossier=" + nouveau);
-  }
-
-  const { dossier: ligne, brouillon } = await ouvrirBrouillon(utilisateur, Number(dossier));
+  /*
+   * Rien n'est écrit tant que rien n'est saisi.
+   *
+   * L'écran ouvrait un dossier dès son affichage, pour que l'adresse porte un
+   * identifiant. Un visiteur qui regardait la page et repartait laissait donc derrière
+   * lui une formalité « Sans nom », comptée « en cours », réclamée par le tableau de
+   * bord, et posée en tête de la file de travail de l'avocat - qui ouvrait sa journée
+   * sur quatre dossiers vides.
+   *
+   * Le dossier naît maintenant au premier enregistrement, dans `Parcours`. Ce n'est
+   * pas une perte : le parcours n'a jamais sauvegardé en continu, il persiste au
+   * changement d'étape. Ce qui est saisi sans franchir l'étape 1 n'était pas gardé
+   * avant non plus.
+   */
+  const ligne = dossier ? (await ouvrirBrouillon(utilisateur, Number(dossier))).dossier : null;
 
   /*
    * Chaque parcours a sa page.
@@ -45,9 +52,13 @@ export default async function Creation({
    * recopiée ici : une première version comparait à « auto-entreprise » quand la
    * valeur stockée est « auto-entrepreneur », et la garde ne se déclenchait jamais.
    */
-  const adresse = adresseDuDossier(ligne);
-  if (!adresse.startsWith("/creation")) redirect(adresse);
-  const documents = await documentsDuDossier(utilisateur, Number(dossier));
+  if (ligne) {
+    const adresse = adresseDuDossier(ligne);
+    if (!adresse.startsWith("/creation")) redirect(adresse);
+  }
+
+  const brouillon = lireBrouillon(ligne?.data_json ?? null);
+  const documents = ligne ? await documentsDuDossier(utilisateur, ligne.id) : [];
 
   // Les deux vivent dans la même table et se distinguent par leur statut :
   // « uploaded » pour une pièce remise par le client, « generated » pour un acte
@@ -63,7 +74,7 @@ export default async function Creation({
    * indicateurs d'avancement côte à côte se contrediraient. Après la transmission, en
    * revanche, le formulaire ne dit plus rien de ce qui se passe.
    */
-  const transmis = ligne.status !== "en_cours";
+  const transmis = ligne !== null && ligne.status !== "en_cours";
   const etat = transmis ? await etatDuDossier(ligne) : null;
 
 
@@ -89,7 +100,7 @@ export default async function Creation({
       <div className={styles.content}>
         <h1 className={styles.titre}>Créer une société</h1>
 
-        {etat && (
+        {etat && ligne && (
           <div className={styles.suivi}>
             <Suivi
               etat={etat}
@@ -108,7 +119,7 @@ export default async function Creation({
           autre type ouvert à cette adresse, ce que la redirection ci-dessus règle.
         */}
         <Parcours
-          dossierId={Number(dossier)}
+          dossierId={ligne?.id ?? null}
           etapes={ETAPES}
           etapeCourante={courante}
           brouillonInitial={brouillon}

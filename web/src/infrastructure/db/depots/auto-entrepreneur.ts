@@ -19,7 +19,7 @@ export function lireDeclaration(dataJson: string | null): Declaration {
   return lire(dataJson);
 }
 
-function lire(dataJson: string | null): Declaration {
+export function lire(dataJson: string | null): Declaration {
   if (!dataJson) return {};
   try {
     const analyse: unknown = JSON.parse(dataJson);

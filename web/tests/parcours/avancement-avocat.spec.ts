@@ -274,9 +274,10 @@ test.describe("suivi côté client", () => {
     await expect(suivi.getByText("Terminé", { exact: true }).first()).toBeVisible();
   });
 
-  test("tant qu'on remplit le dossier, le suivi ne s'affiche pas", async ({ page }) => {
+  test("tant qu'on remplit le dossier, le suivi ne s'affiche pas", async ({ page, request }) => {
     // Deux indicateurs d'avancement côte à côte se contrediraient.
-    await page.goto("/creation");
+    const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+    await page.goto("/creation?dossier=" + dossier);
     await expect(page.getByRole("region", { name: "Avancement du dossier" })).toHaveCount(0);
   });
 });

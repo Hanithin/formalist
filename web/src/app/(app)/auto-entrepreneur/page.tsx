@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import {
-  ouvrirDeclaration,
-  commencerDeclaration,
-} from "@/infrastructure/db/depots/auto-entrepreneur";
+import { ouvrirDeclaration, lire } from "@/infrastructure/db/depots/auto-entrepreneur";
 import { ETAPES, premiereEtapeIncomplete } from "@/domain/auto-entrepreneur/declaration";
 import { Declaration } from "./Declaration";
 import { confirmerAuRetour } from "@/infrastructure/db/depots/auto-entrepreneur";
@@ -33,12 +29,6 @@ export default async function AutoEntrepreneur({
   const utilisateur = await exigerUtilisateur();
   const { dossier, etape, session, paiement } = await searchParams;
 
-  // Pas de dossier : on en ouvre un et on redirige, pour que l'adresse le porte.
-  if (!dossier) {
-    const nouveau = await commencerDeclaration(utilisateur);
-    redirect("/auto-entrepreneur?dossier=" + nouveau);
-  }
-
   /*
    * Le retour du paiement.
    *
@@ -46,15 +36,27 @@ export default async function AutoEntrepreneur({
    * lire la déclaration : sans cela le client revenait sur l'offre qu'il venait de
    * régler, parce que le webhook n'était pas encore passé - ou pas passé du tout.
    */
-  const regleALInstant = session
-    ? (await confirmerAuRetour(utilisateur, Number(dossier), session)).paye
-    : false;
+  const regleALInstant =
+    dossier && session
+      ? (await confirmerAuRetour(utilisateur, Number(dossier), session)).paye
+      : false;
 
-  const { dossier: ligne, declaration } = await ouvrirDeclaration(utilisateur, Number(dossier));
+  /*
+   * Rien n'est écrit tant que rien n'est saisi.
+   *
+   * L'écran ouvrait une déclaration dès son affichage. Un visiteur qui regardait la
+   * page et repartait laissait derrière lui une formalité vide, comptée « en cours »
+   * et posée dans la file de travail de l'avocat. La déclaration naît maintenant au
+   * premier enregistrement, dans `Declaration` - qui ne persiste de toute façon qu'au
+   * changement d'étape.
+   */
+  const ouverte = dossier ? await ouvrirDeclaration(utilisateur, Number(dossier)) : null;
+  const ligne = ouverte?.dossier ?? null;
+  const declaration = ouverte?.declaration ?? lire(null);
 
   // Les pièces déjà remises : les cartes du dépôt les annoncent plutôt que de laisser
   // croire qu'il reste tout à faire.
-  const documents = await documentsDuDossier(utilisateur, Number(dossier));
+  const documents = ligne ? await documentsDuDossier(utilisateur, ligne.id) : [];
   const deposees = documents.filter((d) => d.status !== "generated");
 
   // On ne saute pas par-dessus une étape incomplète : les suivantes s'appuient
@@ -108,7 +110,7 @@ export default async function AutoEntrepreneur({
           remplit, le fil des huit étapes dit déjà où on en est, et deux indicateurs
           d'avancement côte à côte se contrediraient.
         */}
-        {declaration.paye && (
+        {declaration.paye && ligne && (
           <div className={styles.suivi}>
             <Suivi
               etat={await etatDuDossier(ligne)}
@@ -119,7 +121,7 @@ export default async function AutoEntrepreneur({
           </div>
         )}
         <Declaration
-          dossierId={Number(dossier)}
+          dossierId={ligne?.id ?? null}
           etapes={ETAPES}
           etapeCourante={courante}
           declarationInitiale={declaration}

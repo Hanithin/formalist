@@ -8,10 +8,29 @@ import { PrismaClient } from "../../src/infrastructure/db/generated/client";
  */
 
 test.describe("auto-entreprise", () => {
-  test("ouvrir la déclaration crée un dossier et le met dans l'adresse", async ({ page }) => {
+  /**
+   * Regarder l'écran n'ouvre pas de déclaration.
+   *
+   * La page en ouvrait une à chaque affichage, avant toute saisie : un visiteur qui
+   * repartait laissait derrière lui une formalité vide, comptée « en cours » et posée
+   * dans la file de travail de l'avocat. Elle naît au premier enregistrement.
+   */
+  test("visiter la déclaration n'ouvre aucun dossier", async ({ page }) => {
+    // On observe l'ouverture, non le total du compte : les specs tournent en
+    // parallèle sur le même compte, et ce total bouge sous le test.
+    const ouvertures: string[] = [];
+    page.on("request", (r) => {
+      if (r.method() === "POST" && r.url().includes("/api/auto-entrepreneur")) {
+        ouvertures.push(r.url());
+      }
+    });
+
     await page.goto("/auto-entrepreneur");
-    await expect(page).toHaveURL(/dossier=\d+/);
+    await page.goto("/auto-entrepreneur");
+
+    await expect(page).not.toHaveURL(/dossier=/);
     await expect(page.getByRole("heading", { level: 2 })).toContainText("Identité");
+    expect(ouvertures).toEqual([]);
   });
 
   test("l'étape 1 refuse de passer tant qu'elle est incomplète", async ({ page }) => {
@@ -100,9 +119,8 @@ test.describe("auto-entreprise", () => {
     await expect(page.getByText(/660 euros/)).toBeVisible();
   });
 
-  test("on ne saute pas par-dessus une étape incomplète", async ({ page }) => {
-    await page.goto("/auto-entrepreneur");
-    const dossier = new URL(page.url()).searchParams.get("dossier");
+  test("on ne saute pas par-dessus une étape incomplète", async ({ page, request }) => {
+    const { dossier } = await (await request.post("/api/auto-entrepreneur")).json();
 
     await page.goto("/auto-entrepreneur?dossier=" + dossier + "&etape=6");
     await expect(page.getByRole("heading", { level: 2 })).toContainText("Identité");
@@ -136,8 +154,8 @@ test("le formulaire demande tout ce que le guichet réclame", async ({ page }) =
 });
 
 test("les pièces sont énumérées, et la qualification suit l'activité", async ({ page, request }) => {
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   const complete = {
     civilite: "Madame",
@@ -189,8 +207,8 @@ test("l'option EIRL n'est pas reprise : le statut n'existe plus", async ({ page,
    * La loi du 14 février 2022 a supprimé l'EIRL, et sa création est impossible depuis
    * le 15 février 2022. La proposer laisserait choisir ce qui n'existe pas.
    */
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
     data: {
@@ -315,8 +333,8 @@ test("la réglementation se reconnaît dans une liste, et le doute est une répo
    * droit qu'on ne connaît pas : cochée à tort elle réclame un diplôme inutile,
    * oubliée elle fait refuser le dossier au guichet.
    */
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
     data: {
@@ -403,8 +421,8 @@ test("le récapitulatif montre tout ce qui sera déposé", async ({ page, reques
    * Il affichait quatre lignes sur une déclaration qui en compte trente : on ne
    * pouvait pas relire ce qu'on s'apprêtait à déposer.
    */
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
     data: { dossier, modifications: DECLARATION_COMPLETE },
@@ -432,8 +450,8 @@ test("l'offre dit ce qu'elle vend, son prix et ce qu'elle ne cache pas", async (
   page,
   request,
 }) => {
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
     data: { dossier, modifications: DECLARATION_COMPLETE },
@@ -455,8 +473,8 @@ test("l'offre dit ce qu'elle vend, son prix et ce qu'elle ne cache pas", async (
 
 test("une déclaration incomplète ne s'ouvre pas au paiement", async ({ page, request }) => {
   // L'avocat recevrait un dossier qu'il ne peut pas déposer, et il faudrait rembourser.
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   const reponse = await request.post("/api/auto-entrepreneur/paiement", { data: { dossier } });
   expect(reponse.status()).toBe(400);
@@ -471,8 +489,8 @@ test("un paiement abandonné le dit, et ne laisse pas croire à un débit", asyn
    * Revenir sur l'offre sans un mot laisse craindre d'avoir été débité quand même :
    * c'est le doute le plus coûteux d'un parcours de paiement.
    */
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
     data: { dossier, modifications: DECLARATION_COMPLETE },
@@ -506,8 +524,8 @@ test("une déclaration réglée ne se reprend plus", async ({ page, request }) =
     }),
   });
 
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
     data: { dossier, modifications: DECLARATION_COMPLETE },
@@ -569,8 +587,8 @@ test("les pièces se déposent depuis le parcours", async ({ page, request }) =>
    */
   const PDF = Buffer.from("%PDF-1.4\nfaux document d'essai\n%%EOF\n");
 
-  await page.goto("/auto-entrepreneur");
-  const dossier = Number(new URL(page.url()).searchParams.get("dossier"));
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
     data: {

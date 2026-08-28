@@ -32,7 +32,8 @@ import { Pieces } from "@/components/formulaire/Pieces";
 import styles from "./Parcours.module.css";
 
 interface Props {
-  dossierId: number;
+  /** Nul tant que rien n'a été saisi : le dossier naît au premier enregistrement. */
+  dossierId: number | null;
   etapes: Etape[];
   etapeCourante: number;
   brouillonInitial: Brouillon;
@@ -115,6 +116,16 @@ export function Parcours({
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
+  /*
+   * L'identifiant du dossier, une fois qu'il existe.
+   *
+   * Il arrive nul quand on entre sur le parcours : rien n'est écrit tant que rien
+   * n'est saisi. Le premier enregistrement l'ouvre et le retient ici, parce que
+   * `router.push` ne rafraîchit pas la page tout de suite - sans cette mémoire, un
+   * second « Continuer » arrivé entre-temps ouvrirait un deuxième dossier.
+   */
+  const [dossier, setDossier] = useState<number | null>(dossierId);
+
   const etape = etapes.find((e) => e.numero === etapeCourante) ?? etapes[0];
   const avancement = avancementParcours(brouillon);
 
@@ -176,6 +187,9 @@ export function Parcours({
   }
 
   async function enregistrer(suite: number) {
+    // Un enregistrement déjà parti suffit : le second ouvrirait un dossier de plus.
+    if (enCours) return;
+
     // Les règles sont vérifiées ici pour l'affichage immédiat, et à nouveau côté
     // serveur : ce qui arrive du navigateur n'est jamais cru sur parole.
     const manques = verifierEtape(etape.numero, brouillon);
@@ -186,12 +200,26 @@ export function Parcours({
     setAnomalies({});
 
     demarrer(async () => {
+      // Le dossier s'ouvre au premier enregistrement, une fois les règles de
+      // l'étape passées : ce qui est écrit en base porte alors une information.
+      let identifiant = dossier;
+      if (identifiant === null) {
+        const reponse = await fetch("/api/formalites/brouillon", { method: "POST" });
+        const corps = await reponse.json().catch(() => ({}));
+        if (!reponse.ok || typeof corps.dossier !== "number") {
+          setAnomalies({ forme: "Le dossier n'a pas pu être ouvert" });
+          return;
+        }
+        identifiant = corps.dossier;
+        setDossier(identifiant);
+      }
+
       await fetch("/api/formalites/brouillon", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier: dossierId, modifications: brouillon }),
+        body: JSON.stringify({ dossier: identifiant, modifications: brouillon }),
       });
-      router.push("/creation?dossier=" + dossierId + "&etape=" + suite);
+      router.push("/creation?dossier=" + identifiant + "&etape=" + suite);
       router.refresh();
     });
   }
@@ -601,11 +629,13 @@ export function Parcours({
             />
           )}
 
-          {etape.identifiant === "documents" && (
+          {/* Le dossier existe forcément ici : on n'atteint pas la cinquième étape
+              sans avoir franchi la première, qui l'ouvre. La garde est un filet. */}
+          {etape.identifiant === "documents" && dossier !== null && (
             <>
               <div className={styles.full}>
                 <Pieces
-                  dossierId={dossierId}
+                  dossierId={dossier}
                   pieces={piecesAttendues(brouillon.forme)}
                   deposees={piecesDeposees}
                 />
@@ -632,9 +662,9 @@ export function Parcours({
             />
           )}
 
-          {etape.identifiant === "actes" && (
+          {etape.identifiant === "actes" && dossier !== null && (
             <Actes
-              dossierId={dossierId}
+              dossierId={dossier}
               brouillon={brouillon}
               actes={actesProduits}
               surNote={(texte) => modifier("noteAvocat", texte)}
