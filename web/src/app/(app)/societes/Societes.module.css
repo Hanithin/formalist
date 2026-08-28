@@ -98,6 +98,10 @@
   font-weight: 600;
   color: #18181b;
   letter-spacing: 0;
+  /* La même interligne que les autres bandeaux. Sans elle, le titre héritait du 1,15
+     de globals.css : une boîte de 32 px au lieu de 28, dont le milieu tombait deux
+     pixels sous celui du logo. */
+  line-height: 1;
 }
 
 /* La phrase court sous le bandeau, sur toute la largeur, comme aux documents. */

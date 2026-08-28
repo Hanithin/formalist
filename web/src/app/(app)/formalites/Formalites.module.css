@@ -68,6 +68,15 @@
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1;
+  /*
+   * Le titre se pose sur la marge, non au milieu de la barre.
+   *
+   * Le bouton « Nouvelle formalité » est plus haut que lui : centré comme ses frères,
+   * le titre descendait de quatre pixels et quittait la ligne du logo. C'est le seul
+   * bandeau de l'application qui porte un bouton à côté du titre, et donc le seul où
+   * l'écart se creusait.
+   */
+  align-self: flex-start;
 }
 
 .topbarDate {
