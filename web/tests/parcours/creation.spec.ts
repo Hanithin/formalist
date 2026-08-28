@@ -317,6 +317,11 @@ test.describe("pièces et documents", () => {
   });
 
   test("les documents sont produits à partir des gabarits", async ({ page, request }) => {
+    /* Une production d'actes, convertis en PDF par LibreOffice : quelques secondes par
+       acte, et davantage quand la machine en convertit pour d'autres essais en même
+       temps. L'échec au bout de trente secondes ne disait rien du code. */
+    test.setTimeout(120_000);
+
     const dossier = await dossierPret(page, request);
 
     const reponse = await request.post("/api/formalites/documents", {

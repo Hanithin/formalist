@@ -139,6 +139,10 @@ test("un dossier incomplet ne produit pas d'actes troués", async ({ request }) 
 });
 
 test("la dissolution produit ses trois actes, la clôture les siens", async ({ request }) => {
+  /* Deux productions d'actes de suite, converties en PDF : voir creation.spec.ts, même
+     cause et même remède. */
+  test.setTimeout(120_000);
+
   const { dossier } = await dossierDissous(request);
 
   const premiere = await request.post("/api/formalites/fermeture/documents", {

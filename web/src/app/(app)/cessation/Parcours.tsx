@@ -115,9 +115,6 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
       <div className={styles.contenu}>
         <div className={styles.etapeTete}>
           <h2 className={styles.etapeTitre}>{ETAPES[etape - 1]?.titre}</h2>
-          <span className={styles.avancement}>
-            Étape {etape} sur {ETAPES.length}
-          </span>
         </div>
 
         {etape === 1 && <EtapeEntreprise etat={etat} changer={changer} refusDe={refusDe} />}

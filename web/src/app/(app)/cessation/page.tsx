@@ -41,9 +41,21 @@ export default async function Cessation({
   if (!dossier) {
     return (
       <main className={styles.page}>
-        <Fil />
-        <div className={styles.content}>
-          <h1 className={styles.titre}>Fermer mon auto-entreprise</h1>
+        {/*
+          Le nom de l'écran en tête, à la place du fil d'Ariane : il ne disait rien que
+          la colonne ne dise, et son seul rôle propre - repartir vers « Mes
+          formalités » - est tenu par cette colonne, qui ne quitte jamais l'écran.
+        */}
+        <header className={styles.entetePage}>
+          <div>
+            <h1 className={styles.entetePageTitre}>Fermer mon auto-entreprise</h1>
+            <p className={styles.entetePageSousTitre}>
+              Cessation définitive ou suspension temporaire.
+            </p>
+          </div>
+        </header>
+
+        <div className={`${styles.content} ${styles.contentSousEntete}`}>
           <Commencer />
         </div>
       </main>
@@ -67,9 +79,14 @@ export default async function Cessation({
   if (cessation.paye && !issue) {
     return (
       <main className={styles.page}>
-        <Fil nom={nom} />
-        <div className={styles.content}>
-          <h1 className={styles.titre}>{nom}</h1>
+        <header className={styles.entetePage}>
+          <div>
+            <h1 className={styles.entetePageTitre}>{nom}</h1>
+            <p className={styles.entetePageSousTitre}>Cessation d&apos;auto-entreprise</p>
+          </div>
+        </header>
+
+        <div className={`${styles.content} ${styles.contentSousEntete}`}>
           <Suivi
             etat={await etatDuDossier(ligne)}
             demande={await derniereDemandeDeCorrections(dossierId)}
@@ -101,13 +118,20 @@ export default async function Cessation({
 
   return (
     <main className={styles.page}>
-      <Fil nom={nom} />
-      <div className={styles.content}>
-        <h1 className={styles.titre}>
-          {cessation.nature === "temporaire"
-            ? "Suspendre mon auto-entreprise"
-            : "Fermer mon auto-entreprise"}
-        </h1>
+      <header className={styles.entetePage}>
+        <div>
+          <h1 className={styles.entetePageTitre}>{nom}</h1>
+          <p className={styles.entetePageSousTitre}>
+            {cessation.entreprise.denomination?.trim()
+              ? cessation.nature === "temporaire"
+                ? "Suspension d'auto-entreprise"
+                : "Cessation d'auto-entreprise"
+              : "Cessation définitive ou suspension temporaire."}
+          </p>
+        </div>
+      </header>
+
+      <div className={`${styles.content} ${styles.contentSousEntete}`}>
         <Parcours
           dossier={dossierId}
           initial={cessation}
@@ -120,14 +144,4 @@ export default async function Cessation({
   );
 }
 
-function Fil({ nom }: { nom?: string }) {
-  return (
-    <div className={styles.topbar}>
-      <Link href="/formalites">Mes formalités</Link>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
-      <span>{nom ?? "Fermer mon auto-entreprise"}</span>
-    </div>
-  );
-}
+

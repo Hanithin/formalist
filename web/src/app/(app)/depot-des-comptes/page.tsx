@@ -370,9 +370,29 @@ export default async function DepotDesComptes({
 
   return (
     <main className={styles.page}>
-      <Fil nom={nom} />
-      <div className={styles.content}>
-        <h1 className={styles.titre}>Dépôt des comptes annuels</h1>
+      {/*
+        Le nom de l'écran en tête, à la place du fil d'Ariane.
+
+        Quatre choses répondaient à « où suis-je » : le fil, la frise des étapes, la
+        pastille « Étape 1 sur 7 » et la colonne, où le service est déjà en
+        surbrillance. Le fil était le plus faible des quatre - du gris clair qui ne
+        disait rien que la colonne ne dise, et dont le seul rôle propre, repartir vers
+        « Mes formalités », est tenu par cette colonne qui ne quitte jamais l'écran.
+      */}
+      {/* Tant que la société n'est pas choisie, `nom` vaut le nom du service : le
+          répéter en sous-titre écrivait deux fois la même ligne. */}
+      <header className={styles.entetePage}>
+        <div>
+          <h1 className={styles.entetePageTitre}>{nom}</h1>
+          <p className={styles.entetePageSousTitre}>
+            {comptes.societe.denomination?.trim()
+              ? "Dépôt des comptes annuels"
+              : "Une fois par an, dans les six mois de la clôture."}
+          </p>
+        </div>
+      </header>
+
+      <div className={`${styles.content} ${styles.contentSousEntete}`}>
         <Parcours
           dossier={dossierId}
           initial={comptes}
@@ -381,17 +401,5 @@ export default async function DepotDesComptes({
         />
       </div>
     </main>
-  );
-}
-
-function Fil({ nom }: { nom?: string }) {
-  return (
-    <div className={styles.topbar}>
-      <Link href="/formalites">Mes formalités</Link>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
-      <span>{nom ?? "Dépôt des comptes annuels"}</span>
-    </div>
   );
 }

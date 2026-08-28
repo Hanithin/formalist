@@ -463,9 +463,6 @@ export function Parcours({
         */}
         <div className={styles.etapeTete}>
           <h2 className={styles.etapeTitre}>{ETAPES[etape - 1].titre}</h2>
-          <span className={styles.avancement}>
-            Étape {etape} sur {ETAPES.length}
-          </span>
         </div>
 
         {/*

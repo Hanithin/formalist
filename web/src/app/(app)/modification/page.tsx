@@ -78,13 +78,19 @@ export default async function Modification({
   if (!dossier) {
     return (
       <main className={styles.page}>
-        <div className={styles.topbar}>
-          <Link href="/formalites">Mes formalités</Link>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-          <span>Modifier ma société</span>
-        </div>
+        {/*
+          Le nom de l'écran en tête, à la place du fil d'Ariane : il ne disait rien que
+          la colonne ne dise, et son seul rôle propre - repartir vers « Mes
+          formalités » - est tenu par cette colonne, qui ne quitte jamais l'écran.
+        */}
+        <header className={styles.entetePage}>
+          <div>
+            <h1 className={styles.entetePageTitre}>Modifier ma société</h1>
+            <p className={styles.entetePageSousTitre}>
+              Siège, dénomination, dirigeant, capital : tout se déclare ici.
+            </p>
+          </div>
+        </header>
 
         {/*
           L'entrée est plus large que le parcours.
@@ -93,8 +99,9 @@ export default async function Modification({
           ici on compare neuf changements, et cette largeur les rangeait sur deux
           colonnes de cinq lignes - le bouton tombait alors sous le pli.
         */}
-        <div className={`${styles.content} ${styles.contentLarge}`}>
-          <h1 className={styles.titre}>Modifier ma société</h1>
+        <div
+          className={`${styles.content} ${styles.contentLarge} ${styles.contentSousEntete}`}
+        >
           <Commencer />
         </div>
       </main>
@@ -375,16 +382,20 @@ export default async function Modification({
 
   return (
     <main className={styles.page}>
-      <div className={styles.topbar}>
-        <Link href="/formalites">Mes formalités</Link>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-        <span>{modification.societe.denomination || "Modifier ma société"}</span>
-      </div>
+      <header className={styles.entetePage}>
+        <div>
+          <h1 className={styles.entetePageTitre}>
+            {modification.societe.denomination || "Modifier ma société"}
+          </h1>
+          <p className={styles.entetePageSousTitre}>
+            {modification.societe.denomination
+              ? "Modification de société"
+              : "Siège, dénomination, dirigeant, capital."}
+          </p>
+        </div>
+      </header>
 
-      <div className={styles.content}>
-        <h1 className={styles.titre}>Modifier ma société</h1>
+      <div className={`${styles.content} ${styles.contentSousEntete}`}>
         <Parcours
           dossier={dossierId}
           initial={initial}

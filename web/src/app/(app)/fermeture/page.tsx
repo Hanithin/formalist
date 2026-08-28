@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import {
   ouvrirFermeture,
@@ -51,9 +50,21 @@ export default async function Fermeture({
   if (!dossier) {
     return (
       <main className={styles.page}>
-        <Fil />
-        <div className={styles.content}>
-          <h1 className={styles.titre}>Fermer ma société</h1>
+        {/*
+          Le nom de l'écran en tête, à la place du fil d'Ariane : il ne disait rien que
+          la colonne ne dise, et son seul rôle propre - repartir vers « Mes
+          formalités » - est tenu par cette colonne, qui ne quitte jamais l'écran.
+        */}
+        <header className={styles.entetePage}>
+          <div>
+            <h1 className={styles.entetePageTitre}>Fermer ma société</h1>
+            <p className={styles.entetePageSousTitre}>
+              Dissolution, liquidation, puis radiation.
+            </p>
+          </div>
+        </header>
+
+        <div className={`${styles.content} ${styles.contentSousEntete}`}>
           <Commencer />
         </div>
       </main>
@@ -92,9 +103,14 @@ export default async function Fermeture({
   if (enAttente) {
     return (
       <main className={styles.page}>
-        <Fil nom={nom} />
-        <div className={styles.content}>
-          <h1 className={styles.titre}>{nom}</h1>
+        <header className={styles.entetePage}>
+          <div>
+            <h1 className={styles.entetePageTitre}>{nom}</h1>
+            <p className={styles.entetePageSousTitre}>Fermeture de société</p>
+          </div>
+        </header>
+
+        <div className={`${styles.content} ${styles.contentSousEntete}`}>
           <Suivi
             etat={await etatDuDossier(ligne)}
             demande={await derniereDemandeDeCorrections(dossierId)}
@@ -112,11 +128,20 @@ export default async function Fermeture({
 
   return (
     <main className={styles.page}>
-      <Fil nom={nom} />
-      <div className={styles.content}>
-        <h1 className={styles.titre}>
-          {fermeture.phase === "cloture" ? "Clôturer la liquidation" : "Fermer ma société"}
-        </h1>
+      <header className={styles.entetePage}>
+        <div>
+          <h1 className={styles.entetePageTitre}>{nom}</h1>
+          <p className={styles.entetePageSousTitre}>
+            {fermeture.societe.denomination?.trim()
+              ? fermeture.phase === "cloture"
+                ? "Clôture de la liquidation"
+                : "Fermeture de société"
+              : "Dissolution, liquidation, puis radiation."}
+          </p>
+        </div>
+      </header>
+
+      <div className={`${styles.content} ${styles.contentSousEntete}`}>
         <Parcours
           dossier={dossierId}
           initial={fermeture}
@@ -129,14 +154,4 @@ export default async function Fermeture({
   );
 }
 
-function Fil({ nom }: { nom?: string }) {
-  return (
-    <div className={styles.topbar}>
-      <Link href="/formalites">Mes formalités</Link>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
-      <span>{nom ?? "Fermer ma société"}</span>
-    </div>
-  );
-}
+

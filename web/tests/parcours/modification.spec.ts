@@ -165,7 +165,14 @@ test("le parcours s'affiche avec son fil d'étapes", async ({ page, request }) =
   await page.goto("/modification?dossier=" + dossier);
 
   await expect(page.getByRole("heading", { name: "La société" })).toBeVisible();
-  await expect(page.getByText("Étape 1 sur 7")).toBeVisible();
+  /*
+   * La frise dit l'étape, la pastille ne la redit plus.
+   *
+   * « Étape 1 sur 7 » doublait le fil qui la surplombe, en plus précis que lui : quatre
+   * éléments répondaient à « où suis-je » sur cet écran, en comptant le fil d'Ariane et
+   * la colonne. La frise situe et permet de revenir en arrière ; elle suffit.
+   */
+  await expect(page.getByRole("button", { name: /1.*Société/ }).first()).toBeVisible();
   await expect(page.getByLabel("Dénomination sociale")).toHaveValue("ESSAI MODIFICATION");
 });
 
@@ -389,7 +396,14 @@ test("une étape incomplète ne laisse pas passer à la suivante", async ({ page
   await page.getByRole("button", { name: "Continuer" }).click();
   await expect(page.getByRole("alert").first()).toContainText(/requis/);
   // On est resté sur place.
-  await expect(page.getByText("Étape 1 sur 7")).toBeVisible();
+  /*
+   * La frise dit l'étape, la pastille ne la redit plus.
+   *
+   * « Étape 1 sur 7 » doublait le fil qui la surplombe, en plus précis que lui : quatre
+   * éléments répondaient à « où suis-je » sur cet écran, en comptant le fil d'Ariane et
+   * la colonne. La frise situe et permet de revenir en arrière ; elle suffit.
+   */
+  await expect(page.getByRole("button", { name: /1.*Société/ }).first()).toBeVisible();
 });
 
 test("les refus ne s'affichent qu'après une tentative", async ({ page, request }) => {

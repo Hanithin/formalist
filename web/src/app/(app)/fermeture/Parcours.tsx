@@ -185,9 +185,6 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
       <div className={styles.contenu}>
         <div className={styles.etapeTete}>
           <h2 className={styles.etapeTitre}>{etapes[etape - 1]?.titre}</h2>
-          <span className={styles.avancement}>
-            Étape {etape} sur {etapes.length}
-          </span>
         </div>
 
         {etat.phase === "dissolution" ? (
