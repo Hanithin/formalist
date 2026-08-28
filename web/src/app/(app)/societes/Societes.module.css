@@ -89,9 +89,11 @@
   padding: 25px 48px 0;
 }
 
+/* Vingt-huit pixels, comme les documents, les formalités, les contrats et le reste :
+   un titre de page a la même taille partout, sans quoi on croit changer d'application. */
 .titre {
   margin: 0;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 600;
   color: #18181b;
   letter-spacing: 0;
