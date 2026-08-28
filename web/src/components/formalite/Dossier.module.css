@@ -25,10 +25,18 @@
   min-height: 36px;
 }
 
+/*
+ * Le titre se cale sur les capitales, non sur sa boîte.
+ *
+ * Les trois éléments partagent bien le même milieu au pixel près, et pourtant les
+ * pastilles se lisaient deux pixels trop bas : une ligne de 28 pixels réserve sous la
+ * baseline la place des jambages, que « GREMLINS COMMUNICATION » n'utilise pas. On
+ * descend donc la boîte du titre de la moitié de ce creux.
+ */
 .teteTitre {
   display: flex;
   align-items: center;
-  margin: 0;
+  margin: 3px 0 0;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 28px;
   font-weight: 600;
@@ -360,6 +368,75 @@
   }
 }
 
+/*
+ * Une place à remplir, non un bouton de plus.
+ *
+ * Déposer un justificatif demandait de quitter le dossier pour la bibliothèque
+ * commune, d'y ouvrir une fenêtre et d'y redésigner la société qu'on venait de
+ * quitter. Le pointillé dit ce qu'il est : un emplacement vide, au bout de la liste.
+ */
+.ajout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 2px 2px;
+  padding: 14px 16px;
+  border: 1px dashed #d4d4d8;
+  border-radius: 12px;
+  background: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ajout:hover {
+  border-color: #a1a1aa;
+  background: #fafafa;
+}
+
+.ajout:focus-within {
+  border-color: #18181b;
+}
+
+.ajoutSigne {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f4f4f5;
+  color: #52525b;
+}
+
+.ajoutSigne svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+.ajoutTexte {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+}
+
+.ajoutNote {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #a1a1aa;
+}
+
+.ajoutRefus {
+  margin: 8px 2px 0;
+  font-size: 12.5px;
+  color: #dc2626;
+}
+
 .vide {
   margin: 0;
   padding: 26px 12px;
@@ -520,9 +597,11 @@
   gap: 6px;
   flex-wrap: wrap;
   margin-top: 14px;
-  padding: 3px 4px 3px 14px;
+  padding: 3px 4px 3px 16px;
   border: 1px solid #e5e5e7;
-  border-radius: 20px;
+  /* La barre épouse le bouton qu'elle contient : deux rayons différents faisaient
+     lire une pastille posée dans un rectangle arrondi. */
+  border-radius: 100px;
   background: #fff;
 }
 

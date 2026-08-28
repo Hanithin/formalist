@@ -6,12 +6,13 @@ import { ouvrirSociete } from "@/infrastructure/db/depots/societes";
 import { echeancesDesDossiers } from "@/domain/formalite/accueil";
 import { adresseDuDossier, libelleDuType } from "@/domain/formalite/liste";
 import { sirenLisible } from "@/domain/modification/annonce";
-import { avancement, etatCourt } from "@/domain/formalite/etapes";
+import { libelleDossier } from "@/domain/formalite/etapes";
 import {
   dateEtHeure,
   dateRelative,
   phraseJournal,
   seSuffitAElleMeme,
+  ditQuelqueChose,
 } from "@/domain/formalite/journal";
 import styles from "../Societes.module.css";
 
@@ -77,6 +78,14 @@ export default async function FicheSociete({
   if (!ouverte) notFound();
 
   const { societe, etat, documents, journal } = ouverte;
+
+  /*
+   * L'historique ne garde que ce qui apprend quelque chose.
+   *
+   * Il alignait huit fois « Hani Madfai a mis à jour le dossier », à la minute près :
+   * c'est la phrase par défaut, celle où tombent les écritures internes du cabinet.
+   */
+  const racontees = journal.filter(ditQuelqueChose);
 
   const echeances = echeancesDesDossiers(
     societe.dossiers.map((d) => ({
@@ -219,16 +228,19 @@ export default async function FicheSociete({
               <ul className={styles.lignes}>
                 {societe.dossiers.map((dossier) => {
                   /*
-                   * L'état court se lit sur le statut et sur qui l'on attend.
+                   * Le même mot qu'ailleurs, et rien d'autre.
                    *
-                   * Un dossier arrêté à l'étape 1 attend le client ; un dossier
-                   * transmis attend le cabinet. Le portefeuille ne calcule pas les
-                   * actions attendues - c'est le travail de l'accueil - et retient
-                   * qu'un dossier en cours est en cours.
+                   * La ligne disait « En cours · 100 % » : deux mesures qui se
+                   * contredisent - un dépôt de comptes chez le greffe est à cent pour
+                   * cent du chemin du client, et il n'est pas « en cours » au sens où
+                   * quelqu'un le remplirait. La carte de « Mes formalités » dit
+                   * « Comptes déposés » ; la fiche de la société dit la même chose.
                    */
-                  const court = etatCourt({
+                  const etatDuDossier = libelleDossier({
+                    type: dossier.type,
                     status: dossier.status,
-                    attendLeClient: dossier.status === "en_cours",
+                    phase: dossier.etapeAffichee,
+                    sousPhase: dossier.sousPhase,
                   });
                   return (
                     <li key={dossier.id} className={styles.ligne}>
@@ -240,10 +252,7 @@ export default async function FicheSociete({
                           <span className={styles.ligneTitre}>
                             {libelleDuType(dossier.type) ?? "Formalité"}
                           </span>
-                          <span className={styles.ligneDetail}>
-                            {court.libelle} ·{" "}
-                            {avancement(dossier.etapeAffichee, dossier.offre)} %
-                          </span>
+                          <span className={styles.ligneDetail}>{etatDuDossier}</span>
                         </span>
                         <span className={styles.ligneFin}>
                           <span className={styles.ligneQuand}>
@@ -330,11 +339,11 @@ export default async function FicheSociete({
                 </h2>
               </div>
 
-              {journal.length === 0 ? (
-                <p className={styles.vide}>Rien ne s&apos;est encore passé.</p>
+              {racontees.length === 0 ? (
+                <p className={styles.vide}>Rien à signaler pour l&apos;instant.</p>
               ) : (
                 <ul className={styles.journal}>
-                  {journal.slice(0, 8).map((entree, rang) => {
+                  {racontees.slice(0, 8).map((entree, rang) => {
                     const cestMoi = entree.auteurRole === "user";
                     const qui = cestMoi ? "Vous" : (entree.auteur ?? "Formalist");
                     return (

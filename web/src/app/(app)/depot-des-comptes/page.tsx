@@ -6,7 +6,11 @@ import { ouvrirComptes, confirmerComptesAuRetour } from "@/infrastructure/db/dep
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import { Suivi } from "@/components/formalite/Suivi";
-import { documentsDuDossier, actesDuDossier } from "@/infrastructure/db/depots/documents";
+import {
+  documentsDuDossier,
+  actesDuDossier,
+  depotsDuDossier,
+} from "@/infrastructure/db/depots/documents";
 import { messagesDuDossier } from "@/infrastructure/db/depots/messages";
 import { Onglets, ongletDemande } from "@/components/formalite/Onglets";
 import {
@@ -143,9 +147,10 @@ export default async function DepotDesComptes({
      * les taire donnerait une liste vide juste après le règlement, alors que les actes
      * sont écrits : ils figurent, sans fichier, marqués comme étant chez l'avocat.
      */
-    const [deposes, actes, echanges] = await Promise.all([
+    const [deposes, actes, ajoutes, echanges] = await Promise.all([
       documentsDuDossier(utilisateur, dossierId),
       actesDuDossier(utilisateur, dossierId),
+      depotsDuDossier(utilisateur, dossierId),
       messagesDuDossier(utilisateur, dossierId),
     ]);
 
@@ -173,6 +178,14 @@ export default async function DepotDesComptes({
           creeLe: null,
           etat: "en_relecture" as EtatDuDocument,
         })),
+      /* Ce que le client a ajouté depuis cet onglet : il vit au coffre, rattaché ici. */
+      ...ajoutes.map((d) => ({
+        id: "depot-" + d.id,
+        nom: d.name,
+        fichier: d.file_path,
+        creeLe: d.created_at ? d.created_at.toISOString() : null,
+        etat: "depose" as EtatDuDocument,
+      })),
     ];
 
     const fil: MessageDuFil[] = echanges.map((m) => ({
@@ -247,7 +260,9 @@ export default async function DepotDesComptes({
                 />
               )}
 
-              {actif === "documents" && <DocumentsDuDossier documents={documents} />}
+              {actif === "documents" && (
+                <DocumentsDuDossier dossier={dossierId} documents={documents} />
+              )}
 
               {actif === "communication" && (
                 <FilDuDossier dossier={dossierId} moi={utilisateur.id} messages={fil} />

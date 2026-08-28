@@ -25,6 +25,8 @@ export interface DossierDeSociete {
   forme: string | null;
   siren: string | null;
   status: string | null;
+  /** La sous-phase du cabinet : elle situe un dossier déjà confié. */
+  sousPhase?: string | null;
   offre: string;
   etapeAffichee: number;
   majLe: Date | string;

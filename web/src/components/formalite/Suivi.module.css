@@ -48,39 +48,64 @@
  * C'est la seule qu'on vient lire : noyée dans la liste, elle demandait de compter
  * les coches pour savoir où on en est.
  */
+/*
+ * L'étape du moment, cernée de noir.
+ *
+ * Un aplat gris clair aux angles arrondis, sans bord ni repère : le bloc qui porte la
+ * seule chose à savoir se lisait comme une note de bas de page, au milieu de cartes
+ * qui lui ressemblaient. Le trait noir le détache des étapes qu'il surplombe - elles
+ * ont un filet gris pâle - sans lui ajouter d'ornement.
+ */
 .focus {
   margin: 20px 0 0;
-  padding: 16px 18px;
+  padding: 17px 19px;
+  border: 1px solid #18181b;
   border-radius: 12px;
-  background: #fafafa;
+  background: #fff;
 }
 
 /* Ce qui attend un geste se distingue : le reste est de l'information. */
 .aVous {
+  border-color: #16a34a;
   background: #f0fdf4;
 }
 
 .main {
-  display: inline-block;
-  margin-bottom: 8px;
-  padding: 3px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 9px;
+  padding: 4px 11px;
+  border: 1px solid #e4e4e7;
   border-radius: 100px;
-  background: rgba(0, 0, 0, 0.06);
+  background: #fff;
   font-size: 11.5px;
   font-weight: 600;
-  color: #555;
+  color: #52525b;
   letter-spacing: 0;
 }
 
+/* Le point dit qu'il se passe quelque chose, avant qu'on ait lu le nom. */
+.main::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
 .aVous .main {
-  background: #059669;
-  color: #fff;
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .focusTitre {
-  margin: 0 0 4px;
-  font-size: 15px;
+  margin: 0 0 5px;
+  font-size: 15.5px;
   font-weight: 600;
+  letter-spacing: 0;
   color: #111;
 }
 

@@ -42,7 +42,7 @@ const etat = (modifications: Partial<EtatDuCabinet> = {}): EtatDuCabinet => ({
 describe("le vocabulaire suit le dossier", () => {
   it("une modification ne délivre pas de Kbis", () => {
     // Le greffe délivre un extrait à jour : la société existe déjà.
-    expect(DOCUMENT_FINAL.modification).toBe("Extrait à jour");
+    expect(DOCUMENT_FINAL.modification).toBe("Kbis à jour");
     expect(DOCUMENT_FINAL.creation).toBe("Extrait Kbis");
     expect(DOCUMENT_FINAL["auto-entrepreneur"]).toContain("SIRENE");
   });

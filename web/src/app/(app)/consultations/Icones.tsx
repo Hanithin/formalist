@@ -148,11 +148,18 @@ export function IconeDeMatiere({ matiere }: { matiere: CleMatiere }) {
       </svg>
     );
   }
+  /*
+   * Un euro, non un dollar.
+   *
+   * Le signe $ dessinait la fiscalité d'un cabinet américain, sur une plateforme qui
+   * ne traite que du droit français.
+   */
   if (matiere === "fiscalite") {
     return (
       <svg {...traits}>
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+        <path d="M18 6.5A6.5 6.5 0 007.5 12 6.5 6.5 0 0018 17.5" />
+        <line x1="4" y1="10" x2="13" y2="10" />
+        <line x1="4" y1="14" x2="13" y2="14" />
       </svg>
     );
   }

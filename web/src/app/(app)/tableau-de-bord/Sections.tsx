@@ -451,19 +451,28 @@ export function Echeances({ echeances }: { echeances: Echeance[] }) {
           {echeances.slice(0, 4).map((echeance) => {
             const passee = enRetard(echeance);
             return (
+              /*
+                La date sous l'intitulé, non entre lui et le bouton.
+                
+                Trois colonnes dans une carte de trois cents pixels : le nom de la
+                société poussait la date, qui poussait le bouton, et « 14 mars 2027 »
+                finissait sous « Préparer ». Ce qui se lit tient à gauche, ce qui se
+                clique tient à droite.
+              */
               <li key={echeance.cle} className={styles.echeance}>
                 <span className={styles.echeanceCorps}>
                   <span className={styles.echeanceIntitule}>{echeance.intitule}</span>
                   <span className={styles.echeanceSociete}>{echeance.societe}</span>
+                  <span
+                    className={
+                      passee ? `${styles.echeanceDate} ${styles.depassee}` : styles.echeanceDate
+                    }
+                  >
+                    {passee ? "Dépassée le " : ""}
+                    {dateLisible(echeance.limite)}
+                  </span>
                 </span>
-                <span
-                  className={
-                    passee ? `${styles.echeanceDate} ${styles.depassee}` : styles.echeanceDate
-                  }
-                >
-                  {passee ? "Dépassée le " : ""}
-                  {dateLisible(echeance.limite)}
-                </span>
+
                 <Link href={echeance.lien} className={styles.echeanceGeste}>
                   {echeance.bouton}
                 </Link>

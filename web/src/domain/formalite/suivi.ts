@@ -227,7 +227,7 @@ const MODIFICATION: Definition[] = [
     identifiant: "confie",
     titre: "Dossier confié à un avocat",
     explication:
-      "Votre modification est réglée et proposée à nos avocats. Le premier disponible la prend en charge, généralement dans la journée.",
+      "C'est parti : votre modification est réglée et proposée à nos avocats. Le premier disponible la prend en main, en général dans la journée.",
     main: "avocat",
     /*
      * Confié veut dire pris, non payé.
@@ -242,7 +242,7 @@ const MODIFICATION: Definition[] = [
     identifiant: "verification",
     titre: "Vérification par l'avocat",
     explication:
-      "L'avocat relit le procès-verbal, les statuts à jour et vos justificatifs. Il vous écrit si quelque chose doit être repris.",
+      "Votre avocat contrôle le procès-verbal, les statuts à jour et vos justificatifs : rien ne part au greffe sans son accord. Il vous écrit si un point doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
     action: "Voir ce qui est demandé",
     ou: "messagerie",
@@ -262,7 +262,7 @@ const MODIFICATION: Definition[] = [
      * payé pour ne pas faire.
      */
     explication:
-      "Nous publions l'avis dans un support habilité, dans le département du siège. Vous n'avez rien à faire.",
+      "Nous publions l'avis pour vous, dans un support habilité du département de votre siège. C'est compris dans votre forfait : rien à avancer, rien à faire.",
     main: "avocat",
     faite: (e) => e.aLAnnoncePubliee,
   },
@@ -270,15 +270,22 @@ const MODIFICATION: Definition[] = [
     identifiant: "guichet",
     titre: "Dépôt au guichet unique",
     explication:
-      "L'avocat dépose la modification à l'INPI en votre nom, avec les statuts à jour. Comptez trois à sept jours ouvrés.",
+      "Votre avocat dépose la modification à l'INPI en votre nom, statuts à jour à l'appui. Comptez trois à sept jours ouvrés.",
     main: "avocat",
     faite: (e) => auMoins(e.sousPhase, "5d"),
   },
   {
     identifiant: "extrait",
-    titre: "Extrait à jour",
+    /*
+     * Le mot que le client connaît est « Kbis ».
+     *
+     * « Extrait à jour » est le terme du greffe : personne ne demande son extrait à sa
+     * banque, on lui donne son Kbis. L'étape annonçait donc, sans le nommer, le seul
+     * document que le client attend.
+     */
+    titre: "Kbis à jour",
     explication:
-      "Le greffe inscrit la modification et délivre un nouvel extrait. Il vous est remis dès sa réception.",
+      "Le greffe inscrit la modification et délivre votre nouveau Kbis. Il rejoint vos documents dès sa réception : vous n'avez rien à réclamer.",
     main: "avocat",
     faite: (e) => e.aLeKbis || e.status === "terminee",
   },
@@ -300,7 +307,7 @@ const COMPTES: Definition[] = [
     identifiant: "transmis",
     titre: "Comptes transmis à l'avocat",
     explication:
-      "Vos comptes approuvés et leurs annexes sont partis chez l'avocat. Il en accuse réception et les prend en main.",
+      "C'est parti : vos comptes approuvés et leurs annexes sont chez l'avocat. Il en accuse réception et les prend en main.",
     main: "avocat",
     faite: (e) => e.status !== "en_cours" && e.status !== null,
   },
@@ -308,7 +315,7 @@ const COMPTES: Definition[] = [
     identifiant: "verification",
     titre: "Vérification par l'avocat",
     explication:
-      "L'avocat relit le procès-verbal d'approbation, la déclaration de confidentialité s'il y en a une, et contrôle vos comptes. Il vous écrit si quelque chose doit être repris.",
+      "Votre avocat contrôle le procès-verbal d'approbation, la déclaration de confidentialité s'il y en a une, et la cohérence de vos comptes : rien ne part au greffe sans son accord. Il vous écrit si un point doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
     action: "Voir ce qui est demandé",
     ou: "messagerie",
@@ -320,7 +327,7 @@ const COMPTES: Definition[] = [
     identifiant: "greffe",
     titre: "Dépôt au greffe",
     explication:
-      "L'avocat dépose vos comptes au greffe du tribunal de commerce, en votre nom. Comptez quelques jours ouvrés.",
+      "Votre avocat dépose vos comptes au greffe du tribunal de commerce, en votre nom. Comptez quelques jours ouvrés.",
     main: "avocat",
     faite: (e) => auMoins(e.sousPhase, "5d"),
   },
@@ -334,7 +341,7 @@ const COMPTES: Definition[] = [
      * l'avocat peut clore le dossier sans. La phrase ne le promet donc pas.
      */
     explication:
-      "Le greffe a enregistré le dépôt : votre obligation est remplie. Le récépissé, quand le greffe en délivre un, rejoint vos documents.",
+      "C'est fait : le greffe a enregistré le dépôt, votre obligation annuelle est remplie pour cet exercice. Le récépissé, quand le greffe en délivre un, rejoint vos documents.",
     main: "avocat",
     /*
      * La sous-phase suffit, sans attendre un document.

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { mesDisponibilites } from "@/infrastructure/db/depots/consultations";
-import { SousNavigation } from "../SousNavigation";
 import { Disponibilites } from "./Disponibilites";
 import styles from "../Avocat.module.css";
 
@@ -39,7 +38,6 @@ export default async function PageDisponibilites() {
         aux clients.
       </p>
 
-      <SousNavigation actif="disponibilites" />
 
       <div className={styles.content}>
         <Disponibilites

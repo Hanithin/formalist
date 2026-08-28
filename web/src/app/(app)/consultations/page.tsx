@@ -4,7 +4,6 @@ import { mesConsultations, avocatsDisponibles } from "@/infrastructure/db/depots
 import { matiereValide } from "@/domain/consultation/matieres";
 import { dateEnTete } from "@/lib/dates";
 import { Consultations, type ConsultationAffichee } from "./Consultations";
-import { SousNavigation } from "../avocat/SousNavigation";
 import styles from "./Consultations.module.css";
 
 export const metadata: Metadata = {
@@ -47,7 +46,6 @@ export default async function PageConsultations({
     matiere || demande
       ? { matiere: matiereValide(matiere), demande: (demande ?? "").slice(0, 2000) }
       : null;
-  const estAvocat = utilisateur.roles.includes("avocat") || utilisateur.roles.includes("admin");
 
   const [consultations, avocats] = await Promise.all([
     mesConsultations(utilisateur),
@@ -78,12 +76,6 @@ export default async function PageConsultations({
         <span className={styles.topbarDate}>{dateEnTete()}</span>
       </div>
       <p className={styles.sousTitre}>Échangez en visio avec un avocat spécialisé.</p>
-
-      {estAvocat && (
-        <div className={styles.sousNavigation}>
-          <SousNavigation actif="consultations" />
-        </div>
-      )}
 
       <Consultations
         consultations={affichees}

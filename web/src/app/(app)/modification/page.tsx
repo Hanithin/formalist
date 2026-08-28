@@ -5,9 +5,22 @@ import { ouvrirModification, confirmerAuRetour } from "@/infrastructure/db/depot
 import { Parcours, type EtatDuDossier } from "./Parcours";
 import { Commencer } from "./Commencer";
 import { Suivi } from "@/components/formalite/Suivi";
+import { TeteDuDossier } from "@/components/formalite/TeteDuDossier";
 import { definitions } from "@/domain/modification/types";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
-import { actesDuDossier, documentsDuDossier } from "@/infrastructure/db/depots/documents";
+import {
+  actesDuDossier,
+  documentsDuDossier,
+  depotsDuDossier,
+} from "@/infrastructure/db/depots/documents";
+import { messagesDuDossier } from "@/infrastructure/db/depots/messages";
+import { Onglets, ongletDemande } from "@/components/formalite/Onglets";
+import {
+  DocumentsDuDossier,
+  type DocumentDuDossier,
+  type EtatDuDocument,
+} from "@/components/formalite/DocumentsDuDossier";
+import { FilDuDossier, type MessageDuFil } from "@/components/formalite/FilDuDossier";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import styles from "./Modification.module.css";
 
@@ -23,6 +36,12 @@ export const metadata: Metadata = {
  * étape, par recherche au registre. C'est ce qui permet de modifier une société créée
  * ailleurs - c'est-à-dire la plupart d'entre elles.
  */
+
+/** « 31 décembre 2025 à 14:05 » : la date d'un message, dans le fil. */
+function quandDuMessage(date: Date | null): string {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(date);
+}
 
 /** Le chevron d'un chemin : il dit qu'on va ailleurs, non qu'on déclenche une action. */
 function Chevron() {
@@ -45,10 +64,16 @@ function Chevron() {
 export default async function Modification({
   searchParams,
 }: {
-  searchParams: Promise<{ dossier?: string; etape?: string; session?: string; paiement?: string }>;
+  searchParams: Promise<{
+    dossier?: string;
+    etape?: string;
+    session?: string;
+    paiement?: string;
+    onglet?: string;
+  }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { dossier, etape, session, paiement } = await searchParams;
+  const { dossier, etape, session, paiement, onglet } = await searchParams;
 
   if (!dossier) {
     return (
@@ -110,21 +135,76 @@ export default async function Modification({
    */
   if (modification.paye && issue !== "annule") {
     const etat = await etatDuDossier(ligne);
+    const actif = ongletDemande(onglet);
+    const base = "/modification?dossier=" + dossierId;
+
+    /*
+     * Les trois faces du dossier, comme sur le dépôt des comptes.
+     *
+     * Les documents vivaient dans la bibliothèque commune, où il fallait retrouver sa
+     * société parmi les autres, et les messages dans la messagerie, où il fallait
+     * retrouver le bon fil.
+     */
+    const [deposes, actes, ajoutes, echanges] = await Promise.all([
+      documentsDuDossier(utilisateur, dossierId),
+      actesDuDossier(utilisateur, dossierId),
+      depotsDuDossier(utilisateur, dossierId),
+      messagesDuDossier(utilisateur, dossierId),
+    ]);
+
+    const documents: DocumentDuDossier[] = [
+      ...deposes.map((d) => ({
+        id: String(d.id),
+        nom: d.name,
+        fichier: d.file_path,
+        creeLe: d.created_at ? d.created_at.toISOString() : null,
+        etat: (d.uploaded_by === "system" ? "valide" : "depose") as EtatDuDocument,
+      })),
+      ...actes
+        .filter((a) => a.enRelecture)
+        .map((a) => ({
+          id: "acte-" + a.id,
+          nom: a.titre,
+          fichier: null,
+          creeLe: null,
+          etat: "en_relecture" as EtatDuDocument,
+        })),
+      ...ajoutes.map((d) => ({
+        id: "depot-" + d.id,
+        nom: d.name,
+        fichier: d.file_path,
+        creeLe: d.created_at ? d.created_at.toISOString() : null,
+        etat: "depose" as EtatDuDocument,
+      })),
+    ];
+
+    const fil: MessageDuFil[] = echanges.map((m) => ({
+      id: m.id,
+      expediteurId: m.expediteurId,
+      expediteur: m.expediteur,
+      contenu: m.contenu,
+      fichier: m.fichier,
+      quand: quandDuMessage(m.envoyeLe),
+    }));
 
     return (
       <main className={styles.page}>
-        <div className={styles.topbar}>
-          <Link href="/formalites">Mes formalités</Link>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-          <span>{modification.societe.denomination || "Modifier ma société"}</span>
-        </div>
+        {/*
+          Le nom de la société en tête, comme sur le dépôt des comptes.
 
+          Le fil d'Ariane le disait en gris clair au-dessus de tout, et le retour se
+          visait au pixel. Les deux écrans suivent le même dossier réglé : ils se lisent
+          de la même façon.
+        */}
         <div className={`${styles.content} ${styles.contentLarge}`}>
-          <h1 className={styles.titre}>
-            {modification.societe.denomination || "Modifier ma société"}
-          </h1>
+          <TeteDuDossier
+            titre={modification.societe.denomination || "Modifier ma société"}
+            mentions={[
+              "Modification de société",
+              modification.societe.forme || null,
+            ]}
+            retour={{ href: "/formalites", libelle: "Mes formalités" }}
+          />
 
           {/* Le paiement se confirme là où l'on arrive, sans fenêtre à refermer. */}
           {issue === "regle" && (
@@ -142,14 +222,30 @@ export default async function Modification({
             l'on descendait pour trouver un bouton. En colonne, ce qui avance se lit
             d'un côté, ce qu'on peut faire de l'autre.
           */}
+          <Onglets
+            base={base}
+            actif={actif}
+            comptes={{ documents: documents.length, communication: fil.length }}
+          />
+
           <div className={styles.suiviColonnes}>
             <div className={styles.suiviPrincipal}>
-              <Suivi
-                etat={etat}
-                demande={await derniereDemandeDeCorrections(dossierId)}
-                lienAction={"/modification?dossier=" + dossierId}
-                lienMessagerie={"/messagerie?dossier=" + dossierId}
-              />
+              {actif === "suivi" && (
+                <Suivi
+                  etat={etat}
+                  demande={await derniereDemandeDeCorrections(dossierId)}
+                  lienAction={base}
+                  lienMessagerie={base + "&onglet=communication"}
+                />
+              )}
+
+              {actif === "documents" && (
+                <DocumentsDuDossier dossier={dossierId} documents={documents} />
+              )}
+
+              {actif === "communication" && (
+                <FilDuDossier dossier={dossierId} moi={utilisateur.id} messages={fil} />
+              )}
             </div>
 
             <aside className={styles.suiviColonne}>
@@ -193,7 +289,7 @@ export default async function Modification({
                   icône, un intitulé, un chevron, comme partout ailleurs dans l'app.
                 */}
                 <div className={styles.confieLiens}>
-                  <Link className={styles.confieLien} href={"/messagerie?dossier=" + dossierId}>
+                  <Link className={styles.confieLien} href={base + "&onglet=communication"}>
                     <span className={styles.confieIcone} aria-hidden="true">
                       <svg
                         viewBox="0 0 24 24"
@@ -215,7 +311,7 @@ export default async function Modification({
                     <Chevron />
                   </Link>
 
-                  <Link className={styles.confieLien} href="/documents">
+                  <Link className={styles.confieLien} href={base + "&onglet=documents"}>
                     <span className={styles.confieIcone} aria-hidden="true">
                       <svg
                         viewBox="0 0 24 24"
@@ -230,9 +326,9 @@ export default async function Modification({
                       </svg>
                     </span>
                     <span className={styles.confieLienTexte}>
-                      Voir mes documents
+                      Voir les documents
                       <span className={styles.confieLienPrecision}>
-                        Vos actes dès qu&apos;ils sont relus
+                        Les actes de ce dossier
                       </span>
                     </span>
                     <Chevron />

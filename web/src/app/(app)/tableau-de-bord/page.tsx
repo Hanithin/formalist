@@ -15,7 +15,6 @@ import {
 import { avancement, nomEtape, nombreDEtapes, nomsDEtapes } from "@/domain/formalite/etapes";
 import { adresseDuDossier, libelleDuType, nomAffichable } from "@/domain/formalite/liste";
 import { dateEnTete } from "@/lib/dates";
-import { NouvelleFormalite } from "@/components/navigation/NouvelleFormalite";
 import { Accueil } from "./Accueil";
 import {
   DocumentsDuDossier,
@@ -94,10 +93,7 @@ export default async function TableauDeBord() {
       <main className={styles.page}>
         <header className={styles.entete}>
           <h1 className={styles.enteteTitre}>{phraseDAccueil(prenom, 0)}</h1>
-          <div className={styles.enteteDroite}>
-            <span className={styles.enteteDate}>{dateEnTete()}</span>
-            <NouvelleFormalite apparence="page" />
-          </div>
+          <span className={styles.enteteDate}>{dateEnTete()}</span>
         </header>
 
         <div className={styles.content}>
@@ -202,10 +198,7 @@ export default async function TableauDeBord() {
       <main className={styles.page}>
         <header className={styles.entete}>
           <h1 className={styles.enteteTitre}>{phraseDAccueil(prenom, societes.length)}</h1>
-          <div className={styles.enteteDroite}>
-            <span className={styles.enteteDate}>{dateEnTete()}</span>
-            <NouvelleFormalite apparence="page" />
-          </div>
+          <span className={styles.enteteDate}>{dateEnTete()}</span>
         </header>
 
         <div className={styles.content}>
@@ -259,10 +252,7 @@ export default async function TableauDeBord() {
         <h1 className={styles.enteteTitre}>{phraseDAccueil(prenom, societes.length)}</h1>
 
         {/* La date à droite, avant le bouton : elle situe, elle n'annonce pas. */}
-        <div className={styles.enteteDroite}>
-          <span className={styles.enteteDate}>{dateEnTete()}</span>
-          <NouvelleFormalite apparence="page" />
-        </div>
+        <span className={styles.enteteDate}>{dateEnTete()}</span>
       </header>
 
       <div className={styles.content}>

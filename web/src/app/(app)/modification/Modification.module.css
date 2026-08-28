@@ -219,7 +219,9 @@
 .contentLarge {
   max-width: 1180px;
   padding-top: 28px;
-  padding-bottom: 0;
+  /* Sans quoi la dernière carte touche le bas de la fenêtre : on ne voit pas où
+     la liste s'arrête, et rien ne dit qu'on est arrivé au bout. */
+  padding-bottom: 48px;
 }
 
 /* Le titre de page existe pour la structure ; à l'écran, c'est le fil d'ariane et le

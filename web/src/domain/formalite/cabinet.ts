@@ -138,7 +138,8 @@ export function typeDeDossier(brut: string | null | undefined): TypeDeDossier {
 
 export const DOCUMENT_FINAL: Record<TypeDeDossier, string> = {
   creation: "Extrait Kbis",
-  modification: "Extrait à jour",
+  /* Le mot que le client connaît est « Kbis » : personne ne réclame son extrait. */
+  modification: "Kbis à jour",
   "auto-entrepreneur": "Avis de situation SIRENE",
   /* Le greffe ne délivre pas d'extrait pour un dépôt de comptes : il en accuse réception. */
   comptes: "Récépissé de dépôt",

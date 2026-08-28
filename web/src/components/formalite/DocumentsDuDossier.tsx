@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Apercu } from "@/components/document/Apercu";
 import { formaterDate } from "@/lib/dates";
 import styles from "./Dossier.module.css";
@@ -39,23 +40,47 @@ const MENTIONS: Record<EtatDuDocument, string> = {
  * vide juste après le règlement, et l'ouvrir remettrait au client un acte que
  * l'avocat n'a pas encore relu.
  */
-export function DocumentsDuDossier({ documents }: { documents: DocumentDuDossier[] }) {
+export function DocumentsDuDossier({
+  dossier,
+  documents,
+}: {
+  /** Ce qu'on ajoute se range dans ce dossier, non dans le coffre en vrac. */
+  dossier: number;
+  documents: DocumentDuDossier[];
+}) {
   const [apercu, setApercu] = useState<{ nom: string; fichier: string } | null>(null);
+  const [refus, setRefus] = useState<string | null>(null);
+  const [enCours, demarrer] = useTransition();
+  const router = useRouter();
 
-  if (documents.length === 0) {
-    return (
-      <section className={styles.documents} aria-label="Documents du dossier">
-        <p className={styles.vide}>
-          Aucun document pour l&apos;instant. Vos actes apparaîtront ici dès que
-          l&apos;avocat les aura relus.
-        </p>
-      </section>
-    );
+  function ajouter(fichier: File) {
+    setRefus(null);
+
+    demarrer(async () => {
+      const corps = new FormData();
+      corps.append("fichier", fichier);
+      corps.append("nom", fichier.name);
+      corps.append("dossier", String(dossier));
+
+      const reponse = await fetch("/api/documents", { method: "POST", body: corps });
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "Le dépôt n'a pas abouti.");
+        return;
+      }
+      router.refresh();
+    });
   }
 
   return (
     <>
       <section className={styles.documents} aria-label="Documents du dossier">
+        {documents.length === 0 ? (
+          <p className={styles.vide}>
+            Aucun document pour l&apos;instant. Vos actes apparaîtront ici dès que
+            l&apos;avocat les aura relus.
+          </p>
+        ) : (
         <ul className={styles.documentsListe}>
           {documents.map((document) => {
             const quand = document.creeLe ? formaterDate(new Date(document.creeLe)) : null;
@@ -113,6 +138,43 @@ export function DocumentsDuDossier({ documents }: { documents: DocumentDuDossier
             );
           })}
         </ul>
+        )}
+
+        {/*
+          Ajouter une pièce, depuis le dossier auquel elle se rapporte.
+
+          Déposer un justificatif demandait de quitter le dossier pour la bibliothèque
+          commune, d'y ouvrir une fenêtre et d'y redésigner la société qu'on venait de
+          quitter. Le bouton est ici, en pointillé et pleine largeur : il se lit comme
+          une place à remplir, non comme une action de plus.
+        */}
+        <label className={styles.ajout}>
+          <span className={styles.ajoutSigne} aria-hidden="true">
+            <Plus />
+          </span>
+          <span className={styles.ajoutTexte}>
+            {enCours ? "Envoi…" : "Ajouter un document à ce dossier"}
+            <span className={styles.ajoutNote}>
+              PDF, image, Word ou Excel - il rejoint ce dossier et votre bibliothèque.
+            </span>
+          </span>
+          <input
+            type="file"
+            className={styles.champFichier}
+            disabled={enCours}
+            onChange={(e) => {
+              const fichier = e.target.files?.[0];
+              e.target.value = "";
+              if (fichier) ajouter(fichier);
+            }}
+          />
+        </label>
+
+        {refus && (
+          <p className={styles.ajoutRefus} role="alert">
+            {refus}
+          </p>
+        )}
       </section>
 
       {apercu && (
@@ -123,6 +185,22 @@ export function DocumentsDuDossier({ documents }: { documents: DocumentDuDossier
         />
       )}
     </>
+  );
+}
+
+function Plus() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
   );
 }
 

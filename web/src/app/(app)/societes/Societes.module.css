@@ -112,6 +112,140 @@
   padding: 22px 48px 48px;
 }
 
+/* ------------------------------------------------------- Filtrer, chercher */
+
+/*
+ * À huit sociétés, on ne regarde plus la liste : on y cherche la sienne.
+ *
+ * Il n'y avait ni recherche ni filtre - il fallait descendre la colonne des noms à
+ * l'œil. Les autres listes de l'application ont les deux, sous le titre, à la même
+ * place et dans le même dessin.
+ */
+.barre {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 18px;
+}
+
+.filtres {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filtre {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid #ececee;
+  border-radius: 100px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #52525b;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.filtre:hover {
+  border-color: #d4d4d8;
+  color: #18181b;
+}
+
+.filtreActif {
+  border-color: #18181b;
+  background: #18181b;
+  color: #fff;
+}
+
+.filtreCompte {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #a1a1aa;
+}
+
+.filtreActif .filtreCompte {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.recherche {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+  margin-left: auto;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid #ececee;
+  border-radius: 100px;
+  background: #fff;
+}
+
+.recherche:focus-within {
+  border-color: #b4b4bb;
+}
+
+/* Sans taille, le dessin s'affiche à la dimension de son cadre : plein écran. */
+.recherche svg {
+  display: block;
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  color: #a1a1aa;
+}
+
+.recherche input,
+.recherche input:hover,
+.recherche input:focus {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: #18181b;
+}
+
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.videLien {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: #18181b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* --------------------------------------------------------- Le portefeuille */
 
 /*

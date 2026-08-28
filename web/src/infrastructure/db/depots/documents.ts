@@ -263,6 +263,23 @@ export async function documentsDuDossier(
 }
 
 /**
+ * Ce que le client a lui-même déposé sur ce dossier, hors pièces attendues.
+ *
+ * Un dépôt libre ne rejoint pas la table des documents du dossier mais le coffre
+ * personnel, rattaché par `source_id` : sans cette lecture, un document ajouté depuis
+ * l'onglet du dossier disparaissait de l'onglet où on venait de l'ajouter, pour ne se
+ * retrouver que dans la bibliothèque commune.
+ */
+export async function depotsDuDossier(utilisateur: UtilisateurConnecte, dossierId: number) {
+  await exigerDossier(utilisateur, dossierId);
+
+  return prisma.user_documents.findMany({
+    where: { user_id: utilisateur.id, source_type: "upload", source_id: dossierId },
+    orderBy: { created_at: "desc" },
+  });
+}
+
+/**
  * Les actes qu'un dossier a déjà produits, pour l'étape qui les produit.
  *
  * documentsDuDossier écarte les projets en relecture, et c'est bien ce qu'il doit

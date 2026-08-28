@@ -237,11 +237,24 @@ export function salutation(maintenant: Date = new Date()): string {
  *
  * Le tirage est un paramètre : sans cela, la phrase ne se testerait pas.
  */
+/*
+ * La phrase d'accueil change d'heure en heure, non de clic en clic.
+ *
+ * Le tirage était aléatoire à chaque rendu : revenir sur l'accueil trois fois donnait
+ * trois accueils différents, et la page paraissait instable - on croyait avoir mal lu.
+ * L'heure suffit à la renouveler sans qu'elle bouge sous les yeux.
+ */
+function tirageDeLHeure(quand: Date): number {
+  const heures = Math.floor(quand.getTime() / 3_600_000);
+  /* Un mélange simple : deux heures qui se suivent ne doivent pas tomber sur la même. */
+  return ((heures * 2_654_435_761) % 1000) / 1000;
+}
+
 export function phraseDAccueil(
   prenom: string,
   nombreDeDossiers: number,
   maintenant: Date = new Date(),
-  tirage: number = Math.random()
+  tirage: number = tirageDeLHeure(maintenant)
 ): string {
   const heure = maintenant.getHours();
   const seul = nombreDeDossiers === 1;

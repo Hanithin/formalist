@@ -3971,9 +3971,11 @@ button.ligneCorps:disabled {
   gap: 6px;
   flex-wrap: wrap;
   margin-top: 14px;
-  padding: 3px 4px 3px 14px;
+  padding: 3px 4px 3px 16px;
   border: 1px solid #e5e5e7;
-  border-radius: 20px;
+  /* La barre épouse le bouton qu'elle contient : deux rayons différents faisaient
+     lire une pastille posée dans un rectangle arrondi. */
+  border-radius: 100px;
   background: #fff;
 }
 

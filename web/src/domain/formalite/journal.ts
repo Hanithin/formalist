@@ -46,9 +46,37 @@ export function phraseJournal(entree: EntreeJournal, cestMoi: boolean): string {
       return sujet ? sujet.toLowerCase() : a + " fait avancer le dossier";
     case "note":
       return a + " laissé une note";
+    case "dossier_corrige":
+      return a + " corrigé le dossier" + (entree.valeur ? " : " + entree.valeur : "");
     default:
       return a + " mis à jour le dossier";
   }
+}
+
+/*
+ * Ce que le client gagne à lire, et rien d'autre.
+ *
+ * La fiche d'une société affichait huit lignes « Hani Madfai a mis à jour le dossier »
+ * à la minute près : c'est ce que rend la phrase par défaut, et toutes les écritures
+ * internes du cabinet - un cran de sous-phase, un état technique - y tombent. Un
+ * historique qui répète huit fois la même phrase n'est pas un historique.
+ */
+const RACONTABLES = new Set([
+  "field_update",
+  "doc_generated",
+  "doc_uploaded",
+  "doc_validated",
+  "doc_rejected",
+  "status_change",
+  "note",
+  "dossier_corrige",
+]);
+
+export function ditQuelqueChose(entree: EntreeJournal): boolean {
+  if (!RACONTABLES.has(entree.action)) return false;
+  /* « a modifié une information » ne dit pas laquelle : autant se taire. */
+  if (entree.action === "field_update" && !entree.champ) return false;
+  return true;
 }
 
 /**

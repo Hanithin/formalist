@@ -832,11 +832,18 @@
  * c'est une invitation à reprendre. Le jaune franc reste au badge « Action requise »,
  * qui, lui, demande quelque chose.
  */
+/*
+ * Des gris, non de l'ambre.
+ *
+ * La carte du dossier à reprendre était le seul aplat de couleur de l'écran : un
+ * beige qui tirait l'œil vers ce qui n'est pas urgent, à côté de listes tenues en
+ * blanc et gris. Le trait et le fond suffisent à la détacher.
+ */
 .reprendre {
   padding: 20px 24px;
-  border: 1px solid #f2e7c3;
+  border: 1px solid #e4e4e7;
   border-radius: 16px;
-  background: #fdfaf0;
+  background: #fafafa;
 }
 
 /* L'étiquette et le badge se font face : l'un dit le geste, l'autre la nature. */
@@ -851,12 +858,12 @@
 .reprendreBadge {
   flex-shrink: 0;
   padding: 4px 11px;
-  border: 1px solid #edddb4;
+  border: 1px solid #e4e4e7;
   border-radius: 999px;
-  background: #fdf6e3;
+  background: #fff;
   font-size: 11.5px;
   font-weight: 600;
-  color: #8a5f0a;
+  color: #52525b;
   letter-spacing: 0;
   white-space: nowrap;
 }
@@ -867,7 +874,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0;
-  color: #a1751b;
+  color: #a1a1aa;
 }
 
 /* Le nom de la société est le sujet : il porte le corps le plus fort de la carte. */
@@ -1279,7 +1286,7 @@
 
 .echeance {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
   padding: 13px 0;
@@ -1316,7 +1323,8 @@
 }
 
 .echeanceDate {
-  font-size: 13px;
+  margin-top: 3px;
+  font-size: 12.5px;
   color: #52525b;
   white-space: nowrap;
 }

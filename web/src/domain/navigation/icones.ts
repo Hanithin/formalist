@@ -98,7 +98,12 @@ export const ICONES: Record<string, string> = {
   "/avocat": icone_(
     '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>'
   ),
-  // Recherche d'entreprise : la loupe.
+  /*
+   * La loupe.
+   *
+   * La page de recherche au registre a été retirée ; le dessin, lui, sert encore aux
+   * écrans qui n'ont rien trouvé, et garde donc sa clé.
+   */
   "/recherche-entreprise": icone_(
     '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'
   ),

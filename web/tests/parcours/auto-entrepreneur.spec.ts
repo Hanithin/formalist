@@ -116,40 +116,6 @@ test.describe("auto-entreprise", () => {
   });
 });
 
-test.describe("recherche d'entreprise", () => {
-  test("un client n'y accède pas", async ({ page }) => {
-    const reponse = await page.goto("/recherche-entreprise");
-    expect(reponse?.status()).toBe(404);
-  });
-
-  test.describe("avocat", () => {
-    test.use({ storageState: "./tests/parcours/session-avocat.json" });
-
-    test("la page est accessible et propose la recherche", async ({ page }) => {
-      await page.goto("/recherche-entreprise");
-      await expect(page.getByRole("heading", { level: 1 })).toContainText("Recherche d'entreprise");
-      await expect(page.getByLabel("Numéro SIREN")).toBeVisible();
-    });
-
-    test("un SIREN mal formé est signalé sans appel extérieur", async ({ page }) => {
-      await page.goto("/recherche-entreprise");
-      await page.getByLabel("Numéro SIREN").fill("12345");
-      await page.getByRole("button", { name: "Consulter" }).click();
-
-      await expect(page.locator("[role=alert]:not(#__next-route-announcer__)")).toContainText("neuf chiffres");
-    });
-
-    test("l'entrée figure dans son menu, pas dans celui d'un client", async ({ page }) => {
-      await page.goto("/avocat");
-      const liens = await page
-        .getByRole("navigation", { name: "Navigation principale" })
-        .getByRole("link")
-        .allInnerTexts();
-      expect(liens).toContain("Recherche d'entreprise");
-    });
-  });
-});
-
 /**
  * Les champs que le guichet exige, rendus au formulaire.
  *

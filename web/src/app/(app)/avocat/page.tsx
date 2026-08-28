@@ -15,7 +15,6 @@ import {
   FILTRES,
   retenir,
 } from "@/domain/formalite/avocat";
-import { SousNavigation } from "./SousNavigation";
 import { Recherche } from "./Recherche";
 import { Tableau } from "./Tableau";
 import { Pagination } from "./Pagination";
@@ -138,12 +137,18 @@ export default async function EspaceAvocat({
         Les dossiers confiés au cabinet, du premier envoi jusqu&apos;au Kbis.
       </p>
 
-      <SousNavigation actif="dossiers" aVerifier={nombres.verifier} />
+      {/*
+        La barre d'onglets a disparu.
+
+        « Dossiers · Consultations · Mes disponibilités » redisait trois entrées de la
+        colonne, à deux centimètres d'elles : on choisissait deux fois le même chemin,
+        et la page en héritait d'une rangée de plus avant son contenu.
+      */}
 
       <div className={styles.content}>
         {dossiers.length === 0 ? (
           <Vide
-            icone="/avocat"
+            icone="/recherche-entreprise"
             titre="Aucun dossier pour le moment"
             texte="Vos dossiers clients apparaîtront ici dès qu'ils vous seront assignés. Vous pouvez aussi créer directement une formalité."
             action={{ libelle: "Créer une formalité", lien: "/creation?type=creation" }}

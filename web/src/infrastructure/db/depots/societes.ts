@@ -113,6 +113,7 @@ export async function mesSocietes(utilisateur: UtilisateurConnecte): Promise<Soc
         forme: formeRetenue,
         siren,
         status: d.status,
+        sousPhase: d.business_sub_phase,
         offre: d.offer,
         etapeAffichee: Math.max(
           d.phase ?? 1,

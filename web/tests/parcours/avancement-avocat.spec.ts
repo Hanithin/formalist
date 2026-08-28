@@ -143,7 +143,7 @@ test.describe("avancement du cabinet", () => {
     await page.goto("/avocat/" + dossier.id);
     /*
      * Le libellé nomme le document que le greffe délivre pour ce type de dossier :
-     * « Extrait Kbis » pour une création, « Extrait à jour » pour une modification. Il
+     * « Extrait Kbis » pour une création, « Kbis à jour » pour une modification. Il
      * était écrit « Kbis » en dur, et l'avocat d'une modification lisait qu'il devait
      * remettre un Kbis, que le greffe ne délivre pas dans ce cas.
      */

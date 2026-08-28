@@ -342,26 +342,28 @@
  * barre de titre, il partage la ligne avec la date : il se resserre, et sa hauteur
  * s'aligne sur celle du texte qui l'accompagne.
  */
+/*
+ * Un aplat noir de plein format pesait plus que le titre de la page.
+ *
+ * La colonne porte déjà ce geste, en tête et en permanence : celui-ci est un rappel à
+ * portée de main, non l'action que la page réclame. Un filet et un signe suffisent -
+ * c'est le dessin des chemins, ici comme dans le dossier du client.
+ */
 .actionPage {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  height: 40px;
+  height: 36px;
   margin: 0;
-  padding: 0 18px;
-  border: 1px solid #111;
+  padding: 0 14px;
+  border: 1px solid #e5e5e7;
   border-radius: 10px;
-  background: #111;
+  background: #fff;
   font-family: inherit;
-  font-size: 14px;
-  /*
-   * 600, comme le même bouton en tête de colonne et comme tous les boutons pleins de
-   * l'application. À 500, celui-ci était le seul écrit en romain sur son fond noir :
-   * l'action principale de la page paraissait plus légère qu'un intitulé de colonne.
-   */
-  font-weight: 600;
-  color: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #18181b;
   cursor: pointer;
   letter-spacing: 0;
   transition:
@@ -370,8 +372,8 @@
 }
 
 .actionPage:hover {
-  background: #333;
-  border-color: #333;
+  border-color: #d4d4d8;
+  background: #fafafa;
 }
 
 /* Le signe, un peu plus gros que le texte : c'est lui qu'on repère en premier. */
@@ -379,4 +381,10 @@
   font-size: 17px;
   font-weight: 400;
   line-height: 1;
+}
+
+/* Sur fond clair, le signe se tient en retrait du mot qu'il accompagne. */
+.actionPage .plus {
+  font-size: 16px;
+  color: #a1a1aa;
 }
