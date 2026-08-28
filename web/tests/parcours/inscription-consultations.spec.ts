@@ -36,9 +36,21 @@ test.describe("inscription", () => {
     await page.getByLabel("Mot de passe").fill("brouette-lampadaire-42");
     await page.getByRole("button", { name: /Créer mon compte/ }).click();
 
-    await expect(page.getByRole("status")).toContainText("lien de confirmation");
+    /*
+     * Ce que la plateforme annonce dépend de ce qui est parti.
+     *
+     * Elle ne promet pas un email qu'elle n'a pas pu envoyer : sans clé Resend -
+     * l'ordinaire en développement - elle dit que le compte est créé et que l'envoi a
+     * échoué, plutôt que d'envoyer l'inscrit surveiller une boîte vide. Ce test
+     * attendait la première phrase en toutes circonstances, et échouait donc partout
+     * où la messagerie n'est pas configurée.
+     */
+    await expect(page.getByRole("status")).toContainText(
+      process.env.RESEND_API_KEY ? "lien de confirmation" : "n'a pas pu être envoyé"
+    );
 
-    // Le compte n'est utilisable qu'une fois l'adresse confirmée.
+    // Le compte n'est utilisable qu'une fois l'adresse confirmée : c'est vrai des deux
+    // côtés, et c'est ce que ce parcours garde.
     const cookies = await context.cookies();
     expect(cookies.find((c) => c.name === "formalist_session")).toBeUndefined();
   });

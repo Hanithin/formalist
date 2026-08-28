@@ -18,7 +18,15 @@ export async function choisir(champ: Locator, option: string | RegExp) {
   await expect(menu).toHaveCount(0);
 }
 
-/** La même chose, désignée par le libellé du champ. */
+/**
+ * La même chose, désignée par le libellé du champ.
+ *
+ * Le libellé est pris au mot près : « Cédant » désignait aussi « Comment le cédant a
+ * obtenu ses parts », ajouté depuis, et le clic ne savait plus lequel viser.
+ */
 export async function choisirDans(page: Page, libelle: string | RegExp, option: string | RegExp) {
-  await choisir(page.getByLabel(libelle), option);
+  await choisir(
+    page.getByLabel(libelle, typeof libelle === "string" ? { exact: true } : undefined),
+    option
+  );
 }

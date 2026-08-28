@@ -119,15 +119,17 @@ test.describe("formalités", () => {
     await expect(page.getByText("Aucune formalité trouvée")).toBeVisible();
   });
 
-  test("au-delà de six dossiers, la liste se pagine", async ({ page, request }) => {
+  test("au-delà de neuf dossiers, la liste se pagine", async ({ page, request }) => {
     /*
-     * Sept dossiers portant le même nom, cherchés ensemble.
+     * Dix dossiers portant le même nom, cherchés ensemble.
      *
-     * La pagination ne se vérifie qu'au-delà de six, et le jeu de données n'en compte
-     * que quatre. Les semer ici et restreindre la liste par la recherche rend le test
-     * indépendant de ce que les autres séries ont pu créer.
+     * La pagination ne se vérifie qu'au-delà de neuf - six cartes s'arrêtaient au
+     * milieu de l'écran, avec une pagination pour aller chercher les suivantes et un
+     * demi-écran de vide dessous - et le jeu de données n'en compte que quatre. Les
+     * semer ici et restreindre la liste par la recherche rend le test indépendant de
+     * ce que les autres séries ont pu créer.
      */
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= 10; i++) {
       const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
       pagines.push(dossier);
       await request.put("/api/formalites/brouillon", {
@@ -138,13 +140,13 @@ test.describe("formalités", () => {
     await page.goto("/formalites");
     await chercher(page, "PAGINATION ESSAI");
 
-    // Six cartes, pas sept : la septième est sur la page suivante.
-    await expect(page.getByRole("link", { name: /Reprendre/ })).toHaveCount(6);
-    await expect(page.getByText("1 à 6 sur 7")).toBeVisible();
+    // Neuf cartes, pas dix : la dixième est sur la page suivante.
+    await expect(page.getByRole("link", { name: /Reprendre/ })).toHaveCount(9);
+    await expect(page.getByText("1 à 9 sur 10")).toBeVisible();
 
     await page.getByLabel("Page suivante").click();
     await expect(page.getByRole("link", { name: /Reprendre/ })).toHaveCount(1);
-    await expect(page.getByText("7 à 7 sur 7")).toBeVisible();
+    await expect(page.getByText("10 à 10 sur 10")).toBeVisible();
 
     // Une extrémité atteinte ne se clique pas.
     await expect(page.getByLabel("Page suivante")).toBeDisabled();

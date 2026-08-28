@@ -77,23 +77,15 @@ test.describe("disponibilités de l'avocat", () => {
     await expect(page.getByText("05:00 - 06:00")).toHaveCount(0);
   });
 
-  test("les onglets restent visibles depuis l'onglet Consultations", async ({ page }) => {
-    /*
-     * La page des consultations est partagée avec le client, et n'affichait donc pas
-     * la barre d'onglets : en cliquant dessus depuis l'espace avocat, on perdait
-     * « Mes disponibilités » sans autre issue que de repasser par « Espace avocat ».
-     */
-    await page.goto("/avocat/disponibilites");
-    await page.getByRole("link", { name: "Consultations" }).click();
-
-    await expect(page).toHaveURL(/\/consultations$/);
-    await expect(
-      page
-        .getByRole("navigation", { name: "Navigation principale" })
-        .getByRole("link", { name: "Mes disponibilités" })
-    ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Dossiers", exact: true })).toBeVisible();
-  });
+  /*
+   * La barre d'onglets a disparu, et son essai avec elle.
+   *
+   * « Dossiers · Consultations · Mes disponibilités » redisait trois entrées de la
+   * colonne de navigation, à deux centimètres d'elles : on choisissait deux fois le
+   * même chemin. Ce que cet essai gardait - ne pas se retrouver sans issue en
+   * arrivant sur les consultations - est assuré par la colonne, qui ne quitte jamais
+   * l'écran et porte les trois.
+   */
 
   test("un client n'accède pas à la page", async ({ browser, baseURL }) => {
     // Un 404 plutôt qu'un refus explicite : la réponse ne renseigne pas sur ce qui

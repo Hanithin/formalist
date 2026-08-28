@@ -760,10 +760,28 @@
   color: #3f3f46;
 }
 
+/*
+ * La barre reste sous les yeux.
+ *
+ * Elle vivait au bout du document : à l'étape du règlement, le bouton se trouvait
+ * sous les justificatifs et le récapitulatif entier, à plus de deux mille pixels du
+ * haut. Il fallait descendre pour connaître le prix, puis remonter pour vérifier ce
+ * qu'on payait - et ce que la page demande de faire n'était visible nulle part tant
+ * qu'on lisait.
+ *
+ * Collée au bas de la fenêtre, elle porte l'action de l'écran où qu'on en soit. Le
+ * fond est celui de la page : sans lui, le texte défilerait au travers.
+ */
 .actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   display: flex;
   gap: 10px;
   margin-top: 28px;
+  padding: 14px 0 18px;
+  background: var(--papier);
+  border-top: 1px solid var(--trait);
 }
 
 .actions button {

@@ -68,12 +68,14 @@ test.describe("parcours connecté", () => {
     expect(entrees[2]).toEqual(entrees[0]);
   });
 
-  test("le bloc de contexte dit la nature du dossier", async ({ page }) => {
-    // Un nom de société ne dit pas ce qu'on y fait : créer et fermer se lisent pareil.
-    await page.goto("/aide");
-    const contexte = page.locator("aside").getByText("Vous travaillez sur").locator("..");
-    await expect(contexte).toContainText(/Création|Modification|Fermeture|Dépôt des comptes/);
-  });
+  /*
+   * Le bloc « Vous travaillez sur » a disparu, et son essai avec lui.
+   *
+   * Il nommait le dernier dossier ouvert, quel que soit l'écran : on lisait
+   * « GREMLINS COMMUNICATION » en marge d'un dossier STERLING PEAK, et il fallait se
+   * rappeler que ce n'était pas celui qu'on avait sous les yeux. Chaque écran dit de
+   * quoi il parle ; la marge n'a pas à en désigner un autre.
+   */
 
   test("les fondus ne marquent que le côté où il reste à voir", async ({ page }) => {
     /*

@@ -232,7 +232,7 @@ test.describe("bulle de messagerie", () => {
 test.describe("le côté des bulles dit qui parle", () => {
   test.use({ storageState: "./tests/parcours/session-avocat.json" });
 
-  test("le client à droite et la plateforme à gauche, même vu par l'avocat", async ({ page }) => {
+  test("ce que j'écris à droite, ce qu'on me répond à gauche", async ({ page }) => {
     await page.goto("/messagerie");
     await page.getByRole("button", { name: /PARCOURS EN COURS/ }).first().click();
 
@@ -244,16 +244,19 @@ test.describe("le côté des bulles dit qui parle", () => {
     const cadreSite = await duSite.boundingBox();
 
     /*
-     * Le côté ne suit pas qui regarde.
+     * Le côté suit celui qui regarde.
      *
-     * Le second message est de l'avocat, donc de celui qui consulte ici : s'il était
-     * placé selon « est-ce moi », il passerait à droite et le fil se lirait à
-     * l'envers de ce que voit le client.
+     * Il suivait le client de la conversation : sur l'écran d'un avocat, ses propres
+     * réponses partaient donc à gauche et celles du client à droite - l'inverse des
+     * deux fils qui vivent dans les dossiers, et l'inverse de ce que fait toute
+     * messagerie. Le second message est de l'avocat, qui consulte ici : il est à
+     * droite, et celui du client à gauche.
      */
-    expect(cadreClient!.x).toBeGreaterThan(cadreSite!.x);
+    expect(cadreSite!.x).toBeGreaterThan(cadreClient!.x);
 
-    // Le nom n'est affiché que du côté de la plateforme : à droite, c'est le client.
+    // Les deux côtés se nomment : le côté seul ne dit pas qui parle.
     await expect(fil.getByText("Maître Dupont").first()).toBeVisible();
+    await expect(fil.getByText("Vous").first()).toBeVisible();
   });
 });
 
@@ -263,25 +266,29 @@ test("les icônes de la saisie sont visibles et alignées sur le champ", async (
   const champ = await page.getByLabel("Votre message").boundingBox();
 
   /*
-   * Les deux icônes ont une taille réelle.
+   * Le trombone a une taille réelle, et se tient sur la ligne du champ.
    *
    * globals.css habille tout <button> d'un rembourrage de 11px sur 20px : sur un
-   * bouton de 34px, il ne restait aucune place et le trombone comme l'avion étaient
-   * rendus à zéro. Mesurer le SVG est le seul moyen de s'en apercevoir - le bouton,
-   * lui, avait bien sa taille.
+   * bouton de trente pixels, il ne resterait aucune place et le dessin serait rendu à
+   * zéro. Mesurer le SVG est le seul moyen de s'en apercevoir - le bouton, lui, a
+   * bien sa taille.
+   *
+   * L'envoi, lui, ne porte plus d'avion en papier : il porte le mot « Envoyer », qui
+   * dit ce qu'il fait sans demander de le deviner.
    */
-  for (const nom of ["Joindre un fichier", "Envoyer"]) {
-    const icone = page.getByRole("button", { name: nom }).locator("svg");
-    const cadre = await icone.boundingBox();
-    expect(cadre, nom).not.toBeNull();
-    expect(cadre!.width, nom + " : largeur").toBeGreaterThan(10);
-    expect(cadre!.height, nom + " : hauteur").toBeGreaterThan(10);
+  const icone = page.getByRole("button", { name: "Joindre un fichier" }).locator("svg");
+  const cadre = await icone.boundingBox();
+  expect(cadre).not.toBeNull();
+  expect(cadre!.width, "largeur").toBeGreaterThan(10);
+  expect(cadre!.height, "hauteur").toBeGreaterThan(10);
 
-    // Et elles sont sur la même ligne que le champ, à deux pixels près.
-    const centreIcone = cadre!.y + cadre!.height / 2;
-    const centreChamp = champ!.y + champ!.height / 2;
-    expect(Math.abs(centreIcone - centreChamp), nom + " : alignement").toBeLessThan(2);
-  }
+  const centreIcone = cadre!.y + cadre!.height / 2;
+  const centreChamp = champ!.y + champ!.height / 2;
+  expect(Math.abs(centreIcone - centreChamp), "alignement").toBeLessThan(2);
+
+  const envoi = (await page.getByRole("button", { name: "Envoyer" }).boundingBox())!;
+  const centreEnvoi = envoi.y + envoi.height / 2;
+  expect(Math.abs(centreEnvoi - centreChamp), "envoi : alignement").toBeLessThan(2);
 });
 
 test("dans un fil vide, le conseil et son explication ne se collent pas", async ({ page }) => {

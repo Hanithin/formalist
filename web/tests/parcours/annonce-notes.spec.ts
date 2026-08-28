@@ -80,7 +80,9 @@ test.describe("notes internes", () => {
     await page.goto("/avocat/" + dossier.id + "?onglet=notes");
     const texte = "Note à supprimer " + Date.now();
     await page.getByLabel("Ajouter une note").fill(texte);
-    await page.getByRole("button", { name: "Ajouter la note" }).click();
+    /* Le bouton dit « Ajouter » : le formulaire est déjà celui des notes, et « la
+       note » y répétait ce que le champ d'à côté annonce. */
+    await page.getByRole("button", { name: "Ajouter", exact: true }).click();
     await expect(page.getByText(texte)).toBeVisible();
 
     // On retrouve son identifiant par l'API, faute de bouton dédié pour l'instant.

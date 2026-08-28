@@ -700,3 +700,17 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/*
+ * Safari zoome sur un champ dont la police descend sous seize pixels, et ne dézoome
+ * pas : la page saute en avant à la mise au point, et l'on remplit le reste en la
+ * poussant de gauche à droite. La feuille globale pose la règle sur `input` et
+ * `textarea` ; une classe l'emporte, donc chaque page la reprend chez elle.
+ */
+@media (max-width: 700px) {
+  .filEcrire textarea,
+  .filEcrire textarea:hover,
+  .filEcrire textarea:focus {
+    font-size: 16px;
+  }
+}

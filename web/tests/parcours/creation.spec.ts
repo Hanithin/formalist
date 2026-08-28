@@ -332,6 +332,16 @@ test.describe("pièces et documents", () => {
   });
 
   test("régénérer ne produit pas un second jeu d'actes", async ({ page, request }) => {
+    /*
+     * Deux jeux d'actes produits d'affilée, chacun converti en PDF par LibreOffice.
+     *
+     * C'est le seul essai de la série qui le fasse deux fois, et la conversion prend
+     * plusieurs secondes par acte : seul, il tient largement ; lancé avec les autres
+     * sur la même machine, il dépassait les trente secondes accordées par défaut.
+     * L'échec ne disait rien du code - il disait que la machine était occupée.
+     */
+    test.setTimeout(120_000);
+
     const dossier = await dossierPret(page, request);
 
     const premier = await request.post("/api/formalites/documents", {

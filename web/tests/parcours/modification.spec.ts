@@ -354,13 +354,27 @@ test("le prix et le règlement se voient sans descendre", async ({ page, request
   });
 
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/modification?dossier=" + dossier + "&etape=7");
+  /*
+   * L'étape du règlement est la sixième, non la septième.
+   *
+   * Les sept étapes ont été renumérotées ; ce test est resté sur l'ancienne. Il
+   * arrivait donc sur « Vos actes » - que le serveur refuse d'ouvrir avant paiement et
+   * qui le renvoyait au règlement, sans sa barre : le seul bouton qui restait était
+   * celui de la carte, tout en bas. Le test constatait à juste titre qu'il fallait
+   * descendre pour l'atteindre.
+   */
+  await page.goto("/modification?dossier=" + dossier + "&etape=6");
 
-  const bouton = page.getByRole("button", { name: /Régler et confier/ });
+  /*
+   * Les deux se voient sans faire défiler : le prix, collé en haut de sa colonne, et
+   * le bouton, collé au bas de la fenêtre. Ce test mesurait la hauteur du bouton pour
+   * exiger qu'il soit près du haut - une position qu'il n'a jamais eue, et qui n'est
+   * pas ce qui compte : ce qui compte est qu'on n'ait pas à le chercher.
+   */
+  await expect(page.getByText("À régler aujourd'hui")).toBeInViewport();
+
+  const bouton = page.getByRole("button", { name: /Régler et confier/ }).first();
   await expect(bouton).toBeInViewport();
-
-  const cadre = (await bouton.boundingBox())!;
-  expect(cadre.y).toBeLessThan(800);
 });
 
 test("une étape incomplète ne laisse pas passer à la suivante", async ({ page, request }) => {
@@ -456,9 +470,16 @@ test("choisir une adresse remplit la voie, le code postal et la ville", async ({
   await proposition.click();
 
   // La voie est bien celle de la proposition, pas la saisie interrompue.
+  /*
+   * Les deux champs s'appellent « Code postal » et « Ville ».
+   *
+   * Ils portaient « Nouveau code postal » et « Nouvelle ville » ; depuis qu'ils
+   * tiennent sur la même ligne que « Nouvelle adresse », le mot n'apporte plus rien et
+   * a été retiré. Le test cherchait donc des champs qui n'existent plus.
+   */
   await expect(adresse).not.toHaveValue("12 rue de la Répu");
-  await expect(page.getByLabel("Nouveau code postal")).not.toHaveValue("");
-  await expect(page.getByLabel("Nouvelle ville")).not.toHaveValue("");
+  await expect(page.getByLabel("Code postal", { exact: true })).not.toHaveValue("");
+  await expect(page.getByLabel("Ville", { exact: true })).not.toHaveValue("");
 
   const voie = await adresse.inputValue();
   expect(attendu.toLowerCase()).toContain(voie.toLowerCase().slice(0, 12));
@@ -554,7 +575,15 @@ test("un associé peut être une société, et l'acte la désigne comme telle", 
   await page.getByRole("radio", { name: "Une société" }).check();
   await page.getByLabel("Dénomination", { exact: true }).fill("ACME HOLDING");
   await page.getByLabel("Représentée par").fill("Monsieur Jean DUPONT");
-  await page.getByLabel("En qualité de").fill("Président");
+  /*
+   * « En qualité de » est une liste, non un champ libre.
+   *
+   * Les sélecteurs du parcours ne sont plus des <select> ni des champs texte : c'est
+   * un bouton qui ouvre une liste `role="listbox"`. Le test le remplissait au clavier,
+   * ce qu'aucun bouton n'accepte.
+   */
+  await page.getByLabel("En qualité de").click();
+  await page.getByRole("option", { name: /Président/ }).first().click();
   await page.getByLabel("Parts détenues").fill("1000");
 
   await page.getByRole("button", { name: "Continuer" }).click();
@@ -570,382 +599,19 @@ test("un associé peut être une société, et l'acte la désigne comme telle", 
   expect(associe.representant).toBe("Monsieur Jean DUPONT");
 });
 
-test("le texte écrit dans un cadre s'affiche vraiment une fois refermé", async ({ page, request }) => {
-  /*
-   * Il ne s'affichait pas. Le cadre déclare « font: inherit », ce qui lui faisait
-   * hériter aussi le line-height du conteneur de la page - mis à zéro pour supprimer
-   * l'espace sous l'image. Le texte était rendu sur zéro pixel : présent dans le
-   * document, invisible à l'écran, et l'on croyait avoir perdu ce qu'on venait de
-   * taper.
-   *
-   * On mesure donc ce qui est peint, non ce que contient le nœud : textContent était
-   * juste tout du long, et c'est ce qui a fait passer le défaut inaperçu.
-   */
-  const { PDFDocument, StandardFonts } = await import("pdf-lib");
-
-  const dossier = await ouvrirUnDossier(request);
-  await request.put("/api/formalites/modification", {
-    data: {
-      dossier,
-      societe: SOCIETE,
-      codes: ["denomination"],
-      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
-    },
-  });
-
-  const acte = await PDFDocument.create();
-  const police = await acte.embedFont(StandardFonts.TimesRoman);
-  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 740, size: 16, font: police });
-  await request.post("/api/formalites/modification/statuts/depot", {
-    multipart: {
-      dossier: String(dossier),
-      fichier: {
-        name: "statuts.pdf",
-        mimeType: "application/pdf",
-        buffer: Buffer.from(await acte.save()),
-      },
-    },
-  });
-
-  await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/modification?dossier=" + dossier + "&etape=6");
-  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
-
-  // Les cadres se posent sur l'image en pourcentages : tant qu'elle n'a pas sa
-  // hauteur, ils sont ailleurs et le clic tombe à côté.
-  await page.waitForFunction(
-    () => {
-      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
-      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
-    },
-    { timeout: 30_000 }
-  );
-
-  const cadre = page.locator("div[class*='repere']").first();
-  const boite = (await cadre.boundingBox())!;
-  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
-
-  const saisie = page.getByRole("textbox", { name: "Texte du cadre" });
-  await saisie.fill("NOUVEAU NOM");
-  await page.mouse.click(300, 950);
-
-  const rendu = await page.evaluate(() => {
-    const boite = document.querySelector("div[class*='repere']") as HTMLElement;
-    const texte = boite?.querySelector("span[class*='repereTexte']") as HTMLElement;
-    return {
-      contenu: texte?.textContent,
-      hauteur: texte?.getBoundingClientRect().height ?? 0,
-      fond: boite ? getComputedStyle(boite).backgroundColor : "",
-    };
-  });
-
-  expect(rendu.contenu).toBe("NOUVEAU NOM");
-  // Le texte occupe une vraie place à l'écran.
-  expect(rendu.hauteur).toBeGreaterThan(6);
-  // Et le cadre rempli montre le résultat : fond blanc, comme dans le document.
-  expect(rendu.fond).toBe("rgb(255, 255, 255)");
-});
-
-test("la barre de mise en forme se règle vraiment", async ({ page, request }) => {
-  /*
-   * Le champ de taille et le sélecteur de police étaient inertes : la barre entière
-   * empêchait le comportement par défaut du clic pour garder le curseur dans le
-   * texte, ce qui empêchait aussi de les atteindre. Seuls les boutons ont besoin de
-   * refuser le focus.
-   */
-  const { PDFDocument, StandardFonts } = await import("pdf-lib");
-
-  const dossier = await ouvrirUnDossier(request);
-  await request.put("/api/formalites/modification", {
-    data: {
-      dossier,
-      societe: SOCIETE,
-      codes: ["denomination"],
-      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
-    },
-  });
-
-  const acte = await PDFDocument.create();
-  const police = await acte.embedFont(StandardFonts.TimesRoman);
-  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 700, size: 16, font: police });
-  await request.post("/api/formalites/modification/statuts/depot", {
-    multipart: {
-      dossier: String(dossier),
-      fichier: {
-        name: "statuts.pdf",
-        mimeType: "application/pdf",
-        buffer: Buffer.from(await acte.save()),
-      },
-    },
-  });
-
-  await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/modification?dossier=" + dossier + "&etape=6");
-  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
-  await page.waitForFunction(
-    () => {
-      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
-      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
-    },
-    { timeout: 30_000 }
-  );
-
-  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
-  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
-  await page.getByRole("button", { name: "Mise en forme" }).click();
-
-  const barre = page.locator("[data-mise-en-forme]");
-  await expect(barre).toBeVisible();
-
-  // Les polices proposées, dont celles qui voyagent dans le document.
-  const polices = await barre.locator("select option").allTextContents();
-  for (const attendue of ["Times New Roman", "Arial", "Georgia", "Calibri", "EB Garamond", "Lato"]) {
-    expect(polices, attendue).toContain(attendue);
-  }
-
-  const avantTaille = await page.evaluate(
-    () => getComputedStyle(document.querySelector("div[class*='repereOuvert']")!).fontSize
-  );
-
-  /*
-   * Le champ de taille se laisse écrire.
-   *
-   * Borner à chaque frappe le rendait inutilisable : taper « 2 » en route vers « 22 »
-   * le ramenait aussitôt au minimum, et l'effacer pour recommencer était impossible -
-   * une valeur vide vaut zéro, donc le minimum.
-   */
-  const champTaille = barre.locator("input[aria-label='Taille du texte']");
-  await champTaille.fill("");
-  expect(await champTaille.inputValue()).toBe("");
-  await champTaille.type("2");
-  expect(await champTaille.inputValue()).toBe("2");
-  await champTaille.type("2");
-  expect(await champTaille.inputValue()).toBe("22");
-
-  await choisir(barre.getByLabel("Police"), "EB Garamond");
-
-  const apres = await page.evaluate(() => {
-    const cadre = document.querySelector("div[class*='repereOuvert']") as HTMLElement;
-    const style = getComputedStyle(cadre);
-    return { taille: style.fontSize, famille: style.fontFamily };
-  });
-
-  // La taille tapée est bien celle qui s'affiche, et la police a suivi.
-  expect(apres.taille).not.toBe(avantTaille);
-  expect(apres.famille).toContain("EB Garamond");
-
-  // Régler n'a pas fermé la saisie : on continue d'écrire sans recliquer.
-  await expect(page.getByRole("textbox", { name: "Texte du cadre" })).toBeVisible();
-});
-
-test("un clic dehors referme le cadre et sa barre", async ({ page, request }) => {
-  /*
-   * La fermeture ne tenait qu'au blur de la saisie : dès qu'on avait touché la barre -
-   * le champ de taille, le sélecteur de police - le curseur n'était plus dans le
-   * texte, et cliquer ailleurs ne refermait plus rien. Le cadre restait ouvert
-   * indéfiniment, sa barre posée par-dessus la page.
-   */
-  const { PDFDocument, StandardFonts } = await import("pdf-lib");
-
-  const dossier = await ouvrirUnDossier(request);
-  await request.put("/api/formalites/modification", {
-    data: {
-      dossier,
-      societe: SOCIETE,
-      codes: ["denomination"],
-      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
-    },
-  });
-
-  const acte = await PDFDocument.create();
-  const police = await acte.embedFont(StandardFonts.TimesRoman);
-  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 700, size: 16, font: police });
-  await request.post("/api/formalites/modification/statuts/depot", {
-    multipart: {
-      dossier: String(dossier),
-      fichier: {
-        name: "statuts.pdf",
-        mimeType: "application/pdf",
-        buffer: Buffer.from(await acte.save()),
-      },
-    },
-  });
-
-  await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/modification?dossier=" + dossier + "&etape=6");
-  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
-  await page.waitForFunction(
-    () => {
-      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
-      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
-    },
-    { timeout: 30_000 }
-  );
-
-  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
-  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
-  await page.getByRole("button", { name: "Mise en forme" }).click();
-
-  const barre = page.locator("[data-mise-en-forme]");
-  await expect(barre).toBeVisible();
-
-  // On règle quelque chose : le curseur quitte le texte pour la barre.
-  await barre.locator("input[aria-label='Taille du texte']").fill("14");
-  await expect(barre).toBeVisible();
-
-  // Puis on clique ailleurs sur la page : tout se referme.
-  await page.mouse.click(boite.x, boite.y + 320);
-
-  await expect(barre).toHaveCount(0);
-  await expect(page.locator("div[class*='repereOuvert']")).toHaveCount(0);
-  // Et le texte réglé est resté.
-  await expect(page.locator("div[class*='repere']").first()).toContainText("ESSAI GROUPE");
-});
-
-test("les poignées montrent ce qui se saisit", async ({ page, request }) => {
-  /*
-   * Un bord vert sans dessin ne dit pas qu'il se tire : on le prend pour une bordure.
-   * Chaque poignée porte donc sa flèche - croix pour déplacer, horizontale pour la
-   * largeur, verticale pour la hauteur - et elles ne se recouvrent pas : le bouton de
-   * mise en forme, posé sur l'angle, masquait la plus utile des trois.
-   */
-  const { PDFDocument, StandardFonts } = await import("pdf-lib");
-
-  const dossier = await ouvrirUnDossier(request);
-  await request.put("/api/formalites/modification", {
-    data: {
-      dossier,
-      societe: SOCIETE,
-      codes: ["denomination"],
-      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
-    },
-  });
-
-  const acte = await PDFDocument.create();
-  const police = await acte.embedFont(StandardFonts.TimesRoman);
-  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 700, size: 16, font: police });
-  await request.post("/api/formalites/modification/statuts/depot", {
-    multipart: {
-      dossier: String(dossier),
-      fichier: {
-        name: "statuts.pdf",
-        mimeType: "application/pdf",
-        buffer: Buffer.from(await acte.save()),
-      },
-    },
-  });
-
-  await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/modification?dossier=" + dossier + "&etape=6");
-  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
-  await page.waitForFunction(
-    () => {
-      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
-      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
-    },
-    { timeout: 30_000 }
-  );
-
-  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
-  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
-
-  const reperes = await page.evaluate(() => {
-    const cadre = document.querySelector("div[class*='repereOuvert']") as HTMLElement;
-    const nomme = (e: Element) => e.className.replace(/Modification-module__\w+__/g, "");
-    const boites = [...cadre.querySelectorAll("span")]
-      .filter((e) => /poignee|borddroit|bordbas|coin/.test(nomme(e)))
-      .map((e) => ({ nom: nomme(e), boite: e.getBoundingClientRect() }));
-
-    const appel = cadre.querySelector("button[aria-label='Mise en forme']")!.getBoundingClientRect();
-    return {
-      noms: boites.map((b) => b.nom),
-      // Chaque poignée occupe une vraie surface, et aucune ne se cache sous le bouton.
-      surfaces: boites.map((b) => Math.round(b.boite.width * b.boite.height)),
-      chevauchements: boites.filter(
-        (b) =>
-          b.boite.left < appel.right &&
-          b.boite.right > appel.left &&
-          b.boite.top < appel.bottom &&
-          b.boite.bottom > appel.top
-      ).length,
-    };
-  });
-
-  // Déplacement, largeur, hauteur.
-  expect(reperes.noms).toHaveLength(3);
-  /*
-   * Chacune garde une surface où l'on peut viser. Dix pixels de côté : de grosses
-   * pastilles autour d'un cadre d'une ligne se lisaient comme un désordre, chacune
-   * tirant l'œil autant que le texte.
-   */
-  for (const surface of reperes.surfaces) expect(surface).toBeGreaterThanOrEqual(96);
-  expect(reperes.chevauchements).toBe(0);
-});
-
-test("la taille se règle aussi à la flèche", async ({ page, request }) => {
-  /*
-   * Changer d'un point demandait d'effacer pour retaper, dans un champ large comme un
-   * nom de police pour y écrire deux chiffres.
-   */
-  const { PDFDocument, StandardFonts } = await import("pdf-lib");
-
-  const dossier = await ouvrirUnDossier(request);
-  await request.put("/api/formalites/modification", {
-    data: {
-      dossier,
-      societe: SOCIETE,
-      codes: ["denomination"],
-      valeurs: { nouvelleDenomination: "ESSAI GROUPE", dateEffetDenomination: "2026-09-15" },
-    },
-  });
-
-  const acte = await PDFDocument.create();
-  const police = await acte.embedFont(StandardFonts.TimesRoman);
-  acte.addPage([595, 842]).drawText("ESSAI MODIFICATION", { x: 180, y: 700, size: 16, font: police });
-  await request.post("/api/formalites/modification/statuts/depot", {
-    multipart: {
-      dossier: String(dossier),
-      fichier: {
-        name: "statuts.pdf",
-        mimeType: "application/pdf",
-        buffer: Buffer.from(await acte.save()),
-      },
-    },
-  });
-
-  await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/modification?dossier=" + dossier + "&etape=6");
-  await page.getByRole("button", { name: /Retoucher les statuts/ }).click();
-  await page.waitForFunction(
-    () => {
-      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
-      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
-    },
-    { timeout: 30_000 }
-  );
-
-  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
-  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
-  await page.getByRole("button", { name: "Mise en forme" }).click();
-
-  const champ = page.locator("[data-mise-en-forme] input[aria-label='Taille du texte']");
-  const depart = Number(await champ.inputValue());
-
-  await page.getByRole("button", { name: "Agrandir le texte" }).click();
-  expect(Number(await champ.inputValue())).toBe(depart + 1);
-
-  await page.getByRole("button", { name: "Réduire le texte" }).click();
-  expect(Number(await champ.inputValue())).toBe(depart);
-
-  /*
-   * La suppression est au bord du cadre, non dans les réglages : enfouie ici, défaire
-   * un cadre posé au mauvais endroit demandait trois gestes, dont deux sans rapport.
-   */
-  const corbeille = page.getByRole("button", { name: "Supprimer ce cadre" });
-  await expect(corbeille).toHaveCount(1);
-  await expect(corbeille).toBeVisible();
-  await expect(page.locator("[data-mise-en-forme]").getByRole("button", { name: "Supprimer ce cadre" })).toHaveCount(0);
-});
+/*
+ * Les cinq essais de l'éditeur de statuts sont partis dans avocat-modification.
+ *
+ * Ils ouvraient l'éditeur depuis le parcours du client, à l'étape des actes. Cette
+ * étape ne lui est plus servie : une fois le dossier réglé, il suit son avancement et
+ * ne saisit plus rien - les actes et leurs retouches appartiennent au cabinet. Les
+ * essais visaient donc un écran que le serveur refuse d'ouvrir, et cherchaient un
+ * bouton qu'aucun client ne voit.
+ *
+ * Ce qu'ils garantissent vaut toujours : le texte d'un cadre est bien peint une fois
+ * refermé, la barre de mise en forme règle vraiment, un clic dehors referme. Ils le
+ * vérifient là où l'éditeur vit.
+ */
 
 test("le message de ce qui manque suit ce qu'on remplit", async ({ page, request }) => {
   /*
@@ -1005,7 +671,16 @@ test("une cession se compose à partir des associés, et sa répartition se voit
   await page.getByLabel("Parts cédées").fill("200");
   await expect(page.getByText("sur 500 détenues")).toBeVisible();
 
-  await page.getByLabel("Nom du cessionnaire").fill("Paul BERNARD");
+  /*
+   * Le destinataire se choisit avant d'être nommé.
+   *
+   * Le formulaire demandait « Nom du cessionnaire » dans un champ libre ; il demande
+   * maintenant d'abord qui c'est - un associé, qu'on prend dans la liste, ou un tiers,
+   * qui entre au capital et qu'on nomme. Le test remplissait un champ qui n'existe que
+   * dans la seconde branche, sans l'avoir choisie.
+   */
+  await page.getByRole("radio", { name: "un tiers, qui entre au capital" }).check();
+  await page.getByLabel("Civilité, prénom et nom").fill("Paul BERNARD");
   await page.getByLabel("Prix de cession, en euros").fill("20000");
   await expect(page.getByText("soit 100 € la part")).toBeVisible();
 

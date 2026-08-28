@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../../src/infrastructure/db/client";
 import { COMPTE } from "./preparer";
+import { choisir } from "./liste";
 
 /**
  * Le parcours de l'avocat sur une modification.
@@ -110,13 +111,20 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
   await page.goto("/avocat/" + dossier);
 
   /*
-   * Le greffe délivre un extrait à jour : la société existe déjà, et le mot « Kbis »
-   * appartient à une création. Toutes les tâches sont à l'écran, y compris celles du
-   * dépôt : rien n'est replié.
+   * Le document final se dit « Kbis à jour ».
+   *
+   * Ce test exigeait l'inverse : « extrait à jour », et pas une occurrence du mot
+   * Kbis - au motif qu'il appartiendrait à une création. C'est le terme du greffe,
+   * pas celui du client : personne ne réclame son extrait à sa banque, on lui donne
+   * son Kbis. Une modification en délivre un nouveau, et le nommer est ce que le
+   * client attend de lire.
+   *
+   * Ce qui distingue vraiment le vocabulaire d'une modification reste vérifié : ni
+   * dépôt de capital, ni immatriculation - la société existe déjà.
    */
   await expect(page.getByText("À faire maintenant")).toBeVisible();
-  await expect(page.getByText(/[Kk]bis/)).toHaveCount(0);
-  await expect(page.getByText(/extrait à jour/i).first()).toBeVisible();
+  await expect(page.getByText(/Kbis à jour/i).first()).toBeVisible();
+  await expect(page.getByText(/immatriculation|dépôt du capital/i)).toHaveCount(0);
 });
 
 test("une tâche qui attend autre chose dit quoi", async ({ page }) => {
@@ -774,4 +782,395 @@ test("les actes attendent la relecture avant d'atteindre le client", async ({ pa
   expect(await enRelecture()).toBe(0);
 
   await client.close();
+});
+
+/* -------------------------------------------------------------------------- */
+/*
+ * L'éditeur de statuts, éprouvé là où il vit.
+ *
+ * Ces cinq essais ouvraient l'éditeur depuis le parcours du client, à l'étape des
+ * actes. Cette étape ne lui est plus servie : une fois le dossier réglé, il suit son
+ * avancement et ne saisit plus rien - les actes et leurs retouches appartiennent au
+ * cabinet. Ils visaient donc un écran que le serveur refuse d'ouvrir, et cherchaient
+ * un bouton qu'aucun client ne voit.
+ *
+ * Ce qu'ils garantissent vaut toujours, et ne se lit nulle part ailleurs : le texte
+ * d'un cadre est bien peint une fois refermé - il l'était sur zéro pixel - la barre de
+ * mise en forme règle vraiment, un clic dehors referme, les poignées disent ce qui se
+ * saisit, et la taille se règle à la flèche.
+ */
+
+test("le texte écrit dans un cadre s'affiche vraiment une fois refermé", async ({ page, request }) => {
+  /*
+   * Il ne s'affichait pas. Le cadre déclare « font: inherit », ce qui lui faisait
+   * hériter aussi le line-height du conteneur de la page - mis à zéro pour supprimer
+   * l'espace sous l'image. Le texte était rendu sur zéro pixel : présent dans le
+   * document, invisible à l'écran, et l'on croyait avoir perdu ce qu'on venait de
+   * taper.
+   *
+   * On mesure donc ce qui est peint, non ce que contient le nœud : textContent était
+   * juste tout du long, et c'est ce qui a fait passer le défaut inaperçu.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  /* Le texte que la modification touche : c'est lui qui fait naître les cadres. */
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+
+  // Les cadres se posent sur l'image en pourcentages : tant qu'elle n'a pas sa
+  // hauteur, ils sont ailleurs et le clic tombe à côté.
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const cadre = page.locator("div[class*='repere']").first();
+  const boite = (await cadre.boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+
+  const saisie = page.getByRole("textbox", { name: "Texte du cadre" });
+  await saisie.fill("NOUVEAU NOM");
+  await page.mouse.click(300, 950);
+
+  const rendu = await page.evaluate(() => {
+    const boite = document.querySelector("div[class*='repere']") as HTMLElement;
+    const texte = boite?.querySelector("span[class*='repereTexte']") as HTMLElement;
+    return {
+      contenu: texte?.textContent,
+      hauteur: texte?.getBoundingClientRect().height ?? 0,
+      fond: boite ? getComputedStyle(boite).backgroundColor : "",
+    };
+  });
+
+  expect(rendu.contenu).toBe("NOUVEAU NOM");
+  // Le texte occupe une vraie place à l'écran.
+  expect(rendu.hauteur).toBeGreaterThan(6);
+  // Et le cadre rempli montre le résultat : fond blanc, comme dans le document.
+  expect(rendu.fond).toBe("rgb(255, 255, 255)");
+});
+
+test("la barre de mise en forme se règle vraiment", async ({ page, request }) => {
+  /*
+   * Le champ de taille et le sélecteur de police étaient inertes : la barre entière
+   * empêchait le comportement par défaut du clic pour garder le curseur dans le
+   * texte, ce qui empêchait aussi de les atteindre. Seuls les boutons ont besoin de
+   * refuser le focus.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.getByRole("button", { name: "Mise en forme" }).click();
+
+  const barre = page.locator("[data-mise-en-forme]");
+  await expect(barre).toBeVisible();
+
+  /*
+   * Les polices proposées, dont celles qui voyagent dans le document.
+   *
+   * Ce n'est plus un `<select>` : le menu natif était dessiné par le système et rien
+   * ne l'habillait. On ouvre donc la liste et l'on lit ses options, comme ailleurs.
+   */
+  const champPolice = barre.getByLabel("Police");
+  await champPolice.click();
+  const menu = page.getByRole("listbox");
+  const polices = await menu.getByRole("option").allTextContents();
+  for (const attendue of ["Times New Roman", "Arial", "Georgia", "Calibri", "EB Garamond", "Lato"]) {
+    expect(polices, attendue).toContain(attendue);
+  }
+  await page.keyboard.press("Escape");
+
+  const avantTaille = await page.evaluate(
+    () => getComputedStyle(document.querySelector("div[class*='repereOuvert']")!).fontSize
+  );
+
+  /*
+   * Le champ de taille se laisse écrire.
+   *
+   * Borner à chaque frappe le rendait inutilisable : taper « 2 » en route vers « 22 »
+   * le ramenait aussitôt au minimum, et l'effacer pour recommencer était impossible -
+   * une valeur vide vaut zéro, donc le minimum.
+   */
+  const champTaille = barre.locator("input[aria-label='Taille du texte']");
+  await champTaille.fill("");
+  expect(await champTaille.inputValue()).toBe("");
+  await champTaille.type("2");
+  expect(await champTaille.inputValue()).toBe("2");
+  await champTaille.type("2");
+  expect(await champTaille.inputValue()).toBe("22");
+
+  await choisir(barre.getByLabel("Police"), "EB Garamond");
+
+  const apres = await page.evaluate(() => {
+    const cadre = document.querySelector("div[class*='repereOuvert']") as HTMLElement;
+    const style = getComputedStyle(cadre);
+    return { taille: style.fontSize, famille: style.fontFamily };
+  });
+
+  // La taille tapée est bien celle qui s'affiche, et la police a suivi.
+  expect(apres.taille).not.toBe(avantTaille);
+  expect(apres.famille).toContain("EB Garamond");
+
+  // Régler n'a pas fermé la saisie : on continue d'écrire sans recliquer.
+  await expect(page.getByRole("textbox", { name: "Texte du cadre" })).toBeVisible();
+});
+
+test("un clic dehors referme le cadre et sa barre", async ({ page, request }) => {
+  /*
+   * La fermeture ne tenait qu'au blur de la saisie : dès qu'on avait touché la barre -
+   * le champ de taille, le sélecteur de police - le curseur n'était plus dans le
+   * texte, et cliquer ailleurs ne refermait plus rien. Le cadre restait ouvert
+   * indéfiniment, sa barre posée par-dessus la page.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.getByRole("button", { name: "Mise en forme" }).click();
+
+  const barre = page.locator("[data-mise-en-forme]");
+  await expect(barre).toBeVisible();
+
+  // On règle quelque chose : le curseur quitte le texte pour la barre.
+  await barre.locator("input[aria-label='Taille du texte']").fill("14");
+  await expect(barre).toBeVisible();
+
+  // Puis on clique ailleurs sur la page : tout se referme.
+  await page.mouse.click(boite.x, boite.y + 320);
+
+  await expect(barre).toHaveCount(0);
+  await expect(page.locator("div[class*='repereOuvert']")).toHaveCount(0);
+  /*
+   * Et le texte réglé est resté.
+   *
+   * Le cadre porte ce que la modification propose : ici la nouvelle adresse du siège,
+   * puisque le dossier d'essai transfère le siège. Ce test attendait « ESSAI GROUPE »,
+   * la dénomination du jeu d'essai du parcours client, d'où il vient.
+   */
+  await expect(page.locator("div[class*='repere']").first()).toContainText(
+    "5 avenue Victor Hugo"
+  );
+});
+
+test("les poignées montrent ce qui se saisit", async ({ page, request }) => {
+  /*
+   * Un bord vert sans dessin ne dit pas qu'il se tire : on le prend pour une bordure.
+   * Chaque poignée porte donc sa flèche - croix pour déplacer, horizontale pour la
+   * largeur, verticale pour la hauteur - et elles ne se recouvrent pas : le bouton de
+   * mise en forme, posé sur l'angle, masquait la plus utile des trois.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+
+  const reperes = await page.evaluate(() => {
+    const cadre = document.querySelector("div[class*='repereOuvert']") as HTMLElement;
+    const nomme = (e: Element) => e.className.replace(/Modification-module__\w+__/g, "");
+    const boites = [...cadre.querySelectorAll("span")]
+      .filter((e) => /poignee|borddroit|bordbas|coin/.test(nomme(e)))
+      .map((e) => ({ nom: nomme(e), boite: e.getBoundingClientRect() }));
+
+    const appel = cadre.querySelector("button[aria-label='Mise en forme']")!.getBoundingClientRect();
+    return {
+      noms: boites.map((b) => b.nom),
+      // Chaque poignée occupe une vraie surface, et aucune ne se cache sous le bouton.
+      surfaces: boites.map((b) => Math.round(b.boite.width * b.boite.height)),
+      chevauchements: boites.filter(
+        (b) =>
+          b.boite.left < appel.right &&
+          b.boite.right > appel.left &&
+          b.boite.top < appel.bottom &&
+          b.boite.bottom > appel.top
+      ).length,
+    };
+  });
+
+  // Déplacement, largeur, hauteur.
+  expect(reperes.noms).toHaveLength(3);
+  /*
+   * Chacune garde une surface où l'on peut viser. Dix pixels de côté : de grosses
+   * pastilles autour d'un cadre d'une ligne se lisaient comme un désordre, chacune
+   * tirant l'œil autant que le texte.
+   */
+  for (const surface of reperes.surfaces) expect(surface).toBeGreaterThanOrEqual(96);
+  expect(reperes.chevauchements).toBe(0);
+});
+
+test("la taille se règle aussi à la flèche", async ({ page, request }) => {
+  /*
+   * Changer d'un point demandait d'effacer pour retaper, dans un champ large comme un
+   * nom de police pour y écrire deux chiffres.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.getByRole("button", { name: "Mise en forme" }).click();
+
+  const champ = page.locator("[data-mise-en-forme] input[aria-label='Taille du texte']");
+  const depart = Number(await champ.inputValue());
+
+  await page.getByRole("button", { name: "Agrandir le texte" }).click();
+  expect(Number(await champ.inputValue())).toBe(depart + 1);
+
+  await page.getByRole("button", { name: "Réduire le texte" }).click();
+  expect(Number(await champ.inputValue())).toBe(depart);
+
+  /*
+   * La suppression est au bord du cadre, non dans les réglages : enfouie ici, défaire
+   * un cadre posé au mauvais endroit demandait trois gestes, dont deux sans rapport.
+   */
+  const corbeille = page.getByRole("button", { name: "Supprimer ce cadre" });
+  await expect(corbeille).toHaveCount(1);
+  await expect(corbeille).toBeVisible();
+  await expect(page.locator("[data-mise-en-forme]").getByRole("button", { name: "Supprimer ce cadre" })).toHaveCount(0);
 });
