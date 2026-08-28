@@ -337,17 +337,17 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 );
 
 -- Index
-CREATE INDEX idx_audit_formalite ON audit_log(formalite_id, created_at DESC);
-CREATE INDEX idx_user_sessions_user ON user_sessions(user_id, started_at DESC);
-CREATE INDEX idx_payments_user ON payments(user_id, paid_at DESC);
-CREATE INDEX idx_payments_formalite ON payments(formalite_id);
-CREATE INDEX idx_consultations_user ON lawyer_consultations(user_id, scheduled_at DESC);
-CREATE INDEX idx_consultations_avocat ON lawyer_consultations(avocat_id, scheduled_at DESC);
-CREATE INDEX idx_user_sessions_token ON user_sessions(session_token);
-CREATE INDEX idx_availability_avocat ON avocat_availability(avocat_id, day_of_week);
-CREATE INDEX idx_blocked_avocat ON avocat_blocked_dates(avocat_id, start_date);
-CREATE INDEX idx_email_tokens_user ON email_tokens(user_id, type);
-CREATE INDEX idx_team_members_user ON team_members(user_id);
-CREATE INDEX idx_team_invit_team ON team_invitations(team_id);
-CREATE INDEX idx_team_notes ON team_notes(formalite_id, team_id, created_at);
-CREATE INDEX idx_uploaded_files_user ON uploaded_files(user_id);;
+CREATE INDEX IF NOT EXISTS idx_audit_formalite ON audit_log(formalite_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id, paid_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payments_formalite ON payments(formalite_id);
+CREATE INDEX IF NOT EXISTS idx_consultations_user ON lawyer_consultations(user_id, scheduled_at DESC);
+CREATE INDEX IF NOT EXISTS idx_consultations_avocat ON lawyer_consultations(avocat_id, scheduled_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_availability_avocat ON avocat_availability(avocat_id, day_of_week);
+CREATE INDEX IF NOT EXISTS idx_blocked_avocat ON avocat_blocked_dates(avocat_id, start_date);
+CREATE INDEX IF NOT EXISTS idx_email_tokens_user ON email_tokens(user_id, type);
+CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_team_invit_team ON team_invitations(team_id);
+CREATE INDEX IF NOT EXISTS idx_team_notes ON team_notes(formalite_id, team_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_uploaded_files_user ON uploaded_files(user_id);;

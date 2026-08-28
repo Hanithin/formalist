@@ -39,4 +39,13 @@ RUN rm -rf /app/uploads && ln -s /app/persist/uploads /app/uploads
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "mkdir -p /app/persist/uploads && cd /app/web && npm run start -- --port 3000 --hostname 0.0.0.0"]
+# Les migrations passent avant que l'application serve.
+#
+# Rien ne les appliquait : elles étaient copiées dans l'image, et il fallait se
+# souvenir d'ouvrir un client SQL à chaque mise en ligne. Deux d'entre elles sont
+# ainsi restées en arrière, dont celle qui autorise le statut « a_relire » : la
+# production d'actes échouait en production sans que rien ne le dise.
+#
+# Un échec arrête le démarrage : servir sur un schéma incomplet est pire que ne pas
+# servir - l'application répond, et se casse au premier geste qui compte.
+CMD ["sh", "-c", "mkdir -p /app/persist/uploads && cd /app/web && node scripts/appliquer-les-migrations.mjs && npm run start -- --port 3000 --hostname 0.0.0.0"]
