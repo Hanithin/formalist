@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { formalitesPourListe } from "@/infrastructure/db/depots/documents";
-import { filtreValide } from "@/domain/formalite/liste";
+import { comptesParFiltre, filtreValide } from "@/domain/formalite/liste";
+import { accorder } from "@/domain/formalite/etapes";
 import { dateEnTete } from "@/lib/dates";
 import { Liste } from "./Liste";
 import { NouvelleFormalite } from "@/components/navigation/NouvelleFormalite";
@@ -29,10 +30,31 @@ export default async function Formalites({
   const { filtre, societe } = await searchParams;
   const dossiers = await formalitesPourListe(utilisateur);
 
+  /*
+   * Ce que la page contient, en une ligne.
+   *
+   * Trois cartes de compteurs l'annonçaient en six lignes et un tiers d'écran, pour
+   * répéter deux fois le même nombre. Ce qui restait ensuite - un titre seul au-dessus
+   * d'une rangée de filtres - laissait le haut de la page vide.
+   */
+  const comptes = comptesParFiltre(dossiers);
+  const brouillons = dossiers.filter((d) => d.brouillon).length;
+  const resume = [
+    accorder(comptes.tous, "formalité", "formalités"),
+    comptes.en_attente > 0 ? comptes.en_attente + " en attente de votre part" : null,
+    comptes.terminee > 0 ? accorder(comptes.terminee, "terminée", "terminées") : null,
+    brouillons > 0 ? accorder(brouillons, "brouillon", "brouillons") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <main className={styles.page}>
       <div className={styles.topbar}>
-        <h1>Mes formalités</h1>
+        <div className={styles.topbarTitre}>
+          <h1>Mes formalités</h1>
+          <p className={styles.topbarResume}>{resume}</p>
+        </div>
 
         <div className={styles.topbarActions}>
           <span className={styles.topbarDate}>{dateEnTete()}</span>

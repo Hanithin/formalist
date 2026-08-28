@@ -145,24 +145,26 @@ describe("les trois compteurs de tête", () => {
 });
 
 describe("la pagination", () => {
-  it("six cartes par page", () => {
-    expect(PAR_PAGE).toBe(6);
-    expect(paginer(13, 1).pages).toBe(3);
-    expect(pageDe(Array.from({ length: 13 }, (_, i) => i), 2)).toEqual([6, 7, 8, 9, 10, 11]);
+  it("neuf cartes par page", () => {
+    expect(PAR_PAGE).toBe(9);
+    expect(paginer(20, 1).pages).toBe(3);
+    expect(pageDe(Array.from({ length: 20 }, (_, i) => i), 2)).toEqual([
+      9, 10, 11, 12, 13, 14, 15, 16, 17,
+    ]);
   });
 
   it("annonce la tranche affichée", () => {
-    const p = paginer(13, 2);
-    expect(p.premier).toBe(7);
-    expect(p.dernier).toBe(12);
-    expect(p.total).toBe(13);
+    const p = paginer(20, 2);
+    expect(p.premier).toBe(10);
+    expect(p.dernier).toBe(18);
+    expect(p.total).toBe(20);
   });
 
   it("une page hors bornes ramène dans les bornes", () => {
     // Un lien partagé reste utilisable après que des dossiers ont été retirés.
-    expect(paginer(13, 99).page).toBe(3);
-    expect(paginer(13, 0).page).toBe(1);
-    expect(paginer(13, -5).page).toBe(1);
+    expect(paginer(20, 99).page).toBe(3);
+    expect(paginer(20, 0).page).toBe(1);
+    expect(paginer(20, -5).page).toBe(1);
   });
 
   it("une liste vide tient sur une page, sans tranche", () => {
@@ -173,9 +175,9 @@ describe("la pagination", () => {
   });
 
   it("la fenêtre garde les extrémités et coupe le milieu", () => {
-    expect(paginer(60, 5).fenetre).toEqual([1, null, 4, 5, 6, null, 10]);
+    expect(paginer(90, 5).fenetre).toEqual([1, null, 4, 5, 6, null, 10]);
     // Sans coupure quand tout tient.
-    expect(paginer(18, 2).fenetre).toEqual([1, 2, 3]);
+    expect(paginer(27, 2).fenetre).toEqual([1, 2, 3]);
   });
 });
 

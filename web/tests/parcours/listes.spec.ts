@@ -49,18 +49,14 @@ test.describe("formalités", () => {
     await expect(carte.getByText("SASU")).toBeVisible();
   });
 
-  test("les trois compteurs de tête résument la liste", async ({ page }) => {
-    await page.goto("/formalites");
-
-    // « Total » se dit aussi dans le sous-titre « n formalités au total » : on vise
-    // le libellé exact.
-    const compteurs = page.getByRole("list").first();
-    await expect(compteurs.getByText("En cours", { exact: true })).toBeVisible();
-    await expect(compteurs.getByText(/^Terminées?$/)).toBeVisible();
-    await expect(compteurs.getByText("Total", { exact: true })).toBeVisible();
-    // Le total est un nombre, pas un tiret : le jeu de données n'est pas vide.
-    await expect(compteurs.getByText(/formalités? au total/)).toBeVisible();
-  });
+  /*
+   * Les trois compteurs de tête ont été retirés.
+   *
+   * « En cours 23 - 100 % de vos formalités », « Total 23 - 23 formalités au total » :
+   * trois cartes pour dire deux fois le même nombre, que les filtres annoncent déjà
+   * chacun à côté de son nom. C'est donc le décompte des filtres qu'on vérifie, juste
+   * en dessous.
+   */
 
   test("chaque filtre annonce son décompte, et aucun n'est offert à vide", async ({ page }) => {
     /*

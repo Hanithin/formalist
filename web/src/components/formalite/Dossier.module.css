@@ -9,15 +9,25 @@
 
 /* ---------- La tête du dossier ---------- */
 
+/*
+ * Une seule ligne, un seul milieu.
+ *
+ * Les trois éléments s'alignaient sur leur ligne de base : un titre de 28 pixels, des
+ * pastilles de 26 et un bouton de 36 n'ont pas la même, et chacun se posait à sa
+ * hauteur. C'est leur milieu qu'ils partagent.
+ */
 .tete {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: 10px 16px;
   margin: 0 0 18px;
+  min-height: 36px;
 }
 
 .teteTitre {
+  display: flex;
+  align-items: center;
   margin: 0;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 28px;
@@ -38,7 +48,7 @@
 .teteMention {
   display: inline-flex;
   align-items: center;
-  height: 26px;
+  height: 28px;
   padding: 0 11px;
   border-radius: 100px;
   background: #f4f4f5;

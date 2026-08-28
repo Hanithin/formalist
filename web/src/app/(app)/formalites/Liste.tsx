@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { filtresUtiles } from "@/domain/document/statuts";
-import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuType, nomAffichable, pageDe, paginer, parModificationRecente, retenu, statistiques, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
+import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuType, nomAffichable, pageDe, paginer, parModificationRecente, retenu, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
 import { avancementDuDossier, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
 import { signalerChangementDeColonne } from "@/lib/colonne";
 import styles from "./Formalites.module.css";
@@ -66,39 +66,19 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
     [dossiers, filtre, recherche]
   );
 
-  const stats = useMemo(
-    () => statistiques(dossiers, visibles, filtre, recherche),
-    [dossiers, visibles, filtre, recherche]
-  );
-
   const pagination = paginer(visibles.length, page);
   const affiches = pageDe(visibles, pagination.page);
 
   return (
     <>
-      {/* ---------- Les trois compteurs ---------- */}
-      <ul className={styles.stats}>
-        <Compteur stat={stats.enCours} teinte={styles.statCardIconBleu}>
-          <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="1.7" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-        </Compteur>
+      {/*
+        Les trois compteurs sont partis.
 
-        <Compteur stat={stats.termines} teinte={styles.statCardIconVert}>
-          <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="1.7" aria-hidden="true">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </Compteur>
-
-        <Compteur stat={stats.total} teinte={styles.statCardIconGris}>
-          <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="1.7" aria-hidden="true">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-        </Compteur>
-      </ul>
-
+        « En cours 23 - 100 % de vos formalités », « Terminée - 0 sur 23 finalisée »,
+        « Total 23 - 23 formalités au total » : trois cartes, six lignes, un tiers de
+        l'écran pour dire deux fois le même nombre - que les filtres, juste en dessous,
+        annonçaient déjà chacun à côté de son nom.
+      */}
       {/* ---------- Filtres et recherche ---------- */}
       <div className={styles.filterBar}>
         <nav className={styles.filterGroup} aria-label="Filtrer les formalités">
@@ -393,32 +373,6 @@ function Suppression({
   );
 }
 
-/** Un compteur de tête. À zéro, il s'efface plutôt que d'afficher un zéro. */
-function Compteur({
-  stat,
-  teinte,
-  children,
-}: {
-  stat: { valeur: number | null; libelle: string; sousTitre: string };
-  teinte: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <li
-      className={
-        stat.valeur === null ? `${styles.statCard} ${styles.statCardVide}` : styles.statCard
-      }
-    >
-      <span className={`${styles.statCardIcon} ${teinte}`} aria-hidden="true">
-        {children}
-      </span>
-      <span className={styles.statLabel}>{stat.libelle}</span>
-      <span className={styles.statValue}>{stat.valeur ?? "-"}</span>
-      <span className={styles.statSub}>{stat.sousTitre}</span>
-    </li>
-  );
-}
-
 /**
  * Où mène un dossier.
  *
@@ -490,6 +444,14 @@ function Carte({ dossier }: { dossier: DossierListe }) {
 
       <span className={styles.dossierMeta}>{dateRelative(dossier.modifieLe)}</span>
 
+      {/*
+        La jauge est sur toutes les cartes, ou sur aucune.
+
+        Elle avait été retirée des dossiers à cent pour cent : mais un dossier en
+        révision est déjà à cent pour cent - la part du client est finie, celle du
+        cabinet ne se compte pas ici. Une carte sur deux perdait donc son trait sans
+        que rien ne le justifie à la lecture.
+      */}
       <div className={styles.dossierProgress}>
         <div className={styles.dossierProgressBar}>
           <div className={styles.dossierProgressFill} style={{ width: pourcentage + "%" }} />

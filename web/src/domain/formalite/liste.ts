@@ -251,7 +251,13 @@ export function statistiques(
 /* ---------- Pagination ---------- */
 
 /** Six cartes par page : au-delà, la page devient longue à parcourir. */
-export const PAR_PAGE = 6;
+/*
+ * Neuf cartes, non six.
+ *
+ * Trois par rangée sur un écran large : six s'arrêtaient au milieu de la page, avec
+ * une pagination pour aller chercher les suivantes et un demi-écran de vide dessous.
+ */
+export const PAR_PAGE = 9;
 
 export interface Pagination {
   page: number;

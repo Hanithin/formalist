@@ -49,7 +49,7 @@
  * les coches pour savoir où on en est.
  */
 .focus {
-  margin: 20px 0 22px;
+  margin: 20px 0 0;
   padding: 16px 18px;
   border-radius: 12px;
   background: #fafafa;
@@ -110,8 +110,15 @@
 
 /* ---------- La suite complète ---------- */
 
+/*
+ * La liste respire sous la jauge.
+ *
+ * L'écart venait de l'étape mise en avant, qui la portait en marge basse : sur un
+ * dossier achevé, où il n'y a plus d'étape à mettre en avant, la première carte
+ * collait au trait d'avancement.
+ */
 .etapes {
-  margin: 0;
+  margin: 22px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
