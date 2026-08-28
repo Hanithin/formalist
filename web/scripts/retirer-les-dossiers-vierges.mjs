@@ -40,6 +40,12 @@ function connexion(adresse) {
  *
  * Elles sont nommées ici plutôt que devinées : une table oubliée rendrait vierge un
  * dossier qui ne l'est pas, et c'est la seule erreur que ce script puisse commettre.
+ *
+ * `audit_log` en fait partie, et c'est le premier passage qui l'a appris : la
+ * suppression s'est heurtée à sa clé étrangère. La leçon vaut mieux que le contournement
+ * qu'on aurait pu écrire. Une entrée d'audit est la trace d'un geste sur le dossier -
+ * une offre changée, une pièce refusée - donc la preuve qu'il n'est pas vierge. On
+ * l'ajoute à la liste plutôt que d'effacer de l'audit pour faire passer un ménage.
  */
 const RATTACHEMENTS = [
   "documents",
@@ -47,6 +53,7 @@ const RATTACHEMENTS = [
   "payments",
   "signature_requests",
   "messages",
+  "audit_log",
 ];
 
 const VIERGES = `
