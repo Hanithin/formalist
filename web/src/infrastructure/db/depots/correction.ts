@@ -186,13 +186,21 @@ export async function corrigerEtReproduire(
     data: { data_json: JSON.stringify(ecrit), updated_at: new Date() },
   });
 
+  /*
+   * Les identifiants de champs restent au commentaire, non à la valeur.
+   *
+   * `after_value` est ce que le fil du client rend : il y lisait « a corrigé le
+   * dossier : dateOuverture, dateCloture, dirigeantFonction » - les noms que le code
+   * donne à ses champs, tronqués par la colonne. Le commentaire, lui, ne sort que
+   * dans le journal du cabinet.
+   */
   await prisma.audit_log.create({
     data: {
       formalite_id: dossierId,
       actor_id: utilisateur.id,
       actor_role: "avocat",
       action: "dossier_corrige",
-      after_value: Object.keys(corrections).join(", ") || null,
+      comment: Object.keys(corrections).join(", ") || null,
     },
   });
 

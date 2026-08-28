@@ -833,17 +833,19 @@
  * qui, lui, demande quelque chose.
  */
 /*
- * Des gris, non de l'ambre.
+ * Un jaune franc, sans une once de brun.
  *
- * La carte du dossier à reprendre était le seul aplat de couleur de l'écran : un
- * beige qui tirait l'œil vers ce qui n'est pas urgent, à côté de listes tenues en
- * blanc et gris. Le trait et le fond suffisent à la détacher.
+ * La carte du dossier à reprendre est la seule de l'accueil qui appelle un geste :
+ * elle porte donc la seule couleur de l'écran. Le beige qu'elle avait avant tirait
+ * vers le brun - le fond, le trait, l'étiquette et la pastille en étaient teints, et
+ * le texte se lisait sépia. Ici, le jaune est au fond et au trait ; ce qui s'écrit
+ * dessus reste noir et gris, comme partout ailleurs.
  */
 .reprendre {
   padding: 20px 24px;
-  border: 1px solid #e4e4e7;
+  border: 1px solid #fde68a;
   border-radius: 16px;
-  background: #fafafa;
+  background: #fefce8;
 }
 
 /* L'étiquette et le badge se font face : l'un dit le geste, l'autre la nature. */
@@ -855,12 +857,13 @@
   margin-bottom: 8px;
 }
 
+/* La pastille est du même jaune : blanche, elle perçait un trou dans la carte. */
 .reprendreBadge {
   flex-shrink: 0;
   padding: 4px 11px;
-  border: 1px solid #e4e4e7;
+  border: 1px solid #fbeaa6;
   border-radius: 999px;
-  background: #fff;
+  background: #fdf6d3;
   font-size: 11.5px;
   font-weight: 600;
   color: #52525b;
@@ -874,7 +877,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0;
-  color: #a1a1aa;
+  color: #71717a;
 }
 
 /* Le nom de la société est le sujet : il porte le corps le plus fort de la carte. */
@@ -909,6 +912,17 @@
 .reprendrePied .jauge {
   flex: 1;
   min-width: 0;
+}
+
+/*
+ * Le creux de la jauge suit le jaune de la carte.
+ *
+ * Un gris translucide sur un fond jaune donne un gris verdâtre : la part qui reste à
+ * parcourir se lisait comme une tache, alors que c'est le fond de la carte qu'elle
+ * doit prolonger.
+ */
+.reprendre .jauge {
+  background: #fbeaa6;
 }
 
 .reprendrePourcent {
@@ -1770,14 +1784,22 @@
   gap: 10px;
 }
 
+/*
+ * Le format du fichier, en bleu discret.
+ *
+ * Gris sur gris clair, il se confondait avec la carte : c'est pourtant la première
+ * chose qu'on cherche dans une liste de pièces - un PDF ne s'ouvre pas comme un
+ * tableur. Un bleu pâle le détache sans crier.
+ */
 .pieceType {
   padding: 3px 8px;
+  border: 1px solid #dbeafe;
   border-radius: 6px;
-  background: #f4f4f5;
+  background: #eff6ff;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0;
-  color: #71717a;
+  color: #1d4ed8;
 }
 
 .pieceDate {

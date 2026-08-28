@@ -9,7 +9,12 @@ import {
   type Indicateurs,
   type Ton,
 } from "@/domain/formalite/accueil";
-import { dateRelative, phraseJournal, seSuffitAElleMeme } from "@/domain/formalite/journal";
+import {
+  dateRelative,
+  ditQuelqueChose,
+  phraseJournal,
+  seSuffitAElleMeme,
+} from "@/domain/formalite/journal";
 import type { EntreeJournal } from "@/domain/formalite/journal";
 import { ToutesLesAttentes } from "./ToutesLesAttentes";
 import styles from "./TableauDeBord.module.css";
@@ -531,7 +536,9 @@ export function ActiviteRecente({
               fois de suite sur le même dossier. C'est ce qu'on lit qui se répète.
             */
             sansRepetition(
-              activite,
+              /* « a mis à jour le dossier » est la phrase par défaut : elle ne dit rien
+                 de ce qui s'est passé, et les écritures internes du cabinet y tombent. */
+              activite.filter(ditQuelqueChose),
               (e) => e.dossierId + ":" + (seSuffitAElleMeme(e) ? e.valeur : phraseJournal(e, false))
             ),
             (e) => e.societe,

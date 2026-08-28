@@ -46,8 +46,15 @@ export function phraseJournal(entree: EntreeJournal, cestMoi: boolean): string {
       return sujet ? sujet.toLowerCase() : a + " fait avancer le dossier";
     case "note":
       return a + " laissé une note";
+    /*
+     * Ce qui a été corrigé ne se dit pas au client en noms de champs.
+     *
+     * La valeur enregistrée est la liste des identifiants du code -
+     * « dateOuverture, dateCloture, dirigeantFonction » - tronquée par la colonne où
+     * elle s'affiche. Les entrées déjà écrites la portent encore : on ne la lit plus.
+     */
     case "dossier_corrige":
-      return a + " corrigé le dossier" + (entree.valeur ? " : " + entree.valeur : "");
+      return a + " corrigé le dossier";
     default:
       return a + " mis à jour le dossier";
   }
