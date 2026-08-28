@@ -27,7 +27,7 @@ import {
 } from "@/domain/document/statuts";
 import { TITRE_STATUTS_A_JOUR } from "@/domain/modification/formalites";
 import { formaterDate } from "@/lib/dates";
-import { Apercu } from "./Apercu";
+import { Apercu } from "@/components/document/Apercu";
 import styles from "./Documents.module.css";
 
 /** Ce qui traverse jusqu'au navigateur : les dates y sont des chaînes. */

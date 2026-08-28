@@ -12,8 +12,10 @@ import { Onglets, ongletDemande } from "@/components/formalite/Onglets";
 import {
   DocumentsDuDossier,
   type DocumentDuDossier,
+  type EtatDuDocument,
 } from "@/components/formalite/DocumentsDuDossier";
 import { FilDuDossier, type MessageDuFil } from "@/components/formalite/FilDuDossier";
+import { TeteDuDossier } from "@/components/formalite/TeteDuDossier";
 import { formaterDate } from "@/lib/dates";
 import { Commencer } from "./Commencer";
 import { Parcours } from "./Parcours";
@@ -153,10 +155,24 @@ export default async function DepotDesComptes({
         nom: d.name,
         fichier: d.file_path,
         creeLe: d.created_at ? d.created_at.toISOString() : null,
+        /*
+         * Un acte du cabinet qui arrive jusqu'ici a été relu.
+         *
+         * `documentsDuDossier` écarte ceux qui attendent la relecture : ce qui en sort
+         * et porte notre signature est donc validé, et le dire vaut mieux que de le
+         * laisser deviner.
+         */
+        etat: (d.uploaded_by === "system" ? "valide" : "depose") as EtatDuDocument,
       })),
       ...actes
         .filter((a) => a.enRelecture)
-        .map((a) => ({ id: "acte-" + a.id, nom: a.titre, fichier: null, creeLe: null })),
+        .map((a) => ({
+          id: "acte-" + a.id,
+          nom: a.titre,
+          fichier: null,
+          creeLe: null,
+          etat: "en_relecture" as EtatDuDocument,
+        })),
     ];
 
     const fil: MessageDuFil[] = echanges.map((m) => ({
@@ -170,9 +186,29 @@ export default async function DepotDesComptes({
 
     return (
       <main className={styles.page}>
-        <Fil nom={nom} />
+        {/*
+          Le fil d'Ariane a laissé la place au titre.
+
+          « Mes formalités > STERLING PEAK » en gris clair au-dessus de tout : deux
+          mots à peine visibles là où l'on cherche le nom du dossier, et le retour se
+          visait au pixel. Le titre le dit, et le bouton de retour est à son bout.
+        */}
         <div className={`${styles.content} ${styles.contentLarge}`}>
-          <h1 className={styles.titre}>{nom}</h1>
+          {/*
+            De quel dossier s'agit-il ?
+
+            La page n'avait pour titre qu'un fil d'Ariane en gris clair : rien ne
+            disait en gros de quelle société ni de quelle formalité on parlait.
+          */}
+          <TeteDuDossier
+            titre={comptes.societe.denomination || nom}
+            mentions={[
+              "Dépôt des comptes annuels",
+              cloture ? "Exercice clos le " + cloture : null,
+            ]}
+            retour={{ href: "/formalites", libelle: "Mes formalités" }}
+          />
+
           {regle === "1" && (
             <p className={styles.reglementConfirme} role="status">
               Votre règlement est enregistré et vos actes sont écrits. Un avocat les

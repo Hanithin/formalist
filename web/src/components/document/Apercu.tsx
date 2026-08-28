@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { affichable } from "@/domain/document/bibliotheque";
-import styles from "./Documents.module.css";
+import styles from "./Apercu.module.css";
 
 /**
  * L'aperçu d'un document, avant de le télécharger.
@@ -79,18 +79,15 @@ export function Apercu({
       }}
     >
       <div
-        className={styles.apercuFenetre}
+        className={styles.fenetre}
         role="dialog"
         aria-modal="true"
         aria-label={"Aperçu de " + nom}
       >
-        <div className={styles.fenetreTete}>
+        <div className={styles.tete}>
           <h2>{nom}</h2>
-          <div className={styles.apercuGestes}>
-            <a
-              className={styles.action + " " + styles.actionPrincipale}
-              href={adresse + "&telecharger=1"}
-            >
+          <div className={styles.gestes}>
+            <a className={styles.telecharger} href={adresse + "&telecharger=1"}>
               Télécharger
             </a>
             <button
@@ -116,15 +113,15 @@ export function Apercu({
           </div>
         </div>
 
-        <div className={styles.apercuCorps}>
+        <div className={styles.corps}>
           {etat === "chargement" && (
-            <p className={styles.apercuMessage} role="status">
+            <p className={styles.message} role="status">
               Préparation de l&apos;aperçu…
             </p>
           )}
 
           {etat === "echec" && (
-            <p className={styles.apercuMessage} role="status">
+            <p className={styles.message} role="status">
               {lisible
                 ? "L'aperçu n'a pas pu être préparé."
                 : "Ce format ne s'affiche pas dans le navigateur."}{" "}
@@ -133,7 +130,7 @@ export function Apercu({
           )}
 
           {etat === "pret" && source && (
-            <iframe className={styles.apercuCadre} src={source} title={"Aperçu de " + nom} />
+            <iframe className={styles.cadre} src={source} title={"Aperçu de " + nom} />
           )}
         </div>
       </div>

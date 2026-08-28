@@ -118,11 +118,40 @@
   gap: 10px;
 }
 
+/*
+ * Chaque étape dit ce qui s'y passe.
+ *
+ * La liste ne portait que des titres - « Dépôt au greffe », « Dépôt enregistré » - et
+ * l'explication n'existait que pour l'étape mise en avant : un dossier terminé n'en a
+ * plus, et la liste se refermait en quatre libellés sans un mot de ce qu'ils
+ * recouvrent.
+ */
+/*
+ * La feuille globale fait de chaque étape une carte, et l'autorise à passer à la
+ * ligne : le titre, son explication et la pastille d'état s'empilaient chacun sur sa
+ * rangée. La ligne se tient d'un bout à l'autre.
+ */
 .etape {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13.5px;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  font-size: 14px;
+}
+
+.etapeCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.detail {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #a1a1aa;
 }
 
 .puce {
@@ -130,16 +159,17 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  margin-top: 1px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: 1.5px solid #e0e0e0;
   color: #fff;
 }
 
 .puce svg {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
 }
 
 .faite .puce {
@@ -208,7 +238,7 @@
 .badge {
   flex-shrink: 0;
   margin-left: auto;
-  padding: 3px 10px;
+  padding: 4px 11px;
   border-radius: 100px;
   font-size: 11px;
   font-weight: 600;

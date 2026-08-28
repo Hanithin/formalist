@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Apercu } from "../../documents/Apercu";
+import { Apercu } from "@/components/document/Apercu";
 import styles from "../Avocat.module.css";
 
 /**

@@ -110,7 +110,17 @@ export function Suivi({ etat, lienAction, lienMessagerie, demande }: Props) {
             <span className={styles.puce} aria-hidden="true">
               {etape.etat === "faite" ? <Coche /> : null}
             </span>
-            <span className={styles.nom}>{etape.titre}</span>
+            {/*
+              Le titre, puis ce qu'il recouvre.
+
+              « Dépôt enregistré » ne dit pas ce que le greffe a fait, ni ce qu'il
+              reste à attendre : l'explication n'existait que pour l'étape mise en
+              avant, et disparaissait avec elle quand le dossier s'achevait.
+            */}
+            <span className={styles.etapeCorps}>
+              <span className={styles.nom}>{etape.titre}</span>
+              <span className={styles.detail}>{etape.explication}</span>
+            </span>
 
             {/*
               L'état de chaque ligne, nommé.
