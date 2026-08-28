@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/infrastructure/db/client";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { exigerDossier } from "@/infrastructure/db/depots/dossiers";
+import { visibleParLeClient } from "@/domain/document/publication";
 import { convertirEnPdf, ConversionImpossible } from "@/infrastructure/documents/conversion";
 import { apposerSignature } from "@/infrastructure/documents/generation";
 import { validerParametres, schemas } from "@/lib/valider";
@@ -30,6 +31,24 @@ export const GET = route(async (requete: Request) => {
 
   const piece = await prisma.documents.findUnique({ where: { id: document } });
   if (!piece || piece.formalite_id !== dossier || !piece.file_path) {
+    return NextResponse.json({ error: "Document introuvable" }, { status: 404 });
+  }
+
+  /*
+   * Un acte que l'avocat n'a pas relu ne sort pas d'ici non plus.
+   *
+   * Le contrôle s'arrêtait au dossier : un client qui a accès au sien pouvait donc
+   * demander n'importe lequel de ses documents par son identifiant - et ces
+   * identifiants se suivent. Ce point d'entrée rendait ainsi la version signée d'un
+   * projet encore en relecture, que la bibliothèque et le dossier prennent tous deux
+   * soin de retenir. La règle de publication est la même partout.
+   *
+   * Même réponse que pour un document inexistant : elle ne doit pas apprendre qu'il
+   * existe.
+   */
+  const duCabinet =
+    utilisateur.roles.includes("avocat") || utilisateur.roles.includes("admin");
+  if (!duCabinet && !visibleParLeClient(piece)) {
     return NextResponse.json({ error: "Document introuvable" }, { status: 404 });
   }
 

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { prisma } from "../client";
 import { peutLire } from "@/domain/acces/regles";
+import { visibleParLeClient } from "@/domain/document/publication";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -103,9 +104,23 @@ export async function fichierLisible(
     where: {
       OR: [{ file_path: { endsWith: nom } }, { source_path: { endsWith: nom } }],
     },
-    select: { formalite_id: true },
+    select: { formalite_id: true, uploaded_by: true, status: true },
   });
-  if (document && (await dossierAccessible(utilisateur, document.formalite_id))) return nom;
+  /*
+   * Un acte en relecture ne se sert pas au client, même s'il en connaît le nom.
+   *
+   * La règle tenait jusqu'ici par ce que les écrans ne rendent pas : ni la
+   * bibliothèque ni le dossier ne donnent le chemin d'un projet non relu. C'est une
+   * garantie fragile - elle repose sur la discipline de chaque écran à venir. Elle
+   * est ici aussi, à l'endroit qui sert le fichier.
+   */
+  if (
+    document &&
+    (utilisateur.roles.includes("avocat") || visibleParLeClient(document)) &&
+    (await dossierAccessible(utilisateur, document.formalite_id))
+  ) {
+    return nom;
+  }
 
   // 3. Pièce jointe d'un message de dossier
   const message = await prisma.messages.findFirst({

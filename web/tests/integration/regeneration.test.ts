@@ -95,6 +95,19 @@ avecBase("régénération des actes", () => {
   });
 
   afterAll(async () => {
+    /*
+     * Les versions archivées gardent leurs fichiers : la série en produit à chaque
+     * reproduction, et personne d'autre ne viendrait les ramasser.
+     */
+    const versions = await prisma.document_versions.findMany({
+      where: { formalite_id: { in: dossiers } },
+      select: { file_path: true, source_path: true },
+    });
+    for (const v of versions) {
+      if (v.file_path) fichiers.add(v.file_path);
+      if (v.source_path) fichiers.add(v.source_path);
+    }
+
     await prisma.documents.deleteMany({ where: { formalite_id: { in: dossiers } } });
     await prisma.formalites.deleteMany({ where: { id: { in: dossiers } } });
     await prisma.users.deleteMany({ where: { email: { startsWith: MARQUE } } });
@@ -130,7 +143,15 @@ avecBase("régénération des actes", () => {
     expect([...parNom.values()]).toEqual([1, 1, 1]);
   });
 
-  it("le fichier reproduit remplace l'ancien sur le disque", async () => {
+  /*
+   * Reproduire n'efface plus : ça archive.
+   *
+   * Ce test exigeait que l'ancien fichier disparaisse du disque - c'était juste tant
+   * que reproduire un acte le détruisait. Depuis qu'une version remplacée est
+   * conservée, l'avocat peut revenir à celle d'avant : le fichier qu'elle désigne doit
+   * donc rester. Un octet gardé vaut mieux qu'un historique qui pointe dans le vide.
+   */
+  it("le fichier reproduit ne remplace pas l'ancien, qui devient une version", async () => {
     const dossier = await nouveauDossier();
 
     await remplacerDocumentsProduits(dossier, [acte("Statuts constitutifs", "v1")]);
@@ -142,9 +163,14 @@ avecBase("régénération des actes", () => {
     const second = (await actesDu(dossier))[0];
 
     expect(second.file_path).not.toBe(premier.file_path);
-    // L'ancien fichier ne doit pas rester sur le disque à s'accumuler.
-    expect(await surLeDisque(premier.file_path!)).toBe(false);
     expect(await surLeDisque(second.file_path!)).toBe(true);
+
+    // L'acte d'avant est rangé dans l'historique, avec son fichier toujours lisible.
+    const versions = await prisma.document_versions.findMany({
+      where: { formalite_id: dossier, name: "Statuts constitutifs" },
+    });
+    expect(versions.map((v) => v.file_path)).toContain(premier.file_path);
+    expect(await surLeDisque(premier.file_path!)).toBe(true);
   });
 
   it("l'acte est figé en PDF et garde son Word en source", async () => {
