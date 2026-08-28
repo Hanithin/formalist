@@ -588,6 +588,17 @@ export function Parcours({
         )}
 
         <div className={styles.actions}>
+          {/*
+            Où l'on en est, du côté du geste.
+
+            La frise le dit en tête de page - mais la barre est collée au bas de la
+            fenêtre, et quand elle sert vraiment, la frise est sortie de l'écran depuis
+            longtemps. La barre était alors un bandeau blanc avec un bouton seul à
+            droite, et rien à sa gauche.
+          */}
+          <span className={styles.actionsEtape}>
+            Étape {etape} sur {ETAPES.length}
+          </span>
           {etape > 1 && (
             <button type="button" onClick={() => aller(etape - 1)} disabled={enCours}>
               Retour

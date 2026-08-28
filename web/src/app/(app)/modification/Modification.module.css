@@ -815,11 +815,20 @@
   display: flex;
   gap: 10px;
   margin-top: 28px;
-  padding: 14px 0 18px;
+  padding: 12px 0 16px;
   /* La barre vit dans la carte, qui est blanche : le fond de la page y peignait un
      bandeau gris sous le dernier champ. */
   background: var(--surface);
   border-top: 1px solid var(--trait);
+}
+
+/* Elle occupe la gauche, que le bouton laissait vide. */
+.actionsEtape {
+  align-self: center;
+  margin-right: auto;
+  font-size: 12.5px;
+  color: #a1a1aa;
+  white-space: nowrap;
 }
 
 .actions button {
