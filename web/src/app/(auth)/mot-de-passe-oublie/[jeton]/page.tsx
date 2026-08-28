@@ -37,8 +37,9 @@ export default async function NouveauMotDePasse({
             <Image
               src="/images/logo.png"
               alt="Formalist"
-              width={140}
-              height={30}
+              /* Dimensions réelles du PNG (4725 × 861) : le CSS le ramène à 30 px de haut. */
+              width={225}
+              height={41}
               style={{ height: 30, width: "auto" }}
               priority
             />
