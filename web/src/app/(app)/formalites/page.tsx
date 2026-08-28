@@ -50,11 +50,14 @@ export default async function Formalites({
 
   return (
     <main className={styles.page}>
+      {/*
+        Le bandeau ne porte que le titre et ce qu'on peut faire ; la phrase court
+        dessous, sur toute la largeur. Dans un bloc de gauche, elle plaçait la date au
+        milieu de deux lignes au lieu de la poser sur celle du titre - et cette page
+        était la seule des huit à s'y prendre ainsi.
+      */}
       <div className={styles.topbar}>
-        <div className={styles.topbarTitre}>
-          <h1>Mes formalités</h1>
-          <p className={styles.topbarResume}>{resume}</p>
-        </div>
+        <h1>Mes formalités</h1>
 
         <div className={styles.topbarActions}>
           <span className={styles.topbarDate}>{dateEnTete()}</span>
@@ -63,6 +66,8 @@ export default async function Formalites({
           <NouvelleFormalite libelle="Nouvelle formalité" apparence="page" />
         </div>
       </div>
+
+      <p className={styles.introduction}>{resume}</p>
 
       <div className={styles.content}>
         <Liste

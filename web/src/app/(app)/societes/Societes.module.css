@@ -80,13 +80,14 @@
   color: #18181b;
 }
 
+/* La mesure de la bibliothèque de documents, à l'identique. */
 .entete {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 20px;
-  padding: 24px 48px 0;
+  gap: 16px;
+  padding: 26px 48px 4px;
 }
 
 /* Vingt-huit pixels, comme les documents, les formalités, les contrats et le reste :
@@ -99,19 +100,23 @@
   letter-spacing: 0;
 }
 
-.sousTitre {
-  margin: 3px 0 0;
-  font-size: 13.5px;
-  color: #8a8a92;
+/* La phrase court sous le bandeau, sur toute la largeur, comme aux documents. */
+.introduction {
+  margin: 0 0 28px;
+  padding: 0 48px;
+  max-width: 760px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #52525b;
 }
 
 .date {
-  font-size: 13.5px;
-  color: #8a8a92;
+  font-size: 13px;
+  color: #999;
 }
 
 .contenu {
-  padding: 22px 48px 48px;
+  padding: 16px 48px 48px;
 }
 
 /* ------------------------------------------------------- Filtrer, chercher */

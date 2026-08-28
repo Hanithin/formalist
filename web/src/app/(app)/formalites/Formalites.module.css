@@ -28,7 +28,7 @@
 }
 
 .topbar {
-  padding: 26px 48px 18px;
+  padding: 26px 48px 4px;
   background: transparent;
   display: flex;
   flex-wrap: wrap;
@@ -51,18 +51,14 @@
   flex-shrink: 0;
 }
 
-/* Le titre et ce qu'il recouvre, sur deux lignes. */
-.topbarTitre {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.topbarResume {
-  margin: 0;
-  font-size: 13.5px;
-  color: #a1a1aa;
+/* La phrase court sous le bandeau, sur toute la largeur : la mesure des sept autres. */
+.introduction {
+  padding: 0 48px;
+  margin: 0 0 28px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #52525b;
+  max-width: 760px;
 }
 
 .topbar h1 {
@@ -81,7 +77,7 @@
 }
 
 .content {
-  padding: 8px 48px 48px;
+  padding: 16px 48px 48px;
   flex: 1;
 }
 

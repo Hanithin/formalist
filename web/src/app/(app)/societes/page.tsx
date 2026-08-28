@@ -76,25 +76,32 @@ export default async function Societes() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.entete}>
-        <div>
-          <h1 className={styles.titre}>{libelleDuPortefeuille(societes.length)}</h1>
-          <p className={styles.sousTitre}>
-            {societes.length === 0
-              ? "Vos sociétés apparaîtront ici dès votre première formalité."
-              : accorder(societes.length, "société suivie", "sociétés suivies") +
-                (societes.reduce((n, s) => n + s.enCours, 0) > 0
-                  ? " · " +
-                    accorder(
-                      societes.reduce((n, s) => n + s.enCours, 0),
-                      "formalité en cours",
-                      "formalités en cours"
-                    )
-                  : "")}
-          </p>
-        </div>
+      {/*
+        La même ligne de tête que la bibliothèque de documents.
+
+        Le titre et sa phrase tenaient dans un bloc de gauche, et la date s'alignait sur
+        le milieu des deux : elle flottait entre les lignes au lieu de se poser sur celle
+        du titre. Ailleurs, le bandeau ne porte que le titre et la date ; la phrase court
+        dessous, sur toute la largeur.
+      */}
+      <div className={styles.entete}>
+        <h1 className={styles.titre}>{libelleDuPortefeuille(societes.length)}</h1>
         <span className={styles.date}>{dateEnTete()}</span>
-      </header>
+      </div>
+
+      <p className={styles.introduction}>
+        {societes.length === 0
+          ? "Vos sociétés apparaîtront ici dès votre première formalité."
+          : accorder(societes.length, "société suivie", "sociétés suivies") +
+            (societes.reduce((n, s) => n + s.enCours, 0) > 0
+              ? " · " +
+                accorder(
+                  societes.reduce((n, s) => n + s.enCours, 0),
+                  "formalité en cours",
+                  "formalités en cours"
+                )
+              : "")}
+      </p>
 
       <div className={styles.contenu}>
         {societes.length === 0 ? (
