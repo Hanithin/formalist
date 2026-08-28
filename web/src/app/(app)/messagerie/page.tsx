@@ -43,7 +43,6 @@ export default async function PageMessagerie({
         cle: "dossier-" + c.dossierId,
         genre: "dossier" as const,
         dossierId: c.dossierId,
-        clientId: c.clientId,
         titre: c.societe,
         sousTitre: c.avocat ?? "Avocat non assigné",
         forme: c.forme,
@@ -56,8 +55,6 @@ export default async function PageMessagerie({
       cle: "support",
       genre: "support" as const,
       dossierId: null,
-      // Le fil du support est celui du compte : le client, c'est lui.
-      clientId: utilisateur.id,
       titre: "Support Formalist",
       sousTitre: "Réponse sous quelques heures, du lundi au vendredi",
       forme: null,
@@ -114,6 +111,7 @@ export default async function PageMessagerie({
       fils={fils}
       filActif={actif?.cle ?? ""}
       messagesInitiaux={messages}
+      moi={utilisateur.id}
     />
   );
 }

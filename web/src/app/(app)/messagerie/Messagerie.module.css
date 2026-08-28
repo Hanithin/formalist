@@ -767,12 +767,19 @@
   align-items: flex-start;
 }
 
+/*
+ * Les mêmes bulles que dans les dossiers.
+ *
+ * Le fil de la messagerie et celui qu'on lit dans un dossier sont la même
+ * conversation, la même table, le même point d'entrée - ils se lisaient pourtant
+ * autrement : deux gris ardoise ici, du noir et du blanc cerné là.
+ */
 .chatMsg {
   max-width: 100%;
-  padding: 10px 14px;
-  border-radius: 16px;
-  font-size: 13px;
-  line-height: 1.4;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
   word-break: break-word;
 }
 
@@ -785,15 +792,17 @@
  * hiérarchie - le côté sombre reste celui du client - sans peser sur la page.
  */
 .chatMsgSent {
-  background: #2f3037;
+  border: 1px solid #18181b;
+  background: #18181b;
   color: #fff;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 5px;
 }
 
 .chatMsgReceived {
-  background: #f5f5f5;
+  border: 1px solid #e4e4e7;
+  background: #fff;
   color: #111;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 5px;
 }
 
 /*
@@ -868,34 +877,29 @@
   border: 1px solid #e5e7eb;
 }
 
+/* Le nom se pose au-dessus de la bulle, comme dans les dossiers. */
 .chatMsgSender {
-  font-size: 11px;
-  color: #999;
-  margin-bottom: 2px;
+  margin: 0 12px 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a1a1aa;
 }
 
 .chatMsgSent .chatMsgSender {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.chatMsgTypeE .chatMsgSender {
-  color: inherit;
-  opacity: 0.65;
-}
 
 .chatMsgTime {
-  font-size: 10px;
-  opacity: 0.6;
-  margin-top: 3px;
+  margin: 3px 12px 0;
+  font-size: 11px;
+  color: #b4b4bb;
 }
 
 .chatMsgSent .chatMsgTime {
   text-align: right;
 }
 
-.chatMsgTypeE .chatMsgTime {
-  opacity: 0.6;
-}
 
 /* La pastille du type, collée au-dessus de la bulle. */
 .chatMsgKind {
@@ -1016,19 +1020,25 @@
 }
 
 .chatMsgFile {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 6px;
-  padding: 8px 12px;
-  background: #e8f0fe;
-  border-radius: 10px;
+  margin-top: 7px;
+  padding: 4px 9px;
+  border-radius: 100px;
+  background: #f4f4f5;
   font-size: 12px;
-  color: #2563eb;
+  color: #3f3f46;
   cursor: pointer;
   text-decoration: none;
   max-width: 100%;
   word-break: break-all;
+}
+
+/* Sur la bulle noire, la pièce jointe se détache en transparence. */
+.chatMsgSent .chatMsgFile {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 
 .chatMsgFile:hover {
@@ -1094,43 +1104,59 @@
 
 /* ---------- La zone de saisie ---------- */
 
+/*
+ * La barre est la pilule, et non un bandeau qui en contient une.
+ *
+ * Le champ, arrondi et gris, flottait entre deux boutons ronds dans un bandeau cerné
+ * d'un filet : trois formes empilées pour un seul geste. C'est le dessin des deux
+ * fils qui vivent dans les dossiers.
+ */
 .chatInputArea {
-  padding: 16px 24px;
-  border-top: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
+  margin: 4px 24px 20px;
+  padding: 3px 4px 3px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
 }
 
-.chatInputArea input[type="text"] {
+.chatInputArea:focus-within {
+  border-color: #b4b4bb;
+}
+
+.chatInputArea input[type="text"],
+.chatInputArea input[type="text"]:hover,
+.chatInputArea input[type="text"]:focus {
   flex: 1;
   /* Les champs de l'application sont bornés à 460px par globals.css, ce qui laissait
      la saisie à un tiers de la largeur et le bouton d'envoi flottant au milieu. Ici
-     le champ occupe la ligne. */
+     le champ occupe la ligne - et ne porte plus de cadre : la barre en est un. */
   min-width: 0;
   max-width: none;
-  padding: 10px 16px;
-  border: 1px solid #e5e5e5;
-  border-radius: 24px;
-  font-size: 13px;
-  font-family: inherit;
-  background: #f5f5f5;
+  height: 30px;
+  padding: 4px 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
   outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111;
 }
 
-.chatInputArea input[type="text"]:focus {
-  border-color: #e5e5e5;
-  background: #fff;
-}
+
 
 .chatInputArea input[type="file"] {
   display: none;
 }
 
 .chatBtnAttach {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: none;
   background: none;
@@ -1152,31 +1178,42 @@
   opacity: 0.5;
 }
 
+/* Sans `display: block`, le dessin se pose sur la ligne de texte, deux pixels trop bas. */
 .chatBtnAttach svg {
-  width: 18px;
-  height: 18px;
+  display: block;
+  width: 17px;
+  height: 17px;
 }
 
 /* Le bouton d'envoi s'allume quand il y a quelque chose à envoyer. */
+/* Le bouton dit ce qu'il fait : un avion en papier demandait de le deviner. */
 .chatBtnSend {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: none;
-  background: #e5e5e5;
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  color: #999;
-  transition: all 0.2s ease;
+  height: 30px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 100px;
+  background: #18181b;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
   flex-shrink: 0;
+  transition: background 0.15s ease;
 }
 
-.chatBtnSendActive {
-  background: #111;
-  color: #fff;
+.chatBtnSend:hover:not(:disabled) {
+  background: #000;
 }
+
+.chatBtnSend:disabled {
+  background: #d4d4d8;
+  cursor: default;
+}
+
+
 
 /*
  * Un bouton d'envoi vide reste lisible.

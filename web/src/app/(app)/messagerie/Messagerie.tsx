@@ -17,7 +17,6 @@ import {
   Loupe,
   Bulle,
   Trombone,
-  Avion,
   Croix,
   FlecheRetour,
   FlecheDroite,
@@ -42,15 +41,6 @@ export interface Fil {
   cle: string;
   genre: "dossier" | "support";
   dossierId: number | null;
-  /**
-   * Le client de la conversation.
-   *
-   * C'est lui qui parle à droite, la plateforme - avocat ou support - à gauche. Le
-   * côté dit donc qui parle, et non qui regarde : sinon un avocat ou un
-   * administrateur voyait tout le fil du même côté, et ne distinguait plus les
-   * demandes des réponses.
-   */
-  clientId: number;
   titre: string;
   sousTitre: string | null;
   forme: string | null;
@@ -75,6 +65,15 @@ interface Props {
   fils: Fil[];
   filActif: string;
   messagesInitiaux: MessageAffiche[];
+  /*
+   * Ce que j'écris se pose à droite, ce qu'on me répond à gauche.
+   *
+   * Le côté était donné par le client de la conversation : sur l'écran d'un avocat,
+   * ses propres réponses partaient donc à gauche et celles du client à droite -
+   * l'inverse des deux fils qui vivent dans les dossiers, et l'inverse de ce que fait
+   * toute messagerie. C'est celui qui regarde qui décide.
+   */
+  moi: number;
 }
 
 /** Les classes de bulle par type, le CSS module n'acceptant pas de nom calculé. */
@@ -87,7 +86,7 @@ const CLASSES_DE_TYPE: Record<string, string | undefined> = {
   status_note: styles.kindStatusNote,
 };
 
-export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
+export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
   const [messages, setMessages] = useState(messagesInitiaux);
   const [recherche, setRecherche] = useState("");
   const [repondA, setRepondA] = useState<MessageAffiche | null>(null);
@@ -336,8 +335,11 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
                       <span>{libelleJour(jour)}</span>
                     </p>
 
-                    {duJour.map(({ message: m }) => {
-                      const duClient = m.expediteurId === actif.clientId;
+                    {duJour.map(({ message: m }, rang) => {
+                      const deMoi = m.expediteurId === moi;
+                      /* Le nom ne se répète pas d'une bulle à l'autre du même auteur. */
+                      const nouvelAuteur =
+                        duJour[rang - 1]?.message.expediteurId !== m.expediteurId;
                       const genre = presentation(m.type);
                       const type = m.type && m.type !== "text" ? m.type : null;
                       const cite = m.repondA ? parId.get(m.repondA) : undefined;
@@ -347,7 +349,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
                           key={m.id}
                           className={[
                             styles.chatMsgWrap,
-                            duClient ? styles.chatMsgWrapSent : styles.chatMsgWrapReceived,
+                            deMoi ? styles.chatMsgWrapSent : styles.chatMsgWrapReceived,
                           ].join(" ")}
                         >
                           {type && (
@@ -360,18 +362,23 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
                             </span>
                           )}
 
+                          {/* Les deux côtés se nomment, au-dessus de la bulle. */}
+                          {nouvelAuteur && (
+                            <div className={styles.chatMsgSender}>
+                              {deMoi ? "Vous" : m.expediteur}
+                            </div>
+                          )}
+
                           <div
                             className={[
                               styles.chatMsg,
-                              duClient ? styles.chatMsgSent : styles.chatMsgReceived,
+                              deMoi ? styles.chatMsgSent : styles.chatMsgReceived,
                               type ? styles.chatMsgTypeE : "",
                               type ? (CLASSES_DE_TYPE[type] ?? "") : "",
                             ]
                               .filter(Boolean)
                               .join(" ")}
                           >
-                            {!duClient && <div className={styles.chatMsgSender}>{m.expediteur}</div>}
-
                             {cite && (
                               <div className={styles.chatMsgQuote}>
                                 <div className={styles.chatMsgQuoteSender}>{cite.expediteur}</div>
@@ -392,7 +399,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
                             )}
 
                             {/* Le geste attendu, du côté de qui le reçoit. */}
-                            {type && !duClient && genre.action === "dossier" && actif.dossierId && (
+                            {type && !deMoi && genre.action === "dossier" && actif.dossierId && (
                               <a
                                 className={styles.chatMsgCta}
                                 href={"/creation?dossier=" + actif.dossierId}
@@ -401,7 +408,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
                                 {genre.libelleAction}
                               </a>
                             )}
-                            {type && !duClient && genre.action === "piece" && (
+                            {type && !deMoi && genre.action === "piece" && (
                               <button
                                 type="button"
                                 className={styles.chatMsgCta}
@@ -412,9 +419,10 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
                               </button>
                             )}
 
-                            <div className={styles.chatMsgTime}>
-                              {heureCourte(new Date(m.envoyeLe))}
-                            </div>
+                          </div>
+
+                          <div className={styles.chatMsgTime}>
+                            {heureCourte(new Date(m.envoyeLe))}
                           </div>
 
                           {actif.genre === "dossier" && (
@@ -463,6 +471,13 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
               </p>
             )}
 
+            {/*
+              Une barre, comme dans les dossiers.
+
+              Le champ était une pilule posée entre deux boutons ronds, dans un bandeau
+              qui la doublait : trois formes pour un geste. La barre est la pilule, le
+              trombone et l'envoi se rangent à son bout.
+            */}
             <div className={styles.chatInputArea}>
               <input
                 type="file"
@@ -474,16 +489,6 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
                   e.target.value = ""; // permet de joindre deux fois le même fichier
                 }}
               />
-              <button
-                type="button"
-                className={styles.chatBtnAttach}
-                title="Joindre un fichier"
-                aria-label="Joindre un fichier"
-                disabled={enCours}
-                onClick={() => fichierRef.current?.click()}
-              >
-                <Trombone />
-              </button>
 
               <label htmlFor="message" className={styles.invisible}>
                 Votre message
@@ -493,7 +498,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
                 type="text"
                 ref={champRef}
                 value={brouillon}
-                placeholder="Votre message..."
+                placeholder="Votre message…"
                 onChange={(e) => setBrouillon(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -505,17 +510,22 @@ export function Messagerie({ fils, filActif, messagesInitiaux }: Props) {
 
               <button
                 type="button"
-                className={
-                  brouillon.trim()
-                    ? `${styles.chatBtnSend} ${styles.chatBtnSendActive}`
-                    : styles.chatBtnSend
-                }
-                title="Envoyer"
-                aria-label="Envoyer"
+                className={styles.chatBtnAttach}
+                title="Joindre un fichier"
+                aria-label="Joindre un fichier"
+                disabled={enCours}
+                onClick={() => fichierRef.current?.click()}
+              >
+                <Trombone />
+              </button>
+
+              <button
+                type="button"
+                className={styles.chatBtnSend}
                 disabled={enCours || !brouillon.trim()}
                 onClick={envoyer}
               >
-                <Avion />
+                {enCours ? "Envoi…" : "Envoyer"}
               </button>
             </div>
           </>
