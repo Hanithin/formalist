@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { etatCabinet, dateCourte, dateEtHeure, depuis } from "@/domain/formalite/avocat";
+import { etatCabinet, dateCourte, depuis } from "@/domain/formalite/avocat";
 import { libelleDuType } from "@/domain/formalite/liste";
 import styles from "./Avocat.module.css";
 
@@ -46,9 +46,8 @@ function montant(centimes: number): string {
 /**
  * Prendre un dossier en charge.
  *
- * Le geste est le même depuis la ligne et depuis le panneau - c'est la même décision,
- * prise avec plus ou moins de détails sous les yeux - et le conflit se lit pareil : le
- * dossier est proposé à tous, le premier qui accepte le prend.
+ * Le dossier est proposé à tout le cabinet : le premier qui accepte le prend, et les
+ * autres lisent le refus.
  */
 async function demanderLaPrise(dossierId: number): Promise<string | null> {
   const reponse = await fetch("/api/avocat/prise", {
@@ -66,83 +65,65 @@ async function demanderLaPrise(dossierId: number): Promise<string | null> {
 }
 
 /**
- * Le tableau des dossiers, et le panneau qui s'ouvre sur l'un d'eux.
+ * Le tableau des dossiers.
  *
- * Ouvrir un dossier faisait quitter la liste : on perdait sa recherche, son tri et sa
- * page pour lire trois lignes, et il fallait revenir pour passer au suivant. Le
- * panneau donne l'essentiel sans quitter la liste, et la page complète reste à un
- * clic pour qui veut travailler dessus.
+ * Un clic sur une ligne ouvrait un panneau : il redisait ce que la ligne montrait
+ * déjà - la société, le type, l'offre, l'état, le client - et son seul geste propre
+ * était un bouton « Ouvrir le dossier ». Il fallait donc deux clics et une lecture
+ * pour arriver là où l'on allait de toute façon. La ligne y mène directement.
  *
- * C'est aussi le bon endroit pour accepter la révision : on décide en voyant ce qu'on
- * prend.
+ * Le geste de prise reste sur la ligne : accepter un dossier se décide de la liste,
+ * sans l'ouvrir.
  */
 export function Tableau({ lignes }: { lignes: Ligne[] }) {
-  const [ouvert, setOuvert] = useState<number | null>(null);
+  const router = useRouter();
   /*
-   * Le refus d'une prise ouvre le panneau du dossier concerné.
+   * Un refus de prise se lit sous la ligne concernée.
    *
-   * « Ce dossier a déjà été pris par X » n'a pas sa place dans une cellule de tableau :
-   * le message est long, et il vaut mieux le lire avec le dossier sous les yeux.
+   * « Ce dossier a déjà été pris par X » ne tient pas dans une cellule, et il n'y a
+   * plus de panneau où l'afficher : la rangée qui suit le porte, le temps qu'on le
+   * lise.
    */
   const [refus, setRefus] = useState<{ dossier: number; message: string } | null>(null);
-  const choisi = lignes.find((l) => l.id === ouvert) ?? null;
-
-  // La touche Échap referme : c'est ce qu'on essaie d'abord sur un panneau.
-  useEffect(() => {
-    if (!choisi) return;
-
-    function auClavier(e: KeyboardEvent) {
-      if (e.key === "Escape") setOuvert(null);
-    }
-    document.addEventListener("keydown", auClavier);
-    return () => document.removeEventListener("keydown", auClavier);
-  }, [choisi]);
 
   return (
-    <>
-      <div className={styles.tableWrap}>
-        <table className={styles.dossiersTable}>
-          <thead>
-            <tr>
-              <th>Réf.</th>
-              <th>Société</th>
-              <th>Type</th>
-              <th>Offre</th>
-              <th>Phase</th>
-              <th>Client</th>
-              <th>Créée</th>
-              <th>Modifiée</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {lignes.map((d) => {
-              const etat = etatCabinet(d);
-              const type =
-                (libelleDuType(d.type) ?? majuscule(d.type)) +
-                (d.sousType ? " (" + d.sousType.replace(/_/g, " ") + ")" : "");
+    <div className={styles.tableWrap}>
+      <table className={styles.dossiersTable}>
+        <thead>
+          <tr>
+            <th>Réf.</th>
+            <th>Société</th>
+            <th>Type</th>
+            <th>Offre</th>
+            <th>Phase</th>
+            <th>Client</th>
+            <th>Créée</th>
+            <th>Modifiée</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {lignes.map((d) => {
+            const etat = etatCabinet(d);
+            const type =
+              (libelleDuType(d.type) ?? majuscule(d.type)) +
+              (d.sousType ? " (" + d.sousType.replace(/_/g, " ") + ")" : "");
 
-              return (
-                <tr
-                  key={d.id}
-                  className={d.id === ouvert ? styles.ligneOuverte : undefined}
-                  onClick={() => setOuvert(d.id)}
-                >
+            return (
+              <Fragment key={d.id}>
+                <tr onClick={() => router.push("/avocat/" + d.id)}>
                   <td className={styles.ref}>{d.reference}</td>
                   <td>
                     <span className={styles.societeCellule}>
-                      {/* Le bouton porte le nom : une ligne entière cliquable ne
-                          s'atteint pas au clavier. */}
-                      <button
-                        type="button"
+                      {/* Le nom porte le lien : une rangée cliquable ne s'atteint ni au
+                          clavier, ni d'un clic du milieu. */}
+                      <Link
+                        href={"/avocat/" + d.id}
                         className={styles.societeNom}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOuvert(d.id);
-                        }}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {d.societe}
-                      </button>
+                      </Link>
                       {d.forme && <span className={styles.forme}>{d.forme}</span>}
                       {d.nonLus > 0 && (
                         <span className={`${styles.badge} ${styles.unread}`}>{d.nonLus}</span>
@@ -174,18 +155,11 @@ export function Tableau({ lignes }: { lignes: Ligne[] }) {
                   <td className={styles.quand}>{depuis(new Date(d.majLe))}</td>
                   <td className={styles.celluleAction}>
                     {/*
-                      Le geste est sur la ligne, pas seulement dans le panneau.
-                      
+                      Le geste est sur la ligne.
+
                       Il fallait ouvrir chaque dossier pour découvrir lequel portait le
-                      bouton : la liste montre maintenant lesquels attendent un preneur,
-                      et on les prend d'ici.
-                    */}
-                    {/*
-                      « Assigné à vous » se lit du même côté que « Prendre ».
-                      
-                      Sous le nom de la société, il passait à la ligne et étirait la
-                      rangée sur trois lignes ; il répond pourtant à la même question
-                      que le bouton d'à côté - qui s'occupe de ce dossier.
+                      bouton : la liste montre lesquels attendent un preneur, et on les
+                      prend d'ici.
                     */}
                     {d.monDossier && (
                       <span className={`${styles.badge} ${styles.purple} ${styles.badgeAssigne}`}>
@@ -195,10 +169,7 @@ export function Tableau({ lignes }: { lignes: Ligne[] }) {
                     {d.libre && (
                       <BoutonPrise
                         dossier={d}
-                        surRefus={(message) => {
-                          setRefus({ dossier: d.id, message });
-                          setOuvert(d.id);
-                        }}
+                        surRefus={(message) => setRefus({ dossier: d.id, message })}
                       />
                     )}
                     <svg
@@ -213,233 +184,30 @@ export function Tableau({ lignes }: { lignes: Ligne[] }) {
                     </svg>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
 
-      {choisi && (
-        <Panneau
-          dossier={choisi}
-          refus={refus?.dossier === choisi.id ? refus.message : null}
-          surFermeture={() => {
-            setOuvert(null);
-            setRefus(null);
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-/**
- * Le détail d'un dossier, sans quitter la liste.
- *
- * Il porte ce qu'on regarde pour décider : de quoi il s'agit, qui l'a ouvert, ce qui
- * attend une vérification, et ce qu'il reste à faire. Le reste - les pièces, les
- * notes, le journal - vit dans la page du dossier, à un clic.
- */
-function Panneau({
-  dossier,
-  refus,
-  surFermeture,
-}: {
-  dossier: Ligne;
-  refus: string | null;
-  surFermeture: () => void;
-}) {
-  const etat = etatCabinet(dossier);
-  const [erreur, setErreur] = useState<string | null>(refus);
-  const [enCours, setEnCours] = useState(false);
-  const router = useRouter();
-
-  async function prendre() {
-    setEnCours(true);
-    setErreur(null);
-
-    const refus = await demanderLaPrise(dossier.id);
-    setEnCours(false);
-    if (refus) {
-      setErreur(refus);
-      return;
-    }
-
-    /*
-     * On emmène l'avocat sur le dossier qu'il vient de prendre.
-     *
-     * Le panneau se fermait sur la liste : le dossier était accepté, et rien ne
-     * disait où aller pour le réviser. Le lien « Ouvrir le dossier » disparaissait
-     * avec le panneau.
-     */
-    surFermeture();
-    router.push("/avocat/" + dossier.id);
-  }
-
-  return (
-    <>
-      {/* Le voile ne masque pas la liste : on garde le contexte de ce qu'on lisait. */}
-      <div className={styles.voile} onClick={surFermeture} aria-hidden="true" />
-
-      <aside className={styles.panneau} role="dialog" aria-label={"Dossier " + dossier.societe}>
-        <div className={styles.panneauTete}>
-          <div>
-            <p className={styles.panneauRef}>{dossier.reference}</p>
-            <h2 className={styles.panneauTitre}>{dossier.societe}</h2>
-            <p className={styles.panneauSousTitre}>
-              {[
-                dossier.forme,
-                libelleDuType(dossier.type),
-                majuscule(dossier.offre ?? "starter"),
-                dossier.capital ? "capital de " + Number(dossier.capital).toLocaleString("fr-FR") + " €" : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            className={styles.panneauFermer}
-            onClick={surFermeture}
-            aria-label="Fermer"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        {/*
-          Deux pastilles, non trois.
-
-          L'état, l'offre et l'assignation s'affichaient côte à côte en bleu, gris et
-          violet : trois couleurs pour trois choses de poids différent. L'offre est un
-          fait d'identité - elle a rejoint la ligne qui donne la forme et le type.
-        */}
-        <div className={styles.panneauBadges}>
-          <span className={`${styles.badge} ${styles[etat.teinte]}`}>{etat.libelle}</span>
-          {dossier.monDossier && (
-            <span className={`${styles.badge} ${styles.purple}`}>Assigné à vous</span>
-          )}
-        </div>
-
-        {/*
-          Ce qu'on demande au cabinet, avant qui le demande.
-          
-          Le panneau ouvrait sur le nom du client et son adresse électronique : c'est
-          l'identité du dossier, non son objet. Un avocat qui décide d'en prendre un
-          regarde d'abord le travail - transfert de siège, augmentation de capital -
-          puis seulement pour qui.
-        */}
-        {dossier.demande.length > 0 && (
-          <section className={styles.panneauObjet}>
-            <h3 className={styles.panneauSection}>
-              {dossier.type === "modification" ? "Changements décidés" : "Activité déclarée"}
-            </h3>
-            <ul className={styles.panneauPuces}>
-              {dossier.demande.map((ligne) => (
-                <li key={ligne}>{ligne}</li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <h3 className={styles.panneauSection}>Le dossier</h3>
-        <dl className={styles.panneauFaits}>
-          <Fait libelle="Client" valeur={dossier.client} />
-          {dossier.clientEmail && <Fait libelle="Courriel" valeur={dossier.clientEmail} />}
-          <Fait libelle="Ouverte le" valeur={dateEtHeure(new Date(dossier.creeLe))} />
-          <Fait libelle="Dernier mouvement" valeur={depuis(new Date(dossier.majLe))} />
-          {/*
-            Réglé ou non : c'est ce qui dit si le dossier est vraiment à traiter.
-            
-            La ligne n'apparaissait que lorsqu'un paiement existait, si bien qu'un
-            dossier non réglé et un dossier réglé se ressemblaient - il fallait déduire
-            l'absence d'une ligne qu'on ne connaissait pas.
-          */}
-          <Fait
-            libelle="Règlement"
-            valeur={
-              dossier.payeCentimes > 0 ? montant(dossier.payeCentimes) + " encaissés" : "Non réglé"
-            }
-          />
-        </dl>
-
-        {/* Ce qui attend un geste, avant tout le reste. */}
-        {(dossier.documentsAVerifier > 0 || dossier.nonLus > 0 || dossier.notes > 0) && (
-          <>
-            <h3 className={styles.panneauSection}>Ce qui vous attend</h3>
-            <ul className={styles.panneauAttentes}>
-              {dossier.documentsAVerifier > 0 && (
-                <li>
-                  {dossier.documentsAVerifier} pièce{dossier.documentsAVerifier > 1 ? "s" : ""}{" "}
-                  déposée{dossier.documentsAVerifier > 1 ? "s" : ""} à vérifier
-                </li>
-              )}
-              {dossier.nonLus > 0 && (
-                <li>
-                  {dossier.nonLus} message{dossier.nonLus > 1 ? "s" : ""} du client non lu
-                  {dossier.nonLus > 1 ? "s" : ""}
-                </li>
-              )}
-              {dossier.notes > 0 && (
-                <li>
-                  {dossier.notes} note{dossier.notes > 1 ? "s" : ""} interne
-                  {dossier.notes > 1 ? "s" : ""} du cabinet
-                </li>
-              )}
-            </ul>
-          </>
-        )}
-
-        {erreur && (
-          <p className={styles.panneauErreur} role="status">
-            {erreur}
-          </p>
-        )}
-
-        <div className={styles.panneauActions}>
-          {dossier.libre && !erreur && (
-            <button
-              type="button"
-              className={styles.panneauPrincipal}
-              onClick={prendre}
-              disabled={enCours}
-            >
-              {enCours ? "…" : "Prendre en charge et réviser"}
-            </button>
-          )}
-
-          {/*
-            Quand « Prendre en charge » ne s'affiche pas, ouvrir le dossier est le seul
-            geste offert : il portait pourtant le dessin d'un bouton de second rang.
-          */}
-          <Link
-            href={"/avocat/" + dossier.id}
-            className={dossier.libre ? styles.panneauSecondaire : styles.panneauPrincipal}
-          >
-            {dossier.libre ? "Lire sans le prendre" : "Ouvrir le dossier"}
-          </Link>
-        </div>
-
-        {/* Ce que le bouton engage, dit avant qu'on appuie. */}
-        {dossier.libre && (
-          <p className={styles.panneauNote}>
-            Le dossier est proposé à tout le cabinet : le premier qui l&apos;accepte en
-            devient l&apos;avocat, et il disparaît de la liste des autres.
-          </p>
-        )}
-      </aside>
-    </>
+                {refus?.dossier === d.id && (
+                  <tr className={styles.ligneRefus}>
+                    <td colSpan={9}>
+                      <span role="status">{refus.message}</span>
+                      <button
+                        type="button"
+                        className={styles.ligneRefusFermer}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRefus(null);
+                        }}
+                      >
+                        Fermer
+                      </button>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -466,7 +234,7 @@ function BoutonPrise({
       disabled={enCours}
       aria-label={"Prendre en charge le dossier " + dossier.societe}
       onClick={async (e) => {
-        // La ligne entière ouvre le panneau : le bouton, lui, prend le dossier.
+        // La ligne entière mène au dossier : le bouton, lui, le prend.
         e.stopPropagation();
         setEnCours(true);
         const refus = await demanderLaPrise(dossier.id);
@@ -481,14 +249,5 @@ function BoutonPrise({
       {/* Un mot suffit dans un tableau : la pastille « À prendre » dit déjà quoi. */}
       {enCours ? "…" : "Prendre"}
     </button>
-  );
-}
-
-function Fait({ libelle, valeur }: { libelle: string; valeur: string }) {
-  return (
-    <div className={styles.fait}>
-      <dt>{libelle}</dt>
-      <dd>{valeur}</dd>
-    </div>
   );
 }

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import styles from "../Avocat.module.css";
 
 export interface EntreeDuJournal {
@@ -20,22 +23,27 @@ export interface EntreeDuJournal {
  * ouverte depuis les gestes rapides - où on ne la cherchait pas. Il a son onglet, et se
  * lit comme le reste du dossier.
  */
+/** Ce qu'on montre d'abord : au-delà, on fait défiler sans rien y chercher. */
+const PAR_PAGE = 12;
+
 export function Historique({ entrees }: { entrees: EntreeDuJournal[] }) {
+  const [visibles, setVisibles] = useState(PAR_PAGE);
+  const montrees = entrees.slice(0, visibles);
+  const restantes = entrees.length - montrees.length;
+
+  /* Qui est intervenu : le journal ne dit que les gestes, pas qui les a faits. */
+  const auteurs = [...new Set(entrees.map((e) => e.auteur))];
+
   return (
+    <div className={styles.journalGrille}>
     <section className={styles.journal} aria-label="Historique du dossier">
-      <div className={styles.journalTete}>
-        <h3 className={styles.journalTitre}>Historique du dossier</h3>
-        <p className={styles.journalDetail}>
-          Chaque intervention du cabinet et du client, de la plus récente à la plus
-          ancienne. C&apos;est cette trace qui permet d&apos;instruire un litige.
-        </p>
-      </div>
+      <h3 className={styles.journalTitre}>Historique du dossier</h3>
 
       {entrees.length === 0 ? (
         <p className={styles.journalVide}>Aucune intervention enregistrée.</p>
       ) : (
         <ol className={styles.journalListe}>
-          {entrees.map((entree) => (
+          {montrees.map((entree) => (
             <li key={entree.id} className={styles.journalEntree}>
               <span
                 className={`${styles.journalPoint} ${styles[entree.teinte]}`}
@@ -70,6 +78,63 @@ export function Historique({ entrees }: { entrees: EntreeDuJournal[] }) {
           ))}
         </ol>
       )}
+
+      {/*
+        Le reste à la demande.
+        
+        Trente interventions déroulées d'un bloc font trois écrans : on ne les lit pas,
+        on les traverse. Les douze dernières suffisent presque toujours.
+      */}
+      {restantes > 0 && (
+        <button
+          type="button"
+          className={styles.journalSuite}
+          onClick={() => setVisibles((montre) => montre + PAR_PAGE)}
+        >
+          Voir {restantes > PAR_PAGE ? PAR_PAGE : restantes} interventions de plus
+          <span className={styles.journalReste}>{restantes} restantes</span>
+        </button>
+      )}
     </section>
+
+    <aside className={styles.journalColonne}>
+      <div className={styles.filFiche}>
+        <div className={styles.filFicheLigne}>
+          <span>Interventions</span>
+          <span className={styles.filFicheNombre}>{entrees.length}</span>
+        </div>
+        {entrees.length > 0 && (
+          <>
+            <div className={styles.filFicheLigne}>
+              <span>Dernière</span>
+              <span className={styles.journalDate}>{entrees[0].quand}</span>
+            </div>
+            <div className={styles.filFicheLigne}>
+              <span>Première</span>
+              <span className={styles.journalDate}>
+                {entrees[entrees.length - 1].quand}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {auteurs.length > 0 && (
+        <div className={styles.filFiche}>
+          <span className={styles.journalColonneTitre}>Sont intervenus</span>
+          {auteurs.map((auteur) => (
+            <span key={auteur} className={styles.journalAuteur}>
+              {auteur}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <p className={styles.filFicheNote}>
+        Rien ne s&apos;efface ici : c&apos;est cette trace qui permet d&apos;instruire un
+        litige, et le client n&apos;y a pas accès.
+      </p>
+    </aside>
+    </div>
   );
 }

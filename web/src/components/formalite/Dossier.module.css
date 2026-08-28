@@ -1,0 +1,466 @@
+/*
+ * Le dossier vu par le client : trois onglets.
+ *
+ * Tout tenait sur une page : l'avancement, puis un mot du cabinet, puis deux liens -
+ * l'un vers la bibliothèque de documents, où il fallait retrouver son dossier parmi
+ * les autres, l'autre vers la messagerie, où il fallait retrouver le bon fil. Ce qui
+ * concerne un dossier se lit dans son dossier.
+ */
+
+/*
+ * `flex-direction: row` s'écrit ici, explicitement.
+ *
+ * La feuille globale dresse toute liste de `main` à la verticale, et redéclarer
+ * `display: flex` sans direction ne la neutralise pas : les onglets se lisaient
+ * empilés, centrés, comme un sommaire.
+ */
+.onglets {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 20px;
+  padding: 0;
+  border-bottom: 1px solid #ececee;
+  list-style: none;
+}
+
+.onglet {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 13px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #a1a1aa;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.onglet:hover {
+  color: #52525b;
+}
+
+/* Le trait porte l'onglet courant : il tient sur le filet, non au-dessus. */
+.ongletActif {
+  color: #111;
+  font-weight: 600;
+}
+
+.ongletActif::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: #111;
+}
+
+/* Le compte se lit d'un coup d'œil, sans qu'on ait à ouvrir l'onglet. */
+.ongletCompte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 100px;
+  background: #efeff1;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #52525b;
+}
+
+.ongletActif .ongletCompte {
+  background: #111;
+  color: #fff;
+}
+
+/* ---------- Les documents du dossier ---------- */
+
+.documents {
+  padding: 8px 10px;
+  border: 1px solid #e8e8ea;
+  border-radius: 16px;
+  background: #fff;
+}
+
+/*
+ * La feuille globale fait une carte de tout élément de liste posé dans une section :
+ * chaque document se retrouvait encadré de blanc dans un panneau déjà blanc.
+ */
+.documentsListe {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* La feuille globale fait une carte de chaque élément : le panneau en est déjà une. */
+.documents .documentsListe > li {
+  display: block;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
+.document {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 12px 12px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.document + .document {
+  border-top: 1px solid #f4f4f5;
+}
+
+a.document:hover {
+  background: #fafafa;
+}
+
+.documentIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f4f4f5;
+  color: #52525b;
+}
+
+.documentIcone svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+.documentCorps {
+  flex: 1;
+  min-width: 0;
+}
+
+.documentNom {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+  overflow-wrap: anywhere;
+}
+
+.documentQuand {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+/* Un acte encore chez l'avocat existe, mais ne s'ouvre pas. */
+.documentAttente {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 100px;
+  background: #fef3c7;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #92400e;
+}
+
+.documentTelecharger {
+  flex-shrink: 0;
+  color: #c4c4c8;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.documentTelecharger svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+a.document:hover .documentTelecharger {
+  color: #18181b;
+  transform: translateY(1px);
+}
+
+.vide {
+  margin: 0;
+  padding: 26px 12px;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #a1a1aa;
+}
+
+/* ---------- La conversation ---------- */
+
+.fil {
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+  padding: 16px 18px 14px;
+  border: 1px solid #e8e8ea;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.filMessages {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: flex-end;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Même raison : sans cela, chaque bulle se retrouve dans une carte blanche. */
+.fil .filMessages > li {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
+.filLigne {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: min(72%, 520px);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
+.filDeNous {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+/* Les deux côtés se nomment : le côté seul ne dit pas qui parle. */
+.filAuteur {
+  margin: 10px 0 3px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.filDeNous .filAuteur {
+  margin: 10px 12px 3px 0;
+}
+
+/* Ce qu'on a écrit est noir, ce que le cabinet a écrit est blanc cerné. */
+.filBulle {
+  padding: 9px 13px;
+  border: 1px solid #e4e4e7;
+  border-radius: 14px 14px 14px 5px;
+  background: #fff;
+}
+
+.filDeNous .filBulle {
+  border-color: #18181b;
+  border-radius: 14px 14px 5px 14px;
+  background: #18181b;
+}
+
+.filTexte {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.filDeNous .filTexte {
+  color: #fff;
+}
+
+.filQuand {
+  margin: 3px 12px 8px;
+  font-size: 11px;
+  color: #b4b4bb;
+}
+
+.filPiece {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  padding: 4px 9px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  font-size: 12px;
+  color: #3f3f46;
+  text-decoration: none;
+}
+
+.filPiece svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+  color: #a1a1aa;
+}
+
+.filDeNous .filPiece {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.filDeNous .filPiece svg {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.filPiece:hover {
+  background: #e4e4e7;
+}
+
+.filDeNous .filPiece:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.filVide {
+  margin: auto 0;
+  padding: 20px 12px;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #a1a1aa;
+}
+
+/*
+ * Une barre, non un formulaire.
+ *
+ * La zone de texte garderait sinon la bordure de la feuille globale : on lirait deux
+ * cadres l'un dans l'autre, et la barre ferait deux fois sa hauteur utile.
+ */
+.filEcrire {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 3px 4px 3px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.filEcrire:focus-within {
+  border-color: #b4b4bb;
+}
+
+.filEcrire textarea,
+.filEcrire textarea:hover,
+.filEcrire textarea:focus {
+  flex: 1;
+  min-width: 160px;
+  max-width: none;
+  min-height: 20px;
+  height: 30px;
+  padding: 4px 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111;
+  resize: none;
+}
+
+.filGestes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filRefus {
+  flex-basis: 100%;
+  margin: 0 0 4px 2px;
+  font-size: 12.5px;
+  color: #dc2626;
+}
+
+.filJoindre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: #71717a;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* Sans `display: block`, le dessin se pose sur la ligne de texte, deux pixels trop bas. */
+.filJoindre svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+.filJoindre:hover {
+  background: #f4f4f5;
+  color: #111;
+}
+
+.filEnvoyer {
+  height: 30px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 100px;
+  background: #18181b;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.filEnvoyer:hover:not(:disabled) {
+  background: #000;
+}
+
+.filEnvoyer:disabled {
+  background: #d4d4d8;
+  cursor: default;
+}
+
+.champFichier {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

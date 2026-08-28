@@ -474,7 +474,14 @@ export default async function DossierAvocat({
               tâches.
             */}
             <span className={styles.detailBadge}>{libelleDuType(dossier.type)}</span>
-            <span className={`${styles.detailBadge} ${styles.phase}`}>{etat.libelle}</span>
+            {/* Le vert du dossier fini : l'ambre dit « en cours » partout ailleurs. */}
+            <span
+              className={`${styles.detailBadge} ${styles.phase} ${
+                etat.teinte === "green" ? styles.phaseVerte : ""
+              }`}
+            >
+              {etat.libelle}
+            </span>
           </div>
           {/*
             La forme et l'état du dossier ont quitté la barre.
@@ -648,6 +655,7 @@ export default async function DossierAvocat({
               dossiersAPrendre={dossiersAPrendre}
               etapePrecedente={etapePrecedente}
               termineLe={termineLe}
+              correctionsEnCours={dossier.status === "corrections_demandees"}
               pieces={pieces}
               /* Les documents remis sont les pièces de l'étape « Déposer ». */
               livrables={{

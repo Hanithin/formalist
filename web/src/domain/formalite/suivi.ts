@@ -285,6 +285,69 @@ const MODIFICATION: Definition[] = [
 ];
 
 /**
+ * Le parcours d'un dépôt de comptes annuels.
+ *
+ * Ni annonce légale ni Kbis. Le dépôt des comptes ne modifie pas la société : rien
+ * n'est publié, et le greffe ne délivre pas d'extrait - il enregistre le dépôt et en
+ * accuse réception. Le client lisait deux étapes qui ne viendraient jamais, dont une
+ * qui lui promettait un geste - publier une annonce - qu'on ne lui demanderait pas.
+ *
+ * Il n'y a pas non plus d'attestation de capital : la société existe, son capital est
+ * déposé depuis longtemps.
+ */
+const COMPTES: Definition[] = [
+  {
+    identifiant: "transmis",
+    titre: "Comptes transmis à l'avocat",
+    explication:
+      "Vos comptes approuvés et leurs annexes sont partis chez l'avocat. Il en accuse réception et les prend en main.",
+    main: "avocat",
+    faite: (e) => e.status !== "en_cours" && e.status !== null,
+  },
+  {
+    identifiant: "verification",
+    titre: "Vérification par l'avocat",
+    explication:
+      "L'avocat relit le procès-verbal d'approbation, la déclaration de confidentialité s'il y en a une, et contrôle vos comptes. Il vous écrit si quelque chose doit être repris.",
+    main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
+    action: "Voir ce qui est demandé",
+    ou: "messagerie",
+    faite: (e) =>
+      e.status !== "corrections_demandees" &&
+      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+  },
+  {
+    identifiant: "greffe",
+    titre: "Dépôt au greffe",
+    explication:
+      "L'avocat dépose vos comptes au greffe du tribunal de commerce, en votre nom. Comptez quelques jours ouvrés.",
+    main: "avocat",
+    faite: (e) => auMoins(e.sousPhase, "5d"),
+  },
+  {
+    identifiant: "enregistre",
+    titre: "Dépôt enregistré",
+    /*
+     * Le greffe accuse le dépôt, il ne délivre pas d'extrait.
+     *
+     * Le récépissé n'arrive pas toujours : certains greffes n'en émettent pas, et
+     * l'avocat peut clore le dossier sans. La phrase ne le promet donc pas.
+     */
+    explication:
+      "Le greffe a enregistré le dépôt : votre obligation est remplie. Le récépissé, quand le greffe en délivre un, rejoint vos documents.",
+    main: "avocat",
+    /*
+     * La sous-phase suffit, sans attendre un document.
+     *
+     * L'étape ne se cochait que sur un récépissé déposé ou un dossier « terminée » :
+     * un dépôt clos sans récépissé - le cas quand le greffe n'en délivre pas - restait
+     * « en cours » pour toujours, sur un dossier que le cabinet avait fini.
+     */
+    faite: (e) => auMoins(e.sousPhase, "5e") || e.aLeKbis || e.status === "terminee",
+  },
+];
+
+/**
  * Les étapes du dossier, avec celle qui est en cours.
  *
  * Une seule étape est « en cours » : la première qui n'est pas faite. Les suivantes
@@ -298,7 +361,9 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
       ? AUTO_ENTREPRISE
       : etat.type === "modification"
         ? MODIFICATION
-        : TOUTES;
+        : etat.type === "comptes"
+          ? COMPTES
+          : TOUTES;
   const retenues = parcours.filter(
     (d) => d.identifiant !== "attestation" || attestationRequise(etat.forme)
   );

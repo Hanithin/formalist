@@ -6,6 +6,15 @@ import { ouvrirComptes, confirmerComptesAuRetour } from "@/infrastructure/db/dep
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import { Suivi } from "@/components/formalite/Suivi";
+import { documentsDuDossier, actesDuDossier } from "@/infrastructure/db/depots/documents";
+import { messagesDuDossier } from "@/infrastructure/db/depots/messages";
+import { Onglets, ongletDemande } from "@/components/formalite/Onglets";
+import {
+  DocumentsDuDossier,
+  type DocumentDuDossier,
+} from "@/components/formalite/DocumentsDuDossier";
+import { FilDuDossier, type MessageDuFil } from "@/components/formalite/FilDuDossier";
+import { formaterDate } from "@/lib/dates";
 import { Commencer } from "./Commencer";
 import { Parcours } from "./Parcours";
 import styles from "../modification/Modification.module.css";
@@ -22,6 +31,37 @@ export const metadata: Metadata = {
  * étape, par recherche au registre, comme pour une modification. C'est ce qui permet
  * de déposer les comptes d'une société créée ailleurs.
  */
+/** Le chevron d'un chemin : il dit qu'on va ailleurs, non qu'on déclenche une action. */
+function Chevron() {
+  return (
+    <svg
+      className={styles.confieChevron}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+/** « 31 décembre 2025 à 14:05 » : la date d'un message, dans le fil. */
+function quand(date: Date | null): string {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(date);
+}
+
+/** « 31 décembre 2025 », ou la valeur telle quelle si elle n'est pas une date. */
+function enClair(valeur: unknown): string | null {
+  if (typeof valeur !== "string" || !valeur.trim()) return null;
+  const quand = new Date(valeur);
+  return Number.isNaN(quand.getTime()) ? valeur : formaterDate(quand);
+}
+
 export default async function DepotDesComptes({
   searchParams,
 }: {
@@ -31,10 +71,11 @@ export default async function DepotDesComptes({
     session?: string;
     paiement?: string;
     regle?: string;
+    onglet?: string;
   }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { dossier, etape, session, paiement, regle } = await searchParams;
+  const { dossier, etape, session, paiement, regle, onglet } = await searchParams;
 
   if (!dossier) {
     return (
@@ -88,10 +129,49 @@ export default async function DepotDesComptes({
    * était son dépôt.
    */
   if (comptes.paye) {
+    const cloture = enClair(comptes.valeurs.dateCloture);
+    const actif = ongletDemande(onglet);
+    const base = "/depot-des-comptes?dossier=" + dossierId;
+
+    /*
+     * Les documents du dossier, y compris ceux qu'on n'ouvre pas encore.
+     *
+     * `documentsDuDossier` écarte les actes en relecture, et c'est bien ce qu'il doit
+     * faire : leur chemin n'a pas à sortir tant que l'avocat ne les a pas relus. Mais
+     * les taire donnerait une liste vide juste après le règlement, alors que les actes
+     * sont écrits : ils figurent, sans fichier, marqués comme étant chez l'avocat.
+     */
+    const [deposes, actes, echanges] = await Promise.all([
+      documentsDuDossier(utilisateur, dossierId),
+      actesDuDossier(utilisateur, dossierId),
+      messagesDuDossier(utilisateur, dossierId),
+    ]);
+
+    const documents: DocumentDuDossier[] = [
+      ...deposes.map((d) => ({
+        id: String(d.id),
+        nom: d.name,
+        fichier: d.file_path,
+        creeLe: d.created_at ? d.created_at.toISOString() : null,
+      })),
+      ...actes
+        .filter((a) => a.enRelecture)
+        .map((a) => ({ id: "acte-" + a.id, nom: a.titre, fichier: null, creeLe: null })),
+    ];
+
+    const fil: MessageDuFil[] = echanges.map((m) => ({
+      id: m.id,
+      expediteurId: m.expediteurId,
+      expediteur: m.expediteur,
+      contenu: m.contenu,
+      fichier: m.fichier,
+      quand: quand(m.envoyeLe),
+    }));
+
     return (
       <main className={styles.page}>
         <Fil nom={nom} />
-        <div className={styles.content}>
+        <div className={`${styles.content} ${styles.contentLarge}`}>
           <h1 className={styles.titre}>{nom}</h1>
           {regle === "1" && (
             <p className={styles.reglementConfirme} role="status">
@@ -99,26 +179,121 @@ export default async function DepotDesComptes({
               relit, puis vous les retrouverez dans vos documents.
             </p>
           )}
-          <Suivi
-            etat={await etatDuDossier(ligne)}
-            demande={await derniereDemandeDeCorrections(dossierId)}
-            lienAction={"/depot-des-comptes?dossier=" + dossierId}
-            lienMessagerie={"/messagerie?dossier=" + dossierId}
+
+          {/*
+            Trois faces, non trois pages.
+
+            Les documents vivaient dans la bibliothèque commune, où il fallait
+            retrouver son dossier parmi ceux des autres sociétés, et les messages dans
+            la messagerie, où il fallait retrouver le bon fil. Ce qui concerne un
+            dossier se lit dans son dossier.
+          */}
+          <Onglets
+            base={base}
+            actif={actif}
+            comptes={{ documents: documents.length, communication: fil.length }}
           />
-          <div className={styles.confie}>
-            <p className={styles.confieTexte}>
-              Vos comptes sont réglés et suivis par le cabinet. Vous n&apos;avez rien à
-              remplir : l&apos;avancement ci-dessus dit où en est le dépôt, et vous serez
-              prévenu si quelque chose doit être repris.
-            </p>
-            <div className={styles.confieLiens}>
-              <Link className={styles.confieLien} href={"/messagerie?dossier=" + dossierId}>
-                Écrire à l&apos;avocat
-              </Link>
-              <Link className={styles.confieLien} href="/documents">
-                Voir mes documents
-              </Link>
+
+          {/*
+            La face ouverte à gauche, le dossier à droite.
+
+            La colonne ne change pas d'un onglet à l'autre : on écrit à l'avocat en
+            gardant sous les yeux de quelle société et de quel exercice on parle.
+          */}
+          <div className={styles.suiviColonnes}>
+            <div className={styles.suiviPrincipal}>
+              {actif === "suivi" && (
+                <Suivi
+                  etat={await etatDuDossier(ligne)}
+                  demande={await derniereDemandeDeCorrections(dossierId)}
+                  lienAction={base}
+                  lienMessagerie={base + "&onglet=communication"}
+                />
+              )}
+
+              {actif === "documents" && <DocumentsDuDossier documents={documents} />}
+
+              {actif === "communication" && (
+                <FilDuDossier dossier={dossierId} moi={utilisateur.id} messages={fil} />
+              )}
             </div>
+
+            <aside className={styles.suiviColonne}>
+              <div className={styles.confie}>
+                <h2 className={styles.confieTitre}>Votre dépôt</h2>
+
+                <dl className={styles.confieFaits}>
+                  <div>
+                    <dt>Société</dt>
+                    <dd>{comptes.societe.denomination || "À identifier"}</dd>
+                  </div>
+                  {comptes.societe.siren && (
+                    <div>
+                      <dt>SIREN</dt>
+                      <dd>{comptes.societe.siren}</dd>
+                    </div>
+                  )}
+                  {cloture && (
+                    <div>
+                      <dt>Exercice clos le</dt>
+                      <dd>{cloture}</dd>
+                    </div>
+                  )}
+                </dl>
+
+                <p className={styles.confieTexte}>
+                  Vous n&apos;avez rien à remplir : l&apos;avancement dit où en est le
+                  dépôt, et vous serez prévenu si quelque chose doit être repris.
+                </p>
+
+                <div className={styles.confieLiens}>
+                  <Link className={styles.confieLien} href={base + "&onglet=communication"}>
+                    <span className={styles.confieIcone} aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+                      </svg>
+                    </span>
+                    <span className={styles.confieLienTexte}>
+                      Écrire à l&apos;avocat
+                      <span className={styles.confieLienPrecision}>
+                        Une question sur votre dépôt
+                      </span>
+                    </span>
+                    <Chevron />
+                  </Link>
+
+                  <Link className={styles.confieLien} href={base + "&onglet=documents"}>
+                    <span className={styles.confieIcone} aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                    </span>
+                    <span className={styles.confieLienTexte}>
+                      Voir les documents
+                      <span className={styles.confieLienPrecision}>
+                        Les actes de ce dépôt
+                      </span>
+                    </span>
+                    <Chevron />
+                  </Link>
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </main>

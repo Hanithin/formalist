@@ -126,6 +126,8 @@ export interface Dossier {
   type?: string | null;
   status: string | null;
   phase: number | null;
+  /** La sous-phase du cabinet : elle situe un dossier déjà confié. */
+  sousPhase?: string | null;
   offer?: string | null;
   banque?: string | null;
 }
@@ -143,8 +145,42 @@ function libelleAutoEntreprise(dossier: Dossier): string {
   return "Chez l'avocat";
 }
 
+/**
+ * Ce que fait la formalité au registre, une fois chez le cabinet.
+ *
+ * Les phases 1 à 6 racontent une création : dépôt du capital, attestation, signature,
+ * immatriculation. Un dépôt de comptes annonçait donc « En cours d'immatriculation »
+ * pour une société immatriculée depuis des années, et à qui l'on ne demande ni
+ * capital ni signature.
+ */
+const AU_REGISTRE: Record<string, { pendant: string; apres: string }> = {
+  comptes: { pendant: "Dépôt au greffe en cours", apres: "Comptes déposés" },
+  modification: { pendant: "En cours d'enregistrement", apres: "Modification enregistrée" },
+  fermeture: { pendant: "En cours d'enregistrement", apres: "Radiation enregistrée" },
+  cessation: { pendant: "En cours d'enregistrement", apres: "Cessation enregistrée" },
+};
+
+/**
+ * Les formalités qui ne créent rien : comptes, modification, fermeture, cessation.
+ *
+ * Leur parcours est d'un seul tenant - on remplit, on règle, le cabinet dépose - et
+ * la sous-phase dit où en est le cabinet, comme pour l'auto-entreprise.
+ */
+function libelleAutreFormalite(dossier: Dossier): string {
+  const mots = AU_REGISTRE[dossier.type ?? ""];
+
+  if (dossier.status === "terminee") return mots?.apres ?? "Terminée";
+  if (dossier.status === "corrections_demandees") return "Corrections demandées";
+  if (dossier.status === "en_cours") return "À compléter";
+
+  if (dossier.sousPhase === "5e") return mots?.apres ?? "Terminée";
+  if (dossier.sousPhase === "5d") return mots?.pendant ?? "Chez l'avocat";
+  return "En révision par l'avocat";
+}
+
 export function libelleDossier(dossier: Dossier): string {
   if (dossier.type === "auto-entrepreneur") return libelleAutoEntreprise(dossier);
+  if (dossier.type && AU_REGISTRE[dossier.type]) return libelleAutreFormalite(dossier);
   if (dossier.status === "terminee") return "Terminée";
   return libelleEtape(dossier.phase ?? 1, dossier.banque);
 }

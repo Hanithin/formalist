@@ -269,64 +269,48 @@ test.describe("la liste du cabinet", () => {
   });
 });
 
-test.describe("le panneau de détail", () => {
+test.describe("l'ouverture d'un dossier", () => {
   test.use({ storageState: "./tests/parcours/session-avocat.json" });
 
-  test("cliquer une ligne ouvre le détail sans quitter la liste", async ({ page }) => {
+  test("cliquer une ligne ouvre le dossier", async ({ page }) => {
     /*
-     * Ouvrir un dossier faisait quitter la liste : on perdait sa recherche, son tri
-     * et sa page pour lire trois lignes, et il fallait revenir pour passer au suivant.
+     * La ligne mène au dossier.
+     *
+     * Elle ouvrait un panneau qui redisait ce que la ligne montrait déjà, et dont le
+     * seul geste propre était un bouton « Ouvrir le dossier » : deux clics pour
+     * arriver là où l'on allait de toute façon.
      */
     // Son propre dossier : les autres séries en créent et en suppriment en
     // parallèle, et une ligne qui disparaît entre l'affichage et le clic ferait
     // échouer un test qui n'a rien à voir.
-    const marque = "PANNEAU LECTURE " + Date.now();
-    await dossierEnAttente(marque);
+    const marque = "LIGNE LECTURE " + Date.now();
+    const dossier = await dossierEnAttente(marque);
 
     await page.goto("/avocat?q=" + encodeURIComponent(marque));
     await expect(page.getByRole("table")).toBeVisible();
 
-    const adresse = page.url();
     await page.locator("tbody tr").first().click();
 
-    const panneau = page.getByRole("dialog");
-    await expect(panneau).toBeVisible();
-    await expect(panneau.getByText("Client")).toBeVisible();
-    /*
-     * Le libellé du lien dépend de l'état du dossier : « Ouvrir le dossier » une fois
-     * pris, « Lire sans le prendre » tant qu'il est libre. Le test attendait le
-     * premier sur un dossier qui attend, donc libre par construction.
-     */
-    await expect(panneau.getByRole("link", { name: "Lire sans le prendre" })).toBeVisible();
-
-    // La liste reste derrière, avec ses critères intacts.
-    expect(page.url()).toBe(adresse);
-    await expect(page.getByRole("table")).toBeVisible();
-
-    // Échap referme : c'est ce qu'on essaie d'abord sur un panneau.
-    await page.keyboard.press("Escape");
-    await expect(panneau).toHaveCount(0);
+    await page.waitForURL(new RegExp("/avocat/" + dossier.id));
+    await expect(
+      page.getByRole("heading", { name: new RegExp(dossier.societe, "i") })
+    ).toBeVisible();
   });
 
-  test("un dossier qui attend se prend depuis le panneau", async ({ page }) => {
-    const dossier = await dossierEnAttente("PANNEAU ESSAI " + Date.now());
+  test("un dossier qui attend se prend depuis la ligne", async ({ page }) => {
+    const dossier = await dossierEnAttente("LIGNE ESSAI " + Date.now());
 
     await page.goto("/avocat?q=" + encodeURIComponent(dossier.societe));
     await expect(page.getByRole("table")).toBeVisible();
-    await page.locator("tbody tr").first().click();
-
-    const panneau = page.getByRole("dialog");
-    /* Le bouton dit ce qu'il fait, et où il mène : « Prendre en charge et réviser ». */
-    await panneau.getByRole("button", { name: /Prendre en charge et réviser/ }).click();
 
     /*
      * Accepter mène au dossier.
      *
-     * Le panneau se refermait sur la liste : le dossier était pris, et rien ne disait
-     * où aller pour le réviser - le lien « Ouvrir le dossier » disparaissait avec le
-     * panneau.
+     * Prendre puis rester devant la liste laisserait l'avocat sans rien à faire de ce
+     * qu'il vient d'accepter.
      */
-    await expect(panneau).toHaveCount(0);
+    await page.getByRole("button", { name: /Prendre en charge le dossier/ }).first().click();
+
     await page.waitForURL(new RegExp("/avocat/" + dossier.id));
     await expect(page.getByRole("heading", { name: new RegExp(dossier.societe, "i") })).toBeVisible();
 

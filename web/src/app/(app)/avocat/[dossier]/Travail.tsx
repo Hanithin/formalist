@@ -44,6 +44,7 @@ export function Travail({
   dossiersAPrendre,
   etapePrecedente,
   termineLe,
+  correctionsEnCours,
   livrables,
   dossier,
   taches,
@@ -102,6 +103,14 @@ export function Travail({
   etapePrecedente: string | null;
   /** Quand le dossier s'est achevé, lu au journal. */
   termineLe: string | null;
+  /**
+   * Une demande de corrections attend le client.
+   *
+   * Tant qu'elle court, son espace porte un encadré « À vous de jouer » : il faut
+   * pouvoir la clore quand il a répondu, sinon il reste devant une demande à laquelle
+   * il a déjà satisfait.
+   */
+  correctionsEnCours: boolean;
 }) {
   const [refus, setRefus] = useState<string | null>(null);
   /** La demande de corrections, et ce qu'on y écrit. */
@@ -383,6 +392,27 @@ export function Travail({
     });
   }
 
+  /** Clore la demande de corrections : l'encadré disparaît de l'espace du client. */
+  function clore() {
+    setRefus(null);
+
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/dossier", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, etat: "en_attente_validation" }),
+      });
+
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "La demande n'a pas pu être close.");
+        return;
+      }
+      setRetour("La demande est close : le client n'a plus rien à reprendre.");
+      router.refresh();
+    });
+  }
+
   /** Rouvrir un dossier clos : il revient d'un cran, et le travail reprend. */
   function reprendre(vers: string) {
     setRefus(null);
@@ -563,6 +593,34 @@ export function Travail({
         au bas de l'écran, après avoir fait défiler ce qu'on venait de faire.
       */}
       <div className={styles.travailTete}>
+        {/*
+          Clore la demande, quand le client y a répondu.
+          
+          Elle courait tant que personne ne la fermait : le client gardait sous les yeux
+          un encadré « À vous de jouer » pour un travail qu'il avait déjà fait.
+        */}
+        {correctionsEnCours && (
+          <button
+            type="button"
+            className={styles.travailClore}
+            onClick={clore}
+            disabled={enCours}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+            {enCours ? "…" : "Le client a répondu, clore la demande"}
+          </button>
+        )}
+
         <button
           type="button"
           className={styles.travailRenvoi}

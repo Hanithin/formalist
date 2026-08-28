@@ -433,6 +433,7 @@ function Carte({ dossier }: { dossier: DossierListe }) {
     type: dossier.type,
     status: dossier.status,
     phase: dossier.phase,
+    sousPhase: dossier.sousPhase,
     banque: dossier.banque,
   });
   const ton = tonDossier({ status: dossier.status, phase: dossier.phase });

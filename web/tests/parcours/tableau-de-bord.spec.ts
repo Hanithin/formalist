@@ -201,13 +201,12 @@ test.describe("tableau de bord du client", () => {
 /**
  * Ouvre la page complète d'un dossier depuis la liste.
  *
- * Le clic sur le nom ouvre désormais un panneau de détail plutôt que de quitter la
- * liste : la page complète se rejoint depuis ce panneau.
+ * Le nom porte le lien : la rangée entière y mène aussi, mais un lien s'atteint au
+ * clavier et se clique sans risquer une cellule qui a son propre geste.
  */
 async function ouvrirLeDossier(page: import("@playwright/test").Page, societe: string) {
   await page.goto("/avocat");
-  await page.getByRole("button", { name: societe, exact: true }).click();
-  await page.getByRole("dialog").getByRole("link", { name: "Ouvrir le dossier" }).click();
+  await page.getByRole("link", { name: societe, exact: true }).click();
   await page.waitForURL(/\/avocat\/\d+/);
 }
 
@@ -217,8 +216,8 @@ test.describe("espace avocat", () => {
   test("liste les dossiers du cabinet", async ({ page }) => {
     await page.goto("/avocat");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Espace avocat");
-    // Le nom de la société est un bouton depuis qu'il ouvre le panneau de détail.
-    await expect(page.getByRole("button", { name: "PARCOURS EN COURS", exact: true })).toBeVisible();
+    // Le nom de la société est un lien : il mène à la page du dossier.
+    await expect(page.getByRole("link", { name: "PARCOURS EN COURS", exact: true })).toBeVisible();
   });
 
   test("un filtre laisse exactement le nombre de dossiers qu'il annonce", async ({ page }) => {

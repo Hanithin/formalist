@@ -1,9 +1,8 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import styles from "../Avocat.module.css";
+import styles from "./Dossier.module.css";
 
 export interface MessageDuFil {
   id: number;
@@ -15,33 +14,26 @@ export interface MessageDuFil {
 }
 
 /**
- * La conversation avec le client, dans le dossier.
+ * La conversation avec le cabinet, dans le dossier.
  *
- * Écrire au client demandait de quitter le dossier pour la messagerie, d'y retrouver
- * le bon fil, puis de revenir : on écrivait donc de mémoire, sans ce qu'on voulait
- * commenter sous les yeux. C'est le même fil que la messagerie - la même table, le même
- * point d'entrée - il se lit et s'écrit aussi d'ici.
+ * Écrire à son avocat demandait de quitter le dossier pour la messagerie, d'y
+ * retrouver le bon fil, puis de revenir : on écrivait donc de mémoire, sans ce dont on
+ * voulait parler sous les yeux. C'est le même fil que la messagerie - la même table,
+ * le même point d'entrée - il se lit et s'écrit aussi d'ici.
  */
-export function Communication({
+export function FilDuDossier({
   dossier,
   moi,
   messages,
-  client,
-  documents,
-  aVerifier,
 }: {
   dossier: number;
-  /** Pour distinguer ce que le cabinet a écrit de ce que le client répond. */
+  /** Pour distinguer ce qu'on a écrit de ce que le cabinet répond. */
   moi: number;
   messages: MessageDuFil[];
-  client: { nom: string; courriel: string | null };
-  documents: number;
-  aVerifier: number;
 }) {
   const [texte, setTexte] = useState("");
   const [refus, setRefus] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
-  const champ = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   function envoyer(fichier?: File) {
@@ -55,7 +47,10 @@ export function Communication({
        * même point d'entrée, et c'est lui qui décide selon le type de contenu.
        */
       const reponse = fichier
-        ? await fetch("/api/messages", { method: "POST", body: enFormulaire(dossier, contenu, fichier) })
+        ? await fetch("/api/messages", {
+            method: "POST",
+            body: enFormulaire(dossier, contenu, fichier),
+          })
         : await fetch("/api/messages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -73,12 +68,11 @@ export function Communication({
   }
 
   return (
-    <div className={styles.filGrille}>
-    <section className={styles.fil} aria-label="Conversation avec le client">
+    <section className={styles.fil} aria-label="Conversation avec le cabinet">
       {messages.length === 0 ? (
         <p className={styles.filVide}>
           Rien n&apos;a encore été échangé sur ce dossier. Ce que vous écrivez ici arrive
-          dans la messagerie du client, et dans la vôtre.
+          chez l&apos;avocat qui s&apos;en occupe, et dans votre messagerie.
         </p>
       ) : (
         <ol className={styles.filMessages}>
@@ -92,12 +86,6 @@ export function Communication({
                 key={message.id}
                 className={deNous ? `${styles.filLigne} ${styles.filDeNous}` : styles.filLigne}
               >
-                {/*
-                  Les deux côtés se nomment.
-
-                  Seul le client était nommé : sur un fil où l'on vient d'écrire deux
-                  fois de suite, rien ne disait laquelle des bulles était la sienne.
-                */}
                 {nouvelAuteur && (
                   <span className={styles.filAuteur}>
                     {deNous ? "Vous" : message.expediteur}
@@ -114,17 +102,7 @@ export function Communication({
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M21.4 11.05 12.25 20.2a5 5 0 0 1-7.07-7.07l9.19-9.19a3.33 3.33 0 1 1 4.71 4.71l-9.2 9.19a1.67 1.67 0 1 1-2.35-2.36l8.49-8.48" />
-                      </svg>
+                      <Trombone />
                       La pièce jointe
                     </a>
                   )}
@@ -137,19 +115,13 @@ export function Communication({
         </ol>
       )}
 
-      {/*
-        Une barre, non un formulaire.
-        
-        La zone d'écriture tenait une carte à elle seule, avec un champ de trois lignes
-        et deux boutons alignés à droite : écrire un mot au client y paraissait un acte.
-      */}
       <div className={styles.filEcrire}>
         <textarea
           value={texte}
           onChange={(e) => setTexte(e.target.value)}
           rows={1}
-          placeholder="Écrire au client…"
-          aria-label="Écrire au client"
+          placeholder="Écrire à l'avocat…"
+          aria-label="Écrire à l'avocat"
         />
 
         {refus && (
@@ -164,21 +136,9 @@ export function Communication({
             deux messages là où l'on n'en voulait qu'un.
           */}
           <label className={styles.filJoindre} title="Joindre une pièce">
-            {/* Le trombone suffit : le mot doublait le dessin. */}
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M21.4 11.05 12.25 20.2a5 5 0 0 1-7.07-7.07l9.19-9.19a3.33 3.33 0 1 1 4.71 4.71l-9.2 9.19a1.67 1.67 0 1 1-2.35-2.36l8.49-8.48" />
-            </svg>
+            <Trombone />
             <span className={styles.champFichier}>Joindre une pièce</span>
             <input
-              ref={champ}
               type="file"
               className={styles.champFichier}
               /* Le navigateur n'est qu'un filtre de confort : le serveur tranche. */
@@ -194,7 +154,7 @@ export function Communication({
 
           <button
             type="button"
-            className={styles.travailPrincipal}
+            className={styles.filEnvoyer}
             onClick={() => envoyer()}
             disabled={enCours || !texte.trim()}
           >
@@ -203,51 +163,22 @@ export function Communication({
         </div>
       </div>
     </section>
+  );
+}
 
-    {/*
-      Ce qu'on a sous les yeux en écrivant.
-      
-      Écrire au client demandait de se rappeler de tête à qui l'on parle et où en est
-      son dossier : la colonne le dit, et mène à ce qu'on veut lui commenter.
-    */}
-    <aside className={styles.filColonne}>
-      <div className={styles.filFiche}>
-        <span className={styles.filFicheNom}>{client.nom}</span>
-        {client.courriel && (
-          <span className={styles.filFicheMail}>{client.courriel}</span>
-        )}
-      </div>
-
-      {/*
-        Les deux comptes mènent où ils se lisent.
-
-        Ils annonçaient un nombre sans donner le chemin : voir de quels documents il
-        s'agit demandait de repartir dans les onglets, en haut de la page, et de
-        retrouver lequel les portait.
-      */}
-      <div className={styles.filFiche}>
-        <Link
-          className={`${styles.filFicheLigne} ${styles.filFicheLien}`}
-          href={"/avocat/" + dossier + "?onglet=documents"}
-        >
-          <span>Documents au dossier</span>
-          <span className={styles.filFicheNombre}>{documents}</span>
-        </Link>
-        <Link
-          className={`${styles.filFicheLigne} ${styles.filFicheLien}`}
-          href={"/avocat/" + dossier + "?onglet=documents"}
-        >
-          <span>Pièces à vérifier</span>
-          <span className={styles.filFicheNombre}>{aVerifier}</span>
-        </Link>
-      </div>
-
-      <p className={styles.filFicheNote}>
-        Ce fil est celui de la messagerie : ce que vous écrivez ici arrive dans la sienne,
-        et dans la vôtre.
-      </p>
-    </aside>
-    </div>
+function Trombone() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21.4 11.05 12.25 20.2a5 5 0 0 1-7.07-7.07l9.19-9.19a3.33 3.33 0 1 1 4.71 4.71l-9.2 9.19a1.67 1.67 0 1 1-2.35-2.36l8.49-8.48" />
+    </svg>
   );
 }
 
