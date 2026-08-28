@@ -46,19 +46,39 @@ export function phraseJournal(entree: EntreeJournal, cestMoi: boolean): string {
       return sujet ? sujet.toLowerCase() : a + " fait avancer le dossier";
     case "note":
       return a + " laissé une note";
-    /*
-     * Ce qui a été corrigé ne se dit pas au client en noms de champs.
-     *
-     * La valeur enregistrée est la liste des identifiants du code -
-     * « dateOuverture, dateCloture, dirigeantFonction » - tronquée par la colonne où
-     * elle s'affiche. Les entrées déjà écrites la portent encore : on ne la lit plus.
-     */
-    case "dossier_corrige":
-      return a + " corrigé le dossier";
     default:
-      return a + " mis à jour le dossier";
+      return GESTES_DU_CABINET[entree.action]?.(a) ?? a + " mis à jour le dossier";
   }
 }
+
+/*
+ * Ce que le cabinet inscrit, dit au client.
+ *
+ * Les actions écrites par l'espace avocat portent le vocabulaire du cabinet -
+ * `actes_mis_a_disposition`, `depot_sans_document`, `sous_phase_5c` - qu'aucun cas du
+ * `switch` ne prévoyait : tout le fil se rendait par « a mis à jour le dossier », et
+ * le filtrer laissait une seule ligne. Celles qui concernent le client sont traduites,
+ * les autres restent invisibles - un cran de sous-phase ne lui apprend rien.
+ *
+ * `a` vaut « a » ou « avez » selon que le geste est le sien.
+ */
+const GESTES_DU_CABINET: Record<string, (a: string) => string> = {
+  dossier_pris: (a) => a + " pris votre dossier en charge",
+  informations_verifiees: (a) => a + " vérifié vos informations",
+  actes_mis_a_disposition: (a) => a + " mis vos actes à votre disposition",
+  document_valide: (a) => a + " validé une pièce",
+  etat_corrections_demandees: (a) => a + " demandé des corrections",
+  depot_sans_document: (a) => a + " déposé le dossier au guichet",
+  comptes_payes: (a) => a + " réglé le dossier",
+  /*
+   * Ce qui a été corrigé ne se dit pas en noms de champs.
+   *
+   * La valeur enregistrée était la liste des identifiants du code - « dateOuverture,
+   * dateCloture » - tronquée par la colonne où elle s'affiche. Les entrées déjà
+   * écrites la portent encore : on ne la lit plus.
+   */
+  dossier_corrige: (a) => a + " corrigé le dossier",
+};
 
 /*
  * Ce que le client gagne à lire, et rien d'autre.
@@ -76,7 +96,7 @@ const RACONTABLES = new Set([
   "doc_rejected",
   "status_change",
   "note",
-  "dossier_corrige",
+  ...Object.keys(GESTES_DU_CABINET),
 ]);
 
 export function ditQuelqueChose(entree: EntreeJournal): boolean {
