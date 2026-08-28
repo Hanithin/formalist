@@ -216,6 +216,42 @@
  * changements : à cette largeur, ils tenaient sur deux colonnes de cinq lignes, et le
  * bouton tombait sous le pli. À 1180 px, la grille en range trois par ligne.
  */
+/*
+ * La ligne de tête d'un écran d'entrée.
+ *
+ * Le fil d'Ariane la tenait lieu : « Mes formalités > Dépôt des comptes annuels » en
+ * gris clair, là où les autres écrans annoncent leur nom en vingt-huit pixels. La
+ * marge est celle du logo - voir tests/parcours/ligne-de-tete.
+ */
+.entetePage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 24px 48px 0;
+}
+
+.entetePageTitre {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #18181b;
+}
+
+.entetePageSousTitre {
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  color: #8a8a92;
+}
+
+/* Sous une ligne de tête, le contenu n'a plus à ménager la place d'un titre. */
+.contentSousEntete {
+  padding-top: 22px;
+}
+
 .contentLarge {
   max-width: 1180px;
   padding-top: 28px;
@@ -4843,6 +4879,38 @@
 
 .entreeTete {
   padding: 26px 30px 20px;
+}
+
+/*
+ * Le titre et la phrase à gauche, le geste à droite, sur la même ligne.
+ *
+ * « entreeAmorce » existe déjà dans cette feuille, pour le prix d'appel du parcours de
+ * modification : deux noms identiques, et la ligne héritait de sa graisse.
+ */
+.entreeOuverture {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 28px;
+}
+
+/* Le texte prend la place qui reste ; le bouton garde la sienne. */
+.entreeOuverture > div:first-child {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.entreeOuverture > .entreeActions {
+  flex-shrink: 0;
+}
+
+/* Une mention de pied, posée dans le corps depuis que le pied n'existe plus. */
+.entree > .entreeMention {
+  display: block;
+  margin: 0;
+  padding: 14px 30px 18px;
+  border-top: 1px solid #f2f2f4;
 }
 
 .entreeTitre {

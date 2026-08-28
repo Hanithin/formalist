@@ -48,13 +48,40 @@ export function Commencer() {
 
   return (
     <div className={styles.entree}>
+      {/*
+        Le geste est en tête, non au bout de l'écran.
+
+        « Commencer » vivait sous le tableau des seuils, à un écran et demi du titre :
+        il fallait tout lire pour trouver par où entrer. Ce qui suit rassure ; ce n'est
+        pas ce qu'on vient chercher.
+      */}
       <div className={styles.entreeTete}>
-        <h2 className={styles.entreeTitre}>Approuver et déposer vos comptes</h2>
-        <p className={styles.entreeTexte}>
-          Déposez votre bilan : nous en lisons les chiffres, calculons la dotation à la
-          réserve légale, rédigeons le procès-verbal d&apos;approbation et déposons au
-          greffe. Les comptes s&apos;approuvent dans les six mois de la clôture.
-        </p>
+        <div className={styles.entreeOuverture}>
+          <div>
+            <h2 className={styles.entreeTitre}>Vos comptes déposés, sans rien rédiger</h2>
+            <p className={styles.entreeTexte}>
+              Envoyez votre bilan. Nous lisons les chiffres, rédigeons le procès-verbal
+              d&apos;approbation et déposons au greffe pour vous.
+            </p>
+          </div>
+
+          <div className={styles.entreeActions}>
+            <button
+              type="button"
+              className={styles.entreeBouton}
+              onClick={ouvrir}
+              disabled={enCours}
+            >
+              {enCours ? "Ouverture…" : "Commencer"}
+            </button>
+          </div>
+        </div>
+
+        {erreur && (
+          <p className={styles.entreeRefus} role="alert">
+            {erreur}
+          </p>
+        )}
       </div>
 
       {/*
@@ -69,10 +96,9 @@ export function Commencer() {
       </ul>
 
       <div className={styles.entreeBloc}>
-        <h3 className={styles.blocTitre}>Ce que vous pouvez garder confidentiel</h3>
+        <h3 className={styles.blocTitre}>Vos chiffres peuvent rester confidentiels</h3>
         <p className={styles.blocTexte}>
-          Déposer n&apos;est pas publier. Selon votre taille, vos comptes peuvent rester
-          inaccessibles aux tiers. Deux critères sur trois suffisent.
+          Déposer n&apos;est pas publier. Deux critères sur trois suffisent.
         </p>
 
         <ul className={styles.seuils}>
@@ -96,35 +122,16 @@ export function Commencer() {
         </ul>
 
         <p className={styles.entreeNote}>
-          Une société civile ne dépose pas ses comptes au greffe : ils ne sont jamais
-          publics, et il n&apos;y a rien à rendre confidentiel.
+          Une société civile ne dépose pas : ses comptes ne sont jamais publics.
         </p>
       </div>
 
-      {erreur && (
-        <p className={styles.entreeRefus} role="alert">
-          {erreur}
-        </p>
-      )}
-
-      <div className={styles.entreePied}>
-        <p className={styles.entreeAssurance}>
-          Le tarif s&apos;affiche au récapitulatif, avant tout règlement. S&apos;y
-          ajoutent les frais de greffe, refacturés à l&apos;euro - et rien pour une
-          société civile, qui ne dépose pas.
-        </p>
-
-        <div className={styles.entreeActions}>
-          <button
-            type="button"
-            className={styles.entreeBouton}
-            onClick={ouvrir}
-            disabled={enCours}
-          >
-            {enCours ? "Ouverture…" : "Commencer"}
-          </button>
-        </div>
-      </div>
+      {/* Ce qu'il faut savoir avant de payer, en une ligne : le pied entier n'a plus
+          de bouton à porter. */}
+      <p className={styles.entreeMention}>
+        Tarif affiché au récapitulatif, avant tout règlement. Frais de greffe refacturés
+        à l&apos;euro.
+      </p>
     </div>
   );
 }

@@ -128,8 +128,16 @@ a {
 /* ---------- Gabarit de page ----------
    Une page d'application reçoit sa marge et sa largeur sans avoir à les redire. */
 
+/*
+ * La marge de tête pose le titre sur la ligne du logo.
+ *
+ * Trente-deux pixels le descendaient neuf pixels sous lui : les deux se lisent côte à
+ * côte, à deux centimètres l'un de l'autre, et l'écart se voit. Les écrans qui posent
+ * leur propre bandeau reprennent la même mesure chez eux ;
+ * tests/parcours/ligne-de-tete les mesure tous.
+ */
 main {
-  padding: 32px 40px 60px;
+  padding: 24px 40px 60px;
   max-width: var(--largeur-contenu);
   width: 100%;
 }

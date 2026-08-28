@@ -24,7 +24,7 @@
  * le creux au-dessus des capitales explique les six pixels qui manquent au compte.
  */
 .topbar {
-  padding: 19px 48px 6px;
+  padding: 24px 48px 6px;
   background: transparent;
   display: flex;
   align-items: center;

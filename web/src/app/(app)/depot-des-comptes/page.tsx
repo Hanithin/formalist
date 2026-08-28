@@ -86,9 +86,23 @@ export default async function DepotDesComptes({
   if (!dossier) {
     return (
       <main className={styles.page}>
-        <Fil />
-        <div className={styles.content}>
-          <h1 className={styles.titre}>Dépôt des comptes annuels</h1>
+        {/*
+          Le nom de l'écran en tête, à la place du fil d'Ariane.
+
+          « Mes formalités > Dépôt des comptes annuels » l'écrivait en gris clair,
+          au-dessus de tout, là où les autres écrans annoncent le leur en vingt-huit
+          pixels sur la ligne du logo.
+        */}
+        <header className={styles.entetePage}>
+          <div>
+            <h1 className={styles.entetePageTitre}>Dépôt des comptes annuels</h1>
+            <p className={styles.entetePageSousTitre}>
+              Une fois par an, dans les six mois de la clôture.
+            </p>
+          </div>
+        </header>
+
+        <div className={`${styles.content} ${styles.contentSousEntete}`}>
           <Commencer />
         </div>
       </main>

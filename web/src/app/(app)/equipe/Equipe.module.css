@@ -42,7 +42,7 @@
  * utile et déborde sous le bouton.
  */
 .topbar {
-  padding: 30px 48px 4px;
+  padding: 20px 48px 4px;
   background: transparent;
   display: flex;
   flex-wrap: wrap;
