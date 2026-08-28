@@ -933,20 +933,32 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Le geste porte la couleur de sa carte.
+ *
+ * Un aplat noir et une jauge noire sur un fond jaune : deux teintes qui n'ont rien à
+ * voir l'une avec l'autre, et le bouton s'y lisait comme un corps étranger posé là.
+ * L'or est assez sombre pour porter du texte noir, et assez franc pour rester le seul
+ * point d'appel de l'écran.
+ */
 .reprendreBouton {
   flex-shrink: 0;
   padding: 10px 22px;
   border-radius: 10px;
-  background: #18181b;
+  background: #facc15;
   font-size: 14.5px;
   font-weight: 600;
-  color: #fff;
+  color: #18181b;
   text-decoration: none;
   transition: background 0.15s ease;
 }
 
 .reprendreBouton:hover {
-  background: #000;
+  background: #eab308;
+}
+
+.reprendre .jaugeRemplie {
+  background: #eab308;
 }
 
 /* La jauge, partagée par le bloc de reprise et la file de travail. */
@@ -1298,7 +1310,15 @@
   list-style: none;
 }
 
-.echeance {
+/*
+ * La règle qui neutralise la carte globale l'emportait sur celle-ci.
+ *
+ * `.echeances > li` remet chaque élément en `display: block` - il le faut, la feuille
+ * globale en fait des cartes blanches - et sa spécificité dépasse celle d'une classe
+ * seule : la disposition en deux colonnes n'a jamais pris, et l'intitulé, la date et
+ * le bouton se suivaient en ligne puis s'empilaient. Le sélecteur porte donc les deux.
+ */
+.echeances > li.echeance {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
