@@ -590,42 +590,33 @@ function LigneDeFil({
 function Accueil({ fils, surChoix }: { fils: Fil[]; surChoix: (cle: string) => void }) {
   return (
     <div className={styles.chatViewEmpty}>
+      {/*
+        Un cadre, et rien de plus.
+
+        L'écran d'attente reprenait la liste entière des conversations, en grandes
+        cartes, à trente centimètres de la même liste dans la colonne de gauche : deux
+        fois le même choix, dont l'un occupait tout l'écran. Le cadre dit ce qu'on
+        attend de nous, la colonne dit lesquelles.
+      */}
       <div className={styles.welcomePane}>
         <div className={styles.welcomeIc}>
           <Bulle />
         </div>
         <h2 className={styles.welcomeTitle}>Choisissez une conversation</h2>
         <p className={styles.welcomeDesc}>
-          Un fil par dossier avec l&apos;avocat qui le suit, et un fil avec le support pour
-          tout le reste.
+          Un fil par dossier avec l&apos;avocat qui le suit, et un fil avec le support
+          pour tout le reste.
         </p>
 
-        <div className={styles.welcomeConvs}>
-          {fils.map((f) => (
-            <button
-              key={f.cle}
-              type="button"
-              className={styles.wcv}
-              onClick={() => surChoix(f.cle)}
-            >
-              <span
-                className={
-                  f.genre === "support"
-                    ? `${styles.wcvAvatar} ${styles.wcvAvatarSupport}`
-                    : styles.wcvAvatar
-                }
-                aria-hidden="true"
-              >
-                {initiales(f.titre)}
-              </span>
-              <span className={styles.wcvBody}>
-                <span className={styles.wcvTitle}>{f.titre}</span>
-                <span className={styles.wcvSub}>{f.sousTitre}</span>
-              </span>
-              {f.nonLus > 0 && <span className={styles.wcvBadge}>{f.nonLus}</span>}
-            </button>
-          ))}
-        </div>
+        {fils.length > 0 && (
+          <button
+            type="button"
+            className={styles.welcomeGeste}
+            onClick={() => surChoix(fils[0].cle)}
+          >
+            Ouvrir « {fils[0].titre} »
+          </button>
+        )}
       </div>
     </div>
   );

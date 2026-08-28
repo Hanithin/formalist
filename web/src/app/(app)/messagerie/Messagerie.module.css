@@ -261,17 +261,22 @@
   padding: 40px 32px;
 }
 
+/* Un cadre blanc au centre, plutôt qu'un texte flottant sur le fond de la page. */
 .welcomePane {
-  max-width: 640px;
+  max-width: 420px;
+  padding: 32px 30px 30px;
+  border: 1px solid #ececee;
+  border-radius: 18px;
+  background: #fff;
   text-align: center;
 }
 
 .welcomeIc {
-  width: 72px;
-  height: 72px;
-  border-radius: 20px;
-  background: #f5f3ff;
-  color: #7c3aed;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #f4f4f5;
+  color: #52525b;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,24 +284,47 @@
 }
 
 .welcomeIc svg {
-  width: 32px;
-  height: 32px;
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 
 .welcomeTitle {
   margin: 0 0 8px;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 24px;
+  font-size: 19px;
   font-weight: 600;
+  letter-spacing: 0;
   color: #111;
 }
 
 .welcomeDesc {
-  font-size: 14px;
-  line-height: 1.55;
-  color: #666;
-  max-width: 520px;
-  margin: 0 auto 28px;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #71717a;
+}
+
+/* Une porte d'entrée, non la liste entière : la colonne de gauche la porte déjà. */
+.welcomeGeste {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  margin: 20px 0 0;
+  padding: 0 16px;
+  border: 1px solid #18181b;
+  border-radius: 10px;
+  background: #18181b;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.welcomeGeste:hover {
+  background: #000;
 }
 
 .welcomeConvs {
