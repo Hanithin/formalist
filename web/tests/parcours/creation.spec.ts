@@ -734,12 +734,20 @@ test.describe("la relecture retient la signature", () => {
     expect((await reponse.json()).error).toMatch(/relecture/i);
   });
 
-  test("l'écran le dit et ferme le bouton", async ({ page, request }) => {
+  test("l'écran n'ouvre pas la signature avant l'attestation", async ({ page, request }) => {
+    /*
+     * Le bloc entier attend l'attestation de dépôt de capital : c'est elle qui date les
+     * actes, et signer avant ferait signer des actes que la re-datation reproduira -
+     * donc signer deux fois. Le refus au dépôt, lui, est vérifié juste au-dessus.
+     */
     const dossier = await dossierEnRelecture(page, request);
     await page.goto("/creation?dossier=" + dossier + "&etape=7");
 
-    await expect(page.getByText(/La signature s'ouvrira dès que votre avocat/)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Demander les signatures" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Demander les signatures" })).toHaveCount(0);
+
+    // Les actes, eux, sont bien là - annoncés en relecture.
+    await expect(page.getByText("Statuts constitutifs")).toBeVisible();
+    await expect(page.getByText(/actes en relecture/)).toBeVisible();
   });
 
   test("régénérer ne publie pas ce qui attend l'avocat", async ({ page, request }) => {

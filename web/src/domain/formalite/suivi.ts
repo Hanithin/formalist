@@ -116,16 +116,16 @@ interface Definition {
 const TOUTES: Definition[] = [
   {
     identifiant: "transmis",
-    titre: "Dossier transmis à l'avocat",
-    explication: "Votre dossier est parti chez l'avocat. Il en accuse réception et le prend en main.",
+    titre: "Dossier transmis à un avocat",
+    explication: "Votre dossier est parti au cabinet. Un avocat en accuse réception et le prend en main.",
     main: "avocat",
     faite: (e) => e.status !== "en_cours" && e.status !== null,
   },
   {
     identifiant: "verification",
-    titre: "Vérification par l'avocat",
+    titre: "Vérification par un avocat",
     explication:
-      "L'avocat relit vos actes et contrôle vos pièces. Il vous écrit si quelque chose doit être repris.",
+      "Un avocat relit vos actes et contrôle vos pièces. Il vous écrit si quelque chose doit être repris.",
     /*
      * La main revient au client quand l'avocat renvoie le dossier.
      *
@@ -154,7 +154,7 @@ const TOUTES: Definition[] = [
      */
     explication: (e) =>
       e.actesEnRelecture
-        ? "Votre banque ouvre le compte de dépôt sur présentation de vos statuts. L'avocat les relit ; dès qu'il les aura validés, vous pourrez les lui remettre et déposer ici l'attestation qu'elle vous délivrera."
+        ? "Votre banque ouvre le compte de dépôt sur présentation de vos statuts. Un avocat les relit ; dès qu'ils seront validés, vous pourrez les lui remettre et déposer ici l'attestation qu'elle vous délivrera."
         : "Remettez vos actes à votre banque : elle vous délivre cette attestation après le versement du capital. Déposez-la ici - vos actes sont alors datés du jour où vous l'avez obtenue, qui est celui où vous les signez.",
     main: (e) => (e.actesEnRelecture ? "avocat" : "vous"),
     action: "Déposer l'attestation",
@@ -179,7 +179,7 @@ const TOUTES: Definition[] = [
   {
     identifiant: "greffe",
     titre: "Dépôt au greffe",
-    explication: "L'avocat dépose le dossier complet au guichet unique. Comptez quelques jours.",
+    explication: "Le cabinet dépose le dossier complet au guichet unique. Comptez quelques jours.",
     main: "avocat",
     faite: (e) => auMoins(e.sousPhase, "5d"),
   },
@@ -215,9 +215,9 @@ const AUTO_ENTREPRISE: Definition[] = [
   },
   {
     identifiant: "verification",
-    titre: "Vérification par l'avocat",
+    titre: "Vérification par un avocat",
     explication:
-      "L'avocat relit votre déclaration : le code APE, le régime, les plafonds et vos pièces. Il vous écrit si quelque chose doit être repris.",
+      "Un avocat relit votre déclaration : le code APE, le régime, les plafonds et vos pièces. Il vous écrit si quelque chose doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
     action: "Voir ce qui est demandé",
     ou: "messagerie",
@@ -229,7 +229,7 @@ const AUTO_ENTREPRISE: Definition[] = [
     identifiant: "guichet",
     titre: "Dépôt au guichet unique",
     explication:
-      "L'avocat dépose votre déclaration à l'INPI en votre nom. Comptez quelques jours ouvrés.",
+      "Le cabinet dépose votre déclaration à l'INPI en votre nom. Comptez quelques jours ouvrés.",
     main: "avocat",
     faite: (e) => auMoins(e.sousPhase, "5d"),
   },
@@ -268,7 +268,7 @@ const MODIFICATION: Definition[] = [
   },
   {
     identifiant: "verification",
-    titre: "Vérification par l'avocat",
+    titre: "Vérification par un avocat",
     explication:
       "Votre avocat contrôle le procès-verbal, les statuts à jour et vos justificatifs : rien ne part au greffe sans son accord. Il vous écrit si un point doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
@@ -333,15 +333,15 @@ const MODIFICATION: Definition[] = [
 const COMPTES: Definition[] = [
   {
     identifiant: "transmis",
-    titre: "Comptes transmis à l'avocat",
+    titre: "Comptes transmis à un avocat",
     explication:
-      "C'est parti : vos comptes approuvés et leurs annexes sont chez l'avocat. Il en accuse réception et les prend en main.",
+      "C'est parti : vos comptes approuvés et leurs annexes sont au cabinet. Un avocat en accuse réception et les prend en main.",
     main: "avocat",
     faite: (e) => e.status !== "en_cours" && e.status !== null,
   },
   {
     identifiant: "verification",
-    titre: "Vérification par l'avocat",
+    titre: "Vérification par un avocat",
     explication:
       "Votre avocat contrôle le procès-verbal d'approbation, la déclaration de confidentialité s'il y en a une, et la cohérence de vos comptes : rien ne part au greffe sans son accord. Il vous écrit si un point doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),

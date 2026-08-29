@@ -88,6 +88,15 @@ export function documentsAProduire(contexte: Contexte): DocumentAProduire[] {
  * Elles ne sont pas produites mais déposées : identité, domicile, et attestation
  * de dépôt de capital quand la forme en exige un.
  */
+/**
+ * L'attestation de dépôt de capital, par son identifiant.
+ *
+ * Il était écrit en toutes lettres à trois endroits - la liste des pièces, l'état du
+ * dossier, l'écran des actes. Trois chaînes identiques qu'aucun compilateur ne
+ * rapproche.
+ */
+export const PIECE_DEPOT_CAPITAL = "depot-capital";
+
 export interface PieceAttendue {
   identifiant: string;
   titre: string;
@@ -130,7 +139,7 @@ export function piecesAttendues(forme: string | null | undefined): PieceAttendue
   // Une SCI ne dépose pas de capital : lui demander l'attestation n'a pas de sens.
   if (r && r.liberationMinimale > 0) {
     pieces.push({
-      identifiant: "depot-capital",
+      identifiant: PIECE_DEPOT_CAPITAL,
       titre: "Attestation de dépôt de capital",
       description:
         "Remise par la banque après le versement du capital libéré. Vos actes seront datés du jour où vous l'avez obtenue : c'est celui où vous les signez.",

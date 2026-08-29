@@ -31,7 +31,7 @@ import { Capital } from "./Capital";
 import { Dirigeants } from "./Dirigeants";
 import { Offres } from "./Offres";
 import { ObjetSocial } from "./ObjetSocial";
-import { piecesAttendues } from "@/domain/formalite/documents";
+import { piecesAttendues, PIECE_DEPOT_CAPITAL } from "@/domain/formalite/documents";
 import { offre } from "@/domain/formalite/offres";
 import { Pieces } from "@/components/formulaire/Pieces";
 import styles from "./Parcours.module.css";
@@ -926,6 +926,7 @@ export function Parcours({
               brouillon={brouillon}
               actes={actesProduits}
               surNote={(texte) => modifier("noteAvocat", texte)}
+              attestationRecue={piecesDeposees.some((p) => p.type === PIECE_DEPOT_CAPITAL)}
             />
           )}
         </div>

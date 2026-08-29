@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { A_RELIRE } from "@/domain/document/publication";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
@@ -36,6 +36,14 @@ interface Props {
   brouillon: Brouillon;
   actes: ActeProduit[];
   surNote: (texte: string) => void;
+  /**
+   * L'attestation de dépôt de capital est-elle au dossier ?
+   *
+   * Elle date les actes : c'est le jour où la banque la délivre qu'on signe les
+   * statuts. Ouvrir la signature avant, c'est signer des actes qui seront reproduits
+   * à une autre date - et les faire signer deux fois.
+   */
+  attestationRecue: boolean;
 }
 
 function Oeil() {
@@ -106,25 +114,6 @@ function Cadenas() {
   );
 }
 
-/** Les flèches circulaires du bouton de régénération, reprises de creation.html. */
-function Rotation() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="23 4 23 10 17 10" />
-      <polyline points="1 20 1 14 7 14" />
-      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-    </svg>
-  );
-}
-
 /** L'icône du document, celle de la page d'origine pour un acte. */
 function Document() {
   return (
@@ -154,7 +143,7 @@ function Document() {
  * reconnaître.
  */
 
-export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
+export function Actes({ dossierId, brouillon, actes, surNote, attestationRecue }: Props) {
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
   /* La fenêtre d'aperçu ne retient que le nom de l'acte, pas son fichier.
      L'original re-sollicitait un aperçu ouvert après une régénération (« If a preview
@@ -165,20 +154,8 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
   const [apercuDe, setApercuDe] = useState<string | null>(null);
   /* L'échec de production se dit sous le bouton qui l'a déclenché. Au bas de la page,
      sous la note à l'avocat, personne ne le lit. */
-  const [erreurActes, setErreurActes] = useState<string | null>(null);
-  const [confirme, setConfirme] = useState(false);
-  /* Les actes que la dernière production a reproduits : c'est ce que liste la
-     fenêtre de confirmation. Vide tant qu'il n'y a rien à annoncer. */
-  const [reproduits, setReproduits] = useState<string[] | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
-
-  // Les deux secondes de confirmation sur le bouton, puis retour à son état normal.
-  useEffect(() => {
-    if (!confirme) return;
-    const minuteur = setTimeout(() => setConfirme(false), 2000);
-    return () => clearTimeout(minuteur);
-  }, [confirme]);
 
   const associes = brouillon.associes ?? [];
 
@@ -194,40 +171,6 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
 
   /* Les actes que l'avocat n'a pas encore relus : ils s'affichent, sans s'ouvrir. */
   const enRelecture = actes.filter((a) => a.statut === A_RELIRE);
-
-  function produire() {
-    setErreurActes(null);
-    setConfirme(false);
-
-    demarrer(async () => {
-      const reponse = await fetch("/api/formalites/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier: dossierId }),
-      });
-      const corps = (await reponse.json().catch(() => ({}))) as {
-        error?: string;
-        etape?: number;
-        documents?: { titre: string }[];
-      };
-
-      if (!reponse.ok) {
-        setErreurActes(
-          corps.etape
-            ? "Le dossier est incomplet : reprenez à l'étape " + corps.etape + "."
-            : (corps.error ?? "La production des documents a été interrompue")
-        );
-        return;
-      }
-
-      // Deux confirmations, l'une derrière l'autre : la fenêtre dit ce qui a été
-      // reproduit, et le bouton garde la trace verte de l'original quand elle est
-      // refermée.
-      setConfirme(true);
-      setReproduits((corps.documents ?? []).map((d) => d.titre));
-      router.refresh();
-    });
-  }
 
   function ouvrirSignatures() {
     setMessage(null);
@@ -256,7 +199,6 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
     });
   }
 
-
   // L'acte dont l'aperçu est ouvert, relu dans la liste courante : après une
   // régénération, c'est le fichier reproduit que la fenêtre affiche.
   const acteApercu = apercuDe ? actes.find((a) => a.nom === apercuDe) : undefined;
@@ -282,8 +224,8 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
       <div className={styles.genSection}>
         {actes.length === 0 ? (
           <p className={styles.actesVide}>
-            Aucun document produit pour l&apos;instant. Les statuts, la liste des souscripteurs et
-            les déclarations sont générés à partir de ce que vous avez saisi.
+            Aucun document pour l&apos;instant. Les statuts, la liste des souscripteurs et les
+            déclarations sont produits au règlement, à partir de ce que vous avez saisi.
           </p>
         ) : (
           <div className={styles.genList}>
@@ -386,92 +328,86 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
           </div>
         )}
 
-        <div className={styles.genRegenLigne}>
-          <button
-            type="button"
-            className={confirme ? `${styles.genRegen} ${styles.genRegenOk}` : styles.genRegen}
-            onClick={produire}
-            disabled={enCours || confirme}
-          >
-            {confirme ? (
-              "Documents régénérés !"
-            ) : (
-              <>
-                <Rotation />
-                {enCours
-                  ? "Régénération…"
-                  : actes.length > 0
-                    ? "Régénérer les documents"
-                    : "Générer les documents"}
-              </>
-            )}
-          </button>
-        </div>
+        {/*
+          Le bouton « Régénérer les documents » a été retiré.
 
-        {erreurActes && (
-          <p className={styles.actesErreur} role="alert">
-            {erreurActes}
-          </p>
-        )}
+          La production ne se demande plus : elle a lieu au règlement, et de nouveau
+          quand l'attestation de dépôt de capital arrive - c'est ce dépôt qui date les
+          actes, du jour où la banque l'a délivrée. Un bouton laissait croire qu'il
+          fallait y penser, et invitait à reproduire des actes que l'avocat était en
+          train de relire.
+        */}
+
       </div>
 
-      {/* ---------- La signature ---------- */}
-      <div className={styles.genSection}>
-        <div className={styles.genSectionHead}>
-          <p className={styles.genSectionLabel}>Signature</p>
-          <p className={styles.genSectionSub}>
-            Chaque signataire reçoit son propre lien par email
-          </p>
-        </div>
+      {/*
+        ---------- La signature ----------
 
-        {signataires.length > 0 ? (
-          <p className={styles.actesVide}>
-            {signataires.map((s) => s.nom + " (" + s.email + ")").join(", ")}.
-          </p>
-        ) : (
-          <p className={styles.actesVide}>
-            Aucun signataire : renseignez l&apos;adresse email des associés à l&apos;étape
-            « Associés ».
-          </p>
-        )}
+        Elle n'apparaît qu'une fois l'attestation de dépôt de capital au dossier : c'est
+        elle qui date les actes, et signer avant ferait signer des actes que la
+        re-datation reproduira - donc signer deux fois. Le suivi, à droite, dit où l'on
+        en est de cette attente.
+      */}
+      {attestationRecue && (
+        <>
+          <div className={styles.genSection}>
+            <div className={styles.genSectionHead}>
+              <p className={styles.genSectionLabel}>Signature</p>
+              <p className={styles.genSectionSub}>
+                Chaque signataire reçoit son propre lien par email
+              </p>
+            </div>
 
-        {sansEmail.length > 0 && signataires.length > 0 && (
-          <p role="alert">
-            {sansEmail.length} associé(s) sans adresse email ne recevront pas de demande.
-          </p>
-        )}
+            {signataires.length > 0 ? (
+              <p className={styles.actesVide}>
+                {signataires.map((s) => s.nom + " (" + s.email + ")").join(", ")}.
+              </p>
+            ) : (
+              <p className={styles.actesVide}>
+                Aucun signataire : renseignez l&apos;adresse email des associés à l&apos;étape «
+                Associés ».
+              </p>
+            )}
 
-        {/*
+            {sansEmail.length > 0 && signataires.length > 0 && (
+              <p role="alert">
+                {sansEmail.length} associé(s) sans adresse email ne recevront pas de demande.
+              </p>
+            )}
+
+            {/*
           La signature s'ouvre quand l'avocat a rendu les actes.
 
           On ne signe pas ce qu'il n'a pas relu, et c'est sa validation qui accorde la
           mise en signature. Le serveur le refuse aussi : un écran se contourne, et la
           demande part par courriel avec un jeton d'accès.
         */}
-        {enRelecture.length > 0 && (
-          <p className={styles.actesRelecture} role="status">
-            La signature s&apos;ouvrira dès que votre avocat aura validé vos actes.
-          </p>
-        )}
+            {enRelecture.length > 0 && (
+              <p className={styles.actesRelecture} role="status">
+                La signature s&apos;ouvrira dès que votre avocat aura validé vos actes.
+              </p>
+            )}
 
-        <div className={styles.actesEntete}>
-          <button
-            type="button"
-            className={styles.actesBouton}
-            onClick={ouvrirSignatures}
-            /* Rien à signer tant que rien n'est produit, rien qui ne soit relu, et
+            <div className={styles.actesEntete}>
+              <button
+                type="button"
+                className={styles.actesBouton}
+                onClick={ouvrirSignatures}
+                /* Rien à signer tant que rien n'est produit, rien qui ne soit relu, et
                personne à qui l'envoyer sans adresse email. */
-            disabled={
-              enCours ||
-              actes.length === 0 ||
-              signataires.length === 0 ||
-              enRelecture.length > 0
-            }
-          >
-            Demander les signatures
-          </button>
-        </div>
-      </div>
+                disabled={
+                  enCours ||
+                  actes.length === 0 ||
+                  signataires.length === 0 ||
+                  enRelecture.length > 0
+                }
+              >
+                Demander les signatures
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ---------- Le mot à l'avocat ---------- */}
       <div className={styles.formGrid}>
@@ -492,9 +428,6 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
         </p>
       )}
 
-      {reproduits && (
-        <Reproduits actes={reproduits} surFermeture={() => setReproduits(null)} />
-      )}
 
       {acteApercu?.fichier && (
         <Apercu
@@ -503,62 +436,6 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
           surFermeture={() => setApercuDe(null)}
         />
       )}
-    </div>
-  );
-}
-
-/**
- * La fenêtre qui suit une production, et dit ce qu'elle a produit.
- *
- * Elle n'existait pas dans creation.html - la confirmation y tenait au bouton - mais
- * régénérer sans rien voir laissait douter que quelque chose se soit passé, la liste
- * se reconstruisant à l'identique. Elle nomme donc les actes reproduits.
- */
-function Reproduits({ actes, surFermeture }: { actes: string[]; surFermeture: () => void }) {
-  useEffect(() => {
-    function auClavier(e: KeyboardEvent) {
-      if (e.key === "Escape") surFermeture();
-    }
-    document.addEventListener("keydown", auClavier);
-    return () => document.removeEventListener("keydown", auClavier);
-  }, [surFermeture]);
-
-  return (
-    <div className={styles.apercuVoile} onClick={surFermeture}>
-      <div
-        className={styles.reproduitsFenetre}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reproduits-titre"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span className={styles.reproduitsCoche} aria-hidden="true">
-          <Coche />
-        </span>
-
-        <h3 className={styles.reproduitsTitre} id="reproduits-titre">
-          {actes.length > 1 ? "Documents régénérés" : "Document régénéré"}
-        </h3>
-
-        <p className={styles.reproduitsSous}>
-          {actes.length} document{actes.length > 1 ? "s" : ""} à relire avant signature.
-        </p>
-
-        <ul className={styles.reproduitsListe}>
-          {actes.map((titre) => (
-            <li key={titre}>{titre}</li>
-          ))}
-        </ul>
-
-        <button
-          type="button"
-          className={`${styles.genBtn} ${styles.genBtnPrimaire}`}
-          onClick={surFermeture}
-          autoFocus
-        >
-          Fermer
-        </button>
-      </div>
     </div>
   );
 }

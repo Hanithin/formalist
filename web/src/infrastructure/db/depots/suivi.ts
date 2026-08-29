@@ -1,6 +1,7 @@
 import { prisma } from "../client";
 import { type EtatDuDossier } from "@/domain/formalite/suivi";
 import { A_RELIRE } from "@/domain/document/publication";
+import { PIECE_DEPOT_CAPITAL } from "@/domain/formalite/documents";
 
 /**
  * L'état d'un dossier, tel que le domaine le demande.
@@ -11,7 +12,7 @@ import { A_RELIRE } from "@/domain/document/publication";
  */
 
 /** Les types de pièce qui marquent une étape franchie. */
-export const TYPE_ATTESTATION_CAPITAL = "depot-capital";
+export const TYPE_ATTESTATION_CAPITAL = PIECE_DEPOT_CAPITAL;
 export const TYPE_ANNONCE_PUBLIEE = "annonce-parution";
 export const TYPE_KBIS = "kbis";
 export const TYPE_RBE = "rbe";
