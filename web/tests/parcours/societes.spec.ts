@@ -29,7 +29,15 @@ test("le registre aligne ses colonnes, une ligne par société", async ({ page }
    */
   await page.goto("/societes");
 
-  for (const colonne of ["Société", "SIREN", "État", "Formalités", "Prochaine échéance"]) {
+  /*
+   * Le SIREN n'est plus une colonne.
+   *
+   * Elle affichait un tiret sur toutes les lignes : rien ne l'écrit tant qu'une
+   * immatriculation n'est pas revenue du greffe, et une colonne qui ne se remplit
+   * jamais prend la place de celles qui parlent. Il reste sur la fiche, et se cherche
+   * toujours dans la barre.
+   */
+  for (const colonne of ["Société", "État", "Formalités", "Prochaine échéance"]) {
     await expect(page.getByText(colonne, { exact: true }), colonne).toBeVisible();
   }
 

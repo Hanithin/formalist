@@ -140,8 +140,16 @@
 .registreEntete,
 .ligneSociete {
   display: grid;
+  /*
+   * Cinq colonnes, depuis que le SIREN est parti.
+   *
+   * Il affichait un tiret sur toutes les lignes : rien ne l'écrit tant qu'une
+   * immatriculation n'est pas revenue du greffe. Une colonne qui ne se remplit jamais
+   * prend la place de celles qui parlent. Il reste sur la fiche, où il paraît le jour
+   * où on le connaît.
+   */
   grid-template-columns:
-    minmax(0, 1.6fr) 120px 130px 150px minmax(0, 1.2fr) 20px;
+    minmax(0, 1.7fr) 140px 150px minmax(0, 1.5fr) 20px;
   align-items: center;
   gap: 20px;
   padding: 13px 20px;
@@ -219,13 +227,6 @@
   color: #71717a;
 }
 
-.celluleSiren {
-  font-size: 13px;
-  color: #52525b;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 .celluleFormalites {
   font-size: 13px;
   color: #52525b;
@@ -289,7 +290,6 @@
     padding: 16px 18px;
   }
 
-  .celluleSiren,
   .celluleFormalites,
   .celluleEcheance {
     grid-column: 1 / -1;
@@ -302,31 +302,52 @@
 
 /* ------------------------------------------------------------ Les badges */
 
+/*
+ * L'état d'une société, au dessin des pastilles de la page témoin.
+ *
+ * Elles avaient leurs teintes propres - un vert #e9f5ec, un bleu-gris #eef2f7 - quand
+ * le socle en définit déjà : les « couleurs de sens » de globals.css, qui doublent
+ * toujours un mot et passent le seuil de contraste. Deux jeux pour une même idée
+ * finissent par diverger, et c'est ainsi qu'un même état a porté trois teintes selon
+ * l'écran.
+ *
+ * Douze pixels et une graisse moyenne, comme sur les cartes : la pastille se lit sans
+ * crier, et le tiret qui la précédait a disparu avec les points des cartes.
+ */
 .badge {
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
-  padding: 4px 11px;
-  border-radius: 999px;
+  padding: 5px 12px;
+  border-radius: 100px;
   background: #f4f4f5;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: #52525b;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
+/* Une fermeture en cours appelle un geste : c'est la teinte de l'attente. */
 .badge-action {
-  background: #fdf3d7;
-  color: #8a5f0a;
+  background: var(--attente-fond);
+  color: var(--attente-encre);
 }
 
+/*
+ * Une création en cours n'appelle rien du dirigeant : elle avance chez nous.
+ *
+ * Elle portait un bleu-gris à elle. Le gris neutre suffit, et laisse la couleur aux
+ * deux états qui la méritent - celui qui va bien, et celui qui attend.
+ */
 .badge-validation {
-  background: #eef2f7;
-  color: #475569;
+  background: #f4f4f5;
+  color: #52525b;
 }
 
 .badge-termine {
-  background: #e9f5ec;
-  color: #256b38;
+  background: var(--abouti-fond);
+  color: var(--abouti-encre);
 }
 
 /* ------------------------------------------------------------- La fiche */
@@ -471,40 +492,7 @@
   white-space: nowrap;
 }
 
-/* Une échéance : ce qu'elle est, quand elle tombe, et le geste. */
-.echeance {
-  flex-wrap: wrap;
-}
 
-.echeanceIntitule {
-  flex: 1;
-  min-width: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #18181b;
-  letter-spacing: 0;
-}
-
-.echeanceDate {
-  font-size: 13.5px;
-  color: #52525b;
-  white-space: nowrap;
-}
-
-.echeanceGeste {
-  padding: 8px 16px;
-  border: 1px solid #e5e5e7;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #18181b;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.echeanceGeste:hover {
-  border-color: #18181b;
-}
 
 .entree {
   align-items: baseline;

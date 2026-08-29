@@ -19,8 +19,16 @@ import styles from "./Societes.module.css";
 export interface LigneDuRegistre {
   cle: string;
   denomination: string;
-  forme: string;
+  /**
+   * Porté pour la recherche, non pour l'affichage.
+   *
+   * La colonne a disparu du registre - elle montrait un tiret sur toutes les lignes,
+   * rien ne l'écrivant tant qu'une immatriculation n'est pas revenue. Le chercher reste
+   * utile : on a parfois un SIREN sous les yeux, sur un document, et l'on veut la
+   * société qui va avec.
+   */
   siren: string | null;
+  forme: string;
   etat: { cle: string; libelle: string; ton: string };
   formalites: string;
   enCours: number;
@@ -130,7 +138,6 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
         <div className={styles.registre}>
           <div className={styles.registreEntete} aria-hidden="true">
             <span>Société</span>
-            <span>SIREN</span>
             <span>État</span>
             <span>Formalités</span>
             <span>Prochaine échéance</span>
@@ -152,7 +159,6 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
                     « Aucune » répété sur huit lignes fait une colonne de mots qu'on
                     lit, alors qu'il n'y a rien à y lire : le tiret se saute.
                   */}
-                  <span className={styles.celluleSiren}>{societe.siren ?? "—"}</span>
 
                   <span className={styles.celluleEtat}>
                     <span
