@@ -399,8 +399,20 @@ export function Parcours({
    */
   const libellesAssocies = libellesDesAssocies(brouillon.forme, (brouillon.associes ?? []).length);
   const titreDe = (e: Etape) => (e.identifiant === "associes" ? libellesAssocies.titre : e.titre);
-  const descriptionDe = (e: Etape) =>
-    e.identifiant === "associes" ? libellesAssocies.description : e.description;
+  /*
+   * Ce que l'étape des actes annonce dépend de ce qu'on peut en faire.
+   *
+   * « Les actes produits, à relire et à signer » était faux tant qu'ils sont en
+   * relecture : ils ne s'ouvrent pas, ne se téléchargent pas et ne se signent pas. La
+   * phrase dit alors ce qu'on attend, et à quoi tient la suite.
+   */
+  const descriptionDe = (e: Etape) => {
+    if (e.identifiant === "associes") return libellesAssocies.description;
+    if (e.identifiant === "actes" && actesEnRelecture > 0) {
+      return "Vos actes seront disponibles dès qu'un avocat les aura relus et validés.";
+    }
+    return e.description;
+  };
   const libelleCourtDe = (e: Etape) =>
     e.identifiant === "associes" ? libellesAssocies.libelleCourt : e.libelleCourt;
 

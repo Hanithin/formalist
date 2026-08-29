@@ -866,9 +866,12 @@ test.describe("la relecture retient la signature", () => {
 
     await expect(page.getByRole("button", { name: "Demander les signatures" })).toHaveCount(0);
 
-    // Les actes, eux, sont bien là - annoncés en relecture.
+    // Les actes, eux, sont bien là - annoncés en relecture, et l'étape dit l'attente.
     await expect(page.getByText("Statuts constitutifs")).toBeVisible();
     await expect(page.getByText(/actes en relecture/)).toBeVisible();
+    await expect(
+      page.getByText(/disponibles dès qu'un avocat les aura relus et validés/)
+    ).toBeVisible();
   });
 
   test("régénérer ne publie pas ce qui attend l'avocat", async ({ page, request }) => {
