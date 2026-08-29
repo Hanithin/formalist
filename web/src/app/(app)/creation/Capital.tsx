@@ -57,14 +57,23 @@ function euros(valeur: number): string {
 }
 
 /**
- * La valeur nominale, sans arrondi complaisant.
+ * La valeur nominale, sans arrondi complaisant ni notation savante.
  *
  * Deux mille euros en six cent soixante-sept actions font 2,9985 € : arrondi à deux
  * décimales, on lirait « 3 € », et six cent soixante-sept fois trois euros ne font pas
  * deux mille. C'est ce chiffre exact que portent les statuts.
+ *
+ * En dessous du centime, on descend à douze décimales. `String(2000 / 3e12)` rend
+ * « 6.666666666666666e-10 », que le champ affichait tronqué à sa largeur : on y lisait
+ * « 6,66 € » là où l'action vaut moins d'un milliardième d'euro. Et six décimales
+ * auraient rendu « 0 », tout aussi faux.
  */
-function eurosNominale(valeur: number): string {
-  return valeur.toLocaleString("fr-FR", { maximumFractionDigits: 6 }) + " €";
+function nominaleLisible(valeur: number, groupee = true): string {
+  if (!Number.isFinite(valeur) || valeur <= 0) return "";
+  return valeur.toLocaleString("fr-FR", {
+    maximumFractionDigits: valeur < 0.01 ? 12 : 6,
+    useGrouping: groupee,
+  });
 }
 
 /** « Camille Durand » donne CD ; une société, la première lettre de son nom. */
@@ -98,7 +107,6 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
    * division. La saisie s'efface dès qu'un autre champ bouge.
    */
   const [nominaleSaisie, setNominaleSaisie] = useState<string | null>(null);
-
 
   /* Un seul associé : il détient la totalité, et son nombre suit le total émis. */
   const seul = associes.length === 1;
@@ -220,6 +228,9 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
     }
   }
 
+  /* Une valeur sous le centime ne s'écrit dans aucun acte : on le dit avant l'avocat. */
+  const sousLeCentime = nominale > 0 && nominale < 0.01;
+
   /* Une action ne peut pas valoir plus que le capital entier. */
   const nominaleDemandee = Number((nominaleSaisie ?? "").replace(",", "."));
   const nominaleTropGrande =
@@ -260,7 +271,7 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
               <input
                 id="nominale"
                 inputMode="decimal"
-                value={nominaleSaisie ?? (nominale > 0 ? String(nominale) : "")}
+                value={nominaleSaisie ?? nominaleLisible(nominale, false)}
                 onChange={(e) => modifierLaNominale(e.target.value)}
               />
               <span>€</span>
@@ -285,19 +296,24 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
         <p className={styles.emissionNote}>
           {nominaleTropGrande
             ? "Une " + motPart(brouillon.forme) + " ne peut pas valoir plus que le capital entier."
-            : nominale > 0
-            ? partsTotales.toLocaleString("fr-FR") +
-              " " +
-              motPart(brouillon.forme, partsTotales > 1) +
-              " à " +
-              eurosNominale(nominale) +
-              " l'une."
-              : "Renseignez le capital, puis la valeur " +
-                elider("une " + motPart(brouillon.forme)) +
-                " ou leur nombre : l'un donne l'autre."}
+            : sousLeCentime
+              ? partsTotales.toLocaleString("fr-FR") +
+                " " +
+                motPart(brouillon.forme, true) +
+                " pour " +
+                euros(capital) +
+                " font moins d'un centime l'une : réduisez leur nombre, ou augmentez le capital."
+              : nominale > 0
+                ? partsTotales.toLocaleString("fr-FR") +
+                  " " +
+                  motPart(brouillon.forme, partsTotales > 1) +
+                  " à " +
+                  nominaleLisible(nominale) +
+                  " € l'une."
+                : "Renseignez le capital, puis la valeur " +
+                  elider("une " + motPart(brouillon.forme)) +
+                  " ou leur nombre : l'un donne l'autre."}
         </p>
-
-
       </div>
 
       {/*

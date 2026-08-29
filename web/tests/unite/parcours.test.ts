@@ -267,6 +267,33 @@ describe("étape 4, le capital", () => {
     expect(anomalies.some((a) => a.champ === "libere")).toBe(true);
   });
 
+  it("refuse une valeur nominale sous le centime", () => {
+    /*
+     * Trois mille milliards d'actions pour deux mille euros passaient l'étape : chacune
+     * valait six dix-milliardièmes d'euro, un nombre que ni les statuts, ni la liste
+     * des souscripteurs, ni l'attestation de dépôt ne peuvent porter. L'écran affichait
+     * « à 0 € l'une », arrondi à six décimales.
+     */
+    const anomalies = verifierEtape(4, {
+      ...complet,
+      partsTotales: 3_000_000_000_000,
+      associes: [{ ...complet.associes![0], parts: 3_000_000_000_000 }],
+    });
+
+    expect(anomalies.some((a) => a.message.includes("moins d'un centime"))).toBe(true);
+  });
+
+  it("laisse passer un centime tout rond", () => {
+    // Cent mille parts pour mille euros : un centime l'une, et c'est écrivable.
+    const anomalies = verifierEtape(4, {
+      ...complet,
+      partsTotales: 100_000,
+      associes: [{ ...complet.associes![0], parts: 100_000 }],
+    });
+
+    expect(anomalies.some((a) => a.message.includes("centime"))).toBe(false);
+  });
+
   it("un apport en nature compte comme libéré : il est fait le jour même", () => {
     const anomalies = verifierEtape(4, {
       ...complet,

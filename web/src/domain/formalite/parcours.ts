@@ -503,6 +503,24 @@ export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] 
     const souscrits = apports.map((a) => a.souscrit);
     if (souscrits.length) anomalies.push(...verifierRepartition(capital, souscrits));
 
+    /*
+     * Une valeur nominale sous le centime ne s'écrit dans aucun acte.
+     *
+     * Trois mille milliards d'actions pour deux mille euros passaient l'étape : chacune
+     * valait six dix-milliardièmes d'euro, un nombre que ni les statuts, ni la liste
+     * des souscripteurs, ni l'attestation de dépôt ne peuvent porter. L'écran affichait
+     * « à 0 € l'une », et le dossier partait ainsi chez l'avocat.
+     */
+    if (nominale > 0 && nominale < 0.01) {
+      anomalies.push({
+        champ: "partsTotales",
+        message:
+          "Une " +
+          motPart(brouillon.forme) +
+          " vaudrait moins d'un centime : réduisez leur nombre, ou augmentez le capital",
+      });
+    }
+
     // Le nombre de parts distribuées doit tomber juste : c'est ce total qui est
     // écrit dans la liste des souscripteurs.
     const total = brouillon.partsTotales ?? 0;
