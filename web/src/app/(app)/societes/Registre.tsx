@@ -30,9 +30,22 @@ export interface LigneDuRegistre {
   siren: string | null;
   forme: string;
   etat: { cle: string; libelle: string; ton: string };
-  formalites: string;
-  enCours: number;
-  echeance: { intitule: string; quand: string; delai: string; enRetard: boolean } | null;
+  /**
+   * Où en est la société, en trois mots.
+   *
+   * L'échéance quand elle en a une - « Approbation des comptes 2025, en retard de 60
+   * jours » - et sinon l'étape de sa formalité en cours : « En révision par un avocat »,
+   * « Compléter les informations ». La colonne comptait auparavant les formalités, et
+   * disait « 1 en cours » sur sept lignes sur huit.
+   */
+  etape: string | null;
+  echeance: {
+    intitule: string;
+    quand: string;
+    delai: string;
+    limite: string;
+    enRetard: boolean;
+  } | null;
 }
 
 /**
@@ -136,11 +149,19 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
         </p>
       ) : (
         <div className={styles.registre}>
+          {/*
+            Trois colonnes qui parlent, au lieu de quatre dont trois se taisaient.
+
+            « Formalités » comptait - « 1 en cours » sur sept lignes sur huit - et
+            « Prochaine échéance » affichait un tiret sur les mêmes, une société en
+            cours d'immatriculation n'ayant aucune obligation comptable. Les deux n'en
+            font plus qu'une, qui porte l'échéance quand elle existe et l'étape du
+            dossier sinon.
+          */}
           <div className={styles.registreEntete} aria-hidden="true">
             <span>Société</span>
             <span>État</span>
-            <span>Formalités</span>
-            <span>Prochaine échéance</span>
+            <span>Où ça en est</span>
           </div>
 
           <ul className={styles.registreLignes}>
@@ -168,22 +189,13 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
                     </span>
                   </span>
 
-                  <span
-                    className={
-                      societe.enCours > 0
-                        ? `${styles.celluleFormalites} ${styles.enCours}`
-                        : styles.celluleFormalites
-                    }
-                  >
-                    {societe.formalites}
-                  </span>
-
                   {/*
-                    La date, et le temps qu'elle laisse.
+                    L'échéance, et le temps qu'elle laisse.
 
                     « 30/07/2028 » demande un calcul ; « dans 22 mois » se lit. Le
-                    retard, lui, se dit en clair : c'est la seule chose de cette
-                    colonne qui appelle un geste aujourd'hui.
+                    retard se dit en clair : c'est la seule chose de cet écran qui
+                    appelle un geste aujourd'hui. Sans échéance, l'étape du dossier -
+                    qui, elle, dit toujours quelque chose.
                   */}
                   <span className={styles.celluleEcheance}>
                     {societe.echeance ? (
@@ -200,7 +212,7 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
                         </span>
                       </>
                     ) : (
-                      "—"
+                      <span className={styles.etapeDuDossier}>{societe.etape ?? "—"}</span>
                     )}
                   </span>
 

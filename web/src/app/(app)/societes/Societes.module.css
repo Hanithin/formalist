@@ -139,8 +139,16 @@
    * prend la place de celles qui parlent. Il reste sur la fiche, où il paraît le jour
    * où on le connaît.
    */
+  /*
+   * Quatre colonnes, depuis que « Formalités » a rejoint l'échéance.
+   *
+   * Elle comptait - « 1 en cours » sur sept lignes sur huit - et l'échéance affichait
+   * un tiret sur les mêmes : une société en cours d'immatriculation n'a aucune
+   * obligation comptable. Une seule colonne les remplace, qui porte l'échéance quand
+   * elle existe et l'étape du dossier sinon.
+   */
   grid-template-columns:
-    minmax(0, 1.7fr) 140px 150px minmax(0, 1.5fr) 20px;
+    minmax(0, 1.6fr) 140px minmax(0, 1.6fr) 20px;
   align-items: center;
   gap: 20px;
   padding: 13px 20px;
@@ -224,8 +232,17 @@
   white-space: nowrap;
 }
 
-.enCours {
-  color: #8a5f0a;
+/*
+ * L'étape du dossier, quand il n'y a pas d'échéance.
+ *
+ * Elle était peinte en ambre - la teinte de l'attention - sur toutes les lignes qui
+ * portaient une formalité en cours, c'est-à-dire presque toutes. Quand tout est ambre,
+ * plus rien ne l'est : l'ambre est désormais réservé au retard, et l'étape se lit dans
+ * le gris du reste.
+ */
+.etapeDuDossier {
+  font-size: 13.5px;
+  color: #52525b;
 }
 
 .celluleEcheance {

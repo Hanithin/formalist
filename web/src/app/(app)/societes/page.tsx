@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { mesSocietes } from "@/infrastructure/db/depots/societes";
-import {
-  etatDeLaSociete,
-  libelleDesFormalites,
-  libelleDuPortefeuille,
-} from "@/domain/societe/portefeuille";
+import { mesDossiers } from "@/infrastructure/db/depots/dossiers";
+import { contextesDesDossiers } from "@/infrastructure/db/depots/contexte-dossier";
+import { etapeCourte } from "@/domain/formalite/actions";
+import { ordonnerLeRegistre, resumeDuPortefeuille } from "@/domain/societe/registre";
+import { etatDeLaSociete, libelleDuPortefeuille } from "@/domain/societe/portefeuille";
 import { echeancesDesDossiers } from "@/domain/formalite/accueil";
 import { sirenLisible } from "@/domain/modification/annonce";
 import { EnTetePage } from "@/components/page/EnTetePage";
@@ -35,7 +35,22 @@ export const metadata: Metadata = {
  */
 export default async function Societes() {
   const utilisateur = await exigerUtilisateur();
-  const societes = await mesSocietes(utilisateur);
+  const [societes, dossiers] = await Promise.all([
+    mesSocietes(utilisateur),
+    mesDossiers(utilisateur),
+  ]);
+
+  /*
+   * Où en est la formalité de chaque société.
+   *
+   * La colonne comptait - « 1 en cours » sur sept lignes sur huit - là où « En révision
+   * par un avocat » ou « Compléter les informations » dit qui a la main. C'est le même
+   * calcul que « Mes formalités » : il vit dans le domaine, et lit les contextes que
+   * l'infrastructure assemble en deux requêtes pour l'ensemble.
+   */
+  const contextes = await contextesDesDossiers(dossiers);
+  const etapeParDossier = new Map<number, string>();
+  for (const [id, contexte] of contextes) etapeParDossier.set(id, etapeCourte(contexte));
 
   /*
    * Ce que chaque ligne montre, calculé ici.
@@ -74,20 +89,30 @@ export default async function Societes() {
       [...desDossiers, ...deLaSociete].sort((a, b) => a.limite.localeCompare(b.limite))[0] ??
       null;
 
+    /*
+     * L'étape du dossier en cours, quand il y en a un.
+     *
+     * Le plus récemment modifié : c'est celui sur lequel on travaille, et une société
+     * n'en a qu'un ouvert en pratique.
+     */
+    const ouvert = societe.dossiers
+      .filter((d) => d.status !== "terminee" && d.status !== "annulee")
+      .sort((a, b) => new Date(b.majLe).getTime() - new Date(a.majLe).getTime())[0];
+
     return {
       cle: societe.cle,
       denomination: societe.denomination,
       forme: societe.forme ?? "Société",
       siren: societe.siren ? sirenLisible(societe.siren) : null,
       etat: { cle: etat.etat, libelle: etat.libelle, ton: etat.ton },
-      formalites: libelleDesFormalites(societe.dossiers.length, societe.enCours),
-      enCours: societe.enCours,
+      etape: ouvert ? (etapeParDossier.get(ouvert.id) ?? null) : null,
       echeance: prochaine
         ? {
             intitule: prochaine.intitule,
             quand: prochaine.limite.split("-").reverse().join("/"),
             // Le retard se voit dans la liste, sans avoir à ouvrir la fiche.
             delai: delaiLisible(prochaine.limite),
+            limite: prochaine.limite,
             enRetard: prochaine.limite < new Date().toISOString().slice(0, 10),
           }
         : null,
@@ -103,6 +128,15 @@ export default async function Societes() {
    * parce qu'un client qui n'en a qu'une lit « Mes sociétés » comme un menu qui ne le
    * concerne pas.
    */
+  /*
+   * Trié par ce qui presse, non par date de création.
+   *
+   * L'ordre venait de la base - `created_at desc` sur les dossiers - ni alphabétique,
+   * ni par état, ni par urgence : la seule ligne actionnable du registre pouvait se
+   * trouver n'importe où.
+   */
+  const registre = ordonnerLeRegistre(lignes);
+
   if (societes.length === 1) return <Fiche cle={societes[0].cle} />;
 
   return (
@@ -117,11 +151,13 @@ export default async function Societes() {
       */}
       <EnTetePage
         titre={libelleDuPortefeuille(societes.length)}
-        sousTitre={
-          societes.length === 0
-            ? "Vos sociétés apparaîtront ici dès votre première formalité."
-            : "Vos sociétés, leurs formalités en cours et leurs prochaines échéances."
-        }
+        /*
+          La phrase compte ce sur quoi on peut agir.
+
+          Elle décrivait le tableau - « Vos sociétés, leurs formalités en cours et leurs
+          prochaines échéances » - plutôt que de dire ce qu'il contient.
+        */
+        sousTitre={resumeDuPortefeuille(registre)}
       />
 
       <div className={styles.contenu}>
@@ -137,7 +173,7 @@ export default async function Societes() {
             }
           />
         ) : (
-          <Registre societes={lignes} />
+          <Registre societes={registre} />
         )}
       </div>
     </main>

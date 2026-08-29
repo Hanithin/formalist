@@ -37,13 +37,35 @@ test("le registre aligne ses colonnes, une ligne par société", async ({ page }
    * jamais prend la place de celles qui parlent. Il reste sur la fiche, et se cherche
    * toujours dans la barre.
    */
-  for (const colonne of ["Société", "État", "Formalités", "Prochaine échéance"]) {
+  /*
+   * Trois colonnes, et toutes parlent.
+   *
+   * « Formalités » comptait - « 1 en cours » sur sept lignes sur huit - et « Prochaine
+   * échéance » affichait un tiret sur les mêmes : une société en cours
+   * d'immatriculation n'a aucune obligation comptable. Les deux n'en font plus qu'une,
+   * qui porte l'échéance quand elle existe et l'étape du dossier sinon.
+   */
+  for (const colonne of ["Société", "État", "Où ça en est"]) {
     await expect(page.getByText(colonne, { exact: true }), colonne).toBeVisible();
   }
 
   const lignes = page.locator("a[href^='/societes/']");
   expect(await lignes.count(), "le jeu de données a des sociétés").toBeGreaterThan(0);
   await expect(lignes.first().getByText(/En création|Active|En fermeture|Radiée/)).toBeVisible();
+
+  /*
+   * La colonne dit quelque chose.
+   *
+   * Elle répétait « 1 en cours » sur sept lignes sur huit, à côté d'une colonne
+   * d'échéances qui affichait un tiret sur les mêmes. Elle porte désormais l'échéance
+   * quand il y en a une, et sinon l'étape de la formalité - « Compléter les
+   * informations », « En révision par un avocat ». Un tiret ne subsiste que là où il
+   * n'y a réellement rien : une société sans dossier ouvert ni échéance.
+   */
+  const muettes = await lignes.filter({ hasText: "—" }).count();
+  expect(muettes, "toutes les lignes ne peuvent pas être muettes").toBeLessThan(
+    await lignes.count()
+  );
 });
 
 test("la fiche rassemble ce qui concerne une seule société", async ({ page }) => {
