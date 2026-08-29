@@ -5,7 +5,7 @@ import { ouvrirSociete } from "@/infrastructure/db/depots/societes";
 import { echeancesDesDossiers } from "@/domain/formalite/accueil";
 import { adresseDuDossier, libelleDuType } from "@/domain/formalite/liste";
 import { sirenLisible } from "@/domain/modification/annonce";
-import { libelleDossier } from "@/domain/formalite/etapes";
+import { accorder, libelleDossier } from "@/domain/formalite/etapes";
 import {
   dateEtHeure,
   dateRelative,
@@ -163,37 +163,32 @@ export async function Fiche({ cle, avecFil = true }: { cle: string; avecFil?: bo
           <div className={styles.identiteTete}>
             <div>
               <h1 className={styles.titre}>{societe.denomination}</h1>
+              {/*
+                Ce que la société est, sur une ligne.
+
+                Les chiffres vivaient dans une liste de définitions sous le titre :
+                sur une société qui n'a qu'une formalité, elle occupait une rangée
+                entière pour « FORMALITÉS » et « 1 », avec neuf cents pixels de blanc
+                à droite. Ils rejoignent la ligne qui les nomme déjà.
+              */}
               <p className={styles.sousTitre}>
-                {societe.forme ?? "Société"}
-                {societe.siren ? " · SIREN " + sirenLisible(societe.siren) : ""}
+                {[
+                  societe.forme ?? "Société",
+                  societe.siren ? "SIREN " + sirenLisible(societe.siren) : null,
+                  accorder(societe.dossiers.length, "formalité", "formalités"),
+                  societe.enCours > 0 ? societe.enCours + " en cours" : null,
+                  documents.length > 0
+                    ? accorder(documents.length, "document", "documents")
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
             <span className={`${styles.badge} ${styles["badge-" + etat.ton] ?? ""}`}>
               {etat.libelle}
             </span>
           </div>
-
-          {/*
-            Ce qu'il y a, non ce qu'il n'y a pas.
-            « Documents 0 · Échéances 0 » occupait la moitié de la carte pour dire deux
-            fois rien ; les sections plus bas le disent déjà, avec une phrase. Le nombre
-            de formalités reste toujours : une société est là parce qu'elle en a une.
-          */}
-          <dl className={styles.identiteFaits}>
-            {[
-              { cle: "formalites", libelle: "Formalités", valeur: societe.dossiers.length },
-              { cle: "en-cours", libelle: "En cours", valeur: societe.enCours },
-              { cle: "documents", libelle: "Documents", valeur: documents.length },
-              { cle: "echeances", libelle: "Échéances", valeur: echeances.length },
-            ]
-              .filter((fait, rang) => rang === 0 || fait.valeur > 0)
-              .map((fait) => (
-                <div key={fait.cle}>
-                  <dt>{fait.libelle}</dt>
-                  <dd>{fait.valeur}</dd>
-                </div>
-              ))}
-          </dl>
 
           {/*
             Les gestes possibles sur une société.
