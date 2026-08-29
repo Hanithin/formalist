@@ -467,8 +467,36 @@ export function Parcours({
             Paiement abandonné, rien n&apos;a été débité. Votre dossier vous attend.
           </p>
         )}
-        <h2>{titreDe(etape)}</h2>
-        <p className={styles.formDesc}>{descriptionDe(etape)}</p>
+        {/*
+          Le titre de l'étape, et le geste quand elle en porte un.
+
+          Sur les offres, « Régler et confier » vivait sous les trois cartes, après leurs
+          vingt lignes de contenu : il fallait défiler trois écrans pour le trouver. Il
+          se tient là, à hauteur du titre, et le pied de page le redonne à qui a tout lu.
+        */}
+        <div className={styles.formTete}>
+          <div className={styles.formTitre}>
+            <h2>{titreDe(etape)}</h2>
+            <p className={styles.formDesc}>{descriptionDe(etape)}</p>
+          </div>
+
+          {etape.identifiant === "offres" && formuleRetenue && (
+            <div className={styles.reglerBarre}>
+              <p className={styles.reglerFormule}>
+                <span>Formule retenue</span>
+                {formuleRetenue.nom} · {formuleRetenue.prix}€ HT
+              </p>
+              <button
+                type="button"
+                className={styles.reglerBouton}
+                onClick={reglerEtConfier}
+                disabled={enCours || reglementEnCours}
+              >
+                {reglementEnCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className={styles.formGrid}>
           {etape.identifiant === "societe" && (
@@ -851,31 +879,6 @@ export function Parcours({
 
           {etape.identifiant === "offres" && (
             <>
-              {/*
-                Le geste en tête, non au bout de trois écrans de tarifs.
-                
-                Le bouton vivait sous les trois cartes, après leurs vingt lignes de
-                contenu : on ne le voyait qu'en défilant jusqu'en bas, et l'on ne savait
-                pas qu'une formule était déjà retenue. La barre le dit et l'offre, et le
-                pied de page le redonne à qui a tout lu.
-              */}
-              {formuleRetenue && (
-                <div className={styles.reglerBarre}>
-                  <p className={styles.reglerFormule}>
-                    <span>Formule retenue</span>
-                    {formuleRetenue.nom} · {formuleRetenue.prix}€ HT
-                  </p>
-                  <button
-                    type="button"
-                    className={styles.reglerBouton}
-                    onClick={reglerEtConfier}
-                    disabled={enCours || reglementEnCours}
-                  >
-                    {reglementEnCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
-                  </button>
-                </div>
-              )}
-
               <Offres
                 choisie={brouillon.offre}
                 surChangement={(code) => modifier("offre", code)}
