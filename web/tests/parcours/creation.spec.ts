@@ -122,7 +122,6 @@ test("le dossier naît au premier enregistrement, sous son nom", async ({ page, 
   await page.getByLabel("Nom de la société").fill("NAISSANCE DIFFEREE");
   await page.getByLabel("Adresse du siège").fill("12 rue des Lilas");
   await page.getByRole("option", { name: /Paris/ }).first().click();
-  await page.getByLabel("Capital social").fill("10000");
   await page.getByLabel(/Objet social/).fill("Conseil en informatique");
   await page.getByRole("button", { name: "Continuer" }).click();
 
@@ -172,11 +171,9 @@ test("la colonne montre ce qui est déjà saisi", async ({ page, request }) => {
 
   await choisir(page, "Forme juridique", /^SARL/);
   await page.getByLabel("Nom de la société").fill("COLONNE VIVANTE");
-  await page.getByLabel("Capital social").fill("40000");
 
   await expect(colonne).toContainText("SARL");
   await expect(colonne).toContainText("COLONNE VIVANTE");
-  await expect(colonne).toContainText(/40\s000\s€/);
   // Le mot du dirigeant suit la forme, ici comme dans le formulaire.
   await expect(colonne).toContainText("Gérant");
 
@@ -310,14 +307,17 @@ test("le mot employé pour le dirigeant suit la forme choisie", async ({ page, r
 });
 
 /**
- * L'étape du capital dit par quoi commencer.
+ * L'étape du capital dit par quoi commencer, et ne le demande qu'une fois.
  *
  * Elle posait une barre de progression et un camembert avant les deux champs qui les
  * alimentent : on arrivait sur deux graphiques à zéro pour cent, et rien ne disait que
- * le premier geste était de saisir le nombre de titres émis. Le nombre vient d'abord,
- * et la phrase qui suit dit ce qu'il reste à attribuer.
+ * le premier geste était de saisir le nombre de titres émis.
+ *
+ * Le montant, lui, était réclamé deux fois - à l'étape « Société » puis ici, sur le
+ * même champ et sous le même libellé - et l'astérisque de la première mentait :
+ * `verifierSociete` ne regarde pas le capital.
  */
-test("le capital se saisit avant de se répartir", async ({ page, request }) => {
+test("le capital se saisit une fois, avant de se répartir", async ({ page, request }) => {
   const dossier = await ouvrirCreation(page, request);
 
   await request.put("/api/formalites/brouillon", {
@@ -330,12 +330,16 @@ test("le capital se saisit avant de se répartir", async ({ page, request }) => 
         adresse: "2 rue Neuve",
         codePostal: "69001",
         ville: "Lyon",
-        capital: 2000,
         associes: [associe("Camille", "Durand"), associe("Alex", "Martin")],
         dirigeants: [{ associe: 0 }],
       },
     },
   });
+
+  // L'étape « Société » ne le demande plus.
+  await page.goto("/creation?dossier=" + dossier + "&etape=1");
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Informations de la société");
+  await expect(page.getByLabel("Capital social")).toHaveCount(0);
 
   await page.goto("/creation?dossier=" + dossier + "&etape=4");
 
@@ -343,10 +347,11 @@ test("le capital se saisit avant de se répartir", async ({ page, request }) => 
   const total = page.getByLabel(/Nombre total d'actions/);
   await expect(total).toBeVisible();
 
-  // Tant qu'il est vide, la phrase dit le premier geste plutôt qu'un pourcentage.
+  // Tant qu'aucun titre n'est émis, la phrase dit le premier geste, non un pourcentage.
   await expect(page.getByText(/Indiquez d'abord le nombre total d'actions/)).toBeVisible();
 
   await total.fill("2000");
+  await page.getByLabel("Capital social").fill("2000");
   await expect(page.getByText(/2\s000 actions à 1\s€ l'une/)).toBeVisible();
   await expect(page.getByText(/il en reste 2\s000 à attribuer/)).toBeVisible();
 

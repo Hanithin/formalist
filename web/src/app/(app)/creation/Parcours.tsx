@@ -553,19 +553,18 @@ export function Parcours({
                 </>
               )}
 
-              {/* Le montant du capital est saisi ici, comme dans le parcours
-                  d'origine ; sa répartition en parts vient à l'étape « Capital ». */}
-              <Champ id="capital" libelle="Capital social" requis anomalie={anomalies.capital}>
-                <span className={styles.suffix}>
-                  <input
-                    id="capital"
-                    inputMode="decimal"
-                    value={brouillon.capital ?? ""}
-                    onChange={(e) => modifier("capital", Number(e.target.value) || 0)}
-                  />
-                  <span>€</span>
-                </span>
-              </Champ>
+              {/*
+                Le capital n'est plus demandé ici.
+
+                Il l'était deux fois : à cette étape, puis à l'étape « Capital », sur
+                le même champ et sous le même libellé - on se demandait s'il s'agissait
+                de deux montants. Et l'astérisque mentait : `verifierSociete` ne
+                regarde pas le capital, seule l'étape 4 le contrôle.
+
+                Il vit désormais là où il sert, à côté du nombre de titres émis : c'est
+                le couple des deux qui donne la valeur nominale, et l'un sans l'autre
+                ne dit rien.
+              */}
 
               <Champ id="banque" libelle="Banque">
                 <Choix
