@@ -3,7 +3,6 @@ import {
   filtreValide,
   retenu,
   comptesParFiltre,
-  partsDuPortefeuille,
   correspond,
   dateRelative,
   statistiques,
@@ -60,7 +59,15 @@ describe("les filtres de la liste", () => {
       dossier({ status: "terminee" }),
     ]);
 
-    expect(comptes).toEqual({ tous: 4, en_cours: 2, en_attente: 1, terminee: 1 });
+    // Aucun n'est brouillon : les deux « en cours » sont donc chez l'avocat.
+    expect(comptes).toEqual({
+      tous: 4,
+      brouillon: 0,
+      chez_lavocat: 2,
+      en_cours: 2,
+      en_attente: 1,
+      terminee: 1,
+    });
   });
 });
 
@@ -237,56 +244,66 @@ describe("le geste que porte une carte", () => {
 });
 
 /**
- * La ligne de tête annonçait « 9 formalités · 1 terminée · 7 brouillons » : le dossier
- * confié au cabinet n'entrait dans aucune des catégories nommées, et qui additionnait
- * tombait sur huit. Ce qui est énuméré doit couvrir ce qui est annoncé.
+ * La rangée de pastilles se lit comme un tout.
+ *
+ * Elle a remplacé une phrase qui annonçait « 9 formalités · 1 terminée · 7 brouillons » :
+ * le dossier confié au cabinet n'entrait dans aucune des catégories nommées, et qui
+ * additionnait tombait sur huit. Ce qui est énuméré doit couvrir ce qui est annoncé.
  */
-describe("les parts du portefeuille", () => {
-  it("s'additionnent pour faire le total", () => {
-    const dossiers = [
-      dossier({ id: 1, brouillon: true }),
-      dossier({ id: 2, brouillon: true }),
-      dossier({ id: 3 }),
-      dossier({ id: 4, status: "en_attente" }),
-      dossier({ id: 5, status: "terminee" }),
-    ];
+describe("les états d'un dossier dans la liste", () => {
+  const portefeuille = [
+    dossier({ id: 1, brouillon: true }),
+    dossier({ id: 2, brouillon: true }),
+    dossier({ id: 3 }),
+    dossier({ id: 4, status: "en_attente" }),
+    dossier({ id: 5, status: "terminee" }),
+  ];
 
-    const p = partsDuPortefeuille(dossiers);
+  it("se partagent le total sans se recouvrir", () => {
+    const c = comptesParFiltre(portefeuille);
 
-    expect(p).toEqual({
-      total: 5,
-      brouillons: 2,
-      chezLAvocat: 1,
-      enAttente: 1,
-      terminees: 1,
-    });
-    expect(p.brouillons + p.chezLAvocat + p.enAttente + p.terminees).toBe(p.total);
+    expect(c.brouillon).toBe(2);
+    expect(c.chez_lavocat).toBe(1);
+    expect(c.en_attente).toBe(1);
+    expect(c.terminee).toBe(1);
+    expect(c.brouillon + c.chez_lavocat + c.en_attente + c.terminee).toBe(c.tous);
   });
 
-  it("comptent à part le dossier confié, que le brouillon ne dit pas", () => {
-    // Le cas exact qui faisait mentir la ligne : un dossier engagé, ni brouillon ni
-    // terminé, que l'ancienne énumération passait sous silence.
-    const p = partsDuPortefeuille([dossier({ id: 1, brouillon: true }), dossier({ id: 2 })]);
+  it("séparent le dossier confié du brouillon, ce que « en cours » confondait", () => {
+    // Le cas exact qui faisait mentir la ligne de résumé : un dossier engagé, ni
+    // brouillon ni terminé, que l'ancienne énumération passait sous silence.
+    const engage = dossier({ id: 3 });
 
-    expect(p.brouillons).toBe(1);
-    expect(p.chezLAvocat).toBe(1);
-    expect(p.brouillons + p.chezLAvocat).toBe(p.total);
+    expect(retenu(engage, "brouillon")).toBe(false);
+    expect(retenu(engage, "chez_lavocat")).toBe(true);
+    expect(retenu(engage, "en_cours")).toBe(true);
   });
 
-  it("ne comptent pas un dossier terminé parmi ceux du cabinet", () => {
-    const p = partsDuPortefeuille([dossier({ id: 1, status: "terminee" })]);
+  it("ne rangent un dossier terminé ni chez l'avocat ni en brouillon", () => {
+    const fini = dossier({ id: 5, status: "terminee", brouillon: true });
 
-    expect(p.chezLAvocat).toBe(0);
-    expect(p.terminees).toBe(1);
+    expect(retenu(fini, "brouillon")).toBe(false);
+    expect(retenu(fini, "chez_lavocat")).toBe(false);
+    expect(retenu(fini, "terminee")).toBe(true);
   });
 
-  it("rendent des parts nulles sur un portefeuille vide", () => {
-    expect(partsDuPortefeuille([])).toEqual({
-      total: 0,
-      brouillons: 0,
-      chezLAvocat: 0,
-      enAttente: 0,
-      terminees: 0,
+  it("gardent « en cours » comme réunion des deux, pour les anciennes adresses", () => {
+    const c = comptesParFiltre(portefeuille);
+
+    expect(c.en_cours).toBe(c.brouillon + c.chez_lavocat);
+    expect(filtreValide("en_cours")).toBe("en_cours");
+  });
+
+  it("rendent des comptes nuls sur un portefeuille vide", () => {
+    const c = comptesParFiltre([]);
+
+    expect(c).toEqual({
+      tous: 0,
+      brouillon: 0,
+      chez_lavocat: 0,
+      en_cours: 0,
+      en_attente: 0,
+      terminee: 0,
     });
   });
 });

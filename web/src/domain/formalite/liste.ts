@@ -87,17 +87,51 @@ export function nomAffichable(nom: string | null | undefined): string | null {
 
 /* ---------- Filtres ---------- */
 
-export const FILTRES = [
-  { valeur: "tous", libelle: "Tous" },
-  { valeur: "en_cours", libelle: "En cours" },
+/**
+ * Toutes les valeurs qu'un filtre peut prendre, affichées ou non.
+ *
+ * `en_cours` n'a plus de pastille - c'est la réunion de `brouillon` et de
+ * `chez_lavocat` - mais reste une valeur légale : les parts du portefeuille s'en
+ * servent, et une adresse `?filtre=en_cours` partagée hier doit continuer d'ouvrir la
+ * même liste aujourd'hui.
+ */
+export type ValeurFiltre =
+  | "tous"
+  | "brouillon"
+  | "chez_lavocat"
+  | "en_cours"
+  | "en_attente"
+  | "terminee";
+
+/**
+ * Les pastilles, dans l'ordre où un dossier les traverse.
+ *
+ * On le commence, on le confie, on répond à ce qu'on nous demande, il se termine. La
+ * rangée se lit donc comme la vie d'un dossier, et ses comptes se partagent le total
+ * sans se recouvrir - ce qui n'était pas le cas quand « En cours » y figurait, lui qui
+ * contenait déjà tous les brouillons.
+ *
+ * « Toutes », non « Tous » : le mot s'accorde avec les formalités qu'il compte.
+ */
+export const FILTRES: { valeur: ValeurFiltre; libelle: string }[] = [
+  { valeur: "tous", libelle: "Toutes" },
+  { valeur: "brouillon", libelle: "Brouillons" },
+  { valeur: "chez_lavocat", libelle: "Chez l'avocat" },
   { valeur: "en_attente", libelle: "En attente" },
   { valeur: "terminee", libelle: "Terminées" },
-] as const;
+];
 
-export type ValeurFiltre = (typeof FILTRES)[number]["valeur"];
+const VALEURS: ValeurFiltre[] = [
+  "tous",
+  "brouillon",
+  "chez_lavocat",
+  "en_cours",
+  "en_attente",
+  "terminee",
+];
 
 export function filtreValide(brut: string | null | undefined): ValeurFiltre {
-  return FILTRES.some((f) => f.valeur === brut) ? (brut as ValeurFiltre) : "tous";
+  return VALEURS.some((v) => v === brut) ? (brut as ValeurFiltre) : "tous";
 }
 
 /**
@@ -106,48 +140,43 @@ export function filtreValide(brut: string | null | undefined): ValeurFiltre {
  * « En attente » n'est pas le complément de « en cours » : un dossier attend une
  * pièce ou une signature de la part du client, alors qu'un dossier en cours avance.
  * Les deux se distinguent, comme dans la page d'origine.
+ *
+ * `brouillon` et `chez_lavocat` fendent ce qui reste en deux, et de la seule façon qui
+ * vaille pour qui regarde sa liste : ce qu'il lui reste à écrire, et ce qui est parti.
  */
 export function retenu(dossier: DossierListe, filtre: ValeurFiltre): boolean {
   if (filtre === "tous") return true;
   if (filtre === "terminee") return dossier.status === "terminee";
   if (filtre === "en_attente") return dossier.status === "en_attente";
-  return dossier.status !== "terminee" && dossier.status !== "en_attente";
-}
 
-/** Le décompte affiché à côté de chaque filtre. */
-export function comptesParFiltre(dossiers: DossierListe[]): Record<ValeurFiltre, number> {
-  return {
-    tous: dossiers.length,
-    en_cours: dossiers.filter((d) => retenu(d, "en_cours")).length,
-    en_attente: dossiers.filter((d) => retenu(d, "en_attente")).length,
-    terminee: dossiers.filter((d) => retenu(d, "terminee")).length,
-  };
+  const enCours = dossier.status !== "terminee" && dossier.status !== "en_attente";
+  if (filtre === "brouillon") return enCours && dossier.brouillon === true;
+  if (filtre === "chez_lavocat") return enCours && dossier.brouillon !== true;
+  return enCours;
 }
 
 /**
- * Ce que porte le portefeuille, en parts qui s'additionnent.
+ * Le décompte affiché à côté de chaque pastille.
  *
- * La ligne de tête annonçait « 9 formalités · 1 terminée · 7 brouillons ». Elle
- * mélangeait deux axes : « terminée » est un statut, « brouillon » dit qu'un dossier
- * n'est pas encore engagé. Un dossier confié au cabinet n'entrait donc dans aucune des
- * deux catégories nommées, et qui additionnait tombait sur huit pour un total de neuf.
+ * Les quatre états - brouillon, chez l'avocat, en attente, terminé - se partagent tous
+ * les dossiers sans se recouvrir : leur somme est `tous`, par construction et non par
+ * bonne volonté. C'est ce qui permet de lire la rangée comme un tout, et ce qui
+ * manquait à la ligne de résumé qu'elle remplace - elle annonçait « 9 formalités · 1
+ * terminée · 7 brouillons » en passant sous silence le dossier confié au cabinet.
  *
- * Les parts sont ici découpées pour couvrir le total sans se recouvrir : les trois
- * filtres se partagent déjà tous les dossiers - terminé, en attente, ou le reste - et
- * le brouillon ne fend que ce reste. La somme est donc le total par construction, non
- * par bonne volonté.
+ * `en_cours` reste compté bien qu'il n'ait plus de pastille : une adresse partagée
+ * hier peut encore le demander, et la pastille active s'affiche même à zéro.
  */
-export function partsDuPortefeuille(dossiers: DossierListe[]) {
-  const enCours = dossiers.filter((d) => retenu(d, "en_cours"));
-  const brouillons = enCours.filter((d) => d.brouillon).length;
+export function comptesParFiltre(dossiers: DossierListe[]): Record<ValeurFiltre, number> {
+  const pour = (filtre: ValeurFiltre) => dossiers.filter((d) => retenu(d, filtre)).length;
 
   return {
-    total: dossiers.length,
-    brouillons,
-    /* Engagé mais pas encore rendu : réglé, transmis, ou en cours de signature. */
-    chezLAvocat: enCours.length - brouillons,
-    enAttente: dossiers.filter((d) => retenu(d, "en_attente")).length,
-    terminees: dossiers.filter((d) => retenu(d, "terminee")).length,
+    tous: dossiers.length,
+    brouillon: pour("brouillon"),
+    chez_lavocat: pour("chez_lavocat"),
+    en_cours: pour("en_cours"),
+    en_attente: pour("en_attente"),
+    terminee: pour("terminee"),
   };
 }
 

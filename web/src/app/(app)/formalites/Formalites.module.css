@@ -51,16 +51,6 @@
   flex-shrink: 0;
 }
 
-/* La phrase court sous le bandeau, sur toute la largeur : la mesure des sept autres. */
-.introduction {
-  padding: 0 48px;
-  margin: 0 0 28px;
-  font-size: 15px;
-  line-height: 1.5;
-  color: #52525b;
-  max-width: 760px;
-}
-
 .topbar h1 {
   margin: 0;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
@@ -85,8 +75,15 @@
   white-space: nowrap;
 }
 
+/*
+ * La rangée de pastilles remonte sous le titre.
+ *
+ * Elle suivait une phrase de résumé, retirée depuis : seize pixels sous le bandeau
+ * laissaient alors le compte juste. Sans la phrase, la rangée reprend l'air qu'elle
+ * occupait, sans le laisser béant.
+ */
 .content {
-  padding: 16px 48px 48px;
+  padding: 24px 48px 48px;
   flex: 1;
 }
 

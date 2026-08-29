@@ -67,7 +67,7 @@ test.describe("formalités", () => {
     await page.goto("/formalites");
     const filtres = page.getByRole("navigation", { name: "Filtrer les formalités" });
 
-    await expect(filtres.getByRole("link", { name: /Tous/ })).toBeVisible();
+    await expect(filtres.getByRole("link", { name: /Toutes/ })).toBeVisible();
 
     const offerts = await filtres.getByRole("link").allInnerTexts();
     expect(offerts.length, "au moins « Tous »").toBeGreaterThan(0);
@@ -92,6 +92,43 @@ test.describe("formalités", () => {
     await expect(liste(page).getByText("PARCOURS EN COURS")).toHaveCount(0);
   });
 
+  /**
+   * Le brouillon est un état, donc une pastille.
+   *
+   * La ligne de tête annonçait « 6 brouillons » sans qu'on puisse s'y rendre : on
+   * lisait un compte qui ne menait nulle part. La rangée porte maintenant chaque état
+   * qu'elle nomme, et « Chez l'avocat » sépare ce qui est parti de ce qu'il reste à
+   * écrire - deux choses que « En cours » confondait dans un seul chiffre.
+   */
+  test("les brouillons ont leur pastille, distincte de ce qui est parti", async ({ page }) => {
+    await page.goto("/formalites");
+    const filtres = page.getByRole("navigation", { name: "Filtrer les formalités" });
+
+    await filtres.getByRole("link", { name: /Brouillons/ }).click();
+    await expect(page).toHaveURL(/filtre=brouillon/);
+
+    // Un brouillon porte sa pastille sur la carte : toutes celles qui restent l'ont.
+    const cartes = liste(page).getByRole("listitem");
+    const combien = await cartes.count();
+    expect(combien, "au moins un brouillon dans le jeu d'essai").toBeGreaterThan(0);
+    for (let i = 0; i < combien; i++) {
+      await expect(cartes.nth(i)).toContainText("Brouillon");
+    }
+
+    // Et ce qui est parti chez l'avocat n'y figure pas.
+    await expect(liste(page).getByText("En révision par l'avocat")).toHaveCount(0);
+  });
+
+  /** Une adresse partagée avant que « En cours » perde sa pastille ouvre la même liste. */
+  test("l'ancienne adresse « en cours » montre toujours ce qui n'est pas terminé", async ({
+    page,
+  }) => {
+    await page.goto("/formalites?filtre=en_cours");
+
+    await expect(liste(page).getByText("PARCOURS TERMINEE")).toHaveCount(0);
+    await expect(liste(page).getByRole("listitem").first()).toBeVisible();
+  });
+
   test("le filtre survit à un rechargement, donc se partage", async ({ page }) => {
     await page.goto("/formalites?filtre=terminee");
     await expect(liste(page).getByText("PARCOURS EN COURS")).toHaveCount(0);
@@ -103,7 +140,7 @@ test.describe("formalités", () => {
     await expect(
       page
         .getByRole("navigation", { name: "Filtrer les formalités" })
-        .getByRole("link", { name: /Tous/ })
+        .getByRole("link", { name: /Toutes/ })
     ).toHaveAttribute("aria-current", "page");
   });
 
