@@ -2822,10 +2822,17 @@
   min-width: 0;
 }
 
+/*
+ * Le bouton se pose sur la ligne du prix, non au milieu des deux.
+ *
+ * L'étiquette tient sur deux lignes - la mention en capitales, puis la formule et son
+ * montant - et le bouton, centré sur l'ensemble, flottait entre les deux sans se caler
+ * sur aucune.
+ */
 .reglerBarre {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 12px 20px;
   flex-shrink: 0;
 }
