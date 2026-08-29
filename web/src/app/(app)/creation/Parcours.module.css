@@ -2163,20 +2163,21 @@
  * Chaque acte occupait cent pixels de haut : une pastille de quarante-huit, vingt de
  * rembourrage de part et d'autre, et deux boutons pleine taille. À cinq actes, la liste
  * descendait sur deux écrans pour dire cinq noms. Elle se resserre à soixante, et les
- * lignes se touchent presque - c'est une liste, pas cinq cartes.
+ * lignes se resserrent - c'est une liste, pas cinq cartes. Sans se coller pour autant :
+ * cinquante pixels les faisaient tenir, mais serrées les unes contre les autres.
  */
 .genList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 22px;
 }
 
 .genCard {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 14px;
+  padding: 14px 16px;
   border: 1px solid #e5e5e5;
   border-radius: 12px;
   background: #fff;
@@ -2229,16 +2230,16 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: #eff6ff;
   color: #3b82f6;
 }
 
 .genIcone svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .genInfo {
@@ -2302,7 +2303,7 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background: transparent;
