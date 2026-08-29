@@ -29,11 +29,17 @@ const societe: Brouillon = {
   ],
 };
 
+/*
+ * `capitalLibere` n'y figure pas, et c'est le sujet.
+ *
+ * Aucun écran ne l'écrit : le jeu d'essai le posait à la main, et masquait ainsi que
+ * l'étape 4 lisait un champ toujours vide. Ce qui est libéré se compte sur les
+ * associés, comme ici.
+ */
 const complet: Brouillon = {
   ...societe,
   dirigeants: [{ associe: 0 }],
   capital: 1000,
-  capitalLibere: 1000,
   partsTotales: 100,
   offre: "starter",
 };
@@ -236,6 +242,44 @@ describe("étape 4, le capital", () => {
       associes: [{ ...complet.associes![0], versement: 5000 }],
     });
     expect(anomalies.some((a) => a.champ.endsWith("versement"))).toBe(true);
+  });
+
+  /*
+   * Ce qui est libéré se compte sur les associés.
+   *
+   * `capitalLibere` n'est écrit par aucun écran : il valait zéro sur tous les dossiers,
+   * et toute forme qui exige une libération minimale - la moitié pour une SAS, le
+   * cinquième pour une SARL - restait bloquée par « exige de libérer au moins 50 % du
+   * capital », sur un écran qui affichait pourtant « Versé 2 000 €, reste 0 € ». Le jeu
+   * d'essai posait le champ à la main, et ne voyait donc rien.
+   */
+  it("le capital libéré se lit sur les associés, non dans un champ que rien ne remplit", () => {
+    expect(verifierEtape(4, complet)).toEqual([]);
+  });
+
+  it("et il bloque quand la libération est réellement insuffisante", () => {
+    // Une SASU libère au moins la moitié : 400 € versés sur 1 000 € ne suffisent pas.
+    const anomalies = verifierEtape(4, {
+      ...complet,
+      associes: [{ ...complet.associes![0], versement: 400 }],
+    });
+
+    expect(anomalies.some((a) => a.champ === "libere")).toBe(true);
+  });
+
+  it("un apport en nature compte comme libéré : il est fait le jour même", () => {
+    const anomalies = verifierEtape(4, {
+      ...complet,
+      associes: [
+        {
+          ...complet.associes![0],
+          versement: 0,
+          apportEnNature: { description: "Matériel", montant: 1000 },
+        },
+      ],
+    });
+
+    expect(anomalies.some((a) => a.champ === "libere")).toBe(false);
   });
 });
 

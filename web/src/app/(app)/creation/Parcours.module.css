@@ -887,12 +887,38 @@
   border-radius: 16px;
 }
 
+/*
+ * Trois champs, dont deux se commandent l'un l'autre.
+ *
+ * Le capital d'abord, puis la valeur d'un titre ou leur nombre : on saisit celui qu'on
+ * connaît, l'autre s'en déduit. À deux colonnes, il fallait faire la division
+ * soi-même, et se tromper d'un facteur dix ne se voyait nulle part.
+ */
+.emissionGrille {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 24px;
+}
+
+@media (max-width: 700px) {
+  .emissionGrille {
+    grid-template-columns: 1fr;
+  }
+}
+
 .emissionNote {
   margin: 14px 0 0;
   padding-top: 14px;
   border-top: 1px solid #ededf0;
   font-size: 13.5px;
   color: #52525b;
+}
+
+/* Le nombre de titres d'un associé unique ne se saisit pas : il suit le total. */
+.carteSaisieFigee {
+  background: #f4f4f5;
+  color: #52525b;
+  cursor: default;
 }
 
 /* ---------- Où en est la répartition ---------- */

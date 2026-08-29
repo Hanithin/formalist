@@ -471,22 +471,36 @@ export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] 
 
   if (numero === 4) {
     const capital = brouillon.capital ?? 0;
-    const libere = brouillon.capitalLibere ?? 0;
 
     if (capital <= 0) {
       anomalies.push({ champ: "capital", message: "Indiquez le montant du capital" });
       return anomalies;
     }
 
-    if (brouillon.forme) anomalies.push(...verifierCapital(brouillon.forme, capital, libere));
-
     const associes = brouillon.associes ?? [];
     const nominale = valeurNominale(brouillon);
+    const apports = associes.map((a) => apportsDe(a, nominale));
+
+    /*
+     * Ce qui est libéré se compte sur les associés, non dans un champ à part.
+     *
+     * `capitalLibere` n'est écrit par aucun écran : il valait donc zéro sur tous les
+     * dossiers, et toute forme qui exige une libération minimale - la moitié pour une
+     * SAS, le cinquième pour une SARL - restait bloquée à cette étape par « exige de
+     * libérer au moins 50 % du capital », sur un dossier où la carte annonçait
+     * pourtant « Versé 2 000 €, reste à libérer 0 € ».
+     *
+     * C'est la même règle que pour le souscrit, deux lignes plus bas : l'écran saisit
+     * des parts et des pourcentages de libération, jamais un total en euros. Le total
+     * se déduit, et il ne peut pas diverger de ce qu'on lit sur les cartes.
+     */
+    const libere = apports.reduce((somme, a) => somme + a.verse, 0);
+    if (brouillon.forme) anomalies.push(...verifierCapital(brouillon.forme, capital, libere));
 
     // Le montant souscrit se déduit des parts, comme dans les actes : l'écran
     // saisit des parts, pas des euros. Lire `apport` ici rendait l'étape
     // impossible à franchir dès qu'on répartissait en parts.
-    const souscrits = associes.map((a) => apportsDe(a, nominale).souscrit);
+    const souscrits = apports.map((a) => a.souscrit);
     if (souscrits.length) anomalies.push(...verifierRepartition(capital, souscrits));
 
     // Le nombre de parts distribuées doit tomber juste : c'est ce total qui est

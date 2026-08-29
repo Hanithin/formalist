@@ -367,6 +367,82 @@ test("le capital se saisit une fois, avant de se répartir", async ({ page, requ
 });
 
 /**
+ * La valeur d'un titre donne leur nombre, et l'associé unique détient tout.
+ *
+ * Il fallait faire la division soi-même, puis écrire deux fois le même nombre - le
+ * total en tête, puis la totalité dans la carte de l'associé - et l'on cherchait
+ * longtemps pourquoi la répartition restait incomplète.
+ */
+test("la valeur d'une action donne leur nombre", async ({ page, request }) => {
+  const dossier = await ouvrirCreation(page, request);
+
+  await request.put("/api/formalites/brouillon", {
+    data: {
+      dossier: Number(dossier),
+      modifications: {
+        forme: "SASU",
+        denomination: "PAR DIVISION",
+        activite: "Conseil aux entreprises",
+        adresse: "3 rue Centrale",
+        codePostal: "33000",
+        ville: "Bordeaux",
+        capital: 2000,
+        associes: [associe("Camille", "Durand")],
+        dirigeants: [{ associe: 0 }],
+      },
+    },
+  });
+
+  await page.goto("/creation?dossier=" + dossier + "&etape=4");
+
+  await page.getByLabel(/Valeur d'une action/).fill("10");
+  await expect(page.getByLabel(/Nombre total d'actions/)).toHaveValue("200");
+  await expect(page.getByText(/200 actions à 10\s€ l'une/)).toBeVisible();
+
+  // L'actionnaire unique détient tout : son nombre suit, et ne se saisit pas.
+  await expect(page.locator("#parts-0")).toHaveValue("200");
+  await expect(page.locator("#parts-0")).toHaveAttribute("readonly", "");
+  await expect(page.getByText(/actionnaire unique détient les 200 actions/)).toBeVisible();
+
+  /*
+   * Et l'étape passe. Elle ne passait pas : `capitalLibere` n'est écrit par aucun
+   * écran, et une SASU se voyait refuser « exige de libérer au moins 50 % du capital »
+   * sur un dossier entièrement libéré.
+   */
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Pièces justificatives");
+});
+
+test("une valeur qui ne tombe pas juste ne change rien, et le dit", async ({ page, request }) => {
+  const dossier = await ouvrirCreation(page, request);
+
+  await request.put("/api/formalites/brouillon", {
+    data: {
+      dossier: Number(dossier),
+      modifications: {
+        forme: "SASU",
+        denomination: "DIVISION IMPOSSIBLE",
+        activite: "Conseil aux entreprises",
+        adresse: "3 rue Centrale",
+        codePostal: "33000",
+        ville: "Bordeaux",
+        capital: 2000,
+        partsTotales: 200,
+        associes: [{ ...associe("Camille", "Durand"), parts: 200 }],
+        dirigeants: [{ associe: 0 }],
+      },
+    },
+  });
+
+  await page.goto("/creation?dossier=" + dossier + "&etape=4");
+  await page.getByLabel(/Valeur d'une action/).fill("3");
+
+  // Arrondir donnerait une valeur nominale que les statuts ne pourraient pas écrire.
+  await expect(page.getByText(/ne se divise pas en actions de 3\s€/)).toBeVisible();
+  await expect(page.getByLabel(/Nombre total d'actions/)).toHaveValue("200");
+});
+
+/**
  * Les tarifs se lisent côte à côte, sur toute la largeur.
  *
  * Trois cartes dans la colonne du formulaire tombaient sous deux cents pixels

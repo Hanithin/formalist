@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { nomDeLaPartie, nomComplet } from "@/domain/formalite/etat-civil";
 import { regle } from "@/domain/formalite/formes";
 import { apportsDe, repartitionDesTitres, valeurNominale } from "@/domain/formalite/capital";
@@ -76,6 +78,19 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
   const mot = motAssocie(brouillon.forme);
   const minimumLiberation = Math.round((forme?.liberationMinimale ?? 0) * 100);
 
+  /*
+   * Ce qui est tapé dans « valeur d'une action », tant qu'on y touche.
+   *
+   * Le champ affiche d'ordinaire la valeur calculée - le capital divisé par le nombre
+   * de titres. Pendant la frappe, c'est la saisie qui prime : sans quoi « 3 » sur un
+   * capital de 2 000 € se verrait aussitôt remplacé par 2,998, l'arrondi de la
+   * division. La saisie s'efface dès qu'un autre champ bouge.
+   */
+  const [nominaleSaisie, setNominaleSaisie] = useState<string | null>(null);
+
+  /* Un seul associé : il détient la totalité, et son nombre suit le total émis. */
+  const seul = associes.length === 1;
+
   const detail = associes.map((a) => apportsDe(a, nominale));
   const partsReparties = detail.reduce((somme, d) => somme + d.parts, 0);
   const totalVerse = detail.reduce((somme, d) => somme + d.verse, 0);
@@ -143,6 +158,58 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
     modifierAssocie(index, { versement: Math.round(numeraire * borne) / 100 });
   }
 
+  /**
+   * Le nombre de titres, et l'associé unique avec.
+   *
+   * Il fallait écrire deux fois le même nombre : le total en tête, puis la totalité
+   * dans la carte de l'associé - alors qu'à un seul associé, il détient tout par
+   * construction. Sa carte le rappelle et n'attend plus de saisie.
+   */
+  function modifierLeTotal(nombre: number | undefined) {
+    setNominaleSaisie(null);
+    surChangement({ partsTotales: nombre });
+    if (associes.length === 1) {
+      surAssocies([{ ...associes[0], parts: nombre }]);
+    }
+  }
+
+  /**
+   * La valeur d'un titre commande le nombre de titres.
+   *
+   * On sait ce qu'on veut mettre au capital et à combien on veut l'action ; le nombre
+   * s'en déduit. Il fallait faire la division soi-même, et se tromper d'un facteur dix
+   * ne se voyait nulle part.
+   *
+   * La saisie n'est retenue que si elle tombe juste : deux mille euros ne se divisent
+   * pas en actions de trois euros, et arrondir donnerait une valeur nominale que les
+   * statuts ne pourraient pas écrire. On garde alors ce qui est tapé, sans rien
+   * changer au dossier, et la phrase en dessous dit pourquoi.
+   */
+  function modifierLaNominale(saisie: string) {
+    setNominaleSaisie(saisie);
+
+    const valeur = Number(saisie.replace(",", "."));
+    if (!Number.isFinite(valeur) || valeur <= 0 || capital <= 0) return;
+
+    // On compare en centimes : 0,1 + 0,2 ne fait pas 0,3 en virgule flottante.
+    const centimes = Math.round(valeur * 100);
+    const capitalCentimes = Math.round(capital * 100);
+    if (centimes === 0 || capitalCentimes % centimes !== 0) return;
+
+    modifierLeTotal(capitalCentimes / centimes);
+    setNominaleSaisie(saisie);
+  }
+
+  /* Ce que la division ne donne pas : on le dit plutôt que de l'arrondir en douce. */
+  const nominaleDemandee = Number((nominaleSaisie ?? "").replace(",", "."));
+  const divisionImpossible =
+    nominaleSaisie !== null &&
+    nominaleSaisie.trim() !== "" &&
+    Number.isFinite(nominaleDemandee) &&
+    nominaleDemandee > 0 &&
+    capital > 0 &&
+    Math.round(capital * 100) % Math.round(nominaleDemandee * 100) !== 0;
+
   return (
     <div className={styles.full}>
       {/*
@@ -153,7 +220,35 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
         graphiques à zéro pour cent sans savoir par où commencer.
       */}
       <div className={styles.emission}>
-        <div className={styles.formGrid}>
+        <div className={styles.emissionGrille}>
+          <Champ id="capital" libelle="Capital social" requis anomalie={anomalies.capital}>
+            <span className={styles.suffix}>
+              <input
+                id="capital"
+                inputMode="decimal"
+                value={brouillon.capital ?? ""}
+                onChange={(e) => {
+                  setNominaleSaisie(null);
+                  surChangement({ capital: Number(e.target.value) || 0 });
+                }}
+              />
+              <span>€</span>
+            </span>
+          </Champ>
+
+          {/* On saisit l'un ou l'autre : chacun donne le second. */}
+          <Champ id="nominale" libelle={"Valeur d'une " + motPart(brouillon.forme)}>
+            <span className={styles.suffix}>
+              <input
+                id="nominale"
+                inputMode="decimal"
+                value={nominaleSaisie ?? (nominale > 0 ? String(nominale) : "")}
+                onChange={(e) => modifierLaNominale(e.target.value)}
+              />
+              <span>€</span>
+            </span>
+          </Champ>
+
           <Champ
             id="partsTotales"
             libelle={"Nombre total " + elider(motPart(brouillon.forme, true))}
@@ -164,34 +259,29 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
               id="partsTotales"
               inputMode="numeric"
               value={brouillon.partsTotales ?? ""}
-              onChange={(e) => surChangement({ partsTotales: Number(e.target.value) || undefined })}
+              onChange={(e) => modifierLeTotal(Number(e.target.value) || undefined)}
             />
-          </Champ>
-
-          <Champ id="capital" libelle="Capital social" requis anomalie={anomalies.capital}>
-            <span className={styles.suffix}>
-              <input
-                id="capital"
-                inputMode="decimal"
-                value={brouillon.capital ?? ""}
-                onChange={(e) => surChangement({ capital: Number(e.target.value) || 0 })}
-              />
-              <span>€</span>
-            </span>
           </Champ>
         </div>
 
         <p className={styles.emissionNote}>
-          {nominale > 0
+          {divisionImpossible
+            ? euros(capital) +
+              " ne se divise pas en " +
+              motPart(brouillon.forme, true) +
+              " de " +
+              euros(nominaleDemandee) +
+              " : choisissez une valeur qui tombe juste, ou saisissez le nombre."
+            : nominale > 0
             ? partsTotales.toLocaleString("fr-FR") +
               " " +
               motPart(brouillon.forme, partsTotales > 1) +
               " à " +
               euros(nominale) +
               " l'une."
-            : "Ces deux nombres donnent la valeur de chaque " +
-              motPart(brouillon.forme) +
-              ", que portent les statuts."}
+              : "Renseignez le capital, puis la valeur " +
+                elider("une " + motPart(brouillon.forme)) +
+                " ou leur nombre : l'un donne l'autre."}
         </p>
       </div>
 
@@ -201,8 +291,19 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
         La barre de progression disait le même nombre que le camembert, l'un sous
         l'autre, et tous deux avant les champs qu'ils mesurent.
       */}
-      <p className={`${styles.attribue} ${styles["attribue-" + repartition.etat] ?? ""}`}>
-        {repartition.phrase}
+      <p
+        className={`${styles.attribue} ${styles["attribue-" + repartition.etat] ?? ""}`}
+        id={seul ? "parts-toutes" : undefined}
+      >
+        {seul && partsTotales > 0
+          ? "Votre " +
+            mot.toLowerCase() +
+            " unique détient les " +
+            partsTotales.toLocaleString("fr-FR") +
+            " " +
+            motPart(brouillon.forme, partsTotales > 1) +
+            "."
+          : repartition.phrase}
       </p>
 
       {/* ---------- Une carte par associé ---------- */}
@@ -235,6 +336,13 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
                   </div>
                 </div>
 
+                {/*
+                  Un associé seul détient tout : il n'y a rien à répartir.
+
+                  Il fallait écrire deux fois le même nombre - le total en tête, puis
+                  la totalité ici - et l'on cherchait longtemps pourquoi la répartition
+                  restait incomplète. Le champ suit le total, et la phrase le dit.
+                */}
                 <div className={styles.carteSaisie}>
                   <label htmlFor={"parts-" + i} className={styles.carteSaisieLibelle}>
                     {motPart(brouillon.forme, true)}
@@ -243,6 +351,9 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
                     id={"parts-" + i}
                     inputMode="numeric"
                     value={associe.parts ?? ""}
+                    readOnly={seul}
+                    aria-describedby={seul ? "parts-toutes" : undefined}
+                    className={seul ? styles.carteSaisieFigee : undefined}
                     onChange={(e) =>
                       modifierAssocie(i, { parts: Number(e.target.value) || undefined })
                     }
