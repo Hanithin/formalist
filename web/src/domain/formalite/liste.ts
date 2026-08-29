@@ -124,6 +124,33 @@ export function comptesParFiltre(dossiers: DossierListe[]): Record<ValeurFiltre,
   };
 }
 
+/**
+ * Ce que porte le portefeuille, en parts qui s'additionnent.
+ *
+ * La ligne de tête annonçait « 9 formalités · 1 terminée · 7 brouillons ». Elle
+ * mélangeait deux axes : « terminée » est un statut, « brouillon » dit qu'un dossier
+ * n'est pas encore engagé. Un dossier confié au cabinet n'entrait donc dans aucune des
+ * deux catégories nommées, et qui additionnait tombait sur huit pour un total de neuf.
+ *
+ * Les parts sont ici découpées pour couvrir le total sans se recouvrir : les trois
+ * filtres se partagent déjà tous les dossiers - terminé, en attente, ou le reste - et
+ * le brouillon ne fend que ce reste. La somme est donc le total par construction, non
+ * par bonne volonté.
+ */
+export function partsDuPortefeuille(dossiers: DossierListe[]) {
+  const enCours = dossiers.filter((d) => retenu(d, "en_cours"));
+  const brouillons = enCours.filter((d) => d.brouillon).length;
+
+  return {
+    total: dossiers.length,
+    brouillons,
+    /* Engagé mais pas encore rendu : réglé, transmis, ou en cours de signature. */
+    chezLAvocat: enCours.length - brouillons,
+    enAttente: dossiers.filter((d) => retenu(d, "en_attente")).length,
+    terminees: dossiers.filter((d) => retenu(d, "terminee")).length,
+  };
+}
+
 /* ---------- Recherche ---------- */
 
 function sansAccent(texte: string): string {

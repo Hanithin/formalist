@@ -3,6 +3,7 @@ import {
   filtreValide,
   retenu,
   comptesParFiltre,
+  partsDuPortefeuille,
   correspond,
   dateRelative,
   statistiques,
@@ -232,5 +233,60 @@ describe("le geste que porte une carte", () => {
     for (const status of ["en_attente_validation", "valide", "terminee"]) {
       expect(gesteDuDossier({ status })).toBe("Suivre");
     }
+  });
+});
+
+/**
+ * La ligne de tête annonçait « 9 formalités · 1 terminée · 7 brouillons » : le dossier
+ * confié au cabinet n'entrait dans aucune des catégories nommées, et qui additionnait
+ * tombait sur huit. Ce qui est énuméré doit couvrir ce qui est annoncé.
+ */
+describe("les parts du portefeuille", () => {
+  it("s'additionnent pour faire le total", () => {
+    const dossiers = [
+      dossier({ id: 1, brouillon: true }),
+      dossier({ id: 2, brouillon: true }),
+      dossier({ id: 3 }),
+      dossier({ id: 4, status: "en_attente" }),
+      dossier({ id: 5, status: "terminee" }),
+    ];
+
+    const p = partsDuPortefeuille(dossiers);
+
+    expect(p).toEqual({
+      total: 5,
+      brouillons: 2,
+      chezLAvocat: 1,
+      enAttente: 1,
+      terminees: 1,
+    });
+    expect(p.brouillons + p.chezLAvocat + p.enAttente + p.terminees).toBe(p.total);
+  });
+
+  it("comptent à part le dossier confié, que le brouillon ne dit pas", () => {
+    // Le cas exact qui faisait mentir la ligne : un dossier engagé, ni brouillon ni
+    // terminé, que l'ancienne énumération passait sous silence.
+    const p = partsDuPortefeuille([dossier({ id: 1, brouillon: true }), dossier({ id: 2 })]);
+
+    expect(p.brouillons).toBe(1);
+    expect(p.chezLAvocat).toBe(1);
+    expect(p.brouillons + p.chezLAvocat).toBe(p.total);
+  });
+
+  it("ne comptent pas un dossier terminé parmi ceux du cabinet", () => {
+    const p = partsDuPortefeuille([dossier({ id: 1, status: "terminee" })]);
+
+    expect(p.chezLAvocat).toBe(0);
+    expect(p.terminees).toBe(1);
+  });
+
+  it("rendent des parts nulles sur un portefeuille vide", () => {
+    expect(partsDuPortefeuille([])).toEqual({
+      total: 0,
+      brouillons: 0,
+      chezLAvocat: 0,
+      enAttente: 0,
+      terminees: 0,
+    });
   });
 });

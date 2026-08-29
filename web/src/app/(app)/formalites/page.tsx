@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { formalitesPourListe } from "@/infrastructure/db/depots/documents";
-import { comptesParFiltre, filtreValide } from "@/domain/formalite/liste";
+import { partsDuPortefeuille, filtreValide } from "@/domain/formalite/liste";
 import { accorder } from "@/domain/formalite/etapes";
 import { dateEnTete } from "@/lib/dates";
 import { Liste } from "./Liste";
@@ -37,13 +37,18 @@ export default async function Formalites({
    * répéter deux fois le même nombre. Ce qui restait ensuite - un titre seul au-dessus
    * d'une rangée de filtres - laissait le haut de la page vide.
    */
-  const comptes = comptesParFiltre(dossiers);
-  const brouillons = dossiers.filter((d) => d.brouillon).length;
+  /*
+   * Les parts sont annoncées dans l'ordre où un dossier les traverse : on le commence,
+   * on le confie, on répond à ce qu'on nous demande, il se termine. Une part vide ne
+   * s'écrit pas - « 0 en attente » est un mot de plus pour ne rien dire.
+   */
+  const parts = partsDuPortefeuille(dossiers);
   const resume = [
-    accorder(comptes.tous, "formalité", "formalités"),
-    comptes.en_attente > 0 ? comptes.en_attente + " en attente de votre part" : null,
-    comptes.terminee > 0 ? accorder(comptes.terminee, "terminée", "terminées") : null,
-    brouillons > 0 ? accorder(brouillons, "brouillon", "brouillons") : null,
+    accorder(parts.total, "formalité", "formalités"),
+    parts.brouillons > 0 ? accorder(parts.brouillons, "brouillon", "brouillons") : null,
+    parts.chezLAvocat > 0 ? parts.chezLAvocat + " chez l'avocat" : null,
+    parts.enAttente > 0 ? parts.enAttente + " en attente de votre part" : null,
+    parts.terminees > 0 ? accorder(parts.terminees, "terminée", "terminées") : null,
   ]
     .filter(Boolean)
     .join(" · ");
