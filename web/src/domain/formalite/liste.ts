@@ -239,10 +239,12 @@ export function dateRelative(quand: Date | null, maintenant: Date = new Date()):
   const heures = Math.floor(ecart / 3_600_000);
   const jours = Math.floor(ecart / 86_400_000);
 
+  // L'espace avant l'unité est celui que veut la typographie française, et que
+  // « 30 min » avait déjà quand « 6h » et « 3j » ne l'avaient pas.
   if (minutes < 1) return "À l'instant";
   if (minutes < 60) return "Il y a " + minutes + " min";
-  if (heures < 24) return "Il y a " + heures + "h";
-  if (jours < 7) return "Il y a " + jours + "j";
+  if (heures < 24) return "Il y a " + heures + " h";
+  if (jours < 7) return "Il y a " + jours + " j";
 
   return quand.getDate() + " " + MOIS_COURTS[quand.getMonth()] + " " + quand.getFullYear();
 }

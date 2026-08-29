@@ -248,10 +248,27 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
  * d'un dossier qui ne s'appelle pas comme celui qu'on vient de désigner.
  */
 function nomDuDossier(dossier: DossierListe): string {
-  return (
-    nomAffichable(dossier.societe) ??
-    "Nouveau dossier · " + (libelleDuType(dossier.type)?.toLowerCase() ?? "formalité")
-  );
+  /*
+   * Le type ne se redit pas ici : l'intitulé juste au-dessus le porte déjà. « COMPTES »
+   * suivi de « Nouveau dossier · dépôt des comptes » écrivait deux fois la même chose,
+   * et sur les seules cartes qui manquent de place - celles sans nom de société.
+   */
+  return nomAffichable(dossier.societe) ?? "Nouveau dossier";
+}
+
+/**
+ * La date, et ce qu'elle date.
+ *
+ * « Il y a 11h » seul ne disait pas de quoi : créé, modifié, déposé ? C'est la dernière
+ * modification, et la carte le dit maintenant. Le « le » ne s'écrit que devant une date
+ * absolue - on ne dit pas « modifié le il y a 11 h ».
+ */
+function dateDuDossier(dossier: DossierListe): string {
+  const quand = dateRelative(dossier.modifieLe);
+  if (!quand) return "";
+  return quand.startsWith("Il y a") || quand === "À l'instant"
+    ? "Modifié " + quand.charAt(0).toLowerCase() + quand.slice(1)
+    : "Modifié le " + quand;
 }
 
 /**
@@ -392,6 +409,13 @@ function Carte({ dossier }: { dossier: DossierListe }) {
   });
   const ton = tonDossier({ status: dossier.status, phase: dossier.phase });
 
+  /*
+   * « Reprendre » signale que le formulaire est encore au client : c'est exactement
+   * quand la jauge a un sens. « Suivre » dit l'inverse - il n'y a plus rien à remplir.
+   */
+  const geste = gesteDuDossier(dossier);
+  const aJauge = geste === "Reprendre";
+
   return (
     <Link href={adresseDuDossier(dossier)} className={styles.dossierCard}>
       <div
@@ -401,12 +425,19 @@ function Carte({ dossier }: { dossier: DossierListe }) {
             : styles.dossierCardHeader
         }
       >
-        <span
-          className={
-            dossier.forme ? styles.typeBadge : `${styles.typeBadge} ${styles.typeBadgeDefaut}`
-          }
-        >
-          {dossier.forme || dossier.type || "Formalité"}
+        {/*
+          La nature du dossier, en intitulé et non en pastille.
+
+          Elle en portait une, grise, jumelle de celle de l'état posée en face : deux
+          registres - ce qu'est le dossier, où il en est - rendus à l'identique, que
+          l'œil ne pouvait pas distinguer sans les lire. L'état est seul à garder sa
+          pastille, et devient donc ce qu'on trouve en premier.
+
+          Le type passe par `libelleDuType` : la colonne stocke « comptes », qu'il
+          fallait lire tel quel, sans accent ni majuscule de mot.
+        */}
+        <span className={styles.dossierNature}>
+          {dossier.forme || libelleDuType(dossier.type) || "Formalité"}
         </span>
 
         {/*
@@ -442,26 +473,36 @@ function Carte({ dossier }: { dossier: DossierListe }) {
         )}
       </span>
 
-      <span className={styles.dossierMeta}>{dateRelative(dossier.modifieLe)}</span>
+      {/*
+        « Il y a 11 h » ne disait pas de quoi : créé, modifié, déposé ? Le mot « le »
+        n'apparaît que devant une date absolue - « Modifié le 11 mai 2026 », mais
+        « Modifié il y a 11 h ».
+      */}
+      <span className={styles.dossierMeta}>{dateDuDossier(dossier)}</span>
 
       {/*
-        La jauge est sur toutes les cartes, ou sur aucune.
+        La jauge ne s'affiche que tant qu'elle mesure quelque chose.
 
-        Elle avait été retirée des dossiers à cent pour cent : mais un dossier en
-        révision est déjà à cent pour cent - la part du client est finie, celle du
-        cabinet ne se compte pas ici. Une carte sur deux perdait donc son trait sans
-        que rien ne le justifie à la lecture.
+        Elle dit l'avancée du client dans son formulaire. Une fois le dossier parti au
+        cabinet ou terminé, elle est à cent pour cent et ne mesure plus rien : sur une
+        carte terminée, une barre noire pleine largeur et « 100% complété » disaient une
+        troisième fois ce que la pastille verte annonçait déjà.
+
+        Une version antérieure l'affichait partout, au motif qu'un retrait faisait un
+        escalier de hauteurs. La rangée du pied reste ici dans les deux cas - seule la
+        jauge s'en absente - et les cartes gardent leur ligne.
       */}
-      <div className={styles.dossierProgress}>
-        <div className={styles.dossierProgressBar}>
-          <div className={styles.dossierProgressFill} style={{ width: pourcentage + "%" }} />
-        </div>
-      </div>
-
       <div className={styles.dossierFooter}>
-        <span className={styles.dossierDate}>{pourcentage}% complété</span>
+        {aJauge && (
+          <>
+            <span className={styles.dossierProgressBar}>
+              <span className={styles.dossierProgressFill} style={{ width: pourcentage + "%" }} />
+            </span>
+            <span className={styles.dossierDate}>{pourcentage} %</span>
+          </>
+        )}
         <span className={styles.dossierAction}>
-          {gesteDuDossier(dossier)}
+          {geste}
           <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="2" aria-hidden="true">
             <polyline points="9 18 15 12 9 6" />
           </svg>

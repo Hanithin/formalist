@@ -95,8 +95,8 @@ describe("depuis quand un dossier n'a pas bougé", () => {
   it("les seuils suivent ceux de la page d'origine", () => {
     expect(dateRelative(new Date("2026-08-13T11:59:40Z"), maintenant)).toBe("À l'instant");
     expect(dateRelative(new Date("2026-08-13T11:30:00Z"), maintenant)).toBe("Il y a 30 min");
-    expect(dateRelative(new Date("2026-08-13T06:00:00Z"), maintenant)).toBe("Il y a 6h");
-    expect(dateRelative(new Date("2026-08-10T12:00:00Z"), maintenant)).toBe("Il y a 3j");
+    expect(dateRelative(new Date("2026-08-13T06:00:00Z"), maintenant)).toBe("Il y a 6 h");
+    expect(dateRelative(new Date("2026-08-10T12:00:00Z"), maintenant)).toBe("Il y a 3 j");
   });
 
   it("au-delà d'une semaine, la date reprend sa place", () => {

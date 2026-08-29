@@ -44,9 +44,16 @@ test.describe("formalités", () => {
 
     const carte = page.locator("li", { hasText: "PARCOURS EN COURS" }).last();
     await expect(carte.getByText("En attente de signature")).toBeVisible();
-    // La carte annonce aussi son avancement et sa forme.
-    await expect(carte.getByText(/% complété/)).toBeVisible();
+    /*
+     * La carte annonce aussi son avancement et sa nature.
+     *
+     * L'avancement s'écrivait « 20% complété » sous une jauge pleine largeur qui le
+     * disait déjà : il tient désormais au bout de la jauge, sur la ligne du geste.
+     */
+    await expect(carte.getByText(/^\d+ %$/)).toBeVisible();
     await expect(carte.getByText("SASU")).toBeVisible();
+    // Et la date dit ce qu'elle date.
+    await expect(carte.getByText(/^Modifié /)).toBeVisible();
   });
 
   /*

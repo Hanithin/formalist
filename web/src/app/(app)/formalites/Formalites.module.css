@@ -344,24 +344,23 @@
   margin-bottom: 10px;
 }
 
-.typeBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+/*
+ * La nature du dossier : un intitulé, non une pastille.
+ *
+ * Elle en portait une, grise, jumelle de celle de l'état posée en face. Deux registres
+ * rendus à l'identique - ce qu'est le dossier, où il en est - que rien ne distinguait
+ * avant de les lire. Sans fond ni rembourrage, elle recule d'un plan, et la pastille
+ * d'état reste seule de son espèce sur la carte.
+ */
+.dossierNature {
   font-size: 10.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0;
-  padding: 3px 9px;
-  border-radius: 100px;
-  background: #f5f5f5;
-  color: #111;
+  color: #a1a1aa;
   white-space: nowrap;
-}
-
-/* Une forme inconnue reste lisible, en gris plutôt qu'en noir. */
-.typeBadgeDefaut {
-  color: #666;
+  /* Elle s'aligne sur le texte de la pastille d'en face, non sur son bord. */
+  padding: 3px 0;
 }
 
 .statusBadge {
@@ -405,7 +404,7 @@
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .dossierMeta {
@@ -415,13 +414,24 @@
   margin-bottom: 0;
 }
 
-.dossierProgress {
+/*
+ * Le pied porte tout ce qui reste : la jauge, son compte, et le geste.
+ *
+ * La jauge occupait sa propre rangée, pleine largeur, avec « 20% complété » écrit
+ * juste dessous - deux lignes pour un seul chiffre. Elle prend maintenant la place
+ * libre de cette rangée, et disparaît quand elle ne mesure plus rien.
+ */
+.dossierFooter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: 16px;
 }
 
 .dossierProgressBar {
-  width: 100%;
+  flex: 1;
+  min-width: 40px;
   height: 4px;
   background: #f5f5f5;
   border-radius: 100px;
@@ -429,29 +439,22 @@
 }
 
 .dossierProgressFill {
+  display: block;
   height: 100%;
   border-radius: 100px;
   transition: width 0.2s ease;
   background: #111;
 }
 
-.dossierFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: auto;
-  padding-top: 10px;
-}
-
-/* Avec une jauge, c'est elle qui pousse : le pied la suit de près. */
-.dossierProgress + .dossierFooter {
-  margin-top: 0;
-}
-
 .dossierDate {
   font-size: 12px;
   color: #999;
+  white-space: nowrap;
+}
+
+/* Sans jauge, le geste est seul : il se range à droite plutôt que de flotter. */
+.dossierAction:first-child {
+  margin-left: auto;
 }
 
 .dossierAction {
