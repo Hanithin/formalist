@@ -122,25 +122,6 @@ const TOUTES: Definition[] = [
     faite: (e) => e.status !== "en_cours" && e.status !== null,
   },
   {
-    identifiant: "attestation",
-    titre: "Attestation de dépôt de capital",
-    /*
-     * Rien à faire tant que l'avocat n'a pas rendu les actes.
-     *
-     * La banque ouvre le compte de dépôt sur présentation des statuts, et les statuts
-     * sont ce que l'avocat relit. On réclamait donc au client, dès le règlement, une
-     * pièce qu'il ne pouvait pas obtenir - avec un bouton qui menait à un dépôt
-     * impossible, sur un écran où ses actes portaient « En relecture ».
-     */
-    explication: (e) =>
-      e.actesEnRelecture
-        ? "Votre banque ouvre le compte de dépôt sur présentation de vos statuts. L'avocat les relit ; dès qu'il les aura validés, vous pourrez les lui remettre et déposer ici l'attestation qu'elle vous délivrera."
-        : "Remettez vos actes à votre banque : elle vous délivre cette attestation après le versement du capital. Déposez-la ici - vos actes sont alors datés du jour où vous l'avez obtenue, qui est celui où vous les signez.",
-    main: (e) => (e.actesEnRelecture ? "avocat" : "vous"),
-    action: "Déposer l'attestation",
-    faite: (e) => e.aLAttestationDeCapital,
-  },
-  {
     identifiant: "verification",
     titre: "Vérification par l'avocat",
     explication:
@@ -159,6 +140,25 @@ const TOUTES: Definition[] = [
     faite: (e) =>
       e.status !== "corrections_demandees" &&
       (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+  },
+  {
+    identifiant: "attestation",
+    titre: "Attestation de dépôt de capital",
+    /*
+     * Rien à faire tant que l'avocat n'a pas rendu les actes.
+     *
+     * La banque ouvre le compte de dépôt sur présentation des statuts, et les statuts
+     * sont ce que l'avocat relit. On réclamait donc au client, dès le règlement, une
+     * pièce qu'il ne pouvait pas obtenir - avec un bouton qui menait à un dépôt
+     * impossible, sur un écran où ses actes portaient « En relecture ».
+     */
+    explication: (e) =>
+      e.actesEnRelecture
+        ? "Votre banque ouvre le compte de dépôt sur présentation de vos statuts. L'avocat les relit ; dès qu'il les aura validés, vous pourrez les lui remettre et déposer ici l'attestation qu'elle vous délivrera."
+        : "Remettez vos actes à votre banque : elle vous délivre cette attestation après le versement du capital. Déposez-la ici - vos actes sont alors datés du jour où vous l'avez obtenue, qui est celui où vous les signez.",
+    main: (e) => (e.actesEnRelecture ? "avocat" : "vous"),
+    action: "Déposer l'attestation",
+    faite: (e) => e.aLAttestationDeCapital,
   },
   {
     identifiant: "annonce",

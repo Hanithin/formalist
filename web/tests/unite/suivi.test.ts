@@ -61,13 +61,17 @@ describe("l'attestation attend que l'avocat ait rendu les actes", () => {
 describe("les étapes du suivi", () => {
   it("suivent l'ordre de la vraie vie", () => {
     /*
-     * La banque délivre l'attestation, on signe les statuts à cette date, l'annonce
-     * se publie ensuite, le greffe est saisi, le Kbis arrive.
+     * L'avocat relit d'abord les actes. C'est sa validation qui les rend remettables :
+     * la banque ouvre le compte de dépôt sur présentation des statuts, et délivre alors
+     * l'attestation. L'annonce se publie ensuite, le greffe est saisi, le Kbis arrive.
+     *
+     * L'attestation venait avant la vérification : on la réclamait donc au client avant
+     * qu'il ait de quoi l'obtenir.
      */
     expect(etapesDuSuivi(etat()).map((e) => e.identifiant)).toEqual([
       "transmis",
-      "attestation",
       "verification",
+      "attestation",
       "annonce",
       "greffe",
       "kbis",
@@ -111,11 +115,16 @@ describe("les étapes du suivi", () => {
 
   it("l'étape en cours est la première qui n'est pas faite", () => {
     expect(etapeEnCours(etat())?.identifiant).toBe("transmis");
-    expect(etapeEnCours(etat({ status: "en_attente_validation" }))?.identifiant).toBe("attestation");
+
+    // Transmis, le dossier attend l'avocat : c'est sa relecture qui vient ensuite.
+    expect(etapeEnCours(etat({ status: "en_attente_validation" }))?.identifiant).toBe(
+      "verification"
+    );
+
+    // Une fois relu, c'est au client d'aller chercher son attestation à la banque.
     expect(
-      etapeEnCours(etat({ status: "en_attente_validation", aLAttestationDeCapital: true }))
-        ?.identifiant
-    ).toBe("verification");
+      etapeEnCours(etat({ status: "en_attente_validation", sousPhase: "5c" }))?.identifiant
+    ).toBe("attestation");
   });
 
   it("une étape remplie par avance ne fait pas sauter la file", () => {
@@ -127,7 +136,7 @@ describe("les étapes du suivi", () => {
       etat({ status: "en_attente_validation", aLeKbis: true })
     );
     expect(etapes.find((e) => e.identifiant === "kbis")?.etat).toBe("a_venir");
-    expect(etapes.find((e) => e.etat === "en_cours")?.identifiant).toBe("attestation");
+    expect(etapes.find((e) => e.etat === "en_cours")?.identifiant).toBe("verification");
   });
 
   it("les sous-phases se comparent, elles ne s'égalent pas", () => {
@@ -157,7 +166,13 @@ describe("ce qu'on demande au client", () => {
   });
 
   it("le geste attendu, quand il est de son côté", () => {
-    const attente = attenteDuClient(etat({ status: "en_attente_validation" }));
+    /*
+     * Il ne l'est qu'une fois les actes relus : la banque ouvre le compte de dépôt sur
+     * présentation des statuts. Tant que l'avocat les tient, le client n'a rien à faire.
+     */
+    expect(attenteDuClient(etat({ status: "en_attente_validation" }))).toBeNull();
+
+    const attente = attenteDuClient(etat({ status: "en_attente_validation", sousPhase: "5c" }));
     expect(attente?.identifiant).toBe("attestation");
     expect(attente?.action).toBe("Déposer l'attestation");
   });
@@ -192,10 +207,13 @@ describe("l'avancement", () => {
 
   it("progresse à chaque étape franchie", () => {
     const debut = avancementDuSuivi(etat({ status: "en_attente_validation" }));
-    const suite = avancementDuSuivi(
-      etat({ status: "en_attente_validation", aLAttestationDeCapital: true })
+    const relu = avancementDuSuivi(etat({ status: "en_attente_validation", sousPhase: "5c" }));
+    const depose = avancementDuSuivi(
+      etat({ status: "en_attente_validation", sousPhase: "5c", aLAttestationDeCapital: true })
     );
-    expect(suite).toBeGreaterThan(debut);
+
+    expect(relu).toBeGreaterThan(debut);
+    expect(depose).toBeGreaterThan(relu);
   });
 });
 
@@ -286,19 +304,27 @@ describe("un dossier renvoyé par l'avocat", () => {
     expect(verification.etat).not.toBe("faite");
   });
 
-  it("passe devant ce qui restait à fournir", () => {
+  it("met la demande en avant, et c'est déjà l'étape en cours", () => {
     /*
      * Une création sans attestation de capital mettait en avant « Attestation de dépôt
      * de capital » alors que l'avocat venait de renvoyer le dossier : la demande à
-     * laquelle il fallait répondre n'apparaissait nulle part.
+     * laquelle il fallait répondre n'apparaissait nulle part. `etapeAMettreEnAvant`
+     * passait devant pour la rattraper.
+     *
+     * Depuis que la vérification précède l'attestation, l'ordre suffit : elle est
+     * l'étape en cours, et le rattrapage n'a plus rien à rattraper.
      */
-    expect(etapeEnCours(renvoye)?.identifiant).toBe("attestation");
+    expect(etapeEnCours(renvoye)?.identifiant).toBe("verification");
     expect(etapeAMettreEnAvant(renvoye)?.identifiant).toBe("verification");
   });
 
-  it("le rail garde sa vérité : l'attestation reste à fournir", () => {
+  it("l'attestation attend son tour, elle ne se réclame pas", () => {
+    /*
+     * On ne va pas à la banque avec des statuts que l'avocat vient de reprendre : elle
+     * ouvre le compte de dépôt sur présentation de ceux qui sont bons.
+     */
     const attestation = etapesDuSuivi(renvoye).find((e) => e.identifiant === "attestation")!;
-    expect(attestation.etat).toBe("en_cours");
+    expect(attestation.etat).toBe("a_venir");
   });
 
   it("hors renvoi, c'est l'étape en cours qu'on met en avant", () => {

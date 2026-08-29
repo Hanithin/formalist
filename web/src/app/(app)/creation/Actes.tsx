@@ -2,10 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { nomDeLOffre } from "@/domain/formalite/offres";
 import { A_RELIRE, mentionDAttente } from "@/domain/document/publication";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
-import { personneDuDirigeant } from "@/domain/formalite/gabarit";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Champ } from "./EtatCivil";
 import { Apercu } from "./Apercu";
@@ -147,15 +145,14 @@ function Document() {
   );
 }
 
-/** Ce que chaque acte dit de lui-même, sous son nom. */
-const DESCRIPTIONS: Record<string, string> = {
-  "Statuts constitutifs": "L'acte fondateur de la société, à signer par tous les associés",
-  "Liste des souscripteurs": "Qui souscrit quoi, et pour quel montant",
-  "Déclaration de non-condamnation": "Attestation du dirigeant, exigée par le greffe",
-  "Attestation de domiciliation": "Justifie l'adresse du siège social",
-  "Procès-verbal de nomination": "Désigne le dirigeant et fixe ses pouvoirs",
-  "Attestation de dépôt de capital": "Remise par la banque après le versement",
-};
+/*
+ * Les actes n'ont plus de sous-titre.
+ *
+ * Chacun portait une phrase sous son nom - « L'acte fondateur de la société, à signer
+ * par tous les associés » - qui doublait la hauteur de sa ligne. À cinq actes, la liste
+ * descendait sur deux écrans pour dire cinq noms que leur intitulé suffit à
+ * reconnaître.
+ */
 
 export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
@@ -259,7 +256,6 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
     });
   }
 
-  const dirigeant = personneDuDirigeant((brouillon.dirigeants ?? [])[0], associes);
 
   // L'acte dont l'aperçu est ouvert, relu dans la liste courante : après une
   // régénération, c'est le fichier reproduit que la fenêtre affiche.
@@ -268,26 +264,13 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
   return (
     <div className={styles.full}>
       {/* ---------- Ce que le dossier va produire ---------- */}
-      <dl className={styles.recap}>
-        <div className={styles.recapItem}>
-          <dt>Société</dt>
-          <dd>
-            {brouillon.forme ?? "?"} {brouillon.denomination ?? "sans nom"}
-          </dd>
-        </div>
-        <div className={styles.recapItem}>
-          <dt>Formule</dt>
-          <dd>{nomDeLOffre(brouillon.offre)}</dd>
-        </div>
-        <div className={styles.recapItem}>
-          <dt>Dirigeant</dt>
-          <dd>{[dirigeant.prenom, dirigeant.nom].filter(Boolean).join(" ") || "-"}</dd>
-        </div>
-        <div className={styles.recapItem}>
-          <dt>Associés</dt>
-          <dd>{associes.length}</dd>
-        </div>
-      </dl>
+      {/*
+        Le rappel « Société / Formule / Dirigeant / Associés » a été retiré.
+
+        Il posait quatre faits en tête d'un écran qui en a déjà long à montrer, et la
+        colonne de droite les dit tous - avec le siège, le capital et la clôture en
+        plus. Deux endroits pour la même chose, dont l'un était le moins complet.
+      */}
 
       {/* ---------- Les actes ---------- */}
       <div className={styles.genSection}>
@@ -324,7 +307,6 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
 
                   <div className={styles.genInfo}>
                     <div className={styles.genNom}>{a.nom}</div>
-                    <div className={styles.genMeta}>{DESCRIPTIONS[a.nom] ?? "Document du dossier"}</div>
                   </div>
 
                   {/*
