@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { dateHeureLongue } from "@/lib/dates";
 import { presentation } from "@/domain/messagerie/messages";
+import { EcrireAuCabinet } from "./EcrireAuCabinet";
 import { useRouter } from "next/navigation";
 import { A_RELIRE } from "@/domain/document/publication";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
@@ -469,6 +470,7 @@ export interface DernierMot {
  * où l'on répond, où l'on joint, et où tout reste.
  */
 function Echanges({ dossierId, dernierMot }: { dossierId: number; dernierMot: DernierMot }) {
+  const [ouverte, setOuverte] = useState(false);
   const { message, nonLus } = dernierMot;
   const nature = message?.type ? presentation(message.type) : null;
 
@@ -515,9 +517,25 @@ function Echanges({ dossierId, dernierMot }: { dossierId: number; dernierMot: De
         </p>
       )}
 
-      <Link href={"/messagerie?dossier=" + dossierId} className={styles.echangesBouton}>
-        {message ? "Répondre" : "Écrire au cabinet"}
-      </Link>
+      {/*
+        On écrit sans quitter son dossier.
+
+        Le bouton menait droit à la messagerie : on perdait l'écran qu'on remplissait
+        pour une phrase à écrire. La fenêtre envoie par la même route, pièce jointe
+        comprise, et garde le lien vers le fil pour qui veut tout relire.
+      */}
+      <div className={styles.echangesGestes}>
+        <button type="button" className={styles.echangesBouton} onClick={() => setOuverte(true)}>
+          {message ? "Répondre" : "Écrire au cabinet"}
+        </button>
+        <Link href={"/messagerie?dossier=" + dossierId} className={styles.echangesFil}>
+          Voir la conversation
+        </Link>
+      </div>
+
+      {ouverte && (
+        <EcrireAuCabinet dossierId={dossierId} surFermeture={() => setOuverte(false)} />
+      )}
     </section>
   );
 }

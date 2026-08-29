@@ -73,6 +73,35 @@ export default async function PageMessagerie({
    * conversation de quelqu'un d'autre - il ne peut désigner qu'un fil de cette liste.
    */
   const demande = fil === "support" ? "support" : dossier ? "dossier-" + Number(dossier) : null;
+
+  /*
+   * Le dossier demandé s'ouvre, même s'il n'a encore rien à montrer.
+   *
+   * La liste écarte les dossiers sans avocat ni message - à juste titre : on n'affiche
+   * pas trente conversations vides. Mais le parcours renvoie ici pour écrire le premier
+   * message, et l'écran restait alors muet : aucun fil, aucun champ, rien à quoi
+   * s'adresser. On ajoute donc celui qu'on demande, s'il est bien à ce client.
+   */
+  const absent =
+    demande && demande !== "support" && !fils.some((f) => f.cle === demande)
+      ? parDossier.find((c) => "dossier-" + c.dossierId === demande)
+      : undefined;
+
+  if (absent) {
+    fils.unshift({
+      cle: "dossier-" + absent.dossierId,
+      genre: "dossier",
+      dossierId: absent.dossierId,
+      titre: absent.societe,
+      sousTitre: absent.avocat ?? "Avocat non assigné",
+      forme: absent.forme,
+      dernierMessage: absent.dernierMessage,
+      dernierDeMoi: absent.dernierDeMoi,
+      dernierLe: absent.dernierLe?.toISOString() ?? null,
+      nonLus: absent.nonLus,
+    });
+  }
+
   const actif = fils.find((f) => f.cle === demande) ?? null;
 
   let messages: MessageAffiche[] = [];

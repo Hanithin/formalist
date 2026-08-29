@@ -3011,10 +3011,32 @@
   color: #52525b;
 }
 
+.echangesGestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-top: 16px;
+}
+
+.echangesFil {
+  font-size: 14px;
+  color: #52525b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.echangesFil:hover {
+  color: #18181b;
+}
+
 .echangesBouton {
   display: inline-flex;
   align-items: center;
-  margin-top: 16px;
+  margin: 0;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
   padding: 10px 20px;
   border-radius: 100px;
   background: #111;
@@ -3027,4 +3049,218 @@
 
 .echangesBouton:hover {
   background: #000;
+}
+
+/* ---------- Écrire au cabinet ---------- */
+
+/*
+ * On écrit sans quitter son dossier.
+ *
+ * Le bouton menait droit à la messagerie : on perdait l'écran qu'on était en train de
+ * remplir pour une phrase à écrire. La fenêtre envoie par la même route, pièce jointe
+ * comprise.
+ */
+.ecrireVoile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(9, 9, 11, 0.5);
+  animation: ecrireFondu 0.2s ease;
+}
+
+@keyframes ecrireFondu {
+  from {
+    opacity: 0;
+  }
+}
+
+.ecrireFenetre {
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+  animation: ecrireEntree 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes ecrireEntree {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecrireVoile,
+  .ecrireFenetre {
+    animation: none;
+  }
+}
+
+.ecrireTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 0;
+}
+
+.ecrireTitre {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.ecrireFermer {
+  margin: 0;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.ecrireFermer:hover {
+  color: #18181b;
+}
+
+.ecrireCorps {
+  padding: 16px 22px 22px;
+}
+
+.ecrireLabel {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13.5px;
+  color: #52525b;
+}
+
+.ecrireChamp {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e0e0e3;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14.5px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.ecrireChamp:focus {
+  outline: none;
+  border-color: #111;
+}
+
+/* Le champ de fichier est masqué : c'est le bouton qui porte le clic. */
+.ecrireFichier {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.ecrirePiece {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 12px;
+}
+
+.ecrireNomPiece {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  font-size: 13px;
+  color: #3f3f46;
+  overflow-wrap: anywhere;
+}
+
+.ecrireNomPiece button {
+  margin: 0;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  font-size: 16px;
+  line-height: 1;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.ecrireErreur {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  color: #a12525;
+}
+
+.ecrireEnvoye {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #1d6135;
+}
+
+.ecrireGestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 18px;
+}
+
+.ecrireBouton {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 100px;
+  background: #111;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ecrireBouton:hover:not(:disabled) {
+  background: #000;
+}
+
+.ecrireBouton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ecrireSecondaire {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: #52525b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ecrireSecondaire:hover {
+  color: #18181b;
 }

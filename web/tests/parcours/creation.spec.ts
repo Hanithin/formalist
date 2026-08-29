@@ -581,10 +581,36 @@ test("les échanges renvoient à la messagerie du dossier", async ({ page, reque
 
   const echanges = page.getByRole("region", { name: "Échanges avec le cabinet" });
   await expect(echanges).toBeVisible();
-  await expect(echanges.getByRole("link", { name: "Écrire au cabinet" })).toHaveAttribute(
+  await expect(echanges.getByRole("link", { name: "Voir la conversation" })).toHaveAttribute(
     "href",
     "/messagerie?dossier=" + dossier
   );
+
+  /*
+   * On écrit sans quitter son dossier : le bouton menait droit à la messagerie, et
+   * l'on perdait l'écran qu'on remplissait pour une phrase à écrire.
+   */
+  await echanges.getByRole("button", { name: "Écrire au cabinet" }).click();
+  const fenetre = page.getByRole("dialog", { name: "Écrire au cabinet" });
+  await expect(fenetre).toBeVisible();
+  await expect(fenetre.getByRole("button", { name: "Joindre une pièce" })).toBeVisible();
+
+  // Rien à envoyer tant que rien n'est écrit.
+  await expect(fenetre.getByRole("button", { name: "Envoyer" })).toBeDisabled();
+
+  await fenetre.getByLabel("Votre message").fill("Le bail suffit-il comme justificatif ?");
+  await fenetre.getByRole("button", { name: "Envoyer" }).click();
+  await expect(fenetre.getByText(/Message envoyé/)).toBeVisible();
+
+  /*
+   * Et le message est bien dans le fil du dossier.
+   *
+   * La messagerie écarte de sa liste les dossiers sans avocat ni message - à juste
+   * titre - mais elle restait alors muette sur celui qu'on lui demandait : aucun fil,
+   * aucun champ, rien à quoi s'adresser.
+   */
+  await page.goto("/messagerie?dossier=" + dossier);
+  await expect(page.getByText("Le bail suffit-il comme justificatif ?")).toBeVisible();
 });
 
 test.describe("le règlement d'une création", () => {
