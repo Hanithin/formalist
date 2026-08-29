@@ -105,6 +105,13 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
 
         <span className={styles.filterSpacer} />
 
+        {/*
+          La recherche est du même matériau que les filtres.
+
+          Elle était une pastille blanche bordée à côté d'un cadre gris : deux matières
+          pour une seule barre d'outils. Le fond commun les réunit, et le champ garde
+          sa loupe et son curseur pour dire qu'on y écrit.
+        */}
         <div className={styles.searchWrapper}>
           <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="2" aria-hidden="true">
             <circle cx="11" cy="11" r="8" />
@@ -118,7 +125,8 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
             className={styles.searchInput}
             type="text"
             value={recherche}
-            placeholder="Rechercher..."
+            /* Le champ dit sur quoi il porte : « Rechercher... » laissait deviner. */
+            placeholder="Société, forme, type…"
             onChange={(e) => {
               setRecherche(e.target.value);
               // Chercher remet à la première page : rester en page 3 sur deux
@@ -126,12 +134,44 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
               setPage(1);
             }}
           />
+          {/*
+            De quoi effacer sans sélectionner.
+
+            Vider le champ demandait de tout sélectionner puis d'effacer, ou huit
+            appuis sur la touche. Le bouton ne paraît que lorsqu'il y a quelque chose
+            à effacer, et rend la main au champ.
+          */}
+          {recherche && (
+            <button
+              type="button"
+              className={styles.searchClear}
+              aria-label="Effacer la recherche"
+              onClick={() => {
+                setRecherche("");
+                setPage(1);
+                document.getElementById("recherche")?.focus();
+              }}
+            >
+              <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="2" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
       {/* ---------- Les dossiers ---------- */}
       {affiches.length === 0 ? (
-        <Rien filtre={filtre} recherche={recherche} aucunDossier={dossiers.length === 0} />
+        <Rien
+          filtre={filtre}
+          recherche={recherche}
+          aucunDossier={dossiers.length === 0}
+          surReinitialisation={() => {
+            setRecherche("");
+            setPage(1);
+          }}
+        />
       ) : (
         <>
           <ul className={styles.dossiersGrid} aria-label="Formalités">
@@ -571,10 +611,13 @@ function Rien({
   filtre,
   recherche,
   aucunDossier,
+  surReinitialisation,
 }: {
   filtre: ValeurFiltre;
   recherche: string;
   aucunDossier: boolean;
+  /** La recherche vit dans l'état, non dans l'adresse : le lien ne l'efface pas seul. */
+  surReinitialisation: () => void;
 }) {
   return (
     <div className={styles.emptyState}>
@@ -592,10 +635,13 @@ function Rien({
             Vos créations, modifications et fermetures de société se suivent ici, étape par étape.
           </p>
           <div className={styles.emptyStateActions}>
-            <Link href="/creation?type=creation" className={`${styles.pill} ${styles.pillActive}`}>
+            <Link
+              href="/creation?type=creation"
+              className={`${styles.bouton} ${styles.boutonPrincipal}`}
+            >
               Créer une société
             </Link>
-            <Link href="/auto-entrepreneur" className={styles.pill}>
+            <Link href="/auto-entrepreneur" className={styles.bouton}>
               Créer une auto-entreprise
             </Link>
           </div>
@@ -608,7 +654,14 @@ function Rien({
           </p>
           <div className={styles.emptyStateActions}>
             {(filtre !== "tous" || recherche) && (
-              <Link href="/formalites" className={styles.pill}>
+              /*
+                Le lien remet la pastille à « Toutes » et vide la recherche.
+
+                Il ne faisait que la première : la recherche vit dans l'état, non dans
+                l'adresse, si bien que revenir sur /formalites laissait le mot tapé en
+                place - et le même écran vide, avec le même bouton qui ne menait à rien.
+              */
+              <Link href="/formalites" className={styles.bouton} onClick={surReinitialisation}>
                 Voir toutes les formalités
               </Link>
             )}

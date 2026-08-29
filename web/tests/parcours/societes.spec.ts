@@ -84,8 +84,14 @@ test("le lien filtré arrive avec la recherche déjà faite", async ({ page }) =
   await page.getByRole("link", { name: "Voir dans la liste" }).click();
   await page.waitForURL(/\/formalites/);
 
-  // La recherche porte le nom : on n'a pas à le retaper.
-  await expect(page.getByPlaceholder("Rechercher...")).toHaveValue(nom);
+  /*
+   * La recherche porte le nom : on n'a pas à le retaper.
+   *
+   * On la désigne par son libellé, non par son texte d'invite : celui-ci nomme
+   * désormais ce sur quoi la recherche porte - « Société, forme, type » - et changera
+   * encore, quand le libellé, lui, décrit le champ.
+   */
+  await expect(page.getByLabel("Rechercher une formalité")).toHaveValue(nom);
 });
 
 test("une société inconnue rend une page introuvable, non une page vide", async ({ request }) => {

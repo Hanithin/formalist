@@ -214,6 +214,25 @@ test.describe("formalités", () => {
     await expect(page.getByText("Aucune formalité trouvée")).toBeVisible();
   });
 
+  /**
+   * « Voir toutes les formalités » remet tout, non la moitié.
+   *
+   * Le lien menait à /formalites, ce qui reposait la pastille sur « Toutes » - mais la
+   * recherche vit dans l'état, non dans l'adresse. Le mot tapé restait en place, et
+   * l'on retombait sur le même écran vide avec le même bouton qui ne menait à rien.
+   */
+  test("le retour à toutes les formalités vide aussi la recherche", async ({ page }) => {
+    await page.goto("/formalites");
+    await chercher(page, "un nom qui n'existe pas");
+
+    const retour = page.getByRole("link", { name: "Voir toutes les formalités" });
+    await expect(retour).toBeVisible();
+    await retour.click();
+
+    await expect(page.getByLabel("Rechercher une formalité")).toHaveValue("");
+    await expect(liste(page).getByRole("listitem").first()).toBeVisible();
+  });
+
   test("au-delà de neuf dossiers, la liste se pagine", async ({ page, request }) => {
     /*
      * Dix dossiers portant le même nom, cherchés ensemble.

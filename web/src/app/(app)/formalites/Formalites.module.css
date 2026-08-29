@@ -267,47 +267,128 @@
   color: #71717a;
 }
 
+/*
+ * La recherche partage le matériau des filtres.
+ *
+ * Elle était une pastille blanche bordée posée à côté d'un cadre gris : deux matières
+ * pour une seule barre d'outils. Le même fond les réunit, et la loupe suffit à dire
+ * qu'on écrit là.
+ */
 .searchWrapper {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.searchWrapper svg {
+.searchWrapper > svg {
   position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  color: #999;
+  left: 15px;
+  width: 17px;
+  height: 17px;
+  color: #71717a;
   pointer-events: none;
 }
 
 .searchInput {
-  padding: 11px 16px 11px 44px;
-  border: 1px solid #e5e5e7;
+  /* La même hauteur que le cadre des filtres, mesurée : quarante-deux pixels. */
+  padding: 12px 40px 12px 42px;
+  border: 1px solid transparent;
   border-radius: 100px;
-  font-size: 14px;
+  font-size: 13.5px;
   font-family: inherit;
-  /* globals.css borne les champs à 460px ; ici la largeur est celle de l'original. */
-  width: 280px;
+  /* globals.css borne les champs à 460px ; ici la largeur suit le contenu du champ. */
+  width: 300px;
   max-width: none;
-  background: #fff;
-  color: #111;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  background: #ececef;
+  color: #18181b;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .searchInput::placeholder {
-  color: #aaa;
+  color: #8b8b93;
 }
 
 .searchInput:hover {
-  border-color: #d4d4d6;
+  background: #e4e4e8;
 }
 
+/*
+ * Au focus, le champ passe au blanc.
+ *
+ * C'est le même geste que la pastille active des filtres, qui se détache du gris en
+ * blanc : ce qui est en cours d'usage sort du fond commun.
+ */
 .searchInput:focus {
   outline: none;
-  border-color: #111;
-  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+  background: #fff;
+  border-color: #d4d4d8;
+}
+
+.searchClear {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  /* globals.css espace les boutons de la page : la marge décalait la croix. */
+  margin: 0;
+  border: 0;
+  border-radius: 100px;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.searchClear:hover {
+  background: rgba(24, 24, 27, 0.06);
+  color: #18181b;
+}
+
+.searchClear svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/*
+ * Les boutons des écrans vides.
+ *
+ * Ils empruntaient le dessin des pastilles de filtre. Le jour où celles-ci ont rejoint
+ * un cadre commun - fond transparent, sans bordure - ces boutons ont perdu le leur
+ * avec elles : « Voir toutes les formalités » n'était plus qu'un mot posé au milieu
+ * d'un cadre pointillé. Ils ont maintenant le leur, qui ne dépend de personne.
+ */
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  border: 1px solid #e5e5e7;
+  background: #fff;
+  font-size: 13.5px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #18181b;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.bouton:hover {
+  border-color: #d4d4d8;
+  background: #fafafa;
+}
+
+.boutonPrincipal,
+.boutonPrincipal:hover {
+  background: #18181b;
+  border-color: #18181b;
+  color: #fff;
 }
 
 /* ---------- Cartes de dossier ---------- */
@@ -373,11 +454,17 @@
  * d'état reste seule de son espèce sur la carte.
  */
 .dossierNature {
-  font-size: 10.5px;
+  /*
+   * Dix pixels et demi en #a1a1aa donnaient un contraste de 2,6 pour 1 sur le blanc
+   * de la carte - sous le seuil de 4,5 que demande un texte de cette taille. Plus
+   * grande et plus sombre, elle se lit ; elle reste en retrait du titre par sa taille
+   * et ses capitales, non par sa pâleur.
+   */
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0;
-  color: #a1a1aa;
+  color: #71717a;
   white-space: nowrap;
   /* Elle s'aligne sur le texte de la pastille d'en face, non sur son bord. */
   padding: 3px 0;
