@@ -1,5 +1,5 @@
 import { prisma } from "../client";
-import { exigerDossierModifiable } from "./dossiers";
+import { exigerDossier, exigerDossierModifiable } from "./dossiers";
 import { ETAPES, premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
 import { nombreDEtapes } from "@/domain/formalite/etapes";
 import { monteeEnOffrePermise } from "@/domain/formalite/transitions";
@@ -9,6 +9,8 @@ import { Interdit } from "../utilisateur-courant";
 import { regle } from "@/domain/formalite/formes";
 import { journal } from "@/lib/journal";
 import { proposerAuxAvocats } from "./avocat";
+import { produireLesActesDuBrouillon } from "@/infrastructure/documents/actes";
+import { relirePaiement } from "@/infrastructure/paiement/stripe";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -207,6 +209,127 @@ export async function transmettreALAvocat(utilisateur: UtilisateurConnecte, doss
 
   const { proposes } = await proposerAuxAvocats(dossierId);
   return { deja: false as const, proposes };
+}
+
+/**
+ * Le client ouvre le règlement de sa création.
+ *
+ * La référence de session est notée dans le brouillon avant le départ chez Stripe :
+ * c'est par elle que le relais retrouve le dossier si les métadonnées venaient à
+ * manquer, et c'est elle qui rend la confirmation idempotente.
+ */
+export async function ouvrirLeReglementDeLaCreation(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  reference: string
+) {
+  await enregistrerBrouillon(utilisateur, dossierId, { paiementRef: reference });
+}
+
+/**
+ * Confirme le règlement d'une création, produit ses actes et confie le dossier.
+ *
+ * Les quatre autres parcours payants font déjà exactement cela ; la création était la
+ * seule à ne pas encaisser, et son brouillon ne portait jamais `paye`.
+ *
+ * Idempotent : Stripe réémet ses avis, et le retour du client passe par le même
+ * chemin. Un dossier déjà confié ne doit pas repartir une seconde fois dans la file.
+ */
+export async function confirmerLeReglementDeLaCreation(
+  reference: string,
+  dossierId: number | null
+) {
+  const dossier = await prisma.formalites.findFirst({
+    where: dossierId ? { id: dossierId } : { data_json: { contains: reference } },
+  });
+
+  if (!dossier) {
+    journal.warn({ session: reference }, "Encaissement sans dossier de création");
+    return { dossierId: null, paye: false };
+  }
+
+  const brouillon = lireBrouillon(dossier.data_json);
+  if (brouillon.paye) return { dossierId: dossier.id, paye: true };
+
+  const regle: Brouillon = { ...brouillon, paiementRef: reference, paye: true };
+
+  await prisma.formalites.update({
+    where: { id: dossier.id },
+    data: {
+      data_json: JSON.stringify(regle),
+      status: "en_attente_validation",
+      phase: Math.max(dossier.phase ?? 1, 5),
+      updated_at: new Date(),
+    },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossier.id,
+      actor_id: dossier.user_id,
+      actor_role: "user",
+      action: "creation_payee",
+      after_value: reference,
+    },
+  });
+
+  /*
+   * Les actes sont produits à l'encaissement, non par un clic du client.
+   *
+   * Un échec ne remet pas le paiement en cause : l'argent est encaissé, le dossier est
+   * confié, et les actes se régénèrent d'un clic côté cabinet. Refuser la confirmation
+   * ici laisserait un dossier payé mais non transmis, ce qui est bien pire qu'un
+   * dossier transmis sans ses actes.
+   */
+  try {
+    await produireLesActesDuBrouillon(dossier.id, regle, { aRelire: true });
+  } catch (e) {
+    journal.error({ err: e, dossier: dossier.id }, "Actes de création non produits à l'encaissement");
+  }
+
+  const { proposes } = await proposerAuxAvocats(dossier.id);
+  return { dossierId: dossier.id, paye: true, proposes };
+}
+
+/**
+ * Confirme le règlement au retour du client.
+ *
+ * Le paiement est relu auprès de Stripe plutôt que cru sur parole : le paramètre vient
+ * de l'adresse, et une adresse se recopie. C'est aussi ce qui rend la confirmation
+ * indépendante du relais, qui peut arriver en retard - ou jamais, en développement où
+ * personne n'écoute Stripe.
+ *
+ * Le dossier est lu, non ouvert en modification : après confirmation il n'est plus
+ * modifiable, et recharger la page d'arrivée referait le même appel. Exiger un dossier
+ * modifiable transformerait ce rafraîchissement en page d'erreur.
+ */
+export async function confirmerAuRetourDeLaCreation(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  session: string
+): Promise<{ paye: boolean }> {
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  /*
+   * Une session illisible ne casse pas la page où l'on revient : une session expirée
+   * ou recopiée d'un ancien lien ferait remonter l'erreur de Stripe jusqu'au rendu, et
+   * l'écran d'arrivée après paiement serait une page d'erreur.
+   */
+  let encaissement: Awaited<ReturnType<typeof relirePaiement>>;
+  try {
+    encaissement = await relirePaiement(session);
+  } catch (e) {
+    journal.warn({ err: e, session, dossier: dossier.id }, "Session de paiement illisible");
+    return { paye: false };
+  }
+
+  if (encaissement.dossierId !== null && encaissement.dossierId !== dossier.id) {
+    journal.warn({ session }, "Retour de paiement pour un autre dossier, ignoré");
+    return { paye: false };
+  }
+
+  const resultat = await confirmerLeReglementDeLaCreation(session, dossier.id);
+  return { paye: resultat.paye };
 }
 
 export class DossierIncompletPourTransmission extends Error {

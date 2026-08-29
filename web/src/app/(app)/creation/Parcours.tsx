@@ -62,6 +62,8 @@ interface Props {
    * client des valeurs qu'il n'a pas relues.
    */
   connuDuDossier?: { denomination: string | null; forme: string | null; capital: number | null };
+  /** Le client revient d'un paiement qu'il a abandonné : rien n'a été débité. */
+  paiementAnnule?: boolean;
 }
 
 /** La coche des étapes franchies. */
@@ -120,6 +122,7 @@ export function Parcours({
   suivi,
   quand,
   connuDuDossier,
+  paiementAnnule,
 }: Props) {
   /*
    * Les réponses courantes sont écrites dès l'ouverture, pas à la génération : elles
@@ -151,6 +154,7 @@ export function Parcours({
    * second « Continuer » arrivé entre-temps ouvrirait un deuxième dossier.
    */
   const [dossier, setDossier] = useState<number | null>(dossierId);
+  const [reglementEnCours, setReglementEnCours] = useState(false);
 
   const etape = etapes.find((e) => e.numero === etapeCourante) ?? etapes[0];
   const avancement = avancementParcours(brouillon);
@@ -250,6 +254,70 @@ export function Parcours({
     });
   }
 
+  /**
+   * Régler la formule, et confier le dossier.
+   *
+   * Un seul geste : le parcours n'avait pas de paiement, et « transmettre à l'avocat »
+   * était un bouton libre et distinct. Les deux n'en font plus qu'un, comme sur la
+   * modification - on ne confie pas un dossier sans l'avoir réglé, et l'on ne règle
+   * pas sans confier.
+   *
+   * Le brouillon part d'abord : la formule choisie doit être en base, puisque c'est
+   * elle que le serveur relit pour calculer le montant.
+   */
+  async function reglerEtConfier() {
+    if (reglementEnCours || enCours) return;
+
+    const manques = verifierEtape(etape.numero, brouillon);
+    if (manques.length > 0) {
+      setAnomalies(Object.fromEntries(manques.map((a) => [a.champ, a.message])));
+      return;
+    }
+
+    setReglementEnCours(true);
+    setAnomalies({});
+
+    try {
+      let identifiant = dossier;
+      if (identifiant === null) {
+        const ouverture = await fetch("/api/formalites/brouillon", { method: "POST" });
+        const corps = await ouverture.json().catch(() => ({}));
+        if (!ouverture.ok || typeof corps.dossier !== "number") {
+          setAnomalies({ offre: "Le dossier n'a pas pu être ouvert" });
+          setReglementEnCours(false);
+          return;
+        }
+        identifiant = corps.dossier;
+        setDossier(identifiant);
+      }
+
+      await fetch("/api/formalites/brouillon", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier: identifiant, modifications: brouillon }),
+      });
+
+      const reponse = await fetch("/api/formalites/creation/paiement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier: identifiant }),
+      });
+      const corps = await reponse.json().catch(() => ({}));
+
+      if (!reponse.ok || typeof corps.adresse !== "string") {
+        setAnomalies({ offre: corps.error ?? "Le règlement n'a pas pu être ouvert" });
+        setReglementEnCours(false);
+        return;
+      }
+
+      // On quitte l'application : l'état de chargement reste, il ne se rendra plus.
+      window.location.href = corps.adresse;
+    } catch {
+      setAnomalies({ offre: "Le règlement n'a pas pu être ouvert" });
+      setReglementEnCours(false);
+    }
+  }
+
   const titreDirigeant = regle(brouillon.forme)?.titreDirigeant ?? "Dirigeant";
 
   /*
@@ -271,27 +339,21 @@ export function Parcours({
     capital: brouillon.capital || connuDuDossier?.capital || undefined,
   };
 
-  const formeChoisie = regle(identite.forme)?.libelle ?? null;
-  const quoi = formeChoisie ? "Création d'une " + formeChoisie : "Création d'une société";
-
   /*
-   * Le numéro du dossier se retire dans une pastille.
+   * La forme précède le nom, comme partout ailleurs.
    *
-   * En toutes lettres - « Création d'une SARL · dossier n° 62 » - il pesait autant que
-   * la phrase qu'il suivait, alors qu'on ne le lit qu'une fois l'an, pour le citer à
-   * l'avocat ou dans un courriel. Il reste lisible, sans plus prendre le pas.
+   * « SARL LES DEUX RIVES » est ainsi qu'une société se nomme - sur ses statuts, au
+   * greffe, et dans la liste des formalités, qui l'écrit déjà de cette façon. Le titre
+   * la posait en dessous, ce qui obligeait à lire deux lignes pour savoir de quoi il
+   * s'agit.
    */
-  const sousTitre =
-    dossier === null ? (
-      // Le dossier naît au premier enregistrement : on le dit là où l'on se demande
-      // si sa saisie est gardée.
-      <>{quoi} · enregistrée dès la première étape validée</>
-    ) : (
-      <>
-        {quoi}
-        <span className={styles.numero}>n° {dossier}</span>
-      </>
-    );
+  const formeChoisie = regle(identite.forme)?.libelle ?? null;
+  const nom = (identite.denomination ?? "").trim();
+  const titre = [formeChoisie, nom].filter(Boolean).join(" ") || "Nouvelle société";
+
+  const sousTitre = formeChoisie
+    ? "Formalité de création d'une " + formeChoisie
+    : "Formalité de création d'une société";
 
   /**
    * L'étape des associés change de nom : une société par actions a des
@@ -317,7 +379,7 @@ export function Parcours({
           société : les deux écrans se quittent du même geste.
         */}
         <EnTetePage
-          titre={(identite.denomination ?? "").trim() || "Nouvelle société"}
+          titre={titre}
           sousTitre={sousTitre}
           quand={quand}
           sansDate
@@ -341,34 +403,55 @@ export function Parcours({
         />
       </div>
 
-      {suivi}
+      {/*
+        Un seul indicateur d'avancement à la fois.
 
-      {/* Les segments sont des frères des étapes, pas leurs enfants : c'est eux
-          qui absorbent la largeur restante entre deux pastilles. */}
-      <nav className={styles.stepper} aria-label="Étapes du parcours">
-        {etapes.map((e, i) => {
-          const franchie = e.numero < etape.numero;
-          const courante = e.numero === etape.numero;
-          const ton = courante ? styles.active : franchie ? styles.done : "";
+        Le suivi du dossier confié et le fil des sept étapes racontent deux progressions
+        différentes : l'un dit où en est la formalité au cabinet, l'autre où en est la
+        saisie. Empilés, ils se lisaient comme deux pages posées l'une sur l'autre, et
+        se contredisaient - le fil annonçait « étape 7 sur 7 » quand le suivi en était à
+        sa deuxième. Une fois le dossier parti, c'est le suivi qui compte ; le
+        formulaire reste en dessous, pour y déposer les pièces qu'on réclame.
+      */}
+      {!suivi && (
+        /* Les segments sont des frères des étapes, pas leurs enfants : c'est eux
+           qui absorbent la largeur restante entre deux pastilles. */
+        <nav className={styles.stepper} aria-label="Étapes du parcours">
+          {etapes.map((e, i) => {
+            const franchie = e.numero < etape.numero;
+            const courante = e.numero === etape.numero;
+            const ton = courante ? styles.active : franchie ? styles.done : "";
 
-          return (
-            <Fragment key={e.numero}>
-              <div className={`${styles.step} ${ton}`} aria-current={courante ? "step" : undefined}>
-                <span className={styles.stepCircle}>{franchie ? <Coche /> : e.numero}</span>
-                <span className={styles.stepLabel}>{libelleCourtDe(e)}</span>
-              </div>
-              {i < etapes.length - 1 && (
-                <span
-                  className={franchie ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment}
-                  aria-hidden="true"
-                />
-              )}
-            </Fragment>
-          );
-        })}
-      </nav>
+            return (
+              <Fragment key={e.numero}>
+                <div
+                  className={`${styles.step} ${ton}`}
+                  aria-current={courante ? "step" : undefined}
+                >
+                  <span className={styles.stepCircle}>{franchie ? <Coche /> : e.numero}</span>
+                  <span className={styles.stepLabel}>{libelleCourtDe(e)}</span>
+                </div>
+                {i < etapes.length - 1 && (
+                  <span
+                    className={
+                      franchie ? `${styles.stepSegment} ${styles.done}` : styles.stepSegment
+                    }
+                    aria-hidden="true"
+                  />
+                )}
+              </Fragment>
+            );
+          })}
+        </nav>
+      )}
 
       <section className={styles.formCard}>
+        {/* Revenir de la banque sans un mot laisse croire à un débit. */}
+        {paiementAnnule && (
+          <p className={styles.paiementAnnule} role="status">
+            Paiement abandonné, rien n&apos;a été débité. Votre dossier vous attend.
+          </p>
+        )}
         <h2>{titreDe(etape)}</h2>
         <p className={styles.formDesc}>{descriptionDe(etape)}</p>
 
@@ -485,9 +568,9 @@ export function Parcours({
                   </Champ>
 
                   <p className={styles.note} role="note">
-                    Si rien ne s&apos;y oppose, la domiciliation n&apos;a pas de terme. Dans le
-                    cas contraire, la loi la borne à cinq ans et vous devrez prévenir votre
-                    bailleur ou votre syndic dans le mois de l&apos;immatriculation.
+                    Si rien ne s&apos;y oppose, la domiciliation n&apos;a pas de terme. Dans le cas
+                    contraire, la loi la borne à cinq ans et vous devrez prévenir votre bailleur ou
+                    votre syndic dans le mois de l&apos;immatriculation.
                   </p>
                 </>
               )}
@@ -795,7 +878,35 @@ export function Parcours({
               Étape précédente
             </button>
           )}
-          {etape.numero < etapes.length && (
+          {/*
+            L'étape des offres ne « continue » pas : elle règle.
+
+            Le dossier partait chez l'avocat sans qu'un euro ait changé de main, et le
+            client arrivait à l'étape des actes sans savoir qu'il n'avait rien payé.
+          */}
+          {etape.identifiant === "offres" && (
+            <button
+              type="button"
+              className={styles.btnNext}
+              onClick={reglerEtConfier}
+              disabled={enCours || reglementEnCours}
+            >
+              {reglementEnCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          )}
+
+          {etape.numero < etapes.length && etape.identifiant !== "offres" && (
             <button
               type="button"
               className={styles.btnNext}
@@ -841,8 +952,22 @@ export function Parcours({
         </div>
       </section>
 
-      {!ETAPES_PLEINE_LARGEUR.includes(etape.identifiant) && (
-        <Recapitulatif brouillon={identite} avancement={avancement} />
+      {/*
+        La colonne de droite dit ce qui est utile à ce moment-là.
+
+        Tant qu'on remplit, c'est le récapitulatif de ce qu'on a saisi. Une fois le
+        dossier confié, il n'y a plus rien à saisir et tout à suivre : le suivi prend
+        sa place. Il tenait toute la largeur au-dessus du formulaire, et l'écran se
+        lisait comme deux pages posées l'une sur l'autre.
+      */}
+      {suivi ? (
+        <aside className={styles.colonneSuivi} aria-label="Suivi de votre dossier">
+          {suivi}
+        </aside>
+      ) : (
+        !ETAPES_PLEINE_LARGEUR.includes(etape.identifiant) && (
+          <Recapitulatif brouillon={identite} avancement={avancement} />
+        )
       )}
     </>
   );

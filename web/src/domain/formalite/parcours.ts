@@ -278,6 +278,18 @@ export interface Brouillon {
   /* Étape 5 */
   offre?: string;
 
+  /*
+   * Le règlement, écrit par le serveur seul.
+   *
+   * Le schéma de l'API n'accepte pas ces deux clés : elles ne se saisissent pas, elles
+   * se constatent. Un brouillon qui pourrait s'annoncer payé depuis le navigateur
+   * ferait partir un dossier chez l'avocat sans encaissement.
+   */
+  /** La session Stripe ouverte pour ce dossier. */
+  paiementRef?: string;
+  /** Posé à la confirmation de l'encaissement, jamais avant. */
+  paye?: boolean;
+
   /* Étape 6 */
   noteAvocat?: string;
 }

@@ -12,6 +12,17 @@
 
 export type CodeOffre = "starter" | "business" | "premium";
 
+/**
+ * Le taux de la taxe sur la valeur ajoutée.
+ *
+ * Déclaré ici comme dans les quatre autres modules d'offre - modification, fermeture,
+ * cessation, dépôt des comptes - qui en portent chacun le leur.
+ */
+export const TVA = 0.2;
+
+/** Ce que le client lira sur la page de Stripe. */
+export const INTITULE = "Création de société";
+
 export interface Offre {
   code: CodeOffre;
   nom: string;
@@ -84,4 +95,20 @@ export function offre(code: string | null | undefined): Offre | null {
 /** Le nom d'une formule, pour un récapitulatif ou un titre de dossier. */
 export function nomDeLOffre(code: string | null | undefined): string {
   return offre(code)?.nom ?? "Offre non choisie";
+}
+
+/**
+ * Ce que le client règle, en centimes, taxes comprises.
+ *
+ * La formule seule : l'annonce légale et les frais de greffe sont annoncés à côté du
+ * prix et réglés ailleurs - les encaisser ici obligerait à les chiffrer, alors qu'ils
+ * ne sont aujourd'hui que des phrases.
+ *
+ * Le montant se recalcule au serveur à chaque règlement, et ne se reprend jamais du
+ * navigateur : le prix affiché est une information, le prix facturé est une décision.
+ */
+export function montantDeLOffre(code: string | null | undefined): number | null {
+  const formule = offre(code);
+  if (!formule) return null;
+  return Math.round(formule.prix * 100 * (1 + TVA));
 }

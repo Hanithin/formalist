@@ -6,6 +6,7 @@ import { donneesDeGabarit } from "@/domain/formalite/gabarit";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { genererDocument } from "@/infrastructure/documents/generation";
 import { remplacerDocumentsProduits } from "@/infrastructure/documents/depot";
+import type { Brouillon } from "@/domain/formalite/parcours";
 import type { UtilisateurConnecte } from "@/infrastructure/db/sessions";
 
 /**
@@ -23,9 +24,34 @@ export class DossierIncomplet extends Error {
   }
 }
 
+/**
+ * Produit les actes d'un dossier ouvert par son propriétaire.
+ *
+ * C'est le chemin du client : le bouton de la dernière étape, et le dépôt de
+ * l'attestation de capital. La session sert au contrôle d'accès, non à la production.
+ */
 export async function produireLesActes(utilisateur: UtilisateurConnecte, dossierId: number) {
   const { brouillon } = await ouvrirBrouillon(utilisateur, dossierId);
+  return produireLesActesDuBrouillon(dossierId, brouillon);
+}
 
+/**
+ * Produit les actes depuis un brouillon déjà lu, sans session.
+ *
+ * L'encaissement passe par ici : le relais de Stripe appelle depuis ses serveurs, il
+ * n'a pas de session chez nous, et exiger un utilisateur connecté rendrait la
+ * production impossible au seul moment où elle doit être automatique.
+ *
+ * `aRelire` marque les actes comme projets en attente de l'avocat : c'est ce que font
+ * déjà la modification, la fermeture, la cessation et le dépôt des comptes. Les actes
+ * produits par le bouton, avant règlement, restent des lectures de travail - aucun
+ * avocat ne les a vus, et l'annoncer « en relecture » serait faux.
+ */
+export async function produireLesActesDuBrouillon(
+  dossierId: number,
+  brouillon: Brouillon,
+  options: { aRelire?: boolean } = {}
+) {
   // Un dossier incomplet produirait des documents troués, qui seraient déposés
   // au greffe en l'état. Mieux vaut dire ce qui manque.
   const bloquante = premiereEtapeIncomplete(brouillon);
@@ -60,5 +86,5 @@ export async function produireLesActes(utilisateur: UtilisateurConnecte, dossier
     contenu: genererDocument(document.gabarit, donnees),
   }));
 
-  return remplacerDocumentsProduits(dossierId, actes);
+  return remplacerDocumentsProduits(dossierId, actes, { aRelire: options.aRelire });
 }

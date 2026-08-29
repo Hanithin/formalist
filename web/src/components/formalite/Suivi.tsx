@@ -27,6 +27,16 @@ interface Props {
    * d'un bouton qui menait au formulaire sans un mot d'explication.
    */
   demande?: string | null;
+  /**
+   * Le suivi tient dans une colonne, non sur toute la largeur.
+   *
+   * La liste répète alors sous chaque étape une explication de trois lignes, dont
+   * celle de l'étape du moment - déjà écrite en toutes lettres dans le bloc juste
+   * au-dessus. À trois cent vingt pixels, ces répétitions font défiler l'écran entier
+   * pour six lignes d'information. Les titres et les états suffisent à situer ; le
+   * geste attendu, lui, garde son explication.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -40,13 +50,16 @@ interface Props {
  * du moment mise en avant avec son explication, et le geste attendu quand il est du
  * côté du client.
  */
-export function Suivi({ etat, lienAction, lienMessagerie, demande }: Props) {
+export function Suivi({ etat, lienAction, lienMessagerie, demande, compact }: Props) {
   const etapes = etapesDuSuivi(etat);
   const courante = etapeAMettreEnAvant(etat);
   const avancement = avancementDuSuivi(etat);
 
   return (
-    <section className={styles.bloc} aria-label="Avancement du dossier">
+    <section
+      className={compact ? `${styles.bloc} ${styles.compact}` : styles.bloc}
+      aria-label="Avancement du dossier"
+    >
       <div className={styles.tete}>
         <h2 className={styles.titre}>Où en est votre dossier</h2>
         <span className={styles.part}>{avancement}%</span>
@@ -119,7 +132,7 @@ export function Suivi({ etat, lienAction, lienMessagerie, demande }: Props) {
             */}
             <span className={styles.etapeCorps}>
               <span className={styles.nom}>{etape.titre}</span>
-              <span className={styles.detail}>{etape.explication}</span>
+              {!compact && <span className={styles.detail}>{etape.explication}</span>}
             </span>
 
             {/*

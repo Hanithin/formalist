@@ -411,6 +411,130 @@ test("l'étape des offres prend toute la largeur", async ({ page, request }) => 
   expect(large.width).toBeGreaterThan(etroite.width + 300);
 });
 
+/**
+ * On ne confie pas un dossier sans l'avoir réglé.
+ *
+ * La création était le seul parcours à ne pas encaisser : l'étape « Offres » notait un
+ * choix, et « transmettre à l'avocat » était un bouton libre et distinct. Les deux n'en
+ * font plus qu'un, comme sur la modification.
+ */
+test("l'étape des offres règle et confie d'un seul geste", async ({ page, request }) => {
+  const dossier = await ouvrirCreation(page, request);
+
+  await request.put("/api/formalites/brouillon", {
+    data: {
+      dossier: Number(dossier),
+      modifications: {
+        forme: "SASU",
+        denomination: "REGLEMENT ATTENDU",
+        activite: "Conseil aux entreprises",
+        adresse: "3 rue Centrale",
+        codePostal: "33000",
+        ville: "Bordeaux",
+        capital: 1000,
+        capitalLibere: 1000,
+        partsTotales: 100,
+        associes: [{ ...associe("Camille", "Durand"), parts: 100, versement: 1000 }],
+        dirigeants: [{ associe: 0 }],
+      },
+    },
+  });
+
+  await page.goto("/creation?dossier=" + dossier + "&etape=6");
+
+  // Le bouton dit ce qu'il fait, et « Continuer » a disparu de cette étape.
+  await expect(page.getByRole("button", { name: /Régler et confier à un avocat/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Continuer$/ })).toHaveCount(0);
+});
+
+test.describe("le règlement d'une création", () => {
+  test("sans formule choisie, il n'y a rien à encaisser", async ({ page, request }) => {
+    const dossier = await ouvrirCreation(page, request);
+
+    await request.put("/api/formalites/brouillon", {
+      data: {
+        dossier: Number(dossier),
+        modifications: {
+          forme: "SASU",
+          denomination: "SANS FORMULE",
+          activite: "Conseil aux entreprises",
+          adresse: "3 rue Centrale",
+          codePostal: "33000",
+          ville: "Bordeaux",
+          capital: 1000,
+          capitalLibere: 1000,
+          partsTotales: 100,
+          associes: [{ ...associe("Camille", "Durand"), parts: 100, versement: 1000 }],
+          dirigeants: [{ associe: 0 }],
+        },
+      },
+    });
+
+    const reponse = await request.post("/api/formalites/creation/paiement", {
+      data: { dossier: Number(dossier) },
+    });
+
+    expect(reponse.status()).toBe(400);
+    expect((await reponse.json()).etape).toBe(6);
+  });
+
+  test("un dossier incomplet ne se paie pas", async ({ page, request }) => {
+    /*
+     * L'avocat recevrait des actes troués qu'il ne peut pas déposer, et il faudrait
+     * rembourser.
+     */
+    const dossier = await ouvrirCreation(page, request);
+    await request.put("/api/formalites/brouillon", {
+      data: { dossier: Number(dossier), modifications: { offre: "business" } },
+    });
+
+    const reponse = await request.post("/api/formalites/creation/paiement", {
+      data: { dossier: Number(dossier) },
+    });
+
+    expect(reponse.status()).toBe(400);
+    expect((await reponse.json()).error).toMatch(/Complétez/);
+  });
+
+  test("le navigateur ne peut pas déclarer un dossier payé", async ({ page, request }) => {
+    /*
+     * `paye` et `paiementRef` se constatent, ils ne se saisissent pas : un brouillon
+     * qui pourrait s'annoncer réglé ferait partir un dossier chez l'avocat sans
+     * encaissement.
+     */
+    const dossier = await ouvrirCreation(page, request);
+
+    const reponse = await request.put("/api/formalites/brouillon", {
+      data: {
+        dossier: Number(dossier),
+        /*
+         * Le dossier porte une forme : sans elle, le registre des sociétés affiche
+         * « Société » à la place, le mot même de son en-tête de colonne, et la spec du
+         * registre trouve alors deux fois le même texte.
+         */
+        modifications: {
+          forme: "SASU",
+          denomination: "FAUX PAIEMENT",
+          paye: true,
+          paiementRef: "cs_faux",
+        },
+      },
+    });
+
+    // Le schéma de l'API ne connaît pas ces clés : elles sont écartées, non écrites.
+    const { brouillon } = await reponse.json();
+    expect(brouillon.denomination).toBe("FAUX PAIEMENT");
+    expect(brouillon.paye).toBeUndefined();
+    expect(brouillon.paiementRef).toBeUndefined();
+
+    // Et le dossier n'est donc pas parti : il est toujours à saisir.
+    const paiement = await request.post("/api/formalites/creation/paiement", {
+      data: { dossier: Number(dossier) },
+    });
+    expect(paiement.status()).toBe(400);
+  });
+});
+
 test("on ne saute pas par-dessus une étape incomplète", async ({ page, request }) => {
   const dossier = await ouvrirCreation(page, request);
 

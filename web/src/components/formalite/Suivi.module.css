@@ -300,3 +300,43 @@
   background: #f4f4f5;
   color: #a1a1aa;
 }
+
+/* ---------- En colonne ---------- */
+
+/*
+ * Le suivi resserré, quand il tient dans une colonne.
+ *
+ * À trois cent vingt pixels, les explications sous chaque étape faisaient défiler
+ * l'écran entier pour six lignes d'information - et celle de l'étape du moment était
+ * déjà écrite en toutes lettres juste au-dessus. Restent les titres, les états, et le
+ * geste attendu qui garde son explication.
+ */
+.compact {
+  padding: 20px;
+}
+
+.compact .etapes {
+  margin-top: 18px;
+  gap: 6px;
+}
+
+.compact .etape {
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+}
+
+/* La pastille d'état passe sous le titre plutôt que de l'écraser à côté. */
+.compact .badge {
+  flex-shrink: 0;
+}
+
+.compact .focus {
+  margin-top: 16px;
+  padding: 14px 16px;
+}
+
+.compact .focusTexte {
+  font-size: 13px;
+}

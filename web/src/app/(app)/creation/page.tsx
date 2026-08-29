@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import { ouvrirBrouillon, lireBrouillon } from "@/infrastructure/db/depots/brouillons";
-import { documentsDuDossier } from "@/infrastructure/db/depots/documents";
+import {
+  ouvrirBrouillon,
+  lireBrouillon,
+  confirmerAuRetourDeLaCreation,
+} from "@/infrastructure/db/depots/brouillons";
+import { actesDuDossier, documentsDuDossier } from "@/infrastructure/db/depots/documents";
+import { A_RELIRE } from "@/domain/document/publication";
 import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
 import { ETAPES_PLEINE_LARGEUR } from "./etapes-larges";
@@ -20,10 +25,26 @@ export const metadata: Metadata = {
 export default async function Creation({
   searchParams,
 }: {
-  searchParams: Promise<{ dossier?: string; etape?: string }>;
+  searchParams: Promise<{
+    dossier?: string;
+    etape?: string;
+    session?: string;
+    paiement?: string;
+  }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { dossier, etape } = await searchParams;
+  const { dossier, etape, session, paiement } = await searchParams;
+
+  /*
+   * Le retour de paiement est relu avant tout affichage.
+   *
+   * Sans cela, le client revient de sa banque sur l'étape des offres, sans savoir si
+   * quelque chose a été débité - et paie une seconde fois. Le relais de Stripe
+   * confirmerait aussi, mais il arrive quand il arrive, et pas du tout en local.
+   */
+  if (session && dossier) {
+    await confirmerAuRetourDeLaCreation(utilisateur, Number(dossier), session);
+  }
 
   /*
    * Rien n'est écrit tant que rien n'est saisi.
@@ -65,15 +86,24 @@ export default async function Creation({
   // produit à partir du brouillon. Le type, lui, porte l'extension.
   const deposees = documents.filter((d) => d.status !== "generated");
   const actes = documents.filter((d) => d.status === "generated");
-  const courante = etapeAccessible(Number(etape) || 1, brouillon);
 
   /*
-   * L'étape des offres se passe de la colonne de droite, et prend toute la largeur :
-   * trois tarifs dans sept cent trente pixels s'y coupaient sur quatre lignes.
+   * Les actes que l'avocat n'a pas encore relus, qui ne sont pas des documents.
+   *
+   * `documentsDuDossier` les écarte, et c'est ce qu'il doit faire : un acte non relu ne
+   * se télécharge pas, ne s'envoie pas à sa banque et ne se signe pas. Mais les taire
+   * donnait « Aucun document produit pour l'instant » sur un dossier qui vient d'être
+   * réglé et dont les cinq actes sont produits - on croyait le paiement sans effet, et
+   * l'on cliquait « Générer les documents » par-dessus.
+   *
+   * `actesDuDossier` rend leur titre et leur état, jamais le chemin du fichier : ils
+   * s'affichent, ils ne s'ouvrent pas.
    */
-  const large = ETAPES_PLEINE_LARGEUR.includes(
-    ETAPES.find((e) => e.numero === courante)?.identifiant ?? ""
-  );
+  const enRelecture = ligne
+    ? (await actesDuDossier(utilisateur, ligne.id)).filter((a) => a.enRelecture)
+    : [];
+  const courante = etapeAccessible(Number(etape) || 1, brouillon);
+
 
   /*
    * Le suivi n'apparaît qu'une fois le dossier transmis.
@@ -84,6 +114,15 @@ export default async function Creation({
    */
   const transmis = ligne !== null && ligne.status !== "en_cours";
   const etat = transmis ? await etatDuDossier(ligne) : null;
+
+  /*
+   * L'étape des offres se passe de la colonne de droite, et prend toute la largeur :
+   * trois tarifs dans sept cent trente pixels s'y coupaient sur quatre lignes. Un
+   * dossier confié, lui, garde sa colonne : c'est là que vit son suivi.
+   */
+  const large =
+    !etat &&
+    ETAPES_PLEINE_LARGEUR.includes(ETAPES.find((e) => e.numero === courante)?.identifiant ?? "");
 
 
 
@@ -107,6 +146,7 @@ export default async function Creation({
         <Parcours
           dossierId={ligne?.id ?? null}
           quand={new Date()}
+          paiementAnnule={paiement === "annule"}
           connuDuDossier={
             ligne
               ? {
@@ -118,26 +158,33 @@ export default async function Creation({
           }
           suivi={
             etat && ligne ? (
-              <div className={styles.suivi}>
-                <Suivi
-                  etat={etat}
-                  demande={await derniereDemandeDeCorrections(ligne.id)}
-                  lienAction={"/creation?dossier=" + ligne.id + "&etape=5"}
-                  lienMessagerie={"/messagerie?dossier=" + ligne.id}
-                />
-              </div>
+              <Suivi
+                compact
+                etat={etat}
+                demande={await derniereDemandeDeCorrections(ligne.id)}
+                lienAction={"/creation?dossier=" + ligne.id + "&etape=5"}
+                lienMessagerie={"/messagerie?dossier=" + ligne.id}
+              />
             ) : null
           }
           etapes={ETAPES}
           etapeCourante={courante}
           brouillonInitial={brouillon}
           piecesDeposees={deposees.map((d) => ({ type: d.type, nom: d.name }))}
-          actesProduits={actes.map((d) => ({
-            id: d.id,
-            nom: d.name,
-            fichier: d.file_path,
-            statut: d.status,
-          }))}
+          actesProduits={[
+            ...actes.map((d) => ({
+              id: d.id,
+              nom: d.name,
+              fichier: d.file_path,
+              statut: d.status,
+            })),
+            ...enRelecture.map((a) => ({
+              id: a.id,
+              nom: a.titre,
+              fichier: null,
+              statut: A_RELIRE,
+            })),
+          ]}
         />
       </div>
     </main>

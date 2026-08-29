@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { nomDeLOffre } from "@/domain/formalite/offres";
+import { A_RELIRE, mentionDAttente } from "@/domain/document/publication";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
 import { personneDuDirigeant } from "@/domain/formalite/gabarit";
 import type { Brouillon } from "@/domain/formalite/parcours";
@@ -194,6 +195,9 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
 
   const sansEmail = associes.filter((a) => nomDeLaPartie(a) && !a.personne?.email?.trim());
 
+  /* Les actes que l'avocat n'a pas encore relus : ils s'affichent, sans s'ouvrir. */
+  const enRelecture = actes.filter((a) => a.statut === A_RELIRE);
+
   function produire() {
     setErreurActes(null);
     setConfirme(false);
@@ -303,6 +307,7 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
           <div className={styles.genList}>
             {actes.map((a, i) => {
               const signe = a.statut === "signed";
+              const enRelecture = a.statut === A_RELIRE;
               const pret = !!a.fichier;
 
               return (
@@ -322,15 +327,33 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
                     <div className={styles.genMeta}>{DESCRIPTIONS[a.nom] ?? "Document du dossier"}</div>
                   </div>
 
+                  {/*
+                    L'état de l'acte, la relecture d'abord.
+
+                    Un acte produit à l'encaissement est un projet : l'avocat le relit,
+                    corrige ce qu'il faut, et c'est sa relecture qui en fait un document
+                    signable. L'annoncer « Prêt » entre-temps inviterait à l'envoyer à
+                    sa banque ou à le signer avant que quiconque l'ait lu.
+                  */}
                   <span
                     className={[
                       styles.genBadge,
-                      signe ? styles.genBadgeSigne : pret ? styles.genBadgePret : styles.genBadgeVerrou,
+                      signe
+                        ? styles.genBadgeSigne
+                        : enRelecture
+                          ? styles.genBadgeRelecture
+                          : pret
+                            ? styles.genBadgePret
+                            : styles.genBadgeVerrou,
                     ].join(" ")}
                   >
                     {signe ? (
                       <>
                         <Coche /> Signé
+                      </>
+                    ) : enRelecture ? (
+                      <>
+                        <Cadenas /> En relecture
                       </>
                     ) : pret ? (
                       <>
@@ -380,6 +403,18 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
               );
             })}
           </div>
+        )}
+
+        {/*
+          Ce qui se passe, dit une fois pour toutes.
+
+          Le silence serait pire : un dossier dont les actes sont produits mais retenus
+          paraîtrait bloqué, et l'on rappellerait pour demander où ils sont.
+        */}
+        {enRelecture.length > 0 && (
+          <p className={styles.actesRelecture} role="status">
+            {mentionDAttente(enRelecture.length)}
+          </p>
         )}
 
         <div className={styles.genRegenLigne}>
