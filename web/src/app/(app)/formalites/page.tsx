@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { formalitesPourListe } from "@/infrastructure/db/depots/documents";
 import { filtreValide } from "@/domain/formalite/liste";
-import { dateEnTete } from "@/lib/dates";
+import { EnTetePage } from "@/components/page/EnTetePage";
 import { Liste } from "./Liste";
 import styles from "./Formalites.module.css";
 
@@ -30,30 +30,10 @@ export default async function Formalites({
 
   return (
     <main className={styles.page}>
-      {/*
-        Le bandeau ne porte que le titre et la date.
-
-        Il a porté un second bouton « Nouvelle formalité », en plus de celui de la
-        colonne qui ne quitte jamais l'écran : deux portes pour la même pièce, à trente
-        centimètres l'une de l'autre.
-      */}
-      <div className={styles.topbar}>
-        <h1>Mes formalités</h1>
-        <span className={styles.topbarDate}>{dateEnTete()}</span>
-      </div>
-
-      {/*
-        Ce qu'on lit sur chaque carte, et dans quel ordre elles viennent.
-
-        Une première version disait « du brouillon au greffe » : le mot est du métier,
-        et il ne vaut pas pour une auto-entreprise. Elle promettait aussi « ce qui vous
-        attend » sans dire ce qu'on allait lire. La phrase annonce donc les deux choses
-        que la page fait vraiment - chaque carte nomme l'étape suivante, et celles qui
-        demandent un geste passent devant.
-      */}
-      <p className={styles.introduction}>
-        Les dossiers qui requièrent une action de votre part figurent en tête de liste.
-      </p>
+      <EnTetePage
+        titre="Mes formalités"
+        sousTitre="Les dossiers qui requièrent une action de votre part figurent en tête de liste."
+      />
 
       <div className={styles.content}>
         <Liste

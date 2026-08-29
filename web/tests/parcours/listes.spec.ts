@@ -407,9 +407,16 @@ test.describe("la fenêtre de nouvelle formalité", () => {
       await page.setViewportSize({ width: largeur, height: 900 });
       await page.goto("/formalites");
 
+      /*
+       * On désigne la date par sa place, non par sa classe.
+       *
+       * Elle portait `topbarDate`, propre à la page ; elle vient maintenant du bandeau
+       * partagé, où elle s'appelle autrement. Ce qui ne changera pas, c'est qu'elle est
+       * le premier texte à droite du titre dans la ligne de tête.
+       */
       const ecart = await page.evaluate(() => {
-        const date = document.querySelector("[class*='topbarDate']")!;
         const titre = document.querySelector("main h1")!;
+        const date = titre.parentElement!.querySelector("span")!;
         return date.getBoundingClientRect().left - titre.getBoundingClientRect().right;
       });
 

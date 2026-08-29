@@ -1,0 +1,81 @@
+/*
+ * La ligne de tête d'un écran, et la phrase qui l'explique.
+ *
+ * Chaque page posait la sienne, avec ses propres mesures : « Documents » montait plus
+ * haut que « Mes sociétés », qui descendait plus bas que « Espace avocat ». Elles
+ * viennent d'ici désormais, et l'écart ne peut plus revenir par la fenêtre.
+ */
+
+.entete {
+  padding: 26px 48px 4px;
+  background: transparent;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+
+.titre {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+  /*
+   * Le titre se pose sur la marge, non au milieu de la barre.
+   *
+   * Un bouton d'action est plus haut que lui : centré comme ses frères, le titre
+   * descendait de quatre pixels et quittait la ligne du logo de la colonne, que
+   * tests/parcours/ligne-de-tete mesure sur les dix écrans.
+   */
+  align-self: flex-start;
+}
+
+/* La droite du bandeau : la date, et l'action quand la page en porte une. */
+.cote {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.date {
+  /*
+   * Treize pixels en #999 donnaient 2,6 pour 1 sur le gris de la page - sous le seuil
+   * de 4,5 qu'un texte de cette taille demande. Elle prend la teinte de la phrase
+   * posée juste en dessous.
+   */
+  font-size: 13.5px;
+  color: #52525b;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/*
+ * La phrase court sous le bandeau, sur toute la largeur.
+ *
+ * Sa mesure est de sept cent soixante pixels, soit environ soixante-quinze signes :
+ * au-delà, elle passe à la ligne et laisse deux mots orphelins en dessous. C'est une
+ * contrainte d'écriture, non de mise en page - les phrases se raccourcissent.
+ */
+.introduction {
+  padding: 0 48px;
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #52525b;
+  max-width: 760px;
+}
+
+/* Sur écran étroit, le bandeau et sa phrase se serrent ensemble. */
+@media (max-width: 900px) {
+  .entete {
+    padding: 24px 20px 16px;
+  }
+
+  .introduction {
+    padding: 0 20px;
+  }
+}

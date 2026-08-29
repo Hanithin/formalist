@@ -1,0 +1,257 @@
+/*
+ * La barre d'outils d'une liste : le sélecteur de filtres, et la recherche.
+ *
+ * Les deux partagent leur matériau. La recherche était ailleurs une pastille blanche
+ * bordée posée à côté d'un cadre gris : deux matières pour une seule barre, et quatre
+ * pixels d'écart de hauteur.
+ */
+
+.barre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.espace {
+  flex: 1;
+  min-width: 16px;
+}
+
+/* ---------- Le sélecteur ---------- */
+
+/*
+ * Les choix vivent dans un cadre commun.
+ *
+ * Chacun portait le sien, bordé, et la rangée se lisait comme autant de boutons
+ * indépendants - alors qu'en cliquer un décoche les autres. Un seul cadre le dit sans
+ * un mot.
+ *
+ * Il passe à la ligne quand la place manque : mieux vaut deux rangées qu'un cadre
+ * plus large que la page.
+ */
+.selecteur {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 100px;
+  background: #ececef;
+}
+
+/*
+ * Le fond blanc du choix actif, et lui seul.
+ *
+ * Chaque pastille portait le sien : il disparaissait d'un onglet pour réapparaître
+ * sur l'autre, sans rien entre les deux - une classe CSS ne sait pas animer d'un
+ * élément à un autre. Un élément unique le dessine pour tous, et se rend à la place
+ * que le composant lui mesure.
+ *
+ * Il glisse sous les intitulés, jamais devant : c'est un décor, et les clics doivent
+ * le traverser.
+ */
+.curseur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  opacity: 0;
+  border-radius: 100px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.08);
+  pointer-events: none;
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.15s ease;
+}
+
+/* Qui demande à son système de limiter les animations voit la pastille se poser. */
+@media (prefers-reduced-motion: reduce) {
+  .curseur {
+    transition: opacity 0.15s ease;
+  }
+}
+
+.choix {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 100px;
+  border: 0;
+  background: transparent;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: #52525b;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+/* Le survol éclaire le fond du cadre, sans promettre la sélection. */
+.choix:hover {
+  color: #18181b;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/*
+ * L'actif ne porte pas son fond : le curseur le lui apporte en glissant.
+ *
+ * Il garde ce qui ne se déplace pas - l'encre et la graisse - et les cède au même
+ * rythme, sans quoi le mot changerait d'aspect avant que le blanc soit arrivé.
+ */
+.choixActif,
+.choixActif:hover {
+  background: transparent;
+  color: #18181b;
+  font-weight: 500;
+  transition: color 0.28s ease;
+}
+
+.compte {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #a1a1aa;
+}
+
+.choixActif .compte {
+  color: #71717a;
+}
+
+/* ---------- La recherche ---------- */
+
+.recherche {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.recherche > svg {
+  position: absolute;
+  left: 15px;
+  width: 17px;
+  height: 17px;
+  color: #71717a;
+  pointer-events: none;
+}
+
+.champ {
+  /* La même hauteur que le cadre du sélecteur, mesurée : quarante-deux pixels. */
+  padding: 12px 40px 12px 42px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  font-size: 13.5px;
+  font-family: inherit;
+  /* globals.css borne les champs à 460px ; ici la largeur suit le contenu attendu. */
+  width: 300px;
+  max-width: none;
+  background: #ececef;
+  color: #18181b;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.champ::placeholder {
+  color: #8b8b93;
+}
+
+.champ:hover {
+  background: #e4e4e8;
+}
+
+/*
+ * Au focus, le champ passe au blanc.
+ *
+ * C'est le geste de la pastille active du sélecteur : ce qui est en cours d'usage
+ * sort du fond commun.
+ */
+.champ:focus {
+  outline: none;
+  background: #fff;
+  border-color: #d4d4d8;
+}
+
+/*
+ * De quoi effacer sans sélectionner.
+ *
+ * Vider le champ demandait de tout sélectionner puis d'effacer. La croix ne paraît
+ * que lorsqu'il y a quelque chose à effacer, et rend la main au champ.
+ */
+.effacer {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  /* globals.css espace les boutons de la page : la marge décalait la croix. */
+  margin: 0;
+  border: 0;
+  border-radius: 100px;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.effacer:hover {
+  background: rgba(24, 24, 27, 0.06);
+  color: #18181b;
+}
+
+.effacer svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/* Le libellé du champ existe pour qui n'entend pas la loupe. */
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Sur écran étroit ---------- */
+
+@media (max-width: 900px) {
+  /* La recherche prend la largeur qui reste sous le sélecteur passé à la ligne. */
+  .recherche {
+    flex: 1;
+  }
+
+  .champ {
+    width: 100%;
+  }
+}
+
+/*
+ * Seize pixels, sans quoi Safari zoome.
+ *
+ * iOS agrandit l'écran dès qu'un champ porte un texte plus petit, et n'en revient
+ * pas : on tapait trois lettres et la page restait grossie. La règle est posée sur le
+ * champ lui-même pour l'emporter sur la consigne de globals.css.
+ */
+@media (max-width: 700px) {
+  .champ {
+    font-size: 16px;
+  }
+}

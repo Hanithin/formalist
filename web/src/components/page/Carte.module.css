@@ -1,0 +1,286 @@
+/*
+ * Le châssis d'une carte de liste.
+ *
+ * Ce qu'elle contient regarde chaque page ; ce à quoi elle ressemble se décide ici.
+ * Sans ce partage, la même carte se redessinait d'un écran à l'autre et divergeait -
+ * c'est ainsi qu'un même état a fini par porter trois mots et trois teintes.
+ */
+
+.grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * Chaque carte est un conteneur, et se mesure elle-même.
+ *
+ * La bascule plus bas dépend de la largeur de la carte, non de celle de l'écran : la
+ * colonne de navigation en prend trois cents quand elle est dépliée et rien quand
+ * elle ne l'est pas, si bien qu'une requête sur la fenêtre se tromperait d'un cas sur
+ * deux.
+ */
+.case {
+  position: relative;
+  container-type: inline-size;
+}
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 16px;
+  /* Une carte de cent cinquante pixels pour un nom, un état et un geste laissait plus
+     de blanc que de texte, et huit d'entre elles ne remplissaient pas l'écran. */
+  padding: 22px 24px;
+  border: 1px solid #e5e5e5;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+}
+
+.carte:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/*
+ * La nature de l'objet : un intitulé, non une pastille.
+ *
+ * Elle en portait une, grise, jumelle de celle de l'état posée en face. Deux registres
+ * rendus à l'identique - ce qu'est l'objet, où il en est - que rien ne distinguait
+ * avant de les lire. Sans fond, elle recule d'un plan, et la pastille d'état reste
+ * seule de son espèce.
+ *
+ * Dix pixels et demi en #a1a1aa donnaient un contraste de 2,6 pour 1 sur le blanc de
+ * la carte, sous le seuil de 4,5 que demande un texte de cette taille.
+ */
+.nature {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #71717a;
+  white-space: nowrap;
+  /* Elle s'aligne sur le texte de la pastille d'en face, non sur son bord. */
+  padding: 3px 0;
+}
+
+/*
+ * L'état, en un mot.
+ *
+ * La pastille portait un point de la couleur de son texte. Il ne disait rien que le
+ * mot ne dise, et sur une grille de huit cartes il faisait huit taches de plus.
+ *
+ * Les teintes viennent des jetons du socle - « couleurs de sens », dit globals.css.
+ * Celles qu'employaient les pages étaient les leurs : un vert #22c55e sur #f0fdf4
+ * plafonne à 2,1 pour 1, et le mot se devinait plus qu'il ne se lisait.
+ */
+.etat {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 5px 12px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.etatAbouti {
+  background: var(--abouti-fond);
+  color: var(--abouti-encre);
+}
+
+.etatAttente {
+  background: var(--attente-fond);
+  color: var(--attente-encre);
+}
+
+.etatNeutre {
+  background: #f4f4f5;
+  color: #52525b;
+}
+
+.titre {
+  display: block;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0;
+  margin-bottom: 6px;
+}
+
+/* Ce que l'objet attend : la ligne qui a remplacé le pourcentage d'avancement. */
+.etape {
+  display: block;
+  font-size: 13.5px;
+  color: #52525b;
+  margin-bottom: 0;
+}
+
+/* Ce qui situe sans appeler : un montant, une date. */
+.details {
+  display: block;
+  font-size: 12.5px;
+  color: #a1a1aa;
+  margin-top: 6px;
+}
+
+/* Rien à situer : la ligne ne laisse pas son écart derrière elle. */
+.details:empty {
+  display: none;
+}
+
+/*
+ * Le pied porte la jauge, son compte et le geste.
+ *
+ * La jauge occupait sa propre rangée, pleine largeur, avec « 20% complété » écrit
+ * juste dessous - deux lignes pour un seul chiffre, et le texte contredisait le geste
+ * quand il annonçait cent pour cent. Elle prend la place libre de cette rangée, muette.
+ */
+.pied {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+.jauge {
+  flex: 1;
+  min-width: 40px;
+  height: 4px;
+  background: #f5f5f5;
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.jaugeRemplie {
+  display: block;
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.2s ease;
+  background: #111;
+}
+
+/*
+ * Le geste de la carte.
+ *
+ * Il se soulignait au survol - l'affordance la plus fruste, et la seule que la carte
+ * empruntait au lien brut. Un fond s'installe désormais sous lui et le chevron avance :
+ * la carte entière est cliquable, ce coin dit simplement où l'on ira.
+ *
+ * La marge négative rend au fond la place que le rembourrage lui prend, pour que le
+ * mot reste aligné sur le bord de la carte.
+ */
+.geste {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px 6px 12px;
+  margin-right: -10px;
+  border-radius: 100px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #18181b;
+  transition: background 0.18s ease;
+}
+
+/* Sans jauge, le geste est seul : il se range à droite plutôt que de flotter. */
+.geste:first-child {
+  margin-left: auto;
+}
+
+.geste svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.18s ease;
+}
+
+.carte:hover .geste {
+  background: #f4f4f5;
+}
+
+.carte:hover .geste svg {
+  transform: translateX(2px);
+}
+
+/* Qui demande à son système de limiter les animations garde le fond, sans le pas. */
+@media (prefers-reduced-motion: reduce) {
+  .geste svg,
+  .carte:hover .geste svg {
+    transition: none;
+    transform: none;
+  }
+}
+
+/*
+ * Seule sur sa ligne, la carte se couche.
+ *
+ * Entre neuf cents et mille quatre-vingt-dix pixels de fenêtre, la grille ne tient
+ * qu'une colonne : la carte s'étirait à six cent quatre pixels pour un nom, une date
+ * et un geste, et huit dossiers demandaient de faire défiler une page presque vide.
+ * Au-delà de cinq cents, elle se range donc en deux lignes plutôt qu'en quatre.
+ *
+ * Le seuil est celui de la carte, pas de l'écran. Il est à cinq cents et non à quatre
+ * cent soixante-dix : sur téléphone la carte seule en fait quatre cent soixante, et
+ * dix pixels entre deux mises en page auraient suffi à coucher les cartes au premier
+ * changement de marge.
+ */
+@container (min-width: 500px) {
+  .carte {
+    display: grid;
+    grid-template-columns: auto auto auto 1fr;
+    grid-template-areas:
+      "tete  tete  tete    tete"
+      "titre etape details pied";
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 2px;
+    padding: 16px 22px;
+  }
+
+  .tete {
+    grid-area: tete;
+    margin-bottom: 0;
+  }
+
+  .titre {
+    grid-area: titre;
+    margin-bottom: 0;
+  }
+
+  .etape {
+    grid-area: etape;
+  }
+
+  .details {
+    grid-area: details;
+    margin-top: 0;
+  }
+
+  /* Le pied ne pousse plus vers le bas : il partage la ligne du titre. */
+  .pied {
+    grid-area: pied;
+    margin-top: 0;
+    padding-top: 0;
+  }
+}

@@ -8,6 +8,13 @@ import { filtresUtiles } from "@/domain/document/statuts";
 import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuFiltre, libelleDuType, nomAffichable, pageDe, paginer, parCeQuiPresse, retenu, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
 import { avancementDuDossier, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
 import { signalerChangementDeColonne } from "@/lib/colonne";
+import {
+  BarreDOutils,
+  Espace,
+  Recherche,
+  Selecteur,
+} from "@/components/page/BarreDOutils";
+import carte from "@/components/page/Carte.module.css";
 import styles from "./Formalites.module.css";
 
 /**
@@ -34,9 +41,9 @@ interface Props {
 
 /** Les tons du domaine, dans les classes de la page d'origine. */
 const CLASSES_ETAT: Record<string, string> = {
-  termine: styles.statusDone,
-  attente: styles.statusPending,
-  avance: styles.statusProgress,
+  termine: carte.etatAbouti,
+  attente: carte.etatAttente,
+  avance: carte.etatNeutre,
 };
 
 const TRAITS = {
@@ -60,52 +67,6 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
 
   const comptes = useMemo(() => comptesParFiltre(dossiers), [dossiers]);
 
-  /*
-   * Le fond blanc glisse d'un onglet à l'autre.
-   *
-   * Une classe CSS ne sait pas animer entre deux éléments : la pastille active
-   * changeait de place d'un rendu à l'autre, et le blanc sautait. Un seul élément la
-   * dessine donc pour tous, posé sur l'onglet actif après mesure - il n'a plus qu'à
-   * s'y rendre.
-   *
-   * Il reste invisible tant qu'il n'est pas mesuré : sans quoi il naîtrait dans
-   * l'angle du cadre et traverserait la barre au premier affichage.
-   */
-  const barre = useRef<HTMLElement>(null);
-  const [curseur, setCurseur] = useState<{ x: number; y: number; l: number; h: number } | null>(
-    null
-  );
-
-  useEffect(() => {
-    const cadre = barre.current;
-    if (!cadre) return;
-
-    const mesurer = () => {
-      const actif = cadre.querySelector<HTMLElement>("[aria-current='page']");
-      if (!actif) return setCurseur(null);
-
-      const dehors = cadre.getBoundingClientRect();
-      const dedans = actif.getBoundingClientRect();
-      setCurseur({
-        x: dedans.left - dehors.left,
-        y: dedans.top - dehors.top,
-        l: dedans.width,
-        h: dedans.height,
-      });
-    };
-
-    mesurer();
-
-    /*
-     * La barre bouge sans que le filtre change : elle passe à la ligne quand la
-     * fenêtre rétrécit, et les intitulés changent de largeur quand les comptes
-     * changent. Le curseur suit plutôt que de rester en arrière.
-     */
-    const observateur = new ResizeObserver(mesurer);
-    observateur.observe(cadre);
-    return () => observateur.disconnect();
-  }, [filtre, comptes]);
-
   const visibles = useMemo(
     () =>
       parCeQuiPresse(dossiers.filter((d) => retenu(d, filtre) && correspond(d, recherche))),
@@ -126,101 +87,33 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
         annonçaient déjà chacun à côté de son nom.
       */}
       {/* ---------- Filtres et recherche ---------- */}
-      <div className={styles.filterBar}>
-        {/*
-          Un choix parmi quatre, dans un seul cadre.
+      <BarreDOutils>
+        <Selecteur
+        intitule="Filtrer les formalités"
+        actif={filtre}
+        surChoix={() => setPage(1)}
+        choix={filtresUtiles(FILTRES, comptes, filtre).map((f) => ({
+          valeur: f.valeur,
+          lien: f.valeur === "tous" ? "/formalites" : "/formalites?filtre=" + f.valeur,
+          libelle: libelleDuFiltre(f, comptes[f.valeur]),
+          compte: comptes[f.valeur],
+        }))}
+      />
 
-          Chaque filtre portait le sien, bordé, et la rangée se lisait comme quatre
-          boutons indépendants - alors qu'en cliquer un décoche les autres. Un cadre
-          commun le dit sans un mot, et tient moins de place.
-        */}
-        <nav ref={barre} className={styles.filterGroup} aria-label="Filtrer les formalités">
-          <span
-            className={styles.curseur}
-            aria-hidden="true"
-            style={
-              curseur
-                ? {
-                    opacity: 1,
-                    width: curseur.l,
-                    height: curseur.h,
-                    transform: `translate(${curseur.x}px, ${curseur.y}px)`,
-                  }
-                : undefined
-            }
-          />
+      <Espace />
 
-          {filtresUtiles(FILTRES, comptes, filtre).map((f) => (
-            <Link
-              key={f.valeur}
-              href={f.valeur === "tous" ? "/formalites" : "/formalites?filtre=" + f.valeur}
-              className={f.valeur === filtre ? `${styles.pill} ${styles.pillActive}` : styles.pill}
-              aria-current={f.valeur === filtre ? "page" : undefined}
-              onClick={() => setPage(1)}
-            >
-              {libelleDuFiltre(f, comptes[f.valeur])}{" "}
-              <span className={styles.pillCount}>{comptes[f.valeur]}</span>
-            </Link>
-          ))}
-        </nav>
-
-        <span className={styles.filterSpacer} />
-
-        {/*
-          La recherche est du même matériau que les filtres.
-
-          Elle était une pastille blanche bordée à côté d'un cadre gris : deux matières
-          pour une seule barre d'outils. Le fond commun les réunit, et le champ garde
-          sa loupe et son curseur pour dire qu'on y écrit.
-        */}
-        <div className={styles.searchWrapper}>
-          <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="2" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <label htmlFor="recherche" className={styles.invisible}>
-            Rechercher une formalité
-          </label>
-          <input
-            id="recherche"
-            className={styles.searchInput}
-            type="text"
-            value={recherche}
-            /* Le champ dit sur quoi il porte : « Rechercher... » laissait deviner. */
-            placeholder="Société, forme, type…"
-            onChange={(e) => {
-              setRecherche(e.target.value);
-              // Chercher remet à la première page : rester en page 3 sur deux
-              // résultats montrerait une liste vide.
-              setPage(1);
-            }}
-          />
-          {/*
-            De quoi effacer sans sélectionner.
-
-            Vider le champ demandait de tout sélectionner puis d'effacer, ou huit
-            appuis sur la touche. Le bouton ne paraît que lorsqu'il y a quelque chose
-            à effacer, et rend la main au champ.
-          */}
-          {recherche && (
-            <button
-              type="button"
-              className={styles.searchClear}
-              aria-label="Effacer la recherche"
-              onClick={() => {
-                setRecherche("");
-                setPage(1);
-                document.getElementById("recherche")?.focus();
-              }}
-            >
-              <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="2" aria-hidden="true">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
+      <Recherche
+        valeur={recherche}
+        invite="Société, forme, type…"
+        libelle="Rechercher une formalité"
+        surSaisie={(v) => {
+          setRecherche(v);
+          // Chercher remet à la première page : rester en page 3 sur deux résultats
+          // montrerait une liste vide.
+          setPage(1);
+        }}
+      />
+      </BarreDOutils>
 
       {/* ---------- Les dossiers ---------- */}
       {affiches.length === 0 ? (
@@ -235,9 +128,9 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
         />
       ) : (
         <>
-          <ul className={styles.dossiersGrid} aria-label="Formalités">
+          <ul className={carte.grille} aria-label="Formalités">
             {affiches.map((d) => (
-              <li key={d.id} className={styles.dossierCase}>
+              <li key={d.id} className={carte.case}>
                 <Carte dossier={d} />
 
                 {/*
@@ -266,7 +159,7 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
 
                     {/* Elle est hors du lien : les clics la traversent, sans quoi
                         toucher la pastille n'ouvrirait pas le dossier. */}
-                    <span className={`${styles.statusBadge} ${styles.statusDraft}`}>
+                    <span className={`${carte.etat} ${carte.etatNeutre}`}>
                       Brouillon
                     </span>
                   </div>
@@ -548,12 +441,12 @@ function Carte({ dossier }: { dossier: DossierListe }) {
   const aJauge = geste === "Reprendre";
 
   return (
-    <Link href={adresseDuDossier(dossier)} className={styles.dossierCard}>
+    <Link href={adresseDuDossier(dossier)} className={carte.carte}>
       <div
         className={
           dossier.brouillon
-            ? `${styles.dossierCardHeader} ${styles.enteteAvecCorbeille}`
-            : styles.dossierCardHeader
+            ? `${carte.tete} ${styles.enteteAvecCorbeille}`
+            : carte.tete
         }
       >
         {/*
@@ -567,7 +460,7 @@ function Carte({ dossier }: { dossier: DossierListe }) {
           Le type passe par `libelleDuType` : la colonne stocke « comptes », qu'il
           fallait lire tel quel, sans accent ni majuscule de mot.
         */}
-        <span className={styles.dossierNature}>
+        <span className={carte.nature}>
           {dossier.forme || libelleDuType(dossier.type) || "Formalité"}
         </span>
 
@@ -582,8 +475,8 @@ function Carte({ dossier }: { dossier: DossierListe }) {
         */}
         {!dossier.brouillon && (
           <span
-            className={`${styles.statusBadge} ${
-              dossier.urgent ? styles.statusPending : (CLASSES_ETAT[ton] ?? "")
+            className={`${carte.etat} ${
+              dossier.urgent ? carte.etatAttente : (CLASSES_ETAT[ton] ?? "")
             }`}
           >
             {etat}
@@ -591,7 +484,7 @@ function Carte({ dossier }: { dossier: DossierListe }) {
         )}
       </div>
 
-      <span className={styles.dossierTitle}>
+      <span className={carte.titre}>
         {/*
           Le nom, ou ce que le dossier est.
           « Société à identifier » est un marqueur de base : posé en titre, il se lit
@@ -617,9 +510,9 @@ function Carte({ dossier }: { dossier: DossierListe }) {
         ouvre cette page pour savoir ce qui nous attend, pas pour retrouver ce qu'on a
         fait. La date reste lisible sur la page du dossier.
       */}
-      <span className={styles.dossierMeta}>{dossier.etape || dateDuDossier(dossier)}</span>
+      <span className={carte.etape}>{dossier.etape || dateDuDossier(dossier)}</span>
 
-      <span className={styles.dossierDetails}>{detailsDuDossier(dossier).join(" · ")}</span>
+      <span className={carte.details}>{detailsDuDossier(dossier).join(" · ")}</span>
 
       {/*
         La jauge ne s'affiche que tant qu'elle mesure quelque chose.
@@ -633,7 +526,7 @@ function Carte({ dossier }: { dossier: DossierListe }) {
         escalier de hauteurs. La rangée du pied reste ici dans les deux cas - seule la
         jauge s'en absente - et les cartes gardent leur ligne.
       */}
-      <div className={styles.dossierFooter}>
+      <div className={carte.pied}>
         {aJauge && (
           /*
             La jauge se tait.
@@ -644,14 +537,14 @@ function Carte({ dossier }: { dossier: DossierListe }) {
             au-dessus dit quoi faire, ce que le chiffre n'a jamais su dire.
           */
           <span
-            className={styles.dossierProgressBar}
+            className={carte.jauge}
             role="img"
             aria-label={"Avancement : " + pourcentage + " %"}
           >
-            <span className={styles.dossierProgressFill} style={{ width: pourcentage + "%" }} />
+            <span className={carte.jaugeRemplie} style={{ width: pourcentage + "%" }} />
           </span>
         )}
-        <span className={styles.dossierAction}>
+        <span className={carte.geste}>
           {geste}
           <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="2" aria-hidden="true">
             <polyline points="9 18 15 12 9 6" />
