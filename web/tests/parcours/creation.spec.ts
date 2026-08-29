@@ -413,7 +413,7 @@ test("la valeur d'une action donne leur nombre", async ({ page, request }) => {
   await expect(page.getByRole("heading", { level: 2 })).toContainText("Pièces justificatives");
 });
 
-test("une valeur qui ne tombe pas juste ne change rien, et le dit", async ({ page, request }) => {
+test("une valeur qui ne tombe pas juste laisse le capital intact", async ({ page, request }) => {
   const dossier = await ouvrirCreation(page, request);
 
   await request.put("/api/formalites/brouillon", {
@@ -437,9 +437,15 @@ test("une valeur qui ne tombe pas juste ne change rien, et le dit", async ({ pag
   await page.goto("/creation?dossier=" + dossier + "&etape=4");
   await page.getByLabel(/Valeur d'une action/).fill("3");
 
-  // Arrondir donnerait une valeur nominale que les statuts ne pourraient pas écrire.
-  await expect(page.getByText(/ne se divise pas en actions de 3\s€/)).toBeVisible();
-  await expect(page.getByLabel(/Nombre total d'actions/)).toHaveValue("200");
+  /*
+   * Deux nombres ne se négocient pas : le capital est celui qu'on a décidé de mettre,
+   * et un titre ne se découpe pas. C'est la valeur nominale qui absorbe le reste, et
+   * la phrase dit le chiffre exact que porteront les statuts.
+   */
+  await expect(page.getByLabel("Capital social")).toHaveValue("2000");
+  await expect(page.getByLabel(/Nombre total d'actions/)).toHaveValue("667");
+  // 2 000 / 667 ne tombe pas rond : la phrase le dit sans arrondir à « 3 € ».
+  await expect(page.getByText(/667 actions à 2,998\d* €? ?l'une/)).toBeVisible();
 });
 
 /**

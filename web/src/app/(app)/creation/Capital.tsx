@@ -56,6 +56,17 @@ function euros(valeur: number): string {
   return valeur.toLocaleString("fr-FR", { maximumFractionDigits: 2 }) + " €";
 }
 
+/**
+ * La valeur nominale, sans arrondi complaisant.
+ *
+ * Deux mille euros en six cent soixante-sept actions font 2,9985 € : arrondi à deux
+ * décimales, on lirait « 3 € », et six cent soixante-sept fois trois euros ne font pas
+ * deux mille. C'est ce chiffre exact que portent les statuts.
+ */
+function eurosNominale(valeur: number): string {
+  return valeur.toLocaleString("fr-FR", { maximumFractionDigits: 6 }) + " €";
+}
+
 /** « Camille Durand » donne CD ; une société, la première lettre de son nom. */
 function initiales(nom: string): string {
   return (
@@ -87,6 +98,7 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
    * division. La saisie s'efface dès qu'un autre champ bouge.
    */
   const [nominaleSaisie, setNominaleSaisie] = useState<string | null>(null);
+
 
   /* Un seul associé : il détient la totalité, et son nombre suit le total émis. */
   const seul = associes.length === 1;
@@ -174,16 +186,18 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
   }
 
   /**
-   * La valeur d'un titre commande le nombre de titres.
+   * La valeur d'un titre commande leur nombre.
    *
    * On sait ce qu'on veut mettre au capital et à combien on veut l'action ; le nombre
    * s'en déduit. Il fallait faire la division soi-même, et se tromper d'un facteur dix
    * ne se voyait nulle part.
    *
-   * La saisie n'est retenue que si elle tombe juste : deux mille euros ne se divisent
-   * pas en actions de trois euros, et arrondir donnerait une valeur nominale que les
-   * statuts ne pourraient pas écrire. On garde alors ce qui est tapé, sans rien
-   * changer au dossier, et la phrase en dessous dit pourquoi.
+   * Des trois nombres, deux ne se négocient pas : le capital est celui qu'on a décidé
+   * de mettre, et un titre ne se découpe pas - on n'émet pas six cent soixante-six
+   * actions et demie. C'est donc la valeur nominale qui absorbe le reste : deux mille
+   * euros en six cent soixante-sept actions font 2,9985 € l'une, et c'est ce chiffre-là
+   * que portent les statuts. La saisie sert à trouver le nombre ; la phrase en dessous
+   * dit la valeur exacte qui en résulte.
    */
   function modifierLaNominale(saisie: string) {
     setNominaleSaisie(saisie);
@@ -194,21 +208,25 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
     // On compare en centimes : 0,1 + 0,2 ne fait pas 0,3 en virgule flottante.
     const centimes = Math.round(valeur * 100);
     const capitalCentimes = Math.round(capital * 100);
-    if (centimes === 0 || capitalCentimes % centimes !== 0) return;
+    if (centimes === 0) return;
 
-    modifierLeTotal(capitalCentimes / centimes);
-    setNominaleSaisie(saisie);
+    // Une action qui vaut plus que tout le capital ne donne aucun nombre entier.
+    const nombre = Math.round(capitalCentimes / centimes);
+    if (nombre < 1) return;
+
+    surChangement({ partsTotales: nombre });
+    if (associes.length === 1) {
+      surAssocies([{ ...associes[0], parts: nombre }]);
+    }
   }
 
-  /* Ce que la division ne donne pas : on le dit plutôt que de l'arrondir en douce. */
+  /* Une action ne peut pas valoir plus que le capital entier. */
   const nominaleDemandee = Number((nominaleSaisie ?? "").replace(",", "."));
-  const divisionImpossible =
-    nominaleSaisie !== null &&
-    nominaleSaisie.trim() !== "" &&
+  const nominaleTropGrande =
     Number.isFinite(nominaleDemandee) &&
     nominaleDemandee > 0 &&
     capital > 0 &&
-    Math.round(capital * 100) % Math.round(nominaleDemandee * 100) !== 0;
+    nominaleDemandee > capital;
 
   return (
     <div className={styles.full}>
@@ -265,24 +283,21 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
         </div>
 
         <p className={styles.emissionNote}>
-          {divisionImpossible
-            ? euros(capital) +
-              " ne se divise pas en " +
-              motPart(brouillon.forme, true) +
-              " de " +
-              euros(nominaleDemandee) +
-              " : choisissez une valeur qui tombe juste, ou saisissez le nombre."
+          {nominaleTropGrande
+            ? "Une " + motPart(brouillon.forme) + " ne peut pas valoir plus que le capital entier."
             : nominale > 0
             ? partsTotales.toLocaleString("fr-FR") +
               " " +
               motPart(brouillon.forme, partsTotales > 1) +
               " à " +
-              euros(nominale) +
+              eurosNominale(nominale) +
               " l'une."
               : "Renseignez le capital, puis la valeur " +
                 elider("une " + motPart(brouillon.forme)) +
                 " ou leur nombre : l'un donne l'autre."}
         </p>
+
+
       </div>
 
       {/*
