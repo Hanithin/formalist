@@ -320,9 +320,6 @@ export function nombreDeSocietes(documents: DocumentRange[]): number {
  */
 export const DOCUMENTS_MONTRES = 8;
 
-/** Au-delà, tout ouvrir donne la page interminable qu'on cherche à éviter. */
-export const GROUPES_OUVERTS = 3;
-
 /**
  * Un groupe s'ouvre-t-il de lui-même ?
  *
@@ -331,20 +328,29 @@ export const GROUPES_OUVERTS = 3;
  * derrière un groupe replié - l'annonce devenait fausse. Une recherche en cours ouvre
  * tout : on vient de demander ces documents, les cacher derrière un clic serait
  * absurde. Un groupe qui contient un document à remplacer s'ouvre toujours : c'est ce
- * qui bloque un dossier, et le replier reviendrait à le cacher. Sinon, on n'ouvre que
- * si les groupes sont peu nombreux.
+ * qui bloque un dossier, et le replier reviendrait à le cacher.
+ *
+ * Sinon, le premier groupe seulement. La règle ouvrait tout jusqu'à trois sociétés :
+ * trois dossiers de création font une quinzaine d'actes, et la page devenait le mur
+ * qu'on cherchait à éviter. Le premier donne à voir tout de suite ; les autres sont à
+ * un clic, et l'on sait qu'ils existent puisqu'on lit leur nom et leur compte.
  */
 export function ouvertParDefaut(
   groupe: GroupeDeDocuments,
   nombreDeGroupes: number,
   recherche = "",
   /** La société du dernier dépôt ; `undefined` quand rien n'a été déposé. */
-  dernierDepot?: number | null
+  dernierDepot?: number | null,
+  /** Le rang du groupe dans la page : le premier s'ouvre, les suivants attendent. */
+  rang = 0
 ): boolean {
   if (dernierDepot !== undefined && groupe.societeId === dernierDepot) return true;
   if (recherche.trim()) return true;
   if (groupe.documents.some(aRemplacer)) return true;
-  return nombreDeGroupes <= GROUPES_OUVERTS;
+
+  // Une seule société : il n'y a rien à choisir.
+  if (nombreDeGroupes <= 1) return true;
+  return rang === 0;
 }
 
 /**

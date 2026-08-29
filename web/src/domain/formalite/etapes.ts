@@ -109,7 +109,7 @@ export function libelleEtape(phase: number, banque?: string | null): string {
   if (p === 1) return banque ? "À déposer chez " + banque : "En attente du dépôt du capital";
   if (p === 2) return "En attente d'attestation";
   if (p === 3) return "En attente de signature";
-  if (p === 4) return "En révision par l'avocat";
+  if (p === 4) return "En révision par un avocat";
   if (p === 5) return "En cours d'immatriculation";
   return "Terminée";
 }
@@ -142,7 +142,7 @@ function libelleAutoEntreprise(dossier: Dossier): string {
   if (dossier.status === "terminee") return "Immatriculée";
   if (dossier.status === "corrections_demandees") return "Corrections demandées";
   if (dossier.status === "en_cours") return "À compléter";
-  return "Chez l'avocat";
+  return "Au cabinet";
 }
 
 /**
@@ -174,8 +174,8 @@ function libelleAutreFormalite(dossier: Dossier): string {
   if (dossier.status === "en_cours") return "À compléter";
 
   if (dossier.sousPhase === "5e") return mots?.apres ?? "Terminée";
-  if (dossier.sousPhase === "5d") return mots?.pendant ?? "Chez l'avocat";
-  return "En révision par l'avocat";
+  if (dossier.sousPhase === "5d") return mots?.pendant ?? "Au cabinet";
+  return "En révision par un avocat";
 }
 
 export function libelleDossier(dossier: Dossier): string {

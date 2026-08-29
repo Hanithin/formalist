@@ -11,7 +11,6 @@ import {
   TITRE_SANS_NOM,
   ouvertParDefaut,
   tronquer,
-  GROUPES_OUVERTS,
   DOCUMENTS_MONTRES,
   distinguer,
   rangDeLActe,
@@ -207,26 +206,33 @@ describe("ce qui est montré d'emblée", () => {
     documents,
   });
 
-  it("peu de groupes : tout est ouvert", () => {
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 2)).toBe(true);
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), GROUPES_OUVERTS)).toBe(true);
+  it("une seule société : son groupe est ouvert", () => {
+    // Il n'y a rien à choisir : replier reviendrait à cacher toute la page.
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 1)).toBe(true);
   });
 
-  it("beaucoup de groupes : ils se replient", () => {
-    // Sinon la page défile sans qu'on voie jamais la fin.
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), GROUPES_OUVERTS + 1)).toBe(false);
+  it("plusieurs sociétés : le premier groupe seulement", () => {
+    /*
+     * La règle ouvrait tout jusqu'à trois sociétés. Trois dossiers de création font une
+     * quinzaine d'actes, et la page devenait le mur qu'on cherchait à éviter. Le premier
+     * donne à voir tout de suite ; les autres sont à un clic, et l'on sait qu'ils
+     * existent puisqu'on lit leur nom et leur compte.
+     */
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 3, "", undefined, 0)).toBe(true);
+    expect(ouvertParDefaut(groupe("BETA", [doc()]), 3, "", undefined, 1)).toBe(false);
+    expect(ouvertParDefaut(groupe("GAMMA", [doc()]), 3, "", undefined, 2)).toBe(false);
   });
 
   it("un groupe qui attend une action reste ouvert, quel qu'en soit le nombre", () => {
     // C'est ce qui bloque un dossier : le replier reviendrait à le cacher.
     const attente = groupe("ALPHA", [doc(), doc({ motifRejet: "Document périmé" })]);
-    expect(ouvertParDefaut(attente, 12)).toBe(true);
+    expect(ouvertParDefaut(attente, 12, "", undefined, 5)).toBe(true);
   });
 
   it("une recherche en cours ouvre tout", () => {
     // On vient de demander ces documents : les cacher derrière un clic serait absurde.
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "statuts")).toBe(true);
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "   ")).toBe(false);
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "statuts", undefined, 4)).toBe(true);
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "   ", undefined, 4)).toBe(false);
   });
 
   it("le groupe qui vient de recevoir un dépôt s'ouvre", () => {
@@ -234,20 +240,21 @@ describe("ce qui est montré d'emblée", () => {
      * Le dépôt annonce « vous le retrouverez dans sa société » : le document restait
      * derrière un groupe replié, et l'annonce désignait ce qu'on ne voyait pas.
      */
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", 1)).toBe(true);
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", 2)).toBe(false);
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", 1, 6)).toBe(true);
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", 2, 6)).toBe(false);
   });
 
   it("les dépôts personnels sont un groupe comme un autre", () => {
     // Leur société est nulle : c'est une valeur, pas une absence de dépôt.
     const personnels = { societeId: null, titre: "Mes dépôts", documents: [doc()] };
-    expect(ouvertParDefaut(personnels, 12, "", null)).toBe(true);
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", null)).toBe(false);
+    expect(ouvertParDefaut(personnels, 12, "", null, 6)).toBe(true);
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", null, 6)).toBe(false);
   });
 
   it("sans dépôt, la règle habituelle s'applique", () => {
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12)).toBe(false);
-    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", undefined)).toBe(false);
+    // Le premier groupe s'ouvre, les suivants attendent leur clic.
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", undefined, 0)).toBe(true);
+    expect(ouvertParDefaut(groupe("ALPHA", [doc()]), 12, "", undefined, 1)).toBe(false);
   });
 
   it("un groupe long est tronqué, et le reste est annoncé", () => {

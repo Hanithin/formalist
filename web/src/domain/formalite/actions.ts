@@ -224,7 +224,7 @@ export function etapeCourte(ctx: ContexteDossier): string {
 
   // Rien n'est attendu du client : c'est que le dossier travaille ailleurs.
   if (ctx.phase >= 5) return "Déposé au greffe";
-  return "En révision par l'avocat";
+  return "En révision par un avocat";
 }
 
 /**

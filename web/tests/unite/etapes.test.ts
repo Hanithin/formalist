@@ -49,7 +49,7 @@ describe("libellé d'étape", () => {
   it("suit les étapes du parcours", () => {
     expect(libelleEtape(2)).toBe("En attente d'attestation");
     expect(libelleEtape(3)).toBe("En attente de signature");
-    expect(libelleEtape(4)).toBe("En révision par l'avocat");
+    expect(libelleEtape(4)).toBe("En révision par un avocat");
     expect(libelleEtape(5)).toBe("En cours d'immatriculation");
   });
 
@@ -192,7 +192,7 @@ describe("le libellé d'une auto-entreprise", () => {
     const dire = (status: string) =>
       libelleDossier({ type: "auto-entrepreneur", status, phase: 5, banque: null });
 
-    expect(dire("en_attente_validation")).toBe("Chez l'avocat");
+    expect(dire("en_attente_validation")).toBe("Au cabinet");
     expect(dire("corrections_demandees")).toBe("Corrections demandées");
     expect(dire("terminee")).toBe("Immatriculée");
   });

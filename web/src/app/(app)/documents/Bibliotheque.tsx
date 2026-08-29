@@ -296,10 +296,11 @@ export function Bibliotheque({
             {groupes.length > 1 ? " · " + groupes.length + " sociétés" : ""}
           </p>
 
-          {groupes.map((groupe) => (
+          {groupes.map((groupe, rang) => (
             <Groupe
               key={groupe.societeId ?? "sans-societe"}
               groupe={groupe}
+              rang={rang}
               nombreDeGroupes={groupes.length}
               recherche={recherche}
               dernierDepot={dernierDepot}
@@ -372,6 +373,7 @@ export function Bibliotheque({
  */
 function Groupe({
   groupe,
+  rang,
   nombreDeGroupes,
   recherche,
   dernierDepot,
@@ -380,6 +382,8 @@ function Groupe({
   surRemplacement,
 }: {
   groupe: GroupeDeDocuments;
+  /** Le rang du groupe dans la page : le premier s'ouvre, les suivants attendent. */
+  rang: number;
   nombreDeGroupes: number;
   recherche: string;
   dernierDepot: number | null | undefined;
@@ -387,7 +391,7 @@ function Groupe({
   surApercu: (document: { nom: string; fichier: string }) => void;
   surRemplacement: (document: DocumentRange) => void;
 }) {
-  const defaut = ouvertParDefaut(groupe, nombreDeGroupes, recherche, dernierDepot);
+  const defaut = ouvertParDefaut(groupe, nombreDeGroupes, recherche, dernierDepot, rang);
   const [ouvertParLeGeste, setOuvertParLeGeste] = useState<boolean | null>(null);
   const [tout, setTout] = useState(false);
 

@@ -319,7 +319,9 @@ describe("l'étape en trois mots", () => {
     };
 
     expect(actionsAttendues(chezLAvocat)).toEqual([]);
-    expect(etapeCourte(chezLAvocat)).toBe("En révision par l'avocat");
+    /* « un avocat » et non « l'avocat » : tant que personne n'a pris le dossier,
+       l'article défini désigne quelqu'un qui n'existe pas encore. */
+    expect(etapeCourte(chezLAvocat)).toBe("En révision par un avocat");
     expect(etapeCourte({ ...chezLAvocat, phase: 5 })).toBe("Déposé au greffe");
   });
 

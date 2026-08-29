@@ -43,13 +43,13 @@ export const ETATS: EtatLisible[] = [
   {
     code: "en_validation",
     libelle: "En relecture",
-    explication: "L'avocat le relit. Vous êtes prévenu dès qu'il a terminé.",
+    explication: "Un avocat le relit. Vous êtes prévenu dès qu'il a terminé.",
     main: "avocat",
   },
   {
     code: "valide",
-    libelle: "Relu par l'avocat",
-    explication: "L'avocat l'a relu et validé. Téléchargez-le et faites-le signer.",
+    libelle: "Relu par un avocat",
+    explication: "Un avocat l'a relu et validé. Téléchargez-le et faites-le signer.",
     main: "personne",
   },
   {

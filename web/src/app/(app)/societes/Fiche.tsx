@@ -316,10 +316,15 @@ export async function Fiche({ cle }: { cle: string }) {
 
                             La ligne lisait `origine`, qui dit seulement si le document
                             est rattaché à un dossier : la pièce d'identité déposée par
-                            le client s'annonçait donc « Produit par le cabinet ».
+                            le client s'annonçait donc comme venant du cabinet.
+
+                            « Revu par un avocat » plutôt que « Produit par le cabinet » :
+                            un acte n'arrive dans cette liste qu'une fois validé - c'est
+                            la règle de `visibleParLeClient` - et c'est cette relecture
+                            qui en fait un document, non la machine qui l'a écrit.
                           */}
                           <span className={styles.ligneDetail}>
-                            {document.parLeCabinet ? "Produit par le cabinet" : "Déposé par vous"}
+                            {document.parLeCabinet ? "Revu par un avocat" : "Déposé par vous"}
                           </span>
                         </span>
                         <span className={styles.ligneFin}>

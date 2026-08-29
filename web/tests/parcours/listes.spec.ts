@@ -174,7 +174,7 @@ test.describe("formalités", () => {
     }
 
     // Et ce qui est parti chez l'avocat n'y figure pas.
-    await expect(liste(page).getByText("En révision par l'avocat")).toHaveCount(0);
+    await expect(liste(page).getByText("En révision par un avocat")).toHaveCount(0);
   });
 
   /** Une adresse partagée avant que « En cours » perde sa pastille ouvre la même liste. */
