@@ -49,20 +49,6 @@
   gap: 16px 24px;
 }
 
-/*
- * La date et le bouton se partagent le côté droit.
- *
- * La date ne se coupe ni ne passe à la ligne, et l'écart est assez large pour que
- * l'un ne semble jamais collé à l'autre. Sur écran étroit, c'est la barre entière qui
- * passe à la ligne : mieux vaut deux lignes qu'un chevauchement.
- */
-.topbarActions {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-shrink: 0;
-}
-
 .topbar h1 {
   margin: 0;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
@@ -85,6 +71,17 @@
   font-size: 13px;
   color: #999;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* La phrase court sous le bandeau, sur toute la largeur : la mesure des sept autres. */
+.introduction {
+  padding: 0 48px;
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #52525b;
+  max-width: 760px;
 }
 
 /*
@@ -326,7 +323,9 @@
   flex-direction: column;
   background: #fff;
   border-radius: 16px;
-  padding: 18px 20px;
+  /* Une carte de cent cinquante pixels pour un nom, un état et un geste laissait plus
+     de blanc que de texte, et huit d'entre elles ne remplissaient pas l'écran. */
+  padding: 22px 24px;
   border: 1px solid #e5e5e5;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -412,18 +411,32 @@
 .dossierTitle {
   display: block;
   font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
+/* Ce que le dossier attend : la ligne qui a remplacé le pourcentage. */
 .dossierMeta {
+  display: block;
+  font-size: 13.5px;
+  color: #52525b;
+  margin-bottom: 0;
+}
+
+/* Le capital et la date : ce qui situe, en retrait de ce qui appelle. */
+.dossierDetails {
   display: block;
   font-size: 12.5px;
   color: #a1a1aa;
-  margin-bottom: 0;
+  margin-top: 6px;
+}
+
+/* Rien à situer : la ligne ne laisse pas son écart derrière elle. */
+.dossierDetails:empty {
+  display: none;
 }
 
 /*
@@ -438,7 +451,7 @@
   align-items: center;
   gap: 10px;
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 20px;
 }
 
 .dossierProgressBar {
@@ -789,14 +802,14 @@
 @container (min-width: 500px) {
   .dossierCard {
     display: grid;
-    grid-template-columns: auto auto 1fr;
+    grid-template-columns: auto auto auto 1fr;
     grid-template-areas:
-      "tete  tete  tete"
-      "titre meta  pied";
+      "tete  tete  tete    tete"
+      "titre meta  details pied";
     align-items: center;
     column-gap: 16px;
     row-gap: 2px;
-    padding: 14px 20px;
+    padding: 16px 22px;
   }
 
   .dossierCardHeader {
@@ -811,6 +824,11 @@
 
   .dossierMeta {
     grid-area: meta;
+  }
+
+  .dossierDetails {
+    grid-area: details;
+    margin-top: 0;
   }
 
   /* Le pied ne pousse plus vers le bas : il partage la ligne du titre. */

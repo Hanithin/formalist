@@ -346,13 +346,16 @@ test.describe("la fenêtre de nouvelle formalité", () => {
     await page.setViewportSize({ width: 1400, height: 1000 });
     await page.goto("/formalites");
 
-    // Le bouton de la barre de titre, en plus de celui de la colonne : on est venu
-    // ici pour en créer une.
-    // Celui de la barre de titre, non celui de la colonne : depuis que la page en
-    // porte un, le nom seul en désigne deux.
-    const enTete = page.getByRole("main").getByRole("button", { name: "Nouvelle formalité" });
-    await expect(enTete).toBeVisible();
-    await enTete.click();
+    /*
+     * Celui de la colonne, désormais le seul.
+     *
+     * La barre de titre en portait un second, à trente centimètres du premier : deux
+     * portes pour la même pièce. Ce qui se vérifie ici n'est pas d'où l'on ouvre la
+     * fenêtre, mais qu'elle se peigne au-dessus de la page une fois ouverte.
+     */
+    const bouton = page.getByRole("button", { name: "Nouvelle formalité" });
+    await expect(bouton).toBeVisible();
+    await bouton.click();
 
     const fenetre = page.getByRole("dialog", { name: "Nouvelle formalité" });
     await expect(fenetre).toBeVisible();
@@ -373,21 +376,22 @@ test.describe("la fenêtre de nouvelle formalité", () => {
     await page.waitForURL(/auto-entrepreneur/);
   });
 
-  test("la date et le bouton ne se chevauchent à aucune largeur", async ({ page }) => {
-    /*
-     * La barre de titre pouvait se comprimer sous sa largeur utile : la date, alors
-     * rétrécie, débordait sous le bouton noir - le dernier chiffre de l'année passait
-     * dessous. Le bouton ne se comprime plus, la date ne se coupe plus, et c'est la
-     * barre entière qui passe à la ligne quand la place manque.
-     */
+  /**
+   * Le titre et la date ne se chevauchent à aucune largeur.
+   *
+   * La barre portait aussi un bouton, et pouvait se comprimer sous sa largeur utile :
+   * la date, rétrécie, débordait sous le noir du bouton. Le bouton est parti, mais la
+   * contrainte demeure entre le titre et la date - c'est elle qu'on vérifie.
+   */
+  test("le titre et la date ne se chevauchent à aucune largeur", async ({ page }) => {
     for (const largeur of [1500, 1280, 1000, 860, 760]) {
       await page.setViewportSize({ width: largeur, height: 900 });
       await page.goto("/formalites");
 
       const ecart = await page.evaluate(() => {
         const date = document.querySelector("[class*='topbarDate']")!;
-        const bouton = date.parentElement!.querySelector("button")!;
-        return bouton.getBoundingClientRect().left - date.getBoundingClientRect().right;
+        const titre = document.querySelector("main h1")!;
+        return date.getBoundingClientRect().left - titre.getBoundingClientRect().right;
       });
 
       expect(ecart, largeur + "px").toBeGreaterThanOrEqual(16);

@@ -204,6 +204,7 @@ export async function formalitesPourListe(
       etape: contexte ? etapeCourte(contexte) : "",
       urgent: actions.some((a) => a.urgent),
       attendLeClient: actions.length > 0,
+      capital: contexte?.capital ?? null,
     };
   });
 }

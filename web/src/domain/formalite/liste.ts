@@ -38,6 +38,8 @@ export interface DossierListe {
   urgent?: boolean;
   /** La balle est dans le camp du client, qu'elle presse ou non. */
   attendLeClient?: boolean;
+  /** Le capital social, quand il est saisi : il situe le projet d'un coup d'œil. */
+  capital?: number | null;
 }
 
 /* ---------- Le type d'un dossier ---------- */

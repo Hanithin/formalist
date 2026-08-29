@@ -257,6 +257,28 @@ function nomDuDossier(dossier: DossierListe): string {
 }
 
 /**
+ * Ce qui situe le dossier sans avoir à l'ouvrir.
+ *
+ * La carte disait un nom, un état et un geste, et se refermait quatre lignes plus
+ * bas : beaucoup de blanc pour peu de choses. Le capital dit de quel projet il
+ * s'agit - deux SARL du même client ne se distinguent pas autrement - et la date dit
+ * depuis quand il dort. Ni l'un ni l'autre n'est indispensable, et chacun s'efface
+ * quand il n'a rien à dire.
+ */
+function detailsDuDossier(dossier: DossierListe): string[] {
+  const details: string[] = [];
+
+  if (typeof dossier.capital === "number" && dossier.capital > 0) {
+    details.push("Capital " + dossier.capital.toLocaleString("fr-FR") + " €");
+  }
+
+  const quand = dateDuDossier(dossier);
+  if (quand) details.push(quand);
+
+  return details;
+}
+
+/**
  * La date, et ce qu'elle date.
  *
  * « Il y a 11h » seul ne disait pas de quoi : créé, modifié, déposé ? C'est la dernière
@@ -487,6 +509,8 @@ function Carte({ dossier }: { dossier: DossierListe }) {
         fait. La date reste lisible sur la page du dossier.
       */}
       <span className={styles.dossierMeta}>{dossier.etape || dateDuDossier(dossier)}</span>
+
+      <span className={styles.dossierDetails}>{detailsDuDossier(dossier).join(" · ")}</span>
 
       {/*
         La jauge ne s'affiche que tant qu'elle mesure quelque chose.

@@ -4,7 +4,6 @@ import { formalitesPourListe } from "@/infrastructure/db/depots/documents";
 import { filtreValide } from "@/domain/formalite/liste";
 import { dateEnTete } from "@/lib/dates";
 import { Liste } from "./Liste";
-import { NouvelleFormalite } from "@/components/navigation/NouvelleFormalite";
 import styles from "./Formalites.module.css";
 
 export const metadata: Metadata = {
@@ -32,24 +31,29 @@ export default async function Formalites({
   return (
     <main className={styles.page}>
       {/*
-        Le bandeau ne porte que le titre, la date et ce qu'on peut faire.
-        
-        Une phrase de résumé courait dessous : « 8 formalités · 6 brouillons · 1 chez
-        l'avocat · 1 terminée ». Elle disait ce que la rangée de pastilles dit déjà
-        juste en dessous, dans un autre vocabulaire et un autre découpage - et elle le
-        disait sans qu'on puisse cliquer dessus. Les pastilles le disent mieux : elles
-        mènent quelque part.
+        Le bandeau ne porte que le titre et la date.
+
+        Il a porté un second bouton « Nouvelle formalité », en plus de celui de la
+        colonne qui ne quitte jamais l'écran : deux portes pour la même pièce, à trente
+        centimètres l'une de l'autre.
       */}
       <div className={styles.topbar}>
         <h1>Mes formalités</h1>
-
-        <div className={styles.topbarActions}>
-          <span className={styles.topbarDate}>{dateEnTete()}</span>
-          {/* On est venu ici pour en créer une : descendre chercher la colonne est
-              un détour que la page peut s'épargner. */}
-          <NouvelleFormalite libelle="Nouvelle formalité" apparence="page" />
-        </div>
+        <span className={styles.topbarDate}>{dateEnTete()}</span>
       </div>
+
+      {/*
+        Ce qu'on lit sur chaque carte, et dans quel ordre elles viennent.
+
+        Une première version disait « du brouillon au greffe » : le mot est du métier,
+        et il ne vaut pas pour une auto-entreprise. Elle promettait aussi « ce qui vous
+        attend » sans dire ce qu'on allait lire. La phrase annonce donc les deux choses
+        que la page fait vraiment - chaque carte nomme l'étape suivante, et celles qui
+        demandent un geste passent devant.
+      */}
+      <p className={styles.introduction}>
+        Chaque dossier indique l&apos;étape suivante. Ceux qui vous attendent sont en haut.
+      </p>
 
       <div className={styles.content}>
         <Liste
