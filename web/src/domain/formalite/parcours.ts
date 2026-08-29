@@ -63,7 +63,9 @@ export const ETAPES: Etape[] = [
     identifiant: "capital",
     titre: "Répartition du capital",
     description:
-      "Répartissez le capital social entre les associés. 100% du capital doit être distribué.",
+      // L'ordre des gestes, et non le seul but : l'étape posait deux graphiques avant
+      // les champs qui les alimentent, et rien ne disait par où commencer.
+      "Indiquez le nombre de titres émis et le capital, puis répartissez-les entre les associés.",
     libelleCourt: "Capital",
   },
   {

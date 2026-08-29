@@ -309,6 +309,56 @@ test("le mot employé pour le dirigeant suit la forme choisie", async ({ page, r
   await expect(page.getByRole("button", { name: /Ajouter un gérant/ })).toBeVisible();
 });
 
+/**
+ * L'étape du capital dit par quoi commencer.
+ *
+ * Elle posait une barre de progression et un camembert avant les deux champs qui les
+ * alimentent : on arrivait sur deux graphiques à zéro pour cent, et rien ne disait que
+ * le premier geste était de saisir le nombre de titres émis. Le nombre vient d'abord,
+ * et la phrase qui suit dit ce qu'il reste à attribuer.
+ */
+test("le capital se saisit avant de se répartir", async ({ page, request }) => {
+  const dossier = await ouvrirCreation(page, request);
+
+  await request.put("/api/formalites/brouillon", {
+    data: {
+      dossier: Number(dossier),
+      modifications: {
+        forme: "SAS",
+        denomination: "REPARTITION CLAIRE",
+        activite: "Conseil aux entreprises",
+        adresse: "2 rue Neuve",
+        codePostal: "69001",
+        ville: "Lyon",
+        capital: 2000,
+        associes: [associe("Camille", "Durand"), associe("Alex", "Martin")],
+        dirigeants: [{ associe: 0 }],
+      },
+    },
+  });
+
+  await page.goto("/creation?dossier=" + dossier + "&etape=4");
+
+  // L'étiquette s'élide : elle écrivait « Nombre total de actions ».
+  const total = page.getByLabel(/Nombre total d'actions/);
+  await expect(total).toBeVisible();
+
+  // Tant qu'il est vide, la phrase dit le premier geste plutôt qu'un pourcentage.
+  await expect(page.getByText(/Indiquez d'abord le nombre total d'actions/)).toBeVisible();
+
+  await total.fill("2000");
+  await expect(page.getByText(/2\s000 actions à 1\s€ l'une/)).toBeVisible();
+  await expect(page.getByText(/il en reste 2\s000 à attribuer/)).toBeVisible();
+
+  await page.locator("#parts-0").fill("1200");
+  await page.locator("#parts-1").fill("800");
+  await expect(page.getByText("Les 2 000 actions sont attribuées.")).toBeVisible();
+
+  // Et le dépassement se dit, là où la barre se contentait de plafonner à 100 %.
+  await page.locator("#parts-1").fill("1000");
+  await expect(page.getByText(/200 de trop/)).toBeVisible();
+});
+
 test("on ne saute pas par-dessus une étape incomplète", async ({ page, request }) => {
   const dossier = await ouvrirCreation(page, request);
 

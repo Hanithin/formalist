@@ -121,3 +121,19 @@ export function dateEnFrancais(iso: string | null | undefined): string {
   const quantieme = parseInt(jour, 10);
   return (quantieme === 1 ? "1er" : String(quantieme)) + " " + MOIS[rang - 1] + " " + annee;
 }
+
+/**
+ * « de » s'élide devant une voyelle.
+ *
+ * L'étiquette du champ se composait par concaténation - « Nombre total de » suivi du
+ * mot de la forme - et donnait « Nombre total de actions » sur toutes les sociétés par
+ * actions.
+ *
+ * Le h n'est pas traité : il est tantôt muet - d'heure - tantôt aspiré - de hangar - et
+ * rien dans le mot ne le dit. Aucun des mots employés ici n'en commence, et deviner
+ * ferait pire que l'erreur qu'on corrige.
+ */
+export function elider(mot: string): string {
+  const net = mot.trim();
+  return /^[aeiouyàâéèêëîïôöùûü]/i.test(net) ? "d'" + net : "de " + net;
+}

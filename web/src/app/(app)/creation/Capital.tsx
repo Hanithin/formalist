@@ -2,8 +2,8 @@
 
 import { nomDeLaPartie, nomComplet } from "@/domain/formalite/etat-civil";
 import { regle } from "@/domain/formalite/formes";
-import { apportsDe, valeurNominale } from "@/domain/formalite/capital";
-import { nombreEnFrancais } from "@/domain/formalite/lettres";
+import { apportsDe, repartitionDesTitres, valeurNominale } from "@/domain/formalite/capital";
+import { elider, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { motAssocie, motPart, type Associe, type Brouillon } from "@/domain/formalite/parcours";
 import { Champ } from "./EtatCivil";
 import styles from "./Parcours.module.css";
@@ -78,15 +78,8 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
 
   const detail = associes.map((a) => apportsDe(a, nominale));
   const partsReparties = detail.reduce((somme, d) => somme + d.parts, 0);
-  const souscrit = detail.reduce((somme, d) => somme + d.souscrit, 0);
   const totalVerse = detail.reduce((somme, d) => somme + d.verse, 0);
   const totalReste = detail.reduce((somme, d) => somme + d.reste, 0);
-
-  // La barre dit où on en est de la couverture du capital : verte quand ça tombe
-  // juste, ambre quand il manque, rouge quand on dépasse.
-  const couverture = capital > 0 ? Math.min((souscrit / capital) * 100, 100) : 0;
-  const ton =
-    souscrit > capital ? styles.barreTrop : souscrit === capital ? styles.barreOk : styles.barreManque;
 
   /**
    * Le dégradé conique du camembert.
@@ -95,7 +88,9 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
    * gris. Au-delà de 100 %, le disque passe entièrement au rouge : ce n'est plus
    * une répartition, c'est une erreur.
    */
-  const pourcentageGlobal = partsTotales > 0 ? Math.round((partsReparties / partsTotales) * 100) : 0;
+  const pourcentageGlobal =
+    partsTotales > 0 ? Math.round((partsReparties / partsTotales) * 100) : 0;
+  const repartition = repartitionDesTitres(brouillon.forme, partsReparties, partsTotales);
 
   const segments: string[] = [];
   let degre = 0;
@@ -103,7 +98,12 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
     if (a.parts <= 0) return;
     const angle = partsTotales > 0 ? (a.parts / partsTotales) * 360 : 0;
     segments.push(
-      COULEURS[i % COULEURS.length] + " " + degre.toFixed(2) + "deg " + (degre + angle).toFixed(2) + "deg"
+      COULEURS[i % COULEURS.length] +
+        " " +
+        degre.toFixed(2) +
+        "deg " +
+        (degre + angle).toFixed(2) +
+        "deg"
     );
     degre += angle;
   });
@@ -145,95 +145,65 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
 
   return (
     <div className={styles.full}>
-      {/* ---------- La couverture du capital ---------- */}
-      <div className={styles.barreBloc}>
-        <div className={styles.barreEntete}>
-          <span className={styles.barreLibelle}>Répartition du capital</span>
-          <span className={styles.barrePct}>{Math.round(couverture)}%</span>
-        </div>
-        <div className={styles.barrePiste}>
-          <div className={`${styles.barreRemplissage} ${ton}`} style={{ width: couverture + "%" }} />
-        </div>
-        <div className={styles.barreSous}>
-          <span>
-            {euros(souscrit)} répartis sur {euros(capital)}
-          </span>
-          <span>
-            {partsReparties} / {partsTotales || "?"} {motPart(brouillon.forme, true)}
-          </span>
-        </div>
-      </div>
+      {/*
+        Les deux nombres qui commandent l'étape, en tête.
 
-      {/* ---------- Le camembert de la répartition ---------- */}
-      <div className={styles.chartSection}>
-        <div className={styles.donutWrap}>
-          <div className={styles.donut} style={{ background: gradient }} />
-          <div className={styles.donutCenter}>
-            <span className={styles.donutPct} style={{ color: teinteDuCentre }}>
-              {pourcentageGlobal}%
-            </span>
-            <span className={styles.donutLabel}>réparti</span>
-          </div>
-        </div>
-
-        <div className={styles.donutLegend}>
-          {associes.map((associe, i) => {
-            const nom =
-              nomDeLaPartie(associe) || nomComplet(associe.personne ?? {}) || mot + " " + (i + 1);
-            const a = detail[i];
-            const pct = partsTotales > 0 ? (a.parts / partsTotales) * 100 : 0;
-            const montant = partsTotales > 0 ? (a.parts / partsTotales) * capital : 0;
-
-            return (
-              <div key={i} className={styles.donutItem}>
-                <span
-                  className={styles.donutDot}
-                  style={{ background: COULEURS[i % COULEURS.length] }}
-                  aria-hidden="true"
-                />
-                <span className={styles.donutInfo}>
-                  <span className={styles.donutNom}>{nom}</span>
-                  <span className={styles.donutDetail}>
-                    {a.parts} {motPart(brouillon.forme, a.parts > 1)} · {euros(montant)}
-                  </span>
-                </span>
-                <span className={styles.donutItemPct}>{pourcent(pct)}%</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ---------- Le nombre de parts émises ---------- */}
-      <div className={styles.formGrid}>
-        <Champ
-          id="partsTotales"
-          libelle={"Nombre total de " + motPart(brouillon.forme, true)}
-          requis
-          anomalie={anomalies.partsTotales}
-        >
-          <input
+        Ils venaient en troisième, après une barre de progression et un camembert qui
+        ne peuvent rien afficher tant qu'ils sont vides : on arrivait sur deux
+        graphiques à zéro pour cent sans savoir par où commencer.
+      */}
+      <div className={styles.emission}>
+        <div className={styles.formGrid}>
+          <Champ
             id="partsTotales"
-            inputMode="numeric"
-            value={brouillon.partsTotales ?? ""}
-            onChange={(e) =>
-              surChangement({ partsTotales: Number(e.target.value) || undefined })
-            }
-          />
-        </Champ>
-
-        <Champ id="capital" libelle="Capital social" requis anomalie={anomalies.capital}>
-          <span className={styles.suffix}>
+            libelle={"Nombre total " + elider(motPart(brouillon.forme, true))}
+            requis
+            anomalie={anomalies.partsTotales}
+          >
             <input
-              id="capital"
-              inputMode="decimal"
-              value={brouillon.capital ?? ""}
-              onChange={(e) => surChangement({ capital: Number(e.target.value) || 0 })}
+              id="partsTotales"
+              inputMode="numeric"
+              value={brouillon.partsTotales ?? ""}
+              onChange={(e) => surChangement({ partsTotales: Number(e.target.value) || undefined })}
             />
-            <span>€</span>
-          </span>
-        </Champ>
+          </Champ>
+
+          <Champ id="capital" libelle="Capital social" requis anomalie={anomalies.capital}>
+            <span className={styles.suffix}>
+              <input
+                id="capital"
+                inputMode="decimal"
+                value={brouillon.capital ?? ""}
+                onChange={(e) => surChangement({ capital: Number(e.target.value) || 0 })}
+              />
+              <span>€</span>
+            </span>
+          </Champ>
+        </div>
+
+        <p className={styles.emissionNote}>
+          {nominale > 0
+            ? partsTotales.toLocaleString("fr-FR") +
+              " " +
+              motPart(brouillon.forme, partsTotales > 1) +
+              " à " +
+              euros(nominale) +
+              " l'une."
+            : "Ces deux nombres donnent la valeur de chaque " +
+              motPart(brouillon.forme) +
+              ", que portent les statuts."}
+        </p>
       </div>
+
+      {/*
+        Où en est la répartition, là où l'on répartit.
+
+        La barre de progression disait le même nombre que le camembert, l'un sous
+        l'autre, et tous deux avant les champs qu'ils mesurent.
+      */}
+      <p className={`${styles.attribue} ${styles["attribue-" + repartition.etat] ?? ""}`}>
+        {repartition.phrase}
+      </p>
 
       {/* ---------- Une carte par associé ---------- */}
       <div className={styles.cartes}>
@@ -315,7 +285,9 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
                 {enNature > 0 && (
                   <div className={styles.apportLigne}>
                     <div className={styles.apportChamp}>
-                      <label htmlFor={"natureDesc-" + i}>Description de l&apos;apport en nature</label>
+                      <label htmlFor={"natureDesc-" + i}>
+                        Description de l&apos;apport en nature
+                      </label>
                       <textarea
                         id={"natureDesc-" + i}
                         placeholder="Ex : Matériel informatique, fonds de commerce..."
@@ -355,6 +327,46 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
           Ajoutez d&apos;abord un {mot.toLowerCase()} à l&apos;étape « {mot}s ».
         </p>
       )}
+
+      {/* ---------- Le camembert de la répartition ---------- */}
+      <div className={styles.chartSection}>
+        <div className={styles.donutWrap}>
+          <div className={styles.donut} style={{ background: gradient }} />
+          <div className={styles.donutCenter}>
+            <span className={styles.donutPct} style={{ color: teinteDuCentre }}>
+              {pourcentageGlobal}%
+            </span>
+            <span className={styles.donutLabel}>réparti</span>
+          </div>
+        </div>
+
+        <div className={styles.donutLegend}>
+          {associes.map((associe, i) => {
+            const nom =
+              nomDeLaPartie(associe) || nomComplet(associe.personne ?? {}) || mot + " " + (i + 1);
+            const a = detail[i];
+            const pct = partsTotales > 0 ? (a.parts / partsTotales) * 100 : 0;
+            const montant = partsTotales > 0 ? (a.parts / partsTotales) * capital : 0;
+
+            return (
+              <div key={i} className={styles.donutItem}>
+                <span
+                  className={styles.donutDot}
+                  style={{ background: COULEURS[i % COULEURS.length] }}
+                  aria-hidden="true"
+                />
+                <span className={styles.donutInfo}>
+                  <span className={styles.donutNom}>{nom}</span>
+                  <span className={styles.donutDetail}>
+                    {a.parts} {motPart(brouillon.forme, a.parts > 1)} · {euros(montant)}
+                  </span>
+                </span>
+                <span className={styles.donutItemPct}>{pourcent(pct)}%</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ---------- Le récapitulatif ---------- */}
       <dl className={styles.recap}>

@@ -855,72 +855,69 @@
    Reprise des règles .capital-* et .associe-card de css/creation.css : la barre de
    couverture, une carte par associé, le bloc d'apport et le récapitulatif. */
 
-/* ---------- La barre de couverture ---------- */
+/* ---------- Les deux nombres qui commandent l'étape ---------- */
 
-.barreBloc {
+/*
+ * Le nombre de titres émis et le capital, en tête.
+ *
+ * Ils venaient en troisième, après une barre de progression et un camembert qui ne
+ * peuvent rien montrer tant qu'ils sont vides. Encadrés et posés en premier, ils se
+ * lisent comme ce qu'ils sont : le point de départ.
+ */
+.emission {
   margin-bottom: 24px;
-  padding: 24px;
-  background: #f5f5f5;
+  padding: 22px 24px 20px;
+  background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 16px;
 }
 
-.barreEntete {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+.emissionNote {
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #ededf0;
+  font-size: 13.5px;
+  color: #52525b;
 }
 
-.barreLibelle {
-  font-size: 14px;
+/* ---------- Où en est la répartition ---------- */
+
+/*
+ * Une phrase, à l'endroit où l'on répartit.
+ *
+ * La barre de progression et le camembert disaient le même pourcentage, l'un sous
+ * l'autre, tous deux avant les champs qu'ils mesurent. La phrase dit ce qui reste à
+ * faire, en titres - l'unité dans laquelle on saisit - et non en pour cent.
+ */
+.attribue {
+  margin: 0 0 14px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  font-size: 13.5px;
   font-weight: 500;
-  color: #111;
+  background: #f4f4f5;
+  color: #52525b;
 }
 
-.barrePct {
-  font-size: 22px;
-  font-weight: 700;
-  color: #111;
-  font-variant-numeric: tabular-nums;
+/* Tant qu'aucun titre n'est émis, la phrase dit le premier geste. */
+.attribue-vide {
+  background: #f4f4f5;
+  color: #3f3f46;
 }
 
-.barrePiste {
-  width: 100%;
-  height: 8px;
-  overflow: hidden;
-  background: #e5e5e5;
-  border-radius: 100px;
+.attribue-manque {
+  background: #fef6e7;
+  color: #8a5a00;
 }
 
-.barreRemplissage {
-  height: 100%;
-  border-radius: 100px;
-  transition:
-    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    background 0.3s;
+.attribue-juste {
+  background: #eaf7ef;
+  color: #1d6135;
 }
 
-/* Trois états, trois teintes : ça tombe juste, il manque, on dépasse. */
-.barreOk {
-  background: #22c55e;
-}
-
-.barreManque {
-  background: #f59e0b;
-}
-
-.barreTrop {
-  background: #ef4444;
-}
-
-.barreSous {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #999;
+.attribue-trop {
+  background: #fdecec;
+  color: #a12525;
 }
 
 /* ---------- Une carte par associé ---------- */
