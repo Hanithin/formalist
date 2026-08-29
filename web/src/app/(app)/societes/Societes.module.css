@@ -453,8 +453,7 @@
 }
 
 .ligneLien,
-.echeance,
-.entree {
+.echeance {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -465,8 +464,7 @@
 }
 
 .lignes > li:last-child .ligneLien,
-.echeances > li:last-child,
-.journal > li:last-child {
+.echeances > li:last-child {
   border-bottom: none;
 }
 
@@ -519,8 +517,7 @@
 
 .ligneQuand,
 .entreeQuand {
-  flex-shrink: 0;
-  font-size: 13px;
+  font-size: 12.5px;
   color: #a1a1aa;
   white-space: nowrap;
 }
@@ -532,22 +529,67 @@
 }
 
 /*
- * L'entrée tient sur une rangée, quelle que soit la longueur de sa phrase.
+ * Une frise, non un tableau.
  *
- * La feuille globale met `flex-wrap: wrap` sur les rangées : la première entrée -
- * « Vous avez ajouté Attestation de dépôt de capital » - renvoyait donc sa date à la
- * ligne suivante, et paraissait deux fois plus haute que ses voisines. C'est la phrase
- * qui se replie, non la date.
+ * L'historique alignait des phrases à gauche et des dates à droite, séparées par un
+ * blanc que la plus longue franchissait en renvoyant sa date à la ligne. Or ce qu'on
+ * lit dans un historique, c'est l'ordre : un point par événement, reliés par un fil,
+ * et la date sous la phrase plutôt qu'en face d'elle - la mise en page cesse alors de
+ * dépendre de la longueur du texte.
+ *
+ * Le fil est gris et structurel : il dessine la chronologie, il ne signale aucun état.
  */
 .entree {
-  flex-wrap: nowrap;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 0 18px 22px;
+}
+
+.journal > li:last-child .entree {
+  padding-bottom: 2px;
+}
+
+/* Le point de l'événement, sur le fil. */
+.entree::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid #d4d4d8;
+  background: #fff;
+}
+
+/* Le plus récent est plein : c'est là qu'on en est. */
+.journal > li:first-child .entree::before {
+  border-color: #18181b;
+  background: #18181b;
+}
+
+/* Le fil, qui s'arrête au dernier point. */
+.entree::after {
+  content: "";
+  position: absolute;
+  top: 17px;
+  left: 4px;
+  bottom: 0;
+  width: 1px;
+  background: #ededf0;
+}
+
+.journal > li:last-child .entree::after {
+  display: none;
 }
 
 .entreeTexte {
   min-width: 0;
   font-size: 14px;
-  line-height: 1.4;
-  color: #52525b;
+  line-height: 1.45;
+  color: #3f3f46;
 }
 
 .vide {

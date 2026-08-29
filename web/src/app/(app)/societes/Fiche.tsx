@@ -172,9 +172,7 @@ export async function Fiche({ cle }: { cle: string }) {
                   societe.siren ? "SIREN " + sirenLisible(societe.siren) : null,
                   accorder(societe.dossiers.length, "formalité", "formalités"),
                   societe.enCours > 0 ? societe.enCours + " en cours" : null,
-                  documents.length > 0
-                    ? accorder(documents.length, "document", "documents")
-                    : null,
+                  documents.length > 0 ? accorder(documents.length, "document", "documents") : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")}
@@ -363,18 +361,20 @@ export async function Fiche({ cle }: { cle: string }) {
                     const cestMoi = entree.auteurRole === "user";
                     const qui = cestMoi ? "Vous" : (entree.auteur ?? "Formalist");
                     return (
-                      <li key={rang} className={styles.entree}>
-                        <span className={styles.entreeTexte}>
-                          {seSuffitAElleMeme(entree) ? (
-                            entree.valeur
-                          ) : (
-                            <>
-                              {qui} {phraseJournal(entree, cestMoi)}
-                            </>
-                          )}
-                        </span>
-                        {/* L'heure autant que le jour : c'est un historique, on y cherche l'ordre. */}
-                        <span className={styles.entreeQuand}>{dateEtHeure(entree.quand)}</span>
+                      <li key={rang}>
+                        <div className={styles.entree}>
+                          <span className={styles.entreeTexte}>
+                            {seSuffitAElleMeme(entree) ? (
+                              entree.valeur
+                            ) : (
+                              <>
+                                {qui} {phraseJournal(entree, cestMoi)}
+                              </>
+                            )}
+                          </span>
+                          {/* L'heure autant que le jour : c'est un historique, on y cherche l'ordre. */}
+                          <span className={styles.entreeQuand}>{dateEtHeure(entree.quand)}</span>
+                        </div>
                       </li>
                     );
                   })}
