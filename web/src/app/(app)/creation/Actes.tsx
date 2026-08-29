@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { A_RELIRE, mentionDAttente } from "@/domain/document/publication";
+import { A_RELIRE } from "@/domain/document/publication";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Champ } from "./EtatCivil";
@@ -272,15 +272,14 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
         plus. Deux endroits pour la même chose, dont l'un était le moins complet.
       */}
 
-      {/* ---------- Les actes ---------- */}
-      <div className={styles.genSection}>
-        <div className={styles.genSectionHead}>
-          <p className={styles.genSectionLabel}>Documents générés</p>
-          <p className={styles.genSectionSub}>
-            Statuts, PV et attestations préparés automatiquement
-          </p>
-        </div>
+      {/*
+        ---------- Les actes ----------
 
+        Sans en-tête : « Documents générés / Statuts, PV et attestations préparés
+        automatiquement » redisait le titre de l'étape et sa phrase, trois centimètres
+        plus haut - « Mes documents / Les actes produits, à relire et à signer ».
+      */}
+      <div className={styles.genSection}>
         {actes.length === 0 ? (
           <p className={styles.actesVide}>
             Aucun document produit pour l&apos;instant. Les statuts, la liste des souscripteurs et
@@ -385,18 +384,6 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
               );
             })}
           </div>
-        )}
-
-        {/*
-          Ce qui se passe, dit une fois pour toutes.
-
-          Le silence serait pire : un dossier dont les actes sont produits mais retenus
-          paraîtrait bloqué, et l'on rappellerait pour demander où ils sont.
-        */}
-        {enRelecture.length > 0 && (
-          <p className={styles.actesRelecture} role="status">
-            {mentionDAttente(enRelecture.length)}
-          </p>
         )}
 
         <div className={styles.genRegenLigne}>

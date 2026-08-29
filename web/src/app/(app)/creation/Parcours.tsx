@@ -4,7 +4,7 @@ import { Fragment, useState, useTransition } from "react";
 import Link from "next/link";
 import { EnTetePage } from "@/components/page/EnTetePage";
 import { Recapitulatif } from "./Recapitulatif";
-import { A_RELIRE } from "@/domain/document/publication";
+import { A_RELIRE, mentionCourte } from "@/domain/document/publication";
 import { ETAPES_PLEINE_LARGEUR } from "./etapes-larges";
 import { useRouter } from "next/navigation";
 import {
@@ -69,6 +69,24 @@ interface Props {
 }
 
 /** La coche des étapes franchies. */
+/* Le cadenas de la pastille « En relecture », repris pour la mention de tête. */
+function Cadenas() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
+    </svg>
+  );
+}
+
 function Coche() {
   return (
     <svg
@@ -328,7 +346,8 @@ export function Parcours({
    * des pièces la posait « Requis » en rouge dès la première visite, sur un document
    * que personne ne pouvait encore avoir.
    */
-  const actesRendus = actesProduits.length > 0 && !actesProduits.some((a) => a.statut === A_RELIRE);
+  const actesEnRelecture = actesProduits.filter((a) => a.statut === A_RELIRE).length;
+  const actesRendus = actesProduits.length > 0 && actesEnRelecture === 0;
 
   /* La formule retenue, pour la barre de règlement posée en tête de l'étape. */
   const formuleRetenue = offre(brouillon.offre);
@@ -479,6 +498,20 @@ export function Parcours({
             <h2>{titreDe(etape)}</h2>
             <p className={styles.formDesc}>{descriptionDe(etape)}</p>
           </div>
+
+          {/*
+            La relecture se dit en tête, non au milieu de la liste.
+
+            Le message occupait un bandeau ambre entre les actes et le bouton de
+            régénération : il coupait la liste en deux pour une information qui ne
+            demande rien. Il tient en trois mots à côté du titre.
+          */}
+          {etape.identifiant === "actes" && actesEnRelecture > 0 && (
+            <p className={styles.mentionRelecture} role="status">
+              <Cadenas />
+              {mentionCourte(actesEnRelecture)}
+            </p>
+          )}
 
           {etape.identifiant === "offres" && formuleRetenue && (
             <div className={styles.reglerBarre}>

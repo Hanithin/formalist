@@ -56,7 +56,14 @@ export function aRelire<T extends DocumentPublie>(documents: T[]): T[] {
  *
  * Le silence serait pire : un dossier dont les actes sont produits mais retenus
  * paraîtrait vide, et il rappellerait pour demander où ils sont.
+ *
+ * Deux longueurs : la phrase entière quand elle a la place, et la mention courte pour
+ * une ligne de tête, où elle se pose à côté d'un titre.
  */
+export function mentionCourte(nombre: number): string {
+  return nombre === 1 ? "Un acte en relecture" : nombre + " actes en relecture";
+}
+
 export function mentionDAttente(nombre: number): string {
   return nombre === 1
     ? "Un acte est en cours de relecture par votre avocat. Il apparaîtra ici dès qu'il sera validé."

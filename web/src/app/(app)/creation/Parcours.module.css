@@ -2157,18 +2157,26 @@
   color: #888;
 }
 
+/*
+ * Une ligne par acte, et rien qu'une ligne.
+ *
+ * Chaque acte occupait cent pixels de haut : une pastille de quarante-huit, vingt de
+ * rembourrage de part et d'autre, et deux boutons pleine taille. À cinq actes, la liste
+ * descendait sur deux écrans pour dire cinq noms. Elle se resserre à soixante, et les
+ * lignes se touchent presque - c'est une liste, pas cinq cartes.
+ */
 .genList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .genCard {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
+  gap: 12px;
+  padding: 10px 14px;
   border: 1px solid #e5e5e5;
   border-radius: 12px;
   background: #fff;
@@ -2221,16 +2229,16 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background: #eff6ff;
   color: #3b82f6;
 }
 
 .genIcone svg {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
 }
 
 .genInfo {
@@ -2239,9 +2247,9 @@
 }
 
 .genNom {
-  margin-bottom: 3px;
   font-size: 14px;
   font-weight: 500;
+  line-height: 1.35;
   color: #111;
 }
 
@@ -2294,7 +2302,7 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background: transparent;
@@ -2314,8 +2322,8 @@
 }
 
 .genBtn svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .genBtnPrimaire {
@@ -2775,14 +2783,14 @@
 }
 
 /*
- * Les actes retenus par la relecture.
+ * Pourquoi le bouton de signature est fermé.
  *
- * Le silence serait pire : un dossier dont les actes sont produits mais retenus
- * paraîtrait bloqué, et l'on rappellerait pour demander où ils sont.
+ * La mention de tête dit qu'il y a des actes en relecture ; celle-ci dit ce que cela
+ * empêche, à l'endroit où l'on s'apprêtait à cliquer.
  */
 .actesRelecture {
-  margin: 16px 0 0;
-  padding: 12px 16px;
+  margin: 0 0 12px;
+  padding: 11px 16px;
   border-radius: 12px;
   background: #fef6e7;
   font-size: 13.5px;
@@ -2793,6 +2801,33 @@
 .genBadgeRelecture {
   background: #fef6e7;
   color: #8a5a00;
+}
+
+/*
+ * La relecture, dite en trois mots à côté du titre.
+ *
+ * Le message occupait un bandeau ambre entre les actes et le bouton de régénération :
+ * il coupait la liste en deux pour une information qui ne demande rien. Le rôle
+ * « status » reste, pour que les lecteurs d'écran l'annoncent.
+ */
+.mentionRelecture {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: #fef6e7;
+  border: 1px solid #f5e2bf;
+  font-size: 13px;
+  color: #8a5a00;
+  white-space: nowrap;
+}
+
+.mentionRelecture svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 /* ---------- Régler, en tête de l'étape des offres ---------- */
