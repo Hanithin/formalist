@@ -323,6 +323,25 @@ describe("l'étape en trois mots", () => {
     expect(etapeCourte({ ...chezLAvocat, phase: 5 })).toBe("Déposé au greffe");
   });
 
+  it("ne dit jamais d'un brouillon qu'il est au greffe", () => {
+    /*
+     * La phase compte deux choses : les étapes du formulaire, et l'avancement du
+     * dossier chez nous. Un brouillon entièrement saisi atteint la phase cinq sans
+     * avoir été transmis - la lire seule l'annonçait « déposé au greffe » alors qu'il
+     * dormait chez son auteur, sous une pastille « Brouillon ».
+     */
+    const rempliMaisPasParti = {
+      ...base,
+      phase: 5,
+      informationsCompletes: true,
+      banque: "Qonto",
+      brouillon: true,
+    };
+
+    expect(etapeCourte(rempliMaisPasParti)).toBe("À transmettre");
+    expect(etapeCourte({ ...rempliMaisPasParti, brouillon: false })).toBe("Déposé au greffe");
+  });
+
   it("reste court : une carte fait trois cent soixante pixels", () => {
     // prochaineEtape rend une phrase entière, faite pour une vignette large.
     const contexte = { ...base, phase: 4, informationsCompletes: true, banque: "Qonto" };

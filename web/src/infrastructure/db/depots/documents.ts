@@ -180,7 +180,12 @@ export async function formalitesPourListe(
   const contextes = await contextesDesDossiers(dossiers);
 
   return dossiers.map((d) => {
-    const contexte = contextes.get(d.id);
+    /*
+     * Le drapeau vient d'ici : c'est la liste qui sait ce qui n'a jamais été engagé,
+     * et l'étape courte en a besoin pour ne pas annoncer un greffe à un brouillon.
+     */
+    const brut = contextes.get(d.id);
+    const contexte = brut ? { ...brut, brouillon: brouillons.has(d.id) } : undefined;
     const actions = contexte ? actionsAttendues(contexte) : [];
 
     return {

@@ -18,6 +18,11 @@ export interface ContexteDossier {
   documentsRejetes: number;
   signaturesEnAttente: number;
   signaturesTotal: number;
+  /**
+   * Rien ne l'a encore engagé : ni règlement, ni transmission, ni signature demandée.
+   * Il n'est donc ni chez l'avocat ni au greffe, quelle que soit sa phase.
+   */
+  brouillon?: boolean;
 }
 
 export interface ActionAttendue {
@@ -205,6 +210,17 @@ export function etapeCourte(ctx: ContexteDossier): string {
   const actions = actionsAttendues(ctx);
   const premiere = actions.find((a) => a.urgent) ?? actions[0];
   if (premiere) return premiere.titre;
+
+  /*
+   * Un brouillon n'a jamais quitté les mains du client.
+   *
+   * La phase compte deux choses à la fois : les étapes franchies dans le formulaire,
+   * et l'avancement du dossier chez nous - `enregistrerBrouillon` l'avance à mesure
+   * qu'on remplit. Un brouillon entièrement saisi atteint donc la phase cinq sans
+   * avoir été transmis, et la lire seule le disait « déposé au greffe » alors qu'il
+   * dormait chez son auteur.
+   */
+  if (ctx.brouillon) return "À transmettre";
 
   // Rien n'est attendu du client : c'est que le dossier travaille ailleurs.
   if (ctx.phase >= 5) return "Déposé au greffe";
