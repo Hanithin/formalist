@@ -7,6 +7,8 @@ import {
   type ActeProduit,
 } from "@/domain/document/publication";
 import type { DossierListe } from "@/domain/formalite/liste";
+import { actionsAttendues, etapeCourte } from "@/domain/formalite/actions";
+import { contextesDesDossiers } from "./contexte-dossier";
 import type { DocumentRange } from "@/domain/document/bibliotheque";
 import { piecesAttendues } from "@/domain/formalite/documents";
 import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
@@ -168,20 +170,37 @@ export async function formalitesPourListe(
   const nonLusPar = new Map(nonLus.map((m) => [m.formalite_id, m._count._all]));
   const brouillons = await brouillonsParmi(dossiers);
 
-  return dossiers.map((d) => ({
-    id: d.id,
-    type: d.type,
-    societe: d.societe,
-    forme: d.forme,
-    status: d.status,
-    sousPhase: d.business_sub_phase,
-    phase: d.phase,
-    offre: d.offer,
-    banque: banqueDuBrouillon(d.data_json),
-    modifieLe: d.updated_at,
-    nonLus: nonLusPar.get(d.id) ?? 0,
-    brouillon: brouillons.has(d.id),
-  }));
+  /*
+   * Ce que chaque dossier attend, calculé ici plutôt qu'à l'affichage.
+   *
+   * La carte annonçait un pourcentage de remplissage ; elle annonce désormais ce qui
+   * est attendu, et la liste se range par ce qui presse. Les deux demandent le même
+   * contexte que le tableau de bord, d'où le constructeur commun.
+   */
+  const contextes = await contextesDesDossiers(dossiers);
+
+  return dossiers.map((d) => {
+    const contexte = contextes.get(d.id);
+    const actions = contexte ? actionsAttendues(contexte) : [];
+
+    return {
+      id: d.id,
+      type: d.type,
+      societe: d.societe,
+      forme: d.forme,
+      status: d.status,
+      sousPhase: d.business_sub_phase,
+      phase: d.phase,
+      offre: d.offer,
+      banque: banqueDuBrouillon(d.data_json),
+      modifieLe: d.updated_at,
+      nonLus: nonLusPar.get(d.id) ?? 0,
+      brouillon: brouillons.has(d.id),
+      etape: contexte ? etapeCourte(contexte) : "",
+      urgent: actions.some((a) => a.urgent),
+      attendLeClient: actions.length > 0,
+    };
+  });
 }
 
 /**

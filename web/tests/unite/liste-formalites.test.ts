@@ -9,6 +9,7 @@ import {
   paginer,
   pageDe,
   parModificationRecente,
+  parCeQuiPresse,
   libelleDuType,
   PAR_PAGE,
   type DossierListe,
@@ -305,5 +306,60 @@ describe("les états d'un dossier dans la liste", () => {
       en_attente: 0,
       terminee: 0,
     });
+  });
+});
+
+/**
+ * L'ordre de la liste.
+ *
+ * Elle se rangeait par date de modification : le dossier touché hier passait devant
+ * celui qui bloque depuis trois semaines, et rien n'annonçait cet ordre. On n'ouvre
+ * pas cette page pour retrouver ce qu'on a fait, mais pour savoir ce qui attend.
+ */
+describe("l'ordre de ce qui presse", () => {
+  const recent = new Date("2026-08-29T10:00:00Z");
+  const ancien = new Date("2026-08-01T10:00:00Z");
+
+  it("place ce qui bloque devant un dossier modifié plus récemment", () => {
+    const range = parCeQuiPresse([
+      dossier({ id: 1, modifieLe: recent, attendLeClient: true }),
+      dossier({ id: 2, modifieLe: ancien, urgent: true, attendLeClient: true }),
+    ]);
+
+    expect(range.map((d) => d.id)).toEqual([2, 1]);
+  });
+
+  it("range après ce qui attend le client ce qui n'attend rien de lui", () => {
+    const range = parCeQuiPresse([
+      dossier({ id: 1, modifieLe: recent }),
+      dossier({ id: 2, modifieLe: ancien, attendLeClient: true }),
+    ]);
+
+    expect(range.map((d) => d.id)).toEqual([2, 1]);
+  });
+
+  it("met les dossiers terminés en dernier, si récents soient-ils", () => {
+    const range = parCeQuiPresse([
+      dossier({ id: 1, modifieLe: recent, status: "terminee" }),
+      dossier({ id: 2, modifieLe: ancien }),
+    ]);
+
+    expect(range.map((d) => d.id)).toEqual([2, 1]);
+  });
+
+  it("départage deux dossiers de même rang par leur ancienneté", () => {
+    const range = parCeQuiPresse([
+      dossier({ id: 1, modifieLe: ancien, attendLeClient: true }),
+      dossier({ id: 2, modifieLe: recent, attendLeClient: true }),
+    ]);
+
+    expect(range.map((d) => d.id)).toEqual([2, 1]);
+  });
+
+  it("ne modifie pas la liste qu'on lui donne", () => {
+    const dossiers = [dossier({ id: 1, modifieLe: ancien }), dossier({ id: 2, modifieLe: recent })];
+    parCeQuiPresse(dossiers);
+
+    expect(dossiers.map((d) => d.id)).toEqual([1, 2]);
   });
 });

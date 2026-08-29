@@ -174,6 +174,43 @@ export function attendLeClient(ctx: ContexteDossier): boolean {
   return actionsAttendues(ctx).length > 0;
 }
 
+/** Ce dossier bloque-t-il, par opposition à avancer lentement ? */
+export function bloque(ctx: ContexteDossier): boolean {
+  return actionsAttendues(ctx).some((a) => a.urgent);
+}
+
+/**
+ * Où en est le dossier, en trois mots.
+ *
+ * `prochaineEtape` rend une phrase entière, faite pour une vignette large. Une carte
+ * de liste fait trois cent soixante pixels : « Un avocat vérifie l'ensemble de vos
+ * documents avant le dépôt au greffe. » y tient sur trois lignes et repousse tout le
+ * reste. On garde donc le seul titre de ce qui est attendu.
+ *
+ * Cette ligne remplace le pourcentage d'avancement, qui mesurait le remplissage d'un
+ * formulaire sans jamais dire ce qui bloquait - au point qu'un dossier annoncé à cent
+ * pour cent proposait encore de le reprendre.
+ */
+export function etapeCourte(ctx: ContexteDossier): string {
+  if (ctx.status === "terminee") return "Société immatriculée";
+
+  /*
+   * Ce qui bloque passe devant ce qui avance.
+   *
+   * Les actions sortent dans l'ordre du parcours, et la signature manquante est
+   * ajoutée en dernier : prendre la première annonçait « Compléter les informations »
+   * sur un dossier dont les statuts attendent une signature pour partir au greffe.
+   * C'est la règle qu'`attentesOrdonnees` applique déjà d'un dossier à l'autre.
+   */
+  const actions = actionsAttendues(ctx);
+  const premiere = actions.find((a) => a.urgent) ?? actions[0];
+  if (premiere) return premiere.titre;
+
+  // Rien n'est attendu du client : c'est que le dossier travaille ailleurs.
+  if (ctx.phase >= 5) return "Déposé au greffe";
+  return "En révision par l'avocat";
+}
+
 /**
  * Où en est le dossier, en une phrase.
  *

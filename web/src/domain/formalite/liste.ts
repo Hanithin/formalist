@@ -27,6 +27,17 @@ export interface DossierListe {
    * une étape en cours qui ne bouge pas, et lui seul porte la corbeille.
    */
   brouillon?: boolean;
+  /**
+   * Ce que le dossier attend, en trois mots - « Une signature manquante », « Compléter
+   * les informations », « En révision par l'avocat ». Il remplace sur la carte le
+   * pourcentage d'avancement, qui disait le remplissage d'un formulaire sans jamais
+   * dire ce qui bloque.
+   */
+  etape?: string;
+  /** Quelque chose arrête le dossier : une signature, une pièce refusée. */
+  urgent?: boolean;
+  /** La balle est dans le camp du client, qu'elle presse ou non. */
+  attendLeClient?: boolean;
 }
 
 /* ---------- Le type d'un dossier ---------- */
@@ -371,10 +382,43 @@ export function pageDe<T>(dossiers: T[], page: number): T[] {
  *
  * Un dossier sans date de modification passe en dernier : il n'a jamais bougé.
  */
+interface ProprietesDeTri {
+  modifieLe: Date | null;
+  status: string | null;
+  urgent?: boolean;
+  attendLeClient?: boolean;
+}
+
 export function parModificationRecente<T extends { modifieLe: Date | null }>(dossiers: T[]): T[] {
   return [...dossiers].sort(
     (a, b) => (b.modifieLe?.getTime() ?? 0) - (a.modifieLe?.getTime() ?? 0)
   );
+}
+
+/**
+ * Ce qui presse d'abord, ce qui est fini en dernier.
+ *
+ * La liste se rangeait par date de modification : le dossier touché hier passait
+ * devant celui qui bloque depuis trois semaines, et rien à l'écran n'annonçait cet
+ * ordre. Or on n'ouvre pas cette page pour retrouver ce qu'on a fait, mais pour
+ * savoir ce qui attend.
+ *
+ * Quatre rangs, et l'ancienneté départage à l'intérieur de chacun - c'est elle qui
+ * distingue deux brouillons également muets.
+ */
+export function parCeQuiPresse<T extends ProprietesDeTri>(dossiers: T[]): T[] {
+  const rang = (d: T): number => {
+    if (d.status === "terminee") return 3;
+    if (d.urgent) return 0;
+    if (d.attendLeClient) return 1;
+    return 2;
+  };
+
+  return [...dossiers].sort((a, b) => {
+    const ecart = rang(a) - rang(b);
+    if (ecart !== 0) return ecart;
+    return (b.modifieLe?.getTime() ?? 0) - (a.modifieLe?.getTime() ?? 0);
+  });
 }
 
 /**

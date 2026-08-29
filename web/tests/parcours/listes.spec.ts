@@ -44,16 +44,17 @@ test.describe("formalités", () => {
 
     const carte = page.locator("li", { hasText: "PARCOURS EN COURS" }).last();
     await expect(carte.getByText("En attente de signature")).toBeVisible();
-    /*
-     * La carte annonce aussi son avancement et sa nature.
-     *
-     * L'avancement s'écrivait « 20% complété » sous une jauge pleine largeur qui le
-     * disait déjà : il tient désormais au bout de la jauge, sur la ligne du geste.
-     */
-    await expect(carte.getByText(/^\d+ %$/)).toBeVisible();
     await expect(carte.getByText("SASU")).toBeVisible();
-    // Et la date dit ce qu'elle date.
-    await expect(carte.getByText(/^Modifié /)).toBeVisible();
+    /*
+     * La carte dit ce qu'on attend d'elle, non un pourcentage.
+     *
+     * Elle a longtemps écrit « 20% complété » : le remplissage d'un formulaire, qui ne
+     * disait ni ce qui bloquait ni ce qu'il fallait faire - et qui se contredisait avec
+     * le geste, un dossier à cent pour cent proposant encore de le reprendre. La jauge
+     * reste, muette ; c'est la ligne d'étape qui parle.
+     */
+    await expect(carte.getByText(/% complété/)).toHaveCount(0);
+    await expect(carte.getByRole("img", { name: /^Avancement : \d+ %$/ })).toBeVisible();
   });
 
   /*
@@ -87,6 +88,42 @@ test.describe("formalités", () => {
     }
   });
 
+  /**
+   * L'ordre répond à « lequel a besoin de moi », non à « qu'ai-je touché en dernier ».
+   *
+   * La liste se rangeait par date de modification : le dossier bloqué depuis trois
+   * semaines se retrouvait derrière un brouillon ouvert la veille, et rien à l'écran
+   * n'annonçait cet ordre.
+   */
+  test("ce qui bloque passe devant, quelle que soit la date", async ({ page }) => {
+    await page.goto("/formalites");
+
+    const etapes = await liste(page).getByRole("listitem").allInnerTexts();
+    expect(etapes.length, "des dossiers dans le jeu d'essai").toBeGreaterThan(1);
+
+    /*
+     * Un dossier terminé n'a plus rien à demander : rien ne le suit.
+     *
+     * On ne compare pas à la dernière position - le compte d'essai en porte parfois
+     * deux, et le premier des deux n'est alors pas le dernier de la liste.
+     */
+    const premierTermine = etapes.findIndex((c) => c.includes("Société immatriculée"));
+    if (premierTermine !== -1) {
+      const suivants = etapes.slice(premierTermine + 1);
+      expect(
+        suivants.filter((c) => !c.includes("Société immatriculée")),
+        "un dossier vivant rangé après un dossier terminé"
+      ).toEqual([]);
+    }
+
+    // Et chaque carte dit ce qu'on attend d'elle, plutôt qu'un pourcentage.
+    for (const carte of etapes) {
+      expect(carte, "une carte sans étape : " + carte.replace(/\n/g, " | ")).toMatch(
+        /Compléter|signature|Choisir|Déposer|Déposé|révision|immatriculée|à déposer|Reprendre/
+      );
+    }
+  });
+
   test("le filtre restreint la liste et se lit dans l'adresse", async ({ page }) => {
     await page.goto("/formalites");
     await page
@@ -107,7 +144,21 @@ test.describe("formalités", () => {
    * qu'elle nomme, et « Chez l'avocat » sépare ce qui est parti de ce qu'il reste à
    * écrire - deux choses que « En cours » confondait dans un seul chiffre.
    */
-  test("les brouillons ont leur pastille, distincte de ce qui est parti", async ({ page }) => {
+  test("les brouillons ont leur pastille, distincte de ce qui est parti", async ({
+    page,
+    request,
+  }) => {
+    /*
+     * Le brouillon est ouvert ici, non emprunté au jeu d'essai.
+     *
+     * La pastille disparaît quand son compte tombe à zéro - c'est `filtresUtiles` qui
+     * le veut, un filtre qui ne rendrait rien ne s'offre pas. Le test s'appuyait donc
+     * sur les brouillons que d'autres séries laissaient derrière elles : lancé seul,
+     * il ne trouvait aucune pastille à cliquer.
+     */
+    const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+    pagines.push(Number(dossier));
+
     await page.goto("/formalites");
     const filtres = page.getByRole("navigation", { name: "Filtrer les formalités" });
 
@@ -117,7 +168,7 @@ test.describe("formalités", () => {
     // Un brouillon porte sa pastille sur la carte : toutes celles qui restent l'ont.
     const cartes = liste(page).getByRole("listitem");
     const combien = await cartes.count();
-    expect(combien, "au moins un brouillon dans le jeu d'essai").toBeGreaterThan(0);
+    expect(combien, "au moins le brouillon qu'on vient d'ouvrir").toBeGreaterThan(0);
     for (let i = 0; i < combien; i++) {
       await expect(cartes.nth(i)).toContainText("Brouillon");
     }

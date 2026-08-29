@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { filtresUtiles } from "@/domain/document/statuts";
-import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuType, nomAffichable, pageDe, paginer, parModificationRecente, retenu, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
+import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuType, nomAffichable, pageDe, paginer, parCeQuiPresse, retenu, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
 import { avancementDuDossier, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
 import { signalerChangementDeColonne } from "@/lib/colonne";
 import styles from "./Formalites.module.css";
@@ -62,7 +62,7 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
 
   const visibles = useMemo(
     () =>
-      parModificationRecente(dossiers.filter((d) => retenu(d, filtre) && correspond(d, recherche))),
+      parCeQuiPresse(dossiers.filter((d) => retenu(d, filtre) && correspond(d, recherche))),
     [dossiers, filtre, recherche]
   );
 
@@ -450,7 +450,13 @@ function Carte({ dossier }: { dossier: DossierListe }) {
           de poser un bouton à sa gauche. L'en-tête lui réserve la place.
         */}
         {!dossier.brouillon && (
-          <span className={`${styles.statusBadge} ${CLASSES_ETAT[ton] ?? ""}`}>{etat}</span>
+          <span
+            className={`${styles.statusBadge} ${
+              dossier.urgent ? styles.statusPending : (CLASSES_ETAT[ton] ?? "")
+            }`}
+          >
+            {etat}
+          </span>
         )}
       </div>
 
@@ -474,11 +480,13 @@ function Carte({ dossier }: { dossier: DossierListe }) {
       </span>
 
       {/*
-        « Il y a 11 h » ne disait pas de quoi : créé, modifié, déposé ? Le mot « le »
-        n'apparaît que devant une date absolue - « Modifié le 11 mai 2026 », mais
-        « Modifié il y a 11 h ».
+        Ce que le dossier attend, non la date de sa dernière modification.
+
+        « Modifié le 9 août 2026 » est la métadonnée la plus faible de la carte : on
+        ouvre cette page pour savoir ce qui nous attend, pas pour retrouver ce qu'on a
+        fait. La date reste lisible sur la page du dossier.
       */}
-      <span className={styles.dossierMeta}>{dateDuDossier(dossier)}</span>
+      <span className={styles.dossierMeta}>{dossier.etape || dateDuDossier(dossier)}</span>
 
       {/*
         La jauge ne s'affiche que tant qu'elle mesure quelque chose.
@@ -494,12 +502,21 @@ function Carte({ dossier }: { dossier: DossierListe }) {
       */}
       <div className={styles.dossierFooter}>
         {aJauge && (
-          <>
-            <span className={styles.dossierProgressBar}>
-              <span className={styles.dossierProgressFill} style={{ width: pourcentage + "%" }} />
-            </span>
-            <span className={styles.dossierDate}>{pourcentage} %</span>
-          </>
+          /*
+            La jauge se tait.
+
+            « 20 % complété » écrivait ce que le trait montre déjà, et se contredisait
+            avec le geste : un dossier annoncé à cent pour cent proposait encore de le
+            reprendre. Le trait garde le coup d'œil « où j'en suis » ; la ligne
+            au-dessus dit quoi faire, ce que le chiffre n'a jamais su dire.
+          */
+          <span
+            className={styles.dossierProgressBar}
+            role="img"
+            aria-label={"Avancement : " + pourcentage + " %"}
+          >
+            <span className={styles.dossierProgressFill} style={{ width: pourcentage + "%" }} />
+          </span>
         )}
         <span className={styles.dossierAction}>
           {geste}

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   actionsAttendues,
   attendLeClient,
+  bloque,
+  etapeCourte,
   prochaineEtape,
   etatTableauDeBord,
   salutation,
@@ -274,5 +276,58 @@ describe("la phrase d'accueil", () => {
 
     expect(phraseDAccueil("Hani", 2, matin, 1)).toBeTruthy();
     expect(phraseDAccueil("Hani", 2, matin, -1)).toBeTruthy();
+  });
+});
+
+/**
+ * La ligne que porte une carte de la liste.
+ *
+ * Elle a remplacé le pourcentage d'avancement, qui mesurait le remplissage d'un
+ * formulaire sans jamais dire ce qui bloquait - au point qu'un dossier annoncé à cent
+ * pour cent proposait encore de le reprendre.
+ */
+describe("l'étape en trois mots", () => {
+  it("annonce ce qui bloque avant ce qui avance", () => {
+    /*
+     * Le cas qui a motivé la règle : les actions sortent dans l'ordre du parcours et
+     * la signature est ajoutée en dernier. Prendre la première annonçait « Compléter
+     * les informations » sur un dossier dont les statuts attendent une signature.
+     */
+    const contexte = { ...base, signaturesEnAttente: 1, signaturesTotal: 3 };
+
+    expect(actionsAttendues(contexte)[0].titre).toBe("Compléter les informations");
+    expect(etapeCourte(contexte)).toBe("Une signature manquante");
+    expect(bloque(contexte)).toBe(true);
+  });
+
+  it("reprend le titre de l'action quand rien ne bloque", () => {
+    expect(etapeCourte(base)).toBe("Compléter les informations");
+    expect(bloque(base)).toBe(false);
+  });
+
+  it("dit la société immatriculée quand le dossier est terminé", () => {
+    expect(etapeCourte({ ...base, status: "terminee" })).toBe("Société immatriculée");
+  });
+
+  it("dit où travaille le dossier quand le client n'a rien à faire", () => {
+    // Informations complètes, banque choisie, pièces déposées : la balle est ailleurs.
+    const chezLAvocat = {
+      ...base,
+      phase: 4,
+      informationsCompletes: true,
+      banque: "Qonto",
+    };
+
+    expect(actionsAttendues(chezLAvocat)).toEqual([]);
+    expect(etapeCourte(chezLAvocat)).toBe("En révision par l'avocat");
+    expect(etapeCourte({ ...chezLAvocat, phase: 5 })).toBe("Déposé au greffe");
+  });
+
+  it("reste court : une carte fait trois cent soixante pixels", () => {
+    // prochaineEtape rend une phrase entière, faite pour une vignette large.
+    const contexte = { ...base, phase: 4, informationsCompletes: true, banque: "Qonto" };
+
+    expect(prochaineEtape(contexte).length).toBeGreaterThan(40);
+    expect(etapeCourte(contexte).length).toBeLessThanOrEqual(40);
   });
 });
