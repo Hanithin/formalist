@@ -15,6 +15,7 @@ import {
 } from "@/domain/formalite/journal";
 import { obligationsDeLaSociete } from "@/domain/societe/obligations";
 import { CeQuiVousAttend, type AVenir } from "./CeQuiVousAttend";
+import carte from "@/components/page/Carte.module.css";
 import styles from "./Societes.module.css";
 
 /**
@@ -162,19 +163,34 @@ export async function Fiche({ cle, avecFil = true }: { cle: string; avecFil?: bo
         <section className={styles.identite}>
           <div className={styles.identiteTete}>
             <div>
-              <h1 className={styles.titre}>{societe.denomination}</h1>
               {/*
-                Ce que la société est, sur une ligne.
+                La forme au-dessus du nom, comme sur les cartes de la liste.
 
-                Les chiffres vivaient dans une liste de définitions sous le titre :
-                sur une société qui n'a qu'une formalité, elle occupait une rangée
-                entière pour « FORMALITÉS » et « 1 », avec neuf cents pixels de blanc
-                à droite. Ils rejoignent la ligne qui les nomme déjà.
+                Elle vivait en dessous, collée au titre, dans une ligne qui mêlait ce
+                que la société est - sa forme, son numéro - et ce qu'elle a - ses
+                formalités, ses documents. Deux registres sur une ligne, et rien pour
+                les séparer. La nature monte en intitulé, où les cartes la mettent
+                déjà ; les comptes descendent sous le nom.
               */}
-              <p className={styles.sousTitre}>
+              <span className={carte.nature}>
                 {[
                   societe.forme ?? "Société",
                   societe.siren ? "SIREN " + sirenLisible(societe.siren) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+
+              <h1 className={styles.titre}>{societe.denomination}</h1>
+              {/*
+                Ce que la société a, sous son nom.
+
+                Les chiffres vivaient dans une liste de définitions : sur une société
+                qui n'a qu'une formalité, elle occupait une rangée entière pour
+                « FORMALITÉS » et « 1 », avec neuf cents pixels de blanc à droite.
+              */}
+              <p className={styles.sousTitre}>
+                {[
                   accorder(societe.dossiers.length, "formalité", "formalités"),
                   societe.enCours > 0 ? societe.enCours + " en cours" : null,
                   documents.length > 0

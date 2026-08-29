@@ -85,7 +85,8 @@
 /* Vingt-huit pixels, comme les documents, les formalités, les contrats et le reste :
    un titre de page a la même taille partout, sans quoi on croit changer d'application. */
 .titre {
-  margin: 0;
+  /* L'intitulé de nature le précède : quatre pixels les lient sans les coller. */
+  margin: 4px 0 0;
   font-size: 28px;
   font-weight: 600;
   color: #18181b;
@@ -562,10 +563,14 @@
  * lourde que le titre au-dessus d'elle, et douze pixels de blanc sous elle.
  */
 .sousTitre {
-  margin: 4px 0 0;
-  font-size: 14.5px;
+  /*
+   * Six pixels sous un titre dont l'interligne vaut un : sans descente sous la ligne
+   * de base, quatre le collaient au nom.
+   */
+  margin: 6px 0 0;
+  font-size: 14px;
   line-height: 1.4;
-  color: #52525b;
+  color: #71717a;
 }
 
 /*
