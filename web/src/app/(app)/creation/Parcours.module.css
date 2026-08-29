@@ -48,6 +48,16 @@
   width: 100%;
 }
 
+/*
+ * Sans la colonne, le formulaire prend la place entière.
+ *
+ * Les cartes de tarifs se lisent côte à côte : à trois par ligne dans la colonne du
+ * formulaire, chacune tombait sous deux cents pixels.
+ */
+.contentLarge {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* L'en-tête, le suivi et le chemin d'étapes tiennent toute la largeur. */
 .tete,
 .suivi,

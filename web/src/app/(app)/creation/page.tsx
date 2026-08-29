@@ -5,6 +5,7 @@ import { ouvrirBrouillon, lireBrouillon } from "@/infrastructure/db/depots/broui
 import { documentsDuDossier } from "@/infrastructure/db/depots/documents";
 import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
+import { ETAPES_PLEINE_LARGEUR } from "./etapes-larges";
 import { Suivi } from "@/components/formalite/Suivi";
 import { adresseDuDossier } from "@/domain/formalite/liste";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
@@ -67,6 +68,14 @@ export default async function Creation({
   const courante = etapeAccessible(Number(etape) || 1, brouillon);
 
   /*
+   * L'étape des offres se passe de la colonne de droite, et prend toute la largeur :
+   * trois tarifs dans sept cent trente pixels s'y coupaient sur quatre lignes.
+   */
+  const large = ETAPES_PLEINE_LARGEUR.includes(
+    ETAPES.find((e) => e.numero === courante)?.identifiant ?? ""
+  );
+
+  /*
    * Le suivi n'apparaît qu'une fois le dossier transmis.
    *
    * Tant qu'on le remplit, le fil des sept étapes dit déjà où on en est ; deux
@@ -80,7 +89,7 @@ export default async function Creation({
 
   return (
     <main className={styles.page}>
-      <div className={styles.content}>
+      <div className={large ? `${styles.content} ${styles.contentLarge}` : styles.content}>
         {/*
           Le formulaire reste, même une fois le dossier parti chez l'avocat.
           Le masquer paraissait juste - il n'y a plus d'informations à saisir - mais

@@ -364,6 +364,53 @@ test("le capital se saisit une fois, avant de se répartir", async ({ page, requ
   await expect(page.getByText(/200 de trop/)).toBeVisible();
 });
 
+/**
+ * Les tarifs se lisent côte à côte, sur toute la largeur.
+ *
+ * Trois cartes dans la colonne du formulaire tombaient sous deux cents pixels
+ * chacune : « Démarrez votre entreprise en quelques clics » s'y coupait sur quatre
+ * lignes. Le récapitulatif n'aide pas à choisir un forfait - il dit ce qu'on a saisi,
+ * non ce qu'on achète - et cède la place.
+ */
+test("l'étape des offres prend toute la largeur", async ({ page, request }) => {
+  await page.setViewportSize({ width: 1500, height: 900 });
+  const dossier = await ouvrirCreation(page, request);
+
+  await request.put("/api/formalites/brouillon", {
+    data: {
+      dossier: Number(dossier),
+      modifications: {
+        forme: "SASU",
+        denomination: "OFFRES AU LARGE",
+        activite: "Conseil aux entreprises",
+        adresse: "3 rue Centrale",
+        codePostal: "33000",
+        ville: "Bordeaux",
+        capital: 1000,
+        capitalLibere: 1000,
+        partsTotales: 100,
+        associes: [{ ...associe("Camille", "Durand"), parts: 100, versement: 1000 }],
+        dirigeants: [{ associe: 0 }],
+      },
+    },
+  });
+
+  const colonne = page.getByRole("complementary", { name: /Récapitulatif/ });
+  const carte = page.locator("main section").first();
+
+  await page.goto("/creation?dossier=" + dossier + "&etape=5");
+  await expect(colonne).toBeVisible();
+  const etroite = (await carte.boundingBox())!;
+
+  await page.goto("/creation?dossier=" + dossier + "&etape=6");
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Choisissez votre offre");
+  await expect(colonne).toHaveCount(0);
+  const large = (await carte.boundingBox())!;
+
+  // La colonne et sa gouttière font trois cent cinquante pixels : la carte les reprend.
+  expect(large.width).toBeGreaterThan(etroite.width + 300);
+});
+
 test("on ne saute pas par-dessus une étape incomplète", async ({ page, request }) => {
   const dossier = await ouvrirCreation(page, request);
 

@@ -4,6 +4,7 @@ import { Fragment, useState, useTransition } from "react";
 import Link from "next/link";
 import { EnTetePage } from "@/components/page/EnTetePage";
 import { Recapitulatif } from "./Recapitulatif";
+import { ETAPES_PLEINE_LARGEUR } from "./etapes-larges";
 import { useRouter } from "next/navigation";
 import {
   verifierEtape,
@@ -840,7 +841,9 @@ export function Parcours({
         </div>
       </section>
 
-      <Recapitulatif brouillon={identite} avancement={avancement} />
+      {!ETAPES_PLEINE_LARGEUR.includes(etape.identifiant) && (
+        <Recapitulatif brouillon={identite} avancement={avancement} />
+      )}
     </>
   );
 }
