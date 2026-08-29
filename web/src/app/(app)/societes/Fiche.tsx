@@ -15,7 +15,6 @@ import {
 } from "@/domain/formalite/journal";
 import { obligationsDeLaSociete } from "@/domain/societe/obligations";
 import { CeQuiVousAttend, type AVenir } from "./CeQuiVousAttend";
-import carte from "@/components/page/Carte.module.css";
 import styles from "./Societes.module.css";
 
 /**
@@ -65,7 +64,7 @@ export async function Fiche({ cle }: { cle: string }) {
   const ouverte = await ouvrirSociete(utilisateur, cle);
   if (!ouverte) notFound();
 
-  const { societe, etat, documents, journal } = ouverte;
+  const { societe, etat, combien, documents, journal } = ouverte;
 
   /*
    * L'historique ne garde que ce qui apprend quelque chose.
@@ -116,15 +115,6 @@ export async function Fiche({ cle }: { cle: string }) {
         trouvait. Le retour devient une pastille qui réagit au survol, avec sa flèche ;
         le nom de la société prend le noir du titre, puisque c'est la page courante.
       */}
-      {/*
-        Le fil d'Ariane est parti.
-
-        Il n'était pas le chemin du retour : la colonne porte « Mes sociétés » en
-        permanence, et ne quitte jamais l'écran. Il redisait donc où l'on se trouve à
-        qui vient de cliquer pour y arriver, et poussait la carte de trente pixels vers
-        le bas.
-      */}
-
       <div className={styles.contenu}>
         {/*
           L'identité et les gestes, dans une même carte.
@@ -136,26 +126,21 @@ export async function Fiche({ cle }: { cle: string }) {
           <div className={styles.identiteTete}>
             <div>
               {/*
-                La forme au-dessus du nom, comme sur les cartes de la liste.
+                Le nom et l'état sur la même ligne.
 
-                Elle vivait en dessous, collée au titre, dans une ligne qui mêlait ce
-                que la société est - sa forme, son numéro - et ce qu'elle a - ses
-                formalités, ses documents. Deux registres sur une ligne, et rien pour
-                les séparer. La nature monte en intitulé, où les cartes la mettent
-                déjà ; les comptes descendent sous le nom.
+                L'état se tenait dans l'angle de la carte, à neuf cents pixels du nom
+                qu'il qualifie : on lisait « CABINET ROUSSEAU » puis, bien plus tard,
+                « Active », sans que rien ne dise que le second parlait du premier.
               */}
-              <span className={carte.nature}>
-                {[
-                  societe.forme ?? "Société",
-                  societe.siren ? "SIREN " + sirenLisible(societe.siren) : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
+              <div className={styles.identiteNom}>
+                <h1 className={styles.titre}>{societe.denomination}</h1>
+                <span className={`${styles.badge} ${styles["badge-" + etat.ton] ?? ""}`}>
+                  {etat.libelle}
+                </span>
+              </div>
 
-              <h1 className={styles.titre}>{societe.denomination}</h1>
               {/*
-                Ce que la société a, sous son nom.
+                Ce que la société est, puis ce qu'elle a.
 
                 Les chiffres vivaient dans une liste de définitions : sur une société
                 qui n'a qu'une formalité, elle occupait une rangée entière pour
@@ -163,6 +148,8 @@ export async function Fiche({ cle }: { cle: string }) {
               */}
               <p className={styles.sousTitre}>
                 {[
+                  societe.forme ?? "Société",
+                  societe.siren ? "SIREN " + sirenLisible(societe.siren) : null,
                   accorder(societe.dossiers.length, "formalité", "formalités"),
                   societe.enCours > 0 ? societe.enCours + " en cours" : null,
                   documents.length > 0
@@ -173,9 +160,30 @@ export async function Fiche({ cle }: { cle: string }) {
                   .join(" · ")}
               </p>
             </div>
-            <span className={`${styles.badge} ${styles["badge-" + etat.ton] ?? ""}`}>
-              {etat.libelle}
-            </span>
+
+            {/*
+              Le retour, seul dans le coin depuis que l'état a rejoint le nom.
+
+              Il ne paraît que s'il mène quelque part : à une seule société, /societes
+              affiche déjà cette fiche, et le retour boucherait sur lui-même.
+            */}
+            {combien > 1 && (
+              <Link href="/societes" className={styles.retour}>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+                Toutes mes sociétés
+              </Link>
+            )}
           </div>
 
           {/*

@@ -185,6 +185,14 @@ export async function ouvrirSociete(utilisateur: UtilisateurConnecte, cle: strin
   return {
     societe,
     etat: etatDeLaSociete(societe),
+    /*
+     * Combien le compte en porte en tout.
+     *
+     * La fiche s'en sert pour savoir si un retour vers la liste a un sens : à une
+     * seule société, /societes affiche déjà cette fiche, et le bouton bouclerait sur
+     * lui-même. La liste est déjà chargée ici, le compte ne coûte rien.
+     */
+    combien: societes.length,
     documents,
     journal: journal.map((e) => ({
       dossierId: e.formalite_id as number,

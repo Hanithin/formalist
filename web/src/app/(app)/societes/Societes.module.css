@@ -27,8 +27,7 @@
 /* Vingt-huit pixels, comme les documents, les formalités, les contrats et le reste :
    un titre de page a la même taille partout, sans quoi on croit changer d'application. */
 .titre {
-  /* L'intitulé de nature le précède : quatre pixels les lient sans les coller. */
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 28px;
   font-weight: 600;
   color: #18181b;
@@ -42,6 +41,55 @@
 
 
 /* La même mesure que les autres listes : la barre d'outils tombe à la même hauteur. */
+/*
+ * Le nom et l'état, sur la même ligne.
+ *
+ * L'état se tenait dans l'angle de la carte, à neuf cents pixels du nom qu'il qualifie.
+ * On lisait « CABINET ROUSSEAU », puis bien plus loin « Active », sans que rien ne dise
+ * que le second parlait du premier. Ils se touchent maintenant, et la ligne se replie
+ * plutôt que de se serrer quand un nom est long.
+ */
+.identiteNom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 8px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #52525b;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.retour svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.retour:hover {
+  border-color: #d4d4d8;
+  color: #18181b;
+}
+
+/* La flèche recule d'un pixel : le geste est annoncé avant d'être fait. */
+.retour:hover svg {
+  transform: translateX(-2px);
+}
+
 .contenu {
   padding: 24px 48px 48px;
 }
@@ -506,10 +554,18 @@
  */
 .sousTitre {
   /*
-   * Six pixels sous un titre dont l'interligne vaut un : sans descente sous la ligne
-   * de base, quatre le collaient au nom.
+   * Dix pixels sous un titre dont l'interligne vaut un : sans descente sous la ligne
+   * de base, six laissaient encore les deux lignes se toucher.
    */
-  margin: 6px 0 0;
+  margin: 10px 0 0;
+  /*
+   * Deux pixels vers la droite, pour que les deux lignes s'alignent à l'œil.
+   *
+   * Les boîtes commencent bien au même endroit - la mesure le dit - mais un C rond de
+   * vingt-huit pixels déborde de son cadre plus qu'un E plat de quatorze. Aligner les
+   * boîtes, ici, c'est désaligner ce qu'on voit.
+   */
+  padding-left: 2px;
   font-size: 14px;
   line-height: 1.4;
   color: #71717a;
