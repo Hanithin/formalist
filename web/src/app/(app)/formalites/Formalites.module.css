@@ -21,9 +21,21 @@
 
 /* ---------- Gabarit ---------- */
 
+/*
+ * La page se borne, et se centre au-delà.
+ *
+ * Sans borne, le bandeau s'étirait sur toute la largeur : à 2560 pixels, le titre et
+ * le bouton se tenaient à deux mille deux cent soixante pixels l'un de l'autre, avec
+ * un vide entre eux, pendant que les cartes restaient à trois cent cinquante. La borne
+ * laisse quatre colonnes - au-delà, l'œil parcourt plus qu'il ne lit.
+ *
+ * Sur les écrans courants elle ne se voit pas : à 1920 pixels, le contenu en fait
+ * 1524 et rien n'est rogné.
+ */
 .page {
   padding: 0;
-  max-width: none;
+  max-width: 1560px;
+  margin-inline: auto;
   width: 100%;
 }
 
@@ -654,8 +666,16 @@
  * La corbeille est posée dessus, hors du lien : c'est cette case qui lui donne son
  * repère, et le survol de l'une comme de l'autre la fait apparaître.
  */
+/*
+ * Chaque carte est un conteneur, et se mesure elle-même.
+ *
+ * La bascule qui suit dépend de la largeur de la carte, non de celle de l'écran : la
+ * colonne de navigation en prend trois cents, la grille en donne ce qu'elle peut, et
+ * une requête sur la fenêtre se tromperait dès qu'on replie la colonne.
+ */
 .dossierCase {
   position: relative;
+  container-type: inline-size;
 }
 
 /* Le badge d'un dossier que rien n'a encore engagé. */
@@ -748,6 +768,73 @@
  */
 .enteteAvecCorbeille {
   padding-right: 132px;
+}
+
+/*
+ * Seule sur sa ligne, la carte se couche.
+ *
+ * Entre huit cent cinquante et mille quatre-vingt-dix pixels, la grille ne tient
+ * qu'une colonne : la carte s'étirait à six cent quatre pixels pour un nom, une date
+ * et un geste, et huit dossiers demandaient de faire défiler. Au-delà de cinq cents,
+ * elle se range donc en deux lignes plutôt qu'en quatre - la largeur perdue devient de
+ * la hauteur gagnée, et les huit tiennent à l'écran.
+ *
+ * Le seuil est celui de la carte, pas de l'écran : une grille à deux colonnes ou plus
+ * donne des pistes de trois cent vingt à quatre cent quarante, qui restent en dessous
+ * et gardent la carte debout. Sur un téléphone, la carte seule en fait quatre cent
+ * soixante - c'est pour rester franchement au-dessus d'elle que le seuil est à cinq
+ * cents et non à quatre cent soixante-dix : là, dix pixels séparaient les deux mises
+ * en page, et un changement de marge aurait couché les cartes sur mobile.
+ */
+@container (min-width: 500px) {
+  .dossierCard {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    grid-template-areas:
+      "tete  tete  tete"
+      "titre meta  pied";
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 2px;
+    padding: 14px 20px;
+  }
+
+  .dossierCardHeader {
+    grid-area: tete;
+    margin-bottom: 0;
+  }
+
+  .dossierTitle {
+    grid-area: titre;
+    margin-bottom: 0;
+  }
+
+  .dossierMeta {
+    grid-area: meta;
+  }
+
+  /* Le pied ne pousse plus vers le bas : il partage la ligne du titre. */
+  .dossierFooter {
+    grid-area: pied;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  /*
+   * L'angle du brouillon remonte avec l'en-tête.
+   *
+   * Il se posait à vingt-deux pixels du haut, sur une carte qui en faisait cent
+   * cinquante ; couchée, elle en fait quatre-vingts, et la pastille doit retrouver la
+   * ligne de la nature.
+   */
+  .coinBrouillon {
+    top: 14px;
+    right: 20px;
+  }
+
+  .enteteAvecCorbeille {
+    padding-right: 128px;
+  }
 }
 
 /* ---------- La fenêtre de confirmation ---------- */
