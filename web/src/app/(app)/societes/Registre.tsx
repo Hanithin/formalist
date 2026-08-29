@@ -24,7 +24,7 @@ export interface LigneDuRegistre {
   etat: { cle: string; libelle: string; ton: string };
   formalites: string;
   enCours: number;
-  echeance: { intitule: string; quand: string } | null;
+  echeance: { intitule: string; quand: string; delai: string; enRetard: boolean } | null;
 }
 
 /**
@@ -172,11 +172,26 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
                     {societe.formalites}
                   </span>
 
+                  {/*
+                    La date, et le temps qu'elle laisse.
+
+                    « 30/07/2028 » demande un calcul ; « dans 22 mois » se lit. Le
+                    retard, lui, se dit en clair : c'est la seule chose de cette
+                    colonne qui appelle un geste aujourd'hui.
+                  */}
                   <span className={styles.celluleEcheance}>
                     {societe.echeance ? (
                       <>
                         <span className={styles.echeanceNom}>{societe.echeance.intitule}</span>
-                        <span className={styles.echeanceQuand}>{societe.echeance.quand}</span>
+                        <span
+                          className={
+                            societe.echeance.enRetard
+                              ? `${styles.echeanceQuand} ${styles.echeanceDepassee}`
+                              : styles.echeanceQuand
+                          }
+                        >
+                          {societe.echeance.quand} · {societe.echeance.delai}
+                        </span>
                       </>
                     ) : (
                       "—"

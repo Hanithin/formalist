@@ -253,8 +253,15 @@
 
 .echeanceQuand {
   font-size: 12px;
-  color: #a1a1aa;
+  /* #a1a1aa donnait 2,6 pour 1 sur le blanc : sous le seuil d'un texte de cette taille. */
+  color: #71717a;
   font-variant-numeric: tabular-nums;
+}
+
+/* Une échéance passée le dit, dans la teinte que l'application réserve à l'attente. */
+.echeanceDepassee {
+  color: var(--attente-encre);
+  font-weight: 500;
 }
 
 .chevron {

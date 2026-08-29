@@ -33,6 +33,16 @@ export interface DossierDeSociete {
   /** Les échéances que ce dossier porte, quand il en a. */
   limiteDepot?: string | null;
   termeDuMandat?: string | null;
+  /**
+   * L'exercice qu'un dépôt des comptes déclare, par sa date de clôture.
+   *
+   * C'est à cela qu'on reconnaît qu'une obligation annuelle a été levée : un dossier
+   * « comptes » terminé sur l'exercice clos le 31 décembre 2027 acquitte celui-là, et
+   * lui seul.
+   */
+  clotureDeclaree?: string | null;
+  /** La clôture du premier exercice, quand la création la porte. */
+  clotureDuPremierExercice?: string | null;
 }
 
 export interface Societe {
@@ -41,6 +51,13 @@ export interface Societe {
   denomination: string;
   forme: string | null;
   siren: string | null;
+  /**
+   * La clôture de son premier exercice, reprise du dossier qui la porte.
+   *
+   * Elle commande toutes ses obligations annuelles : approuver dans les six mois,
+   * déposer dans le mois suivant. Sans elle, on ne sait rien lui annoncer.
+   */
+  clotureDuPremierExercice: string | null;
   dossiers: DossierDeSociete[];
   /** Les dossiers qui ne sont ni terminés ni archivés. */
   enCours: number;
@@ -98,6 +115,7 @@ export function regrouperEnSocietes(dossiers: DossierDeSociete[]): Societe[] {
         denomination: nom,
         forme: dossier.forme,
         siren,
+        clotureDuPremierExercice: dossier.clotureDuPremierExercice ?? null,
         dossiers: [dossier],
         enCours: CLOS.has(dossier.status ?? "") ? 0 : 1,
         majLe: versDate(dossier.majLe),
@@ -107,6 +125,17 @@ export function regrouperEnSocietes(dossiers: DossierDeSociete[]): Societe[] {
 
     existante.dossiers.push(dossier);
     if (!CLOS.has(dossier.status ?? "")) existante.enCours += 1;
+
+    /*
+     * La clôture se prend au premier dossier qui la porte.
+     *
+     * Seule la création la connaît ; les autres parcours n'ont pas à la redire. Une
+     * société n'a qu'un premier exercice, et le premier dossier qui l'annonce est
+     * celui qui l'a fixé.
+     */
+    if (!existante.clotureDuPremierExercice && dossier.clotureDuPremierExercice) {
+      existante.clotureDuPremierExercice = dossier.clotureDuPremierExercice;
+    }
 
     // Le renseignement le plus récent l'emporte : une société change de nom, de forme.
     const quand = versDate(dossier.majLe);
@@ -136,7 +165,50 @@ export interface Etat {
   ton: "action" | "validation" | "termine" | "";
 }
 
-const FERMETURES = new Set(["fermeture", "cessation"]);
+export type NatureDeDossier =
+  | "creation"
+  | "modification"
+  | "comptes"
+  | "fermeture"
+  | "cessation"
+  | "auto-entrepreneur"
+  | "autre";
+
+/**
+ * Ce qu'est un dossier, quel que soit le texte qu'il porte.
+ *
+ * La colonne `type` n'est pas une énumération : les dossiers ouverts par le parcours
+ * y écrivent « creation », ceux repris de l'ancienne application « Création SAS ». Les
+ * écrans qui comparaient à la chaîne exacte se trompaient sur les seconds - l'état
+ * d'une société en cours d'immatriculation s'affichait « Active », quand sa propre
+ * fiche annonçait « En cours d'immatriculation » deux clics plus loin.
+ *
+ * On reconnaît donc par le début du mot, sans accent ni casse. « Dépôt des comptes »
+ * et « comptes » désignent la même chose ; ce qui ne se reconnaît pas reste « autre »,
+ * et n'entraîne aucune conclusion.
+ */
+export function natureDuDossier(type: string | null | undefined): NatureDeDossier {
+  const net = (type ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (!net) return "autre";
+  if (net.startsWith("auto-entrepreneur") || net.startsWith("auto entrepreneur")) {
+    return "auto-entrepreneur";
+  }
+  if (net.startsWith("creation")) return "creation";
+  if (net.startsWith("modification")) return "modification";
+  if (net.startsWith("cessation")) return "cessation";
+  if (net.startsWith("fermeture")) return "fermeture";
+  // « comptes », « depot », « depot des comptes » : la même formalité, trois écritures.
+  if (net.startsWith("comptes") || net.startsWith("depot")) return "comptes";
+  return "autre";
+}
+
+const FERMETURES = new Set<NatureDeDossier>(["fermeture", "cessation"]);
+const NAISSANCES = new Set<NatureDeDossier>(["creation", "auto-entrepreneur"]);
 
 /**
  * L'état juridique, déduit de ses dossiers.
@@ -144,17 +216,24 @@ const FERMETURES = new Set(["fermeture", "cessation"]);
  * Une société n'a pas de colonne « statut » : c'est ce qu'on lui a fait qui le dit.
  * Une fermeture terminée la radie ; une fermeture en cours la met en sortie ; une
  * création non terminée signifie qu'elle n'existe pas encore. Le reste est actif.
+ *
+ * Un dossier dont on ne reconnaît pas la nature ne conclut rien : il ne rend pas la
+ * société active pour autant, il la laisse au cas suivant.
  */
 export function etatDeLaSociete(societe: Societe): Etat {
   const ouverts = societe.dossiers.filter((d) => !CLOS.has(d.status ?? ""));
 
-  if (societe.dossiers.some((d) => FERMETURES.has(d.type ?? "") && d.status === "terminee")) {
+  if (
+    societe.dossiers.some(
+      (d) => FERMETURES.has(natureDuDossier(d.type)) && d.status === "terminee"
+    )
+  ) {
     return { etat: "radiee", libelle: "Radiée", ton: "" };
   }
-  if (ouverts.some((d) => FERMETURES.has(d.type ?? ""))) {
+  if (ouverts.some((d) => FERMETURES.has(natureDuDossier(d.type)))) {
     return { etat: "en-fermeture", libelle: "En fermeture", ton: "action" };
   }
-  if (ouverts.some((d) => (d.type ?? "creation") === "creation" || d.type === "auto-entrepreneur")) {
+  if (ouverts.some((d) => NAISSANCES.has(natureDuDossier(d.type)))) {
     return { etat: "en-creation", libelle: "En création", ton: "validation" };
   }
   return { etat: "active", libelle: "Active", ton: "termine" };

@@ -9,6 +9,7 @@ import {
 import { echeancesDesDossiers } from "@/domain/formalite/accueil";
 import { sirenLisible } from "@/domain/modification/annonce";
 import { EnTetePage } from "@/components/page/EnTetePage";
+import { delaiLisible, obligationsDeLaSociete } from "@/domain/societe/obligations";
 import { Vide } from "@/components/liste/Vide";
 import { Registre, type LigneDuRegistre } from "./Registre";
 import styles from "./Societes.module.css";
@@ -44,17 +45,33 @@ export default async function Societes() {
    */
   const lignes: LigneDuRegistre[] = societes.map((societe) => {
     const etat = etatDeLaSociete(societe);
+    /*
+     * Deux sources, et la plus proche l'emporte.
+     *
+     * Les dossiers portent les échéances qu'ils ont ouvertes - un dépôt en cours, un
+     * mandat de liquidateur. La société, elle, porte celles que la loi lui impose du
+     * seul fait d'exister : approuver ses comptes, puis les déposer. La colonne
+     * affichait un tiret partout parce qu'elle ne connaissait que les premières, et
+     * qu'une société créée n'en a aucune.
+     */
+    const desDossiers = echeancesDesDossiers(
+      societe.dossiers.map((d) => ({
+        id: d.id,
+        type: d.type,
+        societe: societe.denomination,
+        status: d.status,
+        limiteDepot: d.limiteDepot,
+        termeDuMandat: d.termeDuMandat,
+      }))
+    ).map((e) => ({ intitule: e.intitule, limite: e.limite }));
+
+    const deLaSociete = obligationsDeLaSociete(societe)
+      .filter((o) => o.limite)
+      .map((o) => ({ intitule: o.intituleCourt, limite: o.limite! }));
+
     const prochaine =
-      echeancesDesDossiers(
-        societe.dossiers.map((d) => ({
-          id: d.id,
-          type: d.type,
-          societe: societe.denomination,
-          status: d.status,
-          limiteDepot: d.limiteDepot,
-          termeDuMandat: d.termeDuMandat,
-        }))
-      )[0] ?? null;
+      [...desDossiers, ...deLaSociete].sort((a, b) => a.limite.localeCompare(b.limite))[0] ??
+      null;
 
     return {
       cle: societe.cle,
@@ -68,6 +85,9 @@ export default async function Societes() {
         ? {
             intitule: prochaine.intitule,
             quand: prochaine.limite.split("-").reverse().join("/"),
+            // Le retard se voit dans la liste, sans avoir à ouvrir la fiche.
+            delai: delaiLisible(prochaine.limite),
+            enRetard: prochaine.limite < new Date().toISOString().slice(0, 10),
           }
         : null,
     };

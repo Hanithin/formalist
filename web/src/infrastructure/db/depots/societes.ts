@@ -28,9 +28,17 @@ function societeDuDossier(dataJson: string | null): {
   siren: string | null;
   forme: string | null;
   denomination: string | null;
+  /** La clôture du premier exercice, d'où se déduisent les obligations annuelles. */
+  clotureDuPremierExercice: string | null;
   valeurs: Record<string, unknown>;
 } {
-  const vide = { siren: null, forme: null, denomination: null, valeurs: {} };
+  const vide = {
+    siren: null,
+    forme: null,
+    denomination: null,
+    clotureDuPremierExercice: null,
+    valeurs: {},
+  };
   if (!dataJson) return vide;
 
   try {
@@ -42,6 +50,7 @@ function societeDuDossier(dataJson: string | null): {
       entreprise?: { siren?: string; denomination?: string };
       valeurs?: Record<string, unknown>;
       siren?: string;
+      dateCloturePremierExercice?: string;
     };
 
     /*
@@ -57,6 +66,16 @@ function societeDuDossier(dataJson: string | null): {
       siren: (source.siren ?? objet.siren ?? null) || null,
       forme: (objet.societe?.forme ?? null) || null,
       denomination: (source.denomination ?? null) || null,
+      /*
+       * Elle vit à la racine du brouillon de création, où le parcours la pré-remplit
+       * au 31 décembre. C'est la seule date dont une société tient ses obligations
+       * annuelles : sans elle, on ne sait pas quand son exercice se referme.
+       */
+      clotureDuPremierExercice:
+        typeof objet.dateCloturePremierExercice === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(objet.dateCloturePremierExercice)
+          ? objet.dateCloturePremierExercice
+          : null,
       valeurs: objet.valeurs && typeof objet.valeurs === "object" ? objet.valeurs : {},
     };
   } catch {
@@ -103,7 +122,8 @@ export async function mesSocietes(utilisateur: UtilisateurConnecte): Promise<Soc
      */
     .filter((d) => nomAffichable(d.societe))
     .map((d) => {
-      const { siren, forme, denomination, valeurs } = societeDuDossier(d.data_json);
+      const { siren, forme, denomination, clotureDuPremierExercice, valeurs } =
+        societeDuDossier(d.data_json);
       const formeRetenue = d.forme?.trim() || forme;
 
       return {
@@ -120,6 +140,15 @@ export async function mesSocietes(utilisateur: UtilisateurConnecte): Promise<Soc
           (premiereEtapeIncomplete(lireBrouillon(d.data_json)) ?? 9) > 3 ? 2 : 1
         ),
         majLe: d.updated_at ?? new Date(),
+        clotureDuPremierExercice,
+        /*
+         * L'exercice qu'un dépôt des comptes déclare.
+         *
+         * C'est à cela qu'on reconnaît qu'une obligation annuelle est levée : le
+         * dossier terminé qui porte cette clôture acquitte cet exercice, et lui seul.
+         */
+        clotureDeclaree:
+          typeof valeurs.dateCloture === "string" ? (valeurs.dateCloture as string) : null,
         ...echeancesDu(d.type, formeRetenue, valeurs),
       };
     });

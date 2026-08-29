@@ -8,6 +8,8 @@
  * vérifient les accords de langue, les seuils de date et les bords de la pagination.
  */
 
+import { natureDuDossier } from "@/domain/societe/portefeuille";
+
 export interface DossierListe {
   id: number;
   type: string;
@@ -466,8 +468,18 @@ export function gesteDuDossier(dossier: { status: string | null }): string {
 }
 
 export function adresseDuDossier(dossier: { id: number; type: string | null }): string {
-  if (dossier.type === "modification") return "/modification?dossier=" + dossier.id;
-  if (dossier.type === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + dossier.id;
+  /*
+   * La nature se reconnaît, elle ne se compare pas.
+   *
+   * La colonne `type` porte « creation » sur un dossier ouvert par le parcours et
+   * « Création SAS » sur un dossier repris de l'ancienne application. Les comparaisons
+   * exactes échouaient sur les seconds et retombaient ici par chance sur /creation -
+   * ce qui marchait pour une création, et aurait ouvert le mauvais écran pour une
+   * modification écrite « Modification de siège ».
+   */
+  const nature = natureDuDossier(dossier.type);
+  if (nature === "modification") return "/modification?dossier=" + dossier.id;
+  if (nature === "auto-entrepreneur") return "/auto-entrepreneur?dossier=" + dossier.id;
   /*
    * Les deux parcours ajoutés après coup.
    *
@@ -475,8 +487,8 @@ export function adresseDuDossier(dossier: { id: number; type: string | null }): 
    * parcours de création avec un dossier qui n'en est pas un : l'écran s'affichait vide,
    * et le client croyait son dossier perdu.
    */
-  if (dossier.type === "comptes") return "/depot-des-comptes?dossier=" + dossier.id;
-  if (dossier.type === "fermeture") return "/fermeture?dossier=" + dossier.id;
-  if (dossier.type === "cessation") return "/cessation?dossier=" + dossier.id;
+  if (nature === "comptes") return "/depot-des-comptes?dossier=" + dossier.id;
+  if (nature === "fermeture") return "/fermeture?dossier=" + dossier.id;
+  if (nature === "cessation") return "/cessation?dossier=" + dossier.id;
   return "/creation?dossier=" + dossier.id;
 }
