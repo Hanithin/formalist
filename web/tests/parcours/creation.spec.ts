@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../../src/infrastructure/db/generated/client";
 import { execFile } from "node:child_process";
 import { retirerDossiers } from "./nettoyage";
 
@@ -565,6 +567,100 @@ test.describe("accès au brouillon", () => {
       data: { dossier: 1, modifications: { capital: -500 } },
     });
     expect([400, 403]).toContain(reponse.status());
+  });
+});
+
+/**
+ * On ne signe pas un acte que l'avocat n'a pas rendu.
+ *
+ * Depuis que le règlement produit les actes automatiquement, ils arrivent en
+ * relecture : c'est la validation de l'avocat qui en fait des documents signables, et
+ * c'est elle qui accorde la mise en signature. L'écran désactive le bouton, mais un
+ * écran se contourne - la demande part par courriel avec un jeton d'accès.
+ */
+test.describe("la relecture retient la signature", () => {
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({
+      connectionString: process.env.DATABASE_URL ?? "",
+      options: "-c timezone=UTC",
+    }),
+  });
+
+  test.afterAll(() => prisma.$disconnect());
+
+  /** Un dossier complet, ses actes produits, puis remis en relecture. */
+  async function dossierEnRelecture(
+    page: import("@playwright/test").Page,
+    request: import("@playwright/test").APIRequestContext
+  ) {
+    const dossier = await ouvrirCreation(page, request);
+
+    await request.put("/api/formalites/brouillon", {
+      data: {
+        dossier: Number(dossier),
+        modifications: {
+          forme: "SASU",
+          denomination: "ACTES EN RELECTURE",
+          activite: "Conseil aux entreprises",
+          adresse: "3 rue Centrale",
+          codePostal: "33000",
+          ville: "Bordeaux",
+          capital: 1000,
+          capitalLibere: 1000,
+          partsTotales: 100,
+          offre: "business",
+          associes: [{ ...associe("Camille", "Durand"), parts: 100, versement: 1000 }],
+          dirigeants: [{ associe: 0 }],
+        },
+      },
+    });
+
+    await request.post("/api/formalites/documents", { data: { dossier: Number(dossier) } });
+
+    // L'encaissement les produit ainsi ; ici on pose l'état qu'il aurait laissé.
+    await prisma.documents.updateMany({
+      where: { formalite_id: Number(dossier), uploaded_by: "system" },
+      data: { status: "a_relire" },
+    });
+
+    return dossier;
+  }
+
+  test("la demande de signature est refusée, même hors de l'écran", async ({ page, request }) => {
+    const dossier = await dossierEnRelecture(page, request);
+
+    const reponse = await request.post("/api/signature", {
+      data: {
+        dossier: Number(dossier),
+        signataires: [{ nom: "Camille Durand", email: "camille@exemple.test" }],
+      },
+    });
+
+    expect(reponse.status()).toBe(409);
+    expect((await reponse.json()).error).toMatch(/relecture/i);
+  });
+
+  test("l'écran le dit et ferme le bouton", async ({ page, request }) => {
+    const dossier = await dossierEnRelecture(page, request);
+    await page.goto("/creation?dossier=" + dossier + "&etape=7");
+
+    await expect(page.getByText(/La signature s'ouvrira dès que votre avocat/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Demander les signatures" })).toBeDisabled();
+  });
+
+  test("régénérer ne publie pas ce qui attend l'avocat", async ({ page, request }) => {
+    /*
+     * Un clic sur « Régénérer les documents » déverrouillait les cinq actes : le
+     * client pouvait alors les signer avant que quiconque les ait lus.
+     */
+    const dossier = await dossierEnRelecture(page, request);
+
+    await request.post("/api/formalites/documents", { data: { dossier: Number(dossier) } });
+
+    const publies = await prisma.documents.count({
+      where: { formalite_id: Number(dossier), uploaded_by: "system", status: "generated" },
+    });
+    expect(publies).toBe(0);
   });
 });
 

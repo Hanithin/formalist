@@ -88,7 +88,20 @@ export const POST = route(async (requete: Request) => {
     let redates = false;
     if (attendue.identifiant === TYPE_ATTESTATION_CAPITAL && ligne.type !== "auto-entrepreneur") {
       try {
-        await produireLesActes(utilisateur, dossierId);
+        /*
+         * Re-datés, les actes repassent devant l'avocat.
+         *
+         * Ce ne sont plus les mêmes documents : ils portent une autre date, celle du
+         * jour où l'attestation a été déposée ici. Les laisser à disposition
+         * remettrait au client, sans relecture, des statuts qu'il pourrait signer
+         * aussitôt. C'est cette seconde validation qui ouvre la mise en signature.
+         *
+         * Avant la transmission, il n'y a pas d'avocat : les actes restent alors ce
+         * qu'ils sont, une lecture de travail.
+         */
+        await produireLesActes(utilisateur, dossierId, {
+          forcerLaRelecture: ligne.status !== "en_cours",
+        });
         redates = true;
       } catch (e) {
         if (!(e instanceof DossierIncomplet)) throw e;

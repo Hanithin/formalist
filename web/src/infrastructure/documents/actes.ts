@@ -1,5 +1,5 @@
 import { ouvrirBrouillon } from "@/infrastructure/db/depots/brouillons";
-import { dateDeSignature } from "@/infrastructure/db/depots/suivi";
+import { dateDeSignature, desActesEnRelecture } from "@/infrastructure/db/depots/suivi";
 import { documentsAProduire } from "@/domain/formalite/documents";
 import { premiereEtapeIncomplete } from "@/domain/formalite/parcours";
 import { donneesDeGabarit } from "@/domain/formalite/gabarit";
@@ -29,10 +29,22 @@ export class DossierIncomplet extends Error {
  *
  * C'est le chemin du client : le bouton de la dernière étape, et le dépôt de
  * l'attestation de capital. La session sert au contrôle d'accès, non à la production.
+ *
+ * Régénérer ne publie pas. Un acte en relecture le reste : sans cette précaution, un
+ * client dont le dossier est chez l'avocat déverrouillait les cinq actes d'un clic sur
+ * « Régénérer les documents », et pouvait les signer avant que quiconque les ait lus.
+ *
+ * `forcerLaRelecture` sert au cas inverse : l'acte change - il est re-daté du jour de
+ * l'attestation - et doit repasser devant l'avocat même s'il était déjà remis.
  */
-export async function produireLesActes(utilisateur: UtilisateurConnecte, dossierId: number) {
+export async function produireLesActes(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  options: { forcerLaRelecture?: boolean } = {}
+) {
   const { brouillon } = await ouvrirBrouillon(utilisateur, dossierId);
-  return produireLesActesDuBrouillon(dossierId, brouillon);
+  const aRelire = options.forcerLaRelecture || (await desActesEnRelecture(dossierId));
+  return produireLesActesDuBrouillon(dossierId, brouillon, { aRelire });
 }
 
 /**

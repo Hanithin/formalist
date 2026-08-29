@@ -88,7 +88,7 @@ export async function etatDuDossier(dossier: {
 }
 
 /** Reste-t-il un acte produit que l'avocat n'a pas relu ? */
-async function desActesEnRelecture(dossierId: number): Promise<boolean> {
+export async function desActesEnRelecture(dossierId: number): Promise<boolean> {
   const compte = await prisma.documents.count({
     where: { formalite_id: dossierId, uploaded_by: "system", status: A_RELIRE },
   });

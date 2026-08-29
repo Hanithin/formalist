@@ -472,14 +472,32 @@ export function Actes({ dossierId, brouillon, actes, surNote }: Props) {
           </p>
         )}
 
+        {/*
+          La signature s'ouvre quand l'avocat a rendu les actes.
+
+          On ne signe pas ce qu'il n'a pas relu, et c'est sa validation qui accorde la
+          mise en signature. Le serveur le refuse aussi : un écran se contourne, et la
+          demande part par courriel avec un jeton d'accès.
+        */}
+        {enRelecture.length > 0 && (
+          <p className={styles.actesRelecture} role="status">
+            La signature s&apos;ouvrira dès que votre avocat aura validé vos actes.
+          </p>
+        )}
+
         <div className={styles.actesEntete}>
           <button
             type="button"
             className={styles.actesBouton}
             onClick={ouvrirSignatures}
-            /* Rien à signer tant que rien n'est produit, et personne à qui
-               l'envoyer sans adresse email. */
-            disabled={enCours || actes.length === 0 || signataires.length === 0}
+            /* Rien à signer tant que rien n'est produit, rien qui ne soit relu, et
+               personne à qui l'envoyer sans adresse email. */
+            disabled={
+              enCours ||
+              actes.length === 0 ||
+              signataires.length === 0 ||
+              enRelecture.length > 0
+            }
           >
             Demander les signatures
           </button>

@@ -1,4 +1,5 @@
 import { prisma } from "../client";
+import { desActesEnRelecture } from "./suivi";
 import { exigerDossier, exigerDossierModifiable } from "./dossiers";
 import {
   etatDemande,
@@ -56,6 +57,22 @@ export async function demanderSignatures(
   signataires: { nom: string; email: string; role?: string }[]
 ) {
   await exigerDossierModifiable(utilisateur, dossierId);
+
+  /*
+   * On ne signe pas un acte que l'avocat n'a pas rendu.
+   *
+   * L'écran désactivait déjà le bouton, mais un écran se contourne : la demande de
+   * signature part par courriel avec un jeton d'accès, et un acte encore en relecture
+   * serait signé avant que quiconque l'ait lu - or c'est la relecture qui en fait un
+   * document signable.
+   *
+   * C'est ainsi que l'avocat accorde la mise en signature : en validant les actes.
+   */
+  if (await desActesEnRelecture(dossierId)) {
+    throw new SignatureRetenue(
+      "Vos actes sont en relecture chez l'avocat. La signature s'ouvrira dès qu'il les aura validés."
+    );
+  }
 
   // On repart de zéro : relancer le circuit ne doit pas laisser d'anciens jetons
   // valides en circulation.
@@ -153,3 +170,6 @@ export async function signer(jetonRecu: string, trace: string) {
 
   return { ok: true as const, complet };
 }
+
+/** La signature demandée trop tôt : les actes attendent encore l'avocat. */
+export class SignatureRetenue extends Error {}

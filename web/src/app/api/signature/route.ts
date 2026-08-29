@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import { demandesDuDossier, demanderSignatures } from "@/infrastructure/db/depots/signatures";
+import {
+  demandesDuDossier,
+  demanderSignatures,
+  SignatureRetenue,
+} from "@/infrastructure/db/depots/signatures";
 import { validerCorps, validerParametres, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
@@ -30,7 +34,17 @@ export const GET = route(async (requete: Request) => {
 export const POST = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
   const { dossier, signataires } = await validerCorps(OUVERTURE, requete);
-  const creees = await demanderSignatures(utilisateur, dossier, signataires);
+
+  let creees: Awaited<ReturnType<typeof demanderSignatures>>;
+  try {
+    creees = await demanderSignatures(utilisateur, dossier, signataires);
+  } catch (e) {
+    // La relecture n'est pas une erreur du client : c'est l'ordre des choses.
+    if (e instanceof SignatureRetenue) {
+      return NextResponse.json({ error: e.message }, { status: 409 });
+    }
+    throw e;
+  }
 
   // Les jetons ne sortent pas d'ici : ils partent par email, pas dans une réponse
   // que le navigateur conserve.
