@@ -1204,21 +1204,35 @@
 }
 
 /*
- * À l'étroit, les formules se lisent en défilant, non en se comprimant.
+ * Une marche intermédiaire : deux colonnes, la troisième en dessous.
  *
- * Trois cartes de tarifs dans sept cents pixels tombent à deux cents chacune : le prix
+ * Trois cartes de tarifs sous huit cents pixels tombent à deux cents chacune - le prix
  * y passe à la ligne, l'accroche s'y coupe en six, et la liste de contenu devient une
- * colonne de mots. On les laisse à leur largeur et l'on fait glisser.
+ * colonne de mots.
  */
-@container (max-width: 880px) {
+@container (max-width: 800px) {
+  .offres {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/*
+ * Sur un petit écran, une formule à la fois, et l'on fait glisser.
+ *
+ * Deux cartes côte à côte n'y tiennent pas : la seconde entrait dans l'écran coupée en
+ * son milieu. Chacune prend la largeur, moins de quoi laisser paraître le bord de la
+ * suivante - sans ce débord, rien ne dirait qu'il y en a d'autres.
+ */
+@container (max-width: 600px) {
   .offres {
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(258px, 1fr);
+    grid-auto-columns: calc(100% - 34px);
+    gap: 16px;
     overflow-x: auto;
     /* La carte retenue porte une ombre et un cadre : sans marge, ils se rognent. */
     padding: 20px 2px 8px;
-    scroll-snap-type: x proximity;
+    scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
   }
 
@@ -1635,11 +1649,15 @@
   color: #a1a1aa;
 }
 
+/*
+ * La carte mise en avant ne se soulève pas sur un petit écran.
+ *
+ * Sa règle d'empilement en une colonne vivait ici, et venait après celle du défilement
+ * horizontal : elle rendait au conteneur une seule piste explicite, où la première
+ * carte se réduisait à sa largeur minimale - cent quatre-vingts pixels - pendant que
+ * les deux autres gardaient la leur. C'est le défilement qui commande désormais.
+ */
 @media (max-width: 900px) {
-  .offres {
-    grid-template-columns: 1fr;
-  }
-
   .offreRecommandee {
     transform: none;
   }
