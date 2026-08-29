@@ -272,12 +272,25 @@ export function Parcours({
 
   const formeChoisie = regle(identite.forme)?.libelle ?? null;
   const quoi = formeChoisie ? "Création d'une " + formeChoisie : "Création d'une société";
+
+  /*
+   * Le numéro du dossier se retire dans une pastille.
+   *
+   * En toutes lettres - « Création d'une SARL · dossier n° 62 » - il pesait autant que
+   * la phrase qu'il suivait, alors qu'on ne le lit qu'une fois l'an, pour le citer à
+   * l'avocat ou dans un courriel. Il reste lisible, sans plus prendre le pas.
+   */
   const sousTitre =
-    dossier === null
-      ? // Le dossier naît au premier enregistrement : on le dit là où l'on se demande
-        // si sa saisie est gardée.
-        quoi + " · enregistrée dès la première étape validée"
-      : quoi + " · dossier n° " + dossier;
+    dossier === null ? (
+      // Le dossier naît au premier enregistrement : on le dit là où l'on se demande
+      // si sa saisie est gardée.
+      <>{quoi} · enregistrée dès la première étape validée</>
+    ) : (
+      <>
+        {quoi}
+        <span className={styles.numero}>n° {dossier}</span>
+      </>
+    );
 
   /**
    * L'étape des associés change de nom : une société par actions a des
@@ -294,13 +307,36 @@ export function Parcours({
   return (
     <>
       <div className={styles.tete}>
-        <Link href="/formalites" className={styles.retour}>
-          ← Mes formalités
-        </Link>
+        {/*
+          La date cède la place au retour.
+
+          « Samedi 29 août 2026 » situe une liste d'échéances ; sur un formulaire, elle
+          n'apprend rien - on sait quel jour on remplit son dossier - et occupait le
+          seul coin d'où l'on pouvait repartir. Le bouton reprend celui de la fiche
+          société : les deux écrans se quittent du même geste.
+        */}
         <EnTetePage
           titre={(identite.denomination ?? "").trim() || "Nouvelle société"}
           sousTitre={sousTitre}
           quand={quand}
+          sansDate
+          action={
+            <Link href="/formalites" className={styles.retour}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Mes formalités
+            </Link>
+          }
         />
       </div>
 

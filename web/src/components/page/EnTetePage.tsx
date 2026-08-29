@@ -19,6 +19,7 @@ export function EnTetePage({
   sousTitre,
   action,
   quand,
+  sansDate,
 }: {
   titre: string;
   /**
@@ -27,12 +28,24 @@ export function EnTetePage({
    * Elle tient sur une ligne : la mesure est de sept cent soixante pixels, soit
    * environ soixante-quinze signes. Plus long, et deux mots restent orphelins en
    * dessous.
+   *
+   * Elle accepte du balisage, pour la pastille qu'une page y accroche - un numéro de
+   * dossier, une mention - sans avoir à refaire une ligne de tête à côté.
    */
-  sousTitre?: string;
+  sousTitre?: React.ReactNode;
   /** Le geste que cette page est seule à offrir. */
   action?: React.ReactNode;
   /** La date affichée, pour les tests qui la figent. */
   quand?: Date;
+  /**
+   * La tête ne porte pas de date.
+   *
+   * Sur un écran qui liste, la date situe : elle dit de quand datent les échéances
+   * qu'on lit. Sur un formulaire, elle n'informe de rien - on sait quel jour on
+   * remplit un dossier - et prend la place du seul geste qui manque à ces pages : en
+   * repartir.
+   */
+  sansDate?: boolean;
 }) {
   return (
     <>
@@ -40,7 +53,7 @@ export function EnTetePage({
         <h1 className={styles.titre}>{titre}</h1>
 
         <div className={styles.cote}>
-          <span className={styles.date}>{dateEnTete(quand)}</span>
+          {!sansDate && <span className={styles.date}>{dateEnTete(quand)}</span>}
           {action}
         </div>
       </div>

@@ -63,38 +63,62 @@
 }
 
 /*
- * Le retour, à la place qu'occupait le fil d'ariane.
+ * Le retour, là où la date se tenait.
  *
- * Le fil disait « Tableau de bord › Créer une société » : le second membre est
- * désormais le titre, et le redire deux fois à trois centimètres d'écart n'aidait
- * personne. Reste ce à quoi il servait vraiment - repartir.
+ * C'est le bouton de la fiche société, au trait près : deux écrans qui se quittent du
+ * même geste s'apprennent une fois.
  */
 .retour {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  /* Le bloc de tête déborde de quarante-huit pixels : le lien les reprend, moins les
-     sept de son propre rembourrage, pour tomber sur la verticale du titre. */
-  margin: 0 0 0 41px;
-  padding: 3px 7px;
-  border-radius: 7px;
-  color: #6b6b73;
-  font-size: 13px;
+  gap: 8px;
+  padding: 8px 16px 8px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #52525b;
   text-decoration: none;
   white-space: nowrap;
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
-}
-.retour:hover {
-  background: #f1f1f3;
-  color: #111;
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-@media (max-width: 900px) {
-  .retour {
-    margin-left: 13px;
-  }
+.retour svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.retour:hover {
+  border-color: #d4d4d8;
+  color: #18181b;
+}
+
+/* La flèche recule d'un pixel : le geste est annoncé avant d'être fait. */
+.retour:hover svg {
+  transform: translateX(-2px);
+}
+
+/*
+ * Le numéro du dossier, en retrait.
+ *
+ * Il se cite à l'avocat ou dans un courriel, et ne se lit pas autrement : une pastille
+ * le garde à portée sans lui donner le poids de la phrase qui le précède.
+ */
+.numero {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: #ececef;
+  font-size: 12.5px;
+  color: #52525b;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
 }
 
 /* ---------- Chemin d'étapes ---------- */
@@ -103,6 +127,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /*
+   * La première pastille venait toucher « Création d'une SARL » : la phrase de tête
+   * n'a que dix pixels sous elle, et le fil n'en posait aucun au-dessus.
+   */
+  margin-top: 30px;
   margin-bottom: 48px;
   position: relative;
   gap: 0;
