@@ -543,6 +543,50 @@ test("l'étape des offres règle et confie d'un seul geste", async ({ page, requ
   await expect(page.getByRole("radio", { name: "Formule retenue" })).toBeVisible();
 });
 
+/**
+ * Le dossier dit qu'on lui a écrit, et mène au fil.
+ *
+ * Ici vivait « Note pour l'avocat (optionnel) », une zone de texte enregistrée dans le
+ * brouillon et qu'aucun écran d'avocat n'affichait : le client croyait écrire à
+ * quelqu'un, personne ne lisait. La messagerie du dossier, elle, existe - texte,
+ * pièces jointes, horodatage - et le parcours y renvoie plutôt que d'en porter une
+ * seconde.
+ */
+test("les échanges renvoient à la messagerie du dossier", async ({ page, request }) => {
+  const dossier = await ouvrirCreation(page, request);
+
+  await request.put("/api/formalites/brouillon", {
+    data: {
+      dossier: Number(dossier),
+      modifications: {
+        forme: "SASU",
+        denomination: "ECHANGES AU DOSSIER",
+        activite: "Conseil aux entreprises",
+        adresse: "3 rue Centrale",
+        codePostal: "33000",
+        ville: "Bordeaux",
+        capital: 1000,
+        partsTotales: 100,
+        offre: "business",
+        associes: [{ ...associe("Camille", "Durand"), parts: 100, versement: 1000 }],
+        dirigeants: [{ associe: 0 }],
+      },
+    },
+  });
+
+  await page.goto("/creation?dossier=" + dossier + "&etape=7");
+
+  // La zone de texte a disparu, le fil prend sa place.
+  await expect(page.getByLabel(/Note pour l'avocat/)).toHaveCount(0);
+
+  const echanges = page.getByRole("region", { name: "Échanges avec le cabinet" });
+  await expect(echanges).toBeVisible();
+  await expect(echanges.getByRole("link", { name: "Écrire au cabinet" })).toHaveAttribute(
+    "href",
+    "/messagerie?dossier=" + dossier
+  );
+});
+
 test.describe("le règlement d'une création", () => {
   test("sans formule choisie, il n'y a rien à encaisser", async ({ page, request }) => {
     const dossier = await ouvrirCreation(page, request);

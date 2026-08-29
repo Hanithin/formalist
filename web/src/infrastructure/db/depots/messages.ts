@@ -79,6 +79,43 @@ export async function envoyerMessage(
 }
 
 /** Marque comme lus les messages reçus dans ce dossier. Les siens sont ignorés. */
+/**
+ * Le dernier mot du cabinet sur ce dossier, et ce qui reste à lire.
+ *
+ * Le parcours n'a pas à porter une messagerie : elle existe, complète, à sa place. Il
+ * lui suffit de dire qu'on a écrit - « l'avocat demande une pièce » - et d'y mener.
+ * Sans cette ligne, un client qui remplit son dossier ne saurait pas qu'on l'attend
+ * ailleurs.
+ */
+export async function dernierMotDuCabinet(utilisateur: UtilisateurConnecte, dossierId: number) {
+  await exigerDossier(utilisateur, dossierId);
+
+  const [dernier, nonLus] = await Promise.all([
+    prisma.messages.findFirst({
+      where: { formalite_id: dossierId, sender_id: { not: utilisateur.id } },
+      orderBy: { created_at: "desc" },
+      include: { users: { select: { name: true } } },
+    }),
+    prisma.messages.count({
+      where: { formalite_id: dossierId, sender_id: { not: utilisateur.id }, read: false },
+    }),
+  ]);
+
+  if (!dernier) return { message: null, nonLus: 0 };
+
+  return {
+    message: {
+      auteur: dernier.users?.name ?? "Le cabinet",
+      contenu: dernier.content,
+      /* Le type dit la nature de la demande : une pièce réclamée, une correction. */
+      type: dernier.kind && dernier.kind !== "text" ? dernier.kind : null,
+      aUnePieceJointe: !!dernier.file_path,
+      envoyeLe: dernier.created_at.toISOString(),
+    },
+    nonLus,
+  };
+}
+
 export async function marquerLus(utilisateur: UtilisateurConnecte, dossierId: number) {
   await exigerDossier(utilisateur, dossierId);
 

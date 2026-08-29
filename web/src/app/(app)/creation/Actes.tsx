@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
+import { dateHeureLongue } from "@/lib/dates";
+import { presentation } from "@/domain/messagerie/messages";
 import { useRouter } from "next/navigation";
 import { A_RELIRE } from "@/domain/document/publication";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
 import type { Brouillon } from "@/domain/formalite/parcours";
-import { Champ } from "./EtatCivil";
 import { Apercu } from "./Apercu";
 import styles from "./Parcours.module.css";
 
@@ -35,7 +37,13 @@ interface Props {
   dossierId: number;
   brouillon: Brouillon;
   actes: ActeProduit[];
-  surNote: (texte: string) => void;
+  /**
+   * Le dernier mot du cabinet, et ce qui reste à lire.
+   *
+   * Le parcours ne porte pas de messagerie : elle existe à sa place, complète. Il dit
+   * qu'on a écrit et il y mène.
+   */
+  dernierMot: DernierMot;
   /**
    * L'attestation de dépôt de capital est-elle au dossier ?
    *
@@ -143,7 +151,7 @@ function Document() {
  * reconnaître.
  */
 
-export function Actes({ dossierId, brouillon, actes, surNote, attestationRecue }: Props) {
+export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecue }: Props) {
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
   /* La fenêtre d'aperçu ne retient que le nom de l'acte, pas son fichier.
      L'original re-sollicitait un aperçu ouvert après une régénération (« If a preview
@@ -409,18 +417,18 @@ export function Actes({ dossierId, brouillon, actes, surNote, attestationRecue }
         </>
       )}
 
-      {/* ---------- Le mot à l'avocat ---------- */}
-      <div className={styles.formGrid}>
-        <Champ id="noteAvocat" libelle="Note pour l'avocat (optionnel)" pleineLargeur>
-          <textarea
-            id="noteAvocat"
-            rows={4}
-            placeholder="Une précision sur votre situation, une question à poser avant la relecture..."
-            value={brouillon.noteAvocat ?? ""}
-            onChange={(e) => surNote(e.target.value)}
-          />
-        </Champ>
-      </div>
+      {/*
+        ---------- Les échanges avec le cabinet ----------
+
+        Ici vivait « Note pour l'avocat (optionnel) », une zone de texte enregistrée
+        dans le brouillon et qu'aucun écran d'avocat n'affichait : le client croyait
+        écrire à quelqu'un, personne ne lisait.
+
+        La messagerie du dossier, elle, existe et fonctionne - texte, pièces jointes,
+        horodatage, temps réel, et l'avocat assigné y a accès. Le parcours n'a donc pas
+        à porter un second fil : il dit qu'on a écrit, et il y mène.
+      */}
+      <Echanges dossierId={dossierId} dernierMot={dernierMot} />
 
       {message && (
         <p role={message.ok ? "status" : "alert"} aria-live="polite">
@@ -437,5 +445,79 @@ export function Actes({ dossierId, brouillon, actes, surNote, attestationRecue }
         />
       )}
     </div>
+  );
+}
+
+export interface DernierMot {
+  message: {
+    auteur: string;
+    contenu: string;
+    /** La nature de la demande : une pièce réclamée, une correction. */
+    type: string | null;
+    aUnePieceJointe: boolean;
+    envoyeLe: string;
+  } | null;
+  nonLus: number;
+}
+
+/**
+ * Ce que le cabinet a écrit, et par où répondre.
+ *
+ * Un client qui remplit son dossier ne va pas voir sa messagerie de lui-même : la
+ * demande d'une pièce y dormait sans que rien ici ne la signale. Le dernier message
+ * paraît donc à l'endroit où l'on travaille, avec sa date, et le bouton mène au fil -
+ * où l'on répond, où l'on joint, et où tout reste.
+ */
+function Echanges({ dossierId, dernierMot }: { dossierId: number; dernierMot: DernierMot }) {
+  const { message, nonLus } = dernierMot;
+  const nature = message?.type ? presentation(message.type) : null;
+
+  return (
+    <section className={styles.echanges} aria-label="Échanges avec le cabinet">
+      <div className={styles.echangesTete}>
+        <p className={styles.echangesTitre}>Échanges avec le cabinet</p>
+        {nonLus > 0 && (
+          <span className={styles.echangesNonLus}>
+            {nonLus === 1 ? "1 message non lu" : nonLus + " messages non lus"}
+          </span>
+        )}
+      </div>
+
+      {message ? (
+        <blockquote className={styles.echangesMot}>
+          <span className={styles.echangesQui}>
+            {message.auteur}
+            <time dateTime={message.envoyeLe}>{dateHeureLongue(new Date(message.envoyeLe))}</time>
+            {/*
+              La nature de la demande, quand elle en est une.
+
+              Un type inconnu retombe sur la présentation d'un message ordinaire : la
+              pastille dirait alors « Message » à côté du nom de son auteur, ce qui
+              n'apprend rien. Seuls les tons qui appellent un geste s'affichent.
+            */}
+            {nature && nature.ton !== "neutre" && (
+              <span
+                className={styles.echangesNature}
+                style={{ background: nature.fond, color: nature.encre }}
+              >
+                {nature.libelle}
+              </span>
+            )}
+          </span>
+          <span className={styles.echangesTexte}>
+            {message.contenu || (message.aUnePieceJointe ? "Une pièce jointe vous attend." : "")}
+          </span>
+        </blockquote>
+      ) : (
+        <p className={styles.echangesVide}>
+          Une question, une précision sur votre situation ? Écrivez au cabinet : vous pouvez
+          joindre un document, et tout reste au dossier.
+        </p>
+      )}
+
+      <Link href={"/messagerie?dossier=" + dossierId} className={styles.echangesBouton}>
+        {message ? "Répondre" : "Écrire au cabinet"}
+      </Link>
+    </section>
   );
 }

@@ -2913,3 +2913,118 @@
   opacity: 0.55;
   cursor: default;
 }
+
+/* ---------- Les échanges avec le cabinet ---------- */
+
+/*
+ * Le parcours ne porte pas de messagerie : elle existe à sa place, complète - texte,
+ * pièces jointes, horodatage, temps réel. Ici vivait « Note pour l'avocat », une zone
+ * de texte qu'aucun écran d'avocat n'affichait : le client croyait écrire à quelqu'un.
+ *
+ * Reste à dire qu'on a écrit, et à y mener : un client qui remplit son dossier ne va
+ * pas voir sa messagerie de lui-même, et la demande d'une pièce y dormait.
+ */
+.echanges {
+  margin-top: 28px;
+  padding: 20px 22px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.echangesTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.echangesTitre {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.echangesNonLus {
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/*
+ * Le dernier mot, cité.
+ *
+ * Pas de filet latéral coloré : c'est le retrait et la teinte du nom qui distinguent
+ * la citation du reste.
+ */
+.echangesMot {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f4f4f5;
+}
+
+.echangesQui {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #52525b;
+}
+
+.echangesQui time {
+  font-weight: 400;
+  color: #71717a;
+}
+
+.echangesNature {
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.echangesTexte {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #27272a;
+  /* Un message de trois paragraphes ne prend pas l'écran : le fil le montre en entier. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.echangesVide {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #52525b;
+}
+
+.echangesBouton {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 16px;
+  padding: 10px 20px;
+  border-radius: 100px;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.echangesBouton:hover {
+  background: #000;
+}

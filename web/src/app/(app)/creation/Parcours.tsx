@@ -26,7 +26,7 @@ import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { Choix } from "./Choix";
 import { DateChoisie } from "./DateChoisie";
 import { Associes } from "./Associes";
-import { Actes, type ActeProduit } from "./Actes";
+import { Actes, type ActeProduit, type DernierMot } from "./Actes";
 import { Capital } from "./Capital";
 import { Dirigeants } from "./Dirigeants";
 import { Offres } from "./Offres";
@@ -44,6 +44,8 @@ interface Props {
   brouillonInitial: Brouillon;
   piecesDeposees: { type: string | null; nom: string }[];
   actesProduits: ActeProduit[];
+  /** Ce que le cabinet a écrit en dernier, et ce qui reste à lire. */
+  dernierMot: DernierMot;
   /**
    * Le suivi du dossier confié, rendu par la page.
    *
@@ -139,6 +141,7 @@ export function Parcours({
   brouillonInitial,
   piecesDeposees,
   actesProduits,
+  dernierMot,
   suivi,
   quand,
   connuDuDossier,
@@ -925,7 +928,7 @@ export function Parcours({
               dossierId={dossier}
               brouillon={brouillon}
               actes={actesProduits}
-              surNote={(texte) => modifier("noteAvocat", texte)}
+              dernierMot={dernierMot}
               attestationRecue={piecesDeposees.some((p) => p.type === PIECE_DEPOT_CAPITAL)}
             />
           )}

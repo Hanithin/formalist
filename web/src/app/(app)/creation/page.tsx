@@ -7,6 +7,7 @@ import {
   confirmerAuRetourDeLaCreation,
 } from "@/infrastructure/db/depots/brouillons";
 import { actesDuDossier, documentsDuDossier } from "@/infrastructure/db/depots/documents";
+import { dernierMotDuCabinet } from "@/infrastructure/db/depots/messages";
 import { A_RELIRE } from "@/domain/document/publication";
 import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
@@ -99,6 +100,17 @@ export default async function Creation({
    * `actesDuDossier` rend leur titre et leur état, jamais le chemin du fichier : ils
    * s'affichent, ils ne s'ouvrent pas.
    */
+  /*
+   * Ce que le cabinet a écrit en dernier, et ce qui reste à lire.
+   *
+   * Le parcours ne porte pas de messagerie - elle existe à sa place, complète - mais un
+   * client qui remplit son dossier ne va pas la consulter de lui-même : la demande
+   * d'une pièce y dormait sans que rien ici ne la signale.
+   */
+  const dernierMot = ligne
+    ? await dernierMotDuCabinet(utilisateur, ligne.id)
+    : { message: null, nonLus: 0 };
+
   const enRelecture = ligne
     ? (await actesDuDossier(utilisateur, ligne.id)).filter((a) => a.enRelecture)
     : [];
@@ -146,6 +158,7 @@ export default async function Creation({
         <Parcours
           dossierId={ligne?.id ?? null}
           quand={new Date()}
+          dernierMot={dernierMot}
           paiementAnnule={paiement === "annule"}
           connuDuDossier={
             ligne
