@@ -203,7 +203,18 @@ export async function formalitesPourListe(
       brouillon: brouillons.has(d.id),
       etape: contexte ? etapeCourte(contexte) : "",
       urgent: actions.some((a) => a.urgent),
-      attendLeClient: actions.length > 0,
+      /*
+       * Un brouillon attend toujours son auteur.
+       *
+       * Le drapeau ne suivait que les actions calculées, et le parcours n'en produit
+       * aucune pour l'étape des offres : un brouillon entièrement rempli, qu'il ne
+       * reste qu'à transmettre, était donc rangé comme s'il n'attendait plus personne.
+       * Il descendait sous des dossiers moins avancés, et la ligne de tête - « ceux qui
+       * requièrent une action figurent en tête » - devenait fausse sous les yeux.
+       *
+       * Rempli ou non, personne d'autre que son auteur ne peut le faire avancer.
+       */
+      attendLeClient: actions.length > 0 || brouillons.has(d.id),
       capital: contexte?.capital ?? null,
     };
   });

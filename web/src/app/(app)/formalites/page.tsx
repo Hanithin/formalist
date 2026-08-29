@@ -52,7 +52,7 @@ export default async function Formalites({
         demandent un geste passent devant.
       */}
       <p className={styles.introduction}>
-        Chaque dossier indique l&apos;étape suivante. Ceux qui vous attendent sont en haut.
+        Les dossiers qui requièrent une action de votre part figurent en tête de liste.
       </p>
 
       <div className={styles.content}>

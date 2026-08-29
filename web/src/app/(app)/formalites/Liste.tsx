@@ -60,6 +60,52 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
 
   const comptes = useMemo(() => comptesParFiltre(dossiers), [dossiers]);
 
+  /*
+   * Le fond blanc glisse d'un onglet à l'autre.
+   *
+   * Une classe CSS ne sait pas animer entre deux éléments : la pastille active
+   * changeait de place d'un rendu à l'autre, et le blanc sautait. Un seul élément la
+   * dessine donc pour tous, posé sur l'onglet actif après mesure - il n'a plus qu'à
+   * s'y rendre.
+   *
+   * Il reste invisible tant qu'il n'est pas mesuré : sans quoi il naîtrait dans
+   * l'angle du cadre et traverserait la barre au premier affichage.
+   */
+  const barre = useRef<HTMLElement>(null);
+  const [curseur, setCurseur] = useState<{ x: number; y: number; l: number; h: number } | null>(
+    null
+  );
+
+  useEffect(() => {
+    const cadre = barre.current;
+    if (!cadre) return;
+
+    const mesurer = () => {
+      const actif = cadre.querySelector<HTMLElement>("[aria-current='page']");
+      if (!actif) return setCurseur(null);
+
+      const dehors = cadre.getBoundingClientRect();
+      const dedans = actif.getBoundingClientRect();
+      setCurseur({
+        x: dedans.left - dehors.left,
+        y: dedans.top - dehors.top,
+        l: dedans.width,
+        h: dedans.height,
+      });
+    };
+
+    mesurer();
+
+    /*
+     * La barre bouge sans que le filtre change : elle passe à la ligne quand la
+     * fenêtre rétrécit, et les intitulés changent de largeur quand les comptes
+     * changent. Le curseur suit plutôt que de rester en arrière.
+     */
+    const observateur = new ResizeObserver(mesurer);
+    observateur.observe(cadre);
+    return () => observateur.disconnect();
+  }, [filtre, comptes]);
+
   const visibles = useMemo(
     () =>
       parCeQuiPresse(dossiers.filter((d) => retenu(d, filtre) && correspond(d, recherche))),
@@ -88,7 +134,22 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
           boutons indépendants - alors qu'en cliquer un décoche les autres. Un cadre
           commun le dit sans un mot, et tient moins de place.
         */}
-        <nav className={styles.filterGroup} aria-label="Filtrer les formalités">
+        <nav ref={barre} className={styles.filterGroup} aria-label="Filtrer les formalités">
+          <span
+            className={styles.curseur}
+            aria-hidden="true"
+            style={
+              curseur
+                ? {
+                    opacity: 1,
+                    width: curseur.l,
+                    height: curseur.h,
+                    transform: `translate(${curseur.x}px, ${curseur.y}px)`,
+                  }
+                : undefined
+            }
+          />
+
           {filtresUtiles(FILTRES, comptes, filtre).map((f) => (
             <Link
               key={f.valeur}

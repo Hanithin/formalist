@@ -68,8 +68,13 @@
 }
 
 .topbarDate {
-  font-size: 13px;
-  color: #999;
+  /*
+   * Treize pixels en #999 donnaient 2,6 pour 1 sur le gris de la page - sous le seuil
+   * de 4,5 qu'un texte de cette taille demande. Elle prend la teinte de la phrase
+   * posée juste en dessous : la même que ce qu'elle accompagne, et lisible.
+   */
+  font-size: 13.5px;
+  color: #52525b;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -213,6 +218,7 @@
  * rangées qu'un cadre plus large que la page.
  */
 .filterGroup {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
@@ -221,12 +227,47 @@
   background: #ececef;
 }
 
+/*
+ * Le fond blanc de l'onglet actif, et lui seul.
+ *
+ * Chaque pastille portait le sien : il disparaissait d'un onglet pour réapparaître
+ * sur l'autre, sans rien entre les deux. Un élément unique le dessine pour tous, et
+ * se rend à la place que le composant lui mesure.
+ *
+ * Il glisse sous les intitulés, jamais devant : c'est un décor, et les clics doivent
+ * le traverser.
+ */
+.curseur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  opacity: 0;
+  border-radius: 100px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.08);
+  pointer-events: none;
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.15s ease;
+}
+
+/* Qui demande à son système de limiter les animations voit la pastille se poser. */
+@media (prefers-reduced-motion: reduce) {
+  .curseur {
+    transition: opacity 0.15s ease;
+  }
+}
+
 .filterSpacer {
   flex: 1;
   min-width: 16px;
 }
 
 .pill {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -248,13 +289,18 @@
   background: rgba(255, 255, 255, 0.6);
 }
 
-/* L'actif est la pastille blanche qui se détache du cadre. */
+/*
+ * L'actif ne porte plus son fond : le curseur le lui apporte en glissant.
+ *
+ * Il garde ce qui ne se déplace pas - l'encre et la graisse - et les cède aussitôt,
+ * sans quoi le mot changerait d'aspect avant que le blanc soit arrivé sous lui.
+ */
 .pillActive,
 .pillActive:hover {
-  background: #fff;
+  background: transparent;
   color: #18181b;
   font-weight: 500;
-  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.08);
+  transition: color 0.28s ease;
 }
 
 .pillCount {
@@ -470,38 +516,41 @@
   padding: 3px 0;
 }
 
+/*
+ * L'état du dossier, en un mot.
+ *
+ * La pastille portait un point de la couleur de son texte. Il ne disait rien que le
+ * mot ne dise, et sur une grille de huit cartes il faisait huit taches de plus.
+ *
+ * Les teintes viennent désormais des jetons du socle - « couleurs de sens », dit
+ * globals.css. Celles qu'elle employait étaient les siennes : un vert #22c55e sur
+ * #f0fdf4 plafonne à 2,1 pour 1, et le mot se devinait plus qu'il ne se lisait. Les
+ * jetons montent au-delà de cinq.
+ */
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 5px 12px;
   border-radius: 100px;
   white-space: nowrap;
 }
 
-.statusBadge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-}
-
 .statusDone {
-  background: #f0fdf4;
-  color: #22c55e;
+  background: var(--abouti-fond);
+  color: var(--abouti-encre);
 }
 
 .statusPending {
-  background: #fffbeb;
-  color: #f59e0b;
+  background: var(--attente-fond);
+  color: var(--attente-encre);
 }
 
 .statusProgress {
-  background: #f5f5f5;
-  color: #666;
+  background: #f4f4f5;
+  color: #52525b;
 }
 
 .dossierTitle {
@@ -578,22 +627,51 @@
   margin-left: auto;
 }
 
+/*
+ * Le geste de la carte.
+ *
+ * Il se soulignait au survol - l'affordance la plus fruste, et la seule que la carte
+ * empruntait au lien brut. Un fond s'installe désormais sous lui, et le chevron
+ * avance : la carte entière est cliquable, ce coin dit simplement où l'on ira.
+ *
+ * La marge négative rend au fond la place que le rembourrage lui prend, pour que le
+ * mot reste aligné sur le bord de la carte comme avant.
+ */
 .dossierAction {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  padding: 6px 10px 6px 12px;
+  margin-right: -10px;
+  border-radius: 100px;
+  background: transparent;
   font-size: 13px;
   font-weight: 500;
-  color: #111;
+  color: #18181b;
+  transition: background 0.18s ease;
 }
 
 .dossierAction svg {
   width: 14px;
   height: 14px;
+  transition: transform 0.18s ease;
 }
 
 .dossierCard:hover .dossierAction {
-  text-decoration: underline;
+  background: #f4f4f5;
+}
+
+.dossierCard:hover .dossierAction svg {
+  transform: translateX(2px);
+}
+
+/* Qui demande à son système de limiter les animations garde le fond, sans le pas. */
+@media (prefers-reduced-motion: reduce) {
+  .dossierAction svg,
+  .dossierCard:hover .dossierAction svg {
+    transition: none;
+    transform: none;
+  }
 }
 
 .notifBadge {
@@ -787,10 +865,16 @@
   container-type: inline-size;
 }
 
-/* Le badge d'un dossier que rien n'a encore engagé. */
+/*
+ * Le badge d'un dossier que rien n'a encore engagé.
+ *
+ * Il se distinguait par sa pâleur - #9a9aa2, soit 2,7 pour 1 - ce qui rendait le mot
+ * difficile à lire pour dire qu'il compte moins. Il se distingue maintenant par sa
+ * teinte neutre, quand les autres en ont une.
+ */
 .statusDraft {
   background: #f4f4f5;
-  color: #9a9aa2;
+  color: #52525b;
 }
 
 /*
