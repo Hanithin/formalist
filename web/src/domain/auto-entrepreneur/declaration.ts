@@ -411,7 +411,8 @@ export interface PieceAttendue {
  * l'étape suivante, et non déposée en fichier.
  */
 export function piecesDeclaration(declaration: Declaration): PieceAttendue[] {
-  const images = [".pdf", ".jpg", ".jpeg", ".png"];
+  // Le HEIC est le format par défaut de tout iPhone : le refuser refuse l'appareil.
+  const images = [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"];
 
   const pieces: PieceAttendue[] = [
     {

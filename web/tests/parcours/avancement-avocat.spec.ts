@@ -257,8 +257,16 @@ test.describe("suivi côté client", () => {
 
     const suivi = page.getByRole("region", { name: "Avancement du dossier" });
     await expect(suivi).toBeVisible();
-    await expect(suivi.getByText("À vous de jouer")).toBeVisible();
-    await expect(suivi.getByRole("link", { name: /Déposer l'attestation de parution/ })).toBeVisible();
+
+    /*
+     * L'attestation de parution n'est plus réclamée au client.
+     *
+     * Le cabinet rédige l'avis, le fait paraître et le joint au dossier : le client a
+     * payé pour ne pas s'en occuper. Le dossier attend donc le cabinet, et le suivi le
+     * dit au lieu de tendre un bouton.
+     */
+    await expect(suivi.getByText(/s'en occupe|En attente d'un avocat/)).toBeVisible();
+    await expect(suivi.getByRole("link", { name: /parution/ })).toHaveCount(0);
     // Les six étapes sont là, et l'état technique n'apparaît nulle part.
     await expect(suivi.getByText("Kbis délivré")).toBeVisible();
     await expect(page.getByText("en_attente_validation")).toHaveCount(0);

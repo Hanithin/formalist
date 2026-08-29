@@ -289,6 +289,14 @@ export interface Brouillon {
   paiementRef?: string;
   /** Posé à la confirmation de l'encaissement, jamais avant. */
   paye?: boolean;
+  /**
+   * Le cabinet a fait paraître l'annonce légale.
+   *
+   * Une déclaration, non un dépôt : c'est lui qui porte l'avis au journal habilité, et
+   * le client n'a pas d'attestation de parution à fournir. Le suivi la lit par
+   * `avisDeclares`, quel que soit le parcours.
+   */
+  avisPublies?: boolean;
 
   /* Étape 6 */
   noteAvocat?: string;

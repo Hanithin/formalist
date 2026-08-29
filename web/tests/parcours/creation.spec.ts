@@ -526,9 +526,21 @@ test("l'étape des offres règle et confie d'un seul geste", async ({ page, requ
 
   await page.goto("/creation?dossier=" + dossier + "&etape=6");
 
-  // Le bouton dit ce qu'il fait, et « Continuer » a disparu de cette étape.
-  await expect(page.getByRole("button", { name: /Régler et confier à un avocat/ })).toBeVisible();
+  /*
+   * Le geste est offert deux fois : en tête, avant les trois cartes et leurs vingt
+   * lignes de contenu, et au pied pour qui a tout lu. Il ne se trouvait qu'en bas,
+   * après trois écrans de défilement.
+   */
+  const regler = page.getByRole("button", { name: /Régler et confier à un avocat/ });
+  await expect(regler).toHaveCount(2);
+  await expect(regler.first()).toBeInViewport();
+
+  // Et « Continuer » a disparu de cette étape : on ne passe pas les offres sans payer.
   await expect(page.getByRole("button", { name: /^Continuer$/ })).toHaveCount(0);
+
+  // La formule recommandée est retenue d'avance : on ne croit plus l'avoir choisie.
+  // Les cartes sont un groupe de boutons radio : leur rôle prime sur leur balise.
+  await expect(page.getByRole("radio", { name: "Formule retenue" })).toBeVisible();
 });
 
 test.describe("le règlement d'une création", () => {
@@ -789,11 +801,28 @@ test.describe("pièces et documents", () => {
   }
 
 
-  test("les pièces demandées dépendent de la forme", async ({ page, request }) => {
+  test("les pièces demandées sont celles qu'on peut fournir tout de suite", async ({
+    page,
+    request,
+  }) => {
     await dossierPret(page, request);
     await expect(page.getByText("Pièce d'identité du dirigeant")).toBeVisible();
-    // Une SASU libère du capital : l'attestation est demandée.
-    await expect(page.getByText("Attestation de dépôt de capital")).toBeVisible();
+
+    /*
+     * L'attestation de dépôt de capital n'est pas là, et c'est le sujet.
+     *
+     * La banque ouvre le compte sur présentation des statuts, et les statuts sont ce
+     * que l'avocat relit : la réclamer ici demandait une pièce qu'on ne peut pas encore
+     * obtenir, et l'écran l'affichait « Requis » en rouge dès la première visite. Elle
+     * paraît une fois les actes rendus.
+     */
+    await expect(page.getByText("Attestation de dépôt de capital")).toHaveCount(0);
+
+    /*
+     * L'attestation de parution non plus, et pour de bon : c'est le cabinet qui publie
+     * l'annonce et joint la parution au dossier.
+     */
+    await expect(page.getByText(/Attestation de parution/)).toHaveCount(0);
   });
 
   test("un fichier au contenu trompeur est refusé", async ({ page, request }) => {

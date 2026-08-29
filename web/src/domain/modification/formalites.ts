@@ -161,7 +161,8 @@ export interface PieceAFournir {
   formats: string[];
 }
 
-const PDF_OU_IMAGE = [".pdf", ".jpg", ".jpeg", ".png"];
+/* Le HEIC est le format par défaut de tout iPhone : le refuser refuse l'appareil. */
+const PDF_OU_IMAGE = [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"];
 
 /**
  * Les justificatifs, selon ce qui est décidé.

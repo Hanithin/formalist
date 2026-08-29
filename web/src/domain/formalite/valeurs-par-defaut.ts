@@ -1,4 +1,5 @@
 import type { Brouillon, OptionFiscale } from "./parcours";
+import { OFFRES } from "./offres";
 
 /**
  * Les réponses évidentes, écrites d'avance.
@@ -82,10 +83,25 @@ export function clotureDepuis(iso: string | undefined, aujourdHui: Date): string
  * Seuls les champs encore vides reçoivent une valeur : une réponse déjà donnée n'est
  * jamais remplacée, y compris quand elle diffère de la nôtre.
  */
+/** La formule mise en avant, ou la première à défaut : le domaine la déclare. */
+function offreRecommandee(): string {
+  return (OFFRES.find((o) => o.recommandee) ?? OFFRES[0]).code;
+}
+
 export function valeursParDefaut(brouillon: Brouillon, aujourdHui: Date): Partial<Brouillon> {
   const ajouts: Partial<Brouillon> = {};
 
   if (brouillon.dureeDeVie === undefined) ajouts.dureeDeVie = DUREE_DE_VIE_ANS;
+
+  /*
+   * La formule recommandée est retenue d'avance.
+   *
+   * Sa carte portait un bouton noir « Sélectionner » quand les deux autres l'avaient
+   * blanc : on la croyait déjà choisie, et l'on passait à la suite sans rien cliquer.
+   * Elle l'est vraiment désormais - les cartes disent « Formule retenue » là où elle
+   * l'est - et il reste un clic pour en prendre une autre.
+   */
+  if (!brouillon.offre) ajouts.offre = offreRecommandee();
   if (!brouillon.optionFiscale) ajouts.optionFiscale = OPTION_FISCALE_COURANTE;
   if (!brouillon.dateCloturePremierExercice) {
     ajouts.dateCloturePremierExercice = clotureCourante(departDe(brouillon, aujourdHui));

@@ -786,10 +786,10 @@ export async function marquerLesInformationsVerifiees(
  * promettait pourtant au client de les trouver dans ses documents.
  */
 export const LIVRABLES = {
-  [TYPE_KBIS]: { titre: "Kbis", formats: [".pdf", ".jpg", ".jpeg", ".png"] },
+  [TYPE_KBIS]: { titre: "Kbis", formats: [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"] },
   [TYPE_RBE]: {
     titre: "Registre des bénéficiaires effectifs",
-    formats: [".pdf", ".jpg", ".jpeg", ".png"],
+    formats: [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"],
   },
 } as const;
 

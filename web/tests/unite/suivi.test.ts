@@ -86,9 +86,16 @@ describe("les étapes du suivi", () => {
   it("chaque étape dit à qui est la main", () => {
     const par = new Map(etapesDuSuivi(etat()).map((e) => [e.identifiant, e.main]));
     expect(par.get("attestation")).toBe("vous");
-    expect(par.get("annonce")).toBe("vous");
     expect(par.get("verification")).toBe("avocat");
     expect(par.get("greffe")).toBe("avocat");
+    /*
+     * L'annonce n'est plus au client.
+     *
+     * Elle lui demandait de porter l'avis au journal puis d'en déposer l'attestation.
+     * C'est le cabinet qui rédige, publie et joint la parution : le client a payé pour
+     * ne pas s'en occuper, comme sur une modification.
+     */
+    expect(par.get("annonce")).toBe("avocat");
   });
 
   it("une seule étape est en cours à la fois", () => {
@@ -155,12 +162,15 @@ describe("ce qu'on demande au client", () => {
     expect(attente?.action).toBe("Déposer l'attestation");
   });
 
-  it("l'annonce est réclamée une fois le dossier vérifié", () => {
+  it("ne réclame plus rien une fois l'attestation déposée", () => {
+    /*
+     * L'annonce était réclamée ici. Elle ne l'est plus : le cabinet publie et déclare,
+     * le client n'a pas d'attestation de parution à fournir.
+     */
     const attente = attenteDuClient(
       etat({ status: "valide", sousPhase: "5c", aLAttestationDeCapital: true })
     );
-    expect(attente?.identifiant).toBe("annonce");
-    expect(attente?.action).toContain("parution");
+    expect(attente).toBeNull();
   });
 });
 

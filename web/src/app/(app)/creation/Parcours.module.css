@@ -2742,3 +2742,64 @@
   background: #fef6e7;
   color: #8a5a00;
 }
+
+/* ---------- Régler, en tête de l'étape des offres ---------- */
+
+/*
+ * Le geste avant les tarifs, non après.
+ *
+ * Le bouton vivait sous les trois cartes, après leurs vingt lignes de contenu : il
+ * fallait défiler trois écrans pour le trouver, et rien ne disait qu'une formule était
+ * déjà retenue.
+ */
+.reglerBarre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 4px;
+  padding: 18px 22px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.reglerFormule {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.reglerFormule span {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.reglerBouton {
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 100px;
+  background: #111;
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.reglerBouton:hover:not(:disabled) {
+  background: #000;
+}
+
+.reglerBouton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

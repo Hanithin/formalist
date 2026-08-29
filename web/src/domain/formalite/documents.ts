@@ -93,6 +93,18 @@ export interface PieceAttendue {
   titre: string;
   description: string;
   formats: string[];
+  /**
+   * Le moment où la pièce peut être fournie.
+   *
+   * « saisie » : dès le remplissage du dossier - une pièce d'identité, un justificatif
+   * de domicile, on les a chez soi.
+   *
+   * « apres-relecture » : l'attestation de dépôt de capital. La banque ouvre le compte
+   * sur présentation des statuts, et les statuts sont ce que l'avocat relit : la
+   * réclamer à la saisie demandait une pièce qu'on ne peut pas encore obtenir, et
+   * l'écran des pièces l'affichait « Requis » en rouge dès la première visite.
+   */
+  quand: "saisie" | "apres-relecture";
 }
 
 export function piecesAttendues(forme: string | null | undefined): PieceAttendue[] {
@@ -103,13 +115,15 @@ export function piecesAttendues(forme: string | null | undefined): PieceAttendue
       identifiant: "identite",
       titre: "Pièce d'identité du dirigeant",
       description: "Carte nationale d'identité ou passeport, recto et verso, en cours de validité.",
-      formats: [".pdf", ".jpg", ".jpeg", ".png"],
+      formats: [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"],
+      quand: "saisie",
     },
     {
       identifiant: "domicile",
       titre: "Justificatif de domicile du siège",
       description: "Facture de moins de trois mois, bail, ou attestation d'hébergement.",
-      formats: [".pdf", ".jpg", ".jpeg", ".png"],
+      formats: [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"],
+      quand: "saisie",
     },
   ];
 
@@ -121,23 +135,22 @@ export function piecesAttendues(forme: string | null | undefined): PieceAttendue
       description:
         "Remise par la banque après le versement du capital libéré. Vos actes seront datés du jour où vous l'avez obtenue : c'est celui où vous les signez.",
       formats: [".pdf"],
+      quand: "apres-relecture",
     });
   }
 
   /*
-   * L'attestation de parution.
+   * L'attestation de parution n'est pas demandée au client.
    *
-   * Le journal l'envoie après la publication de l'annonce légale, et le greffe la
-   * réclame avec le dossier. Elle n'était nulle part : le client n'avait aucun moyen
-   * de la rendre, et le dépôt refuse tout identifiant hors de cette liste.
+   * Elle l'était : le journal l'envoie après publication, le greffe la réclame, et
+   * l'écran la posait « Requis » en rouge dans les pièces à fournir. Or ce n'est pas le
+   * client qui publie - c'est le cabinet qui rédige l'avis, le porte au journal
+   * habilité et le déclare publié, comme il le fait déjà sur une modification : « il a
+   * payé pour ne pas s'en occuper ».
+   *
+   * Le suivi s'appuie sur cette déclaration, non sur un dépôt : `avisDeclares` la lit
+   * dans le dossier, quel que soit le parcours.
    */
-  pieces.push({
-    identifiant: "annonce-parution",
-    titre: "Attestation de parution de l'annonce légale",
-    description:
-      "Envoyée par le journal d'annonces légales après publication. L'avocat vous remet le texte à publier.",
-    formats: [".pdf", ".jpg", ".jpeg", ".png"],
-  });
 
   return pieces;
 }

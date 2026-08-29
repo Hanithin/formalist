@@ -71,7 +71,16 @@ const SIGNATURES_JOINTES: Record<string, number[][]> = {
  */
 const SANS_SIGNATURE = [".txt", ".csv", ".md", ".heic", ".heif", ".json", ".xml"];
 
-export const EXTENSIONS_ACCEPTEES = Object.keys(SIGNATURES);
+/**
+ * Ce qu'un dossier accepte en pièce.
+ *
+ * Le HEIC en fait partie. Il en était écarté - « une photo prise au téléphone n'est pas
+ * un justificatif » - mais c'est le format par défaut de tout iPhone : le client
+ * photographiait sa carte d'identité et se voyait refuser son propre appareil, sans
+ * savoir comment le convertir. Mieux vaut recevoir la pièce et la convertir au besoin
+ * que de laisser le dossier en plan.
+ */
+export const EXTENSIONS_ACCEPTEES = [...Object.keys(SIGNATURES), ".heic", ".heif"];
 
 /** Ce qu'une conversation accepte : tout ce qui ne s'exécute pas. */
 export const EXTENSIONS_JOINTES = [

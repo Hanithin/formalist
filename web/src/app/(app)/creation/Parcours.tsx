@@ -4,6 +4,7 @@ import { Fragment, useState, useTransition } from "react";
 import Link from "next/link";
 import { EnTetePage } from "@/components/page/EnTetePage";
 import { Recapitulatif } from "./Recapitulatif";
+import { A_RELIRE } from "@/domain/document/publication";
 import { ETAPES_PLEINE_LARGEUR } from "./etapes-larges";
 import { useRouter } from "next/navigation";
 import {
@@ -31,6 +32,7 @@ import { Dirigeants } from "./Dirigeants";
 import { Offres } from "./Offres";
 import { ObjetSocial } from "./ObjetSocial";
 import { piecesAttendues } from "@/domain/formalite/documents";
+import { offre } from "@/domain/formalite/offres";
 import { Pieces } from "@/components/formulaire/Pieces";
 import styles from "./Parcours.module.css";
 
@@ -317,6 +319,19 @@ export function Parcours({
       setReglementEnCours(false);
     }
   }
+
+  /*
+   * L'avocat a-t-il rendu les actes ?
+   *
+   * L'attestation de dépôt de capital ne s'obtient qu'après : la banque ouvre le compte
+   * sur présentation des statuts, et les statuts sont ce que l'avocat relit. L'écran
+   * des pièces la posait « Requis » en rouge dès la première visite, sur un document
+   * que personne ne pouvait encore avoir.
+   */
+  const actesRendus = actesProduits.length > 0 && !actesProduits.some((a) => a.statut === A_RELIRE);
+
+  /* La formule retenue, pour la barre de règlement posée en tête de l'étape. */
+  const formuleRetenue = offre(brouillon.offre);
 
   const titreDirigeant = regle(brouillon.forme)?.titreDirigeant ?? "Dirigeant";
 
@@ -816,34 +831,57 @@ export function Parcours({
           {/* Le dossier existe forcément ici : on n'atteint pas la cinquième étape
               sans avoir franchi la première, qui l'ouvre. La garde est un filet. */}
           {etape.identifiant === "documents" && dossier !== null && (
-            <>
-              <div className={styles.full}>
-                <Pieces
-                  dossierId={dossier}
-                  pieces={piecesAttendues(brouillon.forme)}
-                  deposees={piecesDeposees}
-                />
-              </div>
+            <div className={styles.full}>
+              {/*
+                Le champ « Paraphes / Initiales » a été retiré.
 
-              {/* Les paraphes figurent en pied de chaque page des actes. */}
-              <Champ id="paraphes" libelle="Paraphes / Initiales">
-                <input
-                  id="paraphes"
-                  maxLength={10}
-                  placeholder="Ex : CD"
-                  value={brouillon.paraphes ?? ""}
-                  onChange={(e) => modifier("paraphes", e.target.value)}
-                />
-              </Champ>
-            </>
+                Il était enregistré dans le brouillon et validé par l'API, mais aucun
+                gabarit ne l'employait : les initiales saisies n'apparaissaient sur
+                aucun acte. On demandait un renseignement pour rien.
+              */}
+              <Pieces
+                dossierId={dossier}
+                pieces={piecesAttendues(brouillon.forme).filter(
+                  (p) => p.quand === "saisie" || actesRendus
+                )}
+                deposees={piecesDeposees}
+              />
+            </div>
           )}
 
           {etape.identifiant === "offres" && (
-            <Offres
-              choisie={brouillon.offre}
-              surChangement={(code) => modifier("offre", code)}
-              anomalie={anomalies.offre}
-            />
+            <>
+              {/*
+                Le geste en tête, non au bout de trois écrans de tarifs.
+                
+                Le bouton vivait sous les trois cartes, après leurs vingt lignes de
+                contenu : on ne le voyait qu'en défilant jusqu'en bas, et l'on ne savait
+                pas qu'une formule était déjà retenue. La barre le dit et l'offre, et le
+                pied de page le redonne à qui a tout lu.
+              */}
+              {formuleRetenue && (
+                <div className={styles.reglerBarre}>
+                  <p className={styles.reglerFormule}>
+                    <span>Formule retenue</span>
+                    {formuleRetenue.nom} · {formuleRetenue.prix}€ HT
+                  </p>
+                  <button
+                    type="button"
+                    className={styles.reglerBouton}
+                    onClick={reglerEtConfier}
+                    disabled={enCours || reglementEnCours}
+                  >
+                    {reglementEnCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
+                  </button>
+                </div>
+              )}
+
+              <Offres
+                choisie={brouillon.offre}
+                surChangement={(code) => modifier("offre", code)}
+                anomalie={anomalies.offre}
+              />
+            </>
           )}
 
           {etape.identifiant === "actes" && dossier !== null && (

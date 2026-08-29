@@ -149,10 +149,17 @@ export function Pieces({ dossierId, pieces, deposees }: Props) {
                     <polyline points="17 8 12 3 7 8" />
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
+                  {/*
+                    Une pièce déposée se remplace, et il faut que ça se voie.
+                    La zone portait le nom du fichier en gras suivi de « déposer un
+                    autre fichier » en gris : on y lisait une étiquette, non un geste,
+                    et l'on cherchait où corriger un mauvais envoi. C'est l'action qui
+                    passe en gras, le fichier en place qui la suit.
+                  */}
                   <span>
                     {dejaLa ? (
                       <>
-                        <strong>{dejaLa.nom}</strong> · déposer un autre fichier
+                        <strong>Remplacer le fichier</strong> · {dejaLa.nom}
                       </>
                     ) : (
                       <>

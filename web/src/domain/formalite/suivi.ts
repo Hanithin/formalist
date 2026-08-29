@@ -163,10 +163,17 @@ const TOUTES: Definition[] = [
   {
     identifiant: "annonce",
     titre: "Annonce légale publiée",
+    /*
+     * Ce n'est pas le client qui publie.
+     *
+     * L'étape lui demandait de porter l'avis au journal puis d'en déposer
+     * l'attestation. C'est le cabinet qui rédige le texte, le fait paraître et le joint
+     * au dossier - le client a payé pour ne pas s'en occuper. Le parcours de
+     * modification le disait déjà ainsi ; celui-ci réclamait deux gestes de plus.
+     */
     explication:
-      "Publiez l'annonce dans un journal habilité de votre département, puis déposez l'attestation de parution qu'il vous envoie. Le greffe la réclame avec le dossier.",
-    main: "vous",
-    action: "Déposer l'attestation de parution",
+      "Le cabinet rédige l'avis, le fait paraître dans un journal habilité de votre département et joint la parution au dossier.",
+    main: "avocat",
     faite: (e) => e.aLAnnoncePubliee,
   },
   {

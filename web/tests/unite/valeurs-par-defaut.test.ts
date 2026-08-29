@@ -61,10 +61,19 @@ describe("ce qui est écrit d'avance", () => {
         dureeDeVie: 50,
         optionFiscale: "IR",
         dateCloturePremierExercice: "2026-06-30",
+        offre: "starter",
       },
       LE_15_AOUT
     );
     expect(ajouts).toEqual({});
+  });
+
+  it("retient la formule recommandée d'avance", () => {
+    /*
+     * Sa carte portait un bouton noir « Sélectionner » quand les deux autres l'avaient
+     * blanc : on la croyait déjà choisie, et l'on passait à la suite sans rien cliquer.
+     */
+    expect(valeursParDefaut({ forme: "SASU" }, LE_15_AOUT).offre).toBe("business");
   });
 
   it("une durée de zéro an est une réponse, pas une absence", () => {
