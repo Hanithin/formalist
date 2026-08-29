@@ -104,14 +104,14 @@ export function nomAffichable(nom: string | null | undefined): string | null {
  * Toutes les valeurs qu'un filtre peut prendre, affichées ou non.
  *
  * `en_cours` n'a plus de pastille - c'est la réunion de `brouillon` et de
- * `chez_lavocat` - mais reste une valeur légale : les parts du portefeuille s'en
+ * `transmise` - mais reste une valeur légale : les parts du portefeuille s'en
  * servent, et une adresse `?filtre=en_cours` partagée hier doit continuer d'ouvrir la
  * même liste aujourd'hui.
  */
 export type ValeurFiltre =
   | "tous"
   | "brouillon"
-  | "chez_lavocat"
+  | "transmise"
   | "en_cours"
   | "en_attente"
   | "terminee";
@@ -124,20 +124,40 @@ export type ValeurFiltre =
  * sans se recouvrir - ce qui n'était pas le cas quand « En cours » y figurait, lui qui
  * contenait déjà tous les brouillons.
  *
- * « Toutes », non « Tous » : le mot s'accorde avec les formalités qu'il compte.
+ * « Toutes », non « Tous » : le mot s'accorde avec les formalités qu'il compte - et
+ * avec leur nombre, un seul brouillon n'en faisant pas des brouillons.
+ *
+ * « Transmises » nomme l'état par le geste du client, non par qui travaille dessus :
+ * « Chez l'avocat » disait où va le dossier plutôt que ce qu'il en est, et la carte
+ * annonce déjà « À transmettre » sur un brouillon prêt à partir. Les deux mots se
+ * répondent d'un écran à l'autre.
  */
-export const FILTRES: { valeur: ValeurFiltre; libelle: string }[] = [
-  { valeur: "tous", libelle: "Toutes" },
-  { valeur: "brouillon", libelle: "Brouillons" },
-  { valeur: "chez_lavocat", libelle: "Chez l'avocat" },
-  { valeur: "en_attente", libelle: "En attente" },
-  { valeur: "terminee", libelle: "Terminées" },
+export const FILTRES: { valeur: ValeurFiltre; singulier: string; pluriel: string }[] = [
+  { valeur: "tous", singulier: "Toutes", pluriel: "Toutes" },
+  { valeur: "brouillon", singulier: "Brouillon", pluriel: "Brouillons" },
+  { valeur: "transmise", singulier: "Transmise", pluriel: "Transmises" },
+  { valeur: "en_attente", singulier: "En attente", pluriel: "En attente" },
+  { valeur: "terminee", singulier: "Terminée", pluriel: "Terminées" },
 ];
+
+/**
+ * L'intitulé d'une pastille, accordé à ce qu'elle compte.
+ *
+ * « Terminées 1 » se lisait sous les yeux : le nombre dément le mot juste à côté de
+ * lui. « Toutes » et « En attente » ne varient pas - le premier désigne un ensemble,
+ * le second un état.
+ */
+export function libelleDuFiltre(
+  filtre: { singulier: string; pluriel: string },
+  combien: number
+): string {
+  return combien <= 1 ? filtre.singulier : filtre.pluriel;
+}
 
 const VALEURS: ValeurFiltre[] = [
   "tous",
   "brouillon",
-  "chez_lavocat",
+  "transmise",
   "en_cours",
   "en_attente",
   "terminee",
@@ -164,7 +184,7 @@ export function retenu(dossier: DossierListe, filtre: ValeurFiltre): boolean {
 
   const enCours = dossier.status !== "terminee" && dossier.status !== "en_attente";
   if (filtre === "brouillon") return enCours && dossier.brouillon === true;
-  if (filtre === "chez_lavocat") return enCours && dossier.brouillon !== true;
+  if (filtre === "transmise") return enCours && dossier.brouillon !== true;
   return enCours;
 }
 
@@ -186,7 +206,7 @@ export function comptesParFiltre(dossiers: DossierListe[]): Record<ValeurFiltre,
   return {
     tous: dossiers.length,
     brouillon: pour("brouillon"),
-    chez_lavocat: pour("chez_lavocat"),
+    transmise: pour("transmise"),
     en_cours: pour("en_cours"),
     en_attente: pour("en_attente"),
     terminee: pour("terminee"),

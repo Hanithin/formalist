@@ -10,6 +10,8 @@ import {
   pageDe,
   parModificationRecente,
   parCeQuiPresse,
+  libelleDuFiltre,
+  FILTRES,
   libelleDuType,
   PAR_PAGE,
   type DossierListe,
@@ -64,7 +66,7 @@ describe("les filtres de la liste", () => {
     expect(comptes).toEqual({
       tous: 4,
       brouillon: 0,
-      chez_lavocat: 2,
+      transmise: 2,
       en_cours: 2,
       en_attente: 1,
       terminee: 1,
@@ -264,34 +266,34 @@ describe("les états d'un dossier dans la liste", () => {
     const c = comptesParFiltre(portefeuille);
 
     expect(c.brouillon).toBe(2);
-    expect(c.chez_lavocat).toBe(1);
+    expect(c.transmise).toBe(1);
     expect(c.en_attente).toBe(1);
     expect(c.terminee).toBe(1);
-    expect(c.brouillon + c.chez_lavocat + c.en_attente + c.terminee).toBe(c.tous);
+    expect(c.brouillon + c.transmise + c.en_attente + c.terminee).toBe(c.tous);
   });
 
-  it("séparent le dossier confié du brouillon, ce que « en cours » confondait", () => {
+  it("séparent le dossier transmis du brouillon, ce que « en cours » confondait", () => {
     // Le cas exact qui faisait mentir la ligne de résumé : un dossier engagé, ni
     // brouillon ni terminé, que l'ancienne énumération passait sous silence.
     const engage = dossier({ id: 3 });
 
     expect(retenu(engage, "brouillon")).toBe(false);
-    expect(retenu(engage, "chez_lavocat")).toBe(true);
+    expect(retenu(engage, "transmise")).toBe(true);
     expect(retenu(engage, "en_cours")).toBe(true);
   });
 
-  it("ne rangent un dossier terminé ni chez l'avocat ni en brouillon", () => {
+  it("ne rangent un dossier terminé ni parmi les transmises ni en brouillon", () => {
     const fini = dossier({ id: 5, status: "terminee", brouillon: true });
 
     expect(retenu(fini, "brouillon")).toBe(false);
-    expect(retenu(fini, "chez_lavocat")).toBe(false);
+    expect(retenu(fini, "transmise")).toBe(false);
     expect(retenu(fini, "terminee")).toBe(true);
   });
 
   it("gardent « en cours » comme réunion des deux, pour les anciennes adresses", () => {
     const c = comptesParFiltre(portefeuille);
 
-    expect(c.en_cours).toBe(c.brouillon + c.chez_lavocat);
+    expect(c.en_cours).toBe(c.brouillon + c.transmise);
     expect(filtreValide("en_cours")).toBe("en_cours");
   });
 
@@ -301,7 +303,7 @@ describe("les états d'un dossier dans la liste", () => {
     expect(c).toEqual({
       tous: 0,
       brouillon: 0,
-      chez_lavocat: 0,
+      transmise: 0,
       en_cours: 0,
       en_attente: 0,
       terminee: 0,
@@ -361,5 +363,37 @@ describe("l'ordre de ce qui presse", () => {
     parCeQuiPresse(dossiers);
 
     expect(dossiers.map((d) => d.id)).toEqual([1, 2]);
+  });
+});
+
+/**
+ * L'intitulé d'une pastille s'accorde à ce qu'elle compte.
+ *
+ * « Terminées 1 » se lisait sous les yeux : le nombre démentait le mot posé juste à
+ * côté de lui.
+ */
+describe("l'accord des pastilles de filtre", () => {
+  const filtre = (valeur: string) => FILTRES.find((f) => f.valeur === valeur)!;
+
+  it("met au singulier ce qui n'est compté qu'une fois", () => {
+    expect(libelleDuFiltre(filtre("terminee"), 1)).toBe("Terminée");
+    expect(libelleDuFiltre(filtre("brouillon"), 1)).toBe("Brouillon");
+    expect(libelleDuFiltre(filtre("transmise"), 1)).toBe("Transmise");
+  });
+
+  it("met au pluriel dès deux", () => {
+    expect(libelleDuFiltre(filtre("terminee"), 2)).toBe("Terminées");
+    expect(libelleDuFiltre(filtre("brouillon"), 6)).toBe("Brouillons");
+  });
+
+  it("laisse invariables ceux qui ne comptent pas des objets", () => {
+    // « Toutes » désigne un ensemble, « En attente » un état : ni l'un ni l'autre ne
+    // se met au singulier parce qu'il n'y a qu'un dossier dedans.
+    expect(libelleDuFiltre(filtre("tous"), 1)).toBe("Toutes");
+    expect(libelleDuFiltre(filtre("en_attente"), 1)).toBe("En attente");
+  });
+
+  it("accorde aussi un compte nul, qui n'est pas un pluriel", () => {
+    expect(libelleDuFiltre(filtre("terminee"), 0)).toBe("Terminée");
   });
 });

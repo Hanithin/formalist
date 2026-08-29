@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { filtresUtiles } from "@/domain/document/statuts";
-import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuType, nomAffichable, pageDe, paginer, parCeQuiPresse, retenu, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
+import { FILTRES, adresseDuDossier, comptesParFiltre, correspond, dateRelative, gesteDuDossier, libelleDuFiltre, libelleDuType, nomAffichable, pageDe, paginer, parCeQuiPresse, retenu, type DossierListe, type ValeurFiltre } from "@/domain/formalite/liste";
 import { avancementDuDossier, libelleDossier, tonDossier } from "@/domain/formalite/etapes";
 import { signalerChangementDeColonne } from "@/lib/colonne";
 import styles from "./Formalites.module.css";
@@ -81,6 +81,13 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
       */}
       {/* ---------- Filtres et recherche ---------- */}
       <div className={styles.filterBar}>
+        {/*
+          Un choix parmi quatre, dans un seul cadre.
+
+          Chaque filtre portait le sien, bordé, et la rangée se lisait comme quatre
+          boutons indépendants - alors qu'en cliquer un décoche les autres. Un cadre
+          commun le dit sans un mot, et tient moins de place.
+        */}
         <nav className={styles.filterGroup} aria-label="Filtrer les formalités">
           {filtresUtiles(FILTRES, comptes, filtre).map((f) => (
             <Link
@@ -90,7 +97,8 @@ export function Liste({ dossiers, filtre, rechercheInitiale = "" }: Props) {
               aria-current={f.valeur === filtre ? "page" : undefined}
               onClick={() => setPage(1)}
             >
-              {f.libelle} <span className={styles.pillCount}>{comptes[f.valeur]}</span>
+              {libelleDuFiltre(f, comptes[f.valeur])}{" "}
+              <span className={styles.pillCount}>{comptes[f.valeur]}</span>
             </Link>
           ))}
         </nav>

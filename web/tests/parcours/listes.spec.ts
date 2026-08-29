@@ -128,7 +128,7 @@ test.describe("formalités", () => {
     await page.goto("/formalites");
     await page
       .getByRole("navigation", { name: "Filtrer les formalités" })
-      .getByRole("link", { name: /Terminées/ })
+      .getByRole("link", { name: /Terminée/ })
       .click();
 
     await expect(page).toHaveURL(/filtre=terminee/);
@@ -141,7 +141,7 @@ test.describe("formalités", () => {
    *
    * La ligne de tête annonçait « 6 brouillons » sans qu'on puisse s'y rendre : on
    * lisait un compte qui ne menait nulle part. La rangée porte maintenant chaque état
-   * qu'elle nomme, et « Chez l'avocat » sépare ce qui est parti de ce qu'il reste à
+   * qu'elle nomme, et « Transmises » sépare ce qui est parti de ce qu'il reste à
    * écrire - deux choses que « En cours » confondait dans un seul chiffre.
    */
   test("les brouillons ont leur pastille, distincte de ce qui est parti", async ({
@@ -162,7 +162,7 @@ test.describe("formalités", () => {
     await page.goto("/formalites");
     const filtres = page.getByRole("navigation", { name: "Filtrer les formalités" });
 
-    await filtres.getByRole("link", { name: /Brouillons/ }).click();
+    await filtres.getByRole("link", { name: /Brouillon/ }).click();
     await expect(page).toHaveURL(/filtre=brouillon/);
 
     // Un brouillon porte sa pastille sur la carte : toutes celles qui restent l'ont.
