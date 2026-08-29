@@ -160,7 +160,7 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
                     lit, alors qu'il n'y a rien à y lire : le tiret se saute.
                   */}
 
-                  <span className={styles.celluleEtat}>
+                  <span>
                     <span
                       className={`${styles.badge} ${styles["badge-" + societe.etat.ton] ?? ""}`}
                     >

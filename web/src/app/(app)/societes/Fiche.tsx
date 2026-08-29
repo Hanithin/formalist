@@ -247,7 +247,7 @@ export async function Fiche({ cle, avecFil = true }: { cle: string; avecFil?: bo
                     sousPhase: dossier.sousPhase,
                   });
                   return (
-                    <li key={dossier.id} className={styles.ligne}>
+                    <li key={dossier.id}>
                       <Link
                         href={adresseDuDossier({ id: dossier.id, type: dossier.type })}
                         className={styles.ligneLien}
@@ -287,7 +287,7 @@ export async function Fiche({ cle, avecFil = true }: { cle: string; avecFil?: bo
               ) : (
                 <ul className={styles.lignes}>
                   {documents.slice(0, 8).map((document) => (
-                    <li key={document.id} className={styles.ligne}>
+                    <li key={document.id}>
                       <Link href={"/documents?societe=" + recherche} className={styles.ligneLien}>
                         <span className={styles.ligneCorps}>
                           <span className={styles.ligneTitre}>{document.nom}</span>
