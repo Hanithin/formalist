@@ -18,67 +18,9 @@
   padding: 0;
 }
 
-/*
- * Le fil d'Ariane.
- *
- * Ses deux membres portaient le même gris et la même graisse, séparés d'un chevron de
- * la même couleur : rien ne disait lequel se cliquait, ni où l'on se trouvait. Le
- * retour est une pastille qui s'allume au survol, le nom courant a le noir du titre,
- * et le chevron s'efface entre les deux.
- */
-.fil {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  /* La pastille déborde à gauche de son texte : la marge la ramène sur la colonne. */
-  padding: 24px 48px 0;
-  margin-left: -9px;
-  font-size: 13px;
-}
 
-.filRetour {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 9px;
-  border-radius: 8px;
-  color: #71717a;
-  text-decoration: none;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
 
-.filRetour svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
-}
 
-.filRetour:hover {
-  /* Sur le gris de la page, plus clair que #e4e4e7 ne se distingue pas. */
-  background: #e4e4e7;
-  color: #18181b;
-}
-
-/* La flèche recule d'un pixel : le geste est annoncé avant d'être fait. */
-.filRetour:hover svg {
-  transform: translateX(-2px);
-}
-
-.filSeparateur {
-  width: 13px;
-  height: 13px;
-  flex-shrink: 0;
-  color: #d4d4d8;
-}
-
-.filCourant {
-  padding-left: 5px;
-  font-weight: 600;
-  color: #18181b;
-}
 
 
 

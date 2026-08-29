@@ -59,7 +59,7 @@ function Chevron() {
  * inutile, une ligne qu'il faut cliquer pour voir quoi que ce soit. Le fil disparaît
  * dans ce cas - il renverrait vers une page qui montre déjà la fiche.
  */
-export async function Fiche({ cle, avecFil = true }: { cle: string; avecFil?: boolean }) {
+export async function Fiche({ cle }: { cle: string }) {
   const utilisateur = await exigerUtilisateur();
 
   const ouverte = await ouvrirSociete(utilisateur, cle);
@@ -116,42 +116,14 @@ export async function Fiche({ cle, avecFil = true }: { cle: string; avecFil?: bo
         trouvait. Le retour devient une pastille qui réagit au survol, avec sa flèche ;
         le nom de la société prend le noir du titre, puisque c'est la page courante.
       */}
-      {avecFil && (
-        <nav className={styles.fil} aria-label="Fil d'Ariane">
-          <Link href="/societes" className={styles.filRetour}>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Mes sociétés
-          </Link>
+      {/*
+        Le fil d'Ariane est parti.
 
-          <svg
-            className={styles.filSeparateur}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-
-          <span className={styles.filCourant} aria-current="page">
-            {societe.denomination}
-          </span>
-        </nav>
-      )}
+        Il n'était pas le chemin du retour : la colonne porte « Mes sociétés » en
+        permanence, et ne quitte jamais l'écran. Il redisait donc où l'on se trouve à
+        qui vient de cliquer pour y arriver, et poussait la carte de trente pixels vers
+        le bas.
+      */}
 
       <div className={styles.contenu}>
         {/*

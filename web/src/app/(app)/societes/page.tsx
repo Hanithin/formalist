@@ -103,7 +103,7 @@ export default async function Societes() {
    * parce qu'un client qui n'en a qu'une lit « Mes sociétés » comme un menu qui ne le
    * concerne pas.
    */
-  if (societes.length === 1) return <Fiche cle={societes[0].cle} avecFil={false} />;
+  if (societes.length === 1) return <Fiche cle={societes[0].cle} />;
 
   return (
     <main className={styles.page}>
