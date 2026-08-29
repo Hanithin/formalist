@@ -8,8 +8,7 @@ import {
 } from "@/domain/societe/portefeuille";
 import { echeancesDesDossiers } from "@/domain/formalite/accueil";
 import { sirenLisible } from "@/domain/modification/annonce";
-import { accorder } from "@/domain/formalite/etapes";
-import { dateEnTete } from "@/lib/dates";
+import { EnTetePage } from "@/components/page/EnTetePage";
 import { Vide } from "@/components/liste/Vide";
 import { Registre, type LigneDuRegistre } from "./Registre";
 import styles from "./Societes.module.css";
@@ -77,31 +76,21 @@ export default async function Societes() {
   return (
     <main className={styles.page}>
       {/*
-        La même ligne de tête que la bibliothèque de documents.
+        La phrase ne recompte plus.
 
-        Le titre et sa phrase tenaient dans un bloc de gauche, et la date s'alignait sur
-        le milieu des deux : elle flottait entre les lignes au lieu de se poser sur celle
-        du titre. Ailleurs, le bandeau ne porte que le titre et la date ; la phrase court
-        dessous, sur toute la largeur.
+        Elle annonçait « 7 sociétés suivies · 6 formalités en cours » - deux nombres que
+        les pastilles du filtre disent juste en dessous, à cliquer près. Elle dit
+        désormais ce que les colonnes du registre apportent, ce qu'aucune pastille ne
+        dit.
       */}
-      <div className={styles.entete}>
-        <h1 className={styles.titre}>{libelleDuPortefeuille(societes.length)}</h1>
-        <span className={styles.date}>{dateEnTete()}</span>
-      </div>
-
-      <p className={styles.introduction}>
-        {societes.length === 0
-          ? "Vos sociétés apparaîtront ici dès votre première formalité."
-          : accorder(societes.length, "société suivie", "sociétés suivies") +
-            (societes.reduce((n, s) => n + s.enCours, 0) > 0
-              ? " · " +
-                accorder(
-                  societes.reduce((n, s) => n + s.enCours, 0),
-                  "formalité en cours",
-                  "formalités en cours"
-                )
-              : "")}
-      </p>
+      <EnTetePage
+        titre={libelleDuPortefeuille(societes.length)}
+        sousTitre={
+          societes.length === 0
+            ? "Vos sociétés apparaîtront ici dès votre première formalité."
+            : "Vos sociétés, leurs formalités en cours et leurs prochaines échéances."
+        }
+      />
 
       <div className={styles.contenu}>
         {societes.length === 0 ? (

@@ -75,7 +75,13 @@
   }
 }
 
+/*
+ * Un choix peut être un lien ou un bouton, selon que le filtre vit dans l'adresse ou
+ * dans la page. globals.css habille les boutons de la page comme des commandes de
+ * formulaire - marge haute, rembourrage, bordure : on remet à zéro avant de dessiner.
+ */
 .choix {
+  margin: 0;
   position: relative;
   z-index: 1;
   display: inline-flex;
@@ -87,6 +93,14 @@
   background: transparent;
   font-size: 13.5px;
   font-family: inherit;
+  /*
+   * L'interligne est dite, non héritée.
+   *
+   * Un lien la prend du corps de page - 1,6 - quand un bouton retombe sur celle du
+   * navigateur : le même sélecteur mesurait quarante-deux pixels sur une page et
+   * trente-six sur l'autre, et la recherche ne s'alignait plus avec lui.
+   */
+  line-height: 1.6;
   color: #52525b;
   text-decoration: none;
   cursor: pointer;

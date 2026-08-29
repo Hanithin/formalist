@@ -2,6 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  BarreDOutils,
+  Espace,
+  Recherche,
+  Selecteur,
+} from "@/components/page/BarreDOutils";
 import styles from "./Societes.module.css";
 
 /**
@@ -21,12 +27,18 @@ export interface LigneDuRegistre {
   echeance: { intitule: string; quand: string } | null;
 }
 
-/** Les états proposés en filtre, dans l'ordre où on les cherche. */
+/**
+ * Les états proposés en filtre, dans l'ordre où on les cherche.
+ *
+ * Chacun porte ses deux formes : « Active 1 » se lisait « Actives 1 », et le nombre
+ * démentait le mot posé juste à côté de lui. « En création » et « En fermeture » sont
+ * des états, non des objets comptés : ils ne varient pas.
+ */
 const ETATS = [
-  { cle: "active", libelle: "Actives" },
-  { cle: "en-creation", libelle: "En création" },
-  { cle: "en-fermeture", libelle: "En fermeture" },
-  { cle: "radiee", libelle: "Radiées" },
+  { cle: "active", singulier: "Active", pluriel: "Actives" },
+  { cle: "en-creation", singulier: "En création", pluriel: "En création" },
+  { cle: "en-fermeture", singulier: "En fermeture", pluriel: "En fermeture" },
+  { cle: "radiee", singulier: "Radiée", pluriel: "Radiées" },
 ] as const;
 
 function sansAccent(texte: string): string {
@@ -69,55 +81,36 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
 
   return (
     <>
-      <div className={styles.barre}>
-        <nav className={styles.filtres} aria-label="Filtrer les sociétés">
-          <button
-            type="button"
-            className={etat === "toutes" ? `${styles.filtre} ${styles.filtreActif}` : styles.filtre}
-            aria-pressed={etat === "toutes"}
-            onClick={() => setEtat("toutes")}
-          >
-            Toutes <span className={styles.filtreCompte}>{comptes.toutes}</span>
-          </button>
+      <BarreDOutils>
+        <Selecteur
+          intitule="Filtrer les sociétés"
+          actif={etat}
+          surChoix={setEtat}
+          choix={[
+            {
+              valeur: "toutes",
+              libelle: comptes.toutes <= 1 ? "Toute" : "Toutes",
+              compte: comptes.toutes,
+            },
+            // Un filtre sans société ne s'affiche pas : on n'offre pas un chemin vide.
+            ...ETATS.filter((e) => comptes[e.cle] > 0 || etat === e.cle).map((e) => ({
+              valeur: e.cle,
+              libelle: comptes[e.cle] <= 1 ? e.singulier : e.pluriel,
+              compte: comptes[e.cle],
+            })),
+          ]}
+        />
 
-          {/* Un filtre sans société ne s'affiche pas : on n'offre pas un chemin vide. */}
-          {ETATS.filter((e) => comptes[e.cle] > 0).map((e) => (
-            <button
-              key={e.cle}
-              type="button"
-              className={etat === e.cle ? `${styles.filtre} ${styles.filtreActif}` : styles.filtre}
-              aria-pressed={etat === e.cle}
-              onClick={() => setEtat(e.cle)}
-            >
-              {e.libelle} <span className={styles.filtreCompte}>{comptes[e.cle]}</span>
-            </button>
-          ))}
-        </nav>
+        <Espace />
 
-        <div className={styles.recherche}>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <label htmlFor="recherche-societe" className={styles.invisible}>
-            Rechercher une société
-          </label>
-          <input
-            id="recherche-societe"
-            type="text"
-            value={recherche}
-            placeholder="Nom ou SIREN…"
-            onChange={(e) => setRecherche(e.target.value)}
-          />
-        </div>
-      </div>
+        <Recherche
+          valeur={recherche}
+          invite="Nom ou SIREN…"
+          libelle="Rechercher une société"
+          identifiant="recherche-societe"
+          surSaisie={setRecherche}
+        />
+      </BarreDOutils>
 
       {visibles.length === 0 ? (
         <p className={styles.vide}>

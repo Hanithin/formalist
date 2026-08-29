@@ -27,8 +27,12 @@ const TRAITS = {
 
 export interface Choix {
   valeur: string;
-  /** Où mène ce choix. Le filtre vit dans l'adresse : il se partage et se recharge. */
-  lien: string;
+  /**
+   * Où mène ce choix, quand le filtre vit dans l'adresse - il se partage alors, et
+   * survit à un rechargement. Absent, le choix est un bouton et l'état reste dans la
+   * page : c'est le cas des listes qui filtrent sans recharger.
+   */
+  lien?: string;
   libelle: string;
   compte?: number;
 }
@@ -53,7 +57,8 @@ export function Selecteur({
   actif: string;
   /** Ce que dit le lecteur d'écran en entrant dans la barre. */
   intitule: string;
-  surChoix?: () => void;
+  /** Reçoit la valeur choisie ; un choix sans lien n'a que cela pour agir. */
+  surChoix?: (valeur: string) => void;
 }) {
   const barre = useRef<HTMLElement>(null);
   const [curseur, setCurseur] = useState<{ x: number; y: number; l: number; h: number } | null>(
@@ -107,18 +112,39 @@ export function Selecteur({
         }
       />
 
-      {choix.map((c) => (
-        <Link
-          key={c.valeur}
-          href={c.lien}
-          className={c.valeur === actif ? `${styles.choix} ${styles.choixActif}` : styles.choix}
-          aria-current={c.valeur === actif ? "page" : undefined}
-          onClick={surChoix}
-        >
-          {c.libelle}
-          {c.compte !== undefined && <span className={styles.compte}>{c.compte}</span>}
-        </Link>
-      ))}
+      {choix.map((c) => {
+        const classe =
+          c.valeur === actif ? `${styles.choix} ${styles.choixActif}` : styles.choix;
+        const courant = c.valeur === actif ? "page" : undefined;
+        const dedans = (
+          <>
+            {c.libelle}
+            {c.compte !== undefined && <span className={styles.compte}>{c.compte}</span>}
+          </>
+        );
+
+        return c.lien ? (
+          <Link
+            key={c.valeur}
+            href={c.lien}
+            className={classe}
+            aria-current={courant}
+            onClick={() => surChoix?.(c.valeur)}
+          >
+            {dedans}
+          </Link>
+        ) : (
+          <button
+            key={c.valeur}
+            type="button"
+            className={classe}
+            aria-current={courant}
+            onClick={() => surChoix?.(c.valeur)}
+          >
+            {dedans}
+          </button>
+        );
+      })}
     </nav>
   );
 }
