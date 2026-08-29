@@ -22,6 +22,14 @@ const PAGES = [
   ["les consultations", "/consultations"],
   ["l'équipe", "/equipe"],
   ["les paramètres", "/parametres"],
+  /*
+   * Le parcours de création aussi.
+   *
+   * Il posait sa propre marge de tête - un fil d'ariane, puis un titre masqué aux
+   * seuls lecteurs d'écran - et n'était donc jamais mesuré. Il porte maintenant le
+   * bandeau partagé, et tombe sur la même ligne que les neuf autres.
+   */
+  ["la création", "/creation"],
 ] as const;
 
 for (const [nom, chemin] of PAGES) {
