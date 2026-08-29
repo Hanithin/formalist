@@ -78,8 +78,15 @@
  * - le titre tombait quarante-huit pixels à droite du formulaire. On rend à ce bloc la
  * largeur entière, et le retrait redevient unique.
  */
+/*
+ * Le bloc de tête pose lui-même l'écart avec ce qui le suit.
+ *
+ * Il était posé par le fil des étapes, qui prenait vingt-six pixels au-dessus de lui.
+ * Le fil disparaît une fois le dossier confié - c'est le suivi qui compte alors - et
+ * la carte du formulaire venait toucher la phrase.
+ */
 .tete {
-  margin: 0 -48px;
+  margin: 0 -48px 24px;
 }
 
 /*
@@ -144,11 +151,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /*
-   * La première pastille venait toucher « Création d'une SARL » : la phrase de tête
-   * n'a que dix pixels sous elle, et le fil n'en posait aucun au-dessus.
-   */
-  margin-top: 26px;
+  /* L'écart au-dessus vient du bloc de tête, qui le pose pour tout ce qui le suit. */
   margin-bottom: 32px;
   position: relative;
   gap: 0;
@@ -280,7 +283,7 @@
     padding: 0 20px 48px;
   }
   .tete {
-    margin: 0 -20px;
+    margin: 0 -20px 24px;
   }
 }
 
