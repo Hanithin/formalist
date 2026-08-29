@@ -724,3 +724,143 @@
     font-size: 16px;
   }
 }
+
+/* ------------------------------------------------- Ce qui vous attend */
+
+/*
+ * Le bloc de tête d'une fiche : une seule chose à faire, et pourquoi.
+ *
+ * La fiche disait « Aucune échéance connue » sur toutes les sociétés du compte, puis
+ * enchaînait sur l'historique. On ouvre une fiche pour savoir ce qui reste à faire,
+ * non pour relire ce qui a été fait.
+ */
+.attend {
+  border: 1px solid #ececee;
+  border-radius: 16px;
+  background: #fff;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+}
+
+/*
+ * En retard, le fond prend la teinte de l'attente.
+ *
+ * Le fond entier plutôt qu'un filet sur le bord : la carte doit se voir dans une page,
+ * non porter une marque qu'on cherche.
+ */
+.attendRetard {
+  background: var(--attente-fond);
+  border-color: var(--attente-trait);
+}
+
+.attendQuand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 0 0 10px;
+}
+
+.attendDate {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #71717a;
+}
+
+.attendRetard .attendDate {
+  color: var(--attente-encre);
+}
+
+.attendDelai {
+  font-size: 13px;
+  color: #52525b;
+}
+
+.attendRetard .attendDelai {
+  color: var(--attente-encre);
+  font-weight: 500;
+}
+
+.attendTitre {
+  margin: 0 0 6px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.25;
+  color: #18181b;
+}
+
+.attendTexte {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #52525b;
+  max-width: 620px;
+}
+
+/* Le fondement se lit si on le cherche : plus petit, jamais illisible. */
+.attendFondement {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #71717a;
+  max-width: 620px;
+}
+
+.attendGestes {
+  margin-top: 18px;
+}
+
+.attendBouton {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 100px;
+  border: 1px solid #18181b;
+  background: #18181b;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.attendBouton:hover {
+  background: #000;
+}
+
+/* Ce qui suit la première obligation : présent, sans peser. */
+.attendSuite {
+  margin: 18px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid #ececee;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attendRetard .attendSuite {
+  border-top-color: var(--attente-trait);
+}
+
+.attendSuite > li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13.5px;
+  color: #52525b;
+}
+
+.attendSuiteQuand {
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}

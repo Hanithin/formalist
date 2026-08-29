@@ -11,6 +11,7 @@ import { sirenLisible } from "@/domain/modification/annonce";
 import { EnTetePage } from "@/components/page/EnTetePage";
 import { delaiLisible, obligationsDeLaSociete } from "@/domain/societe/obligations";
 import { Vide } from "@/components/liste/Vide";
+import { Fiche } from "./Fiche";
 import { Registre, type LigneDuRegistre } from "./Registre";
 import styles from "./Societes.module.css";
 
@@ -92,6 +93,17 @@ export default async function Societes() {
         : null,
     };
   });
+
+  /*
+   * Une seule société : sa fiche, directement.
+   *
+   * La liste serait alors un intermédiaire inutile - une ligne qu'il faut cliquer pour
+   * voir quoi que ce soit, sur une page qui n'annonce rien d'autre. Le domaine s'y
+   * préparait déjà : `libelleDuPortefeuille` bascule sur « Ma société » au singulier,
+   * parce qu'un client qui n'en a qu'une lit « Mes sociétés » comme un menu qui ne le
+   * concerne pas.
+   */
+  if (societes.length === 1) return <Fiche cle={societes[0].cle} avecFil={false} />;
 
   return (
     <main className={styles.page}>

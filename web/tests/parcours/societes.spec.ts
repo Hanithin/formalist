@@ -49,8 +49,15 @@ test("la fiche rassemble ce qui concerne une seule société", async ({ page }) 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(nom!);
   await expect(page.getByRole("heading", { name: "Formalités", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Échéances" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Historique" })).toBeVisible();
+  /*
+   * Les échéances ont quitté la colonne pour la tête de page.
+   *
+   * Elles y annonçaient « Aucune échéance connue pour cette société » sur toutes les
+   * sociétés du compte, faute de savoir calculer ce qu'une société doit du seul fait
+   * d'exister. Le bloc de tête le dit, et ne s'affiche que s'il a quelque chose à dire.
+   */
+  await expect(page.locator("#echeances")).toHaveCount(0);
 });
 
 test("la fiche renvoie aux listes globales plutôt que de les recopier", async ({ page }) => {
@@ -128,5 +135,61 @@ test("les deux pages prennent toute la largeur", async ({ page }) => {
 
     const largeur = await page.locator("main").evaluate((e) => e.getBoundingClientRect().width);
     expect(largeur, adresse).toBeGreaterThan(1000);
+  }
+});
+
+/**
+ * Le registre et la fiche disent le même état.
+ *
+ * Ils ne le disaient pas. L'état se déduisait d'une comparaison exacte sur la colonne
+ * `type` : les dossiers repris de l'ancienne application y écrivent « Création SAS »
+ * quand le parcours écrit « creation ». Le test échouait, le registre retombait sur
+ * « Active », et la fiche annonçait « En cours d'immatriculation » deux clics plus
+ * loin.
+ *
+ * On compare les deux plutôt qu'un mot à une liste : un état « Active » sur une société
+ * qui a un dépôt de comptes en cours est parfaitement juste, et une règle plus grossière
+ * s'y tromperait.
+ */
+test("le registre et la fiche disent le même état", async ({ page }) => {
+  await page.goto("/societes");
+
+  const premiere = page.locator("ul[class*='registreLignes'] li").first();
+  const auRegistre = (await premiere.locator("[class*='badge']").first().innerText()).trim();
+
+  await premiere.getByRole("link").first().click();
+  await page.waitForURL(/\/societes\/.+/);
+
+  const surLaFiche = (
+    await page.locator("[class*='identiteTete'] [class*='badge']").first().innerText()
+  ).trim();
+
+  expect(surLaFiche, "l'état du registre : " + auRegistre).toBe(auRegistre);
+});
+
+/**
+ * Ce qu'une société doit, dit avant ce qu'elle a fait.
+ *
+ * La fiche annonçait « Aucune échéance connue pour cette société » sur toutes les
+ * sociétés du compte : rien ne calculait ce qu'une société doit du seul fait
+ * d'exister. Le bloc de tête le dit maintenant, et l'ancienne colonne a disparu -
+ * elle se serait contredite à vingt lignes d'écart.
+ */
+test("la fiche annonce ce qui attend, avant l'historique", async ({ page }) => {
+  await page.goto("/societes");
+  await page.locator("ul[class*='registreLignes'] a").first().click();
+  await page.waitForURL(/\/societes\/.+/);
+
+  // La colonne « Échéances » ne doit plus exister : une seule place, et c'est la tête.
+  await expect(page.locator("#echeances")).toHaveCount(0);
+
+  const attend = page.locator("section[class*='attend']").first();
+  if ((await attend.count()) > 0) {
+    /*
+     * Quand il y a quelque chose à faire, le bloc porte une date et un geste - non un
+     * pourcentage ni un état.
+     */
+    await expect(attend).toContainText(/À faire avant le|selon vos statuts|À la date/);
+    await expect(attend.getByRole("link")).toBeVisible();
   }
 });
