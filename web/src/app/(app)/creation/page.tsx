@@ -114,7 +114,18 @@ export default async function Creation({
   const enRelecture = ligne
     ? (await actesDuDossier(utilisateur, ligne.id)).filter((a) => a.enRelecture)
     : [];
-  const courante = etapeAccessible(Number(etape) || 1, brouillon);
+  /*
+   * Un dossier confié s'ouvre sur ses documents, non sur son formulaire.
+   *
+   * Sans étape dans l'adresse, on retombait sur la première : le client qui rouvrait
+   * un dossier réglé arrivait sur « Forme juridique », un écran où il n'a plus rien à
+   * saisir, et devait franchir six étapes pour retrouver ses actes et son suivi.
+   *
+   * Une étape demandée explicitement l'emporte toujours : le suivi renvoie à l'étape
+   * des pièces pour déposer l'attestation, et ce lien doit continuer d'y mener.
+   */
+  const confie = ligne !== null && ligne.status !== "en_cours";
+  const courante = etapeAccessible(Number(etape) || (confie ? ETAPES.length : 1), brouillon);
 
 
   /*
@@ -124,8 +135,7 @@ export default async function Creation({
    * indicateurs d'avancement côte à côte se contrediraient. Après la transmission, en
    * revanche, le formulaire ne dit plus rien de ce qui se passe.
    */
-  const transmis = ligne !== null && ligne.status !== "en_cours";
-  const etat = transmis ? await etatDuDossier(ligne) : null;
+  const etat = confie && ligne ? await etatDuDossier(ligne) : null;
 
   /*
    * L'étape des offres se passe de la colonne de droite, et prend toute la largeur :

@@ -218,8 +218,13 @@
   border-width: 4px;
 }
 
+/*
+ * L'étape en cours se distingue par sa pastille et sa teinte, non par sa graisse.
+ *
+ * Le gras l'épaississait sur deux lignes quand le titre passait à la ligne, et la
+ * rangée voisine paraissait alors décolorée plutôt que simplement passée.
+ */
 .en_cours .nom {
-  font-weight: 600;
   color: #111;
 }
 

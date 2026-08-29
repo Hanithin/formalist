@@ -544,6 +544,57 @@ test("l'étape des offres règle et confie d'un seul geste", async ({ page, requ
 });
 
 /**
+ * Un dossier confié s'ouvre sur ses documents, non sur son formulaire.
+ *
+ * Sans étape dans l'adresse on retombait sur la première : le client qui rouvrait un
+ * dossier réglé arrivait sur « Forme juridique », un écran où il n'a plus rien à
+ * saisir, et devait franchir six étapes pour retrouver ses actes et son suivi.
+ */
+test("un dossier confié s'ouvre sur ses documents", async ({ page, request }) => {
+  const dossier = await ouvrirCreation(page, request);
+
+  await request.put("/api/formalites/brouillon", {
+    data: {
+      dossier: Number(dossier),
+      modifications: {
+        forme: "SASU",
+        denomination: "OUVERTURE SUR LES ACTES",
+        activite: "Conseil aux entreprises",
+        adresse: "3 rue Centrale",
+        codePostal: "33000",
+        ville: "Bordeaux",
+        capital: 1000,
+        partsTotales: 100,
+        offre: "business",
+        associes: [{ ...associe("Camille", "Durand"), parts: 100, versement: 1000 }],
+        dirigeants: [{ associe: 0 }],
+      },
+    },
+  });
+
+  // Tant qu'il se remplit, il s'ouvre là où l'on s'était arrêté.
+  await page.goto("/creation?dossier=" + dossier);
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Informations de la société");
+
+  // Confié, il s'ouvre sur ses actes. Le règlement passe par Stripe : on pose l'état
+  // qu'il aurait laissé.
+  await request.post("/api/formalites/transmission", { data: { dossier: Number(dossier) } });
+
+  /*
+   * Le titre de l'étape, non celui du suivi : un dossier confié en porte deux, et la
+   * colonne de droite annonce « Où en est votre dossier ».
+   */
+  const titreDEtape = page.getByRole("heading", { level: 2 }).first();
+
+  await page.goto("/creation?dossier=" + dossier);
+  await expect(titreDEtape).toContainText("Mes documents");
+
+  // Une étape demandée l'emporte : le suivi renvoie aux pièces pour l'attestation.
+  await page.goto("/creation?dossier=" + dossier + "&etape=5");
+  await expect(titreDEtape).toContainText("Pièces justificatives");
+});
+
+/**
  * Le dossier dit qu'on lui a écrit, et mène au fil.
  *
  * Ici vivait « Note pour l'avocat (optionnel) », une zone de texte enregistrée dans le
