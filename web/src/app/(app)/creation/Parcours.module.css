@@ -83,6 +83,21 @@
 }
 
 /*
+ * La phrase se recolle au titre.
+ *
+ * Le bandeau partagé aligne son titre et son action sur une même rangée, et la rangée
+ * prend la hauteur du plus grand : le bouton de retour fait dix pixels de plus que le
+ * titre, dix pixels de vide qui tombaient sous lui. L'écart passait de quatorze pixels
+ * - la mesure des neuf autres écrans - à vingt-six.
+ *
+ * La phrase est le seul paragraphe direct de ce bloc : on la reprend ici plutôt que de
+ * resserrer le bandeau partout, où l'écart est juste.
+ */
+.tete > p {
+  margin-top: 0;
+}
+
+/*
  * Le retour, là où la date se tenait.
  *
  * C'est le bouton de la fiche société, au trait près : deux écrans qui se quittent du

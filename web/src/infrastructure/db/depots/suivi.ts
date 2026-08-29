@@ -1,5 +1,6 @@
 import { prisma } from "../client";
 import { type EtatDuDossier } from "@/domain/formalite/suivi";
+import { A_RELIRE } from "@/domain/document/publication";
 
 /**
  * L'état d'un dossier, tel que le domaine le demande.
@@ -75,7 +76,23 @@ export async function etatDuDossier(dossier: {
     paye: estPayee(dossier.data_json),
     avocatAssigne: !!dossier.assigned_avocat_id,
     nomDeLAvocat: avocat?.name ?? null,
+    /*
+     * Des actes attendent-ils encore l'avocat ?
+     *
+     * Le suivi réclamait l'attestation de dépôt de capital dès le règlement, alors que
+     * la banque ouvre le compte sur présentation des statuts - ceux-là mêmes que
+     * l'avocat est en train de relire.
+     */
+    actesEnRelecture: await desActesEnRelecture(dossier.id),
   };
+}
+
+/** Reste-t-il un acte produit que l'avocat n'a pas relu ? */
+async function desActesEnRelecture(dossierId: number): Promise<boolean> {
+  const compte = await prisma.documents.count({
+    where: { formalite_id: dossierId, uploaded_by: "system", status: A_RELIRE },
+  });
+  return compte > 0;
 }
 
 /** Le cabinet a-t-il déclaré la publication ? Une lecture prudente d'un JSON libre. */

@@ -23,6 +23,41 @@ const etat = (modifications: Partial<EtatDuDossier> = {}): EtatDuDossier => ({
   ...modifications,
 });
 
+describe("l'attestation attend que l'avocat ait rendu les actes", () => {
+  /*
+   * On ne l'obtient pas de nulle part : la banque ouvre le compte de dépôt sur
+   * présentation des statuts, et les statuts sont ce que l'avocat relit. Le suivi la
+   * réclamait dès le règlement, avec un bouton qui menait à un dépôt impossible, sur
+   * un écran où les actes portaient « En relecture ».
+   */
+  const enAttente = etat({ status: "en_attente_validation", actesEnRelecture: true });
+
+  it("rend la main à l'avocat tant que les actes sont en relecture", () => {
+    const attestation = etapesDuSuivi(enAttente).find((e) => e.identifiant === "attestation")!;
+
+    expect(attestation.main).toBe("avocat");
+    // Le geste ne s'affiche que là où il y en a un à faire.
+    expect(attestation.action).toBeUndefined();
+    expect(attestation.explication).toMatch(/relit/);
+  });
+
+  it("la rend au client dès que les actes sont validés", () => {
+    const rendus = etat({ status: "en_attente_validation", actesEnRelecture: false });
+    const attestation = etapesDuSuivi(rendus).find((e) => e.identifiant === "attestation")!;
+
+    expect(attestation.main).toBe("vous");
+    expect(attestation.action).toBe("Déposer l'attestation");
+    expect(attestation.explication).toMatch(/Remettez vos actes à votre banque/);
+  });
+
+  it("ne suppose pas une relecture quand rien ne l'a dit", () => {
+    // Les dossiers d'avant le règlement automatique n'ont pas d'actes en relecture.
+    const attestation = etapesDuSuivi(etat()).find((e) => e.identifiant === "attestation")!;
+
+    expect(attestation.main).toBe("vous");
+  });
+});
+
 describe("les étapes du suivi", () => {
   it("suivent l'ordre de la vraie vie", () => {
     /*

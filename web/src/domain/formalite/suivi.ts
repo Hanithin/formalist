@@ -48,6 +48,16 @@ export interface EtatDuDossier {
   avocatAssigne?: boolean;
   /** Son nom, quand il est connu : « Maître Untel a pris votre dossier ». */
   nomDeLAvocat?: string | null;
+  /**
+   * Des actes attendent-ils encore la relecture de l'avocat ?
+   *
+   * Le suivi réclamait l'attestation de dépôt de capital dès le règlement. Or on ne
+   * l'obtient pas de nulle part : la banque ouvre le compte sur présentation des
+   * statuts, et les statuts sont précisément ce que l'avocat est en train de relire.
+   * On demandait donc au client une pièce qu'il ne pouvait pas avoir, avec un bouton
+   * qui menait à un dépôt impossible.
+   */
+  actesEnRelecture?: boolean;
 }
 
 export type Main = "vous" | "avocat";
@@ -87,7 +97,8 @@ export function attestationRequise(forme: string | null | undefined): boolean {
 interface Definition {
   identifiant: string;
   titre: string;
-  explication: string;
+  /** Ce qui se passe : une phrase, ou celle que l'état commande. */
+  explication: string | ((etat: EtatDuDossier) => string);
   /** La main peut dépendre de l'état : des corrections la rendent au client. */
   main: Main | ((etat: EtatDuDossier) => Main);
   action?: string;
@@ -113,9 +124,19 @@ const TOUTES: Definition[] = [
   {
     identifiant: "attestation",
     titre: "Attestation de dépôt de capital",
-    explication:
-      "Votre banque vous remet cette attestation après le versement du capital. Déposez-la : vos actes sont alors datés du jour où vous l'avez obtenue, qui est celui où vous les signez.",
-    main: "vous",
+    /*
+     * Rien à faire tant que l'avocat n'a pas rendu les actes.
+     *
+     * La banque ouvre le compte de dépôt sur présentation des statuts, et les statuts
+     * sont ce que l'avocat relit. On réclamait donc au client, dès le règlement, une
+     * pièce qu'il ne pouvait pas obtenir - avec un bouton qui menait à un dépôt
+     * impossible, sur un écran où ses actes portaient « En relecture ».
+     */
+    explication: (e) =>
+      e.actesEnRelecture
+        ? "Votre banque ouvre le compte de dépôt sur présentation de vos statuts. L'avocat les relit ; dès qu'il les aura validés, vous pourrez les lui remettre et déposer ici l'attestation qu'elle vous délivrera."
+        : "Remettez vos actes à votre banque : elle vous délivre cette attestation après le versement du capital. Déposez-la ici - vos actes sont alors datés du jour où vous l'avez obtenue, qui est celui où vous les signez.",
+    main: (e) => (e.actesEnRelecture ? "avocat" : "vous"),
     action: "Déposer l'attestation",
     faite: (e) => e.aLAttestationDeCapital,
   },
@@ -395,7 +416,7 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
     return {
       identifiant: d.identifiant,
       titre: d.titre,
-      explication: d.explication,
+      explication: typeof d.explication === "function" ? d.explication(etat) : d.explication,
       main,
       etat: etatEtape,
       // Le geste ne s'affiche que là où il y en a un à faire.
