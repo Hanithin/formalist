@@ -138,6 +138,52 @@ test("le dossier naît au premier enregistrement, sous son nom", async ({ page, 
   );
 });
 
+/**
+ * L'écran dit sur quelle société on travaille.
+ *
+ * Le titre existait mais était masqué aux seuls lecteurs d'écran : on ouvrait le
+ * formulaire depuis « Mes sociétés » sans savoir laquelle on remplissait, le fil
+ * d'ariane disant « Créer une société » pour tous les dossiers du compte.
+ */
+test("le titre nomme la société, et suit la frappe", async ({ page, request }) => {
+  await ouvrirCreation(page, request);
+
+  const titre = page.getByRole("heading", { level: 1 });
+  await expect(titre).toBeVisible();
+  await expect(titre).toHaveText("Nouvelle société");
+
+  await page.getByLabel("Nom de la société").fill("ATELIER DU TITRE");
+  await expect(titre).toHaveText("ATELIER DU TITRE");
+});
+
+/**
+ * Le récapitulatif se remplit à mesure.
+ *
+ * Sept étapes et jusqu'à quinze champs par étape : arrivé au capital, on ne sait plus
+ * quelle forme on a choisie deux écrans plus tôt. La colonne le rappelle sans qu'on
+ * ait à revenir en arrière - ce qui ferait perdre la saisie en cours.
+ */
+test("la colonne montre ce qui est déjà saisi", async ({ page, request }) => {
+  await ouvrirCreation(page, request);
+  const colonne = page.getByRole("complementary", { name: /Récapitulatif/ });
+
+  // Ce qui manque se dit manquant : c'est la liste de ce qu'il reste à faire.
+  await expect(colonne).toContainText("à renseigner");
+
+  await choisir(page, "Forme juridique", /^SARL/);
+  await page.getByLabel("Nom de la société").fill("COLONNE VIVANTE");
+  await page.getByLabel("Capital social").fill("40000");
+
+  await expect(colonne).toContainText("SARL");
+  await expect(colonne).toContainText("COLONNE VIVANTE");
+  await expect(colonne).toContainText(/40\s000\s€/);
+  // Le mot du dirigeant suit la forme, ici comme dans le formulaire.
+  await expect(colonne).toContainText("Gérant");
+
+  // Et l'on n'a pas changé d'étape pour cela.
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Informations de la société");
+});
+
 test("l'étape 1 refuse de passer tant qu'elle est incomplète", async ({ page, request }) => {
   await ouvrirCreation(page, request);
   await page.getByRole("button", { name: "Continuer" }).click();

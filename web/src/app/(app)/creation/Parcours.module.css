@@ -1,10 +1,9 @@
 /**
  * Parcours de création.
  *
- * Reprise des règles de public/css/creation.css : le fil d'ariane, le chemin
- * d'étapes horizontal, la carte de formulaire et sa grille à deux colonnes. Les
- * noms de classes passent en camelCase, ce que les modules CSS exigent ; les
- * valeurs sont inchangées.
+ * Reprise des règles de public/css/creation.css : le chemin d'étapes horizontal, la
+ * carte de formulaire et sa grille à deux colonnes. Les noms de classes passent en
+ * camelCase, ce que les modules CSS exigent.
  */
 
 /* ---------- Gabarit ---------- */
@@ -13,28 +12,73 @@
   padding: 0;
   max-width: none;
   width: 100%;
+  /*
+   * La bascule à une colonne se mesure ici, non sur la fenêtre.
+   *
+   * La barre latérale prend trois cents pixels : une règle en `@media` réglée sur la
+   * fenêtre laissait le formulaire tomber à trois cent cinquante pixels avant de
+   * basculer, parce qu'elle comptait une largeur que la page n'a pas.
+   */
+  container-type: inline-size;
 }
 /*
- * Le fil d'ariane.
+ * Deux colonnes, et le blanc de droite enfin employé.
  *
- * Il flottait au milieu de son propre rembourrage, à la même taille que le titre qui
- * le suit : deux lignes de même poids, dont on ne savait laquelle lisait l'autre. Il
- * se resserre, s'allège, et l'écart au séparateur ne dépend plus d'un `gap` unique
- * appliqué à trois éléments de tailles différentes.
+ * Le contenu était bloqué à neuf cents pixels au milieu d'une zone qui en offre douze
+ * cents : trois cent douze pixels de blanc, sur l'écran le plus long de l'application.
+ * La colonne de droite les prend et y tient le récapitulatif.
+ *
+ * La mesure d'ensemble s'arrête à 1180 et non aux 1560 de « Mes formalités » : une
+ * liste de cartes gagne à s'étendre, un formulaire non - au-delà de huit cent trente
+ * pixels, l'œil ne retrouve plus le début de la ligne suivante.
  */
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 22px 48px 10px;
-  background: transparent;
-  font-size: 13px;
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 0 32px;
+  align-items: start;
+  padding: 24px 48px 48px;
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
 }
-.topbar a {
+
+/* L'en-tête, le suivi et le chemin d'étapes tiennent toute la largeur. */
+.tete,
+.suivi,
+.stepper {
+  grid-column: 1 / -1;
+}
+
+/*
+ * L'en-tête partagé porte déjà sa marge de quarante-huit pixels.
+ *
+ * `EnTetePage` est posé, sur les autres écrans, à même la page : il tient donc son
+ * propre retrait. Ici il entre dans une grille qui a le sien, et les deux s'ajoutaient
+ * - le titre tombait quarante-huit pixels à droite du formulaire. On rend à ce bloc la
+ * largeur entière, et le retrait redevient unique.
+ */
+.tete {
+  margin: 0 -48px;
+}
+
+/*
+ * Le retour, à la place qu'occupait le fil d'ariane.
+ *
+ * Le fil disait « Tableau de bord › Créer une société » : le second membre est
+ * désormais le titre, et le redire deux fois à trois centimètres d'écart n'aidait
+ * personne. Reste ce à quoi il servait vraiment - repartir.
+ */
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* Le bloc de tête déborde de quarante-huit pixels : le lien les reprend, moins les
+     sept de son propre rembourrage, pour tomber sur la verticale du titre. */
+  margin: 0 0 0 41px;
   padding: 3px 7px;
-  margin-left: -7px;
   border-radius: 7px;
-  color: #8a8a92;
+  color: #6b6b73;
   font-size: 13px;
   text-decoration: none;
   white-space: nowrap;
@@ -42,44 +86,15 @@
     color 0.15s ease,
     background 0.15s ease;
 }
-.topbar a:hover {
+.retour:hover {
   background: #f1f1f3;
   color: #111;
 }
-.topbar svg {
-  width: 13px;
-  height: 13px;
-  color: #c9c9cf;
-  flex-shrink: 0;
-}
-.topbar span {
-  font-size: 13px;
-  color: #3f3f46;
-  font-weight: 500;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.content {
-  flex: 1;
-  padding: 48px;
-  max-width: 900px;
-  margin: 0 auto;
-  width: 100%;
-}
 
-/* Le titre de page existe pour la structure ; à l'écran, c'est le fil d'ariane
-   et le titre de l'étape qui situent. */
-.titre {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+@media (max-width: 900px) {
+  .retour {
+    margin-left: 13px;
+  }
 }
 
 /* ---------- Chemin d'étapes ---------- */
@@ -208,15 +223,20 @@
 .formGrid .full {
   grid-column: 1 / -1;
 }
-@media (max-width: 700px) {
-  .formGrid {
-    grid-template-columns: 1fr;
-  }
+/* La bascule étroite suit celle de l'en-tête partagé - neuf cents pixels - sans quoi
+   les deux retraits divergent entre les deux mesures. */
+@media (max-width: 900px) {
   .content {
     padding: 24px 20px 48px;
   }
-  .topbar {
-    padding: 20px;
+  .tete {
+    margin: 0 -20px;
+  }
+}
+
+@media (max-width: 700px) {
+  .formGrid {
+    grid-template-columns: 1fr;
   }
 }
 .field label {
@@ -2483,5 +2503,122 @@
 
   .apportChamp input, .apportChamp textarea {
     font-size: 16px;
+  }
+}
+
+/* ---------- Le récapitulatif ---------- */
+
+/*
+ * Ce qui est déjà saisi, collé au bord droit.
+ *
+ * Les étapes longues - sept associés, chacun avec son état civil - font défiler le
+ * formulaire sur trois écrans : la colonne suit, sans quoi elle ne servirait qu'au
+ * premier tiers de la page.
+ */
+.colonne {
+  position: sticky;
+  top: 24px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  padding: 22px 24px 24px;
+}
+.colonneForme {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #71717a;
+}
+.colonneNom,
+.colonneNomVide {
+  margin: 6px 0 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 17px;
+  line-height: 1.3;
+  /* Une dénomination sans espace - « SOCIETEIMMOBILIEREDUPONT » - déborderait. */
+  overflow-wrap: anywhere;
+}
+.colonneNom {
+  font-weight: 600;
+  color: #18181b;
+}
+.colonneNomVide {
+  font-weight: 400;
+  color: #71717a;
+}
+.colonneAvancement {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #6b6b73;
+}
+.colonneLignes {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid #ededf0;
+}
+.colonneLigne {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+.colonneLigne dt {
+  font-size: 13px;
+  color: #71717a;
+}
+.colonneLigne dd {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #27272a;
+  /* Le siège tient sur deux lignes : la voie, puis le code postal et la ville. */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+/*
+ * Ce qui manque se lit gris, non effacé.
+ *
+ * La teinte reste au-dessus de 4,5:1 sur blanc : c'est du texte qu'on lit, la liste de
+ * ce qu'il reste à faire, et non un ornement.
+ */
+.colonneLigne dd.colonneManque {
+  color: #71717a;
+}
+.colonneOffre {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid #ededf0;
+  font-size: 13.5px;
+  color: #27272a;
+}
+.colonneOffre span {
+  font-size: 13px;
+  color: #71717a;
+}
+
+/*
+ * Trop étroite, la colonne passe sous le formulaire.
+ *
+ * Le seuil est celui qui laisse au formulaire six cent vingt pixels : en deçà, ses
+ * champs à deux par ligne descendent sous deux cent cinquante et ne se lisent plus.
+ * La colonne s'y range après le formulaire, non avant : la placer au-dessus
+ * repousserait le premier champ hors de l'écran - on remplit d'abord, on vérifie
+ * ensuite.
+ */
+@container (max-width: 1070px) {
+  .content {
+    grid-template-columns: minmax(0, 1fr);
+    /* Seule, la colonne du formulaire retrouve la mesure qu'elle avait toujours eue. */
+    max-width: 900px;
+  }
+  .colonne {
+    position: static;
+    margin-top: 24px;
   }
 }

@@ -2,6 +2,8 @@
 
 import { Fragment, useState, useTransition } from "react";
 import Link from "next/link";
+import { EnTetePage } from "@/components/page/EnTetePage";
+import { Recapitulatif } from "./Recapitulatif";
 import { useRouter } from "next/navigation";
 import {
   verifierEtape,
@@ -39,6 +41,26 @@ interface Props {
   brouillonInitial: Brouillon;
   piecesDeposees: { type: string | null; nom: string }[];
   actesProduits: ActeProduit[];
+  /**
+   * Le suivi du dossier confié, rendu par la page.
+   *
+   * Il arrive en élément plutôt qu'en donnée : il se place sous l'en-tête, et l'en-tête
+   * vit ici parce que le titre suit la frappe.
+   */
+  suivi?: React.ReactNode;
+  /** La date de l'en-tête, arrêtée par le serveur : le navigateur n'a pas à la deviner. */
+  quand?: Date;
+  /**
+   * Ce que le dossier sait de lui-même, hors brouillon.
+   *
+   * Un dossier repris - importé, ou ouvert avant que le parcours n'existe - porte son
+   * nom, sa forme et son capital en colonnes, avec un brouillon vide : « Mes
+   * formalités » affiche « SARL ATELIER MERIDIEN » quand l'écran de saisie, lui, ne
+   * connaît rien. Le titre et la colonne s'en servent, à défaut de saisie. Les champs
+   * du formulaire, eux, ne s'en remplissent pas : ce serait écrire à la place du
+   * client des valeurs qu'il n'a pas relues.
+   */
+  connuDuDossier?: { denomination: string | null; forme: string | null; capital: number | null };
 }
 
 /** La coche des étapes franchies. */
@@ -94,6 +116,9 @@ export function Parcours({
   brouillonInitial,
   piecesDeposees,
   actesProduits,
+  suivi,
+  quand,
+  connuDuDossier,
 }: Props) {
   /*
    * Les réponses courantes sont écrites dès l'ouverture, pas à la génération : elles
@@ -226,6 +251,34 @@ export function Parcours({
 
   const titreDirigeant = regle(brouillon.forme)?.titreDirigeant ?? "Dirigeant";
 
+  /*
+   * Ce que l'écran annonce.
+   *
+   * Le titre était masqué aux seuls lecteurs d'écran, et le fil d'ariane disait
+   * « Créer une société » pour les sept dossiers du compte : on ouvrait un formulaire
+   * sans savoir quelle société on remplissait. Il porte maintenant le nom saisi, et le
+   * suit à la frappe.
+   */
+  /*
+   * Le brouillon d'abord, la colonne du dossier ensuite : une saisie en cours prime
+   * toujours sur ce qui a été enregistré avant.
+   */
+  const identite: Brouillon = {
+    ...brouillon,
+    denomination: (brouillon.denomination ?? "").trim() || (connuDuDossier?.denomination ?? ""),
+    forme: brouillon.forme || connuDuDossier?.forme || undefined,
+    capital: brouillon.capital || connuDuDossier?.capital || undefined,
+  };
+
+  const formeChoisie = regle(identite.forme)?.libelle ?? null;
+  const quoi = formeChoisie ? "Création d'une " + formeChoisie : "Création d'une société";
+  const sousTitre =
+    dossier === null
+      ? // Le dossier naît au premier enregistrement : on le dit là où l'on se demande
+        // si sa saisie est gardée.
+        quoi + " · enregistrée dès la première étape validée"
+      : quoi + " · dossier n° " + dossier;
+
   /**
    * L'étape des associés change de nom : une société par actions a des
    * actionnaires, et le pluriel n'apparaît qu'au deuxième. Les autres étapes
@@ -240,6 +293,19 @@ export function Parcours({
 
   return (
     <>
+      <div className={styles.tete}>
+        <Link href="/formalites" className={styles.retour}>
+          ← Mes formalités
+        </Link>
+        <EnTetePage
+          titre={(identite.denomination ?? "").trim() || "Nouvelle société"}
+          sousTitre={sousTitre}
+          quand={quand}
+        />
+      </div>
+
+      {suivi}
+
       {/* Les segments sont des frères des étapes, pas leurs enfants : c'est eux
           qui absorbent la largeur restante entre deux pastilles. */}
       <nav className={styles.stepper} aria-label="Étapes du parcours">
@@ -266,7 +332,6 @@ export function Parcours({
       </nav>
 
       <section className={styles.formCard}>
-        <p className={styles.avancement}>{avancement}% renseigné</p>
         <h2>{titreDe(etape)}</h2>
         <p className={styles.formDesc}>{descriptionDe(etape)}</p>
 
@@ -739,6 +804,8 @@ export function Parcours({
           )}
         </div>
       </section>
+
+      <Recapitulatif brouillon={identite} avancement={avancement} />
     </>
   );
 }

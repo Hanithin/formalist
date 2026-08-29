@@ -239,28 +239,30 @@ test("l'option EIRL n'est pas reprise : le statut n'existe plus", async ({ page,
   await expect(page.getByText(/patrimoine personnel est protégé/)).toBeVisible();
 });
 
-test("le parcours a le cadre de la création de société", async ({ page }) => {
+test("le parcours garde le cadre d'un parcours", async ({ page }) => {
   /*
-   * Deux parcours du même site doivent se lire pareil : fil d'ariane, fil d'étapes
-   * horizontal, colonne centrée. Celui de l'auto-entreprise portait son fil en
-   * colonne à gauche et s'étalait sur toute la largeur.
+   * Le fil d'étapes est horizontal et tient dans la colonne du formulaire.
+   *
+   * Il portait ici son fil en colonne à gauche, et le contenu s'étalait sur toute la
+   * largeur : deux parcours du même site se lisaient différemment. Ce test comparait
+   * les deux au pixel ; la création est passée depuis à deux colonnes - un titre qui
+   * nomme la société, un récapitulatif à droite - et l'auto-entreprise l'y suivra.
+   * D'ici là on vérifie ce qui vaut sans elle : le fil est horizontal, et il tombe sur
+   * la verticale du formulaire.
    */
   await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto("/auto-entrepreneur");
 
-  const mesures: Record<string, { x: number; largeur: number }> = {};
+  const fil = page.getByRole("navigation", { name: "Étapes du parcours" });
+  await expect(fil).toBeVisible();
 
-  for (const adresse of ["/creation", "/auto-entrepreneur"]) {
-    await page.goto(adresse);
-    const fil = page.getByRole("navigation", { name: "Étapes du parcours" });
-    await expect(fil).toBeVisible();
+  const cadre = (await fil.boundingBox())!;
+  const carte = (await page.locator("form, section").first().boundingBox())!;
 
-    const cadre = (await fil.boundingBox())!;
-    mesures[adresse] = { x: Math.round(cadre.x), largeur: Math.round(cadre.width) };
-  }
+  expect(cadre.width).toBeGreaterThan(cadre.height * 4);
+  expect(Math.round(cadre.x)).toBe(Math.round(carte.x));
 
-  expect(mesures["/auto-entrepreneur"]).toEqual(mesures["/creation"]);
-
-  // Et le fil d'ariane situe la page, comme sur la création.
+  // Et le fil d'ariane situe la page.
   await expect(page.getByRole("navigation", { name: "Fil d'ariane" })).toContainText(
     "Créer une auto-entreprise"
   );

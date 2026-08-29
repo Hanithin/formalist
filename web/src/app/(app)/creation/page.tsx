@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { ouvrirBrouillon, lireBrouillon } from "@/infrastructure/db/depots/brouillons";
@@ -81,35 +80,7 @@ export default async function Creation({
 
   return (
     <main className={styles.page}>
-      <nav className={styles.topbar} aria-label="Fil d'ariane">
-        <Link href="/tableau-de-bord">Tableau de bord</Link>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-        <span>Créer une société</span>
-      </nav>
-
       <div className={styles.content}>
-        <h1 className={styles.titre}>Créer une société</h1>
-
-        {etat && ligne && (
-          <div className={styles.suivi}>
-            <Suivi
-              etat={etat}
-              demande={await derniereDemandeDeCorrections(ligne.id)}
-              lienAction={"/creation?dossier=" + ligne.id + "&etape=5"}
-              lienMessagerie={"/messagerie?dossier=" + ligne.id}
-            />
-          </div>
-        )}
         {/*
           Le formulaire reste, même une fois le dossier parti chez l'avocat.
           Le masquer paraissait juste - il n'y a plus d'informations à saisir - mais
@@ -117,9 +88,37 @@ export default async function Creation({
           celle de parution, que le suivi et les courriels lui réclament précisément
           à ce moment-là. Le formulaire vide qu'on y voyait venait d'un dossier d'un
           autre type ouvert à cette adresse, ce que la redirection ci-dessus règle.
+
+          L'en-tête, lui, vit dans `Parcours`, non ici.
+
+          Le titre nomme la société qu'on remplit, et le suit à la frappe : il lui faut
+          le brouillon du navigateur. Le suivi, lui, se rend au serveur et descend en
+          élément, pour se placer sous cet en-tête plutôt qu'avant lui.
         */}
         <Parcours
           dossierId={ligne?.id ?? null}
+          quand={new Date()}
+          connuDuDossier={
+            ligne
+              ? {
+                  denomination: ligne.societe,
+                  forme: ligne.forme,
+                  capital: ligne.capital,
+                }
+              : undefined
+          }
+          suivi={
+            etat && ligne ? (
+              <div className={styles.suivi}>
+                <Suivi
+                  etat={etat}
+                  demande={await derniereDemandeDeCorrections(ligne.id)}
+                  lienAction={"/creation?dossier=" + ligne.id + "&etape=5"}
+                  lienMessagerie={"/messagerie?dossier=" + ligne.id}
+                />
+              </div>
+            ) : null
+          }
           etapes={ETAPES}
           etapeCourante={courante}
           brouillonInitial={brouillon}
