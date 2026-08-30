@@ -23,7 +23,22 @@ interface Avis {
   texte: string;
 }
 
-export function Annonce({ dossier }: { dossier: number }) {
+export function Annonce({
+  dossier,
+  /**
+   * Où lire et déclarer l'avis.
+   *
+   * L'adresse était écrite en dur sur celle de la modification, si bien que le
+   * composant ne pouvait servir qu'à elle : une création n'avait aucun écran pour
+   * publier son avis de constitution, et la route qui le déclare n'était appelée nulle
+   * part. Les deux répondent la même chose sous deux formes - une liste d'avis, ou un
+   * texte unique.
+   */
+  route,
+}: {
+  dossier: number;
+  route: string;
+}) {
   const [avis, setAvis] = useState<Avis[] | null>(null);
   const [publies, setPublies] = useState(false);
   const [copie, setCopie] = useState<number | null>(null);
@@ -35,14 +50,18 @@ export function Annonce({ dossier }: { dossier: number }) {
     let vivant = true;
     (async () => {
       try {
-        const reponse = await fetch("/api/formalites/modification/annonce?dossier=" + dossier);
+        const reponse = await fetch(route + "?dossier=" + dossier);
         const corps = await reponse.json().catch(() => ({}));
         if (!vivant) return;
 
         if (!reponse.ok) setRefus(corps.error ?? "Les avis n'ont pas pu être composés");
         else {
-          setAvis(corps.avis ?? []);
-          setPublies(corps.publies === true);
+          /* Un avis unique arrive sans ressort ni objet : il n'en a qu'un. */
+          setAvis(
+            corps.avis ??
+              (corps.texte ? [{ ressort: "", objet: "", texte: corps.texte as string }] : [])
+          );
+          setPublies(corps.publies === true || corps.avisPublies === true);
         }
       } catch {
         if (vivant) setRefus("Les avis n'ont pas pu être composés");
@@ -52,7 +71,7 @@ export function Annonce({ dossier }: { dossier: number }) {
     return () => {
       vivant = false;
     };
-  }, [dossier]);
+  }, [dossier, route]);
 
   async function copier(texte: string, rang: number) {
     try {
@@ -69,7 +88,7 @@ export function Annonce({ dossier }: { dossier: number }) {
   function declarer(valeur: boolean) {
     setRefus(null);
     demarrer(async () => {
-      const reponse = await fetch("/api/formalites/modification/annonce", {
+      const reponse = await fetch(route, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dossier, publies: valeur }),

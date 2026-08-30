@@ -596,3 +596,87 @@ test.describe("la correction d'un dossier de création", () => {
     ).toBe(0);
   });
 });
+
+/**
+ * L'avis légal d'une création.
+ *
+ * Trois endroits se contredisaient : le suivi du client annonçait « le cabinet rédige
+ * l'avis et joint la parution », l'onglet Annonce de l'avocat répondait « sur ce
+ * dossier, l'annonce légale est publiée par le client », et la route qui déclare la
+ * parution - écrite exprès pour la création - n'était appelée par aucun écran. L'étape
+ * restait « en cours » à vie, et un dossier se clôturait sans qu'aucun avis n'ait paru.
+ */
+test.describe("l'avis de constitution", () => {
+  test.use({ storageState: "./tests/parcours/session-avocat.json" });
+
+  const ouverts: number[] = [];
+
+  test.afterAll(async () => {
+    if (ouverts.length > 0) await retirerDossiers(ouverts);
+  });
+
+  async function creation(societe: string) {
+    const client = await prisma.users.findFirstOrThrow({
+      where: { email: "parcours@exemple.test" },
+    });
+    const avocat = await prisma.users.findFirstOrThrow({
+      where: { email: "avocat-parcours@exemple.test" },
+    });
+
+    const dossier = await prisma.formalites.create({
+      data: {
+        user_id: client.id,
+        assigned_avocat_id: avocat.id,
+        type: "creation",
+        forme: "SASU",
+        societe,
+        capital: 1000,
+        status: "en_attente_validation",
+        phase: 5,
+        business_sub_phase: "5c",
+        data_json: JSON.stringify({
+          forme: "SASU",
+          denomination: societe,
+          adresse: "3 rue Centrale",
+          codePostal: "33000",
+          ville: "Bordeaux",
+          capital: 1000,
+        }),
+      },
+    });
+    ouverts.push(dossier.id);
+    return dossier;
+  }
+
+  test("le cabinet a une tâche, un texte, et de quoi déclarer la parution", async ({ page }) => {
+    const dossier = await creation("AVIS ESSAI " + Date.now());
+
+    await page.goto("/avocat/" + dossier.id + "?onglet=travail");
+    await expect(page.getByText("Publier l'avis de constitution")).toBeVisible();
+
+    await page.goto("/avocat/" + dossier.id + "?onglet=annonce");
+    /* Le texte est composé depuis le dossier : il n'y a qu'à le copier. */
+    await expect(page.getByText(new RegExp("AVIS ESSAI"))).toBeVisible();
+
+    await page.getByRole("button", { name: "Marquer comme publiés" }).click();
+
+    await expect
+      .poll(async () => {
+        const apres = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier.id } });
+        return JSON.parse(apres.data_json ?? "{}").avisPublies === true;
+      })
+      .toBe(true);
+  });
+
+  /* Et l'étape du client, qui n'avait aucun moyen d'être franchie, se coche. */
+  test("le suivi du client s'en trouve avancé", async ({ page, request }) => {
+    const dossier = await creation("AVIS SUIVI " + Date.now());
+
+    await request.post("/api/formalites/annonce", {
+      data: { dossier: dossier.id, publies: true },
+    });
+
+    await page.goto("/avocat/" + dossier.id + "?onglet=annonce");
+    await expect(page.getByRole("button", { name: "Revenir sur la publication" })).toBeVisible();
+  });
+});

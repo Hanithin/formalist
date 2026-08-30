@@ -270,6 +270,43 @@ export default async function DossierAvocat({
   const revue = (donnees.revue ?? {}) as Record<string, unknown>;
   const informationsVerifiees = revue.informations === true;
 
+  /*
+   * Combien d'avis ce dossier fait-il paraître ?
+   *
+   * Une modification en publie un par ressort touché ; une création et une fermeture
+   * en publient un - la constitution et la dissolution s'annoncent, la loi l'exige. Le
+   * calcul ne connaissait que la modification, si bien que le cabinet n'avait aucune
+   * tâche sur les deux autres : le suivi du client annonçait « le cabinet fait paraître
+   * l'avis » sur une étape que personne ne pouvait cocher, et la route qui la déclare
+   * n'était appelée par aucun écran.
+   */
+  const avisAPublier =
+    type === "creation" || type === "fermeture"
+      ? 1
+      : type === "modification"
+        ? publicationsAPrevoir({
+            codes,
+            ressortActuel: villeDuRcs(societeDuDossier.codePostal, societeDuDossier.ville),
+            ressortNouveau: villeDuRcs(
+              typeof valeursDuDossier.nouveauCodePostal === "string"
+                ? valeursDuDossier.nouveauCodePostal
+                : "",
+              typeof valeursDuDossier.nouvelleVille === "string"
+                ? valeursDuDossier.nouvelleVille
+                : ""
+            ),
+          }).length
+        : 0;
+
+  /*
+   * Où lire et déclarer l'avis.
+   *
+   * Une modification a sa route - un avis par ressort touché ; les autres parcours
+   * passent par la route commune, qui compose un texte unique.
+   */
+  const routeDeLAnnonce =
+    type === "modification" ? "/api/formalites/modification/annonce" : "/api/formalites/annonce";
+
   const taches = travailDuCabinet({
     type,
     informationsVerifiees,
@@ -286,21 +323,17 @@ export default async function DossierAvocat({
     nomsDesActesARelire: aRelire(documents).map((d) => d.name),
     statutsAuDossier: documents.some((d) => d.name === "Statuts en vigueur"),
     statutsAJour: donnees.statutsAJour === true,
-    avisAPublier:
-      type === "modification"
-        ? publicationsAPrevoir({
-            codes,
-            ressortActuel: villeDuRcs(societeDuDossier.codePostal, societeDuDossier.ville),
-            ressortNouveau: villeDuRcs(
-              typeof valeursDuDossier.nouveauCodePostal === "string"
-                ? valeursDuDossier.nouveauCodePostal
-                : "",
-              typeof valeursDuDossier.nouvelleVille === "string"
-                ? valeursDuDossier.nouvelleVille
-                : ""
-            ),
-          }).length
-        : 0,
+    /*
+     * Combien d'avis ce dossier fait-il paraître ?
+     *
+     * Une modification en publie un par ressort touché ; une création et une fermeture
+     * en publient un - la constitution et la dissolution s'annoncent, la loi l'exige.
+     * Le calcul ne connaissait que la modification, si bien que le cabinet n'avait pas
+     * de tâche sur les deux autres : le suivi du client annonçait « le cabinet fait
+     * paraître l'avis » sur une étape que personne ne pouvait cocher, et la route qui
+     * la déclare n'était appelée par aucun écran.
+     */
+    avisAPublier,
     avisPublies: donnees.avisPublies === true,
     confidentialiteDemandee: donnees.demandeLaConfidentialite === true,
     /*
@@ -650,6 +683,19 @@ export default async function DossierAvocat({
             <Travail
               dossier={dossier.id}
               taches={taches}
+              /* La tâche nomme ce qu'elle réclame, au lieu de le compter. */
+              manquantes={[
+                ...pieces_.manquantes.map((p) => ({
+                  identifiant: p.identifiant,
+                  titre: p.titre,
+                  motif: "jamais déposée",
+                })),
+                ...pieces_.refusees.map((p) => ({
+                  identifiant: p.identifiant,
+                  titre: p.titre,
+                  motif: "refusée, en attente de remplacement",
+                })),
+              ]}
               /*
                * Une modification les produit toujours ; les autres parcours quand ils
                * n'en ont pas. À la création, les actes naissent à l'encaissement, dont
@@ -840,13 +886,19 @@ export default async function DossierAvocat({
             />
           ))}
 
+        {/*
+          L'écran disait « sur ce dossier, l'annonce légale est publiée par le client »
+          - le contraire de ce que le suivi promet au client, et de ce que la route de
+          déclaration dit d'elle-même. Le cabinet publie, ici comme ailleurs ; ne
+          restent sans avis que les parcours qui n'en font paraître aucun.
+        */}
         {onglet === "annonce" &&
-          (type === "modification" ? (
-            <Annonce dossier={dossier.id} />
+          (avisAPublier > 0 ? (
+            <Annonce dossier={dossier.id} route={routeDeLAnnonce} />
           ) : (
             <Vide
               ton="encart"
-              texte="Sur ce dossier, l'annonce légale est publiée par le client."
+              texte="Ce dossier ne fait paraître aucune annonce légale."
             />
           ))}
 

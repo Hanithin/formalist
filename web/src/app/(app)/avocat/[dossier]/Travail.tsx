@@ -8,6 +8,21 @@ import { Piece, estUnActeProduit, type PieceAffichee } from "./Piece";
 import { deposerUnLivrable } from "./Avancement";
 import styles from "../Avocat.module.css";
 
+/** Les quatre gestes qui s'écrivent dans la fenêtre. */
+type Geste = "corrections" | "refus" | "dessaisissement" | "confrere";
+
+interface Formulaire {
+  titre: string;
+  detail: string;
+  label: string;
+  exemple: string;
+  bouton: string;
+  /** Le champ est-il obligatoire ? Un motif de dessaisissement ne l'est pas. */
+  exige: boolean;
+  envoyer: (texte: string) => Promise<Response>;
+  succes: string;
+}
+
 /*
  * Ce qu'une tâche montre quand on lui demande ses pièces.
  *
@@ -48,6 +63,7 @@ export function Travail({
   livrables,
   dossier,
   taches,
+  manquantes,
   peutProduireLesActes,
   routeDeProduction,
   informationsVerifiees,
@@ -79,6 +95,15 @@ export function Travail({
      */
     registreConcerne: boolean;
   };
+  /**
+   * Ce que le dossier réclame et qui n'y est pas, nommé.
+   *
+   * La carte s'intitulait « 1 pièce manquante » et listait dessous les pièces
+   * validées : on lisait un titre rouge au-dessus de deux pastilles vertes, et le nom
+   * de celle qui manquait était à un onglet de là. La tâche dit maintenant ce qu'elle
+   * réclame.
+   */
+  manquantes: { identifiant: string; titre: string; motif: string }[];
   /** Les actes se produisent d'ici : c'est une commande, non un écran. */
   peutProduireLesActes: boolean;
   /**
@@ -123,7 +148,15 @@ export function Travail({
 }) {
   const [refus, setRefus] = useState<string | null>(null);
   /** La demande de corrections, et ce qu'on y écrit. */
-  const [corrections, setCorrections] = useState(false);
+  /*
+   * Quatre gestes, une fenêtre.
+   *
+   * Demander des corrections avait la sienne ; refuser le dossier, le rendre au
+   * cabinet et appeler un confrère en auraient fait quatre, à la virgule près. Ce qui
+   * change d'un geste à l'autre tient dans une table : le titre, ce qu'on annonce, le
+   * champ à remplir et ce qu'on en fait.
+   */
+  const [fenetre, setFenetreBrute] = useState<Geste | null>(null);
   const [motif, setMotif] = useState("");
 
   const [retour, setRetour] = useState<string | null>(null);
@@ -270,29 +303,108 @@ export function Travail({
     });
   }
 
-  function demanderDesCorrections() {
+  /**
+   * Ce que chaque geste demande, et ce qu'il envoie.
+   *
+   * Refuser un dossier n'avait aucun bouton : les deux seuls états que l'interface
+   * posait étaient « corrections demandées » et « en attente de validation ». Un
+   * dossier impossible - objet illicite, pièces fausses - ne pouvait que boucler en
+   * demandes de reprise. Rendre le dossier au cabinet n'existait pas non plus : la
+   * prise était sans envers.
+   */
+  const GESTES: Record<Geste, Formulaire> = {
+    corrections: {
+      titre: "Demander des corrections au client",
+      detail:
+        "Le dossier repasse de son côté et il en est prévenu par courriel. Ce que vous écrivez ici est ce qu'il lira : dites ce qui cloche et ce que vous attendez de lui.",
+      label: "Ce que le client doit reprendre",
+      exemple:
+        "Le justificatif de jouissance est au nom d'un tiers : il nous faut un bail ou une attestation au nom de la société.",
+      bouton: "Envoyer la demande",
+      exige: true,
+      envoyer: (texte) =>
+        fetch("/api/avocat/dossier", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dossier, etat: "corrections_demandees", commentaire: texte }),
+        }),
+      succes: "Le client est prévenu de ce qu'il doit reprendre.",
+    },
+    refus: {
+      titre: "Refuser le dossier",
+      detail:
+        "Le dossier est refusé et le client en est prévenu, avec votre motif. Il reste modifiable : s'il reprend ce qui bloque, il repartira en vérification.",
+      label: "Le motif du refus",
+      exemple:
+        "L'objet social déclaré suppose un agrément que la société n'a pas : le greffe refusera l'immatriculation en l'état.",
+      bouton: "Refuser le dossier",
+      exige: true,
+      envoyer: (texte) =>
+        fetch("/api/avocat/dossier", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dossier, etat: "rejete", commentaire: texte }),
+        }),
+      succes: "Le dossier est refusé : le client a reçu votre motif.",
+    },
+    dessaisissement: {
+      titre: "Rendre le dossier au cabinet",
+      detail:
+        "Le dossier repart dans la file : le premier confrère disponible le reprend. Le client est prévenu qu'il change de mains. Votre motif reste interne.",
+      label: "Pourquoi vous le rendez, pour vos confrères",
+      exemple: "Conflit d'intérêts : le siège est celui d'un client du cabinet.",
+      bouton: "Rendre le dossier",
+      exige: false,
+      envoyer: (texte) =>
+        fetch("/api/avocat/dessaisissement", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dossier, motif: texte || undefined }),
+        }),
+      succes: "Le dossier est rendu au cabinet.",
+    },
+    confrere: {
+      titre: "Appeler un confrère sur le dossier",
+      detail:
+        "Il pourra le lire et y travailler avec vous, et il en est prévenu par courriel. Vous en restez l'avocat désigné.",
+      label: "L'adresse du confrère",
+      exemple: "confrere@cabinet.fr",
+      bouton: "Inviter",
+      exige: true,
+      envoyer: (texte) =>
+        fetch("/api/avocat/confreres", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dossier, courriel: texte }),
+        }),
+      succes: "Le confrère est invité : il voit le dossier dans sa liste.",
+    },
+  };
+
+  /* Ouvrir ou fermer une fenêtre efface ce que la précédente avait à dire. */
+  function setFenetre(geste: Geste | null) {
+    setFenetreBrute(geste);
+    setRefus(null);
+    setMotif("");
+  }
+
+  function envoyerLeGeste() {
+    if (!fenetre) return;
+    const forme = GESTES[fenetre];
     const texte = motif.trim();
-    if (!texte) return;
+    if (forme.exige && !texte) return;
 
     setRefus(null);
     demarrer(async () => {
-      const reponse = await fetch("/api/avocat/dossier", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dossier,
-          etat: "corrections_demandees",
-          commentaire: texte,
-        }),
-      });
+      const reponse = await forme.envoyer(texte);
+      const corps = await reponse.json().catch(() => ({}));
 
       if (!reponse.ok) {
-        setRefus("La demande n'a pas pu être envoyée");
+        setRefus(corps.error ?? "Le geste n'a pas abouti.");
         return;
       }
-      setCorrections(false);
-      setMotif("");
-      setRetour("Le client est prévenu de ce qu'il doit reprendre.");
+      setFenetre(null);
+      setRetour(forme.succes);
       router.refresh();
     });
   }
@@ -680,7 +792,7 @@ export function Travail({
         <button
           type="button"
           className={styles.travailRenvoi}
-          onClick={() => setCorrections(true)}
+          onClick={() => setFenetre("corrections")}
           disabled={enCours}
         >
           <svg
@@ -697,12 +809,59 @@ export function Travail({
           </svg>
           Demander des corrections au client
         </button>
+
+        {/*
+          Ce qu'un avocat peut faire du dossier lui-même, et non de son travail.
+          
+          Aucun de ces trois gestes n'existait : un dossier impossible ne pouvait que
+          boucler en demandes de reprise, la prise en charge était sans envers, et
+          l'avis d'un confrère se payait de lui rendre le dossier en entier.
+        */}
+        {!correctionsEnCours && (
+          <span className={styles.travailGestes}>
+            <button
+              type="button"
+              className={styles.travailTertiaire}
+              onClick={() => setFenetre("confrere")}
+              disabled={enCours}
+            >
+              Appeler un confrère
+            </button>
+            <button
+              type="button"
+              className={styles.travailTertiaire}
+              onClick={() => setFenetre("dessaisissement")}
+              disabled={enCours}
+            >
+              Rendre au cabinet
+            </button>
+            <button
+              type="button"
+              className={styles.travailTertiaire}
+              onClick={() => setFenetre("refus")}
+              disabled={enCours}
+            >
+              Refuser le dossier
+            </button>
+          </span>
+        )}
       </div>
       {maintenant ? (
         <section className={styles.maintenant} aria-label="À faire maintenant">
           <p className={styles.maintenantLegende}>À faire maintenant</p>
           <h2 className={styles.maintenantTitre}>{maintenant.titre}</h2>
           <p className={styles.maintenantPhrase}>{maintenant.explication}</p>
+
+          {maintenant.identifiant === "pieces" && manquantes.length > 0 && (
+            <ul className={styles.piecesManquantesListe}>
+              {manquantes.map((piece) => (
+                <li key={piece.identifiant}>
+                  {piece.titre}
+                  <span className={styles.piecesManquantesMotif}>{piece.motif}</span>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {documentsDe(maintenant).length > 0 && (
             <div className={styles.maintenantDocuments}>
@@ -875,42 +1034,67 @@ export function Travail({
         </div>
       </footer>
 
-      {corrections && (
+      {fenetre && (
         <>
           {/* Le voile ne masque pas la liste : on écrit en regardant ce qui cloche. */}
-          <div className={styles.voile} onClick={() => setCorrections(false)} aria-hidden="true" />
+          <div className={styles.voile} onClick={() => setFenetre(null)} aria-hidden="true" />
 
           <div
             className={styles.fenetreCorrections}
             role="dialog"
             aria-modal="true"
-            aria-label="Demander des corrections au client"
+            aria-label={GESTES[fenetre].titre}
           >
-            <h3 className={styles.fenetreCorrectionsTitre}>Demander des corrections au client</h3>
-            <p className={styles.fenetreCorrectionsDetail}>
-              Le dossier repasse de son côté et il en est prévenu par courriel. Ce que vous écrivez
-              ici est ce qu&apos;il lira : dites ce qui cloche et ce que vous attendez de lui.
-            </p>
+            <h3 className={styles.fenetreCorrectionsTitre}>{GESTES[fenetre].titre}</h3>
+            <p className={styles.fenetreCorrectionsDetail}>{GESTES[fenetre].detail}</p>
 
-            <label className={styles.fenetreCorrectionsLabel} htmlFor="motif-corrections">
-              Ce que le client doit reprendre
+            <label className={styles.fenetreCorrectionsLabel} htmlFor="motif-du-geste">
+              {GESTES[fenetre].label}
             </label>
-            <textarea
-              id="motif-corrections"
-              className={styles.fenetreCorrectionsChamp}
-              value={motif}
-              onChange={(e) => setMotif(e.target.value)}
-              rows={4}
-              maxLength={1000}
-              autoFocus
-              placeholder="Le justificatif de jouissance est au nom d'un tiers : il nous faut un bail ou une attestation au nom de la société."
-            />
+            {/*
+              Une adresse tient sur une ligne ; un motif, non. Le champ suit ce qu'on
+              lui demande d'écrire.
+            */}
+            {fenetre === "confrere" ? (
+              <input
+                id="motif-du-geste"
+                type="email"
+                className={styles.fenetreCorrectionsChamp}
+                value={motif}
+                onChange={(e) => setMotif(e.target.value)}
+                autoFocus
+                placeholder={GESTES[fenetre].exemple}
+              />
+            ) : (
+              <textarea
+                id="motif-du-geste"
+                className={styles.fenetreCorrectionsChamp}
+                value={motif}
+                onChange={(e) => setMotif(e.target.value)}
+                rows={4}
+                maxLength={1000}
+                autoFocus
+                placeholder={GESTES[fenetre].exemple}
+              />
+            )}
+
+            {/*
+              Le refus se lit dans la fenêtre qui l'a provoqué.
+              
+              Il s'affichait au bas de la page, sous les tâches : la fenêtre le
+              masquait, et l'on recliquait sur un bouton qui semblait ne rien faire.
+            */}
+            {refus && (
+              <p className={styles.fenetreCorrectionsRefus} role="alert">
+                {refus}
+              </p>
+            )}
 
             <div className={styles.fenetreCorrectionsActions}>
               <button
                 type="button"
                 className={styles.travailSecondaire}
-                onClick={() => setCorrections(false)}
+                onClick={() => setFenetre(null)}
                 disabled={enCours}
               >
                 Annuler
@@ -918,10 +1102,10 @@ export function Travail({
               <button
                 type="button"
                 className={styles.travailPrincipal}
-                onClick={demanderDesCorrections}
-                disabled={enCours || !motif.trim()}
+                onClick={envoyerLeGeste}
+                disabled={enCours || (GESTES[fenetre].exige && !motif.trim())}
               >
-                {enCours ? "Envoi" : "Envoyer la demande"}
+                {enCours ? "Envoi" : GESTES[fenetre].bouton}
               </button>
             </div>
           </div>

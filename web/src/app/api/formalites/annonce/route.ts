@@ -24,9 +24,16 @@ export const GET = route(async (requete: Request) => {
   // effacerait sa relecture.
   const enregistre = formalite.annonce_text;
 
+  /*
+   * L'état de la publication voyage avec le texte.
+   *
+   * Il ne sortait pas d'ici : l'écran qui affiche l'avis rouvrait donc sur « Marquer
+   * comme publié » un dossier dont la parution était déjà déclarée.
+   */
   return NextResponse.json({
     texte: enregistre || texteAnnonce(formalite),
     relu: !!enregistre,
+    publies: lireBrouillon(formalite.data_json).avisPublies === true,
   });
 });
 

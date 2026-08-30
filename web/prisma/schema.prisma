@@ -97,13 +97,13 @@ model documents {
   name             String
   type             String?
   file_path        String?
-  /// Word source d'un acte livré en PDF : la signature s'y appose avant conversion.
-  source_path      String?
   uploaded_by      String     @default("user")
   status           String     @default("generated")
   created_at       DateTime   @default(now()) @db.Timestamptz(6)
   rejection_reason String?
   rejected_at      DateTime?  @db.Timestamptz(6)
+  /// Word source d'un acte livré en PDF : la signature s'y appose avant conversion.
+  source_path      String?
   formalites       formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -125,8 +125,8 @@ model document_versions {
   produite_le  DateTime   @db.Timestamptz(6)
   archivee_le  DateTime   @default(now()) @db.Timestamptz(6)
   archivee_par Int?
-  formalites   formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users        users?     @relation(fields: [archivee_par], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  formalites   formalites @relation(fields: [formalite_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([formalite_id, name, archivee_le(sort: Desc)], map: "document_versions_acte")
 }
@@ -165,7 +165,9 @@ model formalites {
   reference                                  String?
   team_id                                    Int?
   audit_log                                  audit_log[]
+  document_versions                          document_versions[]
   documents                                  documents[]
+  dossier_confreres                          dossier_confreres[]
   users_formalites_assigned_avocat_idTousers users?               @relation("formalites_assigned_avocat_idTousers", fields: [assigned_avocat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   teams                                      teams?               @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users_formalites_user_idTousers            users                @relation("formalites_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -175,7 +177,6 @@ model formalites {
   signature_requests                         signature_requests[]
   team_notes                                 team_notes[]
   uploaded_files                             uploaded_files[]
-  document_versions                          document_versions[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -195,10 +196,10 @@ model lawyer_consultations {
   documents_json                              String?
   meeting_link                                String?
   payment_status                              String?   @default("pending")
-  payment_ref                                 String?
   accepted_at                                 DateTime? @db.Timestamptz(6)
   done_at                                     DateTime? @db.Timestamptz(6)
   rating                                      Int?
+  payment_ref                                 String?   @unique(map: "idx_consultations_paiement", where: raw("(payment_ref IS NOT NULL)"))
   users_lawyer_consultations_avocat_idTousers users?    @relation("lawyer_consultations_avocat_idTousers", fields: [avocat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users_lawyer_consultations_user_idTousers   users     @relation("lawyer_consultations_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -461,6 +462,9 @@ model users {
   avocat_blocked_dates                                            avocat_blocked_dates[]
   contrats_contrats_assigned_avocat_idTousers                     contrats[]             @relation("contrats_assigned_avocat_idTousers")
   contrats_contrats_user_idTousers                                contrats[]             @relation("contrats_user_idTousers")
+  document_versions                                               document_versions[]
+  dossier_confreres_dossier_confreres_avocat_idTousers            dossier_confreres[]    @relation("dossier_confreres_avocat_idTousers")
+  dossier_confreres_dossier_confreres_invite_parTousers           dossier_confreres[]    @relation("dossier_confreres_invite_parTousers")
   email_tokens                                                    email_tokens[]
   formalites_formalites_assigned_avocat_idTousers                 formalites[]           @relation("formalites_assigned_avocat_idTousers")
   formalites_formalites_user_idTousers                            formalites[]           @relation("formalites_user_idTousers")
@@ -482,7 +486,6 @@ model users {
   uploaded_files                                                  uploaded_files[]
   user_documents                                                  user_documents[]
   user_sessions                                                   user_sessions[]
-  document_versions                                               document_versions[]
 }
 
 model tentatives {
@@ -492,4 +495,23 @@ model tentatives {
   created_at DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([action, cle, created_at(sort: Desc)], map: "idx_tentatives_cle")
+}
+
+model dossier_confreres {
+  id                                        Int        @id @default(autoincrement())
+  formalite_id                              Int
+  avocat_id                                 Int
+  invite_par                                Int
+  created_at                                DateTime   @default(now()) @db.Timestamptz(6)
+  users_dossier_confreres_avocat_idTousers  users      @relation("dossier_confreres_avocat_idTousers", fields: [avocat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  formalites                                formalites @relation(fields: [formalite_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_dossier_confreres_invite_parTousers users      @relation("dossier_confreres_invite_parTousers", fields: [invite_par], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([formalite_id, avocat_id], map: "idx_dossier_confreres_unique")
+  @@index([avocat_id], map: "idx_dossier_confreres_avocat")
+}
+
+model schema_migrations {
+  nom         String   @id
+  applique_le DateTime @default(now()) @db.Timestamptz(6)
 }

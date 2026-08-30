@@ -36,6 +36,17 @@ export interface Dossier {
    * facultatif pour ne pas obliger tous les appelants à le fournir.
    */
   statut?: string | null;
+  /**
+   * Les confrères invités sur ce dossier.
+   *
+   * L'assignation est unique - c'est elle qui dit qui répond du dossier - mais un
+   * avocat peut appeler un confrère à travailler avec lui : une forme rare, un apport
+   * en nature à évaluer, une absence à couvrir. Il n'avait qu'un choix : rendre le
+   * dossier en entier, et le perdre de vue.
+   *
+   * Facultatif, comme le statut : la plupart des règles n'en dépendent pas.
+   */
+  confreresInvites?: number[];
 }
 
 export function aLeRole(utilisateur: Utilisateur, role: Role): boolean {
@@ -98,6 +109,11 @@ export function estPropose(dossier: Dossier | null): boolean {
   return statutProposable(dossier.statut);
 }
 
+/** Ce confrère a-t-il été appelé sur ce dossier ? */
+export function estConfrereInvite(utilisateur: Utilisateur, dossier: Dossier | null): boolean {
+  return !!dossier?.confreresInvites?.includes(utilisateur.id);
+}
+
 export function peutLire(
   utilisateur: Utilisateur,
   dossier: Dossier | null,
@@ -107,6 +123,8 @@ export function peutLire(
   if (aLeRole(utilisateur, "admin")) return true;
   if (dossier.proprietaireId === utilisateur.id) return true;
   if (dossier.avocatAssigneId === utilisateur.id) return true;
+  // Le confrère appelé travaille le dossier : le lui cacher viderait l'invitation.
+  if (estConfrereInvite(utilisateur, dossier)) return true;
   // Un dossier proposé se lit par tout avocat : c'est ce qui lui permet de décider.
   if (aLeRole(utilisateur, "avocat") && estPropose(dossier)) return true;
 
@@ -124,6 +142,8 @@ export function peutModifier(
   if (aLeRole(utilisateur, "admin")) return true;
   if (dossier.proprietaireId === utilisateur.id) return true;
   if (dossier.avocatAssigneId === utilisateur.id) return true;
+  // Inviter un confrère pour qu'il ne puisse rien faire n'aurait pas de sens.
+  if (estConfrereInvite(utilisateur, dossier)) return true;
 
   if (!appartenance || dossier.equipeId !== appartenance.equipeId) return false;
   if (appartenance.role === "admin") return true;

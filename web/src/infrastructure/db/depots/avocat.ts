@@ -36,6 +36,8 @@ import {
   actesRetires,
   dossierPrisEnCharge,
   dossierRetransmis,
+  dossierRendu,
+  confrereInvite,
 } from "@/domain/formalite/avis";
 import { prevenir } from "./avis";
 import { A_RELIRE } from "@/domain/document/publication";
@@ -76,7 +78,7 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
    * sinon la notification mène à une liste où il ne figure pas. Un dossier déjà pris
    * disparaît de la vue des autres - il appartient à son avocat.
    */
-  const [miens, proposes] = await Promise.all([
+  const [miens, proposes, invites] = await Promise.all([
     listerDossiers(utilisateur),
     prisma.formalites.findMany({
       where: {
@@ -85,10 +87,24 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
       },
       orderBy: { updated_at: "desc" },
     }),
+    /*
+     * Ceux sur lesquels un confrère l'a appelé.
+     *
+     * Ils ne lui sont pas assignés - l'assignation dit qui répond du dossier - et
+     * `listerDossiers` ne les voit donc pas : l'invitation aurait donné un accès sans
+     * chemin pour y arriver, sauf à garder le lien du courriel.
+     */
+    prisma.formalites.findMany({
+      where: { dossier_confreres: { some: { avocat_id: utilisateur.id } } },
+      orderBy: { updated_at: "desc" },
+    }),
   ]);
 
   const vus = new Set(miens.map((d) => d.id));
   const dossiers = [...miens, ...proposes.filter((d) => !vus.has(d.id))];
+  for (const invite of invites) {
+    if (!dossiers.some((d) => d.id === invite.id)) dossiers.push(invite);
+  }
   if (dossiers.length === 0) return [];
 
   const identifiants = dossiers.map((d) => d.id);
@@ -124,6 +140,7 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
     }),
   ]);
 
+  const invitesSurMoi = new Set(invites.map((d) => d.id));
   const parClient = new Map(clients.map((c) => [c.id, c]));
   const aVerifier = new Map(documents.map((d) => [d.formalite_id, d._count._all]));
   const nbNotes = new Map(notes.map((n) => [n.formalite_id, n._count._all]));
@@ -151,7 +168,11 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
     notes: nbNotes.get(d.id) ?? 0,
     nonLus: messages.get(d.id) ?? 0,
     payeCentimes: paye.get(d.id) ?? 0,
-    monDossier: d.assigned_avocat_id === utilisateur.id,
+    /*
+     * « Assignés à moi » retient aussi ceux où un confrère l'a appelé : c'est du
+     * travail qui l'attend, et l'onglet existe pour retrouver ce qu'on a accepté.
+     */
+    monDossier: d.assigned_avocat_id === utilisateur.id || invitesSurMoi.has(d.id),
     /*
      * De quoi il s'agit, et pas seulement de quel type.
      *
@@ -1293,6 +1314,185 @@ export async function conclureSansDocumentFinal(
   );
 
   return { conclu: true as const };
+}
+
+/**
+ * Rendre un dossier au cabinet.
+ *
+ * Prendre un dossier n'avait pas d'envers. Un avocat qui découvrait un conflit
+ * d'intérêts, une matière qui n'est pas la sienne, ou qui part trois semaines, ne
+ * pouvait que le garder : le dossier lui restait assigné, il disparaissait de la file
+ * des confrères, et le client attendait quelqu'un qui ne travaillait pas.
+ *
+ * Le dossier repart dans la file, et le client l'apprend - c'est son dossier qui
+ * change de mains.
+ */
+export async function seDessaisirDuDossier(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  motif?: string
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  if (dossier.assigned_avocat_id !== utilisateur.id && !utilisateur.roles.includes("admin")) {
+    throw new Interdit("Ce dossier n'est pas le vôtre");
+  }
+  if (dossier.assigned_avocat_id === null) return { deja: true as const };
+
+  /* Un dossier clos ne retourne pas dans la file : il n'y a plus rien à en faire. */
+  if (estClos(dossier.status)) {
+    throw new Interdit("Ce dossier est clos : il n'attend plus d'avocat");
+  }
+
+  await prisma.formalites.update({
+    where: { id: dossierId },
+    data: { assigned_avocat_id: null, updated_at: new Date() },
+  });
+
+  /* Les confrères appelés l'étaient par celui qui s'en va : leur accès part avec lui. */
+  await prisma.dossier_confreres.deleteMany({ where: { formalite_id: dossierId } });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "dossier_rendu",
+      before_value: utilisateur.nom,
+      comment: motif?.slice(0, LONGUEUR_COMMENTAIRE) ?? null,
+    },
+  });
+
+  await prevenir(
+    dossier.user_id,
+    dossierId,
+    dossierRendu(dossier.societe || "votre société")
+  );
+
+  /* Et il repart dans la file : les confrères en sont prévenus comme au premier jour. */
+  const { proposes } = await proposerAuxAvocats(dossierId);
+
+  return { deja: false as const, proposes };
+}
+
+/**
+ * Appeler un confrère sur un dossier.
+ *
+ * L'assignation est unique - c'est elle qui dit qui répond du dossier - et un avocat
+ * qui voulait l'avis d'un confrère n'avait qu'un choix : lui rendre le dossier en
+ * entier, et le perdre de vue. L'invité lit et travaille le dossier comme celui qui
+ * l'a pris ; l'assignation, elle, ne bouge pas.
+ */
+export async function inviterUnConfrere(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  courriel: string
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  if (dossier.assigned_avocat_id !== utilisateur.id && !utilisateur.roles.includes("admin")) {
+    throw new Interdit("Seul l'avocat du dossier invite un confrère");
+  }
+
+  const confrere = await prisma.users.findFirst({
+    where: { email: courriel.trim().toLowerCase() },
+    select: { id: true, name: true, role: true, suspended: true },
+  });
+
+  if (!confrere || confrere.role !== "avocat") {
+    throw new Interdit("Aucun avocat ne porte cette adresse");
+  }
+  if (confrere.suspended) throw new Interdit("Ce compte est suspendu");
+  if (confrere.id === dossier.assigned_avocat_id) {
+    throw new Interdit("Ce dossier est déjà le sien");
+  }
+
+  /*
+   * Inviter deux fois n'est pas une faute : c'est un clic de trop.
+   *
+   * Et c'est la base qui tranche, en une instruction. Lire puis écrire laissait passer
+   * deux clics dans la même seconde - chacun lisait « pas encore invité » avant que
+   * l'autre n'écrive, et le second heurtait l'index unique : l'avocat voyait « Erreur
+   * serveur » sur une invitation qui venait pourtant d'aboutir. C'est la même règle que
+   * la prise d'un dossier, qui la résout ainsi depuis toujours.
+   */
+  const { count } = await prisma.dossier_confreres.createMany({
+    data: [{ formalite_id: dossierId, avocat_id: confrere.id, invite_par: utilisateur.id }],
+    skipDuplicates: true,
+  });
+  if (count === 0) return { deja: true as const, confrere: confrere.name };
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "confrere_invite",
+      after_value: confrere.name,
+    },
+  });
+
+  /*
+   * Le confrère l'apprend, et par courriel : sans cela il faudrait le prévenir de vive
+   * voix, et l'invitation ne vaudrait que ce que vaut le coup de téléphone qui la suit.
+   */
+  await prevenir(
+    confrere.id,
+    dossierId,
+    confrereInvite(dossier.societe || "un dossier", utilisateur.nom)
+  );
+
+  return { deja: false as const, confrere: confrere.name };
+}
+
+/** Retirer un confrère : l'invitation se défait comme elle s'est faite. */
+export async function retirerUnConfrere(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  avocatId: number
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  /* Celui qui a invité peut retirer ; l'invité peut se retirer lui-même. */
+  const sien = dossier.assigned_avocat_id === utilisateur.id;
+  if (!sien && avocatId !== utilisateur.id && !utilisateur.roles.includes("admin")) {
+    throw new Interdit("Seul l'avocat du dossier retire un confrère");
+  }
+
+  const { count } = await prisma.dossier_confreres.deleteMany({
+    where: { formalite_id: dossierId, avocat_id: avocatId },
+  });
+  if (count === 0) return { retire: false as const };
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: dossierId,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "confrere_retire",
+      after_value: String(avocatId),
+    },
+  });
+
+  return { retire: true as const };
+}
+
+/** Les confrères appelés sur ce dossier, nommés. */
+export async function confreresNommes(dossierId: number) {
+  const lignes = await prisma.dossier_confreres.findMany({
+    where: { formalite_id: dossierId },
+    orderBy: { id: "asc" },
+    include: { users_dossier_confreres_avocat_idTousers: { select: { id: true, name: true } } },
+  });
+
+  return lignes.map((l) => ({
+    id: l.avocat_id,
+    nom: l.users_dossier_confreres_avocat_idTousers?.name ?? "Confrère",
+    inviteLe: l.created_at,
+  }));
 }
 
 /**

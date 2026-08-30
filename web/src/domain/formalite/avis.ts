@@ -27,6 +27,8 @@ export type GenreDAvis =
   | "document_final_remis"
   | "message_recu"
   | "dossier_retransmis"
+  | "dossier_rendu"
+  | "confrere_invite"
   | "dossier_a_prendre"
   | "dossier_pris_en_charge"
   | "actes_disponibles"
@@ -88,6 +90,16 @@ const PAR_COURRIEL = new Set<GenreDAvis>([
   "message_recu",
   // Un dossier corrigé et retransmis revient à son avocat, qui ne l'apprenait jamais.
   "dossier_retransmis",
+  /*
+   * Un dossier rendu au cabinet change de mains : le client doit savoir que celui à
+   * qui il écrivait n'est plus le sien, faute de quoi il attend une réponse qui ne
+   * viendra pas.
+   */
+  "dossier_rendu",
+  /*
+   * Une invitation qui n'arrive pas ne vaut que le coup de téléphone qui la suit.
+   */
+  "confrere_invite",
   "dossier_a_prendre",
   /*
    * La prise en charge se dit par courriel.
@@ -354,6 +366,43 @@ export function messageRecu(auteur: string, societe: string, extrait: string): A
  * le cabinet, muet pour celui qui l'avait pris : après un aller-retour de corrections,
  * le dossier revenait en attente et son avocat ne l'apprenait jamais.
  */
+/**
+ * L'avocat rend le dossier au cabinet.
+ *
+ * Prendre un dossier n'avait pas d'envers : un avocat qui découvrait un conflit
+ * d'intérêts ou partait trois semaines ne pouvait que le garder. Le client, lui, ne
+ * doit pas continuer d'écrire à quelqu'un qui ne le suit plus.
+ */
+export function dossierRendu(societe: string): Avis {
+  return {
+    genre: "dossier_rendu",
+    contenu: "Votre dossier " + societe + " est confié à un autre avocat",
+    sujet: "Votre dossier change d'avocat - " + societe,
+    corps:
+      "L'avocat qui suivait " +
+      societe +
+      " a rendu votre dossier au cabinet.\n\nIl est de nouveau proposé à nos avocats : le premier disponible le reprend, et vous serez prévenu dès qu'il l'aura fait. Votre dossier, vos pièces et vos échanges sont conservés.",
+    bouton: "Voir mon dossier",
+    destination: "dossier",
+  };
+}
+
+/** Un confrère est appelé sur un dossier : il faut qu'il l'apprenne. */
+export function confrereInvite(societe: string, avocat: string): Avis {
+  return {
+    genre: "confrere_invite",
+    contenu: avocat + " vous invite sur le dossier " + societe,
+    sujet: "Invitation sur un dossier - " + societe,
+    corps:
+      avocat +
+      " vous appelle sur le dossier " +
+      societe +
+      ".\n\nVous pouvez le lire et y travailler comme lui. Il en reste l'avocat désigné.",
+    bouton: "Ouvrir le dossier",
+    destination: "avocat",
+  };
+}
+
 export function dossierRetransmis(societe: string, client: string): Avis {
   return {
     genre: "dossier_retransmis",

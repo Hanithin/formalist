@@ -231,9 +231,15 @@ test("sans statuts au dossier, l'onglet le dit au lieu de planter", async ({ pag
   await expect(page.getByRole("alert").filter({ hasText: /statuts/i })).toBeVisible();
 });
 
-test("un dossier de création ne montre ni statuts ni annonce à retoucher", async ({ page }) => {
-  // Ces deux écrans ne concernent que les modifications : le dire vaut mieux qu'un
-  // écran vide où l'on cherche ce qui manque.
+test("un dossier de création ne montre pas de statuts à retoucher", async ({ page }) => {
+  /*
+   * Cet écran ne concerne que les modifications : le dire vaut mieux qu'un écran vide
+   * où l'on cherche ce qui manque.
+   *
+   * L'annonce, elle, concerne bien une création - la constitution s'annonce, la loi
+   * l'exige. L'écran répondait « publiée par le client », le contraire de ce que le
+   * suivi promet au client et de ce que la route de déclaration dit d'elle-même.
+   */
   const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
   const avocat = await prisma.users.findFirstOrThrow({
     where: { email: { startsWith: "avocat-parcours" } },
@@ -257,7 +263,7 @@ test("un dossier de création ne montre ni statuts ni annonce à retoucher", asy
   await expect(page.getByText(/ne concerne que les modifications/)).toBeVisible();
 
   await page.goto("/avocat/" + creation.id + "?onglet=annonce");
-  await expect(page.getByText(/publiée par le client/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Marquer comme publiés" })).toBeVisible();
 });
 
 test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {

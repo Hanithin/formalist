@@ -84,6 +84,63 @@ function physique(associe: Associe | undefined): PersonnePhysique {
 }
 
 /** L'état civil d'un dirigeant : le sien, ou celui de l'associé qu'il reprend. */
+/**
+ * Le dirigeant tel que l'annonce légale le nomme.
+ *
+ * Le texte de l'avis lisait le dirigeant dans des clés d'un ancien formulaire -
+ * `dirigeant_nom`, `GERANT_ADRESSE` - qu'aucun brouillon ne porte plus : chaque avis
+ * de constitution sortait avec « Président : [NOM DU DIRIGEANT], demeurant [ADRESSE DU
+ * DIRIGEANT] », prêt à partir tel quel au journal. Le dirigeant se compose ici, comme
+ * partout ailleurs dans les actes.
+ */
+/**
+ * Le siège en entier, tel qu'un acte ou un avis l'écrit.
+ *
+ * Le formulaire le saisit en trois champs - voie, code postal, commune - et un avis
+ * qui dirait « Siège social : 12 rue de la Paix » sans la commune ne vaudrait rien
+ * au greffe.
+ */
+export function siegeComplet(brouillon: Brouillon): string {
+  return [
+    brouillon.adresse?.trim(),
+    [brouillon.codePostal?.trim(), brouillon.ville?.trim()].filter(Boolean).join(" "),
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+export function dirigeantDeLAnnonce(brouillon: Brouillon): {
+  nom: string;
+  adresse: string;
+} {
+  const associes = brouillon.associes ?? [];
+  const dirigeant = (brouillon.dirigeants ?? [])[0];
+  const societe = societeDuDirigeant(dirigeant, associes);
+
+  if (societe) {
+    return {
+      nom: societeDesignee(societe),
+      adresse: [societe.adresse, societe.codePostal, societe.ville]
+        .filter((m) => m?.trim())
+        .join(" "),
+    };
+  }
+
+  const personne = personneDuDirigeant(dirigeant, associes);
+  const nom = [personne.civilite, personne.prenom, personne.nom]
+    .filter((m) => m?.trim())
+    .join(" ");
+
+  /*
+   * Rien plutôt qu'un tiret.
+   *
+   * Un blanc dans un acte s'écrit « - » ; dans un avis qu'on porte au journal, il
+   * faut qu'il se voie. Le module d'annonce y met alors son propre repère, qu'on ne
+   * publie pas par mégarde.
+   */
+  return { nom, adresse: personne.adresse?.trim() ?? "" };
+}
+
 export function personneDuDirigeant(
   dirigeant: Dirigeant | undefined,
   associes: Associe[]
@@ -432,12 +489,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
    * acte qui dirait « Le siège social est fixé : 12 rue des Lilas » sans la ville
    * serait rejeté. L'original les recomposait de la même façon.
    */
-  const adresseComplete = [
-    brouillon.adresse?.trim(),
-    [brouillon.codePostal?.trim(), brouillon.ville?.trim()].filter(Boolean).join(" "),
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const adresseComplete = siegeComplet(brouillon);
 
   const qui = decideurDeLaRemuneration(brouillon.forme);
   const remuneration = dirigeants[0]?.remuneration;

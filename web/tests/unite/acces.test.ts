@@ -11,6 +11,7 @@ import {
   estClos,
   statutProposable,
   STATUTS_HORS_PROPOSITION,
+  estConfrereInvite,
 } from "@/domain/acces/regles";
 
 const client: Utilisateur = { id: 10, roles: ["user"] };
@@ -169,5 +170,47 @@ describe("un dossier proposé aux avocats", () => {
     expect(estClos("rejete")).toBe(true);
     expect(estClos("en_attente_validation")).toBe(false);
     expect(estClos(null)).toBe(false);
+  });
+});
+
+describe("le confrère appelé sur un dossier", () => {
+  /*
+   * L'assignation est unique - c'est elle qui dit qui répond du dossier - et un avocat
+   * qui voulait l'avis d'un confrère n'avait qu'un choix : lui rendre le dossier en
+   * entier, et le perdre de vue.
+   */
+  const dossier: Dossier = {
+    id: 7,
+    proprietaireId: 99,
+    avocatAssigneId: 20,
+    equipeId: null,
+    statut: "en_attente_validation",
+    confreresInvites: [21],
+  };
+
+  const confrere: Utilisateur = { id: 21, roles: ["avocat"] };
+  const etranger: Utilisateur = { id: 22, roles: ["avocat"] };
+
+  it("le lit et le travaille comme celui qui l'a pris", () => {
+    expect(estConfrereInvite(confrere, dossier)).toBe(true);
+    expect(peutLire(confrere, dossier, null)).toBe(true);
+    // Inviter quelqu'un pour qu'il ne puisse rien faire n'aurait pas de sens.
+    expect(peutModifier(confrere, dossier, null)).toBe(true);
+  });
+
+  it("un avocat qui n'a pas été appelé n'y a pas accès", () => {
+    expect(estConfrereInvite(etranger, dossier)).toBe(false);
+    expect(peutLire(etranger, dossier, null)).toBe(false);
+    expect(peutModifier(etranger, dossier, null)).toBe(false);
+  });
+
+  it("une liste absente ne donne accès à personne", () => {
+    const sansConfreres = { ...dossier, confreresInvites: undefined };
+    expect(peutLire(confrere, sansConfreres, null)).toBe(false);
+  });
+
+  /* L'invitation ne fait pas du confrère l'avocat du dossier. */
+  it("ne rend pas le dossier proposable pour autant", () => {
+    expect(estPropose(dossier)).toBe(false);
   });
 });

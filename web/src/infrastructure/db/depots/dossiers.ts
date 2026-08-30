@@ -30,13 +30,16 @@ async function appartenanceDe(utilisateurId: number): Promise<Appartenance | nul
   };
 }
 
-function versDossier(ligne: {
-  id: number;
-  user_id: number;
-  assigned_avocat_id: number | null;
-  team_id: number | null;
-  status?: string | null;
-}): Dossier {
+function versDossier(
+  ligne: {
+    id: number;
+    user_id: number;
+    assigned_avocat_id: number | null;
+    team_id: number | null;
+    status?: string | null;
+  },
+  confreres: number[] = []
+): Dossier {
   return {
     id: ligne.id,
     proprietaireId: ligne.user_id,
@@ -44,7 +47,25 @@ function versDossier(ligne: {
     equipeId: ligne.team_id,
     // Le statut sert à la seule règle des dossiers proposés aux avocats.
     statut: ligne.status ?? null,
+    confreresInvites: confreres,
   };
+}
+
+/**
+ * Les confrères appelés sur un dossier.
+ *
+ * Lus à part plutôt que joints à la formalité : la lecture d'un dossier est le chemin
+ * le plus emprunté de l'application, et la table est vide pour l'immense majorité
+ * d'entre eux. On ne la consulte donc que si la question se pose - c'est-à-dire quand
+ * l'utilisateur est avocat et que le dossier n'est déjà ni le sien ni celui de son
+ * client.
+ */
+export async function confreresDuDossier(dossierId: number): Promise<number[]> {
+  const lignes = await prisma.dossier_confreres.findMany({
+    where: { formalite_id: dossierId },
+    select: { avocat_id: true },
+  });
+  return lignes.map((l) => l.avocat_id);
 }
 
 /**
@@ -59,7 +80,12 @@ export async function lireDossier(utilisateur: UtilisateurConnecte, id: number) 
   if (!ligne) return null;
 
   const appartenance = await appartenanceDe(utilisateur.id);
-  if (!peutLire(utilisateur, versDossier(ligne), appartenance)) return null;
+  if (peutLire(utilisateur, versDossier(ligne), appartenance)) return ligne;
+
+  /* Reste l'invitation, la seule voie qui demande une lecture de plus. */
+  if (!utilisateur.roles.includes("avocat")) return null;
+  const confreres = await confreresDuDossier(id);
+  if (!peutLire(utilisateur, versDossier(ligne, confreres), appartenance)) return null;
   return ligne;
 }
 
@@ -76,7 +102,10 @@ export async function exigerDossierModifiable(utilisateur: UtilisateurConnecte, 
   if (!ligne) throw new Interdit("Ce dossier n'existe pas ou ne vous est pas accessible");
 
   const appartenance = await appartenanceDe(utilisateur.id);
-  if (!peutModifier(utilisateur, versDossier(ligne), appartenance)) {
+  if (peutModifier(utilisateur, versDossier(ligne), appartenance)) return ligne;
+
+  const confreres = utilisateur.roles.includes("avocat") ? await confreresDuDossier(id) : [];
+  if (!peutModifier(utilisateur, versDossier(ligne, confreres), appartenance)) {
     throw new Interdit("Vous n'avez pas le droit de modifier ce dossier");
   }
   return ligne;

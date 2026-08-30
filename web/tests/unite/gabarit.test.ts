@@ -6,6 +6,7 @@ import {
   nomDeJeuneFille,
   personneDuDirigeant,
   sirenDe,
+  dirigeantDeLAnnonce,
   situationAccordee,
   societeDesignee,
 } from "@/domain/formalite/gabarit";
@@ -560,4 +561,66 @@ it("l'associé personne morale porte son SIREN et son siège entier", () => {
 
   expect(donnees.ASSOC_1_SOCIETE_SIREN).toBe("842019336");
   expect(donnees.ASSOC_1_SOCIETE_ADRESSE).toBe("8 quai de la Gare 75013 Paris");
+});
+
+describe("le dirigeant de l'annonce légale", () => {
+  /*
+   * Le texte de l'avis lisait le dirigeant dans des clés d'un ancien formulaire :
+   * chaque avis de constitution sortait avec « Président : [NOM DU DIRIGEANT],
+   * demeurant [ADRESSE DU DIRIGEANT] », prêt à partir tel quel au journal.
+   */
+  it("nomme la personne physique et son domicile", () => {
+    expect(
+      dirigeantDeLAnnonce({
+        forme: "SASU",
+        associes: [
+          {
+            type: "physique",
+            parts: 100,
+            personne: {
+              civilite: "Monsieur",
+              prenom: "Julien",
+              nom: "MOREAU",
+              adresse: "12 rue de la Paix, 75002 Paris",
+            },
+          },
+        ],
+        dirigeants: [{ associe: 0 }],
+      } as Brouillon)
+    ).toEqual({
+      nom: "Monsieur Julien MOREAU",
+      adresse: "12 rue de la Paix, 75002 Paris",
+    });
+  });
+
+  /* Une société qui préside se désigne par son immatriculation, non par une naissance. */
+  it("désigne la société qui dirige, et son siège", () => {
+    expect(
+      dirigeantDeLAnnonce({
+        forme: "SASU",
+        associes: [
+          {
+            type: "morale",
+            parts: 100,
+            societe: {
+              denomination: "HOLDING MERIDIEN",
+              forme: "SARL",
+              capital: 50000,
+              adresse: "8 quai de la Gare",
+              codePostal: "75013",
+              ville: "Paris",
+              numeroRcs: "842019336",
+              villeImmatriculation: "Paris",
+              representant: { civilite: "Monsieur", prenom: "Marc", nom: "BERTIN" },
+            },
+          },
+        ],
+        dirigeants: [{ associe: 0 }],
+      } as Brouillon).adresse
+    ).toBe("8 quai de la Gare 75013 Paris");
+  });
+
+  it("ne rend rien plutôt qu'un crochet, quand le dirigeant manque", () => {
+    expect(dirigeantDeLAnnonce({} as Brouillon)).toEqual({ nom: "", adresse: "" });
+  });
 });

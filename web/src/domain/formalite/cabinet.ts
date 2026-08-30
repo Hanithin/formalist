@@ -136,6 +136,22 @@ export function typeDeDossier(brut: string | null | undefined): TypeDeDossier {
   return connus.find((t) => t === lu) ?? "creation";
 }
 
+/**
+ * Ce que l'avis annonce, selon le dossier.
+ *
+ * La tâche disait « Publier l'avis de modification » pour tout le monde - et elle
+ * n'existait que pour les modifications, si bien qu'une création se terminait sans
+ * qu'aucun avis n'ait été publié, alors que la constitution en exige un.
+ */
+export const OBJET_DE_L_AVIS: Record<TypeDeDossier, string> = {
+  creation: "de constitution",
+  modification: "de modification",
+  fermeture: "de dissolution",
+  cessation: "de cessation",
+  comptes: "",
+  "auto-entrepreneur": "",
+};
+
 export const DOCUMENT_FINAL: Record<TypeDeDossier, string> = {
   creation: "Extrait Kbis",
   /* Le mot que le client connaît est « Kbis » : personne ne réclame son extrait. */
@@ -362,11 +378,11 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
       titre:
         etat.avisAPublier > 1
           ? "Publier les " + etat.avisAPublier + " avis de modification"
-          : "Publier l'avis de modification",
+          : "Publier l'avis " + OBJET_DE_L_AVIS[etat.type],
       explication:
         etat.avisAPublier > 1
           ? "Le siège change de ressort : un avis paraît dans le département de départ, un autre dans celui d'arrivée. Le texte de chacun est rédigé, il n'y a qu'à le copier."
-          : "Le texte est rédigé : copiez-le dans le formulaire du support habilité, puis joignez l'attestation de parution au dossier.",
+          : "Le texte est rédigé : copiez-le dans le formulaire du support habilité, puis déclarez la parution. Le suivi du client s'en sert - c'est cette étape qu'il attend.",
       etat: etat.avisPublies ? "faite" : "a_faire",
       onglet: "annonce",
       bloquee: verifie ? undefined : "Vérifiez d'abord le dossier : un avis erroné se republie à vos frais.",

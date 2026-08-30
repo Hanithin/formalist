@@ -633,6 +633,14 @@
   color: #a1a1aa;
 }
 
+/* Le refus se lit dans la fenêtre qui l'a provoqué, non au bas de la page. */
+.fenetreCorrectionsRefus {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #b91c1c;
+}
+
 .fenetreCorrectionsActions {
   display: flex;
   justify-content: flex-end;
@@ -3704,6 +3712,34 @@ button.ligneCorps:disabled {
 .travailRenvoi:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+/*
+ * Ce qu'on fait du dossier, non de son travail.
+ *
+ * Appeler un confrère, rendre le dossier, le refuser : trois gestes rares, qui ne
+ * doivent pas peser autant que la demande de corrections. Ils tiennent à droite, en
+ * retrait, et se lisent quand on les cherche.
+ */
+.travailGestes {
+  display: inline-flex;
+  align-items: center;
+  /* Ces trois-là sont soulignés : collés, leurs traits n'en font plus qu'un. */
+  gap: 18px;
+  margin-left: auto;
+}
+
+.travailGestes button {
+  height: 34px;
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  /* En dessous, la barre se replie : les trois gestes passent sous la demande. */
+  .travailGestes {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
 }
 
 /* ---------- La conversation avec le client ---------- */
