@@ -11,11 +11,11 @@ import { validerCorps, validerParametres, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
 /**
- * Les confrères appelés sur un dossier.
+ * Les avocats invités sur un dossier.
  *
  * L'assignation est unique - c'est elle qui dit qui répond du dossier - et un avocat
- * qui voulait l'avis d'un confrère n'avait qu'un choix : lui rendre le dossier en
- * entier, et le perdre de vue. L'invité lit et travaille le dossier comme lui.
+ * qui voulait un second regard n'avait qu'un choix : rendre le dossier en entier, et
+ * le perdre de vue. L'invité lit et travaille le dossier comme lui.
  */
 export const GET = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();

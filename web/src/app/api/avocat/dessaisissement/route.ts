@@ -7,12 +7,12 @@ import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
 /**
- * L'avocat rend un dossier au cabinet.
+ * L'avocat se retire d'un dossier.
  *
  * Prendre un dossier n'avait pas d'envers : un avocat qui découvrait un conflit
  * d'intérêts, une matière qui n'est pas la sienne, ou qui part trois semaines, ne
  * pouvait que le garder. Le dossier lui restait assigné, disparaissait de la file des
- * confrères, et le client attendait quelqu'un qui ne travaillait pas.
+ * autres, et le client attendait quelqu'un qui ne travaillait pas.
  */
 export const PUT = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();

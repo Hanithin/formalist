@@ -91,9 +91,9 @@ const PAR_COURRIEL = new Set<GenreDAvis>([
   // Un dossier corrigé et retransmis revient à son avocat, qui ne l'apprenait jamais.
   "dossier_retransmis",
   /*
-   * Un dossier rendu au cabinet change de mains : le client doit savoir que celui à
-   * qui il écrivait n'est plus le sien, faute de quoi il attend une réponse qui ne
-   * viendra pas.
+   * Un dossier dont l'avocat se retire change de mains : le client doit savoir que
+   * celui à qui il écrivait n'est plus le sien, faute de quoi il attend une réponse
+   * qui ne viendra pas.
    */
   "dossier_rendu",
   /*
@@ -367,7 +367,7 @@ export function messageRecu(auteur: string, societe: string, extrait: string): A
  * le dossier revenait en attente et son avocat ne l'apprenait jamais.
  */
 /**
- * L'avocat rend le dossier au cabinet.
+ * L'avocat se retire d'un dossier.
  *
  * Prendre un dossier n'avait pas d'envers : un avocat qui découvrait un conflit
  * d'intérêts ou partait trois semaines ne pouvait que le garder. Le client, lui, ne
@@ -381,13 +381,13 @@ export function dossierRendu(societe: string): Avis {
     corps:
       "L'avocat qui suivait " +
       societe +
-      " a rendu votre dossier au cabinet.\n\nIl est de nouveau proposé à nos avocats : le premier disponible le reprend, et vous serez prévenu dès qu'il l'aura fait. Votre dossier, vos pièces et vos échanges sont conservés.",
+      " ne peut plus s'en occuper.\n\nVotre dossier est de nouveau proposé à nos avocats : le premier disponible le reprend, et vous serez prévenu dès qu'il l'aura fait. Vos pièces et vos échanges sont conservés.",
     bouton: "Voir mon dossier",
     destination: "dossier",
   };
 }
 
-/** Un confrère est appelé sur un dossier : il faut qu'il l'apprenne. */
+/** Un avocat est invité sur un dossier : il faut qu'il l'apprenne. */
 export function confrereInvite(societe: string, avocat: string): Avis {
   return {
     genre: "confrere_invite",
@@ -395,9 +395,9 @@ export function confrereInvite(societe: string, avocat: string): Avis {
     sujet: "Invitation sur un dossier - " + societe,
     corps:
       avocat +
-      " vous appelle sur le dossier " +
+      " vous invite à travailler sur " +
       societe +
-      ".\n\nVous pouvez le lire et y travailler comme lui. Il en reste l'avocat désigné.",
+      ".\n\nVous pouvez le lire et y travailler comme lui. Il en reste l'avocat responsable.",
     bouton: "Ouvrir le dossier",
     destination: "avocat",
   };

@@ -52,7 +52,7 @@ function versDossier(
 }
 
 /**
- * Les confrères appelés sur un dossier.
+ * Les avocats invités sur un dossier.
  *
  * Lus à part plutôt que joints à la formalité : la lecture d'un dossier est le chemin
  * le plus emprunté de l'application, et la table est vide pour l'immense majorité

@@ -163,7 +163,7 @@ test.describe("prise d'un dossier", () => {
           email: "confrere-parcours@exemple.test",
           password_hash: "x",
           salt: "x",
-          name: "Maître Confrère",
+          name: "Maître Rousseau",
           role: "avocat",
           roles: JSON.stringify(["user", "avocat"]),
           email_verified: true,
@@ -490,7 +490,7 @@ test.describe("le dossier lui-même", () => {
     expect(message.content).toContain("agrément");
   });
 
-  test("il rend le dossier au cabinet, qui le repropose", async ({ request }) => {
+  test("il se retire du dossier, qui repart dans la file", async ({ request }) => {
     const dossier = await dossierPris("DESSAISISSEMENT " + Date.now());
 
     const reponse = await request.put("/api/avocat/dessaisissement", {
@@ -500,7 +500,7 @@ test.describe("le dossier lui-même", () => {
 
     const corps = await reponse.json();
     expect(corps.deja).toBe(false);
-    /* Il repart dans la file : les confrères en sont prévenus comme au premier jour. */
+    /* Il repart dans la file : les avocats en sont prévenus comme au premier jour. */
     expect(corps.proposes).toBeGreaterThan(0);
 
     const apres = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier.id } });
@@ -521,17 +521,17 @@ test.describe("le dossier lui-même", () => {
     );
   });
 
-  test("il appelle un confrère, qui voit le dossier et le travaille", async ({ request }) => {
+  test("il invite un avocat, qui voit le dossier et le travaille", async ({ request }) => {
     const dossier = await dossierPris("CONFRERE " + Date.now());
 
     const confrere = await prisma.users.upsert({
       where: { email: "confrere-parcours@exemple.test" },
-      update: { role: "avocat", suspended: false },
+      update: { role: "avocat", suspended: false, name: "Maître Rousseau" },
       create: {
         email: "confrere-parcours@exemple.test",
         password_hash: "x",
         salt: "x",
-        name: "Maître Confrère",
+        name: "Maître Rousseau",
         role: "avocat",
         roles: JSON.stringify(["user", "avocat"]),
         email_verified: true,
@@ -542,7 +542,7 @@ test.describe("le dossier lui-même", () => {
       data: { dossier: dossier.id, courriel: "confrere-parcours@exemple.test" },
     });
     expect(reponse.status()).toBe(200);
-    expect((await reponse.json()).confrere).toBe("Maître Confrère");
+    expect((await reponse.json()).confrere).toBe("Maître Rousseau");
 
     /* Il l'apprend : une invitation qu'il faut annoncer de vive voix n'en est pas une. */
     expect(

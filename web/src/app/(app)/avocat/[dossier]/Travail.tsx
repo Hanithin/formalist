@@ -151,10 +151,10 @@ export function Travail({
   /*
    * Quatre gestes, une fenêtre.
    *
-   * Demander des corrections avait la sienne ; refuser le dossier, le rendre au
-   * cabinet et appeler un confrère en auraient fait quatre, à la virgule près. Ce qui
-   * change d'un geste à l'autre tient dans une table : le titre, ce qu'on annonce, le
-   * champ à remplir et ce qu'on en fait.
+   * Demander des corrections avait la sienne ; refuser le dossier, s'en retirer et y
+   * inviter un autre avocat en auraient fait quatre, à la virgule près. Ce qui change
+   * d'un geste à l'autre tient dans une table : le titre, ce qu'on annonce, le champ à
+   * remplir et ce qu'on en fait.
    */
   const [fenetre, setFenetreBrute] = useState<Geste | null>(null);
   const [motif, setMotif] = useState("");
@@ -309,8 +309,8 @@ export function Travail({
    * Refuser un dossier n'avait aucun bouton : les deux seuls états que l'interface
    * posait étaient « corrections demandées » et « en attente de validation ». Un
    * dossier impossible - objet illicite, pièces fausses - ne pouvait que boucler en
-   * demandes de reprise. Rendre le dossier au cabinet n'existait pas non plus : la
-   * prise était sans envers.
+   * demandes de reprise. Se retirer d'un dossier n'existait pas non plus : la prise
+   * était sans envers.
    */
   const GESTES: Record<Geste, Formulaire> = {
     corrections: {
@@ -348,12 +348,12 @@ export function Travail({
       succes: "Le dossier est refusé : le client a reçu votre motif.",
     },
     dessaisissement: {
-      titre: "Rendre le dossier au cabinet",
+      titre: "Me retirer du dossier",
       detail:
-        "Le dossier repart dans la file : le premier confrère disponible le reprend. Le client est prévenu qu'il change de mains. Votre motif reste interne.",
-      label: "Pourquoi vous le rendez, pour vos confrères",
-      exemple: "Conflit d'intérêts : le siège est celui d'un client du cabinet.",
-      bouton: "Rendre le dossier",
+        "Le dossier repart dans la file : le premier avocat disponible le reprend. Votre client est prévenu qu'il change de mains. Ce que vous écrivez ici n'est lu que par nous.",
+      label: "Pourquoi vous vous retirez",
+      exemple: "Conflit d'intérêts : le siège est celui d'un autre de mes clients.",
+      bouton: "Me retirer",
       exige: false,
       envoyer: (texte) =>
         fetch("/api/avocat/dessaisissement", {
@@ -361,14 +361,14 @@ export function Travail({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ dossier, motif: texte || undefined }),
         }),
-      succes: "Le dossier est rendu au cabinet.",
+      succes: "Vous n'êtes plus sur ce dossier : il repart dans la file.",
     },
     confrere: {
-      titre: "Appeler un confrère sur le dossier",
+      titre: "Inviter un avocat sur le dossier",
       detail:
-        "Il pourra le lire et y travailler avec vous, et il en est prévenu par courriel. Vous en restez l'avocat désigné.",
-      label: "L'adresse du confrère",
-      exemple: "confrere@cabinet.fr",
+        "Il pourra le lire et y travailler avec vous, et il en est prévenu par courriel. Vous en restez l'avocat responsable.",
+      label: "L'adresse de l'avocat",
+      exemple: "prenom.nom@exemple.fr",
       bouton: "Inviter",
       exige: true,
       envoyer: (texte) =>
@@ -377,7 +377,7 @@ export function Travail({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ dossier, courriel: texte }),
         }),
-      succes: "Le confrère est invité : il voit le dossier dans sa liste.",
+      succes: "L'avocat est invité : il voit le dossier dans sa liste.",
     },
   };
 
@@ -815,7 +815,7 @@ export function Travail({
           
           Aucun de ces trois gestes n'existait : un dossier impossible ne pouvait que
           boucler en demandes de reprise, la prise en charge était sans envers, et
-          l'avis d'un confrère se payait de lui rendre le dossier en entier.
+          l'avis d'un autre avocat se payait de lui rendre le dossier en entier.
         */}
         {!correctionsEnCours && (
           <span className={styles.travailGestes}>
@@ -825,7 +825,7 @@ export function Travail({
               onClick={() => setFenetre("confrere")}
               disabled={enCours}
             >
-              Appeler un confrère
+              Inviter un avocat
             </button>
             <button
               type="button"
@@ -833,7 +833,7 @@ export function Travail({
               onClick={() => setFenetre("dessaisissement")}
               disabled={enCours}
             >
-              Rendre au cabinet
+              Me retirer du dossier
             </button>
             <button
               type="button"

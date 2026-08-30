@@ -100,7 +100,7 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
       orderBy: { updated_at: "desc" },
     }),
     /*
-     * Ceux sur lesquels un confrère l'a appelé.
+     * Ceux sur lesquels un autre avocat l'a invité.
      *
      * Ils ne lui sont pas assignés - l'assignation dit qui répond du dossier - et
      * `listerDossiers` ne les voit donc pas : l'invitation aurait donné un accès sans
@@ -186,7 +186,7 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
     nonLus: messages.get(d.id) ?? 0,
     payeCentimes: paye.get(d.id) ?? 0,
     /*
-     * « Assignés à moi » retient aussi ceux où un confrère l'a appelé : c'est du
+     * « Assignés à moi » retient aussi ceux où un autre avocat l'a invité : c'est du
      * travail qui l'attend, et l'onglet existe pour retrouver ce qu'on a accepté.
      */
     monDossier: d.assigned_avocat_id === utilisateur.id || invitesSurMoi.has(d.id),
@@ -1359,12 +1359,12 @@ export async function conclureSansDocumentFinal(
 }
 
 /**
- * Rendre un dossier au cabinet.
+ * L'avocat se retire d'un dossier.
  *
  * Prendre un dossier n'avait pas d'envers. Un avocat qui découvrait un conflit
  * d'intérêts, une matière qui n'est pas la sienne, ou qui part trois semaines, ne
  * pouvait que le garder : le dossier lui restait assigné, il disparaissait de la file
- * des confrères, et le client attendait quelqu'un qui ne travaillait pas.
+ * des autres, et le client attendait quelqu'un qui ne travaillait pas.
  *
  * Le dossier repart dans la file, et le client l'apprend - c'est son dossier qui
  * change de mains.
@@ -1392,7 +1392,7 @@ export async function seDessaisirDuDossier(
     data: { assigned_avocat_id: null, updated_at: new Date() },
   });
 
-  /* Les confrères appelés l'étaient par celui qui s'en va : leur accès part avec lui. */
+  /* Les invités l'étaient par celui qui s'en va : leur accès part avec lui. */
   await prisma.dossier_confreres.deleteMany({ where: { formalite_id: dossierId } });
 
   await prisma.audit_log.create({
@@ -1412,19 +1412,19 @@ export async function seDessaisirDuDossier(
     dossierRendu(nomDeLaSociete(dossier) || "votre société")
   );
 
-  /* Et il repart dans la file : les confrères en sont prévenus comme au premier jour. */
+  /* Et il repart dans la file : les avocats en sont prévenus comme au premier jour. */
   const { proposes } = await proposerAuxAvocats(dossierId);
 
   return { deja: false as const, proposes };
 }
 
 /**
- * Appeler un confrère sur un dossier.
+ * Inviter un autre avocat sur un dossier.
  *
  * L'assignation est unique - c'est elle qui dit qui répond du dossier - et un avocat
- * qui voulait l'avis d'un confrère n'avait qu'un choix : lui rendre le dossier en
- * entier, et le perdre de vue. L'invité lit et travaille le dossier comme celui qui
- * l'a pris ; l'assignation, elle, ne bouge pas.
+ * qui voulait un second regard n'avait qu'un choix : rendre le dossier en entier, et
+ * le perdre de vue. L'invité lit et travaille le dossier comme celui qui l'a pris ;
+ * l'assignation, elle, ne bouge pas.
  */
 export async function inviterUnConfrere(
   utilisateur: UtilisateurConnecte,
@@ -1435,7 +1435,7 @@ export async function inviterUnConfrere(
   const dossier = await exigerDossier(utilisateur, dossierId);
 
   if (dossier.assigned_avocat_id !== utilisateur.id && !utilisateur.roles.includes("admin")) {
-    throw new Interdit("Seul l'avocat du dossier invite un confrère");
+    throw new Interdit("Seul l'avocat du dossier peut en inviter un autre");
   }
 
   const confrere = await prisma.users.findFirst({
@@ -1477,7 +1477,7 @@ export async function inviterUnConfrere(
   });
 
   /*
-   * Le confrère l'apprend, et par courriel : sans cela il faudrait le prévenir de vive
+   * L'invité l'apprend, et par courriel : sans cela il faudrait le prévenir de vive
    * voix, et l'invitation ne vaudrait que ce que vaut le coup de téléphone qui la suit.
    */
   await prevenir(
@@ -1489,7 +1489,7 @@ export async function inviterUnConfrere(
   return { deja: false as const, confrere: confrere.name };
 }
 
-/** Retirer un confrère : l'invitation se défait comme elle s'est faite. */
+/** Retirer un invité : l'invitation se défait comme elle s'est faite. */
 export async function retirerUnConfrere(
   utilisateur: UtilisateurConnecte,
   dossierId: number,
@@ -1501,7 +1501,7 @@ export async function retirerUnConfrere(
   /* Celui qui a invité peut retirer ; l'invité peut se retirer lui-même. */
   const sien = dossier.assigned_avocat_id === utilisateur.id;
   if (!sien && avocatId !== utilisateur.id && !utilisateur.roles.includes("admin")) {
-    throw new Interdit("Seul l'avocat du dossier retire un confrère");
+    throw new Interdit("Seul l'avocat du dossier peut en retirer un autre");
   }
 
   const { count } = await prisma.dossier_confreres.deleteMany({
@@ -1522,7 +1522,7 @@ export async function retirerUnConfrere(
   return { retire: true as const };
 }
 
-/** Les confrères appelés sur ce dossier, nommés. */
+/** Les avocats invités sur ce dossier, nommés. */
 export async function confreresNommes(dossierId: number) {
   const lignes = await prisma.dossier_confreres.findMany({
     where: { formalite_id: dossierId },
@@ -1532,7 +1532,7 @@ export async function confreresNommes(dossierId: number) {
 
   return lignes.map((l) => ({
     id: l.avocat_id,
-    nom: l.users_dossier_confreres_avocat_idTousers?.name ?? "Confrère",
+    nom: l.users_dossier_confreres_avocat_idTousers?.name ?? "Avocat invité",
     inviteLe: l.created_at,
   }));
 }
