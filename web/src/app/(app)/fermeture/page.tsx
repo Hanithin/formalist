@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
+import { ouIntrouvable } from "../introuvable";
 import {
   ouvrirFermeture,
   confirmerFermetureAuRetour,
@@ -89,7 +90,7 @@ export default async function Fermeture({
     issue = "annule";
   }
 
-  const { fermeture, dossier: ligne } = await ouvrirFermeture(utilisateur, dossierId);
+  const { fermeture, dossier: ligne } = await ouIntrouvable(ouvrirFermeture(utilisateur, dossierId));
   const nom = fermeture.societe.denomination || "Fermer ma société";
 
   /*

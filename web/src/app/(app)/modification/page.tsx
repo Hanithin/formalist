@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
+import { ouIntrouvable } from "../introuvable";
 import { ouvrirModification, confirmerAuRetour } from "@/infrastructure/db/depots/modifications";
 import { Parcours, type EtatDuDossier } from "./Parcours";
 import { Commencer } from "./Commencer";
@@ -124,7 +125,7 @@ export default async function Modification({
     issue = "annule";
   }
 
-  const { modification, dossier: ligne } = await ouvrirModification(utilisateur, dossierId);
+  const { modification, dossier: ligne } = await ouIntrouvable(ouvrirModification(utilisateur, dossierId));
 
   /*
    * Un dossier réglé n'a plus rien à saisir, mais il a tout à suivre.

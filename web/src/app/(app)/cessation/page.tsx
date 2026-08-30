@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
+import { ouIntrouvable } from "../introuvable";
 import {
   ouvrirCessation,
   confirmerCessationAuRetour,
@@ -73,7 +74,7 @@ export default async function Cessation({
     issue = "annule";
   }
 
-  const { cessation, dossier: ligne } = await ouvrirCessation(utilisateur, dossierId);
+  const { cessation, dossier: ligne } = await ouIntrouvable(ouvrirCessation(utilisateur, dossierId));
   const nom = cessation.entreprise.denomination || "Fermer mon auto-entreprise";
 
   if (cessation.paye && !issue) {

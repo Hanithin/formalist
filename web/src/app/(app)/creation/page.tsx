@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
+import { ouIntrouvable } from "../introuvable";
 import {
   ouvrirBrouillon,
   lireBrouillon,
@@ -63,7 +64,7 @@ export default async function Creation({
    * changement d'étape. Ce qui est saisi sans franchir l'étape 1 n'était pas gardé
    * avant non plus.
    */
-  const ligne = dossier ? (await ouvrirBrouillon(utilisateur, Number(dossier))).dossier : null;
+  const ligne = dossier ? (await ouIntrouvable(ouvrirBrouillon(utilisateur, Number(dossier)))).dossier : null;
 
   /*
    * Chaque parcours a sa page.

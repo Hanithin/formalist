@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
+import { ouIntrouvable } from "../introuvable";
 import { ouvrirComptes, confirmerComptesAuRetour } from "@/infrastructure/db/depots/comptes";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
@@ -140,7 +141,7 @@ export default async function DepotDesComptes({
     issue = "annule";
   }
 
-  const { comptes, dossier: ligne } = await ouvrirComptes(utilisateur, dossierId);
+  const { comptes, dossier: ligne } = await ouIntrouvable(ouvrirComptes(utilisateur, dossierId));
   const nom = comptes.societe.denomination || "Dépôt des comptes annuels";
 
   /*

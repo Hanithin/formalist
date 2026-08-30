@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
+import { ouIntrouvable } from "../introuvable";
 import { ouvrirDeclaration, lire } from "@/infrastructure/db/depots/auto-entrepreneur";
 import { ETAPES, premiereEtapeIncomplete } from "@/domain/auto-entrepreneur/declaration";
 import { Declaration } from "./Declaration";
@@ -49,7 +50,7 @@ export default async function AutoEntrepreneur({
    * premier enregistrement, dans `Declaration` - qui ne persiste de toute façon qu'au
    * changement d'étape.
    */
-  const ouverte = dossier ? await ouvrirDeclaration(utilisateur, Number(dossier)) : null;
+  const ouverte = dossier ? await ouIntrouvable(ouvrirDeclaration(utilisateur, Number(dossier))) : null;
   const ligne = ouverte?.dossier ?? null;
   const declaration = ouverte?.declaration ?? lire(null);
 
