@@ -28,14 +28,17 @@
   width: 100%;
   margin: 0 0 6px;
   /*
-   * Le retrait tient l'alignement que le « + » tenait avant lui.
+   * Le libellé se centre, et le retrait de gauche est ce qui l'y pose.
    *
-   * Les entrées voisines portent une icône de vingt pixels suivie d'un écart de douze :
-   * leur libellé commence donc à quarante-quatre du bord. Le bouton n'a plus d'icône,
-   * et c'est son retrait qui pose « Nouvelle formalité » sur la même verticale que
-   * « Mes formalités ».
+   * À droite, le chevron et ses écarts occupent quarante pixels - douze de marge, seize
+   * de dessin, douze d'intervalle. Le même retrait à gauche donne au libellé une boîte
+   * symétrique : le centrer dedans le centre dans le bouton, sans le sortir du flux ni
+   * placer quoi que ce soit en absolu.
+   *
+   * Sans icône à gauche, l'alignement sur les entrées voisines n'avait plus rien à
+   * tenir : le bouton n'est pas une entrée de la colonne, c'est le geste qui la coiffe.
    */
-  padding: 11px 12px 11px 44px;
+  padding: 11px 12px 11px 40px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: #e9e9ec;
@@ -66,6 +69,11 @@
 .actionPage .libelle {
   flex: 1;
   min-width: 0;
+}
+
+/* Dans la barre de titre, le bouton se resserre sur son texte : rien à centrer. */
+.action .libelle {
+  text-align: center;
 }
 
 .action .chevron,
