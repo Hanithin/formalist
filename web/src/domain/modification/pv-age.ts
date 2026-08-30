@@ -2,6 +2,7 @@ import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
+import { auFilDeLaPhrase } from "./traite-apport";
 import { paritéDeLApport } from "./traite-apport";
 import { definitions, type Valeurs } from "./types";
 import { planDeCapital } from "./apport";
@@ -124,6 +125,26 @@ const MOIS = [
   "novembre",
   "décembre",
 ];
+
+/**
+ * Le poste incorporé, avec l'article que la phrase attend.
+ *
+ * L'acte écrit « prélevée sur {poste} » : le libellé du menu passait en minuscules et
+ * l'on lisait « prélevée sur réserves », « prélevée sur report à nouveau ».
+ */
+export function posteAvecArticle(poste: string): string {
+  const articles: Record<string, string> = {
+    Réserves: "les réserves",
+    "Report à nouveau": "le report à nouveau",
+    "Prime d'émission": "la prime d'émission",
+    "Réserve légale": "la réserve légale",
+  };
+  const connu = articles[poste.trim()];
+  if (connu) return connu;
+
+  const nu = poste.trim().toLowerCase();
+  return nu ? "le poste « " + poste.trim() + " »" : "";
+}
 
 /** « (i) », « (ii) » : la numérotation des présents dans un acte. */
 export function numeroDePresent(rang: number): string {
@@ -309,7 +330,11 @@ const LIBELLES: Record<BlocDuModele, (mots: MotsDeLaForme, contexte: ContexteGab
   r_objet_social: () => "modification de l'objet social",
   r_date_cloture: () => "modification de la date de clôture de l'exercice social",
   r_dirigeant: () => "changement de dirigeant",
-  r_augmentation_numeraire: () => "augmentation du capital social par apport en numéraire",
+  r_augmentation_numeraire: (_, contexte) =>
+    "augmentation du capital social " +
+    (texte(contexte.valeurs.modeAugmentation) === "Compensation de créances"
+      ? "par compensation de créances"
+      : "par apport en numéraire"),
   r_augmentation_nature: () => "augmentation du capital social par apport en nature",
   r_incorporation: () => "augmentation du capital social par incorporation de réserves",
   r_reduction: (_, contexte) =>
@@ -688,22 +713,46 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
   }
 
   if (blocs.includes("r_denomination")) {
+    /*
+     * Le sigle se saisit, et ne se lisait nulle part.
+     *
+     * Le formulaire le demande, l'annonce légale le publie - « sigle « AM » » - et le
+     * procès-verbal, qui cite pourtant la clause statutaire de la dénomination, ne le
+     * mentionnait pas. Les statuts déposés au greffe l'ignoraient donc, alors que
+     * l'avis paru l'annonçait.
+     */
+    const sigle = texte(valeurs.sigle);
+
     donnees.r_denomination = {
       ...commun("r_denomination", dateEnFrancais(texte(valeurs.dateEffetDenomination))),
       ancienne_denomination: texte(societe.denomination),
       nouvelle_denomination: texte(valeurs.nouvelleDenomination),
+      /* Dans la clause, non après elle : le sigle fait partie des statuts. */
+      mention_sigle: sigle ? ", sigle " + sigle : "",
     };
   }
 
   if (blocs.includes("r_objet_social")) {
     donnees.r_objet_social = {
       ...commun("r_objet_social", dateEnFrancais(texte(valeurs.dateEffetObjet))),
-      nouvel_objet: texte(valeurs.nouvelObjetSocial).replace(/\.$/, ""),
+      /*
+       * L'objet s'insère après deux points, au fil de la phrase.
+       *
+       * L'acte écrit « La Société a pour objet, en France et à l'étranger : {objet} ; et,
+       * plus généralement… » : le texte arrivait avec sa majuscule de début de phrase, et
+       * l'on lisait « à l'étranger : La menuiserie ».
+       */
+      nouvel_objet: auFilDeLaPhrase(texte(valeurs.nouvelObjetSocial)),
     };
   }
 
   if (blocs.includes("r_dirigeant")) {
     const changement = texte(valeurs.typeChangementDirigeant);
+    /* Le motif ne vaut que pour une révocation : une démission n'en demande pas. */
+    const motifDeRevocation =
+      changement === "Révocation"
+        ? auFilDeLaPhrase(texte(valeurs.motifRevocation))
+        : "";
     const sortie = changement === "Révocation" || changement === "Démission";
 
     donnees.r_dirigeant = {
@@ -732,6 +781,22 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
               texte(valeurs.dirigeantRevoqueNom) || texte(valeurs.dirigeantDemissionnaireNom),
             fonction_sortant: texte(valeurs.fonctionDirigeant).toLowerCase(),
             date_fin_mandat: dateEnFrancais(texte(valeurs.dateEffetDirigeant)),
+            /*
+             * Le motif de la révocation, et le quitus qui ne va pas avec.
+             *
+             * Le formulaire demande le motif ; l'acte ne le portait nulle part. Or la
+             * révocation d'un gérant sans juste motif ouvre droit à des dommages et
+             * intérêts (article L. 223-25 du code de commerce) : c'est le motif énoncé
+             * qui protège la société, et le taire revient à s'en priver.
+             *
+             * La phrase donnait par ailleurs quitus dans le même souffle - une
+             * décharge de gestion accordée à celui qu'on révoque pour un manquement se
+             * retourne contre l'assemblée qui l'a votée. Le quitus reste sur une
+             * démission, et sur une révocation dont aucun motif n'est allégué.
+             */
+            mention_fin_mandat: motifDeRevocation
+              ? ", pour le motif suivant : " + motifDeRevocation + "."
+              : ", et lui donne quitus entier et sans réserve de l'exécution de son mandat jusqu'à cette date.",
           }
         : false,
       fonction: texte(valeurs.fonctionDirigeant).toLowerCase(),
@@ -747,8 +812,24 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
     };
   }
 
-  /* Les trois augmentations partagent leur arithmétique : une seule est allumée. */
-  const augmentation = blocs.find((bloc) => bloc.startsWith("r_augmentation") && bloc !== "r_augmentation_remuneration");
+  /*
+   * Les trois augmentations partagent leur arithmétique : une seule est allumée.
+   *
+   * Elles se reconnaissaient à leur préfixe - `bloc.startsWith("r_augmentation")` -
+   * et l'incorporation de réserves s'appelle `r_incorporation` : elle n'était donc
+   * jamais reconnue. Tout le calcul était sauté, `r_incorporation` n'était jamais
+   * rendu, et le procès-verbal sortait avec son ordre du jour annonçant l'augmentation
+   * puis, pour seule résolution, celle des pouvoirs. La décision qui augmente le
+   * capital ne figurait nulle part dans l'acte déposé au greffe.
+   *
+   * On les nomme, plutôt que de les deviner à leur nom.
+   */
+  const AUGMENTATIONS: BlocDuModele[] = [
+    "r_augmentation_numeraire",
+    "r_augmentation_nature",
+    "r_incorporation",
+  ];
+  const augmentation = blocs.find((bloc) => AUGMENTATIONS.includes(bloc));
   if (augmentation) {
     const avant = nombre(valeurs, "capitalActuelAugm") || capitalDepart;
     const apres = nombre(valeurs, "nouveauCapitalAugm");
@@ -798,6 +879,17 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
       const compensation = mode === "Compensation de créances";
       donnees.r_augmentation_numeraire = {
         ...chiffres,
+        /*
+         * Une compensation de créances n'est pas un apport en numéraire.
+         *
+         * Elle n'a pas de résolution à elle - c'est une souscription en numéraire,
+         * libérée par compensation avec une créance liquide et exigible - mais l'acte
+         * l'annonçait « par apport en numéraire », dans son titre et dans sa première
+         * phrase, avant de la décrire comme une compensation deux lignes plus bas.
+         */
+        nature_augmentation: compensation
+          ? "par compensation de créances"
+          : "par apport en numéraire",
         modalites_souscription: compensation
           ? "par compensation avec la créance liquide et exigible de " +
             texte(valeurs.titulaireCreance) +
@@ -839,15 +931,31 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
     if (augmentation === "r_incorporation") {
       donnees.r_incorporation = {
         ...chiffres,
-        poste_incorpore: texte(valeurs.posteIncorpore).toLowerCase(),
+        /* « prélevée sur les réserves », non « prélevée sur réserves ». */
+        poste_incorpore: posteAvecArticle(texte(valeurs.posteIncorpore)),
+        /*
+         * Comment le capital s'élève, et rien de plus.
+         *
+         * La phrase reprenait le montant et le poste que la résolution vient d'énoncer,
+         * puis affirmait une élévation de la valeur nominale - quel que soit ce qui
+         * avait été saisi. Un dossier qui créait quinze cents parts nouvelles voyait
+         * donc son acte décrire l'opération inverse.
+         *
+         * Une incorporation attribue des titres gratuits ou élève le nominal : c'est
+         * l'un ou l'autre, et le formulaire le dit par le nombre de titres créés.
+         */
         modalite_incorporation:
-          "par incorporation directe au capital d'une somme de " +
-          montant(nombre(valeurs, "montantIncorpore")) +
-          " euros prélevée sur le poste « " +
-          texte(valeurs.posteIncorpore) +
-          " », par élévation de la valeur nominale des " +
-          mots.titres +
-          " existantes",
+          parts > 0 && nominale > 0
+            ? "par la création de " +
+              montant(parts) +
+              " " +
+              mots.titres +
+              " nouvelles d'une valeur nominale de " +
+              montant(nominale) +
+              " euros chacune, attribuées gratuitement aux " +
+              mots.associesPluriel +
+              " en proportion de leurs droits"
+            : "par élévation de la valeur nominale des " + mots.titres + " existantes",
       };
     }
   }

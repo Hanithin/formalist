@@ -406,3 +406,187 @@ describe("plusieurs cessions dans une même assemblée", () => {
     expect(signataires.map((s) => s.qualite_signataire)).toEqual(["Associé", "Associée"]);
   });
 });
+
+describe("les résolutions que l'audit a trouvées muettes ou fausses", () => {
+  const contexte = (codes: string[], valeurs: Record<string, string | number>) =>
+    ({
+      societe: SOCIETE,
+      codes,
+      valeurs,
+      assemblee: { date: "2026-09-10", associes: ASSOCIES },
+    }) as unknown as ContexteGabarit;
+
+  /*
+   * Les trois augmentations se reconnaissaient à leur préfixe - startsWith("r_augmentation")
+   * - et l'incorporation de réserves s'appelle « r_incorporation » : elle n'était donc
+   * jamais reconnue, sa résolution n'était jamais rendue, et l'acte sortait avec son
+   * ordre du jour annonçant l'augmentation puis, pour seule résolution, celle des
+   * pouvoirs. La décision qui augmente le capital ne figurait nulle part.
+   */
+  it("l'incorporation de réserves a sa résolution", () => {
+    const donnees = donneesDuPvAge(
+      contexte(["augmentation_capital"], {
+        capitalActuelAugm: 20000,
+        nouveauCapitalAugm: 35000,
+        modeAugmentation: "Incorporation de réserves",
+        posteIncorpore: "Réserves",
+        montantIncorpore: 15000,
+        nbPartsNouvelles: 1500,
+        valeurNominaleAugm: 10,
+        dateEffetAugm: "2026-10-01",
+      })
+    );
+
+    const resolution = donnees.r_incorporation as Record<string, string>;
+    expect(resolution).toBeDefined();
+    expect(resolution.ord).toBe("PREMIÈRE");
+    /* Et les pouvoirs suivent, au lieu d'ouvrir la marche. */
+    expect(donnees.ord).toBe("DEUXIÈME");
+  });
+
+  it("le poste incorporé porte son article", () => {
+    const poste = (valeur: string) =>
+      (
+        donneesDuPvAge(
+          contexte(["augmentation_capital"], {
+            capitalActuelAugm: 20000,
+            nouveauCapitalAugm: 35000,
+            modeAugmentation: "Incorporation de réserves",
+            posteIncorpore: valeur,
+            montantIncorpore: 15000,
+            dateEffetAugm: "2026-10-01",
+          })
+        ).r_incorporation as Record<string, string>
+      ).poste_incorpore;
+
+    expect(poste("Réserves")).toBe("les réserves");
+    expect(poste("Report à nouveau")).toBe("le report à nouveau");
+    expect(poste("Prime d'émission")).toBe("la prime d'émission");
+  });
+
+  /*
+   * La modalité affirmait une élévation de la valeur nominale quel que soit ce qui
+   * avait été saisi : un dossier qui créait quinze cents parts nouvelles voyait son
+   * acte décrire l'opération inverse.
+   */
+  it("l'incorporation dit ce qu'elle fait des titres", () => {
+    const modalite = (parts?: number) =>
+      (
+        donneesDuPvAge(
+          contexte(["augmentation_capital"], {
+            capitalActuelAugm: 20000,
+            nouveauCapitalAugm: 35000,
+            modeAugmentation: "Incorporation de réserves",
+            posteIncorpore: "Réserves",
+            montantIncorpore: 15000,
+            dateEffetAugm: "2026-10-01",
+            ...(parts ? { nbPartsNouvelles: parts, valeurNominaleAugm: 10 } : {}),
+          })
+        ).r_incorporation as Record<string, string>
+      ).modalite_incorporation;
+
+    expect(modalite(1500)).toContain("par la création de 1 500 parts sociales nouvelles");
+    expect(modalite(1500)).toContain("attribuées gratuitement");
+    expect(modalite()).toBe("par élévation de la valeur nominale des parts sociales existantes");
+  });
+
+  /*
+   * Une compensation de créances n'a pas de résolution à elle : c'est une souscription
+   * en numéraire libérée par compensation. L'acte l'annonçait « par apport en
+   * numéraire », dans son titre et sa première phrase, avant de la décrire comme une
+   * compensation deux lignes plus bas.
+   */
+  it("une compensation de créances s'annonce comme telle", () => {
+    const donnees = donneesDuPvAge(
+      contexte(["augmentation_capital"], {
+        capitalActuelAugm: 20000,
+        nouveauCapitalAugm: 32000,
+        modeAugmentation: "Compensation de créances",
+        titulaireCreance: "Monsieur Jean DUPONT",
+        montantCreance: 12000,
+        dateArreteCompte: "2026-08-31",
+        dateEffetAugm: "2026-10-01",
+      })
+    );
+
+    expect((donnees.r_augmentation_numeraire as Record<string, string>).nature_augmentation).toBe(
+      "par compensation de créances"
+    );
+    expect((donnees.ordre_du_jour as { libelle: string }[])[0].libelle).toContain(
+      "par compensation de créances"
+    );
+  });
+
+  /*
+   * Le formulaire demande le motif de la révocation ; l'acte ne le portait nulle part,
+   * et donnait quitus dans le même souffle - une décharge accordée à celui qu'on révoque
+   * pour un manquement se retourne contre l'assemblée qui l'a votée.
+   */
+  it("une révocation motivée énonce son motif, et ne donne pas quitus", () => {
+    const donnees = donneesDuPvAge(
+      contexte(["dirigeant"], {
+        typeChangementDirigeant: "Révocation",
+        fonctionDirigeant: "Gérant",
+        dateEffetDirigeant: "2026-10-01",
+        dirigeantRevoqueNom: "Monsieur Jean DUPONT",
+        motifRevocation: "Désaccord persistant sur la conduite de l'activité.",
+      })
+    );
+
+    const fin = (donnees.r_dirigeant as { fin_mandat: Record<string, string> }).fin_mandat;
+    expect(fin.mention_fin_mandat).toBe(
+      ", pour le motif suivant : désaccord persistant sur la conduite de l'activité."
+    );
+  });
+
+  it("une démission garde son quitus", () => {
+    const donnees = donneesDuPvAge(
+      contexte(["dirigeant"], {
+        typeChangementDirigeant: "Démission",
+        fonctionDirigeant: "Gérant",
+        dateEffetDirigeant: "2026-10-01",
+        dirigeantDemissionnaireNom: "Monsieur Jean DUPONT",
+      })
+    );
+
+    const fin = (donnees.r_dirigeant as { fin_mandat: Record<string, string> }).fin_mandat;
+    expect(fin.mention_fin_mandat).toContain("quitus entier et sans réserve");
+  });
+
+  /*
+   * Le sigle se saisit, l'annonce légale le publie, et le procès-verbal - qui cite
+   * pourtant la clause statutaire de la dénomination - ne le mentionnait pas.
+   */
+  it("le sigle rejoint la clause des statuts", () => {
+    const avec = donneesDuPvAge(
+      contexte(["denomination"], {
+        nouvelleDenomination: "ATELIER MERIDIEN",
+        sigle: "AM",
+        dateEffetDenomination: "2026-10-01",
+      })
+    );
+    const sans = donneesDuPvAge(
+      contexte(["denomination"], {
+        nouvelleDenomination: "ATELIER MERIDIEN",
+        dateEffetDenomination: "2026-10-01",
+      })
+    );
+
+    expect((avec.r_denomination as Record<string, string>).mention_sigle).toBe(", sigle AM");
+    expect((sans.r_denomination as Record<string, string>).mention_sigle).toBe("");
+  });
+
+  /* L'objet s'insère après deux points : « à l'étranger : La menuiserie » se lisait mal. */
+  it("l'objet social s'insère au fil de la phrase", () => {
+    const donnees = donneesDuPvAge(
+      contexte(["objet_social"], {
+        nouvelObjetSocial: "La menuiserie et l'agencement d'intérieur.",
+        dateEffetObjet: "2026-10-01",
+      })
+    );
+
+    expect((donnees.r_objet_social as Record<string, string>).nouvel_objet).toBe(
+      "la menuiserie et l'agencement d'intérieur"
+    );
+  });
+});
