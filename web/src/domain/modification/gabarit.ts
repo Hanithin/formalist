@@ -73,6 +73,19 @@ export interface AssociePresent {
   prenom?: string | null;
   nom?: string | null;
 
+  /*
+   * L'état civil, pour les actes qui identifient les parties.
+   *
+   * Une feuille de présence nomme et compte des parts : le nom suffit. Un acte de
+   * cession part à l'enregistrement au service des impôts, et il identifie chaque
+   * partie comme le ferait un notaire. Le formulaire ne demande ces quatre champs
+   * qu'aux associés qui cèdent - les autres restent nommés.
+   */
+  neLe?: string | null;
+  neA?: string | null;
+  nationalite?: string | null;
+  adresse?: string | null;
+
   denomination?: string | null;
   forme?: string | null;
   siren?: string | null;

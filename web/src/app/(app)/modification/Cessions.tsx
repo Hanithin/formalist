@@ -191,6 +191,9 @@ export function Cessions({
 
       {/* ---------- Les cessions ---------- */}
       {cessions.map((cession, rang) => {
+        const cedant = cession.cedant === null || cession.cedant === undefined ? null : cession.cedant;
+        const premiereApparition =
+          cedant !== null && cessions.findIndex((c) => c.cedant === cedant) === rang;
         const detenues = cession.cedant !== null ? (associes[cession.cedant]?.parts ?? 0) : 0;
         const unitaire = prixParPart(cession);
         const agrement = agrementDeDroit(forme, cession.vers);
@@ -235,6 +238,72 @@ export function Cessions({
                   <p role="alert">{refus("cession-" + rang + "-cedant")}</p>
                 )}
               </div>
+
+              {/*
+                L'état civil du cédant.
+
+                Il est demandé ici, et non à l'étape des associés : cette étape sert une
+                feuille de présence, où l'on nomme et l'on compte des parts. C'est l'acte
+                de cession qui a besoin de l'état civil, parce qu'il est présenté à
+                l'enregistrement au service des impôts et qu'il identifie chaque partie
+                comme le ferait un notaire - l'acquéreur le donnait déjà, plus bas.
+
+                Il s'écrit sur l'associé, non sur la cession : un associé qui cède deux
+                fois n'est interrogé qu'une fois, dans la première cession où il paraît.
+              */}
+              {cedant !== null && premiereApparition && associes[cedant]?.nature !== "morale" && (
+                <>
+                  <div className={styles.champ}>
+                    <label htmlFor={"associe-" + cedant + "-ne-le"}>Né(e) le</label>
+                    <ChampDate
+                      id={"associe-" + cedant + "-ne-le"}
+                      valeur={associes[cedant]?.neLe ?? ""}
+                      surChangement={(iso) => modifierAssocie(cedant, { neLe: iso })}
+                    />
+                    {refus("associe-" + cedant + "-ne-le") && (
+                      <p role="alert">{refus("associe-" + cedant + "-ne-le")}</p>
+                    )}
+                  </div>
+
+                  <div className={styles.champ}>
+                    <label htmlFor={"associe-" + cedant + "-ne-a"}>Né(e) à</label>
+                    <input
+                      id={"associe-" + cedant + "-ne-a"}
+                      placeholder="Lyon (Rhône)"
+                      value={associes[cedant]?.neA ?? ""}
+                      onChange={(e) => modifierAssocie(cedant, { neA: e.target.value })}
+                    />
+                    {refus("associe-" + cedant + "-ne-a") && (
+                      <p role="alert">{refus("associe-" + cedant + "-ne-a")}</p>
+                    )}
+                  </div>
+
+                  <div className={styles.champ}>
+                    <label htmlFor={"associe-" + cedant + "-nationalite"}>Nationalité</label>
+                    <input
+                      id={"associe-" + cedant + "-nationalite"}
+                      placeholder="Française"
+                      value={associes[cedant]?.nationalite ?? ""}
+                      onChange={(e) => modifierAssocie(cedant, { nationalite: e.target.value })}
+                    />
+                    {refus("associe-" + cedant + "-nationalite") && (
+                      <p role="alert">{refus("associe-" + cedant + "-nationalite")}</p>
+                    )}
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                    <label htmlFor={"associe-" + cedant + "-adresse"}>Adresse personnelle</label>
+                    <AdresseUneLigne
+                      id={"associe-" + cedant + "-adresse"}
+                      valeur={associes[cedant]?.adresse ?? ""}
+                      surChangement={(adresse) => modifierAssocie(cedant, { adresse })}
+                    />
+                    {refus("associe-" + cedant + "-adresse") && (
+                      <p role="alert">{refus("associe-" + cedant + "-adresse")}</p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className={styles.champ}>
                 <label htmlFor={"cession-parts-" + rang}>Parts cédées</label>

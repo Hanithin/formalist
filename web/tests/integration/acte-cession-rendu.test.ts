@@ -45,7 +45,17 @@ const SOCIETE = {
 };
 
 const ASSOCIES = [
-  { nature: "physique", civilite: "Monsieur", prenom: "Paul", nom: "MERCIER", parts: 500 },
+  {
+    nature: "physique",
+    civilite: "Monsieur",
+    prenom: "Paul",
+    nom: "MERCIER",
+    parts: 500,
+    neLe: "1972-06-18",
+    neA: "Nantes (Loire-Atlantique)",
+    nationalite: "Française",
+    adresse: "7 rue Sainte-Catherine, 69001 Lyon",
+  },
   {
     nature: "morale",
     denomination: "MERCIER FRERES",
@@ -56,7 +66,17 @@ const ASSOCIES = [
     representant: "Madame Claire MERCIER",
     parts: 300,
   },
-  { nature: "physique", civilite: "Madame", prenom: "Anne", nom: "ROUSSEL", parts: 200 },
+  {
+    nature: "physique",
+    civilite: "Madame",
+    prenom: "Anne",
+    nom: "ROUSSEL",
+    parts: 200,
+    neLe: "1980-11-02",
+    neA: "Grenoble (Isère)",
+    nationalite: "Française",
+    adresse: "14 cours Gambetta, 69007 Lyon",
+  },
 ];
 
 function contexte(
@@ -296,7 +316,16 @@ describe("l'identité des parties", () => {
   it("fait intervenir les associés qui ne sont ni cédants ni acquéreurs", () => {
     const texte = rendre(VERS_UN_TIERS);
     expect(texte).toContain("Et, intervenant aux présentes :");
-    expect(texte).toContain("Madame Anne ROUSSEL, en sa qualité d'autre actionnaire");
+    /*
+     * L'intervenant est identifié comme les autres parties.
+     *
+     * Il donne son agrément dans l'acte : il y est partie, et un acte présenté à
+     * l'enregistrement ne connaît pas deux manières de nommer les gens.
+     */
+    expect(texte).toContain(
+      "Madame Anne ROUSSEL, née le 2 novembre 1980, à Grenoble (Isère), de nationalité " +
+        "française, demeurant 14 cours Gambetta, 69007 Lyon, en sa qualité d'autre actionnaire"
+    );
     // Deux associés restent en dehors de la cession : le pluriel les désigne.
     expect(texte).toContain("les Associés Intervenants");
   });
@@ -471,5 +500,76 @@ describe("plusieurs cédants dans le même acte", () => {
   it("le prix se verse aux cédants", () => {
     expect(rendre(troisCedants)).toContain("par virement bancaire aux Cédants");
     expect(rendre([troisCedants[0]])).toContain("par virement bancaire au Cédant");
+  });
+});
+
+describe("l'identité des parties", () => {
+  /*
+   * Le cédant se lisait « Monsieur Paul MERCIER », rien de plus, pendant que
+   * l'acquéreur donnait ses date et lieu de naissance, sa nationalité et son domicile.
+   * Deux registres dans le même paragraphe, dans un acte qui part au service des
+   * impôts : l'état civil du cédant vient de l'associé, il est demandé à l'étape des
+   * cessions, et il s'imprime là où l'acte nomme les parties.
+   */
+  it("nomme le cédant aussi complètement que l'acquéreur", () => {
+    const texte = rendre(VERS_UN_TIERS);
+    expect(texte).toContain(
+      "Monsieur Paul MERCIER, né le 18 juin 1972, à Nantes (Loire-Atlantique), de " +
+        "nationalité française, demeurant 7 rue Sainte-Catherine, 69001 Lyon"
+    );
+  });
+
+  it("accorde le participe avec la civilité", () => {
+    /* « Madame Anne ROUSSEL, né le » se lisait dans l'acte des trois cédants. */
+    const texte = rendre([{ ...VERS_UN_TIERS[0], cedant: 2, parts: 200 }]);
+    expect(texte).toContain("Madame Anne ROUSSEL, née le 2 novembre 1980");
+    expect(texte).not.toContain("Madame Anne ROUSSEL, né le");
+  });
+
+  it("laisse une société se désigner par son immatriculation", () => {
+    /* Une personne morale portait déjà son identité complète : rien ne change. */
+    const texte = rendre([{ ...VERS_UN_TIERS[0], cedant: 1, parts: 300 }]);
+    expect(texte).toContain(
+      "la société MERCIER FRERES, société à responsabilité limitée au capital de 8 000 euros"
+    );
+  });
+
+  it("réclame l'état civil d'un cédant qui n'en a pas", () => {
+    /*
+     * Le manque se répare à la case, non au moment de la relecture : chaque champ
+     * absent porte son propre message, sous le champ qui l'attend.
+     */
+    const sansEtatCivil = {
+      ...contexte(VERS_UN_TIERS),
+      assemblee: {
+        date: "2026-09-15",
+        totalParts: 1000,
+        associes: [{ nature: "physique", civilite: "Monsieur", prenom: "Paul", nom: "MERCIER", parts: 500 }],
+      },
+    } as unknown as ContexteGabarit;
+
+    expect(verifierLActeDeCession(sansEtatCivil).map((a) => a.champ)).toEqual([
+      "associe-0-ne-le",
+      "associe-0-ne-a",
+      "associe-0-nationalite",
+      "associe-0-adresse",
+    ]);
+    expect(verifierLActeDeCession(sansEtatCivil)[0].message).toBe(
+      "Indiquez la date de naissance de Paul MERCIER : l'acte identifie chaque partie."
+    );
+  });
+
+  it("ne réclame rien deux fois au même cédant", () => {
+    /* Céder deux fois ne fait pas deux personnes : un seul jeu de messages. */
+    const deuxFois = {
+      ...contexte([VERS_UN_TIERS[0], { ...VERS_UN_TIERS[0], parts: 100, nom: "HOLDING SUD" }]),
+      assemblee: {
+        date: "2026-09-15",
+        totalParts: 1000,
+        associes: [{ nature: "physique", civilite: "Monsieur", prenom: "Paul", nom: "MERCIER", parts: 500 }],
+      },
+    } as unknown as ContexteGabarit;
+
+    expect(verifierLActeDeCession(deuxFois).filter((a) => a.champ.startsWith("associe-"))).toHaveLength(4);
   });
 });

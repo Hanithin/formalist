@@ -133,6 +133,12 @@ interface Associe {
   prenom?: string | null;
   nom?: string | null;
 
+  /* L'état civil, demandé aux seuls associés qui cèdent : l'acte les identifie. */
+  neLe?: string | null;
+  neA?: string | null;
+  nationalite?: string | null;
+  adresse?: string | null;
+
   denomination?: string | null;
   forme?: string | null;
   siren?: string | null;

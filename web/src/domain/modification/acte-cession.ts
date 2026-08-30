@@ -164,7 +164,28 @@ function identificationDeLAssocie(
     return morceaux.join(", ");
   }
 
-  return [texte(a.civilite), texte(a.prenom), texte(a.nom)].filter(Boolean).join(" ");
+  /*
+   * Une personne physique s'identifie comme dans le reste de l'acte.
+   *
+   * L'acquéreur, lui, portait déjà son état civil : le formulaire le lui demandait
+   * parce qu'il vient du dehors. Le cédant, associé déjà présent, n'était connu que
+   * par son nom - l'étape des associés avait été écrite pour une feuille de présence.
+   * Les deux parties se lisaient alors dans deux registres, dans le même paragraphe.
+   *
+   * Ce qui manque disparaît de la phrase plutôt que d'y laisser un blanc : un acte
+   * ancien, saisi avant que le formulaire ne demande ces champs, se relit encore.
+   */
+  const adresse = adresseLisible(texte(a.adresse));
+  const madame = /^(mme|madame)$/i.test(texte(a.civilite).trim());
+  return [
+    [texte(a.civilite), texte(a.prenom), texte(a.nom)].filter(Boolean).join(" "),
+    texte(a.neLe) ? (madame ? "née le " : "né le ") + dateEnFrancais(texte(a.neLe)) : "",
+    texte(a.neA) ? "à " + texte(a.neA) : "",
+    texte(a.nationalite) ? "de nationalité " + texte(a.nationalite).toLowerCase() : "",
+    adresse && adresse !== "-" ? "demeurant " + adresse : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
 }
 
 /* ------------------------------------------------------------- Le groupement */
@@ -271,6 +292,57 @@ export function verifierLActeDeCession(contexte: ContexteGabarit): AlerteDeCessi
     }
   }
 
+  /*
+   * L'état civil des cédants personnes physiques.
+   *
+   * L'acquéreur donnait le sien depuis toujours ; le cédant, associé déjà présent,
+   * n'était connu que par son nom, et l'acte les faisait figurer côte à côte dans deux
+   * registres. Un acte de cession se présente à l'enregistrement au service des impôts :
+   * il identifie chaque partie de la même manière, ou il n'identifie personne.
+   *
+   * Un cédant qui cède deux fois n'est signalé qu'une fois : c'est une personne, pas
+   * une ligne du tableau.
+   */
+  const associesDuContexte = assemblee.associes ?? [];
+  const cedantsVus = new Set<number>();
+  for (const cession of cessions) {
+    const rangDuCedant = cession.cedant;
+    if (rangDuCedant === null || rangDuCedant === undefined) continue;
+    if (cedantsVus.has(rangDuCedant)) continue;
+    cedantsVus.add(rangDuCedant);
+
+    const cedant = associesDuContexte[rangDuCedant];
+    if (!cedant || cedant.nature === "morale") continue;
+
+    const nom = nomDeLAssocie(cedant, rangDuCedant);
+    const manques: { cle: string; quoi: string }[] = [
+      { cle: "ne-le", quoi: "la date de naissance" },
+      { cle: "ne-a", quoi: "le lieu de naissance" },
+      { cle: "nationalite", quoi: "la nationalité" },
+      { cle: "adresse", quoi: "l'adresse" },
+    ];
+    const valeursDuCedant: Record<string, string> = {
+      "ne-le": texte(cedant.neLe),
+      "ne-a": texte(cedant.neA),
+      nationalite: texte(cedant.nationalite),
+      adresse: texte(cedant.adresse),
+    };
+
+    for (const manque of manques) {
+      if (valeursDuCedant[manque.cle]) continue;
+      alertes.push({
+        gravite: "bloquant",
+        champ: "associe-" + rangDuCedant + "-" + manque.cle,
+        message:
+        "Indiquez " +
+        manque.quoi +
+        (/^[aeiouyéèêh]/i.test(nom) ? " d'" : " de ") +
+        nom +
+        " : l'acte identifie chaque partie.",
+      });
+    }
+  }
+
   return alertes;
 }
 
@@ -326,12 +398,23 @@ export function donneesDeLActeDeCession(
     (partie?.civilite ?? "").trim() === "Madame";
   const accorde = (mot: string, auFeminin: boolean) => mot + (auFeminin ? "e" : "");
 
-  const cedants = acte.cessions.map((cession) => ({
-    identification: identificationDeLAssocie(associes[cession.cedant ?? -1] ?? {}),
-    nom: nomDeLAssocie(associes[cession.cedant ?? -1], cession.cedant ?? 0),
-    titres: cession.parts ?? 0,
-    origine: phraseDeLOrigine(cession.origine),
-  }));
+  const cedants = acte.cessions.map((cession) => {
+    const identification = identificationDeLAssocie(associes[cession.cedant ?? -1] ?? {});
+    return {
+      identification,
+      nom: nomDeLAssocie(associes[cession.cedant ?? -1], cession.cedant ?? 0),
+      /*
+       * Le nom au bas de la page de signature.
+       *
+       * On signe sous le nom par lequel l'acte s'est ouvert, sans l'état civil qui le
+       * suit : « Monsieur Jean DUPONT », et non « Jean DUPONT » sous la plume d'un acte
+       * qui vient d'écrire « Madame Sophie ROUX » deux lignes plus bas.
+       */
+      nomSignature: identification.split(",")[0],
+      titres: cession.parts ?? 0,
+      origine: phraseDeLOrigine(cession.origine),
+    };
+  });
 
   /* Tiennent-ils tous leurs parts de la même façon ? */
   const originesConcordantes = new Set(cedants.map((cedant) => cedant.origine)).size <= 1;
@@ -582,7 +665,7 @@ export function donneesDeLActeDeCession(
 
     signataires: [
       ...cedants.map((cedant) => ({
-        nom_signataire: cedant.nom,
+        nom_signataire: cedant.nomSignature,
         qualite_signataire: plusieurs ? "Cédant" : "Le Cédant",
       })),
       { nom_signataire: acte.acquereur, qualite_signataire: "L'Acquéreur" },
