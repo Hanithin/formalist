@@ -564,10 +564,36 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
     (d) => d.identifiant !== "attestation" || attestationRequise(etat.forme)
   );
 
+  /*
+   * Ce que chaque étape sait d'elle-même, avant qu'on regarde l'ordre.
+   *
+   * Chaque règle ne lit que son propre fait : l'attestation regarde le document
+   * déposé, le Kbis regarde le Kbis. Prises une à une, elles ne peuvent pas se
+   * contredire - c'est ensemble qu'elles le font.
+   */
+  const declarees = retenues.map((d) => d.faite(etat));
+
+  /*
+   * Une étape faite emporte celles qui la précèdent.
+   *
+   * Un dossier immatriculé affichait « Dépôt au greffe : terminé », « Kbis délivré :
+   * terminé », et au-dessus « Attestation de dépôt de capital : à vous de jouer », avec
+   * le bouton pour la déposer. Le greffe n'immatricule pas sans elle : si le Kbis est
+   * là, l'attestation a existé, l'annonce a paru, et le dossier a été déposé. Le rail
+   * réclamait donc au client une pièce pour une société déjà immatriculée, et son
+   * avancement s'arrêtait à 67 % sur un dossier clos.
+   *
+   * Ce n'est pas la même règle que celle du paragraphe suivant, c'en est la moitié qui
+   * manquait : « faite là où elle est » disait qu'une étape tardive n'attend pas les
+   * précédentes ; il fallait aussi qu'une étape tardive faite achève ce qui la précède.
+   * Les deux ensemble, le rail ne peut plus se contredire.
+   */
+  const derniereFaite = declarees.lastIndexOf(true);
+
   let enCoursTrouvee = false;
 
-  return retenues.map((d) => {
-    const faite = d.faite(etat);
+  return retenues.map((d, rang) => {
+    const faite = declarees[rang] || rang < derniereFaite;
     let etatEtape: EtatEtape;
 
     /*

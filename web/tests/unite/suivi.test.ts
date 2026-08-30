@@ -127,15 +127,52 @@ describe("les étapes du suivi", () => {
     ).toBe("attestation");
   });
 
-  it("une étape remplie par avance ne fait pas sauter la file", () => {
+  it("un Kbis au dossier emporte tout ce qui menait à lui", () => {
     /*
-     * Un Kbis déposé avant le dépôt au greffe ne signale pas un dossier plus avancé :
-     * il signale une erreur de saisie, qu'il vaut mieux voir. C'est la condition de
-     * l'étape qui le dit, non l'ordre du rail.
+     * Le rail y voyait d'abord une erreur de saisie et gardait la file : « Vérification
+     * par un avocat » restait en cours sous un « Dépôt au greffe » déjà fait. Deux
+     * lignes qui se contredisent, et un client à qui l'on réclamait des pièces pour une
+     * société immatriculée.
+     *
+     * Le Kbis est la preuve la plus forte du dossier : le greffe ne le délivre pas sans
+     * l'attestation de capital, sans la parution, sans le dépôt. S'il est là, ce qui y
+     * menait a eu lieu - et si la donnée est fausse, c'est là où on l'écrit qu'il faut
+     * la reprendre, non en désaccordant le rail que lit le client.
+     *
+     * L'étape du Kbis, elle, garde son exigence : elle ne se dit faite que corroborée
+     * par la sous-phase. C'est elle qui reste à confirmer.
      */
     const etapes = etapesDuSuivi(etat({ status: "en_attente_validation", aLeKbis: true }));
-    expect(etapes.find((e) => e.identifiant === "kbis")?.etat).toBe("a_venir");
-    expect(etapes.find((e) => e.etat === "en_cours")?.identifiant).toBe("verification");
+    expect(etapes.find((e) => e.identifiant === "greffe")?.etat).toBe("faite");
+    expect(etapes.find((e) => e.identifiant === "verification")?.etat).toBe("faite");
+    expect(etapes.find((e) => e.etat === "en_cours")?.identifiant).toBe("kbis");
+  });
+
+  it("aucune étape n'attend derrière une étape faite", () => {
+    /*
+     * L'invariant du rail, tenu sur les cinq parcours : c'est la contradiction qu'un
+     * client a relevée sur son écran - « Dépôt au greffe : terminé », « Kbis délivré :
+     * terminé », et au-dessus « Attestation de dépôt de capital : à vous de jouer »,
+     * avec le bouton pour la déposer.
+     */
+    const types = [null, "modification", "comptes", "fermeture", "cessation"];
+    const etats = [
+      { status: "terminee" },
+      { status: "terminee", sousPhase: "5e", aLeKbis: true },
+      { status: "valide", sousPhase: "5d", aLAttestationDeCapital: true },
+      { status: "en_attente_validation", aLeKbis: true },
+    ];
+
+    for (const type of types) {
+      for (const cas of etats) {
+        const etapes = etapesDuSuivi(etat({ type, avocatAssigne: true, paye: true, ...cas }));
+        const dernierefaite = etapes.map((e) => e.etat).lastIndexOf("faite");
+        const enRetard = etapes
+          .slice(0, Math.max(dernierefaite, 0))
+          .filter((e) => e.etat !== "faite");
+        expect(enRetard.map((e) => e.identifiant), `${type} · ${JSON.stringify(cas)}`).toEqual([]);
+      }
+    }
   });
 
   /*
@@ -146,8 +183,12 @@ describe("les étapes du suivi", () => {
    * parution annonçait « Dépôt au greffe : à venir » et « Kbis délivré : à venir » au
    * client qui avait son Kbis dans ses documents. La barre s'arrêtait à 50 % sur un
    * dossier clos.
+   *
+   * L'étape dit la publication, non le classement de son justificatif : le greffe
+   * n'immatricule pas sans la parution, et une société immatriculée a donc paru. Ce
+   * qui manque au cabinet - joindre l'attestation - se suit sur son écran à lui.
    */
-  it("une étape faite se dit faite, même si une précédente manque", () => {
+  it("une étape faite achève celles qui la précèdent", () => {
     const etapes = etapesDuSuivi(
       etat({
         status: "terminee",
@@ -160,10 +201,9 @@ describe("les étapes du suivi", () => {
 
     expect(etapes.find((e) => e.identifiant === "greffe")?.etat).toBe("faite");
     expect(etapes.find((e) => e.identifiant === "kbis")?.etat).toBe("faite");
-    /* Une seule reste en cours : celle qui manque vraiment. */
-    expect(etapes.filter((e) => e.etat === "en_cours").map((e) => e.identifiant)).toEqual([
-      "annonce",
-    ]);
+    expect(etapes.find((e) => e.identifiant === "annonce")?.etat).toBe("faite");
+    /* Plus rien n'est en cours : le dossier est clos. */
+    expect(etapes.filter((e) => e.etat === "en_cours")).toEqual([]);
   });
 
   it("l'avancement compte tout ce qui est fait", () => {
@@ -175,8 +215,8 @@ describe("les étapes du suivi", () => {
       aLeKbis: true,
     });
 
-    // Cinq étapes sur six : le dossier est clos, seule la parution manque au dossier.
-    expect(avancementDuSuivi(clos)).toBe(83);
+    /* Un dossier clos est à cent pour cent : c'est ce que « clos » veut dire. */
+    expect(avancementDuSuivi(clos)).toBe(100);
   });
 
   it("les sous-phases se comparent, elles ne s'égalent pas", () => {
