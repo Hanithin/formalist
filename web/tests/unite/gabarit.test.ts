@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nombreEnFrancais, dateEnFrancais } from "@/domain/formalite/lettres";
+import { nombreEnFrancais, dateEnFrancais, dateDeTitre } from "@/domain/formalite/lettres";
 import {
   donneesDeGabarit,
   identitePhysique,
@@ -670,5 +670,22 @@ describe("ce qu'un acte donne à lire", () => {
 
     expect(donnees.ASSOC_1_SOCIETE_ADRESSE).toBe("8 quai de la Gare, 75013 Paris");
     expect(donnees.ASSOC_1_SOCIETE_SIREN).toBe("842 019 336");
+  });
+});
+
+describe("la date d'un titre", () => {
+  /*
+   * Les en-têtes d'actes sont en capitales, et la date y restait en bas-de-casse -
+   * « EN DATE DU 19 novembre 2026 » sous « RAPPORT DU LIQUIDATEUR ». Le procès-verbal
+   * de modification la met en petites capitales depuis toujours ; les autres familles
+   * de gabarits ne suivaient pas.
+   */
+  it("s'écrit comme le titre", () => {
+    expect(dateDeTitre("2026-11-19")).toBe("19 NOVEMBRE 2026");
+    expect(dateDeTitre("2026-05-01")).toBe("1ER MAI 2026");
+  });
+
+  it("suit la date ordinaire quand il n'y en a pas", () => {
+    expect(dateDeTitre(null)).toBe(dateEnFrancais(null).toUpperCase());
   });
 });

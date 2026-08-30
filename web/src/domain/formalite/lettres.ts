@@ -152,3 +152,15 @@ export function sirenLisible(siren: string | null | undefined): string {
   if (chiffres.length !== 9) return (siren ?? "").trim();
   return chiffres.slice(0, 3) + " " + chiffres.slice(3, 6) + " " + chiffres.slice(6);
 }
+
+/**
+ * « 19 NOVEMBRE 2026 » : la date d'un titre s'écrit comme le titre.
+ *
+ * Les en-têtes d'actes sont en capitales, et la date y restait en bas-de-casse -
+ * « EN DATE DU 19 novembre 2026 » sous « RAPPORT DU LIQUIDATEUR ». Le procès-verbal
+ * de modification la met en petites capitales depuis toujours ; les autres familles
+ * de gabarits ne suivaient pas.
+ */
+export function dateDeTitre(iso: string | null | undefined): string {
+  return dateEnFrancais(iso).toUpperCase();
+}

@@ -12,7 +12,12 @@ import { natureDeLaForme } from "@/domain/formalite/formes";
  * ne dit jamais quel cas. Ici, la phrase sort juste ou ne sort pas.
  */
 
-import { dateEnFrancais, nombreEnFrancais, sirenLisible } from "@/domain/formalite/lettres";
+import {
+  dateEnFrancais,
+  dateDeTitre,
+  nombreEnFrancais,
+  sirenLisible,
+} from "@/domain/formalite/lettres";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "@/domain/modification/annonce";
 import { avecElision } from "@/domain/modification/gabarit";
 import { decisionDeDissolution } from "./decision";
@@ -266,6 +271,7 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
 
     /* ------------------------------------------------------ La dissolution */
     DATE_DISSOLUTION_FR: dateEnFrancais(texte(valeurs.dateDissolution)),
+    DATE_DISSOLUTION_TITRE: dateDeTitre(texte(valeurs.dateDissolution)),
     ANNEE_LETTRES: anneeEnLettres(texte(valeurs.dateDissolution)),
     HEURE_DECISION: ou(texte(valeurs.heureDecision), "11 heures"),
     LIEU_DECISION: ou(texte(valeurs.lieuDecision), "au siège social"),
@@ -288,9 +294,11 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
 
     /* --------------------------------------------------------- La clôture */
     DATE_CLOTURE_FR: dateEnFrancais(texte(valeurs.dateCloture)),
+    DATE_CLOTURE_TITRE: dateDeTitre(texte(valeurs.dateCloture)),
     ANNEE_CLOTURE_LETTRES: anneeEnLettres(texte(valeurs.dateCloture)),
     JOUR_CLOTURE_LETTRES: jourEnLettres(texte(valeurs.dateCloture)),
     DATE_ARRETE_FR: dateEnFrancais(texte(valeurs.dateArreteDesComptes)),
+    DATE_ARRETE_TITRE: dateDeTitre(texte(valeurs.dateArreteDesComptes)),
     LIEU_CLOTURE: ou(texte(valeurs.lieuCloture), "au siège de la liquidation"),
 
     /* ---------------------------------------------- Les comptes définitifs */

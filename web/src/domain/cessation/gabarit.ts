@@ -8,7 +8,7 @@
  */
 
 import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
-import { dateEnFrancais, sirenLisible } from "@/domain/formalite/lettres";
+import { dateEnFrancais, dateDeTitre, sirenLisible } from "@/domain/formalite/lettres";
 import { echeancesDe, type Nature, type Periodicite } from "./regles";
 
 const TIRET = "-";
@@ -105,6 +105,7 @@ export function donneesDeLaCessation(contexte: ContexteCessation): Record<string
     IS_TEMPORAIRE: contexte.nature === "temporaire",
     NATURE_MOT: contexte.nature === "temporaire" ? "la suspension" : "la cessation définitive",
     DATE_CESSATION_FR: dateEnFrancais(texte(valeurs.dateCessation)),
+    DATE_CESSATION_TITRE: dateDeTitre(texte(valeurs.dateCessation)),
     MOTIF: MOTIFS[texte(valeurs.motif)] ?? "des circonstances personnelles",
     PERIODICITE: ou(texte(valeurs.periodicite)).toLowerCase(),
     IS_TVA: texte(valeurs.assujettiTva) === "Oui",

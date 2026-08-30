@@ -382,7 +382,11 @@ test("en clôture, ce qui manque se dit sur l'écran qui le saisit", async ({ pa
     page.getByRole("heading", { name: "Les comptes de liquidation", level: 2 })
   ).toBeVisible();
   await expect(
-    page.getByText("Date de la décision de clôture est requis", { exact: true })
+    /*
+     * « … est requis » collait un adjectif à un libellé sans l'accorder : la moitié
+     * des champs sont féminins. « À renseigner » ne s'accorde avec rien.
+     */
+    page.getByText("Date de la décision de clôture : à renseigner", { exact: true })
   ).toBeVisible();
 
   // Rempli, l'écran laisse passer.
