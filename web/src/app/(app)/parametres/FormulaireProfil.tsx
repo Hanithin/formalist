@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { soumettreSansEffacer } from "@/components/formulaire/soumission";
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -39,7 +40,7 @@ export function FormulaireProfil({ prenom, nom, email }: Props) {
   }
 
   return (
-    <form action={soumettre} noValidate>
+    <form onSubmit={soumettreSansEffacer(soumettre)} noValidate>
       <label htmlFor="prenom">Prénom</label>
       <input id="prenom" name="prenom" defaultValue={prenom} autoComplete="given-name" required />
 

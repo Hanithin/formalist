@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { soumettreSansEffacer } from "@/components/formulaire/soumission";
 import { useRouter } from "next/navigation";
 import styles from "../../Authentification.module.css";
 
@@ -45,7 +46,7 @@ export function FormulaireNouveau({ jeton }: { jeton: string }) {
   }
 
   return (
-    <form action={soumettre} noValidate>
+    <form onSubmit={soumettreSansEffacer(soumettre)} noValidate>
       <div className={styles.formGroup}>
         <label htmlFor="motDePasse">Nouveau mot de passe</label>
         <input

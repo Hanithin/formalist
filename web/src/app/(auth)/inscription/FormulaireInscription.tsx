@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { soumettreSansEffacer } from "@/components/formulaire/soumission";
 import styles from "../Authentification.module.css";
 
 export function FormulaireInscription() {
@@ -37,7 +38,7 @@ export function FormulaireInscription() {
   const erreur = (champ: string) => erreurs[champ]?.[0];
 
   return (
-    <form action={soumettre} noValidate>
+    <form onSubmit={soumettreSansEffacer(soumettre)} noValidate>
       <div className={styles.formGroup}>
         <label htmlFor="prenom">Prénom</label>
         <input id="prenom" name="prenom" autoComplete="given-name" required />

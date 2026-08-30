@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { soumettreSansEffacer } from "@/components/formulaire/soumission";
 import styles from "../Authentification.module.css";
 
 /**
@@ -43,7 +44,7 @@ export function FormulaireDemande() {
   }
 
   return (
-    <form action={soumettre} noValidate>
+    <form onSubmit={soumettreSansEffacer(soumettre)} noValidate>
       <div className={styles.formGroup}>
         <label htmlFor="email">Email</label>
         <input
