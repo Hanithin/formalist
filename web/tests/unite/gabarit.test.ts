@@ -2,8 +2,12 @@ import { describe, it, expect } from "vitest";
 import { nombreEnFrancais, dateEnFrancais } from "@/domain/formalite/lettres";
 import {
   donneesDeGabarit,
+  identitePhysique,
   nomDeJeuneFille,
   personneDuDirigeant,
+  sirenDe,
+  situationAccordee,
+  societeDesignee,
 } from "@/domain/formalite/gabarit";
 import { apportsDe, valeurNominale } from "@/domain/formalite/capital";
 import type { Brouillon } from "@/domain/formalite/parcours";
@@ -223,7 +227,8 @@ describe("les champs remis aux gabarits Word", () => {
   });
 
   it("la situation matrimoniale tombe au milieu d'une phrase, donc en minuscules", () => {
-    expect(donnees.SITUATION_MATRIMONIALE_1).toBe("marié(e)");
+    // Et accordée : l'associée n° 1 de ce brouillon est une femme.
+    expect(donnees.SITUATION_MATRIMONIALE_1).toBe("mariée");
   });
 
   it("un champ vide s'écrit « - » : dans un acte, un blanc se lit comme un oubli", () => {
@@ -409,4 +414,150 @@ describe("l'adresse du siège dans les actes", () => {
     );
     expect(donneesDeGabarit({}).ADRESSE_SIEGE).toBe("-");
   });
+});
+
+describe("l'identité, en une phrase", () => {
+  /*
+   * « marié(e) » vient d'un menu déroulant, où les deux genres tiennent dans la même
+   * ligne. Dans un acte qui nomme déjà quelqu'un, la parenthèse est une faute.
+   */
+  it("la situation matrimoniale s'accorde à la civilité", () => {
+    expect(situationAccordee({ civilite: "Madame", situationMatrimoniale: "Marié(e)" })).toBe(
+      "mariée"
+    );
+    expect(situationAccordee({ civilite: "Monsieur", situationMatrimoniale: "Marié(e)" })).toBe(
+      "marié"
+    );
+    expect(situationAccordee({ civilite: "Madame", situationMatrimoniale: "Pacsé(e)" })).toBe(
+      "pacsée"
+    );
+    expect(situationAccordee({})).toBe("célibataire");
+  });
+
+  it("le lieu de naissance porte son code postal entre parenthèses", () => {
+    const phrase = identitePhysique({
+      civilite: "Madame",
+      prenom: "Claire",
+      nom: "MARCHAND",
+      dateDeNaissance: "1988-04-12",
+      villeDeNaissance: "Lyon",
+      codePostalDeNaissance: "69003",
+      situationMatrimoniale: "Célibataire",
+      adresse: "9 rue Oberkampf",
+    });
+
+    expect(phrase).toBe(
+      "Madame Claire MARCHAND, née le 12 avril 1988 à Lyon (69003), " +
+        "de nationalité Française, célibataire, demeurant 9 rue Oberkampf"
+    );
+  });
+
+  /* Une société n'a ni naissance ni situation : sa désignation dit ce qui la nomme. */
+  it("une société est désignée par son immatriculation et son représentant", () => {
+    expect(
+      societeDesignee({
+        denomination: "HOLDING MERIDIEN",
+        forme: "SARL",
+        capital: 50000,
+        adresse: "8 quai de la Gare",
+        codePostal: "75013",
+        ville: "Paris",
+        numeroRcs: "842019336",
+        villeImmatriculation: "Paris",
+        representant: { civilite: "Monsieur", prenom: "Marc", nom: "BERTIN" },
+      })
+    ).toBe(
+      "HOLDING MERIDIEN, SARL au capital de 50 000 euros, dont le siège social est " +
+        "8 quai de la Gare 75013 Paris, immatriculée au registre du commerce et des " +
+        "sociétés de Paris sous le numéro 842019336, représentée par Monsieur Marc BERTIN"
+    );
+  });
+
+  /* Le SIREN identifie la société ; le SIRET, un établissement. */
+  it("le SIREN se prend au registre, ou aux neuf premiers chiffres du SIRET", () => {
+    expect(sirenDe({ numeroRcs: "842019336", siret: "84201933600018" })).toBe("842019336");
+    expect(sirenDe({ siret: "84201933600018" })).toBe("842019336");
+    expect(sirenDe({})).toBe("");
+  });
+});
+
+/*
+ * Le menu déroulant écrit « Marié(e) » ; l'acte nomme une personne, donc l'accorde.
+ * La faute était passée par trois chemins - le préfixe, le rang, la liste des
+ * souscripteurs - qui composaient chacun la phrase de leur côté.
+ */
+it("aucune variable de gabarit ne porte de parenthèse d'accord", () => {
+  const donnees = donneesDeGabarit(
+    {
+      forme: "SARL",
+      denomination: "LE CLOS",
+      associes: [
+        {
+          type: "physique",
+          parts: 60,
+          personne: {
+            civilite: "Monsieur",
+            prenom: "Thomas",
+            nom: "RENAUD",
+            situationMatrimoniale: "Marié(e)",
+          },
+        },
+        {
+          type: "physique",
+          parts: 40,
+          personne: {
+            civilite: "Madame",
+            prenom: "Camille",
+            nom: "DURAND",
+            situationMatrimoniale: "Marié(e)",
+          },
+        },
+      ],
+      partsTotales: 100,
+      capital: 1000,
+    } as Brouillon,
+    { maintenant: new Date("2026-08-30T10:00:00Z") }
+  );
+
+  const fautes = Object.entries(donnees).filter(
+    ([, valeur]) => typeof valeur === "string" && valeur.includes("(e)")
+  );
+  expect(fautes).toEqual([]);
+  expect(donnees.SITUATION_MATRIMONIALE_1).toBe("marié");
+  expect(donnees.SITUATION_MATRIMONIALE_2).toBe("mariée");
+});
+
+/*
+ * Les statuts nomment l'associé personne morale par les mêmes variables que le reste
+ * des actes ; elles écrivaient le SIRET et une rue sans commune.
+ */
+it("l'associé personne morale porte son SIREN et son siège entier", () => {
+  const donnees = donneesDeGabarit(
+    {
+      forme: "SARL",
+      denomination: "ATELIER DU CANAL",
+      associes: [
+        {
+          type: "morale",
+          parts: 100,
+          societe: {
+            denomination: "HOLDING MERIDIEN",
+            forme: "SARL",
+            capital: 50000,
+            adresse: "8 quai de la Gare",
+            codePostal: "75013",
+            ville: "Paris",
+            siret: "84201933600018",
+            villeImmatriculation: "Paris",
+          },
+        },
+      ],
+      partsTotales: 100,
+      capital: 20000,
+    } as Brouillon,
+    { maintenant: new Date("2026-08-30T10:00:00Z") }
+  );
+
+  expect(donnees.ASSOC_1_SOCIETE_SIREN).toBe("842019336");
+  expect(donnees.ASSOC_1_SOCIETE_ADRESSE).toBe("8 quai de la Gare 75013 Paris");
 });

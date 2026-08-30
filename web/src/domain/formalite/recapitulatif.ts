@@ -1,7 +1,6 @@
 import { nomComplet, nomDeLaPartie } from "./etat-civil";
 import { regle } from "./formes";
 import { personneDuDirigeant } from "./gabarit";
-import { offre } from "./offres";
 import { libellesDesAssocies, type Brouillon } from "./parcours";
 
 /**
@@ -30,8 +29,6 @@ export interface Recapitulatif {
   forme: string | null;
   denomination: string | null;
   lignes: LigneDuRecapitulatif[];
-  /** « Business · 345 € », une fois la formule choisie seulement. */
-  offre: string | null;
 }
 
 const MOIS = new Intl.DateTimeFormat("fr-FR", {
@@ -95,7 +92,6 @@ function capital(brouillon: Brouillon): string | null {
 
 export function recapitulatifDuBrouillon(brouillon: Brouillon): Recapitulatif {
   const forme = regle(brouillon.forme);
-  const formule = offre(brouillon.offre);
 
   const dirigeant = personneDuDirigeant(
     (brouillon.dirigeants ?? [])[0],
@@ -127,6 +123,5 @@ export function recapitulatifDuBrouillon(brouillon: Brouillon): Recapitulatif {
           : null,
       },
     ],
-    offre: formule ? formule.nom + " · " + formule.prix + " €" : null,
   };
 }

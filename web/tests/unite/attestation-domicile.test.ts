@@ -86,7 +86,15 @@ describe("ce que l'attestation porte du dossier", () => {
     expect(texte).toContain("ATELIER LAUGIER");
     expect(texte).toContain("Société par actions simplifiée au capital de 1 000 euros");
     expect(texte).toContain("12 rue Vauban");
-    expect(texte).toContain("Fait à Lyon");
+    /*
+     * La formule de clôture est la même sur tous les actes d'une création.
+     *
+     * Ils en portaient trois - « Le 30 août 2026. », « A Lyon, le 30/08/2026 », « Fait à
+     * Lyon, le 30/08/2026 » - et deux formats de date. C'est celle des statuts qui a été
+     * retenue partout.
+     */
+    expect(texte).toContain("à Lyon.");
+    expect(texte).toMatch(/Fait le \d+ \S+ \d{4} à Lyon\./);
   });
 
   it("vise l'article qui fonde la domiciliation au domicile", () => {

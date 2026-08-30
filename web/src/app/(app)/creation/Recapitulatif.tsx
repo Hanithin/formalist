@@ -44,14 +44,14 @@ export function Recapitulatif({
         ))}
       </dl>
 
-      {/* La formule n'est pas un attribut de la société : elle attend en pied, et ne
-          paraît qu'une fois choisie. */}
-      {recap.offre && (
-        <p className={styles.colonneOffre}>
-          <span>Formule</span>
-          {recap.offre}
-        </p>
-      )}
+      {/*
+        La formule a quitté la colonne.
+
+        Elle y attendait en pied, sous un filet - « Business · 345 € ». Ce n'est pas un
+        attribut de la société : c'est ce qu'on achète, et l'étape des offres le dit
+        déjà, tout comme le récapitulatif du règlement. La colonne récapitule le
+        dossier, non la commande.
+      */}
     </aside>
   );
 }

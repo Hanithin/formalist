@@ -29,7 +29,17 @@ const DOCUMENTS: Definition[] = [
   // Une société civile n'émet pas de titres souscrits : il n'y a pas de liste,
   // et aucun gabarit n'existe pour elle.
   { type: "liste-souscripteurs", titre: "Liste des souscripteurs", saufFormes: ["SCI"] },
-  { type: "declaration-non-condamnation", titre: "Déclaration de non-condamnation" },
+    /*
+   * Son nom entier.
+   *
+   * Les modèles des greffes s'intitulent « déclaration de non-condamnation et de
+   * filiation » : la filiation n'y est pas un supplément, c'est elle qui distingue le
+   * déclarant d'un homonyme, et le document la porte depuis toujours sans la nommer.
+   */
+  {
+    type: "declaration-non-condamnation",
+    titre: "Déclaration de non-condamnation et de filiation",
+  },
   { type: "attestation-domicile", titre: "Attestation de domiciliation" },
   { type: "pv-nomination", titre: "Procès-verbal de nomination", condition: "avec-dirigeant" },
   { type: "conjoint", titre: "Attestation du conjoint", condition: "conjoint-marie" },

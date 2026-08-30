@@ -85,8 +85,16 @@ describe("le rendu des gabarits", () => {
       expect(femme).toContain("fille de");
       expect(femme).not.toContain("Je soussigné,");
       expect(femme).not.toContain("fils de");
-      // Le « née » du nom de jeune fille de la mère ne dépend pas du déclarant.
-      expect(femme).toContain("née PETIT");
+
+      /*
+       * Le nom de la mère est son nom de jeune fille : il ne se répète plus.
+       *
+       * La phrase écrivait « et de Marie Petit née PETIT » - le nom de naissance était
+       * tiré du même champ, et le doublait donc toujours. Le formulaire demande
+       * maintenant le nom de jeune fille sous ce nom.
+       */
+      expect(femme).toContain("et de Marie Petit");
+      expect(femme).not.toContain("née PETIT");
     }
   );
 
@@ -159,3 +167,88 @@ describe("le rendu des gabarits", () => {
     expect(homme).not.toContain("La soussignée");
   });
 });
+
+it.each(["sasu", "sas", "sarl", "sci"])(
+  "la filiation de %s élide sa préposition devant une voyelle",
+  (forme) => {
+    /*
+     * « fils de Paul MARCHAND et de Anne BERGER » : le second « de » se lisait devant
+     * une voyelle, alors que le reste des actes élide partout.
+     */
+    const avecVoyelle = {
+      ...brouillon("Madame", 1000, 100),
+      associes: [
+        {
+          type: "physique" as const,
+          personne: {
+            civilite: "Madame" as const,
+            prenom: "Camille",
+            nom: "Durand",
+            dateDeNaissance: "1985-04-12",
+            nomDuPere: "Olivier Durand",
+            nomDeLaMere: "Anne PETIT",
+          },
+          parts: 100,
+        },
+      ],
+      dirigeants: [{ associe: 0 }],
+    };
+
+    const texte = texteDe(
+      genererDocument(forme + "-declaration-non-condamnation.docx", donneesDeGabarit(avecVoyelle))
+    );
+    expect(texte).toContain("fille d’Olivier Durand et d’Anne PETIT");
+  }
+);
+
+it.each(["sasu", "sas", "sarl", "sci"])(
+  "le procès-verbal de %s nomme une société sans lui inventer d'état civil",
+  (forme) => {
+    /*
+     * Un associé personne morale sortait à trous - « - -, né le - à - (-) (France), de
+     * nationalité Française, célibataire, demeurant - » - et, sur les gabarits de SARL
+     * et de SCI, il disparaissait même de la liste des présents : les deux branches de
+     * genre l'écartaient toutes les deux.
+     */
+    const avecHolding = {
+      forme: forme.toUpperCase(),
+      denomination: "ESSAI MORALE",
+      activite: "Conseil",
+      adresse: "4 rue de la Fontaine",
+      codePostal: "75010",
+      ville: "Paris",
+      capital: 20000,
+      partsTotales: 2000,
+      associes: [
+        {
+          type: "morale" as const,
+          societe: {
+            denomination: "HOLDING MERIDIEN",
+            forme: "SARL",
+            capital: 50000,
+            adresse: "8 quai de la Gare",
+            codePostal: "75013",
+            ville: "Paris",
+            numeroRcs: "842019336",
+            villeImmatriculation: "Paris",
+            representant: { civilite: "Monsieur" as const, prenom: "Marc", nom: "BERTIN" },
+          },
+          parts: 2000,
+        },
+      ],
+      dirigeants: [{ associe: 0 }],
+    };
+
+    const texte = texteDe(
+      genererDocument(forme + "-pv-nomination.docx", donneesDeGabarit(avecHolding))
+    );
+
+    expect(texte).toContain("HOLDING MERIDIEN");
+    expect(texte).toContain("représentée par Monsieur Marc BERTIN");
+    expect(texte).toContain("sous le numéro 842019336");
+    // Ni naissance, ni situation matrimoniale, ni domicile inventés.
+    expect(texte).not.toContain("né le -");
+    expect(texte).not.toContain("née le -");
+    expect(texte).not.toContain("célibataire");
+  }
+);

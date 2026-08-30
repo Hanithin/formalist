@@ -2,6 +2,7 @@ import { ouvrirBrouillon } from "@/infrastructure/db/depots/brouillons";
 import { dateDeSignature, desActesEnRelecture } from "@/infrastructure/db/depots/suivi";
 import { documentsAProduire } from "@/domain/formalite/documents";
 import { premiereEtapeIncomplete } from "@/domain/formalite/parcours";
+import { conjointRequis } from "@/domain/formalite/etat-civil";
 import { donneesDeGabarit } from "@/domain/formalite/gabarit";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { genererDocument } from "@/infrastructure/documents/generation";
@@ -72,6 +73,19 @@ export async function produireLesActesDuBrouillon(
   const aProduire = documentsAProduire({
     forme: brouillon.forme ?? "",
     aUnDirigeant: (brouillon.dirigeants ?? []).length > 0,
+    /*
+     * L'attestation du conjoint ne se produisait jamais.
+     *
+     * `documentsAProduire` la conditionne à ce drapeau, et la production ne le posait
+     * pas : la condition valait donc toujours faux, et le gabarit `*-conjoint.docx`
+     * n'a jamais servi. Or les statuts mentionnent le consentement du conjoint pour un
+     * apport de bien commun, et l'étape des associés réclame déjà son état civil dès
+     * que la situation l'implique - on demandait une information qu'aucun acte ne
+     * reprenait.
+     */
+    conjointMarie: (brouillon.associes ?? []).some(
+      (a) => a.type !== "morale" && conjointRequis(a.personne?.situationMatrimoniale)
+    ),
   });
 
   /*

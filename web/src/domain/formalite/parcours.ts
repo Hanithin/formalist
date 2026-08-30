@@ -9,6 +9,7 @@ import {
 } from "./formes";
 import { conjointRequis, nomDeLaPartie, type PersonneMorale, type PersonnePhysique } from "./etat-civil";
 import { elider } from "./lettres";
+import { valeursParDefaut } from "./valeurs-par-defaut";
 import { apportsDe, valeurNominale } from "./capital";
 
 /**
@@ -647,14 +648,24 @@ export function etapeAccessible(demandee: number, brouillon: Brouillon): number 
  * que rien ne l'est.
  *
  * Le dénominateur se déduit donc du parcours lui-même : une étape compte si un
- * brouillon vide la déclare incomplète. Une étape ajoutée plus tard s'y range seule.
+ * brouillon neuf la déclare incomplète. Une étape ajoutée plus tard s'y range seule.
+ *
+ * Neuf, et non vide : les réponses courantes sont écrites d'avance - la formule, la
+ * durée de vie, l'option fiscale, la clôture du premier exercice. L'étape des offres
+ * était donc faite dès l'ouverture, et le même « 20 % renseigné » revenait sur un
+ * formulaire où personne n'avait rien tapé. Ce qui est répondu d'avance n'est pas à
+ * saisir : cela ne compte ni au numérateur ni au dénominateur.
  */
-function etapesASaisir(): Etape[] {
-  return ETAPES.filter((e) => verifierEtape(e.numero, {}).length > 0);
+function etapesASaisir(maintenant: Date): Etape[] {
+  const neuf = valeursParDefaut({}, maintenant);
+  return ETAPES.filter((e) => verifierEtape(e.numero, neuf).length > 0);
 }
 
-export function avancementParcours(brouillon: Brouillon): number {
-  const aSaisir = etapesASaisir();
+export function avancementParcours(
+  brouillon: Brouillon,
+  maintenant: Date = new Date()
+): number {
+  const aSaisir = etapesASaisir(maintenant);
   if (aSaisir.length === 0) return 100;
 
   const faites = aSaisir.filter((e) => verifierEtape(e.numero, brouillon).length === 0).length;

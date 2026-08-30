@@ -824,12 +824,30 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   // Order: civilité+nom, naissance, nationalité, parents (mère née), demeurant.
   {
     const civNomPrenom = (cleanData.CIVILITE_NOM_PRENOM_1 || cleanData.CIVILITE_NOM_PRENOM || '').trim();
+
+    /*
+     * Une personne morale n'a ni naissance, ni filiation, ni nationalité.
+     *
+     * Un président qui est une société sortait « né le - à - (-), de nationalité
+     * Française, fils de - et de - » : quatre mentions à trous, et une personne physique
+     * inventée de toutes pièces. Sa désignation - forme, capital, siège, immatriculation,
+     * représentant - a déjà été composée par le gabarit, et elle tient lieu de tout cela.
+     */
+    const estMorale = cleanData.ASSOC_1_EST_MORALE === true
+      || cleanData.DIRIGEANT_EST_MORALE === true;
     const dateNaiss = (cleanData.DATE_NAISSANCE_1 || cleanData.DATE_NAISSANCE || '').trim();
     const lieuNaiss = (cleanData.LIEU_NAISSANCE_1 || cleanData.LIEU_NAISSANCE || '').trim();
     const nationalite = (cleanData.NATIONALITE_1 || cleanData.NATIONALITE || '').trim();
     const nomPere = (cleanData.NOM_PERE_1 || cleanData.NOM_PERE || '').trim();
     const nomMere = (cleanData.NOM_MERE_1 || cleanData.NOM_MERE || '').trim();
-    const nomJeune = (cleanData.NOM_JEUNE_FILLE || '').trim();
+    /*
+     * Le nom de jeune fille ne se déduit plus : c'est le champ lui-même.
+     *
+     * La phrase écrivait « et de Anne BERGER née BERGER » - le nom de naissance était
+     * tiré du même champ que le nom de la mère, et le répétait donc toujours. Or c'est
+     * précisément le nom de jeune fille que la déclaration doit porter, puisqu'il sert à
+     * distinguer d'un homonyme : le formulaire le demande maintenant, sous ce nom.
+     */
     const adresse = (cleanData.ADRESSE_ASSOCIE_1 || cleanData.ADRESSE_PERSO || cleanData.ADRESSE || '').trim();
 
     function fnEsc(s) {
@@ -858,7 +876,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     const estFemme = /^\s*(madame|mademoiselle|mme)\b/i.test(civNomPrenom);
     const jeSoussigne = estFemme ? 'Je soussignée, ' : 'Je soussigné, ';
     const neLe = estFemme ? 'née le ' : 'né le ';
-    const enfantDe = estFemme ? 'fille de ' : 'fils de ';
+    const enfantDe = estFemme ? 'fille ' : 'fils ';
 
     /*
      * Cette passe ne vaut que pour les actes d'une création.
@@ -878,9 +896,11 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     } else if (isAttestationDomicile) {
       // Attestation de domiciliation: include "agissant en qualité de Président..." and "déclare domicilier..."
       const parts = [jeSoussigne + civNomPrenom + ','];
-      if (dateNaiss) parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
-      if (nationalite) parts.push('de nationalité ' + nationalite + ',');
-      if (adresse) parts.push('demeurant ' + adresse + ',');
+      if (!estMorale && dateNaiss) {
+        parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
+      }
+      if (!estMorale && nationalite) parts.push('de nationalité ' + nationalite + ',');
+      if (adresse && !estMorale) parts.push('demeurant ' + adresse + ',');
       let agissant = 'agissant en qualité de Président de la société ' + nomSociete + ',';
       if (capital || formeDescription) {
         agissant = 'agissant en qualité de Président de la société ' + nomSociete + ', ' + formeDescription
@@ -892,20 +912,33 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     } else {
       // DNC-style sentence with parents
       const parts = [jeSoussigne + civNomPrenom + ','];
-      if (dateNaiss) parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
-      if (nationalite) parts.push('de nationalité ' + nationalite + ',');
-      if (nomPere || nomMere) {
+      if (!estMorale && dateNaiss) {
+        parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
+      }
+      if (!estMorale && nationalite) parts.push('de nationalité ' + nationalite + ',');
+      if (!estMorale && (nomPere || nomMere)) {
+        /*
+         * « fils de Paul MARCHAND et de Anne BERGER » : le second « de » se lisait
+         * devant une voyelle. La préposition s'élide, comme partout ailleurs.
+         */
+        const de = (nom) =>
+          /* L'apostrophe typographique, celle du reste des actes. */
+          /^[aeiouyàâéèêëîïôöùûü]/i.test(nom.trim()) ? 'd\u2019' + nom : 'de ' + nom;
+
         let parents = '';
-        if (nomPere) parents += enfantDe + nomPere;
-        if (nomPere && nomMere) parents += ' et de ';
-        else if (nomMere) parents += enfantDe;
-        if (nomMere) {
-          parents += nomMere;
-          if (nomJeune) parents += ' née ' + nomJeune;
-        }
+        if (nomPere) parents += enfantDe + de(nomPere);
+        if (nomPere && nomMere) parents += ' et ' + de(nomMere);
+        else if (nomMere) parents += enfantDe + de(nomMere);
         parts.push(parents);
       }
-      if (adresse) parts.push('et demeurant ' + adresse + ',');
+      /*
+       * Une société n'habite pas, et sa désignation porte déjà son siège.
+       *
+       * La phrase l'écrivait deux fois : « …dont le siège social est 8 quai de la Gare
+       * 75013 Paris, représentée par Monsieur Marc BERTIN, dont le siège social est 8
+       * quai de la Gare ».
+       */
+      if (adresse && !estMorale) parts.push('et demeurant ' + adresse + ',');
       finalText = parts.join(' ');
     }
 

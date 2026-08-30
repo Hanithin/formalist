@@ -10,7 +10,7 @@ import {
 } from "@/domain/formalite/etat-civil";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { Choix } from "./Choix";
-import { DateChoisie } from "./DateChoisie";
+import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./Parcours.module.css";
 
 /**
@@ -150,7 +150,12 @@ export function EtatCivil({
           valeur={personne.adresse ?? ""}
           surChangement={(v) => surChangement({ adresse: v })}
           surCompletion={(codePostal, ville) => surChangement({ codePostal, ville })}
-          placeholder="Adresse de l'associé"
+          /*
+            L'écran sert aux associés comme aux dirigeants, et une SASU n'a ni l'un ni
+            l'autre mais un actionnaire : l'invite dit ce que le champ fait, non qui il
+            désigne.
+          */
+          placeholder="Rechercher l'adresse…"
         />
       </Champ>
 
@@ -160,7 +165,7 @@ export function EtatCivil({
         requis
         anomalie={anomalies[cle + ".dateDeNaissance"]}
       >
-        <DateChoisie
+        <ChampDate
           id={"naissance-" + rang}
           valeur={personne.dateDeNaissance ?? ""}
           surChangement={(iso) => surChangement({ dateDeNaissance: iso })}
@@ -211,7 +216,7 @@ export function EtatCivil({
         />
       </Champ>
 
-      <Champ id={"mere-" + rang} libelle="Nom et prénom de la mère">
+      <Champ id={"mere-" + rang} libelle="Nom de jeune fille et prénom de la mère">
         <input
           id={"mere-" + rang}
           value={personne.nomDeLaMere ?? ""}
@@ -292,7 +297,7 @@ export function EtatCivil({
               id={"dateUnion-" + rang}
               libelle={pacs ? "Date de PACS" : "Date de mariage"}
             >
-              <DateChoisie
+              <ChampDate
                 id={"dateUnion-" + rang}
                 valeur={conjoint.dateMariage ?? ""}
                 surChangement={(iso) => surConjoint({ dateMariage: iso })}

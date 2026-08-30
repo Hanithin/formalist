@@ -24,7 +24,7 @@ import { valeursParDefaut, clotureDepuis } from "@/domain/formalite/valeurs-par-
 import { FORMES_PROPOSEES, FORMES, regle } from "@/domain/formalite/formes";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { Choix } from "./Choix";
-import { DateChoisie } from "./DateChoisie";
+import { ChampDate } from "@/components/formulaire/ChampDate";
 import { Associes } from "./Associes";
 import { Actes, type ActeProduit, type DernierMot } from "./Actes";
 import { Capital } from "./Capital";
@@ -811,7 +811,7 @@ export function Parcours({
               )}
 
               <Champ id="dateDebutActivite" libelle="Date de début d'activité">
-                <DateChoisie
+                <ChampDate
                   id="dateDebutActivite"
                   valeur={brouillon.dateDebutActivite ?? ""}
                   surChangement={modifierDebutDActivite}
@@ -819,7 +819,7 @@ export function Parcours({
               </Champ>
 
               <Champ id="dateCloturePremierExercice" libelle="Date de clôture de la première année">
-                <DateChoisie
+                <ChampDate
                   id="dateCloturePremierExercice"
                   valeur={brouillon.dateCloturePremierExercice ?? ""}
                   surChangement={(iso) => {

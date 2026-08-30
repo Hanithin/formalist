@@ -25,7 +25,6 @@ describe("le récapitulatif d'un brouillon", () => {
 
     expect(recap.forme).toBeNull();
     expect(recap.denomination).toBeNull();
-    expect(recap.offre).toBeNull();
     expect(recap.lignes.every((l) => l.valeur === null)).toBe(true);
   });
 
@@ -152,16 +151,5 @@ describe("le siège, le capital et la clôture", () => {
     expect(ligne({ dateCloturePremierExercice: "31/12/2027" }, "cloture")?.valeur).toBe(
       "31/12/2027"
     );
-  });
-});
-
-describe("la formule", () => {
-  it("n'apparaît qu'une fois choisie", () => {
-    expect(recapitulatifDuBrouillon({}).offre).toBeNull();
-    expect(recapitulatifDuBrouillon({ offre: "inconnue" }).offre).toBeNull();
-  });
-
-  it("porte son nom et son prix", () => {
-    expect(recapitulatifDuBrouillon({ offre: "starter" }).offre).toBe("Starter · 89 €");
   });
 });

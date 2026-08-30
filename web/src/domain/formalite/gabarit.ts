@@ -94,6 +94,137 @@ export function personneDuDirigeant(
 }
 
 /**
+ * La société qui dirige, quand le dirigeant en est une.
+ *
+ * Une SASU peut avoir pour président son actionnaire unique, et celui-ci peut être une
+ * holding. L'écran le propose - la liste des dirigeants possibles nomme les associés,
+ * personnes morales comprises - et l'étape ne vérifie que l'existence du rang.
+ */
+export function societeDuDirigeant(
+  dirigeant: Dirigeant | undefined,
+  associes: Associe[]
+): PersonneMorale | null {
+  if (!dirigeant || dirigeant.associe === undefined) return null;
+  const associe = associes[dirigeant.associe];
+  if (!associe || associe.type !== "morale") return null;
+  return associe.societe ?? {};
+}
+
+/**
+ * Une société dirigeante, désignée comme un acte la désigne.
+ *
+ * « HOLDING MERIDIEN, SARL au capital de 50 000 euros, dont le siège social est 8 quai
+ * de la Gare, 75013 Paris, immatriculée au registre du commerce et des sociétés de
+ * Paris sous le numéro 842019336, représentée par Monsieur Marc BERTIN ».
+ *
+ * Une personne morale n'a ni date de naissance, ni filiation, ni nationalité : les
+ * actes écrivaient « né le - à - (-), fils de - et de - » sur un président qui est une
+ * société. Ce qui la remplace, et que le greffe attend, c'est son immatriculation et le
+ * nom de qui la représente.
+ *
+ * Les morceaux absents sont omis : une phrase courte vaut mieux qu'une phrase à trous.
+ */
+/**
+ * L'état civil d'une personne physique, en une phrase.
+ *
+ * « Madame Claire MARCHAND, née le 12 avril 1988 à Lyon (69003) (France), de
+ * nationalité Française, célibataire, demeurant 9 rue Oberkampf ». Les gabarits
+ * l'écrivaient champ par champ, ce qui interdisait de la remplacer par la désignation
+ * d'une société.
+ */
+/** « marié », « mariée », « pacsé » : la situation accordée à la civilité. */
+export function situationAccordee(personne: PersonnePhysique): string {
+  const brute = personne.situationMatrimoniale?.trim().toLowerCase();
+  if (!brute) return "célibataire";
+  const feminin = personne.civilite === "Madame";
+  return brute.replace(/\(e\)/g, feminin ? "e" : "");
+}
+
+export function identitePhysique(personne: PersonnePhysique): string {
+  const nom = civiliteNomPrenom(personne);
+  const morceaux = [nom];
+
+  const naissance = dateEnFrancais(personne.dateDeNaissance);
+  if (naissance !== TIRET) {
+    /* « à Lyon (69003) » : le code postal entre parenthèses, comme dans les actes. */
+    const ville = personne.villeDeNaissance?.trim();
+    const cp = personne.codePostalDeNaissance?.trim();
+    const lieu = ville ? ville + (cp ? " (" + cp + ")" : "") : "";
+    const feminin = personne.civilite === "Madame";
+    morceaux.push(
+      (feminin ? "née le " : "né le ") + naissance + (lieu ? " à " + lieu : "")
+    );
+  }
+
+  morceaux.push("de nationalité " + ou(personne.nationalite, "Française"));
+  /*
+   * « marié(e) » ne s'écrit pas dans un acte.
+   *
+   * La liste du formulaire porte les deux genres entre parenthèses - c'est juste pour
+   * un menu déroulant, faux dans une phrase qui nomme déjà quelqu'un. L'accord se fait
+   * sur la civilité, comme pour « né » et « fille ».
+   */
+  morceaux.push(situationAccordee(personne));
+  if (personne.adresse?.trim()) morceaux.push("demeurant " + personne.adresse.trim());
+
+  return morceaux.join(", ");
+}
+
+/** Le SIREN d'une société associée : celui du registre, ou les neuf premiers du SIRET. */
+export function sirenDe(societe: PersonneMorale | undefined): string {
+  const rcs = (societe?.numeroRcs ?? "").replace(/\D/g, "");
+  if (rcs) return rcs;
+  const siret = (societe?.siret ?? "").replace(/\D/g, "");
+  return siret.length >= 9 ? siret.slice(0, 9) : "";
+}
+
+export function societeDesignee(societe: PersonneMorale): string {
+  const denomination = societe.denomination?.trim();
+  if (!denomination) return TIRET;
+
+  const morceaux = [denomination];
+
+  const forme = societe.forme?.trim();
+  const capital = typeof societe.capital === "number" ? montant(societe.capital) : "";
+  if (forme && capital) morceaux.push(forme + " au capital de " + capital + " euros");
+  else if (forme) morceaux.push(forme);
+
+  const siege = [societe.adresse, societe.codePostal, societe.ville]
+    .filter((m) => m?.trim())
+    .join(" ");
+  if (siege) morceaux.push("dont le siège social est " + siege);
+
+  /*
+   * Le SIREN, non le SIRET.
+   *
+   * L'acte cite le numéro d'immatriculation au registre du commerce - neuf chiffres,
+   * celui de la personne morale. Le SIRET en compte quatorze : il désigne un
+   * établissement, et le greffe ne rattache pas une société par lui. Le formulaire
+   * range le SIREN sous « numeroRcs », que la recherche au registre remplit ; à défaut,
+   * les neuf premiers chiffres du SIRET sont ce même SIREN.
+   */
+  const siren = sirenDe(societe);
+  if (siren) {
+    const ou_ = societe.villeImmatriculation?.trim();
+    morceaux.push(
+      "immatriculée au registre du commerce et des sociétés" +
+        (ou_ ? " de " + ou_ : "") +
+        " sous le numéro " +
+        siren
+    );
+  }
+
+  const representant = societe.representant
+    ? civiliteNomPrenom(societe.representant as PersonnePhysique)
+    : "";
+  if (representant && representant !== TIRET) {
+    morceaux.push("représentée par " + representant);
+  }
+
+  return morceaux.join(", ");
+}
+
+/**
  * Qui décide de la rémunération du dirigeant.
  *
  * Le mot entre dans la phrase des statuts : « fixé par décision de … ». Une SCI et
@@ -211,10 +342,7 @@ function etatCivilSous(prefixe: string, personne: PersonnePhysique, donnees: Don
   donnees[prefixe + "CP_NAISSANCE"] = ou(personne.codePostalDeNaissance);
   donnees[prefixe + "PAYS_NAISSANCE"] = ou(personne.paysDeNaissance, "France");
   donnees[prefixe + "NATIONALITE"] = ou(personne.nationalite, "Française");
-  donnees[prefixe + "SITUATION_MATRIMONIALE"] = ou(
-    personne.situationMatrimoniale?.toLowerCase(),
-    "célibataire"
-  );
+  donnees[prefixe + "SITUATION_MATRIMONIALE"] = situationAccordee(personne);
   donnees[prefixe + "NOM_PERE"] = ou(personne.nomDuPere);
   donnees[prefixe + "NOM_MERE"] = ou(personne.nomDeLaMere);
   donnees[prefixe + "NOM_JEUNE_FILLE"] = nomDeJeuneFille(
@@ -229,11 +357,17 @@ function societeSous(prefixe: string, societe: PersonneMorale, donnees: Donnees)
   donnees[prefixe + "SOCIETE_TYPE"] = ou(societe.forme);
   donnees[prefixe + "SOCIETE_CAPITAL"] =
     societe.capital !== undefined ? montant(societe.capital) : TIRET;
-  donnees[prefixe + "SOCIETE_ADRESSE"] = ou(societe.adresse);
+  /* Le siège s'écrit en entier : sans code postal ni commune, il ne situe personne. */
+  donnees[prefixe + "SOCIETE_ADRESSE"] = ou(
+    [societe.adresse, societe.codePostal, societe.ville]
+      .filter((m) => m?.trim())
+      .join(" ")
+  );
   donnees[prefixe + "SOCIETE_RCS"] = ou(societe.numeroRcs);
   donnees[prefixe + "SOCIETE_RCS_VILLE"] = ou(societe.villeImmatriculation);
   donnees[prefixe + "SOCIETE_VILLE_RCS"] = ou(societe.villeImmatriculation);
-  donnees[prefixe + "SOCIETE_SIREN"] = ou(societe.siret);
+  /* Le SIREN, non le SIRET : le greffe ne rattache pas une société par son établissement. */
+  donnees[prefixe + "SOCIETE_SIREN"] = ou(sirenDe(societe));
   donnees[prefixe + "SOCIETE_REP"] = societe.representant
     ? civiliteNomPrenom(societe.representant as PersonnePhysique)
     : TIRET;
@@ -278,6 +412,11 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   const premier = associes[0];
   const a1 = physique(premier);
   const dirigeant = personneDuDirigeant(dirigeants[0], tous);
+  /* Le dirigeant peut être une société : elle n'a ni naissance ni filiation. */
+  const societeDirigeante = societeDuDirigeant(dirigeants[0], tous);
+  const designationDuDirigeant = societeDirigeante
+    ? societeDesignee(societeDirigeante)
+    : civiliteNomPrenom(dirigeant);
   const conjoint = a1.conjoint;
 
   // L'objet social est découpé ligne par ligne : les statuts en réservent six.
@@ -406,9 +545,25 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     BANQUE_AUTRE: brouillon.banque === "Autre",
 
     /* ---------- Le dirigeant ---------- */
-    PRESIDENT_NOM: civiliteNomPrenom(dirigeant),
-    GERANT_NOM: civiliteNomPrenom(dirigeant),
-    ADRESSE_DIRIGEANT: ou(dirigeant.adresse),
+    PRESIDENT_NOM: designationDuDirigeant,
+    GERANT_NOM: designationDuDirigeant,
+    /*
+     * Le dirigeant est-il une société ?
+     *
+     * Les actes composent une phrase d'état civil - « né le … à …, fils de … » - qui n'a
+     * aucun sens pour une personne morale : ils l'écrivaient à trous. Cette clé leur dit
+     * de s'en passer, et la désignation porte à sa place l'immatriculation et le nom du
+     * représentant.
+     */
+    DIRIGEANT_EST_MORALE: societeDirigeante !== null,
+    DIRIGEANT_EST_PHYSIQUE: societeDirigeante === null,
+    ADRESSE_DIRIGEANT: ou(
+      societeDirigeante
+        ? [societeDirigeante.adresse, societeDirigeante.codePostal, societeDirigeante.ville]
+            .filter((m) => m?.trim())
+            .join(" ")
+        : dirigeant.adresse
+    ),
     FONCTION_DIRIGEANT: regleForme?.titreDirigeant ?? "Président",
     REMUNERATION_PRESIDENT: phraseRemuneration("présidence", remuneration, qui),
     REMUNERATION_GERANT: phraseRemuneration("gérance", remuneration, qui),
@@ -445,7 +600,15 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     DATE_MARIAGE: dateEnFrancais(conjoint?.dateMariage),
     VILLE_MARIAGE: ou(conjoint?.villeMariage),
 
-    SIREN: ou(premier?.societe?.siret),
+    /*
+     * Le SIREN, non le SIRET.
+     *
+     * Les actes citent le numéro d'immatriculation de la personne morale - neuf
+     * chiffres. Le SIRET en compte quatorze et désigne un établissement : le formulaire
+     * le demande à part, et c'est celui-ci qui était écrit. Les neuf premiers chiffres
+     * d'un SIRET sont le SIREN : ils servent de repli.
+     */
+    SIREN: ou(sirenDe(premier?.societe)),
   };
 
   // L'état civil du premier associé, sans préfixe : c'est lui que les gabarits
@@ -453,6 +616,20 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   etatCivilSous("", a1, donnees);
   donnees.ADRESSE_PERSO = ou(a1.adresse);
   donnees.CODE_POSTAL_NAISSANCE = ou(a1.codePostalDeNaissance);
+
+  /*
+   * La phrase entière qui présente le signataire.
+   *
+   * Les procès-verbaux l'écrivaient champ par champ - « {{CIVILITE}} {{NOM}}
+   * {{PRENOM}}, né le {{DATE_NAISSANCE}} à {{LIEU_NAISSANCE}} ({{CODE_POSTAL}}) … » -
+   * et un actionnaire personne morale la remplissait de tirets : « - -, né le - à - (-)
+   * (France), de nationalité Française, célibataire, demeurant - ». Une société n'a ni
+   * naissance ni situation matrimoniale ; sa désignation, elle, dit ce que le greffe
+   * attend. La phrase se compose donc ici, où l'on sait laquelle des deux écrire.
+   */
+  donnees.IDENTITE_SIGNATAIRE = premier?.type === "morale"
+    ? societeDesignee(premier.societe ?? {})
+    : identitePhysique(a1);
 
   // Le gérant, pour les gabarits de SCI et de SARL qui le nomment ainsi. EST_HOMME
   // et EST_FEMME sans préfixe désignent le dirigeant : c'est lui qui déclare ne pas
@@ -507,6 +684,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
       donnees["NOM_PERE_" + rang] = TIRET;
       donnees["NOM_MERE_" + rang] = TIRET;
       donnees["NOM_JEUNE_FILLE_" + rang] = TIRET;
+      donnees["IDENTITE_ASSOCIE_" + rang] = TIRET;
       donnees["EST_HOMME_" + rang] = false;
       donnees["EST_FEMME_" + rang] = false;
       donnees["ASSOC_" + rang + "_EST_MORALE"] = false;
@@ -534,9 +712,29 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
       partsTotales > 0 ? ((a.parts / partsTotales) * 100).toFixed(1).replace(/\.0$/, "") : "0";
 
     const identite = estMorale ? ou(associe.societe?.denomination) : civiliteNomPrenom(personne);
+    /*
+     * La désignation entière, pour les actes qui la réclament.
+     *
+     * Une déclaration de non-condamnation nommait « HOLDING MERIDIEN » et rien d'autre :
+     * ni forme, ni capital, ni immatriculation, ni le nom de qui la représente - et le
+     * greffe ne peut pas rattacher cette société à son propre extrait. La dénomination
+     * seule reste pour les lignes de signature, où la phrase entière ne tiendrait pas.
+     */
+    const designation = estMorale
+      ? societeDesignee(associe.societe ?? {})
+      : civiliteNomPrenom(personne);
 
     donnees["HAS_ASSOC_" + rang] = true;
-    donnees["CIVILITE_NOM_PRENOM_" + rang] = identite;
+    donnees["CIVILITE_NOM_PRENOM_" + rang] = designation;
+    /*
+     * La phrase entière de l'associé, telle que les procès-verbaux la listent.
+     *
+     * Ils l'écrivaient champ par champ - « né le …, de nationalité …, demeurant … » -
+     * sur dix rangs et deux variantes de genre. Une personne morale y sortait à trous.
+     */
+    donnees["IDENTITE_ASSOCIE_" + rang] = estMorale
+      ? designation
+      : identitePhysique(personne);
     donnees["ACTIONNAIRE_" + rang] = identite;
     donnees["ASSOCIE_" + rang] = identite;
     donnees["ADRESSE_ASSOCIE_" + rang] = ou(estMorale ? associe.societe?.adresse : personne.adresse);
@@ -544,10 +742,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     donnees["DATE_NAISSANCE_" + rang] = dateEnFrancais(personne.dateDeNaissance);
     donnees["LIEU_NAISSANCE_" + rang] = ou(personne.villeDeNaissance);
     donnees["NATIONALITE_" + rang] = ou(personne.nationalite, "Française");
-    donnees["SITUATION_MATRIMONIALE_" + rang] = ou(
-      personne.situationMatrimoniale?.toLowerCase(),
-      "célibataire"
-    );
+    donnees["SITUATION_MATRIMONIALE_" + rang] = situationAccordee(personne);
     donnees["NOM_PERE_" + rang] = ou(personne.nomDuPere);
     donnees["NOM_MERE_" + rang] = ou(personne.nomDeLaMere);
     donnees["NOM_JEUNE_FILLE_" + rang] = nomDeJeuneFille(
@@ -584,7 +779,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
       DATE_NAISSANCE: dateEnFrancais(personne.dateDeNaissance),
       LIEU_NAISSANCE: ou(personne.villeDeNaissance),
       NATIONALITE: ou(personne.nationalite, "Française"),
-      SITUATION_MATRIMONIALE: ou(personne.situationMatrimoniale?.toLowerCase(), "célibataire"),
+      SITUATION_MATRIMONIALE: situationAccordee(personne),
       ADRESSE: ou(estMorale ? associe.societe?.adresse : personne.adresse),
       EST_HOMME: personne.civilite === "Monsieur",
       EST_FEMME: personne.civilite === "Madame",
@@ -634,11 +829,34 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     donnees["HAS_DG_" + rang] = !!dg;
     // Le parcours ne saisit pas de dirigeant personne morale : la condition existe
     // dans les gabarits, elle est donc renseignée, et fausse.
-    donnees["DG_" + rang + "_EST_PHYSIQUE"] = !!dg;
-    donnees["DG_" + rang + "_EST_MORALE"] = false;
+    /* Un directeur général peut reprendre un associé, et celui-ci être une société. */
+    const societeDuDg = societeDuDirigeant(dg, tous);
+    donnees["DG_" + rang + "_EST_PHYSIQUE"] = !!dg && !societeDuDg;
+    donnees["DG_" + rang + "_EST_MORALE"] = !!societeDuDg;
+    donnees["IDENTITE_DG_" + rang] = dg
+      ? societeDuDg
+        ? societeDesignee(societeDuDg)
+        : identitePhysique(personne)
+      : TIRET;
     etatCivilSous("DG_" + rang + "_", personne, donnees);
-    societeSous("DG_" + rang + "_", {}, donnees);
+    societeSous("DG_" + rang + "_", societeDuDg ?? {}, donnees);
   }
+
+  /* Les mêmes phrases, pour le dirigeant et les directeurs généraux. */
+  /*
+   * Les procès-verbaux de SARL et de SCI écrivaient chaque associé deux fois - une
+   * version « né », une version « née » - sous une condition de genre. Depuis que la
+   * phrase compose son propre accord, les deux branches sont identiques ; et surtout,
+   * un associé personne morale n'étant ni l'un ni l'autre, il disparaissait purement et
+   * simplement de la liste des présents. La seconde branche est neutralisée par ce
+   * drapeau, qui n'est jamais vrai.
+   */
+  donnees.SANS_OBJET = false;
+  donnees.A_UN_DIRIGEANT = dirigeants.length > 0;
+
+  donnees.IDENTITE_GERANT = societeDirigeante
+    ? societeDesignee(societeDirigeante)
+    : identitePhysique(dirigeant);
 
   donnees.DG_1_EST_HOMME = personneDuDirigeant(generaux[0], tous).civilite === "Monsieur";
   donnees.DG_1_EST_FEMME = personneDuDirigeant(generaux[0], tous).civilite === "Madame";

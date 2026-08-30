@@ -251,7 +251,9 @@ function Morale({
         </span>
       </Champ>
 
-      <Champ id={"rcs-" + rang} libelle="Numéro RCS">
+      {/* Le numéro d'immatriculation au registre du commerce est le SIREN : c'est
+          lui que les actes citent, et le mot que tout le monde emploie. */}
+      <Champ id={"rcs-" + rang} libelle="Numéro SIREN">
         <input
           id={"rcs-" + rang}
           value={societe.numeroRcs ?? ""}

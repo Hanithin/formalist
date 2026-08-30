@@ -203,7 +203,14 @@ test("les réponses courantes sont déjà écrites, et se relisent", async ({ pa
 
   await expect(page.getByLabel("Durée de vie (années)")).toHaveValue("99");
   await expect(page.locator("#optionFiscale")).toHaveText("IS");
-  await expect(page.locator("#dateCloturePremierExercice")).toContainText("31 décembre");
+  /*
+   * La date se lit dans un champ, non sur un bouton.
+   *
+   * Ce parcours avait son propre calendrier - un bouton qui ouvrait une grille, sans
+   * saisie au clavier et dont les deux flèches glissaient d'un mois. Il emploie
+   * maintenant `ChampDate`, comme les cinq autres : la valeur est celle d'un `input`.
+   */
+  await expect(page.locator("#dateCloturePremierExercice")).toHaveValue("31/12/2027");
 });
 
 test("une société de domiciliation demande ce que le greffe exige", async ({ page, request }) => {
@@ -1122,4 +1129,40 @@ test.describe("pièces et documents", () => {
  */
 test.afterAll(async () => {
   if (ouverts.length > 0) await retirerDossiers(ouverts);
+});
+
+test("une date de naissance se tape, elle ne se cherche pas au calendrier", async ({
+  page,
+  request,
+}) => {
+  /*
+   * Le parcours avait son propre calendrier : un bouton, une grille, et deux flèches
+   * qui glissaient d'un mois. Une associée née en avril 1988 demandait quatre cent
+   * soixante clics sur la flèche gauche - sur un champ obligatoire de la deuxième
+   * étape. Les cinq autres parcours emploient `ChampDate`, où l'on tape la date.
+   */
+  const dossier = await ouvrirCreation(page, request);
+  await request.put("/api/formalites/brouillon", {
+    data: {
+      dossier: Number(dossier),
+      modifications: {
+        forme: "SASU",
+        denomination: "ESSAI DATE",
+        activite: "Conseil",
+        adresse: "2 rue Neuve",
+        codePostal: "69001",
+        ville: "Lyon",
+      },
+    },
+  });
+  await page.goto("/creation?dossier=" + dossier + "&etape=2");
+
+  await page.getByRole("button", { name: /Ajouter un/ }).click();
+  const naissance = page.locator("#naissance-0");
+
+  await naissance.click();
+  await naissance.pressSequentially("12041988");
+
+  // Le masque s'applique à la frappe, et le calendrier ne s'est pas ouvert.
+  await expect(naissance).toHaveValue("12/04/1988");
 });

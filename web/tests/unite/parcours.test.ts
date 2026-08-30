@@ -502,3 +502,28 @@ describe("le capital se répartit en parts, pas en euros saisis", () => {
     ).toEqual([]);
   });
 });
+
+describe("l'avancement d'un dossier neuf", () => {
+  /*
+   * « 20 % renseigné » s'affichait sur un formulaire où personne n'avait rien tapé :
+   * les réponses courantes sont écrites d'avance - la formule, la durée, l'option
+   * fiscale, la clôture - et l'étape des offres comptait donc comme faite dès
+   * l'ouverture. Ce qui est répondu d'avance n'est pas à saisir.
+   */
+  it("part de zéro", () => {
+    expect(avancementParcours({})).toBe(0);
+    expect(avancementParcours({ offre: "business" })).toBe(0);
+  });
+
+  it("et monte avec ce qu'on répond soi-même", () => {
+    const societe = {
+      forme: "SASU",
+      denomination: "NOVA",
+      activite: "Conseil",
+      adresse: "14 rue de Cléry",
+      codePostal: "75002",
+      ville: "Paris",
+    };
+    expect(avancementParcours(societe)).toBe(25);
+  });
+});

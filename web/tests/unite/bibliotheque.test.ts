@@ -96,7 +96,7 @@ describe("la recherche", () => {
   });
 
   it("ignore la casse et les accents", () => {
-    const d = doc({ nom: "Déclaration de non-condamnation", societe: "SOCIÉTÉ TEST" });
+    const d = doc({ nom: "Déclaration de non-condamnation et de filiation", societe: "SOCIÉTÉ TEST" });
     expect(correspond(d, "DECLARATION")).toBe(true);
     expect(correspond(d, "societe")).toBe(true);
     expect(correspond(d, "déclaration")).toBe(true);
@@ -329,7 +329,7 @@ describe("l'ordre dans lequel on cherche un acte", () => {
 
   it("l'ordre ignore la casse et les accents", () => {
     expect(rangDeLActe("STATUTS CONSTITUTIFS")).toBe(rangDeLActe("Statuts constitutifs"));
-    expect(rangDeLActe("Déclaration de non-condamnation")).toBe(
+    expect(rangDeLActe("Déclaration de non-condamnation et de filiation")).toBe(
       rangDeLActe("Declaration de non-condamnation")
     );
   });

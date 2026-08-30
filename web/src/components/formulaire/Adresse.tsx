@@ -61,6 +61,17 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
    */
   const frappe = useRef(false);
 
+  /*
+   * Le champ, pour savoir s'il a encore le focus quand la réponse arrive.
+   *
+   * La liste s'ouvrait au retour de la requête, trois cents millisecondes après la
+   * frappe - c'est-à-dire souvent après qu'on a quitté le champ. Elle se rouvrait donc
+   * sur un champ qu'on venait de laisser, et plus rien ne la refermait : le `blur` avait
+   * déjà eu lieu. Elle recouvrait la ligne suivante du formulaire, et le clic qu'on
+   * destinait au champ d'après tombait sur une proposition d'adresse.
+   */
+  const champ = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (!frappe.current) return;
     frappe.current = false;
@@ -96,6 +107,8 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
             };
           })
         );
+        /* Parti ailleurs entre-temps : on ne rouvre pas une liste qu'il ne regarde plus. */
+        if (document.activeElement !== champ.current) return;
         setOuvert(true);
         setSurvole(-1);
       } catch {
@@ -120,6 +133,7 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
   return (
     <div className={styles.completion}>
       <input
+        ref={champ}
         id={id}
         value={valeur}
         placeholder={placeholder}
@@ -255,6 +269,8 @@ export function Ville({
   const assezLong = valeur.trim().length >= MINIMUM;
   // Comme pour l'adresse : la liste ne s'ouvre que sur une frappe.
   const frappe = useRef(false);
+  /* Et, comme pour l'adresse, seulement si le champ a encore le focus au retour. */
+  const champ = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!frappe.current) return;
@@ -278,6 +294,7 @@ export function Ville({
         setCommunes(
           donnees.map((c) => ({ nom: c.nom, codePostal: c.codesPostaux?.[0] ?? "" }))
         );
+        if (document.activeElement !== champ.current) return;
         setOuvert(true);
       } catch {
         // Service indisponible : la saisie manuelle reste possible.
@@ -293,6 +310,7 @@ export function Ville({
   return (
     <div className={styles.completion}>
       <input
+        ref={champ}
         id={id}
         value={valeur}
         autoComplete="off"
