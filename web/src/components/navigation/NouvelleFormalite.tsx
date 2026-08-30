@@ -66,12 +66,17 @@ export function NouvelleFormalite({
         aria-haspopup="dialog"
         aria-expanded={ouverte}
       >
-        {/* Dans la colonne, le signe tient la place de l'icône des entrées voisines. */}
-        {apparence === "colonne" && (
-          <span className={styles.signe} aria-hidden="true">
-            +
-          </span>
-        )}
+        {/*
+          Le « + » a laissé la place au chevron.
+
+          Les deux se contredisaient : le signe promet une page vierge - c'est ce qu'il
+          veut dire partout ailleurs, « + Ajouter un associé » - quand le chevron
+          annonce un choix à faire d'abord. Un geste, un symbole ; c'est le chevron qui
+          dit vrai, et il se range au bout comme sur tout ce qui se déplie.
+
+          L'alignement de la colonne ne tient plus au signe mais au retrait du bouton :
+          le libellé reste sur la même verticale que « Mes formalités » en dessous.
+        */}
         <span className={styles.libelle}>{libelle}</span>
 
         {/*

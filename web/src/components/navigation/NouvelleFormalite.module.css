@@ -27,7 +27,15 @@
   gap: 12px;
   width: 100%;
   margin: 0 0 6px;
-  padding: 11px 12px;
+  /*
+   * Le retrait tient l'alignement que le « + » tenait avant lui.
+   *
+   * Les entrées voisines portent une icône de vingt pixels suivie d'un écart de douze :
+   * leur libellé commence donc à quarante-quatre du bord. Le bouton n'a plus d'icône,
+   * et c'est son retrait qui pose « Nouvelle formalité » sur la même verticale que
+   * « Mes formalités ».
+   */
+  padding: 11px 12px 11px 44px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: #e9e9ec;
@@ -80,18 +88,6 @@
 .action .chevronOuvert,
 .actionPage .chevronOuvert {
   transform: rotate(180deg);
-}
-
-/* Le signe tient la place de l'icône des entrées voisines : la colonne reste alignée. */
-.action .signe {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  flex-shrink: 0;
-  font-size: 17px;
-  font-weight: 400;
-  line-height: 1;
 }
 
 /* ---------- La fenêtre ---------- */
@@ -414,15 +410,3 @@
   background: #fafafa;
 }
 
-/* Le signe, un peu plus gros que le texte : c'est lui qu'on repère en premier. */
-.plus {
-  font-size: 17px;
-  font-weight: 400;
-  line-height: 1;
-}
-
-/* Sur fond clair, le signe se tient en retrait du mot qu'il accompagne. */
-.actionPage .plus {
-  font-size: 16px;
-  color: #a1a1aa;
-}
