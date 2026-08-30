@@ -245,7 +245,7 @@ it.each(["sasu", "sas", "sarl", "sci"])(
 
     expect(texte).toContain("HOLDING MERIDIEN");
     expect(texte).toContain("représentée par Monsieur Marc BERTIN");
-    expect(texte).toContain("sous le numéro 842019336");
+    expect(texte).toContain("sous le numéro 842 019 336");
     // Ni naissance, ni situation matrimoniale, ni domicile inventés.
     expect(texte).not.toContain("né le -");
     expect(texte).not.toContain("née le -");

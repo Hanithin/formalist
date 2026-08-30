@@ -6,6 +6,7 @@ import {
   nomDeJeuneFille,
   personneDuDirigeant,
   sirenDe,
+  sirenLisible,
   dirigeantDeLAnnonce,
   situationAccordee,
   societeDesignee,
@@ -469,8 +470,8 @@ describe("l'identité, en une phrase", () => {
       })
     ).toBe(
       "HOLDING MERIDIEN, SARL au capital de 50 000 euros, dont le siège social est " +
-        "8 quai de la Gare 75013 Paris, immatriculée au registre du commerce et des " +
-        "sociétés de Paris sous le numéro 842019336, représentée par Monsieur Marc BERTIN"
+        "8 quai de la Gare, 75013 Paris, immatriculée au registre du commerce et des " +
+        "sociétés de Paris sous le numéro 842 019 336, représentée par Monsieur Marc BERTIN"
     );
   });
 
@@ -559,8 +560,8 @@ it("l'associé personne morale porte son SIREN et son siège entier", () => {
     { maintenant: new Date("2026-08-30T10:00:00Z") }
   );
 
-  expect(donnees.ASSOC_1_SOCIETE_SIREN).toBe("842019336");
-  expect(donnees.ASSOC_1_SOCIETE_ADRESSE).toBe("8 quai de la Gare 75013 Paris");
+  expect(donnees.ASSOC_1_SOCIETE_SIREN).toBe("842 019 336");
+  expect(donnees.ASSOC_1_SOCIETE_ADRESSE).toBe("8 quai de la Gare, 75013 Paris");
 });
 
 describe("le dirigeant de l'annonce légale", () => {
@@ -622,5 +623,52 @@ describe("le dirigeant de l'annonce légale", () => {
 
   it("ne rend rien plutôt qu'un crochet, quand le dirigeant manque", () => {
     expect(dirigeantDeLAnnonce({} as Brouillon)).toEqual({ nom: "", adresse: "" });
+  });
+});
+
+describe("ce qu'un acte donne à lire", () => {
+  /*
+   * Neuf chiffres à la file se relisent mal, et c'est le numéro qu'un greffier compare.
+   * Les actes le composaient d'un bloc quand le procès-verbal, l'annonce et l'en-tête
+   * des statuts l'espacent.
+   */
+  it("le SIREN se lit par groupes de trois", () => {
+    expect(sirenLisible("842019336")).toBe("842 019 336");
+    expect(sirenLisible("842 019 336")).toBe("842 019 336");
+    /* Ce qui n'a pas neuf chiffres reste tel quel : on ne découpe pas au hasard. */
+    expect(sirenLisible("84201933600018")).toBe("84201933600018");
+    expect(sirenLisible("")).toBe("");
+  });
+
+  /*
+   * Deux adresses dans le même acte étaient ponctuées de deux façons : celle d'une
+   * personne portait sa virgule, celle d'une société non.
+   */
+  it("le siège d'une société se ponctue comme l'adresse d'une personne", () => {
+    const donnees = donneesDeGabarit(
+      {
+        forme: "SARL",
+        denomination: "ATELIER",
+        associes: [
+          {
+            type: "morale",
+            parts: 100,
+            societe: {
+              denomination: "HOLDING MERIDIEN",
+              adresse: "8 quai de la Gare",
+              codePostal: "75013",
+              ville: "Paris",
+              numeroRcs: "842019336",
+            },
+          },
+        ],
+        partsTotales: 100,
+        capital: 1000,
+      } as Brouillon,
+      { maintenant: new Date("2026-08-30T10:00:00Z") }
+    );
+
+    expect(donnees.ASSOC_1_SOCIETE_ADRESSE).toBe("8 quai de la Gare, 75013 Paris");
+    expect(donnees.ASSOC_1_SOCIETE_SIREN).toBe("842 019 336");
   });
 });

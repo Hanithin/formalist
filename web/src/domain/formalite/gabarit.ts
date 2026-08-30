@@ -228,11 +228,36 @@ export function identitePhysique(personne: PersonnePhysique): string {
 }
 
 /** Le SIREN d'une société associée : celui du registre, ou les neuf premiers du SIRET. */
+/**
+ * « 842 019 336 » : un SIREN se lit par groupes de trois.
+ *
+ * Les actes le composaient d'un bloc - « sous le numéro 842019336 » - quand le
+ * procès-verbal, l'annonce et l'en-tête des statuts l'espacent. Neuf chiffres à la
+ * file se relisent mal, et c'est le numéro qu'un greffier compare.
+ */
+export function sirenLisible(siren: string | null | undefined): string {
+  const chiffres = (siren ?? "").replace(/\D/g, "");
+  if (chiffres.length !== 9) return (siren ?? "").trim();
+  return chiffres.slice(0, 3) + " " + chiffres.slice(3, 6) + " " + chiffres.slice(6);
+}
+
 export function sirenDe(societe: PersonneMorale | undefined): string {
   const rcs = (societe?.numeroRcs ?? "").replace(/\D/g, "");
   if (rcs) return rcs;
   const siret = (societe?.siret ?? "").replace(/\D/g, "");
   return siret.length >= 9 ? siret.slice(0, 9) : "";
+}
+
+/**
+ * « 8 quai de la Gare, 75013 Paris » : la virgule sépare la voie de la commune.
+ *
+ * Le siège d'une société morale se composait sans elle - « 8 quai de la Gare 75013
+ * Paris » - à côté de l'adresse d'une personne physique, qui la porte. Deux adresses
+ * dans le même acte, ponctuées de deux façons.
+ */
+function adresseSurUneLigne(societe: PersonneMorale): string {
+  const commune = [societe.codePostal?.trim(), societe.ville?.trim()].filter(Boolean).join(" ");
+  return [societe.adresse?.trim(), commune].filter(Boolean).join(", ");
 }
 
 export function societeDesignee(societe: PersonneMorale): string {
@@ -246,9 +271,7 @@ export function societeDesignee(societe: PersonneMorale): string {
   if (forme && capital) morceaux.push(forme + " au capital de " + capital + " euros");
   else if (forme) morceaux.push(forme);
 
-  const siege = [societe.adresse, societe.codePostal, societe.ville]
-    .filter((m) => m?.trim())
-    .join(" ");
+  const siege = adresseSurUneLigne(societe);
   if (siege) morceaux.push("dont le siège social est " + siege);
 
   /*
@@ -267,7 +290,7 @@ export function societeDesignee(societe: PersonneMorale): string {
       "immatriculée au registre du commerce et des sociétés" +
         (ou_ ? " de " + ou_ : "") +
         " sous le numéro " +
-        siren
+        sirenLisible(siren)
     );
   }
 
@@ -415,16 +438,15 @@ function societeSous(prefixe: string, societe: PersonneMorale, donnees: Donnees)
   donnees[prefixe + "SOCIETE_CAPITAL"] =
     societe.capital !== undefined ? montant(societe.capital) : TIRET;
   /* Le siège s'écrit en entier : sans code postal ni commune, il ne situe personne. */
-  donnees[prefixe + "SOCIETE_ADRESSE"] = ou(
-    [societe.adresse, societe.codePostal, societe.ville]
-      .filter((m) => m?.trim())
-      .join(" ")
-  );
-  donnees[prefixe + "SOCIETE_RCS"] = ou(societe.numeroRcs);
+  donnees[prefixe + "SOCIETE_ADRESSE"] = ou(adresseSurUneLigne(societe));
+  donnees[prefixe + "SOCIETE_RCS"] = ou(sirenLisible(societe.numeroRcs));
   donnees[prefixe + "SOCIETE_RCS_VILLE"] = ou(societe.villeImmatriculation);
   donnees[prefixe + "SOCIETE_VILLE_RCS"] = ou(societe.villeImmatriculation);
-  /* Le SIREN, non le SIRET : le greffe ne rattache pas une société par son établissement. */
-  donnees[prefixe + "SOCIETE_SIREN"] = ou(sirenDe(societe));
+  /*
+   * Le SIREN, non le SIRET : le greffe ne rattache pas une société par son
+   * établissement. Et par groupes de trois, comme partout ailleurs dans les actes.
+   */
+  donnees[prefixe + "SOCIETE_SIREN"] = ou(sirenLisible(sirenDe(societe)));
   donnees[prefixe + "SOCIETE_REP"] = societe.representant
     ? civiliteNomPrenom(societe.representant as PersonnePhysique)
     : TIRET;

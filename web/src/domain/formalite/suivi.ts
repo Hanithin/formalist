@@ -89,6 +89,18 @@ export interface EtapeDeSuivi {
 /** Les sous-phases, dans l'ordre : elles se comparent. */
 const RANG_SOUS_PHASE: Record<string, number> = { "5a": 1, "5b": 2, "5c": 3, "5d": 4, "5e": 5 };
 
+/**
+ * Le dépôt est-il fait ?
+ *
+ * Il l'est dès que ce qui vient après l'est : un dépôt enregistré, un Kbis délivré, un
+ * dossier clos supposent tous qu'on soit passé au guichet. L'étape ne lisait que la
+ * sous-phase, et le suivi affichait « Dépôt au greffe · En cours » au-dessus de
+ * « Dépôt enregistré · Terminé » - deux lignes qui se contredisent sur le même écran.
+ */
+function depotFait(etat: EtatDuDossier): boolean {
+  return auMoins(etat.sousPhase, "5d") || etat.aLeKbis || etat.status === "terminee";
+}
+
 function auMoins(sousPhase: string | null, seuil: string): boolean {
   return (RANG_SOUS_PHASE[sousPhase ?? ""] ?? 0) >= RANG_SOUS_PHASE[seuil];
 }
@@ -191,7 +203,7 @@ const TOUTES: Definition[] = [
     titre: "Dépôt au greffe",
     explication: "Le cabinet dépose le dossier complet au guichet unique. Comptez quelques jours.",
     main: "avocat",
-    faite: (e) => auMoins(e.sousPhase, "5d"),
+    faite: depotFait,
   },
   {
     identifiant: "kbis",
@@ -247,7 +259,7 @@ const AUTO_ENTREPRISE: Definition[] = [
     explication:
       "Le cabinet dépose votre déclaration à l'INPI en votre nom. Comptez quelques jours ouvrés.",
     main: "avocat",
-    faite: (e) => auMoins(e.sousPhase, "5d"),
+    faite: depotFait,
   },
   {
     identifiant: "siret",
@@ -316,7 +328,7 @@ const MODIFICATION: Definition[] = [
     explication:
       "Votre avocat dépose la modification à l'INPI en votre nom, statuts à jour à l'appui. Comptez trois à sept jours ouvrés.",
     main: "avocat",
-    faite: (e) => auMoins(e.sousPhase, "5d"),
+    faite: depotFait,
   },
   {
     identifiant: "extrait",
@@ -373,7 +385,7 @@ const COMPTES: Definition[] = [
     explication:
       "Votre avocat dépose vos comptes au greffe du tribunal de commerce, en votre nom. Comptez quelques jours ouvrés.",
     main: "avocat",
-    faite: (e) => auMoins(e.sousPhase, "5d"),
+    faite: depotFait,
   },
   {
     identifiant: "enregistre",
@@ -443,7 +455,7 @@ const FERMETURE: Definition[] = [
     explication:
       "Votre avocat dépose la dissolution en votre nom. La radiation se demandera à la clôture de la liquidation, des mois plus tard.",
     main: "avocat",
-    faite: (e) => auMoins(e.sousPhase, "5d"),
+    faite: depotFait,
   },
   {
     identifiant: "dissolution",
@@ -508,7 +520,7 @@ const CESSATION: Definition[] = [
     explication:
       "Votre avocat déclare la cessation à l'INPI en votre nom, sur mandat. La démarche est gratuite.",
     main: "avocat",
-    faite: (e) => auMoins(e.sousPhase, "5d"),
+    faite: depotFait,
   },
   {
     identifiant: "recepisse",

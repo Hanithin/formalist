@@ -466,3 +466,45 @@ describe("chaque formalité a son parcours", () => {
     ]);
   });
 });
+
+describe("le dépôt et ce qui le suit", () => {
+  /*
+   * Un dépôt enregistré suppose un dépôt fait. L'étape ne lisait que la sous-phase, et
+   * le suivi affichait « Dépôt au greffe · En cours » au-dessus de « Dépôt enregistré ·
+   * Terminé » : deux lignes qui se contredisent sur le même écran.
+   */
+  it("un dossier clos a forcément été déposé", () => {
+    const etapes = etapesDuSuivi(
+      etat({ type: "comptes", status: "terminee", sousPhase: "5c", avocatAssigne: true })
+    );
+
+    expect(etapes.find((e) => e.identifiant === "greffe")?.etat).toBe("faite");
+    expect(etapes.find((e) => e.identifiant === "enregistre")?.etat).toBe("faite");
+  });
+
+  it("le document du greffe emporte le dépôt", () => {
+    const etapes = etapesDuSuivi(
+      etat({
+        type: "creation",
+        forme: "SASU",
+        status: "en_attente_validation",
+        sousPhase: "5c",
+        aLeKbis: true,
+        avocatAssigne: true,
+        aLAttestationDeCapital: true,
+        aLAnnoncePubliee: true,
+      })
+    );
+
+    expect(etapes.find((e) => e.identifiant === "greffe")?.etat).toBe("faite");
+  });
+
+  /* Et tant que rien ne suit, le dépôt reste ce qu'il est : à faire. */
+  it("un dossier en cours de vérification n'a rien déposé", () => {
+    const etapes = etapesDuSuivi(
+      etat({ type: "comptes", status: "en_attente_validation", sousPhase: "5c", avocatAssigne: true })
+    );
+
+    expect(etapes.find((e) => e.identifiant === "greffe")?.etat).toBe("en_cours");
+  });
+});
