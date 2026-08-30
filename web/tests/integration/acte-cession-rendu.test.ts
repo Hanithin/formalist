@@ -365,3 +365,65 @@ describe("les contrôles avant de produire l'acte", () => {
     expect(verifierLActeDeCession(contexte(VERS_UN_TIERS))).toEqual([]);
   });
 });
+
+describe("les accords de l'acte", () => {
+  /*
+   * Le participe s'accorde avec la partie qu'il désigne. L'acte écrivait « Madame
+   * Claire MARTIN, ci-après dénommé « le Cédant » » et « Monsieur Jean DUPONT,
+   * ci-après désignée « l'Associé Intervenant » » : le premier figé au masculin, le
+   * second au féminin. Un acte enregistré au service des impôts porte les deux fautes.
+   */
+  it("la cédante est dénommée, l'intervenant est désigné", () => {
+    /* La cédante est l'associée n° 3 : Madame Anne ROUSSEL. */
+    const texte = rendre([
+      { cedant: 2, parts: 100, prix: 5000, date: "2026-03-01", vers: "tiers", nom: "Marc BERTIN" },
+    ]);
+
+    expect(texte).toContain("ci-après dénommée");
+    expect(texte).toContain("ci-après désigné « l'Acquéreur »");
+  });
+
+  /* Une société qui acquiert se désigne au féminin : « la société X, désignée ». */
+  it("une société acquéreuse est désignée au féminin", () => {
+    const texte = rendre([
+      {
+        cedant: 0,
+        parts: 100,
+        prix: 5000,
+        date: "2026-03-01",
+        vers: "tiers",
+        nature: "morale",
+        nom: "HOLDING SUD",
+        forme: "SAS",
+        capital: 40000,
+        siren: "842019336",
+        villeRcs: "Lyon",
+        representant: "Monsieur Luc GARNIER",
+      },
+    ]);
+
+    expect(texte).toContain("ci-après désignée « l'Acquéreur »");
+    expect(texte).toContain("ci-après dénommé « le Cédant »");
+  });
+
+  /*
+   * L'origine de propriété s'enchaîne : « lesquelles {origine} et sont intégralement
+   * libérées ». Un libellé de menu à la place du membre de phrase donnait « lesquelles
+   * Acquisition auprès d'un tiers et sont intégralement libérées ».
+   */
+  it("l'origine de propriété se lit au fil de la phrase", () => {
+    const texte = rendre([
+      {
+        cedant: 0,
+        parts: 100,
+        prix: 5000,
+        date: "2026-03-01",
+        vers: "tiers",
+        nom: "Marc BERTIN",
+        origine: "Acquisition auprès d'un tiers",
+      },
+    ]);
+
+    expect(texte).toContain("lesquelles ont été acquises auprès d'un précédent titulaire et");
+  });
+});

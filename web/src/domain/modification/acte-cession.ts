@@ -1,7 +1,7 @@
 import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { formeEnToutesLettres } from "./annonce";
-import { agrementDeDroit, nomDeLAssocie, type Cession } from "./cession";
+import { agrementDeDroit, nomDeLAssocie, type Cession, phraseDeLOrigine } from "./cession";
 import { adresseLisible, enCapitaleInitiale, type ContexteGabarit } from "./gabarit";
 import { montant, sirenEspace } from "./pv-age";
 import { courDAppel } from "./traite-apport";
@@ -314,6 +314,18 @@ export function donneesDeLActeDeCession(
   const plusieurs = acte.cessions.length > 1;
 
   /* Les cédants, dans l'ordre où ils cèdent. */
+  /*
+   * Le participe s'accorde avec la partie qu'il désigne.
+   *
+   * L'acte écrivait « Madame Claire MARTIN, ci-après dénommé « le Cédant » » et
+   * « Monsieur Jean DUPONT, ci-après désignée « l'Associé Intervenant » » : le premier
+   * était figé au masculin, le second au féminin. Un acte enregistré au service des
+   * impôts porte les deux fautes, et rien dans le document ne peut les prévenir.
+   */
+  const feminin = (partie: { civilite?: string | null } | undefined) =>
+    (partie?.civilite ?? "").trim() === "Madame";
+  const accorde = (mot: string, auFeminin: boolean) => mot + (auFeminin ? "e" : "");
+
   const cedants = acte.cessions.map((cession) => ({
     identification: identificationDeLAssocie(associes[cession.cedant ?? -1] ?? {}),
     nom: nomDeLAssocie(associes[cession.cedant ?? -1], cession.cedant ?? 0),
@@ -344,7 +356,12 @@ export function donneesDeLActeDeCession(
     .filter(({ rang }) => !rangsConcernes.has(rang))
     .map(({ associe }) => ({
       identification: identificationDeLAssocie(associe),
-      qualite: "d'autre " + mots.associesPluriel.replace(/s$/, "") + " de la Société",
+      /* « d'autre associée » quand c'est une femme, comme partout ailleurs. */
+      qualite:
+        "d'autre " +
+        accorde(mots.associesPluriel.replace(/s$/, ""), feminin(associe)) +
+        " de la Société",
+      feminin: feminin(associe),
     }));
 
   /* L'agrément : de droit dans certaines formes, statutaire dans les autres. */
@@ -426,15 +443,29 @@ export function donneesDeLActeDeCession(
     })),
     le_cedant: plusieurs ? "les Cédants" : "le Cédant",
     le_cedant_maj: plusieurs ? "Les Cédants" : "Le Cédant",
-    denomme_cedant: plusieurs ? "dénommés ensemble" : "dénommé",
+    denomme_cedant: plusieurs
+      ? "dénommés ensemble"
+      : accorde("dénommé", feminin(associes[premiere?.cedant ?? -1])),
     sengage_a_garantir: plusieurs ? "s'engagent solidairement à garantir" : "s'engage à garantir",
 
     identification_acquereur: identificationAcquereur,
-    denomme_acquereur: acquereurEstAssocie ? "désigné" : "désigné",
+    /*
+     * Une société qui acquiert se désigne au féminin : c'est « la société X, ci-après
+     * désignée ». Le ternaire d'avant rendait « désigné » dans ses deux branches.
+     */
+    denomme_acquereur: accorde(
+      "désigné",
+      acquereurEstAssocie
+        ? feminin(associes[premiere?.cessionnaire ?? -1])
+        : /* Un tiers : une société se désigne au féminin, une personne selon son nom. */
+          premiere?.nature === "morale" ||
+          (premiere?.nom ?? "").trim().startsWith("Madame")
+    ),
 
     intervenants_presents: intervenants.length > 0,
     intervenants,
-    denomme_intervenant: intervenants.length > 1 ? "désignés" : "désignée",
+    denomme_intervenant:
+      intervenants.length > 1 ? "désignés" : accorde("désigné", intervenants[0]?.feminin ?? false),
     les_intervenants:
       intervenants.length > 1 ? "les Associés Intervenants" : "l'Associé Intervenant",
 
@@ -475,8 +506,7 @@ export function donneesDeLActeDeCession(
     nb_titres_cedes_lettres: nombreEnFrancais(titresCedes),
     pourcentage_cede: total > 0 ? pourcentage(titresCedes, total) : "",
     titre_onereux: "à titre onéreux",
-    origine_propriete:
-      texte(premiere?.origine) || "ont été souscrites lors de la constitution de la Société",
+    origine_propriete: phraseDeLOrigine(premiere?.origine),
     contexte_operation:
       texte(valeurs.cessionContexte) ||
       "Les parties ont convenu de réorganiser la détention du capital social de la Société.",

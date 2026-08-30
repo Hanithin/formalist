@@ -568,6 +568,24 @@ export function verifierLeTraite(contexte: ContexteGabarit): AlerteDuTraite[] {
   return alertes;
 }
 
+/**
+ * Un texte saisi, rendu insérable au milieu d'une phrase.
+ *
+ * On le saisit comme une phrase - majuscule et point - et l'acte l'enchâsse dans la
+ * sienne. L'initiale tombe, sauf si c'est un nom propre : « SAS Meridien » garde sa
+ * majuscule, « La prise de participation » la perd.
+ */
+export function auFilDeLaPhrase(texteSaisi: string): string {
+  const sansPoint = texteSaisi.trim().replace(/\s*\.+$/, "");
+  if (!sansPoint) return "";
+
+  const premierMot = sansPoint.split(/\s+/)[0] ?? "";
+  /* Un mot tout en capitales, ou qui en porte une après sa première lettre, est un nom. */
+  const estUnNom = premierMot.length > 1 && /[A-ZÀ-Þ]/.test(premierMot.slice(1));
+
+  return estUnNom ? sansPoint : sansPoint.charAt(0).toLowerCase() + sansPoint.slice(1);
+}
+
 /** Les incohérences du traité, au format du formulaire. */
 export function anomaliesDuTraite(contexte: ContexteGabarit): { champ: string; message: string }[] {
   return verifierLeTraite(contexte)
@@ -718,7 +736,15 @@ export function donneesDuTraite(contexte: ContexteGabarit): Record<string, unkno
     rcs_ville_beneficiaire: enCapitaleInitiale(texte(societe.villeRcs) || texte(societe.ville)),
     rcs_numero_beneficiaire: sirenEspace(texte(societe.siren)),
     representant_beneficiaire: representantBeneficiaire,
-    objet_beneficiaire: texte(valeurs.beneficiaireObjet),
+    /*
+     * L'objet s'insère au fil d'une phrase, non en tête de la sienne.
+     *
+     * Le traité écrit « La Société Bénéficiaire a notamment pour objet {objet}. » : le
+     * texte saisi arrivait avec sa majuscule et son point final, et l'on lisait « pour
+     * objet La prise de participation … du groupe.. » dans un acte qui se présente à
+     * l'enregistrement.
+     */
+    objet_beneficiaire: auFilDeLaPhrase(texte(valeurs.beneficiaireObjet)),
     nb_titres_beneficiaire: montant(titresBeneficiaire),
     valeur_nominale_beneficiaire: montant(nominale),
     /*
@@ -819,8 +845,16 @@ export function donneesDuTraite(contexte: ContexteGabarit): Record<string, unkno
     capital_avant_lettres: nombreEnFrancais(plan.capitalApresNumeraireCentimes / 100),
     capital_apres: montant(plan.capitalFinalCentimes / 100),
     capital_apres_lettres: nombreEnFrancais(plan.capitalFinalCentimes / 100),
+    /*
+     * Une énumération annoncée, et jamais faite.
+     *
+     * L'article disait « sera réparti comme suit : conformément à la décision de
+     * l'organe compétent » - deux points qui ouvrent une liste, suivis d'un renvoi. La
+     * répartition finale dépend de qui souscrit et de ce que l'assemblée arrête : on ne
+     * la connaît pas ici, et il vaut mieux le dire que faire mine de l'énumérer.
+     */
     repartition_post_operations:
-      "conformément à la décision de l'organe compétent de la Société Bénéficiaire approuvant l'opération",
+      "par la décision de l'organe compétent de la Société Bénéficiaire approuvant l'opération",
 
     /* ------------------------------------- L'augmentation en numéraire préalable */
     souscription_numeraire: souscriptionNumeraire,
@@ -873,11 +907,21 @@ export function donneesDuTraite(contexte: ContexteGabarit): Record<string, unkno
      * En double représentation, l'apporteur signe en son nom puis pour la société :
      * ce sont deux engagements distincts, et l'acte doit porter les deux qualités.
      */
+    /*
+     * Une société ne signe pas, son représentant signe pour elle.
+     *
+     * Le pied de l'acte portait « Monsieur Jean DUPONT » sur la ligne, et « La Société
+     * Bénéficiaire » dessous : une qualité qui n'est pas la sienne. Il signe au nom de
+     * la société, et l'acte doit le dire - c'est l'article 1161 du code civil qui
+     * l'autorise à se tenir des deux côtés, et le traité le rappelle plus haut.
+     */
     signataires: [
       { nom_signataire: apporteur, qualite_signataire: "L'Apporteur" },
       {
-        nom_signataire: double ? apporteur : representantBeneficiaire,
-        qualite_signataire: "La Société Bénéficiaire",
+        nom_signataire: texte(societe.denomination),
+        qualite_signataire:
+          "La Société Bénéficiaire, représentée par " +
+          (double ? apporteur : representantBeneficiaire),
       },
     ],
   };

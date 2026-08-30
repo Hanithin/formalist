@@ -8,6 +8,7 @@ import {
   totalDesParts,
   verifierCessions,
   type Cession,
+  phraseDeLOrigine,
 } from "@/domain/modification/cession";
 import type { AssociePresent } from "@/domain/modification/gabarit";
 
@@ -149,5 +150,45 @@ describe("ce qui se calcule et ce qui se déduit", () => {
     expect(agrementDeDroit("SAS", "tiers").requis).toBe(false);
     expect(agrementDeDroit("SCI", "tiers").requis).toBe(true);
     expect(agrementDeDroit("SAS", "tiers").motif).toContain("clause");
+  });
+});
+
+describe("d'où le cédant tient ses titres", () => {
+  /*
+   * La valeur enregistrée est la fin d'une phrase : l'acte écrit « lesquelles {origine}
+   * et sont intégralement libérées ». La liste vivait dans l'écran de saisie, et le
+   * domaine qui rédige l'acte ne connaissait pas les valeurs qu'il rend : tout ce qui
+   * n'était pas l'un de ces membres de phrase produisait « lesquelles Acquisition
+   * auprès d'un tiers et sont intégralement libérées » dans un acte enregistré au
+   * service des impôts.
+   */
+  it("accepte la phrase que l'écran enregistre", () => {
+    expect(phraseDeLOrigine("ont été acquises auprès d'un précédent titulaire")).toBe(
+      "ont été acquises auprès d'un précédent titulaire"
+    );
+  });
+
+  it("traduit le libellé du menu, qu'un appelant écrirait à sa place", () => {
+    expect(phraseDeLOrigine("Acquisition auprès d'un tiers")).toBe(
+      "ont été acquises auprès d'un précédent titulaire"
+    );
+    expect(phraseDeLOrigine("Donation ou succession")).toBe(
+      "ont été reçues par voie de transmission à titre gratuit"
+    );
+  });
+
+  /* Ce qui ne s'enchaîne pas retombe sur le cas ordinaire, plutôt que de bégayer. */
+  it("écarte ce qui ne se lit pas au fil de la phrase", () => {
+    const defaut = "ont été souscrites lors de la constitution de la Société";
+    expect(phraseDeLOrigine("")).toBe(defaut);
+    expect(phraseDeLOrigine(null)).toBe(defaut);
+    expect(phraseDeLOrigine("Acquisition")).toBe(defaut);
+    expect(phraseDeLOrigine("Souscription à la constitution de la société")).toBe(defaut);
+  });
+
+  it("garde une phrase inconnue qui s'enchaîne", () => {
+    expect(phraseDeLOrigine("ont été attribuées lors du partage d'une indivision")).toBe(
+      "ont été attribuées lors du partage d'une indivision"
+    );
   });
 });

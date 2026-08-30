@@ -337,3 +337,72 @@ describe("les résolutions portent leurs propres valeurs", () => {
     expect(bloc.modalites_souscription).toContain("Monsieur Paul DURAND");
   });
 });
+
+describe("plusieurs cessions dans une même assemblée", () => {
+  /*
+   * L'assemblée agrée chaque cession : c'est l'agrément qui la rend opposable, et sans
+   * lui elle est nulle. Le procès-verbal n'en rédigeait qu'une - la première - pendant
+   * que les actes de cession, eux, se produisaient tous. Deux associés qui cédaient le
+   * même jour repartaient avec deux contrats et un seul agrément.
+   */
+  const deuxCessions = {
+    societe: SOCIETE,
+    codes: ["cession_parts"],
+    valeurs: {},
+    assemblee: { date: "2026-09-10", associes: ASSOCIES },
+    cessions: [
+      { cedant: 0, parts: 300, prix: 15000, date: "2026-09-15", vers: "tiers", nom: "Marc BERTIN" },
+      { cedant: 1, parts: 200, prix: 10000, date: "2026-09-15", vers: "tiers", nom: "HOLDING SUD" },
+    ],
+  } as unknown as ContexteGabarit;
+
+  it("rédige une résolution par cession", () => {
+    const donnees = donneesDuPvAge(deuxCessions);
+    const resolutions = donnees.r_cession as { ord: string; identification_cessionnaire: string }[];
+
+    expect(resolutions).toHaveLength(2);
+    expect(resolutions.map((r) => r.ord)).toEqual(["PREMIÈRE", "DEUXIÈME"]);
+    expect(resolutions.map((r) => r.identification_cessionnaire)).toEqual([
+      "Marc BERTIN",
+      "HOLDING SUD",
+    ]);
+  });
+
+  it("décale les pouvoirs, qui ferment la marche", () => {
+    const donnees = donneesDuPvAge(deuxCessions);
+    expect(donnees.ord).toBe("TROISIÈME");
+  });
+
+  /* L'ordre du jour annonce chaque cession, en nommant ses parties. */
+  it("annonce chaque cession à l'ordre du jour", () => {
+    const ordre = donneesDuPvAge(deuxCessions).ordre_du_jour as { libelle: string }[];
+
+    expect(ordre).toHaveLength(3);
+    expect(ordre[0].libelle).toContain("Marc BERTIN");
+    expect(ordre[1].libelle).toContain("HOLDING SUD");
+    expect(ordre[2].libelle).toContain("pouvoirs");
+  });
+
+  /* Une cession seule garde la forme qu'elle avait : une résolution, un ordre du jour. */
+  it("une seule cession ne change rien", () => {
+    const donnees = donneesDuPvAge({
+      ...deuxCessions,
+      cessions: [deuxCessions.cessions![0]],
+    } as ContexteGabarit);
+
+    expect(donnees.r_cession).toHaveLength(1);
+    expect(donnees.ord).toBe("DEUXIÈME");
+    expect((donnees.ordre_du_jour as { libelle: string }[])[0].libelle).toContain(
+      "constatation d'une cession"
+    );
+  });
+
+  /* La qualité du signataire s'accorde : Madame Anne DURAND est associée. */
+  it("le pied de l'acte accorde la qualité des signataires", () => {
+    const signataires = donneesDuPvAge(deuxCessions).signataires as {
+      qualite_signataire: string;
+    }[];
+
+    expect(signataires.map((s) => s.qualite_signataire)).toEqual(["Associé", "Associée"]);
+  });
+});

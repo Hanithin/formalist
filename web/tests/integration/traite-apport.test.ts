@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import PizZip from "pizzip";
 import { genererDocument } from "@/infrastructure/documents/generation";
 import { rendreLeTraiteDApport } from "@/infrastructure/documents/modeles-cabinet";
-import { donneesDuTraite } from "@/domain/modification/traite-apport";
+import { donneesDuTraite, auFilDeLaPhrase } from "@/domain/modification/traite-apport";
 import { donneesDuGabarit, actesAProduire, MODELE_TRAITE } from "@/domain/modification/gabarit";
 import type { Valeurs } from "@/domain/modification/types";
 
@@ -202,5 +202,30 @@ describe("le traité d'apport de titres", () => {
     expect(texte).toContain("sursis d'imposition prévu à l'article 150-0 B du code général des impôts");
     expect(texte).not.toContain("Événements mettant fin au report");
     expect(texte).not.toContain("150-0 B ter");
+  });
+});
+
+describe("le texte saisi, inséré au fil d'une phrase", () => {
+  /*
+   * Le traité écrit « La Société Bénéficiaire a notamment pour objet {objet}. » : le
+   * texte arrivait avec sa majuscule et son point final, et l'on lisait « pour objet La
+   * prise de participation … du groupe.. » dans un acte présenté à l'enregistrement.
+   */
+  it("perd sa majuscule et son point", () => {
+    expect(auFilDeLaPhrase("La prise de participation dans toutes sociétés.")).toBe(
+      "la prise de participation dans toutes sociétés"
+    );
+    expect(auFilDeLaPhrase("L'animation du groupe...")).toBe("l'animation du groupe");
+  });
+
+  /* Un nom propre garde la sienne : « SCI Marchand » n'est pas une phrase. */
+  it("garde la majuscule d'un nom", () => {
+    expect(auFilDeLaPhrase("SCI Marchand et gestion immobilière.")).toBe(
+      "SCI Marchand et gestion immobilière"
+    );
+  });
+
+  it("rend le vide sur le vide", () => {
+    expect(auFilDeLaPhrase("   ")).toBe("");
   });
 });

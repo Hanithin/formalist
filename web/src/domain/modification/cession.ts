@@ -55,6 +55,55 @@ export interface Cession {
   origine?: string | null;
 }
 
+/**
+ * D'où le cédant tient ses titres, et comment l'acte le dit.
+ *
+ * La liste vivait dans l'écran de saisie, et la valeur enregistrée était la fin d'une
+ * phrase : l'acte écrit « lesquelles {origine} et sont intégralement libérées ». Le
+ * domaine qui rédige l'acte ne connaissait donc pas les valeurs qu'il rend, et tout ce
+ * qui n'était pas l'un de ces membres de phrase - un libellé de menu, une saisie venue
+ * d'ailleurs - produisait « lesquelles Acquisition auprès d'un tiers et sont
+ * intégralement libérées » dans un acte enregistré au service des impôts.
+ */
+export const ORIGINES_DE_PROPRIETE = [
+  { libelle: "Souscription à la constitution de la société", phrase: "" },
+  {
+    libelle: "Souscription à une augmentation de capital",
+    phrase: "ont été souscrites lors d'une augmentation de capital",
+  },
+  {
+    libelle: "Acquisition auprès d'un tiers",
+    phrase: "ont été acquises auprès d'un précédent titulaire",
+  },
+  {
+    libelle: "Donation ou succession",
+    phrase: "ont été reçues par voie de transmission à titre gratuit",
+  },
+] as const;
+
+const ORIGINE_PAR_DEFAUT = "ont été souscrites lors de la constitution de la Société";
+
+/**
+ * La phrase qui dira l'origine dans l'acte.
+ *
+ * Elle accepte la phrase elle-même - ce que l'écran enregistre - et le libellé du menu,
+ * que tout appelant un peu moins au fait écrirait à sa place. Ce qu'elle ne reconnaît
+ * pas retombe sur la souscription à la constitution, qui est le cas ordinaire : mieux
+ * vaut une phrase juste et générale qu'un membre de phrase qui ne se lit pas.
+ */
+export function phraseDeLOrigine(origine: string | null | undefined): string {
+  const valeur = (origine ?? "").trim();
+  if (!valeur) return ORIGINE_PAR_DEFAUT;
+
+  const connue = ORIGINES_DE_PROPRIETE.find(
+    (o) => o.phrase === valeur || o.libelle === valeur
+  );
+  if (connue) return connue.phrase || ORIGINE_PAR_DEFAUT;
+
+  /* Une phrase inconnue mais qui s'enchaîne : on la garde telle quelle. */
+  return /^(ont|lui|leur|proviennent|résultent)\b/i.test(valeur) ? valeur : ORIGINE_PAR_DEFAUT;
+}
+
 export function cessionVide(): Cession {
   return { cedant: null, parts: null, prix: null, vers: "tiers" };
 }

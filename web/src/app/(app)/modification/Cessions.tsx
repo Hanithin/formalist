@@ -9,6 +9,7 @@ import {
   repartitionApres,
   totalDesParts,
   type Cession,
+  ORIGINES_DE_PROPRIETE,
 } from "@/domain/modification/cession";
 import type { AssociePresent } from "@/domain/modification/gabarit";
 import { identiteSurUneLigne, separerLIdentite } from "@/domain/formalite/noms";
@@ -24,21 +25,14 @@ import styles from "./Modification.module.css";
  * « lesquelles ont été souscrites lors de la constitution ». Chaque valeur est donc
  * rédigée pour s'y insérer telle quelle.
  */
-const ORIGINES = [
-  { valeur: "", libelle: "Souscription à la constitution de la société" },
-  {
-    valeur: "ont été souscrites lors d'une augmentation de capital",
-    libelle: "Souscription à une augmentation de capital",
-  },
-  {
-    valeur: "ont été acquises auprès d'un précédent titulaire",
-    libelle: "Acquisition auprès d'un tiers",
-  },
-  {
-    valeur: "ont été reçues par voie de transmission à titre gratuit",
-    libelle: "Donation ou succession",
-  },
-] as const;
+/*
+ * La liste des origines vit dans le domaine, avec l'acte qui la rédige.
+ *
+ * Elle était ici, et la valeur enregistrée est la fin d'une phrase : « lesquelles {…}
+ * et sont intégralement libérées ». Le domaine qui écrit l'acte ne connaissait donc
+ * pas les valeurs qu'il rend.
+ */
+const ORIGINES = ORIGINES_DE_PROPRIETE.map((o) => ({ valeur: o.phrase, libelle: o.libelle }));
 
 /**
  * Les cessions de parts.

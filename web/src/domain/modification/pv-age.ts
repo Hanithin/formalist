@@ -564,10 +564,30 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
    * Les ordinaux se calculent sur la liste des blocs allumés, dans l'ordre du modèle.
    * Les pouvoirs ferment la marche : ils ne portent pas de bloc, mais comptent.
    */
-  const ordinalDe = (bloc: BlocDuModele) => ordinalDeResolution(blocs.indexOf(bloc));
+  /*
+   * Une résolution par cession, non une pour toutes.
+   *
+   * L'assemblée agrée chaque cession : c'est l'agrément qui la rend opposable, et sans
+   * lui elle est nulle. Le procès-verbal n'en rédigeait qu'une - la première - pendant
+   * que les actes de cession, eux, se produisaient tous. Deux associés qui cédaient le
+   * même jour repartaient donc avec deux contrats et un seul agrément.
+   *
+   * Les résolutions qui suivent se décalent d'autant, et les pouvoirs avec elles.
+   */
+  const cessionsAAgreer = blocs.includes("r_cession") ? Math.max(1, cessions.length) : 0;
+  const supplementDeCession = Math.max(0, cessionsAAgreer - 1);
 
-  const commun = (bloc: BlocDuModele, dateEffet: string) => ({
-    ord: ordinalDe(bloc),
+  const decalageDe = (bloc: BlocDuModele) => {
+    const rangDeLaCession = blocs.indexOf("r_cession");
+    if (rangDeLaCession === -1) return 0;
+    return blocs.indexOf(bloc) > rangDeLaCession ? supplementDeCession : 0;
+  };
+
+  const ordinalDe = (bloc: BlocDuModele, rangDansLeBloc = 0) =>
+    ordinalDeResolution(blocs.indexOf(bloc) + decalageDe(bloc) + rangDansLeBloc);
+
+  const commun = (bloc: BlocDuModele, dateEffet: string, rangDansLeBloc = 0) => ({
+    ord: ordinalDe(bloc, rangDansLeBloc),
     date_effet: dateEffet,
     formule_adoption: formuleAdoption,
     titres: mots.titres,
@@ -623,7 +643,19 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
      * point final au dernier. Le modèle n'écrit que le numéro et la tabulation.
      */
     ordre_du_jour: [
-      ...blocs.map((bloc) => LIBELLES[bloc](mots, contexte)),
+      ...blocs.flatMap((bloc) =>
+        bloc === "r_cession" && cessions.length > 1
+          ? cessions.map(
+              (cession) =>
+                "constatation d'une cession " +
+                (mots.titres === "actions" ? "d'actions" : "de parts sociales") +
+                " consentie par " +
+                cession.CEDANT +
+                " au profit de " +
+                cession.CESSIONNAIRE
+            )
+          : [LIBELLES[bloc](mots, contexte)]
+      ),
       "pouvoirs en vue de l'accomplissement des formalités légales de publicité et de dépôt",
     ].map((libelle, rang, tous) => ({
       num: rang + 1,
@@ -634,14 +666,16 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
     signataires: associes.map((associe) => ({
       /* En tête de ligne de signature : « La société X », non « la société X ». */
       nom_signataire: avecMajusculeInitiale(nomDeLAssocie(associe)),
+      /* « Associée » quand c'est une femme : la qualité s'accorde comme un adjectif. */
       qualite_signataire: avecMajusculeInitiale(
-        mots.associesPluriel === "actionnaires" ? "actionnaire" : "associé"
+        (mots.associesPluriel === "actionnaires" ? "actionnaire" : "associé") +
+          (associe.civilite === "Madame" && mots.associesPluriel !== "actionnaires" ? "e" : "")
       ),
     })),
   };
 
   /* Les pouvoirs ferment la marche : le modèle les écrit en dur, avec leur ordinal. */
-  donnees.ord = ordinalDeResolution(blocs.length);
+  donnees.ord = ordinalDeResolution(blocs.length + supplementDeCession);
 
   /* --------------------------------------------------- Les résolutions */
 
@@ -836,12 +870,14 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
   }
 
   if (blocs.includes("r_cession")) {
-    const cession = cessions[0];
     const regle = agrementDeDroit(societe.forme, "tiers");
     const agrement = regle.requis || texte(valeurs.agrementRequis) === "Oui";
 
-    donnees.r_cession = {
-      ...commun("r_cession", dateEnFrancais(cession?.DATE ?? "")),
+    /* Une par cession : le modèle répète la section autant de fois qu'elle a d'entrées. */
+    const aAgreer = cessions.length > 0 ? cessions : [undefined];
+
+    donnees.r_cession = aAgreer.map((cession, rang) => ({
+      ...commun("r_cession", dateEnFrancais(cession?.DATE ?? ""), rang),
       agrement,
       identification_cedant: cession?.CEDANT ?? "",
       nb_titres_cedes: montant(cession?.PARTS ?? 0),
@@ -855,7 +891,7 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
        */
       qualite_nouvel_associe:
         mots.associesPluriel === "actionnaires" ? "de nouvel actionnaire" : "de nouvel associé",
-    };
+    }));
   }
 
   if (blocs.includes("r_prorogation")) {
