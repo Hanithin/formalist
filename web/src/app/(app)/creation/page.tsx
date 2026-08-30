@@ -128,7 +128,30 @@ export default async function Creation({
    * des pièces pour déposer l'attestation, et ce lien doit continuer d'y mener.
    */
   const confie = ligne !== null && ligne.status !== "en_cours";
-  const courante = etapeAccessible(Number(etape) || (confie ? ETAPES.length : 1), brouillon);
+
+  /*
+   * Un dossier confié ne se fait plus barrer par une étape incomplète.
+   *
+   * `etapeAccessible` empêche de sauter par-dessus ce qui n'est pas rempli : la
+   * répartition du capital n'a pas de sens sans les associés. La règle vaut tant qu'on
+   * remplit ; elle n'a plus d'objet une fois le dossier chez l'avocat, où il n'y a rien
+   * à compléter.
+   *
+   * Elle se retournait alors contre le client. Un dossier ouvert avant le format actuel
+   * ne se relit pas : son brouillon paraît vide, la première étape incomplète est la
+   * première, et une société immatriculée s'ouvrait sur « Choisissez une forme » -
+   * formulaire vierge à gauche, suivi complet à droite.
+   *
+   * Un dossier renvoyé pour corrections fait exception : il est revenu dans les mains
+   * du client, qui reprend précisément ce qui manque. La règle vaut de nouveau, et
+   * c'est elle qui le pose devant la case à corriger.
+   */
+  const aReprendre = ligne?.status === "corrections_demandees";
+  const demandee = Number(etape) || (confie ? ETAPES.length : 1);
+  const courante =
+    confie && !aReprendre
+      ? Math.min(Math.max(demandee, 1), ETAPES.length)
+      : etapeAccessible(demandee, brouillon);
 
 
   /*

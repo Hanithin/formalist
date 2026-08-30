@@ -1261,3 +1261,61 @@ test("une date de naissance se tape, elle ne se cherche pas au calendrier", asyn
   // Le masque s'applique à la frappe, et le calendrier ne s'est pas ouvert.
   await expect(naissance).toHaveValue("12/04/1988");
 });
+
+/**
+ * Un dossier confié ne se fait plus barrer par une étape incomplète.
+ *
+ * `etapeAccessible` empêche de sauter par-dessus ce qui n'est pas rempli. La règle vaut
+ * tant qu'on remplit ; elle se retournait contre le client une fois le dossier parti
+ * chez l'avocat. Un dossier ouvert avant le format actuel ne se relit pas : son
+ * brouillon paraît vide, la première étape incomplète est la première, et une société
+ * immatriculée s'ouvrait sur « Choisissez une forme » - formulaire vierge à gauche,
+ * suivi complet à droite.
+ */
+test.describe("un dossier transmis s'ouvre sur ses documents", () => {
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({
+      connectionString: process.env.DATABASE_URL ?? "",
+      options: "-c timezone=UTC",
+    }),
+  });
+
+  test.afterAll(() => prisma.$disconnect());
+
+  /** Un dossier transmis dont le brouillon ne se relit pas : l'ancien format. */
+  async function dossierIllisible(request: import("@playwright/test").APIRequestContext) {
+    const reponse = await request.post("/api/formalites/brouillon");
+    const { dossier } = await reponse.json();
+    ouverts.push(Number(dossier));
+
+    await prisma.formalites.update({
+      where: { id: Number(dossier) },
+      data: {
+        societe: "ANCIEN FORMAT",
+        forme: "EURL",
+        status: "terminee",
+        phase: 5,
+        /* Les clés d'avant : le lecteur actuel n'y trouve rien. */
+        data_json: JSON.stringify({ NOM_SOCIETE: "ANCIEN FORMAT", FORME_JURIDIQUE: "EURL" }),
+      },
+    });
+    return Number(dossier);
+  }
+
+  test("même quand son brouillon ne se relit pas", async ({ page, request }) => {
+    const dossier = await dossierIllisible(request);
+    await page.goto("/creation?dossier=" + dossier);
+
+    await expect(page.getByRole("heading", { name: "Mes documents" })).toBeVisible();
+    /* Et non la première étape, vide, d'une société déjà immatriculée. */
+    await expect(page.getByText("Informations de la société")).toHaveCount(0);
+  });
+
+  test("le lien du suivi mène toujours à l'étape qu'il vise", async ({ page, request }) => {
+    /* Le suivi renvoie à l'étape des pièces pour déposer l'attestation. */
+    const dossier = await dossierIllisible(request);
+    await page.goto("/creation?dossier=" + dossier + "&etape=5");
+
+    await expect(page.getByRole("heading", { name: "Pièces justificatives" })).toBeVisible();
+  });
+});

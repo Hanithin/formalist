@@ -166,11 +166,23 @@ test.describe("un dossier parti chez l'avocat", () => {
      * par lui que le client dépose l'attestation de dépôt de capital et celle de
      * parution, que le suivi et les courriels lui réclament précisément à ce
      * moment-là. Le serveur, lui, n'a jamais refusé ces dépôts.
+     *
+     * Ce qui compte est qu'on puisse y aller, non qu'on y tombe. Un dossier confié
+     * s'ouvre là où il en est - ses documents - et le fil des étapes reste ouvert
+     * derrière : c'est ce que ce test tient, depuis qu'une étape incomplète ne barre
+     * plus la route d'un dossier déjà parti.
      */
     const parti = await dossierEnVerification();
     await page.goto("/creation?dossier=" + parti);
 
     await expect(page.getByRole("heading", { name: "Où en est votre dossier" })).toBeVisible();
+
+    /* Les pièces, où le suivi renvoie pour déposer l'attestation. */
+    await page.goto("/creation?dossier=" + parti + "&etape=5");
+    await expect(page.getByRole("heading", { name: "Pièces justificatives" })).toBeVisible();
+
+    /* Et le formulaire lui-même, jusqu'à sa première étape. */
+    await page.goto("/creation?dossier=" + parti + "&etape=1");
     await expect(page.getByText("Informations de la société")).toBeVisible();
   });
 
