@@ -2,6 +2,7 @@
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { natureDeLaForme } from "@/domain/formalite/formes";
+import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { NATURES_PROPOSEES, fonctionsDuDirigeant } from "@/domain/formalite/formes";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
@@ -21,6 +22,8 @@ import {
 } from "@/domain/comptes/regles";
 import { confidentialitePossible } from "@/domain/comptes/confidentialite";
 import { regimeDesConventions } from "@/domain/comptes/conventions";
+import { piecesDesComptes } from "@/domain/comptes/pieces";
+import { Pieces } from "@/components/formulaire/Pieces";
 import { devisDesComptes, DELAI, PRESTATIONS } from "@/domain/comptes/offre";
 import { verifierComptes } from "@/domain/comptes/verification";
 import { Conventions } from "./Conventions";
@@ -53,6 +56,8 @@ interface Props {
   initial: Comptes;
   etapeInitiale: number;
   issueDuPaiement?: "annule" | "attente";
+  /** Ce qui est déjà au dossier, pour ne pas redemander une pièce arrivée. */
+  piecesDeposees: { type: string; nom: string }[];
 }
 
 function nombre(valeur: unknown): number {
@@ -94,7 +99,13 @@ function etapeDe(champ: string): number {
   return 1;
 }
 
-export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: Props) {
+export function Parcours({
+  dossier,
+  initial,
+  etapeInitiale,
+  issueDuPaiement,
+  piecesDeposees,
+}: Props) {
   const [etape, setEtape] = useState(etapeInitiale);
   const [etat, setEtat] = useState<Comptes>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -260,6 +271,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
 
         {etape === 7 && (
           <EtapeReglement
+            piecesDeposees={piecesDeposees}
             dossier={dossier}
             etat={etat}
             anomalies={anomalies}
@@ -1238,11 +1250,13 @@ function EtapeReglement({
   dossier,
   etat,
   anomalies,
+  piecesDeposees,
   surCorrection,
 }: {
   dossier: number;
   etat: Comptes;
   anomalies: { champ: string; message: string }[];
+  piecesDeposees: { type: string; nom: string }[];
   /** Le champ en défaut ; l'étape s'en déduit. */
   surCorrection: (champ: string) => void;
 }) {
@@ -1256,6 +1270,13 @@ function EtapeReglement({
   const regime = regimeDesConventions({
     forme: etat.societe.forme,
     avecCommissaire: etat.valeurs.commissaireAuxComptes === "Oui",
+  });
+  const pieces = piecesDesComptes({
+    forme: etat.societe.forme,
+    avecCommissaire: etat.valeurs.commissaireAuxComptes === "Oui",
+    commissaireNom:
+      typeof etat.valeurs.commissaireNom === "string" ? etat.valeurs.commissaireNom : null,
+    nombreDeConventions: etat.conventions.length,
   });
 
   function payer() {
@@ -1294,6 +1315,33 @@ function EtapeReglement({
           retrouverez dans vos documents une fois la relecture faite.
         </p>
       </section>
+
+      {/*
+        Le seul document que nous n'écrivons pas.
+
+        Quand la société a un commissaire aux comptes, le rapport spécial sur les
+        conventions est de sa main : nous ne le rédigeons pas à sa place, et le
+        procès-verbal atteste pourtant que l'assemblée en a pris connaissance. Sans le
+        document au dossier, cette phrase parle d'une lecture qui n'a pas eu lieu.
+      */}
+      {pieces.length > 0 && (
+        <section className={styles.bloc}>
+          <h3 className={styles.blocTitre}>Le rapport de votre commissaire</h3>
+          <p className={styles.blocTexte}>
+            Déposez-le ici : il part avec votre dossier, et le procès-verbal y renvoie.
+          </p>
+          <Pieces
+            dossierId={dossier}
+            pieces={pieces.map((p) => ({
+              identifiant: p.identifiant,
+              titre: p.titre,
+              description: p.explication,
+              formats: p.formats,
+            }))}
+            deposees={piecesDeposees}
+          />
+        </section>
+      )}
 
       <section className={styles.bloc}>
         <h3 className={styles.blocTitre}>Ce que nous faisons</h3>
@@ -1381,7 +1429,7 @@ function EtapeReglement({
               {anomalies.length === 1
                 ? "Une information manque : "
                 : anomalies.length + " informations manquent : "}
-              {anomalies.map((a) => a.message).join(", ")}.
+              {phraseDesAnomalies(anomalies.map((a) => a.message))}
             </p>
             <div className={styles.blocActions}>
               <button type="button" onClick={() => surCorrection(anomalies[0].champ)}>

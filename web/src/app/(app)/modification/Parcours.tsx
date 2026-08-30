@@ -2,6 +2,7 @@
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { NATURES_PROPOSEES, fonctionsDuDirigeant } from "@/domain/formalite/formes";
+import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
 import {
   Fragment,
@@ -3188,7 +3189,7 @@ function EtapeReglement({
                 {anomalies.length === 1
                   ? "Une information manque : "
                   : anomalies.length + " informations manquent : "}
-                {anomalies.map((a) => a.message).join(", ")}.
+                {phraseDesAnomalies(anomalies.map((a) => a.message))}
               </p>
               <button
                 type="button"

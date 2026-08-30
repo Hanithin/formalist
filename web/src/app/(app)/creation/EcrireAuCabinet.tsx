@@ -154,10 +154,17 @@ export function EcrireAuCabinet({ dossierId, surFermeture }: Props) {
               onChange={(e) => setTexte(e.target.value)}
             />
 
-            {/* Le champ de fichier est masqué : c'est le bouton qui porte le clic. */}
+            {/*
+              Le champ de fichier est masqué : c'est le bouton qui porte le clic.
+
+              Masqué aux yeux, non au clavier - il reste dans l'ordre de tabulation,
+              et sans nom la synthèse vocale y annonce « Choisir un fichier » sans
+              dire de quoi il s'agit.
+            */}
             <input
               ref={fichierRef}
               type="file"
+              aria-label="Joindre un fichier à votre message"
               className={styles.ecrireFichier}
               accept={EXTENSIONS_JOINTES.join(",")}
               onChange={(e) => choisir(e.target.files?.[0] ?? null)}

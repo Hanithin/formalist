@@ -2,6 +2,7 @@
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { natureDeLaForme } from "@/domain/formalite/formes";
+import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
@@ -1017,7 +1018,7 @@ function EtapeReglement({
           {anomalies.length === 1
             ? "Une information manque : "
             : anomalies.length + " informations manquent : "}
-          {anomalies.map((a) => a.message).join(", ")}.
+          {phraseDesAnomalies(anomalies.map((a) => a.message))}
         </p>
       ) : (
         <div className={styles.blocActions}>

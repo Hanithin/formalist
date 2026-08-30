@@ -270,6 +270,42 @@ describe("les actes à produire", () => {
     expect(actes.map((a) => a.gabarit)).toContain("comptes-rapport-conventions.docx");
   });
 
+  it("nomme le commissaire là où le procès-verbal cite son rapport", () => {
+    /*
+     * Le formulaire demandait son nom, et aucun document ne le portait. La seule phrase
+     * qui a besoin de lui est celle où l'assemblée déclare avoir pris connaissance de
+     * son rapport : un rapport présenté se rattache à celui qui l'a établi.
+     */
+    const texte = produire(
+      contexte({
+        valeurs: { ...VALEURS, commissaireAuxComptes: "Oui", commissaireNom: "Cabinet AUDIT RHONE" },
+        conventions: [
+          { nature: "Convention de compte courant", partie: "Monsieur Jean DUPONT", objet: "Avance en compte", montantCentimes: 500_000, modalites: "", poursuivie: false },
+        ],
+      }),
+      "comptes-pv-assemblee.docx"
+    );
+
+    expect(texte).toContain(
+      "rapport spécial établi par le commissaire aux comptes, Cabinet AUDIT RHONE"
+    );
+  });
+
+  it("se passe de son nom quand il n'est pas donné", () => {
+    const texte = produire(
+      contexte({
+        valeurs: { ...VALEURS, commissaireAuxComptes: "Oui" },
+        conventions: [
+          { nature: "Convention de compte courant", partie: "Monsieur Jean DUPONT", objet: "Avance en compte", montantCentimes: 500_000, modalites: "", poursuivie: false },
+        ],
+      }),
+      "comptes-pv-assemblee.docx"
+    );
+
+    expect(texte).toContain("rapport spécial établi par le commissaire aux comptes");
+    expect(texte).not.toContain("commissaire aux comptes, ");
+  });
+
   it("ne le produit pas pour un associé unique, ni quand un commissaire est là", () => {
     /*
      * L'associé unique est dispensé du rapport et du vote ; et quand un commissaire aux

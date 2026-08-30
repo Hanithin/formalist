@@ -339,7 +339,18 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
     IS_MENTION_AU_REGISTRE: regime.regime === "mention-au-registre",
     IS_CONVENTIONS_SANS_OBJET: regime.regime === "sans-objet",
     ARTICLE_CONVENTIONS: regime.article,
-    RAPPORT_PAR: regime.rapportPar ?? "",
+    /*
+     * « le rapport spécial établi par le commissaire aux comptes, Monsieur X ».
+     *
+     * Le formulaire demandait son nom depuis toujours et aucun document ne le portait.
+     * L'acte le nomme là où il cite son rapport : c'est le seul endroit de la
+     * procédure où ce nom a un office, et un rapport présenté à l'assemblée se
+     * rattache à celui qui l'a établi.
+     */
+    RAPPORT_PAR:
+      regime.rapportPar === "commissaire aux comptes" && texte(valeurs.commissaireNom)
+        ? regime.rapportPar + ", " + texte(valeurs.commissaireNom)
+        : (regime.rapportPar ?? ""),
     CONVENTIONS: conventions.map((convention, rang) => ({
       RANG: rang + 1,
       NATURE: ou(convention.nature),

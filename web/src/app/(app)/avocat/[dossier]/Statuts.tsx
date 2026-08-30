@@ -251,9 +251,16 @@ export function Statuts({ dossier }: { dossier: number }) {
             Déposez les statuts en vigueur, au format PDF. Vous pouvez les demander au
             client par message, ou les reprendre au registre national.
           </p>
+          {/*
+            Le champ est visible, et le paragraphe au-dessus ne le nomme pas.
+            Une explication n'est pas une étiquette : elle se lit avant, elle ne se
+            rattache pas au champ, et la synthèse vocale annonçait ici « Choisir un
+            fichier » sans dire lequel.
+          */}
           <input
             type="file"
             accept=".pdf"
+            aria-label="Déposer les statuts en vigueur, au format PDF"
             disabled={enCours}
             onChange={(e) => {
               const fichier = e.target.files?.[0];

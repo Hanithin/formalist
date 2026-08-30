@@ -99,6 +99,15 @@ export function DepotFichier({
         {/*
           Le champ natif reste, caché : c'est lui qui ouvre le sélecteur du système, et
           son étiquette « Aucun fichier choisi » n'a pas à s'afficher.
+
+          Caché aux yeux seulement : il garde sa place dans l'ordre de tabulation, et
+          c'est bien ce qu'il faut - le sélecteur de fichiers doit s'atteindre au
+          clavier. Il lui faut donc un nom, sans quoi la synthèse vocale annonce un
+          bouton « Choisir un fichier » seul au milieu de la page.
+
+          Ici un fichier est déjà là : le champ sert à le remplacer, et c'est ce qu'il
+          annonce - l'invite de la zone vide (« Glissez votre fichier ici ») décrirait
+          un geste qui n'est plus celui-là.
         */}
         <input
           ref={champ}
@@ -106,6 +115,7 @@ export function DepotFichier({
           className={styles.natif}
           type="file"
           accept={accepte}
+          aria-label={"Remplacer le fichier déposé" + (depose ? " : " + depose : "")}
           disabled={desactive}
           onChange={(e) => recevoir(e.target.files)}
         />
@@ -153,6 +163,7 @@ export function DepotFichier({
         className={styles.natif}
         type="file"
         accept={accepte}
+        aria-label={invite}
         disabled={desactive}
         onChange={(e) => recevoir(e.target.files)}
       />

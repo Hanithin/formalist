@@ -402,6 +402,17 @@ export default async function DepotDesComptes({
           initial={comptes}
           etapeInitiale={etapeInitiale}
           issueDuPaiement={issue}
+          /*
+           * Les pièces déjà déposées, relues du serveur à chaque affichage.
+           *
+           * Une seule pièce est attendue ici - le rapport du commissaire aux comptes,
+           * que nous n'écrivons pas - et elle se dépose à l'étape du règlement.
+           * Revenir sur l'étape après un dépôt doit montrer ce qui est arrivé, non ce
+           * qu'on avait en ouvrant la page.
+           */
+          piecesDeposees={(await documentsDuDossier(utilisateur, dossierId))
+            .filter((d) => d.type)
+            .map((d) => ({ type: d.type as string, nom: d.name }))}
         />
       </div>
     </main>

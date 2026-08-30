@@ -7,7 +7,9 @@ import { TYPE_ATTESTATION_CAPITAL } from "@/infrastructure/db/depots/suivi";
 import { piecesAttendues } from "@/domain/formalite/documents";
 import { piecesDeclaration } from "@/domain/auto-entrepreneur/declaration";
 import { piecesAFournir } from "@/domain/modification/formalites";
+import { piecesDesComptes } from "@/domain/comptes/pieces";
 import { lireModification } from "@/infrastructure/db/depots/modifications";
+import { lireComptes } from "@/infrastructure/db/depots/comptes";
 import { lireDeclaration } from "@/infrastructure/db/depots/auto-entrepreneur";
 import { DepotRefuse } from "@/lib/fichiers";
 import { route } from "@/lib/reponses";
@@ -47,19 +49,34 @@ export const POST = route(async (requete: Request) => {
    * modification était mesuré à l'aune de la liste de la création : tout dépôt s'y
    * voyait répondre « cette pièce n'est pas attendue ».
    */
-  const attendues =
-    ligne.type === "auto-entrepreneur"
-      ? piecesDeclaration(lireDeclaration(ligne.data_json))
-      : ligne.type === "modification"
-        ? (() => {
-            const modification = lireModification(ligne.data_json);
-            return piecesAFournir(modification.codes ?? [], modification.valeurs ?? {}).map((p) => ({
-              identifiant: p.identifiant,
-              titre: p.titre,
-              formats: p.formats,
-            }));
-          })()
-        : piecesAttendues(brouillon.forme);
+  const attendues = ((): { identifiant: string; titre: string; formats: string[] }[] => {
+    if (ligne.type === "auto-entrepreneur") {
+      return piecesDeclaration(lireDeclaration(ligne.data_json));
+    }
+    if (ligne.type === "modification") {
+      const modification = lireModification(ligne.data_json);
+      return piecesAFournir(modification.codes ?? [], modification.valeurs ?? {}).map((p) => ({
+        identifiant: p.identifiant,
+        titre: p.titre,
+        formats: p.formats,
+      }));
+    }
+    /*
+     * Le dépôt des comptes n'en attend qu'une, et seulement dans un cas : le rapport
+     * spécial du commissaire aux comptes, que le cabinet n'écrit pas.
+     */
+    if (ligne.type === "comptes") {
+      const comptes = lireComptes(ligne.data_json);
+      return piecesDesComptes({
+        forme: comptes.societe.forme,
+        avecCommissaire: comptes.valeurs.commissaireAuxComptes === "Oui",
+        commissaireNom:
+          typeof comptes.valeurs.commissaireNom === "string" ? comptes.valeurs.commissaireNom : null,
+        nombreDeConventions: comptes.conventions.length,
+      }).map((p) => ({ identifiant: p.identifiant, titre: p.titre, formats: p.formats }));
+    }
+    return piecesAttendues(brouillon.forme);
+  })();
 
   const attendue = attendues.find((p) => p.identifiant === identifiant);
   if (!attendue) {

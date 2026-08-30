@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { montantLisible } from "@/domain/modification/offre";
+import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import type { ActeProduit } from "@/domain/document/publication";
 import type { Cessation } from "@/infrastructure/db/depots/cessation";
 import { champsAffiches, verifierCessation } from "@/domain/cessation/verification";
@@ -614,7 +615,7 @@ function EtapeReglement({
             {anomalies.length === 1
               ? "Une information manque : "
               : anomalies.length + " informations manquent : "}
-            {anomalies.map((a) => a.message).join(", ")}.
+            {phraseDesAnomalies(anomalies.map((a) => a.message))}
           </p>
         ) : (
           <div className={styles.blocActions}>
