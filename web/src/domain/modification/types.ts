@@ -318,6 +318,14 @@ export const MODIFICATIONS: DefinitionModification[] = [
         libelle: "Nationalité",
         type: "texte",
         indication: "Française",
+        /*
+         * Facultative, elle laissait « de nationalité , » dans le procès-verbal.
+         *
+         * L'acte présente le dirigeant d'une phrase qui l'énonce toujours, et le
+         * greffe la demande sur la déclaration qui accompagne la nomination : c'est
+         * un renseignement dû, non un complément.
+         */
+        obligatoire: true,
         visibleSi: { champ: "typeChangementDirigeant", vaut: ["Nomination"] },
       },
       {

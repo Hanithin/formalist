@@ -764,8 +764,19 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
        * avec quatre paragraphes nommant un président sans nom - « , né le - à , de
        * nationalité , demeurant . » - sous le quitus du sortant. Un acte qui ne nomme
        * personne, déposé au greffe.
+       *
+       * La condition posée alors regardait aussi le nom saisi, et elle allait trop
+       * loin dans l'autre sens : qui remplit une nomination, se ravise et choisit une
+       * révocation laisse ce nom derrière lui - le formulaire masque les champs, il ne
+       * les efface pas. Le procès-verbal révoquait alors un dirigeant et en nommait un
+       * autre dans le même souffle, sans que personne ne l'ait décidé.
+       *
+       * C'est la nature du changement qui tranche. Le nom ne sert plus que faute de
+       * nature déclarée - un dossier ouvert avant que le formulaire ne la demande.
        */
-      nomination: changement === "Nomination" || !!texte(valeurs.nouveauDirigeantNom),
+      nomination: changement
+        ? changement === "Nomination"
+        : !!texte(valeurs.nouveauDirigeantNom),
       fin_mandat: sortie
         ? {
             /*

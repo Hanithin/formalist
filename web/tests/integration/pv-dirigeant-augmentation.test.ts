@@ -75,6 +75,51 @@ describe("la résolution du dirigeant", () => {
     expect(texte).not.toContain("déclare accepter les fonctions");
   });
 
+  it("ne nomme pas non plus le dirigeant d'une nomination abandonnée", () => {
+    /*
+     * Le formulaire masque les champs d'une nomination quand on choisit la révocation ;
+     * il ne les efface pas. Qui remplit une nomination, se ravise et révoque laissait
+     * donc un nom derrière lui, et le procès-verbal révoquait un dirigeant tout en en
+     * nommant un autre - sans que personne ne l'ait décidé, et sous les yeux du greffe.
+     */
+    const texte = rendre(["dirigeant"], {
+      typeChangementDirigeant: "Révocation",
+      fonctionDirigeant: "Gérant",
+      dateEffetDirigeant: "2026-09-20",
+      dirigeantRevoqueNom: "Monsieur Marc BERTIN",
+      motifRevocation: "Perte de confiance",
+      nouveauDirigeantCivilite: "Madame",
+      nouveauDirigeantPrenom: "Sophie",
+      nouveauDirigeantNom: "LEROY",
+      nouveauDirigeantDateNaissance: "1985-02-03",
+      nouveauDirigeantLieuNaissance: "Lyon",
+      nouveauDirigeantNationalite: "Française",
+      nouveauDirigeantAdresse: "3 rue Bellecour, 69002 Lyon",
+    });
+
+    expect(texte).toContain("décide de révoquer Monsieur Marc BERTIN");
+    expect(texte).not.toContain("LEROY");
+    expect(texte).not.toContain("Bellecour");
+    expect(texte).not.toContain("déclare accepter les fonctions");
+  });
+
+  it("nomme encore sur un dossier d'avant, qui ne déclarait pas la nature", () => {
+    /* Le nom saisi ne tranche plus que faute de nature déclarée. */
+    const texte = rendre(["dirigeant"], {
+      fonctionDirigeant: "Gérant",
+      dateEffetDirigeant: "2026-09-20",
+      nouveauDirigeantCivilite: "Madame",
+      nouveauDirigeantPrenom: "Sophie",
+      nouveauDirigeantNom: "LEROY",
+      nouveauDirigeantDateNaissance: "1985-02-03",
+      nouveauDirigeantLieuNaissance: "Lyon",
+      nouveauDirigeantNationalite: "Française",
+      nouveauDirigeantAdresse: "3 rue Bellecour, 69002 Lyon",
+    });
+
+    expect(texte).toContain("Madame Sophie LEROY");
+  });
+
   it("garde la préposition pour une démission", () => {
     const texte = rendre(["dirigeant"], {
       typeChangementDirigeant: "Démission",
