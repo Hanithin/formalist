@@ -559,6 +559,47 @@ describe("l'identité des parties", () => {
     );
   });
 
+  it("réclame aussi l'état civil de l'associé qui ne cède rien", () => {
+    /*
+     * Il intervient à l'acte pour reconnaître la répartition et ne pas s'opposer à
+     * l'entrée de l'acquéreur : il y est nommé, donc il y est identifié.
+     */
+    const intervenantNu = {
+      ...contexte(VERS_UN_TIERS),
+      assemblee: {
+        date: "2026-09-15",
+        totalParts: 1000,
+        associes: [
+          ASSOCIES[0],
+          { nature: "physique", civilite: "Madame", prenom: "Anne", nom: "ROUSSEL", parts: 500 },
+        ],
+      },
+    } as unknown as ContexteGabarit;
+
+    expect(verifierLActeDeCession(intervenantNu).map((a) => a.champ)).toEqual([
+      "associe-1-ne-le",
+      "associe-1-ne-a",
+      "associe-1-nationalite",
+      "associe-1-adresse",
+    ]);
+  });
+
+  it("laisse tranquille une ligne d'associé encore sans nom", () => {
+    /* Une ligne vide est un brouillon en cours, non une partie sans état civil. */
+    const enCours = {
+      ...contexte(VERS_UN_TIERS),
+      assemblee: {
+        date: "2026-09-15",
+        totalParts: 1000,
+        associes: [ASSOCIES[0], { nature: "physique", parts: 500 }],
+      },
+    } as unknown as ContexteGabarit;
+
+    expect(verifierLActeDeCession(enCours).filter((a) => a.champ.startsWith("associe-"))).toEqual(
+      []
+    );
+  });
+
   it("ne réclame rien deux fois au même cédant", () => {
     /* Céder deux fois ne fait pas deux personnes : un seul jeu de messages. */
     const deuxFois = {

@@ -5342,6 +5342,35 @@
   background: #fcfcfd;
 }
 
+/*
+ * L'état civil des associés, sous la liste qui les nomme.
+ *
+ * Un filet horizontal l'ouvre plutôt qu'un encadré de plus : la section a déjà sa
+ * bordure, et deux cartes emboîtées feraient croire à deux sujets.
+ */
+.etatCivil {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8ea;
+}
+
+/* L'aide se lit avant le premier nom, non contre lui. */
+.etatCivil > .capitalAide {
+  margin-bottom: 18px;
+}
+
+/*
+ * Ici le titre de groupe nomme une personne, non une rubrique.
+ *
+ * Les capitales conviennent à « L'ACQUÉREUR » ; sur « MONSIEUR JEAN DUPONT » elles
+ * crient un nom que l'acte écrira posément.
+ */
+.etatCivil .champsGroupe {
+  text-transform: none;
+  font-size: 13px;
+  color: #6b6b73;
+}
+
 .capitalTete {
   display: flex;
   align-items: baseline;

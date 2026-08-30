@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment, useState } from "react";
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import {
   agrementDeDroit,
@@ -12,7 +13,7 @@ import {
   ORIGINES_DE_PROPRIETE,
 } from "@/domain/modification/cession";
 import type { AssociePresent } from "@/domain/modification/gabarit";
-import { identiteSurUneLigne, separerLIdentite } from "@/domain/formalite/noms";
+import { identiteSurUneLigne, separerLIdentite, type Identite } from "@/domain/formalite/noms";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { AdresseUneLigne } from "@/components/formulaire/Adresse";
@@ -33,6 +34,64 @@ import styles from "./Modification.module.css";
  * pas les valeurs qu'il rend.
  */
 const ORIGINES = ORIGINES_DE_PROPRIETE.map((o) => ({ valeur: o.phrase, libelle: o.libelle }));
+
+/**
+ * Un associé que l'acte peut nommer, et dont il lui faut donc l'état civil.
+ *
+ * Une personne morale porte son identité à l'étape de l'assemblée. Une ligne encore
+ * sans nom est un brouillon en cours : la même règle vaut dans le domaine, qui ne
+ * réclame rien tant que personne n'est nommé.
+ */
+function estIdentifiable(associe: AssociePresent): boolean {
+  return (
+    associe.nature !== "morale" &&
+    Boolean((associe.nom ?? "").trim() || (associe.prenom ?? "").trim())
+  );
+}
+
+/**
+ * Le nom d'un associé, tel qu'on le tape.
+ *
+ * Le champ tient trois valeurs - civilité, prénom, nom - et les recomposait à chaque
+ * frappe pour se réafficher. Or « M » est une civilité : taper la première lettre de
+ * « Monsieur Jean DUPONT » remplaçait le M par « Monsieur » sous le doigt qui allait
+ * taper le o, et la ligne finissait « Monsieuronsieur Jean DUPONT ». L'espace après la
+ * civilité disparaissait de même, aussitôt tapé.
+ *
+ * La frappe reste donc ce qu'elle est, et seule la donnée se sépare. Ce qui vient
+ * d'ailleurs - le dossier qu'on rouvre, une ligne retirée au-dessus - est repris, sauf
+ * s'il ne fait que renvoyer ce qu'on est en train d'écrire.
+ */
+function ChampIdentite({
+  valeur,
+  surChangement,
+  ...reste
+}: {
+  valeur: string;
+  surChangement: (identite: Identite) => void;
+  className?: string;
+  placeholder?: string;
+  "aria-label"?: string;
+}) {
+  const [frappe, setFrappe] = useState(valeur);
+  const [venuDuDehors, setVenuDuDehors] = useState(valeur);
+
+  if (valeur !== venuDuDehors) {
+    setVenuDuDehors(valeur);
+    if (valeur !== identiteSurUneLigne(separerLIdentite(frappe))) setFrappe(valeur);
+  }
+
+  return (
+    <input
+      {...reste}
+      value={frappe}
+      onChange={(e) => {
+        setFrappe(e.target.value);
+        surChangement(separerLIdentite(e.target.value));
+      }}
+    />
+  );
+}
 
 /**
  * Les cessions de parts.
@@ -119,31 +178,29 @@ export function Cessions({
         <ul className={styles.detenteurs}>
           {associes.map((associe, rang) => (
             <li key={rang} className={styles.detenteur}>
-              <input
-                aria-label={"Nom de l'associé " + (rang + 1)}
-                className={styles.detenteurNom}
-                placeholder={"Associé " + (rang + 1)}
-                value={
-                  associe.nature === "morale"
-                    ? (associe.denomination ?? "")
-                    : identiteSurUneLigne(associe)
-                }
-                onChange={(e) => {
-                  const saisi = e.target.value;
-                  if (associe.nature === "morale") {
-                    modifierAssocie(rang, { denomination: saisi });
-                    return;
-                  }
-                  /*
-                   * Deux champs pour une ligne de liste alourdiraient l'écran ; l'acte,
-                   * lui, distingue le prénom du nom. La casse tranche - c'est la
-                   * convention des actes - et la règle vit dans le domaine, partagée
-                   * avec les autres parcours.
-                   */
-                  const { civilite, prenom, nom } = separerLIdentite(saisi);
-                  modifierAssocie(rang, { civilite, prenom, nom });
-                }}
-              />
+              {associe.nature === "morale" ? (
+                <input
+                  aria-label={"Nom de l'associé " + (rang + 1)}
+                  className={styles.detenteurNom}
+                  placeholder={"Associé " + (rang + 1)}
+                  value={associe.denomination ?? ""}
+                  onChange={(e) => modifierAssocie(rang, { denomination: e.target.value })}
+                />
+              ) : (
+                /*
+                 * Deux champs pour une ligne de liste alourdiraient l'écran ; l'acte,
+                 * lui, distingue le prénom du nom. La casse tranche - c'est la
+                 * convention des actes - et la règle vit dans le domaine, partagée
+                 * avec les autres parcours.
+                 */
+                <ChampIdentite
+                  aria-label={"Nom de l'associé " + (rang + 1)}
+                  className={styles.detenteurNom}
+                  placeholder={"Associé " + (rang + 1)}
+                  valeur={identiteSurUneLigne(associe)}
+                  surChangement={(identite) => modifierAssocie(rang, identite)}
+                />
+              )}
 
               {/*
                 Un champ de texte, non un compteur.
@@ -187,13 +244,95 @@ export function Cessions({
         >
           + Ajouter un associé
         </button>
+
+        {/*
+          L'état civil, demandé à tous les associés et non aux seuls cédants.
+
+          Ils figurent tous à l'acte : celui qui cède, celui qui achète quand il est
+          déjà là, et les autres qui interviennent pour reconnaître la répartition et
+          ne pas s'opposer à l'entrée de l'acquéreur. Un acte de cession est présenté à
+          l'enregistrement au service des impôts, et il identifie chaque partie comme le
+          ferait un notaire - il ne peut pas en nommer une par son seul nom quand la
+          suivante donne ses date et lieu de naissance.
+
+          Une personne morale n'est pas ici : sa forme, son capital, son siège et son
+          immatriculation se saisissent à l'étape de l'assemblée, et l'acte les reprend.
+
+          Une ligne encore sans nom non plus : sur un dossier qui s'ouvre, elle
+          réclamerait la date de naissance d'une personne que rien ne nomme.
+        */}
+        {associes.some(estIdentifiable) && (
+          <div className={styles.etatCivil}>
+            <p className={styles.capitalAide}>
+              L&apos;acte de cession est présenté à l&apos;enregistrement au service des impôts :
+              il identifie chaque associé, qu&apos;il cède ou qu&apos;il intervienne.
+            </p>
+
+            <div className={styles.champs}>
+              {associes.map((associe, rang) =>
+                !estIdentifiable(associe) ? null : (
+                  <Fragment key={rang}>
+                    <p className={styles.champsGroupe}>{nomDeLAssocie(associe, rang)}</p>
+
+                    <div className={styles.champ}>
+                      <label htmlFor={"associe-" + rang + "-ne-le"}>Né(e) le</label>
+                      <ChampDate
+                        id={"associe-" + rang + "-ne-le"}
+                        valeur={associe.neLe ?? ""}
+                        surChangement={(iso) => modifierAssocie(rang, { neLe: iso })}
+                      />
+                      {refus("associe-" + rang + "-ne-le") && (
+                        <p role="alert">{refus("associe-" + rang + "-ne-le")}</p>
+                      )}
+                    </div>
+
+                    <div className={styles.champ}>
+                      <label htmlFor={"associe-" + rang + "-ne-a"}>Né(e) à</label>
+                      <input
+                        id={"associe-" + rang + "-ne-a"}
+                        placeholder="Lyon (Rhône)"
+                        value={associe.neA ?? ""}
+                        onChange={(e) => modifierAssocie(rang, { neA: e.target.value })}
+                      />
+                      {refus("associe-" + rang + "-ne-a") && (
+                        <p role="alert">{refus("associe-" + rang + "-ne-a")}</p>
+                      )}
+                    </div>
+
+                    <div className={styles.champ}>
+                      <label htmlFor={"associe-" + rang + "-nationalite"}>Nationalité</label>
+                      <input
+                        id={"associe-" + rang + "-nationalite"}
+                        placeholder="Française"
+                        value={associe.nationalite ?? ""}
+                        onChange={(e) => modifierAssocie(rang, { nationalite: e.target.value })}
+                      />
+                      {refus("associe-" + rang + "-nationalite") && (
+                        <p role="alert">{refus("associe-" + rang + "-nationalite")}</p>
+                      )}
+                    </div>
+
+                    <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                      <label htmlFor={"associe-" + rang + "-adresse"}>Adresse personnelle</label>
+                      <AdresseUneLigne
+                        id={"associe-" + rang + "-adresse"}
+                        valeur={associe.adresse ?? ""}
+                        surChangement={(adresse) => modifierAssocie(rang, { adresse })}
+                      />
+                      {refus("associe-" + rang + "-adresse") && (
+                        <p role="alert">{refus("associe-" + rang + "-adresse")}</p>
+                      )}
+                    </div>
+                  </Fragment>
+                )
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ---------- Les cessions ---------- */}
       {cessions.map((cession, rang) => {
-        const cedant = cession.cedant === null || cession.cedant === undefined ? null : cession.cedant;
-        const premiereApparition =
-          cedant !== null && cessions.findIndex((c) => c.cedant === cedant) === rang;
         const detenues = cession.cedant !== null ? (associes[cession.cedant]?.parts ?? 0) : 0;
         const unitaire = prixParPart(cession);
         const agrement = agrementDeDroit(forme, cession.vers);
@@ -238,72 +377,6 @@ export function Cessions({
                   <p role="alert">{refus("cession-" + rang + "-cedant")}</p>
                 )}
               </div>
-
-              {/*
-                L'état civil du cédant.
-
-                Il est demandé ici, et non à l'étape des associés : cette étape sert une
-                feuille de présence, où l'on nomme et l'on compte des parts. C'est l'acte
-                de cession qui a besoin de l'état civil, parce qu'il est présenté à
-                l'enregistrement au service des impôts et qu'il identifie chaque partie
-                comme le ferait un notaire - l'acquéreur le donnait déjà, plus bas.
-
-                Il s'écrit sur l'associé, non sur la cession : un associé qui cède deux
-                fois n'est interrogé qu'une fois, dans la première cession où il paraît.
-              */}
-              {cedant !== null && premiereApparition && associes[cedant]?.nature !== "morale" && (
-                <>
-                  <div className={styles.champ}>
-                    <label htmlFor={"associe-" + cedant + "-ne-le"}>Né(e) le</label>
-                    <ChampDate
-                      id={"associe-" + cedant + "-ne-le"}
-                      valeur={associes[cedant]?.neLe ?? ""}
-                      surChangement={(iso) => modifierAssocie(cedant, { neLe: iso })}
-                    />
-                    {refus("associe-" + cedant + "-ne-le") && (
-                      <p role="alert">{refus("associe-" + cedant + "-ne-le")}</p>
-                    )}
-                  </div>
-
-                  <div className={styles.champ}>
-                    <label htmlFor={"associe-" + cedant + "-ne-a"}>Né(e) à</label>
-                    <input
-                      id={"associe-" + cedant + "-ne-a"}
-                      placeholder="Lyon (Rhône)"
-                      value={associes[cedant]?.neA ?? ""}
-                      onChange={(e) => modifierAssocie(cedant, { neA: e.target.value })}
-                    />
-                    {refus("associe-" + cedant + "-ne-a") && (
-                      <p role="alert">{refus("associe-" + cedant + "-ne-a")}</p>
-                    )}
-                  </div>
-
-                  <div className={styles.champ}>
-                    <label htmlFor={"associe-" + cedant + "-nationalite"}>Nationalité</label>
-                    <input
-                      id={"associe-" + cedant + "-nationalite"}
-                      placeholder="Française"
-                      value={associes[cedant]?.nationalite ?? ""}
-                      onChange={(e) => modifierAssocie(cedant, { nationalite: e.target.value })}
-                    />
-                    {refus("associe-" + cedant + "-nationalite") && (
-                      <p role="alert">{refus("associe-" + cedant + "-nationalite")}</p>
-                    )}
-                  </div>
-
-                  <div className={`${styles.champ} ${styles.pleineLargeur}`}>
-                    <label htmlFor={"associe-" + cedant + "-adresse"}>Adresse personnelle</label>
-                    <AdresseUneLigne
-                      id={"associe-" + cedant + "-adresse"}
-                      valeur={associes[cedant]?.adresse ?? ""}
-                      surChangement={(adresse) => modifierAssocie(cedant, { adresse })}
-                    />
-                    {refus("associe-" + cedant + "-adresse") && (
-                      <p role="alert">{refus("associe-" + cedant + "-adresse")}</p>
-                    )}
-                  </div>
-                </>
-              )}
 
               <div className={styles.champ}>
                 <label htmlFor={"cession-parts-" + rang}>Parts cédées</label>

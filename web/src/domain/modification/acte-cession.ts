@@ -293,52 +293,43 @@ export function verifierLActeDeCession(contexte: ContexteGabarit): AlerteDeCessi
   }
 
   /*
-   * L'état civil des cédants personnes physiques.
+   * L'état civil des associés personnes physiques.
    *
    * L'acquéreur donnait le sien depuis toujours ; le cédant, associé déjà présent,
    * n'était connu que par son nom, et l'acte les faisait figurer côte à côte dans deux
    * registres. Un acte de cession se présente à l'enregistrement au service des impôts :
    * il identifie chaque partie de la même manière, ou il n'identifie personne.
    *
-   * Un cédant qui cède deux fois n'est signalé qu'une fois : c'est une personne, pas
-   * une ligne du tableau.
+   * On le demande à tous les associés, non aux seuls cédants : ceux qui ne cèdent rien
+   * interviennent à l'acte pour reconnaître la répartition et ne pas s'opposer à
+   * l'entrée de l'acquéreur, et ils y sont nommés comme les autres.
+   *
+   * Une ligne encore sans nom est un brouillon en cours, non une partie sans état civil :
+   * elle se répare à l'étape des associés, où elle est déjà signalée.
    */
-  const associesDuContexte = assemblee.associes ?? [];
-  const cedantsVus = new Set<number>();
-  for (const cession of cessions) {
-    const rangDuCedant = cession.cedant;
-    if (rangDuCedant === null || rangDuCedant === undefined) continue;
-    if (cedantsVus.has(rangDuCedant)) continue;
-    cedantsVus.add(rangDuCedant);
+  for (const [rang, associe] of (assemblee.associes ?? []).entries()) {
+    if (associe.nature === "morale") continue;
+    if (!texte(associe.nom) && !texte(associe.prenom)) continue;
 
-    const cedant = associesDuContexte[rangDuCedant];
-    if (!cedant || cedant.nature === "morale") continue;
-
-    const nom = nomDeLAssocie(cedant, rangDuCedant);
-    const manques: { cle: string; quoi: string }[] = [
-      { cle: "ne-le", quoi: "la date de naissance" },
-      { cle: "ne-a", quoi: "le lieu de naissance" },
-      { cle: "nationalite", quoi: "la nationalité" },
-      { cle: "adresse", quoi: "l'adresse" },
+    const nom = nomDeLAssocie(associe, rang);
+    const attendu: { cle: string; quoi: string; valeur: string }[] = [
+      { cle: "ne-le", quoi: "la date de naissance", valeur: texte(associe.neLe) },
+      { cle: "ne-a", quoi: "le lieu de naissance", valeur: texte(associe.neA) },
+      { cle: "nationalite", quoi: "la nationalité", valeur: texte(associe.nationalite) },
+      { cle: "adresse", quoi: "l'adresse", valeur: texte(associe.adresse) },
     ];
-    const valeursDuCedant: Record<string, string> = {
-      "ne-le": texte(cedant.neLe),
-      "ne-a": texte(cedant.neA),
-      nationalite: texte(cedant.nationalite),
-      adresse: texte(cedant.adresse),
-    };
 
-    for (const manque of manques) {
-      if (valeursDuCedant[manque.cle]) continue;
+    for (const manque of attendu) {
+      if (manque.valeur) continue;
       alertes.push({
         gravite: "bloquant",
-        champ: "associe-" + rangDuCedant + "-" + manque.cle,
+        champ: "associe-" + rang + "-" + manque.cle,
         message:
-        "Indiquez " +
-        manque.quoi +
-        (/^[aeiouyéèêh]/i.test(nom) ? " d'" : " de ") +
-        nom +
-        " : l'acte identifie chaque partie.",
+          "Indiquez " +
+          manque.quoi +
+          (/^[aeiouyéèêh]/i.test(nom) ? " d'" : " de ") +
+          nom +
+          " : l'acte identifie chaque partie.",
       });
     }
   }
