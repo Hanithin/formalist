@@ -74,11 +74,17 @@ test("la fenêtre dit ce que chaque formalité coûte et prend de temps", async 
     await expect(carte, parcours.titre).toContainText(parcours.prix!);
   }
 
-  /* Le parcours recommandé se signale, comme sur l'accueil. */
-  const recommande = PARCOURS.find((p) => p.recommande)!;
-  await expect(
-    fenetre.getByRole("link", { name: new RegExp(recommande.titre) })
-  ).toContainText("Recommandé");
+  /*
+   * Le parcours mis en avant se distingue sans se vanter.
+   *
+   * Il portait le mot « Recommandé » : nous annoncions un conseil que nous ne donnons
+   * pas - créer une société n'est pas plus indiqué que la fermer. C'est le trait de la
+   * carte qui le dit maintenant, et rien d'autre.
+   */
+  const enAvant = PARCOURS.find((p) => p.enAvant)!;
+  const mise = fenetre.getByRole("link", { name: new RegExp(enAvant.titre) });
+  await expect(mise).not.toContainText("Recommandé");
+  await expect(fenetre.getByText("Recommandé")).toHaveCount(0);
 });
 
 test("le catalogue tient dans l'écran sans se couper", async ({ page }) => {

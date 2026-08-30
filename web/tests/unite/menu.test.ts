@@ -284,10 +284,8 @@ describe("les parcours qu'on peut ouvrir", () => {
     }
   });
 
-  it("une seule recommandation, sinon aucune ne l'est", () => {
-    expect(PARCOURS.filter((p) => p.recommande).map((p) => p.titre)).toEqual([
-      "Créer une société",
-    ]);
+  it("un seul parcours mis en avant, sinon aucun ne l'est", () => {
+    expect(PARCOURS.filter((p) => p.enAvant).map((p) => p.titre)).toEqual(["Créer une société"]);
   });
 
   it("ses intitulés sont tous des verbes : elle dit ce qu'on fait", () => {

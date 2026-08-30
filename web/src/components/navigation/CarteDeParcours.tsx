@@ -20,12 +20,17 @@ const OUVERTURE =
  * Elle a d'abord vécu à l'accueil seule ; la fenêtre « Nouvelle formalité » en montrait
  * une version sans durée, sans prix, sans flèche - celle des deux qui sert justement à
  * choisir. Elles n'en font plus qu'une.
+ *
+ * Un parcours peut être mis en avant : il est alors cerné d'un trait net et porte sa
+ * flèche pleine. Il portait aussi le mot « Recommandé », qui annonçait un conseil que
+ * nous ne donnons pas - créer une société n'est pas plus indiqué que la fermer. C'est
+ * celui pour lequel on vient le plus souvent, et il mérite d'être trouvé en premier.
  */
 export function CarteDeParcours({ parcours }: { parcours: ParcoursACreer }) {
   return (
     <Link
       href={parcours.lien}
-      className={parcours.recommande ? `${styles.chemin} ${styles.recommande}` : styles.chemin}
+      className={parcours.enAvant ? `${styles.chemin} ${styles.enAvant}` : styles.chemin}
     >
       <span className={styles.tete}>
         {/*
@@ -43,7 +48,6 @@ export function CarteDeParcours({ parcours }: { parcours: ParcoursACreer }) {
         <span className={styles.corps}>
           <span className={styles.ligneTitre}>
             <span className={styles.cheminTitre}>{parcours.titre}</span>
-            {parcours.recommande && <span className={styles.pastille}>Recommandé</span>}
           </span>
           <span className={styles.cheminDesc}>{parcours.description}</span>
         </span>

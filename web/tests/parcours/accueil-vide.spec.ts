@@ -151,6 +151,20 @@ test("l'amorce n'impose pas la création à qui vient pour autre chose", async (
   await expect(page.getByText(/créez votre société/i)).toHaveCount(0);
 });
 
-test("une seule carte porte la recommandation", async ({ page }) => {
-  await expect(page.getByText("Recommandé", { exact: true })).toHaveCount(1);
+test("une seule carte est mise en avant, et sans se vanter", async ({ page }) => {
+  /*
+   * Elle portait le mot « Recommandé » : nous annoncions un conseil que nous ne
+   * donnons pas - créer une société n'est pas plus indiqué que la fermer, cela dépend
+   * de qui regarde. C'est le parcours pour lequel on vient le plus souvent, et il
+   * mérite d'être trouvé en premier, non d'être vanté. Le trait de la carte le dit.
+   */
+  await expect(page.getByText("Recommandé", { exact: true })).toHaveCount(0);
+
+  const misEnAvant = PARCOURS.filter((p) => p.enAvant);
+  expect(misEnAvant).toHaveLength(1);
+
+  const carte = page.getByRole("link", { name: new RegExp(misEnAvant[0].titre) });
+  await expect(carte).toBeVisible();
+  /* Le cadre net, là où les autres portent un gris pâle. */
+  await expect(carte).toHaveCSS("border-top-color", "rgb(24, 24, 27)");
 });

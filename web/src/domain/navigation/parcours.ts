@@ -63,8 +63,15 @@ export interface ParcoursACreer {
    */
   duree?: string;
   prix?: string;
-  /** Le parcours mis en avant, et le seul : deux recommandations n'en font aucune. */
-  recommande?: boolean;
+  /**
+   * Le parcours mis en avant, et le seul : deux mises en avant n'en font aucune.
+   *
+   * Il s'appelait `recommande`, et la carte écrivait « Recommandé » : nous annoncions
+   * un conseil que nous ne donnons pas - créer une société n'est pas plus indiqué que
+   * la fermer, cela dépend de qui regarde. C'est celui pour lequel on vient le plus
+   * souvent, et il mérite d'être trouvé en premier, non d'être vanté.
+   */
+  enAvant?: boolean;
   /**
    * Parcours annoncé mais pas ouvert.
    *
@@ -96,7 +103,7 @@ export const FAMILLES: FamilleDeParcours[] = [
         description: "SAS, SARL, SCI, SASU, EURL",
         duree: "12 min",
         prix: "dès " + euros(CREATION_HT),
-        recommande: true,
+        enAvant: true,
       },
       {
         lien: "/auto-entrepreneur",

@@ -116,18 +116,6 @@
   letter-spacing: 0;
 }
 
-.pastille {
-  flex-shrink: 0;
-  padding: 2px 7px;
-  background: rgba(16, 185, 129, 0.14);
-  border-radius: 20px;
-  color: #047857;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0;
-}
-
 .cheminDesc {
   font-size: 12.5px;
   color: #8a8a92;
@@ -199,41 +187,30 @@
   color: #fff;
 }
 
-/* ---------- Le parcours recommandé ---------- */
+/* ---------- Le parcours mis en avant ---------- */
 
-.recommande {
-  background: linear-gradient(135deg, #ecfdf5 0%, #f7fdfa 100%);
-  border: 1.5px solid #10b981;
+/*
+ * Un cran au-dessus des autres, et rien de plus.
+ *
+ * La carte portait un aplat vert, un cadre vert, une flèche verte et le mot
+ * « Recommandé » : de quoi annoncer un conseil que nous ne donnons pas - créer une
+ * société n'est pas plus indiqué que la fermer, cela dépend de qui regarde. C'est
+ * simplement le parcours pour lequel on vient le plus souvent, et il mérite d'être
+ * trouvé en premier, non d'être vanté.
+ *
+ * L'encre de l'application suffit à le dire : un trait net là où les autres ont un
+ * gris pâle, et la flèche pleine qu'elles n'ont qu'au survol. Aucune couleur
+ * n'affirme rien ; l'œil s'y pose d'abord, et c'est tout ce qu'on voulait.
+ */
+.enAvant {
+  border: 1.5px solid #18181b;
 }
 
-.recommande:hover {
-  border-color: #059669;
-  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.16);
+.enAvant:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-.recommande .icone,
-.recommande .icone.green {
-  background: #10b981;
+.enAvant .fleche {
+  background: #18181b;
   color: #fff;
-}
-
-.recommande .pied {
-  border-top-color: rgba(16, 185, 129, 0.22);
-}
-
-.recommande .duree {
-  color: #4d7c6f;
-}
-
-.recommande .prix {
-  color: #065f46;
-}
-
-.recommande .fleche {
-  background: #10b981;
-  color: #fff;
-}
-
-.recommande:hover .fleche {
-  background: #059669;
 }
