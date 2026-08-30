@@ -330,7 +330,11 @@ export function donneesDeLActeDeCession(
     identification: identificationDeLAssocie(associes[cession.cedant ?? -1] ?? {}),
     nom: nomDeLAssocie(associes[cession.cedant ?? -1], cession.cedant ?? 0),
     titres: cession.parts ?? 0,
+    origine: phraseDeLOrigine(cession.origine),
   }));
+
+  /* Tiennent-ils tous leurs parts de la même façon ? */
+  const originesConcordantes = new Set(cedants.map((cedant) => cedant.origine)).size <= 1;
 
   const acquereurEstAssocie = premiere?.vers === "associe";
   const identificationAcquereur = acquereurEstAssocie
@@ -439,7 +443,9 @@ export function donneesDeLActeDeCession(
         (cedant.titres > 1 ? mots.titres : mots.titreSingulier) +
         (total > 0
           ? ", soit " + pourcentage(cedant.titres, total) + " % du capital social"
-          : ""),
+          : "") +
+        /* L'origine ne se détaille que si elle distingue : sinon la phrase l'a dite. */
+        (originesConcordantes ? "" : ", qui " + cedant.origine),
     })),
     le_cedant: plusieurs ? "les Cédants" : "le Cédant",
     le_cedant_maj: plusieurs ? "Les Cédants" : "Le Cédant",
@@ -506,7 +512,20 @@ export function donneesDeLActeDeCession(
     nb_titres_cedes_lettres: nombreEnFrancais(titresCedes),
     pourcentage_cede: total > 0 ? pourcentage(titresCedes, total) : "",
     titre_onereux: "à titre onéreux",
-    origine_propriete: phraseDeLOrigine(premiere?.origine),
+    /*
+     * L'origine de propriété n'était celle que du premier cédant.
+     *
+     * Trois associés qui cèdent le même jour ne tiennent pas leurs parts de la même
+     * façon - l'un les a souscrites, l'autre rachetées, le troisième reçues en
+     * donation - et l'acte affirmait la première origine pour les trois. Deux
+     * déclarations fausses dans un contrat qui se présente à l'enregistrement.
+     *
+     * Quand elles concordent, la phrase reste commune ; sinon, chaque cédant porte la
+     * sienne dans la liste que l'acte dresse déjà juste en dessous.
+     */
+    origine_propriete: originesConcordantes
+      ? phraseDeLOrigine(premiere?.origine)
+      : "leur appartiennent dans les conditions détaillées ci-après",
     contexte_operation:
       texte(valeurs.cessionContexte) ||
       "Les parties ont convenu de réorganiser la détention du capital social de la Société.",
@@ -518,7 +537,7 @@ export function donneesDeLActeDeCession(
     justification_prix:
       texte(valeurs.cessionJustificationPrix) ||
       "Ce prix a été librement convenu entre les parties, qui reconnaissent que la valeur retenue demeure soumise aux règles fiscales applicables en matière de détermination de la valeur réelle des titres.",
-    modalites_paiement: modalitesDePaiement(texte(valeurs.cessionModalitePaiement)),
+    modalites_paiement: modalitesDePaiement(texte(valeurs.cessionModalitePaiement), plusieurs),
 
     /* -------------------------------------------------------- Les modalités */
     formule_transfert:
@@ -595,13 +614,35 @@ function pourcentage(part: number, total: number): string {
   return String(Math.round((part / total) * 10000) / 100).replace(".", ",");
 }
 
-/** Comment le prix se règle, en une phrase d'acte. */
-function modalitesDePaiement(choix: string): string {
+/**
+ * Comment le prix se règle, en une phrase d'acte.
+ *
+ * Le cédant y était toujours seul : « par virement bancaire au profit du cédant » dans
+ * un acte dont tout le reste - les déclarations, les garanties, la répartition - se
+ * met au pluriel dès qu'ils sont plusieurs. Trois associés qui cèdent le même jour se
+ * partagent le prix, et l'acte doit dire à qui il se verse.
+ */
+function modalitesDePaiement(choix: string, plusieurs: boolean): string {
+  const auCedant = plusieurs ? "aux Cédants" : "au Cédant";
+  const leCedant = plusieurs ? "Les Cédants conservent" : "Le Cédant conserve";
+
   if (choix.startsWith("Échelonné")) {
-    return "Le prix est payable selon l'échéancier convenu entre les parties, dont le détail est annexé aux présentes. Le cédant conserve, jusqu'au complet paiement, les recours de droit commun.";
+    return (
+      "Le prix est payable selon l'échéancier convenu entre les parties, dont le détail est annexé aux présentes. " +
+      leCedant +
+      ", jusqu'au complet paiement, les recours de droit commun."
+    );
   }
   if (choix.startsWith("Séquestre")) {
-    return "Le prix est consigné entre les mains d'un séquestre, qui le libérera au profit du cédant dans les conditions convenues entre les parties.";
+    return (
+      "Le prix est consigné entre les mains d'un séquestre, qui le libérera " +
+      auCedant +
+      " dans les conditions convenues entre les parties."
+    );
   }
-  return "Le prix est payable comptant au jour de la signature des présentes, par virement bancaire au profit du cédant. La preuve du règlement résultera de l'avis d'exécution du virement ou de tout autre justificatif bancaire correspondant.";
+  return (
+    "Le prix est payable comptant au jour de la signature des présentes, par virement bancaire " +
+    auCedant +
+    ". La preuve du règlement résultera de l'avis d'exécution du virement ou de tout autre justificatif bancaire correspondant."
+  );
 }

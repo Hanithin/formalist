@@ -427,3 +427,49 @@ describe("les accords de l'acte", () => {
     expect(texte).toContain("lesquelles ont été acquises auprès d'un précédent titulaire et");
   });
 });
+
+describe("plusieurs cédants dans le même acte", () => {
+  /*
+   * Trois associés qui cèdent le même jour au même acquéreur signent un contrat : un
+   * prix global, un enregistrement. Ce que l'acte doit alors mettre au pluriel, il le
+   * met - sauf deux endroits, que seul ce cas révélait.
+   */
+  const troisCedants = [
+    { cedant: 0, parts: 200, prix: 20000, date: "2026-03-01", vers: "tiers", nom: "HOLDING SUD",
+      origine: "ont été souscrites lors de la constitution de la Société" },
+    { cedant: 1, parts: 100, prix: 10000, date: "2026-03-01", vers: "tiers", nom: "HOLDING SUD",
+      origine: "ont été acquises auprès d'un précédent titulaire" },
+    { cedant: 2, parts: 100, prix: 10000, date: "2026-03-01", vers: "tiers", nom: "HOLDING SUD",
+      origine: "ont été reçues par voie de transmission à titre gratuit" },
+  ];
+
+  /*
+   * L'origine n'était celle que du premier : l'acte affirmait pour les trois que les
+   * parts avaient été souscrites à la constitution. Deux déclarations fausses dans un
+   * contrat qui se présente à l'enregistrement.
+   */
+  it("chaque cédant porte son origine quand elles diffèrent", () => {
+    const texte = rendre(troisCedants);
+
+    expect(texte).toContain("leur appartiennent dans les conditions détaillées ci-après");
+    expect(texte).toContain("qui ont été souscrites lors de la constitution de la Société");
+    expect(texte).toContain("qui ont été acquises auprès d'un précédent titulaire");
+    expect(texte).toContain("qui ont été reçues par voie de transmission à titre gratuit");
+  });
+
+  /* Quand elles concordent, la phrase reste commune et la liste ne les répète pas. */
+  it("une origine commune se dit une fois", () => {
+    const texte = rendre(
+      troisCedants.map((c) => ({ ...c, origine: "ont été acquises auprès d'un précédent titulaire" }))
+    );
+
+    expect(texte).toContain("lesquelles ont été acquises auprès d'un précédent titulaire et");
+    expect(texte).not.toContain("qui ont été acquises");
+  });
+
+  /* Le prix se versait « au profit du cédant », seul, dans un acte qui en compte trois. */
+  it("le prix se verse aux cédants", () => {
+    expect(rendre(troisCedants)).toContain("par virement bancaire aux Cédants");
+    expect(rendre([troisCedants[0]])).toContain("par virement bancaire au Cédant");
+  });
+});
