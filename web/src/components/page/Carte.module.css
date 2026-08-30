@@ -33,9 +33,14 @@
   flex-direction: column;
   background: #fff;
   border-radius: 16px;
-  /* Une carte de cent cinquante pixels pour un nom, un état et un geste laissait plus
-     de blanc que de texte, et huit d'entre elles ne remplissaient pas l'écran. */
-  padding: 22px 24px;
+  /*
+   * Une carte de cent cinquante pixels pour un nom, un état et un geste laissait plus
+   * de blanc que de texte, et huit d'entre elles ne remplissaient pas l'écran. Elle a
+   * ensuite grandi de l'autre côté : deux cent trente-six pixels pour quatre lignes,
+   * dont un tiers de blanc. Les retraits se resserrent d'un dixième, sans toucher aux
+   * corps ni aux graisses - c'est l'air qui partait, pas le texte.
+   */
+  padding: 17px 24px;
   border: 1px solid #e5e5e5;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -56,7 +61,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 /*
@@ -124,7 +129,7 @@
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 /* Ce que l'objet attend : la ligne qui a remplacé le pourcentage d'avancement. */
@@ -140,7 +145,7 @@
   display: block;
   font-size: 12.5px;
   color: #a1a1aa;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 /* Rien à situer : la ligne ne laisse pas son écart derrière elle. */
@@ -160,7 +165,7 @@
   align-items: center;
   gap: 10px;
   margin-top: auto;
-  padding-top: 20px;
+  padding-top: 13px;
 }
 
 .jauge {

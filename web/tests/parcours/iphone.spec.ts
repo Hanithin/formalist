@@ -28,6 +28,7 @@ const PAGES = [
   ["le choix d'une modification", "/modification"],
   ["la création", "/creation"],
   ["l'auto-entrepreneur", "/auto-entrepreneur"],
+  ["le dépôt des comptes", "/depot-des-comptes"],
 ] as const;
 
 for (const [nom, chemin] of PAGES) {

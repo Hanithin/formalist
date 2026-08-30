@@ -96,12 +96,16 @@ test.describe("auto-entreprise", () => {
   test("le régime fiscal découle de l'activité, il n'est pas demandé", async ({ page }) => {
     await jusquAActivite(page);
 
+    /*
+     * Le premier des deux : le formulaire précède la colonne de droite, qui répète le
+     * régime en tête. C'est bien celui qu'affiche l'étape qu'on vérifie ici.
+     */
     await choisirDans(page, "Nature de l'activité", "Activité libérale");
-    await expect(page.getByText(/Micro-BNC/)).toBeVisible();
+    await expect(page.getByText(/Micro-BNC/).first()).toBeVisible();
     await expect(page.getByText(/77\s700 euros/)).toBeVisible();
 
     await choisirDans(page, "Nature de l'activité", "Achat et revente de marchandises");
-    await expect(page.getByText(/Micro-BIC/)).toBeVisible();
+    await expect(page.getByText(/Micro-BIC/).first()).toBeVisible();
     await expect(page.getByText(/188\s700 euros/)).toBeVisible();
   });
 
@@ -241,14 +245,12 @@ test("l'option EIRL n'est pas reprise : le statut n'existe plus", async ({ page,
 
 test("le parcours garde le cadre d'un parcours", async ({ page }) => {
   /*
-   * Le fil d'étapes est horizontal et tient dans la colonne du formulaire.
+   * Le fil d'étapes est horizontal, et traverse les deux colonnes.
    *
    * Il portait ici son fil en colonne à gauche, et le contenu s'étalait sur toute la
-   * largeur : deux parcours du même site se lisaient différemment. Ce test comparait
-   * les deux au pixel ; la création est passée depuis à deux colonnes - un titre qui
-   * nomme la société, un récapitulatif à droite - et l'auto-entreprise l'y suivra.
-   * D'ici là on vérifie ce qui vaut sans elle : le fil est horizontal, et il tombe sur
-   * la verticale du formulaire.
+   * largeur : deux parcours du même site se lisaient différemment. Le parcours a rejoint
+   * la création - un titre qui nomme la personne, un récapitulatif à droite - et le fil
+   * part du bord gauche du formulaire pour aller jusqu'au bord droit de la colonne.
    */
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto("/auto-entrepreneur");
@@ -258,14 +260,24 @@ test("le parcours garde le cadre d'un parcours", async ({ page }) => {
 
   const cadre = (await fil.boundingBox())!;
   const carte = (await page.locator("form, section").first().boundingBox())!;
+  const colonne = (await page
+    .getByRole("complementary", { name: "Récapitulatif de votre déclaration" })
+    .boundingBox())!;
 
   expect(cadre.width).toBeGreaterThan(cadre.height * 4);
   expect(Math.round(cadre.x)).toBe(Math.round(carte.x));
+  expect(Math.round(cadre.x + cadre.width)).toBe(Math.round(colonne.x + colonne.width));
 
-  // Et le fil d'ariane situe la page.
-  await expect(page.getByRole("navigation", { name: "Fil d'ariane" })).toContainText(
-    "Créer une auto-entreprise"
-  );
+  /*
+   * Le fil d'ariane a disparu, et le titre a cessé d'être masqué.
+   *
+   * « Tableau de bord › Créer une auto-entreprise » s'écrivait en gris clair au-dessus
+   * d'un `<h1>` en `clip-path` : rien à l'écran ne disait de qui était le dossier.
+   */
+  await expect(page.getByRole("navigation", { name: "Fil d'ariane" })).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Nouvelle auto-entreprise", level: 1 })
+  ).toBeVisible();
 });
 
 test("les champs courts se posent deux par ligne", async ({ page }) => {
@@ -462,7 +474,8 @@ test("l'offre dit ce qu'elle vend, son prix et ce qu'elle ne cache pas", async (
   await page.goto("/auto-entrepreneur?dossier=" + dossier + "&etape=8");
 
   await expect(page.getByText("149 €")).toBeVisible();
-  await expect(page.getByText(/178,80 € TTC/)).toBeVisible();
+  // La colonne de droite porte le même total : celui-ci est celui de l'offre.
+  await expect(page.getByText(/178,80 € TTC/).first()).toBeVisible();
   // Les frais sont dits avant, jamais facturés après.
   await expect(page.getByText(/Aucun frais administratif/)).toBeVisible();
   await expect(page.getByText(/agent commercial/)).toBeVisible();
@@ -480,7 +493,16 @@ test("une déclaration incomplète ne s'ouvre pas au paiement", async ({ page, r
 
   const reponse = await request.post("/api/auto-entrepreneur/paiement", { data: { dossier } });
   expect(reponse.status()).toBe(400);
-  expect((await reponse.json()).error).toContain("Complétez");
+
+  /*
+   * Le refus nomme l'étape qui bloque, et l'écran y va.
+   *
+   * « Complétez votre déclaration avant de la confier » s'affichait seul au bas de
+   * l'offre : le serveur envoyait déjà le numéro d'étape, et personne ne le lisait.
+   */
+  const refus = await reponse.json();
+  expect(refus.error).toContain("Complétez");
+  expect(refus.etape).toBe(1);
 });
 
 test("un paiement abandonné le dit, et ne laisse pas croire à un débit", async ({
@@ -625,4 +647,39 @@ test("les pièces se déposent depuis le parcours", async ({ page, request }) =>
   const refus = await request.post("/api/formalites/pieces", { multipart: corps });
   expect(refus.status()).toBe(400);
   expect((await refus.json()).error).toContain("pas attendue");
+});
+
+test("la colonne de droite dit ce qui est déclaré, et suit la frappe", async ({
+  page,
+  request,
+}) => {
+  /*
+   * Le plafond, le régime et le taux du versement ne sont demandés nulle part : ils
+   * découlent de la nature d'activité, et n'étaient écrits nulle part une fois son
+   * étape passée.
+   */
+  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  await request.put("/api/auto-entrepreneur", {
+    data: {
+      dossier,
+      modifications: { ...DECLARATION_COMPLETE, versementLiberatoire: true, acre: true },
+    },
+  });
+  await page.goto("/auto-entrepreneur?dossier=" + dossier + "&etape=4");
+
+  const colonne = page.getByRole("complementary", {
+    name: "Récapitulatif de votre déclaration",
+  });
+  await expect(colonne).toBeVisible();
+  await expect(colonne.getByText("Micro-BIC")).toBeVisible();
+  await expect(colonne.getByText("Camille Durand")).toBeVisible();
+  await expect(colonne.getByText("77 700 €")).toBeVisible();
+  await expect(colonne.getByText("libératoire, 1,7 %")).toBeVisible();
+  await expect(colonne.getByText("1er septembre 2026")).toBeVisible();
+
+  /* Le métier est reconnu réglementé : une quatrième pièce est attendue. */
+  await expect(colonne.getByText("0 sur 4")).toBeVisible();
+
+  /* Et le titre de la page nomme la personne, au lieu d'être masqué. */
+  await expect(page.getByRole("heading", { name: "Camille Durand", level: 1 })).toBeVisible();
 });

@@ -68,6 +68,23 @@ test.describe("contrats", () => {
     await expect(page.getByText("brouillon", { exact: true })).toHaveCount(0);
   });
 
+  test("le geste de rédaction reste offert, quel que soit le filtre", async ({ page }) => {
+    /*
+     * « Nouveau contrat » terminait la barre de filtres, entre des pastilles qui ne lui
+     * ressemblaient pas : on le prenait pour un filtre de plus, et il défilait avec la
+     * liste. Il tient maintenant le pied de la colonne, qui ne bouge pas.
+     */
+    await page.goto("/contrats");
+
+    const colonne = page.getByRole("complementary", { name: "Rédiger un contrat" });
+    await expect(colonne).toBeVisible();
+    await expect(colonne.getByRole("button", { name: "Nouveau contrat" })).toBeVisible();
+
+    // Un filtre qui ne retient rien ne l'emporte pas avec lui.
+    await page.getByRole("button", { name: /^Tous/ }).click();
+    await expect(colonne.getByRole("button", { name: "Nouveau contrat" })).toBeVisible();
+  });
+
   test("demander le document seul le rend disponible tout de suite", async ({ page }) => {
     await page.goto("/contrats");
     await page.getByRole("button", { name: /Nouveau contrat/ }).click();

@@ -182,6 +182,23 @@ export function libelleDossier(dossier: Dossier): string {
   if (dossier.type === "auto-entrepreneur") return libelleAutoEntreprise(dossier);
   if (dossier.type && AU_REGISTRE[dossier.type]) return libelleAutreFormalite(dossier);
   if (dossier.status === "terminee") return "Terminée";
+  if (dossier.status === "corrections_demandees") return "Corrections demandées";
+
+  /*
+   * Un dossier encore chez son auteur n'est pas chez l'avocat, quelle que soit sa phase.
+   *
+   * La phase compte deux choses à la fois : les étapes franchies dans le formulaire, et
+   * l'avancement du dossier au cabinet - l'enregistrement du brouillon l'avance à mesure
+   * qu'on remplit. Un brouillon arrivé en phase 4 s'annonçait donc « En révision par un
+   * avocat » sur une vignette qui offrait, à trois centimètres de là, « Reprendre » : la
+   * même carte disait que le dossier était parti et qu'on pouvait encore le remplir.
+   *
+   * `actionAttendue` avait déjà été corrigée de ce piège ; cette lecture-ci ne l'était
+   * pas, et c'est la seule des quatre familles à ne pas regarder le statut d'abord -
+   * l'auto-entreprise, les comptes, la modification et la fermeture le font toutes.
+   */
+  if (dossier.status === "en_cours") return "À compléter";
+
   return libelleEtape(dossier.phase ?? 1, dossier.banque);
 }
 

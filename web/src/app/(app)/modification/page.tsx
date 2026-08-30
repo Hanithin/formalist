@@ -83,7 +83,7 @@ export default async function Modification({
           la colonne ne dise, et son seul rôle propre - repartir vers « Mes
           formalités » - est tenu par cette colonne, qui ne quitte jamais l'écran.
         */}
-        <header className={styles.entetePage}>
+        <header className={`${styles.entetePage} ${styles.entetePageLarge}`}>
           <div>
             <h1 className={styles.entetePageTitre}>Modifier ma société</h1>
             <p className={styles.entetePageSousTitre}>
@@ -382,7 +382,7 @@ export default async function Modification({
 
   return (
     <main className={styles.page}>
-      <header className={styles.entetePage}>
+      <header className={`${styles.entetePage} ${styles.entetePageLarge}`}>
         <div>
           <h1 className={styles.entetePageTitre}>
             {modification.societe.denomination || "Modifier ma société"}
@@ -395,7 +395,9 @@ export default async function Modification({
         </div>
       </header>
 
-      <div className={`${styles.content} ${styles.contentSousEntete}`}>
+      <div
+        className={`${styles.content} ${styles.contentSousEntete} ${styles.contentColonne}`}
+      >
         <Parcours
           dossier={dossierId}
           initial={initial}

@@ -93,7 +93,7 @@ export default async function DepotDesComptes({
           au-dessus de tout, là où les autres écrans annoncent le leur en vingt-huit
           pixels sur la ligne du logo.
         */}
-        <header className={styles.entetePage}>
+        <header className={`${styles.entetePage} ${styles.entetePageLarge}`}>
           <div>
             <h1 className={styles.entetePageTitre}>Dépôt des comptes annuels</h1>
             <p className={styles.entetePageSousTitre}>
@@ -102,7 +102,9 @@ export default async function DepotDesComptes({
           </div>
         </header>
 
-        <div className={`${styles.content} ${styles.contentSousEntete}`}>
+        <div
+          className={`${styles.content} ${styles.contentLarge} ${styles.contentSousEntete}`}
+        >
           <Commencer />
         </div>
       </main>
@@ -381,7 +383,7 @@ export default async function DepotDesComptes({
       */}
       {/* Tant que la société n'est pas choisie, `nom` vaut le nom du service : le
           répéter en sous-titre écrivait deux fois la même ligne. */}
-      <header className={styles.entetePage}>
+      <header className={`${styles.entetePage} ${styles.entetePageLarge}`}>
         <div>
           <h1 className={styles.entetePageTitre}>{nom}</h1>
           <p className={styles.entetePageSousTitre}>
@@ -392,7 +394,9 @@ export default async function DepotDesComptes({
         </div>
       </header>
 
-      <div className={`${styles.content} ${styles.contentSousEntete}`}>
+      <div
+        className={`${styles.content} ${styles.contentSousEntete} ${styles.contentColonne}`}
+      >
         <Parcours
           dossier={dossierId}
           initial={comptes}

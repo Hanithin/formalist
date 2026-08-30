@@ -13,80 +13,107 @@
 }
 
 /*
- * Le fil d'ariane.
+ * La mesure des autres parcours, et le contexte de conteneur de la colonne.
  *
- * Il flottait au milieu de son propre rembourrage, à la même taille que le titre qui
- * le suit : deux lignes de même poids, dont on ne savait laquelle lisait l'autre. Il
- * se resserre, s'allège, et l'écart au séparateur ne dépend plus d'un `gap` unique
- * appliqué à trois éléments de tailles différentes.
+ * Neuf cents pixels au milieu d'une zone qui en offre douze cents laissaient trois
+ * cents pixels de blanc à droite, sur un formulaire de huit étapes. La bascule de la
+ * colonne se mesure sur cette largeur et non sur celle de la fenêtre : la barre
+ * latérale prend trois cents pixels, et un seuil en `@media` se déclencherait trop
+ * tard.
+ *
+ * Aucun retrait en tête : `EnTetePage` porte le sien, et c'est lui qui pose le titre
+ * sur la ligne du logo de la colonne - ce que `tests/parcours/ligne-de-tete` mesure.
  */
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 22px 48px 10px;
-  background: transparent;
-  font-size: 13px;
-}
-
-.topbar a {
-  padding: 3px 7px;
-  margin-left: -7px;
-  border-radius: 7px;
-  color: #8a8a92;
-  font-size: 13px;
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    color 0.15s ease,
-    background 0.15s ease;
-}
-
-.topbar a:hover {
-  background: #f1f1f3;
-  color: #111;
-}
-
-.topbar svg {
-  width: 13px;
-  height: 13px;
-  color: #c9c9cf;
-  flex-shrink: 0;
-}
-
-.topbar span {
-  font-size: 13px;
-  color: #3f3f46;
-  font-weight: 500;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .content {
   flex: 1;
-  padding: 48px;
-  max-width: 900px;
+  padding: 0 48px 48px;
+  max-width: 1180px;
+  container-type: inline-size;
   margin: 0 auto;
   width: 100%;
 }
 
-/* Le titre de page existe pour la structure ; à l'écran, c'est le fil d'ariane et le
-   titre de l'étape qui situent. */
-.titre {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+/*
+ * L'en-tête partagé porte déjà sa marge de quarante-huit pixels, et pose lui-même
+ * l'écart avec ce qui le suit.
+ */
+.tete {
+  margin: 0 -48px 24px;
 }
 
+/*
+ * La phrase se recolle au titre.
+ *
+ * Le bandeau aligne son titre et son action sur une même rangée, et la rangée prend la
+ * hauteur du plus grand : le bouton de retour fait dix pixels de plus que le titre.
+ */
+.tete > p {
+  margin-top: 0;
+}
+
+/*
+ * Le retour, là où la date se tenait.
+ *
+ * « Samedi 29 août 2026 » situe une liste d'échéances ; sur un formulaire, elle
+ * n'apprend rien - on sait quel jour on remplit son dossier - et occupait le seul coin
+ * d'où l'on pouvait repartir.
+ */
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 8px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #52525b;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.retour svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.retour:hover {
+  border-color: #d4d4d8;
+  color: #18181b;
+}
+
+/*
+ * Le formulaire à gauche, le récapitulatif à droite.
+ *
+ * Les classes de la carte - `.colonne*` - viennent de la feuille partagée avec les
+ * trois autres parcours : elles y sont écrites une fois, et un quatrième exemplaire de
+ * la même carte finirait par diverger des autres. Seule la grille est ici, parce
+ * qu'elle porte sur `.parcours`, qui est de cette feuille.
+ */
 .parcours {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 0 32px;
+  align-items: start;
+}
+
+/*
+ * Trop étroite, la colonne passe sous le formulaire.
+ *
+ * Le seuil laisse au formulaire six cent vingt pixels : en deçà, ses champs à deux par
+ * ligne descendent sous deux cent cinquante et ne se lisent plus. Elle se range après
+ * le formulaire, non avant : la placer au-dessus repousserait le premier champ hors de
+ * l'écran - on remplit d'abord, on vérifie ensuite.
+ */
+@container (max-width: 974px) {
+  .parcours {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .stepper {

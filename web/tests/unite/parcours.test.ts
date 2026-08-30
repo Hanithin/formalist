@@ -215,16 +215,55 @@ describe("étape 3, les dirigeants", () => {
 });
 
 describe("étape 4, le capital", () => {
-  it("la répartition doit couvrir le capital", () => {
-    // 50 parts sur 100 émises, à 20 € la part : 1 000 € souscrits sur 2 000 €.
+  /*
+   * Une cause, un message.
+   *
+   * 50 parts sur 100 émises levaient trois anomalies : « il reste 1 000 euros à
+   * répartir », « exige de libérer au moins 20 % », et le décompte des parts. L'écran
+   * annonçait « 3 points à régler » pour un seul geste, et la plus alarmante des trois
+   * était la moins actionnable - le montant libéré se déduit de versements qui
+   * n'existent pas tant que les parts ne sont pas attribuées.
+   */
+  it("tant que les parts ne tombent pas juste, on ne dit qu'elles", () => {
     const anomalies = verifierEtape(4, {
       ...complet,
       capital: 2000,
-      capitalLibere: 2000,
       partsTotales: 100,
       associes: [{ type: "physique", personne: { nom: "A" }, parts: 50 }],
     });
-    expect(anomalies.some((a) => a.champ === "repartition")).toBe(true);
+
+    expect(anomalies.map((a) => a.champ)).toEqual(["partsTotales"]);
+    expect(anomalies[0].message).toContain("(50)");
+  });
+
+  it("sans nombre de titres, c'est lui qu'on réclame", () => {
+    /*
+     * L'étape disait « il reste 30 000 euros à répartir » d'un capital dont on n'avait
+     * pas encore dit en combien de titres il se divise : la case à remplir était celle
+     * du nombre, non une répartition qui n'a pas d'unité.
+     */
+    const anomalies = verifierEtape(4, {
+      ...complet,
+      capital: 30000,
+      partsTotales: undefined,
+      associes: [{ type: "physique", personne: { nom: "A" } }],
+    });
+
+    expect(anomalies.map((a) => a.champ)).toEqual(["partsTotales"]);
+    expect(anomalies[0].message).toContain("nombre total");
+  });
+
+  /* Le capital minimum d'une forme ne dépend pas des parts : il se dit tout de suite. */
+  it("le capital minimum se dit sans attendre la répartition", () => {
+    const anomalies = verifierEtape(4, {
+      ...complet,
+      forme: "SA",
+      capital: 1000,
+      partsTotales: 100,
+      associes: [{ type: "physique", personne: { nom: "A" }, parts: 50 }],
+    });
+
+    expect(anomalies.map((a) => a.champ).sort()).toEqual(["capital", "partsTotales"]);
   });
 
   it("cohérente, elle passe", () => {

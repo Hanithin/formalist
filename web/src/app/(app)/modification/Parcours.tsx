@@ -48,6 +48,7 @@ import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification
 import type { Retouche, Zone } from "@/domain/modification/edition";
 import type { ActeProduit } from "@/domain/document/publication";
 import styles from "./Modification.module.css";
+import { Recapitulatif } from "./Recapitulatif";
 import { remonterEnHaut } from "@/lib/defilement";
 import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
 import { qualitesDuRepresentant } from "@/domain/formalite/formes";
@@ -97,6 +98,31 @@ const FORMES = NATURES_PROPOSEES;
 
 /** Les champs que l'étape « La société » porte : ils s'y corrigent, et nulle part ailleurs. */
 const CHAMPS_DE_SOCIETE = ["denomination", "forme", "siren", "adresse", "codePostal", "ville"];
+
+/**
+ * Les manques du procès-verbal, qui se réparent à l'assemblée.
+ *
+ * `anomaliesDuPvAge` juge l'assemblée - qui y siège, pour combien de parts. Ses champs
+ * sont préfixés, et c'est ce préfixe qui les distingue des champs de l'étape des
+ * détails, avec lesquels ils étaient mêlés.
+ */
+function estDeLAssemblee(champ: string): boolean {
+  return champ.startsWith("assemblee");
+}
+
+/**
+ * L'étape où un manque se répare.
+ *
+ * « Corriger », au règlement, menait à l'étape 1 ou à l'étape 3, jamais ailleurs : un
+ * associé manquant à l'assemblée renvoyait aux détails, cinq écrans plus loin que la
+ * case en défaut. C'est la table qui manquait, celle que le dépôt des comptes a déjà.
+ */
+function etapeDe(champ: string): number {
+  if (CHAMPS_DE_SOCIETE.includes(champ)) return 1;
+  if (champ === "codes" || champ === "modifications") return 2;
+  if (estDeLAssemblee(champ)) return 4;
+  return 3;
+}
 
 interface Associe {
   /** Personne physique par défaut : c'est le cas courant, et l'ancien format. */
@@ -288,9 +314,20 @@ export function Parcours({
        * Les cessions se vérifient à part : leurs manques se posent sous le bloc
        * concerné, et le cumul de plusieurs cessions se juge sur l'ensemble.
        */
+      /*
+       * Ce qui touche à l'assemblée reste à l'assemblée.
+       *
+       * Les manques du procès-verbal étaient mêlés à ceux des détails : sur un dossier
+       * dont l'étape 3 était entièrement remplie, « Continuer » refusait d'avancer en
+       * disant « Aucun associé n'est inscrit à l'assemblée » - et l'assemblée est
+       * l'étape suivante, qu'on ne pouvait donc pas atteindre. Le dossier n'était plus
+       * récupérable autrement qu'en tapant `?etape=4` dans l'adresse.
+       */
+      const desDetails = anomalies.filter((a) => !estDeLAssemblee(a.champ));
+
       return etat.codes.includes("cession_parts")
         ? [
-            ...anomalies,
+            ...desDetails,
             ...verifierCessions(
               etat.assemblee.associes ?? [],
               etat.cessions ?? [],
@@ -298,7 +335,7 @@ export function Parcours({
               typeof etat.valeurs.agrementRequis === "string" ? etat.valeurs.agrementRequis : ""
             ),
           ]
-        : anomalies;
+        : desDetails;
     }
     /*
      * L'assemblée : tout le capital doit être représenté.
@@ -308,7 +345,13 @@ export function Parcours({
      * parts. Continuer avec un procès-verbal qui ne représente que la moitié du
      * capital, c'est le faire retoquer plus loin, quand tout est déjà signé.
      */
-    if (etape === 4) return verifierLesParts(etat.assemblee);
+    if (etape === 4) {
+      /* Les manques du procès-verbal s'ajoutent ici, où ils se réparent. */
+      return [
+        ...anomalies.filter((a) => estDeLAssemblee(a.champ)),
+        ...verifierLesParts(etat.assemblee),
+      ];
+    }
     return [];
   }
 
@@ -445,7 +488,7 @@ export function Parcours({
   const definitionsChoisies = definitions(etat.codes);
 
   return (
-    <div className={styles.parcours}>
+    <div className={`${styles.parcours} ${styles.parcoursColonne}`}>
       {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} dossier={dossier} />}
 
       {/* La dernière étape ne s'ouvre qu'une fois la formalité réglée. */}
@@ -479,37 +522,13 @@ export function Parcours({
         )}
 
         {/*
-          Ce qui a été coché avant d'entrer, rappelé là où l'on entre.
-          Sans ce rappel, l'étape 2 est enjambée sans explication : on passe de la
-          société aux détails, et rien ne dit où sont partis les changements. La
-          reprise se fait par le fil, une fois l'étape 3 atteinte.
+          Le rappel des changements a quitté le formulaire pour la colonne.
+
+          Il n'y paraissait qu'à l'étape 1 - l'étape 2 étant enjambée quand on a coché
+          avant d'entrer, il fallait bien dire où étaient partis les changements. La
+          colonne le dit sur les sept étapes, et les deux listes se retrouvaient côte à
+          côte à trois cents pixels l'une de l'autre, avec les mêmes intitulés.
         */}
-        {etape === 1 && definitionsChoisies.length > 0 && (
-          <div className={styles.rappelChoix}>
-            <div className={styles.rappelTete}>
-              <span className={styles.rappelIntitule}>
-                Ce que vous modifiez
-                <span className={styles.rappelCompte}>{definitionsChoisies.length}</span>
-              </span>
-            </div>
-
-            {/*
-              Des pastilles, non une phrase.
-
-              Les six changements s'écrivaient en une énumération séparée de virgules,
-              sur deux lignes pleines : on la lisait comme un texte alors qu'on veut y
-              vérifier une liste. Chacun a maintenant sa pastille, et l'œil en compte
-              les éléments sans les lire.
-            */}
-            <ul className={styles.rappelListe}>
-              {definitionsChoisies.map((d) => (
-                <li key={d.code} className={styles.rappelPastille}>
-                  {d.libelleCourt}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         {etape === 1 && (
           <EtapeSociete
@@ -553,7 +572,7 @@ export function Parcours({
             payer={reglerLaFormalite}
             enCoursDeReglement={reglementEnCours}
             refusDuReglement={reglementRefuse}
-            surCorrection={(champ) => aller(CHAMPS_DE_SOCIETE.includes(champ) ? 1 : 3)}
+            surCorrection={(champ) => aller(etapeDe(champ))}
           />
         )}
 
@@ -645,6 +664,7 @@ export function Parcours({
         </div>
       </div>
 
+      <Recapitulatif etat={etat} />
     </div>
   );
 }

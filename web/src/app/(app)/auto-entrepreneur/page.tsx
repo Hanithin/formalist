@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { ouvrirDeclaration, lire } from "@/infrastructure/db/depots/auto-entrepreneur";
 import { ETAPES, premiereEtapeIncomplete } from "@/domain/auto-entrepreneur/declaration";
@@ -80,46 +79,17 @@ export default async function AutoEntrepreneur({
   const courante = declaration.paye ? recapitulatif : Math.min(Math.max(demandee, 1), bloquante);
 
   /*
-   * Le même cadre que la création de société : un fil d'ariane, puis une colonne
-   * centrée de neuf cents pixels. Le titre existe pour la structure du document ;
-   * à l'écran, ce sont le fil d'ariane et le titre de l'étape qui situent.
+   * Le même cadre que la création de société : une ligne de tête qui nomme la personne,
+   * le formulaire à gauche et le récapitulatif à droite.
+   *
+   * Le fil d'ariane a été retiré. Il écrivait « Tableau de bord › Créer une
+   * auto-entreprise » en gris clair au-dessus d'un titre masqué en `clip-path` : rien
+   * à l'écran ne disait de qui était le dossier, et le seul rôle propre du fil -
+   * repartir - est tenu par le bouton de retour de la ligne de tête.
    */
   return (
     <main className={styles.page}>
-      <nav className={styles.topbar} aria-label="Fil d'ariane">
-        <Link href="/tableau-de-bord">Tableau de bord</Link>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-        <span>Créer une auto-entreprise</span>
-      </nav>
-
       <div className={styles.content}>
-        <h1 className={styles.titre}>Créer une auto-entreprise</h1>
-
-        {/*
-          Le suivi n'apparaît qu'une fois la déclaration confiée : tant qu'on la
-          remplit, le fil des huit étapes dit déjà où on en est, et deux indicateurs
-          d'avancement côte à côte se contrediraient.
-        */}
-        {declaration.paye && ligne && (
-          <div className={styles.suivi}>
-            <Suivi
-              etat={await etatDuDossier(ligne)}
-              demande={await derniereDemandeDeCorrections(ligne.id)}
-              lienAction={"/auto-entrepreneur?dossier=" + ligne.id}
-              lienMessagerie={"/messagerie?dossier=" + ligne.id}
-            />
-          </div>
-        )}
         <Declaration
           dossierId={ligne?.id ?? null}
           etapes={ETAPES}
@@ -128,6 +98,27 @@ export default async function AutoEntrepreneur({
           piecesDeposees={deposees.map((d) => ({ type: d.type, nom: d.name }))}
           regleALInstant={regleALInstant}
           paiementAnnule={paiement === "annule"}
+          quand={new Date()}
+          /*
+            Le suivi n'apparaît qu'une fois la déclaration confiée : tant qu'on la
+            remplit, le fil des huit étapes dit déjà où on en est, et deux indicateurs
+            d'avancement côte à côte se contrediraient.
+
+            Il est passé en propriété plutôt que rendu ici, pour se placer sous la ligne
+            de tête - que le formulaire rend, puisque le titre suit la frappe.
+          */
+          suivi={
+            declaration.paye && ligne ? (
+              <div className={styles.suivi}>
+                <Suivi
+                  etat={await etatDuDossier(ligne)}
+                  demande={await derniereDemandeDeCorrections(ligne.id)}
+                  lienAction={"/auto-entrepreneur?dossier=" + ligne.id}
+                  lienMessagerie={"/messagerie?dossier=" + ligne.id}
+                />
+              </div>
+            ) : null
+          }
         />
       </div>
     </main>

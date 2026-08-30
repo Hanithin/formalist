@@ -171,14 +171,32 @@ test("les listes affichées en ligne le restent", async ({ page }) => {
    * tableau de bord signalée en production.
    */
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/consultations");
+
+  /*
+   * Les quatre repères de l'écran d'entrée d'une modification.
+   *
+   * L'essai mesurait les trois faits de la carte d'appel des consultations - prix,
+   * durée, délai. Cette carte est passée en colonne de droite, où les faits se lisent
+   * en lignes de définition. Cette liste-ci porte la même règle, sur un écran qui ne
+   * demande aucune donnée.
+   */
+  await page.goto("/modification");
 
   const ordonnees = await page.evaluate(() =>
-    [...document.querySelectorAll("[class*='hFacts'] > li")].map((e) =>
+    [...document.querySelectorAll("[class*='entreeRepere'] > li")].map((e) =>
       Math.round(e.getBoundingClientRect().y)
     )
   );
 
   expect(ordonnees.length).toBeGreaterThan(1);
-  expect(Math.max(...ordonnees) - Math.min(...ordonnees)).toBeLessThan(4);
+
+  /*
+   * Deux voisins au moins partagent leur ligne.
+   *
+   * La liste s'enroule quand la place manque - ce n'est pas le défaut cherché. Dressée
+   * en colonne, en revanche, aucun de ses éléments n'en partagerait avec un autre.
+   */
+  const parLigne = new Map<number, number>();
+  for (const y of ordonnees) parLigne.set(y, (parLigne.get(y) ?? 0) + 1);
+  expect(Math.max(...parLigne.values())).toBeGreaterThan(1);
 });

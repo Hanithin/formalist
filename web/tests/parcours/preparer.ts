@@ -132,6 +132,25 @@ export default async function preparer() {
     },
   });
 
+  /*
+   * Un dossier confié, pour distinguer la phase du statut.
+   *
+   * « PARCOURS EN COURS » est un brouillon en phase 3 : la phase avance à mesure qu'on
+   * remplit, et elle ne dit donc rien de ce que le cabinet fait. Il fallait un dossier
+   * réellement parti pour vérifier que c'est alors la phase qui parle.
+   */
+  await prisma.formalites.create({
+    data: {
+      user_id: compte.id,
+      type: "creation",
+      forme: "SAS",
+      societe: "PARCOURS CONFIE",
+      status: "en_attente_validation",
+      phase: 3,
+      data_json: "{}",
+    },
+  });
+
   await prisma.documents.create({
     data: {
       formalite_id: enCours.id,

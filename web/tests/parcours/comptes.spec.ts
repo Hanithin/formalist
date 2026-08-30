@@ -348,3 +348,50 @@ test("l'écran d'entrée annonce les seuils de confidentialité", async ({ page 
   await expect(page.getByText("450 000 €")).toBeVisible();
   await expect(page.getByText("Compte de résultat seul")).toBeVisible();
 });
+
+test("la colonne de droite dit ce qui est saisi, et suit la frappe", async ({
+  page,
+  request,
+}) => {
+  /*
+   * Le formulaire occupait neuf cents pixels au milieu d'une zone qui en offre douze
+   * cents, et rien ne rappelait sur quelle société ni sur quel exercice on travaillait.
+   */
+  const { dossier } = await dossierRempli(request);
+  await page.goto("/depot-des-comptes?dossier=" + dossier + "&etape=4");
+
+  const colonne = page.getByRole("complementary", { name: "Récapitulatif de votre dépôt" });
+  await expect(colonne).toBeVisible();
+  await expect(colonne.getByText("ESSAI COMPTES")).toBeVisible();
+  await expect(colonne.getByText("552 100 554")).toBeVisible();
+  await expect(colonne.getByText("15 juin 2026")).toBeVisible();
+  await expect(colonne.getByText("48 000 € de bénéfice")).toBeVisible();
+
+  /* La date limite de dépôt : un mois après l'assemblée. */
+  await expect(colonne.getByText("15 juillet 2026")).toBeVisible();
+
+  /* Elle lit le même état que le formulaire : un dividende saisi s'y écrit aussitôt. */
+  await expect(colonne.getByText("aucun", { exact: true })).toBeVisible();
+  await page.getByLabel("Dividendes distribués, en euros").fill("1000");
+  await expect(colonne.getByText("1 000 €")).toBeVisible();
+});
+
+test("la colonne passe sous le formulaire quand la place manque", async ({
+  page,
+  request,
+}) => {
+  /*
+   * Elle se range après lui, non avant : la placer au-dessus repousserait le premier
+   * champ hors de l'écran - on remplit d'abord, on vérifie ensuite.
+   */
+  const { dossier } = await dossierRempli(request);
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await page.goto("/depot-des-comptes?dossier=" + dossier + "&etape=1");
+
+  const colonne = page.getByRole("complementary", { name: "Récapitulatif de votre dépôt" });
+  const formulaire = page.getByRole("heading", { name: "La société", exact: true });
+
+  const basDuFormulaire = (await formulaire.boundingBox())!.y;
+  const hautDeLaColonne = (await colonne.boundingBox())!.y;
+  expect(hautDeLaColonne).toBeGreaterThan(basDuFormulaire);
+});

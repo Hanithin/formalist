@@ -158,14 +158,17 @@ export function resumeDePeriode(periode: Periode): string {
     memeMois ? { day: "numeric" } : { day: "numeric", month: "long" }
   );
 
+  /* « 1 jours » se lisait sur une absence d'une seule journée. */
+  const jours = nombreDeJours(periode.debut, periode.fin);
+
   return (
     "Du " +
     debut +
     " au " +
     ecrire(periode.fin, complet) +
     " · " +
-    nombreDeJours(periode.debut, periode.fin) +
-    " jours"
+    jours +
+    (jours > 1 ? " jours" : " jour")
   );
 }
 

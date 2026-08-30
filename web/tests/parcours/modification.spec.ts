@@ -293,14 +293,17 @@ test("l'écran d'entrée fait cocher, et le choix remplit l'étape 2", async ({ 
   /*
    * On arrive sur la société : les changements sont déjà répondus, et rappelés.
    *
-   * Le rappel s'écrivait « Vous changez… » en une énumération séparée de virgules ; il
-   * s'intitule « Ce que vous modifiez » et compte ses pastilles. Le test attendait
-   * l'ancienne phrase.
+   * Le rappel a été posé dans le formulaire, puis dans la colonne de droite - où il
+   * tient les sept étapes, et non la seule première. Le laisser aux deux endroits
+   * mettait deux fois la même liste côte à côte.
    */
   await expect(page.getByRole("heading", { name: "La société" })).toBeVisible();
-  await expect(page.getByText("Ce que vous modifiez")).toBeVisible();
-  await expect(page.getByText("Siège social", { exact: true })).toBeVisible();
-  await expect(page.getByText("Dénomination", { exact: true }).first()).toBeVisible();
+
+  const colonne = page.getByRole("complementary", {
+    name: "Récapitulatif de votre modification",
+  });
+  await expect(colonne.getByText("Ce que vous changez")).toBeVisible();
+  await expect(colonne.getByRole("listitem")).toHaveText(["Siège social", "Dénomination"]);
 });
 
 test("qui ne sait pas encore ouvre un dossier vide", async ({ page }) => {
@@ -753,4 +756,103 @@ test("le calendrier est le nôtre, et la saisie reste au clavier", async ({ page
   await champ.fill("31/02/2026");
   await champ.blur();
   await expect(champ).toHaveValue("22/09/2026");
+});
+
+test("la colonne de droite rappelle ce qu'on change, et suit la frappe", async ({
+  page,
+  request,
+}) => {
+  /*
+   * On coche les changements à l'étape deux et l'on remplit leurs détails à l'étape
+   * trois : entre les deux, rien à l'écran ne disait plus lesquels on avait pris.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege", "denomination"],
+      assemblee: { date: "2026-05-15", associes: [] },
+    },
+  });
+  await page.goto("/modification?dossier=" + dossier + "&etape=3");
+
+  const colonne = page.getByRole("complementary", {
+    name: "Récapitulatif de votre modification",
+  });
+  await expect(colonne).toBeVisible();
+  await expect(colonne.getByText("ESSAI MODIFICATION")).toBeVisible();
+  await expect(colonne.getByText("552 100 554")).toBeVisible();
+  await expect(colonne.getByText("15 000 €")).toBeVisible();
+  await expect(colonne.getByText("15 mai 2026")).toBeVisible();
+
+  /* Les deux changements cochés, sous leur intitulé court. */
+  await expect(colonne.getByRole("listitem")).toHaveText(["Siège social", "Dénomination"]);
+});
+
+test("une étape 3 remplie mène à l'assemblée, même sans associé inscrit", async ({
+  page,
+  request,
+}) => {
+  /*
+   * Le cul-de-sac : les manques du procès-verbal étaient mêlés à ceux des détails, si
+   * bien que « Continuer » refusait d'avancer en disant « Aucun associé n'est inscrit à
+   * l'assemblée » - et l'assemblée est l'étape suivante, qu'on ne pouvait donc pas
+   * atteindre. Le dossier n'était plus récupérable autrement qu'en tapant `?etape=4`.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {
+        nouvelleAdresse: "3 rue de la Forge",
+        nouveauCodePostal: "69003",
+        nouvelleVille: "Lyon",
+        dateEffetTransfert: "2026-09-15",
+      },
+      assemblee: { date: "2026-09-01", associes: [] },
+    },
+  });
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=3");
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  await expect(page.getByRole("heading", { name: "L'assemblée" })).toBeVisible();
+
+  /*
+   * Et c'est là que la phrase se lit, sous le formulaire qui la répare - à l'essai
+   * suivant : on ne reproche rien à qui vient d'arriver sur l'étape.
+   */
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page.getByText("Aucun associé n'est inscrit")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "L'assemblée" })).toBeVisible();
+});
+
+test("« Corriger » mène à l'étape où le manque se répare", async ({ page, request }) => {
+  /*
+   * Le bouton renvoyait à l'étape 1 ou à l'étape 3, jamais ailleurs : un associé
+   * manquant à l'assemblée menait aux détails, une étape trop tôt.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {
+        nouvelleAdresse: "3 rue de la Forge",
+        nouveauCodePostal: "69003",
+        nouvelleVille: "Lyon",
+        dateEffetTransfert: "2026-09-15",
+      },
+      assemblee: { date: "2026-09-01", associes: [] },
+    },
+  });
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=6");
+  await page.getByRole("button", { name: "Corriger" }).click();
+
+  await expect(page.getByRole("heading", { name: "L'assemblée" })).toBeVisible();
 });

@@ -486,13 +486,21 @@ export function verifierAssocies(forme: string, nombre: number): Anomalie[] {
   const r = regle(forme);
   if (!r) return [{ champ: "forme", message: "Forme juridique inconnue" }];
 
+  /*
+   * Le mot de la forme, et le pluriel de son nombre.
+   *
+   * Les deux messages écrivaient « associés » quelle que soit la forme, quand le reste
+   * de l'écran dit « actionnaire » pour une société par actions. Et le maximum ne
+   * s'accordait pas : « Une SASU ne peut pas dépasser 1 associés ».
+   */
+  const mot = natureDeLaForme(forme).titres === "actions" ? "actionnaire" : "associé";
+  const compter = (n: number) => (n === 1 ? "un " + mot : n + " " + mot + "s");
+
   if (nombre < r.associesMin) {
     return [
       {
         champ: "associes",
-        message:
-          "Une " + r.libelle + " demande au moins " +
-          (r.associesMin === 1 ? "un associé" : r.associesMin + " associés"),
+        message: "Une " + r.libelle + " demande au moins " + compter(r.associesMin),
       },
     ];
   }
@@ -501,7 +509,7 @@ export function verifierAssocies(forme: string, nombre: number): Anomalie[] {
     return [
       {
         champ: "associes",
-        message: "Une " + r.libelle + " ne peut pas dépasser " + r.associesMax + " associés",
+        message: "Une " + r.libelle + " ne peut pas dépasser " + compter(r.associesMax),
       },
     ];
   }

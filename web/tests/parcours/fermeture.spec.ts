@@ -334,3 +334,61 @@ test("le solde de la liquidation se calcule et s'explique", async ({ page, reque
   await expect(page.getByText("700,00 €", { exact: false }).first()).toBeVisible();
   await expect(page.getByText("revenu distribué", { exact: false })).toBeVisible();
 });
+
+test("la colonne de droite dit la phase, le liquidateur et l'échéance", async ({
+  page,
+  request,
+}) => {
+  /*
+   * La fermeture est le seul parcours en deux temps séparés par des mois : on rouvre
+   * son dossier longtemps après l'avoir quitté, et rien ne disait où l'on en était.
+   */
+  const { dossier } = await dossierDissous(request);
+  await page.goto("/fermeture?dossier=" + dossier + "&etape=2");
+
+  const colonne = page.getByRole("complementary", {
+    name: "Récapitulatif de votre fermeture",
+  });
+  await expect(colonne).toBeVisible();
+  await expect(colonne.getByText("Dissolution · liquidation amiable")).toBeVisible();
+  await expect(colonne.getByText("ESSAI FERMETURE")).toBeVisible();
+  await expect(colonne.getByText("552 100 554")).toBeVisible();
+  await expect(colonne.getByText("10 mars 2026")).toBeVisible();
+  await expect(colonne.getByText("Madame Claire MARTIN")).toBeVisible();
+
+  /* Le mandat du liquidateur court trois ans, jour pour jour. */
+  await expect(colonne.getByText("Fin du mandat")).toBeVisible();
+  await expect(colonne.getByText("10 mars 2029")).toBeVisible();
+});
+
+test("en clôture, ce qui manque se dit sur l'écran qui le saisit", async ({ page, request }) => {
+  /*
+   * Les quatre étapes de la clôture ne sont pas celles de la dissolution : « Les comptes
+   * de liquidation » porte tous les champs, « Le solde » ne fait que calculer. Le
+   * découpage de la dissolution était appliqué tel quel - le premier écran ne bloquait
+   * sur rien, et le second, qui n'a pas une case à remplir, refusait d'avancer en
+   * réclamant la date de clôture, une étape en arrière.
+   */
+  const { dossier } = await dossierDissous(request);
+  await request.patch("/api/formalites/fermeture", { data: { dossier } });
+
+  await page.goto("/fermeture?dossier=" + dossier + "&phase=cloture&etape=1");
+  // Le formulaire attend d'être vivant : un clic avant l'hydratation ne bloque rien.
+  await expect(page.getByLabel("Date de la décision de clôture")).toBeVisible();
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  // On reste sur les comptes, et le manque se lit sur le champ qui le porte.
+  await expect(
+    page.getByRole("heading", { name: "Les comptes de liquidation", level: 2 })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Date de la décision de clôture est requis", { exact: true })
+  ).toBeVisible();
+
+  // Rempli, l'écran laisse passer.
+  await ecrire(request, dossier, { valeurs: CLOTURE });
+  await page.goto("/fermeture?dossier=" + dossier + "&phase=cloture&etape=1");
+  await expect(page.getByLabel("Date de la décision de clôture")).toBeVisible();
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page.getByRole("heading", { name: "Le solde de la liquidation" })).toBeVisible();
+});

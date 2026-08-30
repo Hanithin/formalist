@@ -70,9 +70,33 @@ describe("état d'un dossier", () => {
     expect(tonDossier({ status: "terminee", phase: 2 })).toBe("termine");
   });
 
-  it("sinon, l'étape en cours fait le libellé", () => {
-    expect(libelleDossier({ status: "en_cours", phase: 3 })).toBe("En attente de signature");
+  /*
+   * Un brouillon reste un brouillon, quelle que soit sa phase.
+   *
+   * La phase avance à mesure qu'on remplit le formulaire : un dossier arrivé en phase 3
+   * s'annonçait « En attente de signature », et en phase 4 « En révision par un
+   * avocat », sur une vignette qui offrait « Reprendre » juste à côté. La même carte
+   * disait que le dossier était parti et qu'on pouvait encore le remplir.
+   */
+  it("un dossier encore chez son auteur est à compléter, quelle que soit sa phase", () => {
+    expect(libelleDossier({ status: "en_cours", phase: 3 })).toBe("À compléter");
+    expect(libelleDossier({ status: "en_cours", phase: 4 })).toBe("À compléter");
     expect(tonDossier({ status: "en_cours", phase: 3 })).toBe("avance");
+  });
+
+  it("une fois transmis, c'est la phase qui parle", () => {
+    expect(libelleDossier({ status: "en_attente_validation", phase: 3 })).toBe(
+      "En attente de signature"
+    );
+    expect(libelleDossier({ status: "en_attente_validation", phase: 4 })).toBe(
+      "En révision par un avocat"
+    );
+  });
+
+  it("des corrections demandées se disent avant tout le reste", () => {
+    expect(libelleDossier({ status: "corrections_demandees", phase: 4 })).toBe(
+      "Corrections demandées"
+    );
   });
 
   it("un dossier en attente se distingue d'un dossier qui avance", () => {

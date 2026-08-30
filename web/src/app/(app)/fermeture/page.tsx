@@ -55,7 +55,7 @@ export default async function Fermeture({
           la colonne ne dise, et son seul rôle propre - repartir vers « Mes
           formalités » - est tenu par cette colonne, qui ne quitte jamais l'écran.
         */}
-        <header className={styles.entetePage}>
+        <header className={`${styles.entetePage} ${styles.entetePageLarge}`}>
           <div>
             <h1 className={styles.entetePageTitre}>Fermer ma société</h1>
             <p className={styles.entetePageSousTitre}>
@@ -64,7 +64,9 @@ export default async function Fermeture({
           </div>
         </header>
 
-        <div className={`${styles.content} ${styles.contentSousEntete}`}>
+        <div
+          className={`${styles.content} ${styles.contentLarge} ${styles.contentSousEntete}`}
+        >
           <Commencer />
         </div>
       </main>
@@ -128,7 +130,7 @@ export default async function Fermeture({
 
   return (
     <main className={styles.page}>
-      <header className={styles.entetePage}>
+      <header className={`${styles.entetePage} ${styles.entetePageLarge}`}>
         <div>
           <h1 className={styles.entetePageTitre}>{nom}</h1>
           <p className={styles.entetePageSousTitre}>
@@ -141,7 +143,9 @@ export default async function Fermeture({
         </div>
       </header>
 
-      <div className={`${styles.content} ${styles.contentSousEntete}`}>
+      <div
+        className={`${styles.content} ${styles.contentSousEntete} ${styles.contentColonne}`}
+      >
         <Parcours
           dossier={dossierId}
           initial={fermeture}

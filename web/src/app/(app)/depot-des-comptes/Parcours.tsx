@@ -25,6 +25,7 @@ import { devisDesComptes, DELAI, PRESTATIONS } from "@/domain/comptes/offre";
 import { verifierComptes } from "@/domain/comptes/verification";
 import { Conventions } from "./Conventions";
 import { Chiffres } from "./Chiffres";
+import { Recapitulatif } from "./Recapitulatif";
 import styles from "../modification/Modification.module.css";
 import { remonterEnHaut } from "@/lib/defilement";
 import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
@@ -193,7 +194,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
   const manquesCourants = manquesDe(etape);
 
   return (
-    <div className={styles.parcours}>
+    <div className={`${styles.parcours} ${styles.parcoursColonne}`}>
       {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} />}
 
       <Frise etape={etape} atteinte={atteinte} surChoix={aller} />
@@ -315,6 +316,8 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
           )}
         </div>
       </div>
+
+      <Recapitulatif etat={etat} />
     </div>
   );
 }

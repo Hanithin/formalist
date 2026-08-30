@@ -89,9 +89,74 @@
   max-width: 760px;
 }
 
-.content {
-  padding: 0 48px 60px;
+/*
+ * La liste à gauche, la réservation à droite.
+ *
+ * La carte d'appel prenait la pleine largeur en tête d'écran, et le bandeau du prochain
+ * rendez-vous la remplaçait : son bouton s'en allait avec elle, et l'on ne pouvait plus
+ * prendre un second rendez-vous depuis cette page.
+ *
+ * La bascule se mesure sur cette largeur et non sur celle de la fenêtre : la barre
+ * latérale prend trois cents pixels, et un seuil en `@media` se déclencherait trop tard.
+ */
+/*
+ * Le cadre porte la mesure, la grille la partage.
+ *
+ * Une requête de conteneur ne s'applique qu'aux descendants du conteneur : posée sur la
+ * grille elle-même, la règle qui la replie en une colonne ne l'atteignait pas - elle se
+ * serait interrogée. Le cadre ne fait que mesurer.
+ */
+.cadre {
   flex: 1;
+  padding: 0 48px 60px;
+  container-type: inline-size;
+}
+
+/*
+ * La grille ne prend que la liste et la colonne.
+ *
+ * Le titre et les filtres restent au-dessus, sur toute la largeur : la carte de
+ * réservation se pose ainsi au niveau de la première consultation, et non au-dessus des
+ * filtres.
+ */
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 0 32px;
+  align-items: start;
+}
+
+.content > * {
+  grid-column: 1;
+}
+
+/*
+ * La colonne est dernière du document - comme dans les quatre parcours, où l'on remplit
+ * d'abord et vérifie ensuite - mais la grille la remonte en tête de rangée.
+ */
+.content > aside {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/*
+ * Trop étroite, la grille se déplie - et la colonne passe au-dessus de la liste.
+ *
+ * C'est l'inverse des parcours, où elle se range en dessous : là-bas on remplit un
+ * formulaire et la colonne le vérifie ; ici elle porte le geste qu'on vient faire.
+ */
+@container (max-width: 974px) {
+  .content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .content > aside {
+    /* Sans quoi elle reste en deuxième colonne, et en crée une implicite. */
+    grid-column: 1;
+    grid-row: auto;
+    order: -1;
+    margin: 0 0 24px;
+  }
 }
 
 /*
@@ -446,10 +511,6 @@
 }
 
 /* ---------- Mes consultations ---------- */
-
-.section {
-  margin-bottom: 36px;
-}
 
 .sectionTitre {
   font-family: var(--police-titre), var(--police-texte), sans-serif;

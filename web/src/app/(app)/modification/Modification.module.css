@@ -995,18 +995,24 @@
  */
 .seuil {
   display: grid;
-  grid-template-columns: 152px minmax(0, 1fr);
+  grid-template-columns: 152px minmax(0, 1fr) minmax(0, 340px);
   align-items: baseline;
   row-gap: 3px;
   column-gap: 14px;
   padding: 12px 15px;
 }
 
-/* Sur un téléphone, deux colonnes ne tiennent pas : chaque mention prend sa ligne. */
+/* Sur un téléphone, trois colonnes ne tiennent pas : chaque mention prend sa ligne. */
 @media (max-width: 700px) {
   .seuil,
   .seuilOuvre {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .seuilOuvre {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 2px;
   }
 }
 
@@ -1036,12 +1042,20 @@
  * pouvait rester caché - la question même qui amène ici. Elle porte donc son
  * intitulé, au lieu de le laisser deviner.
  */
+/*
+ * Elle passe en troisième colonne, sur la ligne qu'elle qualifie.
+ *
+ * Posée sous les deux premières, elle laissait quatre cents pixels de vide à droite
+ * depuis que l'écran d'entrée a repris la mesure du parcours - et il fallait deux
+ * lignes pour dire ce qu'une seule dit : cette taille-là, ces chiffres-là, cela reste
+ * confidentiel.
+ */
 .seuilOuvre {
   display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  column-gap: 14px;
-  margin-top: 2px;
+  grid-column: 3;
+  grid-row: 1;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 2px;
 }
 
 .seuilOuvreLabel {
@@ -7043,4 +7057,278 @@
   .totalMontant {
     font-size: 19px;
   }
+}
+
+/* ================================================================
+   La colonne de droite du dépôt des comptes
+
+   Le parcours de création l'a d'abord eue : neuf cents pixels de formulaire au
+   milieu d'une zone qui en offre douze cents, et rien qui rappelle sur quelle
+   société on travaille. Le dépôt des comptes pose la question sur sept étapes.
+
+   Ces classes ne servent qu'à lui. Les trois autres parcours qui partagent cette
+   feuille - modification, fermeture, cessation - gardent leur colonne unique de
+   neuf cents pixels tant qu'on ne le leur demande pas.
+   ================================================================ */
+
+/*
+ * Le cadre de la grille, et son contexte de conteneur.
+ *
+ * La bascule se mesure sur cette largeur et non sur celle de la fenêtre : la barre
+ * latérale prend trois cents pixels, et un seuil en `@media` se déclencherait trois
+ * cents pixels trop tard.
+ */
+.contentColonne {
+  max-width: 1180px;
+  container-type: inline-size;
+}
+
+.parcoursColonne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 0 32px;
+  align-items: start;
+}
+
+/* Le fil des étapes et le mot du paiement traversent : ils parlent des deux colonnes. */
+.parcoursColonne > .frise,
+.parcoursColonne > .obligations {
+  grid-column: 1 / -1;
+}
+
+.colonne {
+  position: sticky;
+  top: 24px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  padding: 22px 24px 24px;
+}
+
+.colonneForme {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.colonneNom,
+.colonneNomVide {
+  margin: 6px 0 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 17px;
+  line-height: 1.3;
+  /* Une dénomination sans espace - « SOCIETEIMMOBILIEREDUPONT » - déborderait. */
+  overflow-wrap: anywhere;
+}
+
+.colonneNom {
+  font-weight: 600;
+  color: #18181b;
+}
+
+.colonneNomVide {
+  font-weight: 400;
+  color: #71717a;
+}
+
+/* La ligne sous la dénomination : l'exercice d'un dépôt, la phase d'une fermeture. */
+.colonneSous {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #6b6b73;
+}
+
+/*
+ * Une ligne par ligne, quelle que soit la largeur.
+ *
+ * `globals.css` range toute liste de définitions en colonnes de deux cents pixels :
+ * la colonne dépliée sous le formulaire y étalait ses sept lignes sur trois rangées,
+ * et l'exercice se coupait en trois dans une case trop étroite. C'est une liste qu'on
+ * lit de haut en bas, non un tableau de chiffres.
+ */
+.colonneLignes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid #ededf0;
+}
+
+.colonneLigne {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.colonneLigne dt {
+  font-size: 13px;
+  color: #71717a;
+}
+
+.colonneLigne dd {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #27272a;
+  /* L'exercice tient sur deux lignes : l'ouverture, puis la clôture. */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Ce qui manque se lit gris, non effacé.
+ *
+ * La teinte reste au-dessus de 4,5:1 sur blanc : c'est du texte qu'on lit, la liste
+ * de ce qu'il reste à faire, et non un ornement.
+ */
+.colonneLigne dd.colonneManque {
+  color: #71717a;
+}
+
+/*
+ * L'échéance et le montant, en pied.
+ *
+ * Ni l'une ni l'autre ne sont des attributs de la société : la première est un délai
+ * légal, le second un prix. Ils se rangent sous un filet, où l'on regarde en dernier.
+ */
+.colonnePied {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid #ededf0;
+}
+
+.colonnePiedLigne {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+  color: #27272a;
+}
+
+.colonnePiedLigne > span:first-child {
+  font-size: 13px;
+  color: #71717a;
+}
+
+/*
+ * Trop étroite, la colonne passe sous le formulaire.
+ *
+ * Le seuil laisse au formulaire six cent vingt pixels : en deçà, ses champs à deux
+ * par ligne descendent sous deux cent cinquante et ne se lisent plus. La colonne se
+ * range après le formulaire, non avant : la placer au-dessus repousserait le premier
+ * champ hors de l'écran - on remplit d'abord, on vérifie ensuite.
+ */
+@container (max-width: 974px) {
+  .parcoursColonne {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .colonne {
+    position: static;
+    margin-top: 24px;
+  }
+}
+
+/*
+ * La ligne de tête, alignée sur le bloc qu'elle surplombe.
+ *
+ * Le bandeau tient son retrait de quarante-huit pixels à même la page, quand le contenu
+ * en dessous se centre dans onze cent quatre-vingts : le titre tombait seize pixels à
+ * gauche de la carte. Il reprend la même mesure, et les deux bords se rejoignent.
+ *
+ * Elle va de pair avec `.contentLarge` et `.contentColonne`, les deux blocs qui tiennent
+ * cette largeur.
+ */
+.entetePageLarge {
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/*
+ * Le bloc du milieu, entre l'identité et le montant.
+ *
+ * Une modification n'a pas la société pour sujet, mais ce qu'on lui change : les
+ * changements cochés à l'étape deux se relisent trois étapes plus loin, quand on
+ * remplit leurs détails et qu'on ne sait plus lesquels on avait pris.
+ */
+.colonneGroupe {
+  margin: 18px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid #ededf0;
+}
+
+.colonneGroupeTitre {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+.colonneGroupeListe {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: #27272a;
+}
+
+/* Rien de coché : la liste dit ce qu'il reste à faire, du même gris que les manques. */
+.colonneGroupeVide {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  color: #71717a;
+}
+
+/*
+ * Ce qui traverse la grille, quel que soit le module qui l'a nommé.
+ *
+ * `.parcoursColonne > .frise` ne peut pas atteindre le fil du parcours
+ * auto-entrepreneur : il vient d'une autre feuille, et porte donc un autre nom haché.
+ * Cette classe se pose là-bas, à la main, sur ce qui doit prendre les deux colonnes.
+ */
+.pleineLargeur {
+  grid-column: 1 / -1;
+}
+
+/*
+ * Le geste, en pied de colonne.
+ *
+ * Les quatre parcours n'en avaient pas besoin : leur colonne récapitule, elle
+ * n'actionne rien - le bouton est au bas du formulaire. L'écran des consultations
+ * n'est pas un formulaire, et c'est son seul geste.
+ */
+.colonneBouton {
+  display: block;
+  width: 100%;
+  margin: 18px 0 0;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #18181b;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.colonneBouton:hover {
+  background: #000;
 }

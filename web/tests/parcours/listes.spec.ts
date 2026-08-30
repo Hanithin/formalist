@@ -42,8 +42,15 @@ test.describe("formalités", () => {
     await page.goto("/formalites");
     await chercher(page, "PARCOURS EN COURS");
 
+    /*
+     * Un brouillon dit ce qu'on attend de lui, non ce que ferait le cabinet.
+     *
+     * La phase avance à mesure qu'on remplit : celui-ci est en phase 3, et la carte
+     * annonçait « En attente de signature » sur un dossier qui n'a jamais quitté son
+     * auteur - en offrant « Reprendre » à trois centimètres de là.
+     */
     const carte = page.locator("li", { hasText: "PARCOURS EN COURS" }).last();
-    await expect(carte.getByText("En attente de signature")).toBeVisible();
+    await expect(carte.getByText("À compléter")).toBeVisible();
     await expect(carte.getByText("SASU")).toBeVisible();
     /*
      * La carte dit ce qu'on attend d'elle, non un pourcentage.
@@ -55,6 +62,11 @@ test.describe("formalités", () => {
      */
     await expect(carte.getByText(/% complété/)).toHaveCount(0);
     await expect(carte.getByRole("img", { name: /^Avancement : \d+ %$/ })).toBeVisible();
+
+    /* Une fois le dossier confié, c'est bien la phase qui fait le libellé. */
+    await chercher(page, "PARCOURS CONFIE");
+    const confie = page.locator("li", { hasText: "PARCOURS CONFIE" }).last();
+    await expect(confie.getByText("En attente de signature")).toBeVisible();
   });
 
   /*

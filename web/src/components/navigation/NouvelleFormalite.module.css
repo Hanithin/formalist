@@ -9,12 +9,17 @@
 /* ---------- Le bouton ---------- */
 
 /*
- * Une entrée de colonne, non un pavé.
+ * Un aplat clair, à la géométrie des entrées.
  *
- * Le bouton occupait un rectangle blanc pleine largeur en tête de marge, plus lourd
- * que le logo : la seule action de la colonne y pesait plus que la colonne entière. Il
- * prend la géométrie des entrées, juste au-dessus de « Mes formalités » - ce qu'il
- * crée va s'y ranger - et se distingue par un filet et un signe, non par un aplat.
+ * Le bouton a connu deux excès. D'abord un rectangle blanc pleine largeur en tête de
+ * marge, plus lourd que le logo : la seule action de la colonne y pesait plus que la
+ * colonne entière. Puis un filet sur fond transparent, qui a corrigé le poids mais l'a
+ * rendu moins visible que « Mes formalités » juste en dessous - l'entrée courante porte
+ * un aplat, et un simple état de navigation attirait donc l'œil avant le seul geste.
+ *
+ * Il garde la géométrie des entrées - même hauteur, même retrait, même rayon - et ne
+ * se distingue que par sa matière : un gris clair sur une colonne sombre, qui se voit
+ * d'un coup d'œil sans occuper plus de place qu'une ligne de menu.
  */
 .action {
   display: flex;
@@ -23,13 +28,13 @@
   width: 100%;
   margin: 0 0 6px;
   padding: 11px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid transparent;
   border-radius: 10px;
-  background: none;
-  color: #fff;
+  background: #e9e9ec;
+  color: #18181b;
   font-family: inherit;
   font-size: 15.5px;
-  font-weight: 550;
+  font-weight: 600;
   line-height: 1.2;
   text-align: left;
   text-decoration: none;
@@ -40,8 +45,7 @@
 }
 
 .action:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.07);
+  background: #fff;
 }
 
 /* Le signe tient la place de l'icône des entrées voisines : la colonne reste alignée. */

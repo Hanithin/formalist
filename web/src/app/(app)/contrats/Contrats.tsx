@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ETATS,
   etatLisible,
   actionAttendue,
   FILTRES,
@@ -25,6 +24,8 @@ import { formaterDate } from "@/lib/dates";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import styles from "./Contrats.module.css";
+import { Redaction } from "./Redaction";
+import { BarreDOutils, Selecteur } from "@/components/page/BarreDOutils";
 
 export interface ContratAffiche {
   id: number;
@@ -49,22 +50,6 @@ function Feuille() {
     >
       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
       <polyline points="14 2 14 8 20 8" />
-    </svg>
-  );
-}
-
-function Plus() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
 }
@@ -126,62 +111,42 @@ export function Contrats({ contrats }: { contrats: ContratAffiche[] }) {
       )}
 
       {/*
-        Le parcours expliqué une fois, en haut : c'est ce qui manquait le plus. La page
-        affichait « en validation » sans dire qui valide ni s'il y avait quelque chose
-        à faire de son côté.
+        Le bandeau des trois étapes a été retiré.
+
+        Il expliquait le parcours en trois cartes - « À compléter », « En relecture »,
+        « Relu par un avocat » - chacune avec son décompte et sa phrase. Les décomptes
+        sont ceux des filtres, juste en dessous ; les phrases sont recopiées mot pour mot
+        sur chaque ligne de la liste, qui les porte là où elles servent. Il disait donc
+        trois fois ce que la page dit déjà, et prenait un tiers de l'écran pour le dire.
       */}
-      {contrats.length > 0 && (
-        <div className={styles.parcours}>
-          {ETATS.filter((e) => e.code !== "signe" && e.code !== "genere").map((etape, i) => {
-            const combien = contrats.filter(
-              (c) => etatLisible(c.status).code === etape.code
-            ).length;
-            return (
-              <div
-                className={styles.etape + (combien > 0 ? " " + styles.etapeActive : "")}
-                key={etape.code}
-              >
-                <span className={styles.etapeNumero}>{i + 1}</span>
-                {combien > 0 && (
-                  <span className={styles.etapeCompte}>
-                    {combien} {combien > 1 ? "contrats" : "contrat"}
-                  </span>
-                )}
-                <span className={styles.etapeNom}>{etape.libelle}</span>
-                <span className={styles.etapeTexte}>{etape.explication}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
-      <div className={styles.barre}>
-        {filtresUtiles(FILTRES, comptes, filtre).map((f) => (
-          <button
-            type="button"
-            key={f.valeur}
-            className={styles.pill + (filtre === f.valeur ? " " + styles.pillActive : "")}
-            onClick={() => setFiltre(f.valeur)}
-            aria-pressed={filtre === f.valeur}
-          >
-            {f.libelle}
-            {/* Un « 0 » collé au libellé n'informe pas : la rubrique vide ne s'affiche
-                plus du tout, sauf « Tous » et celle qu'on regarde. */}
-            {comptes[f.valeur] > 0 && (
-              <span className={styles.compte}>{comptes[f.valeur]}</span>
-            )}
-          </button>
-        ))}
+      {/*
+        Les mêmes filtres que « Mes formalités » et que les consultations.
 
-        <button
-          type="button"
-          className={styles.nouveau}
-          onClick={() => setAssistant({ type: null })}
-        >
-          <Plus />
-          Nouveau contrat
-        </button>
-      </div>
+        Chacun portait ici son propre cadre bordé, et le bouton « Nouveau contrat »
+        terminait la rangée : on le prenait pour un filtre de plus. Le sélecteur partagé
+        met les filtres dans un cadre unique, dont le fond blanc glisse de l'un à
+        l'autre, et le geste est parti dans la colonne. Un « 0 » collé au libellé
+        n'informe pas : `filtresUtiles` écarte les rubriques vides.
+      */}
+      <BarreDOutils>
+        <Selecteur
+          intitule="Filtrer les contrats"
+          actif={filtre}
+          surChoix={(valeur) => setFiltre(valeur as FiltreContrat)}
+          choix={filtresUtiles(FILTRES, comptes, filtre).map((f) => ({
+            valeur: f.valeur,
+            libelle: f.libelle,
+            compte: comptes[f.valeur] > 0 ? comptes[f.valeur] : undefined,
+          }))}
+        />
+      </BarreDOutils>
+
+      {/*
+        La grille ne commence qu'à la liste : la colonne de droite se pose ainsi au
+        niveau du premier contrat, et non au-dessus du bandeau et des filtres.
+      */}
+      <div className={styles.grille}>
 
       {retenus.length === 0 ? (
         <div className={styles.vide}>
@@ -228,6 +193,15 @@ export function Contrats({ contrats }: { contrats: ContratAffiche[] }) {
           ))}
         </div>
       )}
+
+        {/*
+          La colonne de droite : rédiger, et ce qu'il faut savoir avant.
+
+          Dernière du document - mais la grille la remonte au-dessus de la liste sur un
+          écran étroit : ici on vient pour rédiger, non pour parcourir.
+        */}
+        <Redaction surNouveau={() => setAssistant({ type: null })} />
+      </div>
 
       {assistant && (
         <Assistant

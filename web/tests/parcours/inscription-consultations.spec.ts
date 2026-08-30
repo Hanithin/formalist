@@ -1,4 +1,12 @@
 import { test, expect } from "@playwright/test";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../../src/infrastructure/db/generated/client";
+import { COMPTE } from "./preparer";
+
+/* Le rendez-vous à venir ne s'obtient pas par l'API : il faut un paiement. */
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" }),
+});
 
 /**
  * Inscription et prise de rendez-vous.
@@ -86,6 +94,52 @@ test.describe("consultations", () => {
     await expect(page.getByRole("button", { name: /^À venir/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /^Passées/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /^Annulées/ })).toBeVisible();
+
+    // Le prix, la durée et le délai se lisent dans la colonne, avant de cliquer.
+    const colonne = page.getByRole("complementary", { name: "Réserver une consultation" });
+    await expect(colonne.getByText("99 € HT")).toBeVisible();
+    await expect(colonne.getByText("30 minutes")).toBeVisible();
+    await expect(colonne.getByText("sous 24 h ouvrées")).toBeVisible();
+  });
+
+  test("réserver reste possible quand un rendez-vous est déjà pris", async ({ page }) => {
+    /*
+     * L'appel à réserver vivait dans une carte que le bandeau du prochain rendez-vous
+     * remplaçait : dès qu'un rendez-vous était à venir, le seul bouton de la page s'en
+     * allait avec elle, et l'on ne pouvait plus en prendre un second. Il vit maintenant
+     * dans la colonne, qui ne s'en va pas.
+     */
+    const utilisateur = await prisma.users.findUniqueOrThrow({
+      where: { email: COMPTE.email },
+      select: { id: true },
+    });
+
+    const demain = new Date(Date.now() + 24 * 3600 * 1000);
+    const rendezVous = await prisma.lawyer_consultations.create({
+      data: {
+        user_id: utilisateur.id,
+        scheduled_at: demain,
+        duration_minutes: 30,
+        status: "scheduled",
+        domain: "fiscalite",
+        description: "Une question de TVA",
+        payment_status: "paid",
+      },
+      select: { id: true },
+    });
+
+    try {
+      await page.goto("/consultations");
+
+      // Le bandeau annonce bien le rendez-vous à venir.
+      await expect(page.getByText("En attente de confirmation")).toBeVisible();
+
+      // Et la colonne offre toujours le geste.
+      const colonne = page.getByRole("complementary", { name: "Réserver une consultation" });
+      await expect(colonne.getByRole("button", { name: "Prendre rendez-vous" })).toBeVisible();
+    } finally {
+      await prisma.lawyer_consultations.delete({ where: { id: rendezVous.id } });
+    }
   });
 
   test("l'assistant mène de la matière au récapitulatif", async ({ page }) => {

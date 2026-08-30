@@ -154,7 +154,11 @@ export function recapitulatifDeModification(
     if (!nom.trim()) continue;
     faitsAssemblee.push({
       libelle: "Associé présent",
-      valeur: nom + (associe.parts ? ", " + associe.parts + " parts" : ""),
+      valeur:
+        nom +
+        (associe.parts
+          ? ", " + associe.parts + (associe.parts > 1 ? " parts" : " part")
+          : ""),
     });
   }
   if (faitsAssemblee.length > 0) {

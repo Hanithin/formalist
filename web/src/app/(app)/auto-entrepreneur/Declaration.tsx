@@ -35,6 +35,12 @@ import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { Pieces } from "@/components/formulaire/Pieces";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./AutoEntrepreneur.module.css";
+import partage from "../modification/Modification.module.css";
+import { EnTetePage } from "@/components/page/EnTetePage";
+/* L'étape 7 a déjà son `Recapitulatif`, qui est un écran : celui-ci est la colonne. */
+import { Recapitulatif as ColonneDuDossier } from "./Recapitulatif";
+import { nomDeLaPersonne } from "@/domain/auto-entrepreneur/colonne";
+import Link from "next/link";
 
 interface Props {
   /** Nul tant que rien n'a été saisi : la déclaration naît au premier enregistrement. */
@@ -48,6 +54,15 @@ interface Props {
   regleALInstant?: boolean;
   /** Vrai quand on revient de Stripe sans avoir payé. */
   paiementAnnule?: boolean;
+  /** La date de la ligne de tête, posée par le serveur pour que les tests la figent. */
+  quand?: Date;
+  /**
+   * Le suivi du dossier confié.
+   *
+   * Rendu par la page, qui seule peut le lire en base, mais placé ici : il va sous la
+   * ligne de tête, et c'est ce formulaire qui la porte - le titre suit la frappe.
+   */
+  suivi?: React.ReactNode;
 }
 
 /**
@@ -107,6 +122,8 @@ export function Declaration({
   piecesDeposees,
   regleALInstant = false,
   paiementAnnule = false,
+  quand,
+  suivi,
 }: Props) {
   const [donnees, setDonnees] = useState(declarationInitiale);
   const [anomalies, setAnomalies] = useState<Record<string, string>>({});
@@ -179,14 +196,61 @@ export function Declaration({
 
   const erreur = (champ: string) => anomalies[champ];
 
+  const nom = nomDeLaPersonne(donnees);
+
   return (
     <div className={styles.parcours}>
+      {/*
+        La date cède la place au retour.
+
+        « Samedi 29 août 2026 » situe une liste d'échéances ; sur un formulaire, elle
+        n'apprend rien - on sait quel jour on remplit son dossier - et occupait le seul
+        coin d'où l'on pouvait repartir.
+      */}
+      <div className={`${styles.tete} ${partage.pleineLargeur}`}>
+        <EnTetePage
+          titre={nom ?? "Nouvelle auto-entreprise"}
+          sousTitre={
+            nom
+              ? "Création d'une auto-entreprise"
+              : "Création d'une auto-entreprise · enregistrée dès la première étape validée"
+          }
+          quand={quand}
+          sansDate
+          action={
+            <Link href="/formalites" className={styles.retour}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Mes formalités
+            </Link>
+          }
+        />
+      </div>
+
+      {suivi && <div className={partage.pleineLargeur}>{suivi}</div>}
+
       {/* Le paiement mérite d'être annoncé : sans cela on revient sur l'offre qu'on
           vient de régler, et on doute d'avoir payé. Un abandon aussi : revenir sur
           l'offre sans un mot laisse craindre un débit. */}
-      {regleALInstant && dossier !== null && <FinDePaiement dossierId={dossier} issue="regle" />}
+      {regleALInstant && dossier !== null && (
+        <div className={partage.pleineLargeur}>
+          <FinDePaiement dossierId={dossier} issue="regle" />
+        </div>
+      )}
       {paiementAnnule && !regleALInstant && dossier !== null && (
-        <FinDePaiement dossierId={dossier} issue="annule" />
+        <div className={partage.pleineLargeur}>
+          <FinDePaiement dossierId={dossier} issue="annule" />
+        </div>
       )}
 
       {/*
@@ -204,7 +268,10 @@ export function Declaration({
         n'est qu'un obstacle qui repousse le récapitulatif d'un écran vers le bas.
       */}
       {!donnees.paye && (
-        <nav className={styles.stepper} aria-label="Étapes du parcours">
+        <nav
+          className={`${styles.stepper} ${partage.pleineLargeur}`}
+          aria-label="Étapes du parcours"
+        >
           {etapes.map((e, i) => {
             const franchie = e.numero < etape.numero;
             const courante = e.numero === etape.numero;
@@ -685,7 +752,7 @@ export function Declaration({
         {etape.identifiant === "recapitulatif" && <Recapitulatif donnees={donnees} />}
 
         {etape.identifiant === "paiement" && dossier !== null && (
-          <Paiement dossierId={dossier} declaration={donnees} />
+          <Paiement dossierId={dossier} declaration={donnees} surEtape={aller} />
         )}
 
         {/* Une déclaration réglée ne se reprend plus : elle est chez l'avocat. */}
@@ -707,6 +774,8 @@ export function Declaration({
           )}
         </div>
       </section>
+
+      <ColonneDuDossier declaration={donnees} pieces={piecesDeposees} />
     </div>
   );
 }
@@ -939,7 +1008,16 @@ function Recapitulatif({ donnees }: { donnees: Donnees }) {
  * Une fois réglé, le dossier part chez les avocats et le client n'a plus rien à
  * faire : il est prévenu à chaque étape, jusqu'au SIRET.
  */
-function Paiement({ dossierId, declaration }: { dossierId: number; declaration: Donnees }) {
+function Paiement({
+  dossierId,
+  declaration,
+  surEtape,
+}: {
+  dossierId: number;
+  declaration: Donnees;
+  /** Où aller quand le refus nomme l'étape qui bloque. */
+  surEtape?: (numero: number) => void;
+}) {
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const prix = detailDuPrix();
@@ -970,6 +1048,15 @@ function Paiement({ dossierId, declaration }: { dossierId: number; declaration: 
       const donnees = await reponse.json().catch(() => ({}));
       setErreur((donnees.error as string) ?? "Le paiement n'a pas pu s'ouvrir. Réessayez.");
       setEnCours(false);
+
+      /*
+       * Le refus dit quelle étape bloque : on y va.
+       *
+       * Le serveur renvoyait déjà `etape` et personne ne la lisait : « Complétez votre
+       * déclaration avant de la confier » s'affichait au bas de l'offre, sans dire ce
+       * qui manquait ni où le remplir - à sept écrans de là dans le pire des cas.
+       */
+      if (typeof donnees.etape === "number") surEtape?.(donnees.etape);
       return;
     }
 

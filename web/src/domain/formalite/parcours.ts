@@ -8,6 +8,7 @@ import {
   type Anomalie,
 } from "./formes";
 import { conjointRequis, nomDeLaPartie, type PersonneMorale, type PersonnePhysique } from "./etat-civil";
+import { elider } from "./lettres";
 import { apportsDe, valeurNominale } from "./capital";
 
 /**
@@ -503,13 +504,54 @@ export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] 
      * se déduit, et il ne peut pas diverger de ce qu'on lit sur les cartes.
      */
     const libere = apports.reduce((somme, a) => somme + a.verse, 0);
-    if (brouillon.forme) anomalies.push(...verifierCapital(brouillon.forme, capital, libere));
+
+    /*
+     * La répartition d'abord, le reste ensuite.
+     *
+     * Sur un capital de 30 000 euros dont aucune part n'est encore attribuée, l'étape
+     * levait trois anomalies pour une seule cause : « exige de libérer au moins 20 % »,
+     * « il reste 30 000 euros à répartir », et le décompte des parts. L'écran annonçait
+     * « il reste 3 points à régler », dont le premier - le plus alarmant - était le
+     * moins actionnable : le montant libéré se déduit des versements des associés, qui
+     * n'existent pas tant qu'ils n'ont pas de parts.
+     *
+     * Le nombre de titres et leur attribution gouvernent donc tout le reste : tant
+     * qu'ils ne tombent pas juste, on ne dit qu'eux.
+     */
+    const total = brouillon.partsTotales ?? 0;
+    const distribuees = associes.reduce((somme, a) => somme + (a.parts ?? 0), 0);
+    const partsJustes = total > 0 && distribuees === total;
+
+    if (total <= 0) {
+      anomalies.push({
+        champ: "partsTotales",
+        message: "Indiquez le nombre total " + elider(motPart(brouillon.forme, true)),
+      });
+    } else if (!partsJustes) {
+      anomalies.push({
+        champ: "partsTotales",
+        message:
+          "Les parts réparties (" + distribuees + ") ne font pas le total annoncé (" + total + ")",
+      });
+    }
+
+    /*
+     * Le capital minimum d'une forme ne dépend pas des parts : il se dit tout de suite.
+     * La libération minimale, elle, se compte sur des versements qui n'existent pas
+     * encore - elle attend que les parts tombent juste.
+     */
+    if (brouillon.forme) {
+      const surLeCapital = verifierCapital(brouillon.forme, capital, libere);
+      anomalies.push(...surLeCapital.filter((a) => partsJustes || a.champ !== "libere"));
+    }
 
     // Le montant souscrit se déduit des parts, comme dans les actes : l'écran
     // saisit des parts, pas des euros. Lire `apport` ici rendait l'étape
     // impossible à franchir dès qu'on répartissait en parts.
     const souscrits = apports.map((a) => a.souscrit);
-    if (souscrits.length) anomalies.push(...verifierRepartition(capital, souscrits));
+    if (partsJustes && souscrits.length) {
+      anomalies.push(...verifierRepartition(capital, souscrits));
+    }
 
     /*
      * Une valeur nominale sous le centime ne s'écrit dans aucun acte.
@@ -527,20 +569,6 @@ export function verifierEtape(numero: number, brouillon: Brouillon): Anomalie[] 
           motPart(brouillon.forme) +
           " vaudrait moins d'un centime : réduisez leur nombre, ou augmentez le capital",
       });
-    }
-
-    // Le nombre de parts distribuées doit tomber juste : c'est ce total qui est
-    // écrit dans la liste des souscripteurs.
-    const total = brouillon.partsTotales ?? 0;
-    if (total > 0) {
-      const distribuees = associes.reduce((somme, a) => somme + (a.parts ?? 0), 0);
-      if (distribuees !== total) {
-        anomalies.push({
-          champ: "partsTotales",
-          message:
-            "Les parts réparties (" + distribuees + ") ne font pas le total annoncé (" + total + ")",
-        });
-      }
     }
 
     associes.forEach((a, i) => {

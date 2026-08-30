@@ -14,18 +14,15 @@ import {
   type Onglet,
   type CleMatiere,
 } from "@/domain/consultation/matieres";
-import {
-  DUREE_MINUTES,
-  DELAI_REPONSE,
-  PRIX_HT_CENTIMES,
-  montantLisible,
-} from "@/domain/consultation/offre";
+import { montantLisible } from "@/domain/consultation/offre";
 import { DELAI_REMBOURSEMENT_HEURES } from "@/domain/consultation/paiement";
 import { libelleEtat, libelleEtatDetaille, type EtatAffiche } from "@/domain/consultation/creneaux";
 import { dateHeureLongue } from "@/lib/dates";
 import { Calendrier, Horloge, Personne, Euro, Camera, Document, Croix, Chevron } from "./Icones";
 import { Assistant, type AvocatProposable } from "./Assistant";
 import styles from "./Consultations.module.css";
+import { Reservation } from "./Reservation";
+import { BarreDOutils, Selecteur } from "@/components/page/BarreDOutils";
 
 export interface ConsultationAffichee {
   id: number;
@@ -137,7 +134,16 @@ export function Consultations({
 
   return (
     <>
-      <div className={styles.content}>
+      {/*
+        Le cadre qui mesure la largeur, autour de la grille qui la partage.
+
+        Une requête de conteneur ne s'applique qu'aux descendants du conteneur : posée
+        sur la grille elle-même, la règle qui la replie en une colonne ne l'atteignait
+        pas. Ce cadre ne porte que la mesure, et laisse les fenêtres modales dehors -
+        `contain: layout` en ferait leur bloc contenant, et le voile ne couvrirait plus
+        l'écran entier.
+      */}
+      <div className={styles.cadre}>
         {avisMontre && (
           <div className={styles.avis + " " + avisMontre.ton} role="status">
             <span className={styles.avisPoint} />
@@ -154,10 +160,14 @@ export function Consultations({
         )}
 
         {/*
-          Le bandeau remplace la carte d'appel dès qu'un rendez-vous est pris : ce
-          qu'on vient chercher n'est plus « comment réserver » mais « c'est quand ».
+          Ce qu'on vient chercher quand un rendez-vous est pris : non plus « comment
+          réserver » mais « c'est quand ».
+
+          Le bandeau remplaçait la carte d'appel, qui portait le seul bouton de la page :
+          dès qu'un rendez-vous était à venir, on ne pouvait plus en prendre un second.
+          L'appel vit maintenant dans la colonne, qui ne s'en va pas.
         */}
-        {prochain ? (
+        {prochain && (
           <div className={styles.nextBanner}>
             <span className={styles.nbIc}>
               <Calendrier />
@@ -196,70 +206,42 @@ export function Consultations({
               )}
             </div>
           </div>
-        ) : (
-          <div className={styles.heroCard}>
-            <div>
-              <h2>Réservez une consultation</h2>
-              <p>
-                Choisissez la matière, l&apos;avocat et le créneau qui vous arrange. L&apos;avocat
-                confirme et vous envoie le lien de visio.
-              </p>
-              {/* Ce qu'on veut savoir avant de cliquer : prix, durée, délai. */}
-              <ul className={styles.hFacts}>
-                <li>
-                  <strong>{montantLisible(PRIX_HT_CENTIMES)} HT</strong> par consultation
-                </li>
-                <li>
-                  <strong>{DUREE_MINUTES} minutes</strong> en visio
-                </li>
-                <li>
-                  Réponse de l&apos;avocat sous <strong>{DELAI_REPONSE}</strong>
-                </li>
-              </ul>
-            </div>
-            {/*
-              Sans avocat ayant publié ses disponibilités, l'assistant n'aurait aucun
-              créneau à proposer : le bouton mènerait à une impasse. On donne alors
-              une sortie plutôt qu'un geste inutile.
-            */}
-            {avocats.length > 0 ? (
-              <button
-                type="button"
-                className={styles.hCta}
-                onClick={() => setAssistant({ matiere: null })}
-              >
-                Prendre rendez-vous
-              </button>
-            ) : (
-              <Link className={styles.hCta} href="/messagerie">
-                Écrire au support
-              </Link>
-            )}
-          </div>
         )}
 
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitre}>
-            Mes consultations
-            {consultations.length > 0 && (
-              <span className={styles.ct}>· {consultations.length} au total</span>
-            )}
-          </h2>
+        <h2 className={styles.sectionTitre}>
+          Mes consultations
+          {consultations.length > 0 && (
+            <span className={styles.ct}>· {consultations.length} au total</span>
+          )}
+        </h2>
 
-          <div className={styles.tabs}>
-            {ONGLETS.map((o) => (
-              <button
-                type="button"
-                key={o.valeur}
-                className={styles.tab + (onglet === o.valeur ? " " + styles.tabActif : "")}
-                onClick={() => setOnglet(o.valeur)}
-                aria-pressed={onglet === o.valeur}
-              >
-                {o.libelle}
-                <span className={styles.compte}>{comptes[o.valeur]}</span>
-              </button>
-            ))}
-          </div>
+        {/*
+          Les mêmes filtres que « Mes formalités ».
+
+          Chaque onglet portait ici son propre cadre bordé : la rangée se lisait comme
+          quatre boutons indépendants, alors qu'en cliquer un décoche les autres. Le
+          sélecteur partagé les met dans un cadre unique, dont le fond blanc glisse de
+          l'un à l'autre. Ils n'ont pas de lien : le filtre ne vit pas dans l'adresse,
+          il reste dans la page.
+        */}
+        <BarreDOutils>
+          <Selecteur
+            intitule="Filtrer les consultations"
+            actif={onglet}
+            surChoix={(valeur) => setOnglet(valeur as Onglet)}
+            choix={ONGLETS.map((o) => ({
+              valeur: o.valeur,
+              libelle: o.libelle,
+              compte: comptes[o.valeur],
+            }))}
+          />
+        </BarreDOutils>
+
+        {/*
+          La grille ne commence qu'à la liste : la colonne de droite se pose ainsi au
+          niveau de la première carte, et non au-dessus du titre et des filtres.
+        */}
+        <div className={styles.content}>
 
           {affichees.length === 0 && consultations.length === 0 && (
             <div className={styles.vide}>
@@ -361,6 +343,18 @@ export function Consultations({
               ))}
             </div>
           )}
+
+          {/*
+            La colonne de droite : réserver, et ce qu'il faut savoir avant.
+
+            Dernière du document, comme dans les quatre parcours - mais la grille la
+            remonte au-dessus de la liste sur un écran étroit : ici on vient pour
+            réserver, non pour parcourir.
+          */}
+          <Reservation
+            avocatsDisponibles={avocats.length > 0}
+            surReservation={() => setAssistant({ matiere: null })}
+          />
         </div>
       </div>
 

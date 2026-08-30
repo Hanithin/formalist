@@ -160,3 +160,24 @@ describe("qui représente une société associée", () => {
     expect(inconnue).toContain("Gérant");
   });
 });
+
+describe("le mot et le nombre, dans les messages sur les associés", () => {
+  /*
+   * « Une SASU ne peut pas dépasser 1 associés » : le pluriel ne s'accordait pas, et le
+   * mot ne suivait pas la forme - le reste de l'écran dit « actionnaire » pour une
+   * société par actions.
+   */
+  it("une société par actions a des actionnaires", () => {
+    expect(verifierAssocies("SASU", 2)[0].message).toBe(
+      "Une SASU ne peut pas dépasser un actionnaire"
+    );
+    expect(verifierAssocies("SAS", 1)[0].message).toContain("2 actionnaires");
+  });
+
+  it("une société de personnes a des associés", () => {
+    expect(verifierAssocies("EURL", 2)[0].message).toBe(
+      "Une EURL ne peut pas dépasser un associé"
+    );
+    expect(verifierAssocies("SARL", 1)[0].message).toContain("2 associés");
+  });
+});

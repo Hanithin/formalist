@@ -19,6 +19,7 @@ import { devisDeFermeture, DELAI, PRESTATIONS, HORS_FORFAIT } from "@/domain/fer
 import { champsAffiches, manquesDeLaPhase, unipersonnelleDans } from "@/domain/fermeture/verification";
 import { estUnipersonnelle } from "@/domain/fermeture/voie";
 import styles from "../modification/Modification.module.css";
+import { Recapitulatif } from "./Recapitulatif";
 import { remonterEnHaut } from "@/lib/defilement";
 import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
 
@@ -130,6 +131,18 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
 
   /** Ce qui manque pour quitter cette étape-ci. */
   function manquesDe(rang: number): typeof anomalies {
+    /*
+     * La clôture saisit tout sur son premier écran.
+     *
+     * Ses quatre étapes ne sont pas celles de la dissolution : « Les comptes de
+     * liquidation » porte tous les champs, « Le solde » ne fait que calculer ce qu'on
+     * vient d'y écrire. Le découpage de la dissolution était appliqué tel quel, si bien
+     * que le premier écran ne bloquait sur rien et que le second - qui n'a pas une seule
+     * case à remplir - refusait d'avancer en réclamant la date de clôture, une étape en
+     * arrière.
+     */
+    if (etat.phase === "cloture") return rang === 1 ? anomalies : [];
+
     if (rang === 1) {
       return anomalies.filter(
         (a) => a.phase === "societe" || (voie === "tup" && a.champ === "dateDissolution")
@@ -177,7 +190,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
   }
 
   return (
-    <div className={styles.parcours}>
+    <div className={`${styles.parcours} ${styles.parcoursColonne}`}>
       {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} dossier={dossier} />}
 
       <Frise etapes={etapes} etape={etape} atteinte={atteinte} surChoix={aller} />
@@ -262,6 +275,8 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
           )}
         </div>
       </div>
+
+      <Recapitulatif etat={etat} />
     </div>
   );
 }
