@@ -304,7 +304,17 @@ export function verifierApport(valeurs: Valeurs): AnomalieDApport[] {
 
   exiger("apporteeDenomination", "Cherchez la société dont les titres sont apportés");
   exiger("apporteeSiren", "Le SIREN de la société dont les titres sont apportés est requis");
-  exiger("apporteurNomComplet", "Nommez l'apporteur");
+  /*
+   * Le nom de l'apporteur, en trois champs depuis qu'ils tiennent sur une ligne.
+   *
+   * Un dossier ouvert avant porte encore `apporteurNomComplet` : le réclamer en trois
+   * morceaux le renverrait vers des cases qui n'existaient pas quand il a été rempli.
+   */
+  if (!rempli(valeurs.apporteurNomComplet)) {
+    exiger("apporteurCivilite", "La civilité de l'apporteur est requise");
+    exiger("apporteurPrenom", "Le prénom de l'apporteur est requis");
+    exiger("apporteurNom", "Le nom de l'apporteur est requis");
+  }
   exiger("apporteurAdresse", "L'adresse de l'apporteur est requise");
   exiger("apporteurNeLe", "La date de naissance de l'apporteur est requise");
   exiger("apporteurNeA", "Le lieu de naissance de l'apporteur est requis");

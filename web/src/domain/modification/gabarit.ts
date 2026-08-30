@@ -6,6 +6,7 @@ import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
 import { changeDeRessort } from "./formalites";
 import { evaluationDesApports, planDeCapital, regimeApport, REMPLOI } from "./apport";
+import { nomDeLApporteur } from "./traite-apport";
 
 /**
  * Les champs attendus par les gabarits Word de modification.
@@ -1045,7 +1046,7 @@ function donneesDeLApport(
 
   return {
     /* --------------------------------------------------------- L'apporteur */
-    APPORTEUR_NOM: ou(texte(valeurs.apporteurNomComplet)),
+    APPORTEUR_NOM: ou(nomDeLApporteur(valeurs)),
     APPORTEUR_NE_LE_FR: dateEnFrancais(texteBrut(valeurs.apporteurNeLe)),
     APPORTEUR_NE_A: ou(texte(valeurs.apporteurNeA)),
     APPORTEUR_NATIONALITE: ou(texte(valeurs.apporteurNationalite), "française"),

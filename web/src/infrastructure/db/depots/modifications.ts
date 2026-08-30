@@ -1,4 +1,5 @@
 import { prisma } from "../client";
+import { separerLIdentite } from "@/domain/formalite/noms";
 import { exigerDossierModifiable } from "./dossiers";
 import { proposerAuxAvocats } from "./avocat";
 import { relirePaiement } from "@/infrastructure/paiement/stripe";
@@ -100,6 +101,32 @@ const VIDE: Modification = {
  * libre, elle se serait désaccordée à la première reformulation.
  */
 
+/**
+ * L'apporteur, en trois champs.
+ *
+ * Son nom tenait dans une seule case - « Civilité, prénom et nom » - où l'on tapait ce
+ * qu'on voulait dans l'ordre qu'on voulait. Le formulaire en demande trois depuis
+ * qu'elles tiennent sur une ligne, comme pour la nomination d'un dirigeant.
+ *
+ * Un dossier ouvert avant porte l'ancienne valeur : on la découpe à la lecture, plutôt
+ * que de rendre un formulaire vide à qui l'avait déjà rempli - ou de le bloquer sur
+ * trois cases obligatoires qui n'existaient pas quand il l'a fait. Le découpage est
+ * celui des autres listes de noms, où la casse tranche le nom du prénom.
+ */
+function apporteurEnTroisChamps(valeurs: Modification["valeurs"]): Modification["valeurs"] {
+  const ancien = typeof valeurs.apporteurNomComplet === "string" ? valeurs.apporteurNomComplet : "";
+  if (!ancien.trim() || valeurs.apporteurNom) return valeurs;
+
+  const { civilite, prenom, nom } = separerLIdentite(ancien);
+  return {
+    ...valeurs,
+    apporteurCivilite: valeurs.apporteurCivilite || civilite,
+    apporteurPrenom: valeurs.apporteurPrenom || prenom,
+    /* Sans capitales pour trancher, le dernier mot fait le nom : mieux vaut ça que rien. */
+    apporteurNom: nom || prenom,
+  };
+}
+
 export function lireModification(dataJson: string | null): Modification {
   if (!dataJson) return { ...VIDE };
   try {
@@ -111,7 +138,7 @@ export function lireModification(dataJson: string | null): Modification {
       // le garder ferait échouer la production d'actes sans dire pourquoi.
       codes: (lu.codes ?? []).filter(estUnTypeConnu),
       societe: lu.societe ?? {},
-      valeurs: lu.valeurs ?? {},
+      valeurs: apporteurEnTroisChamps(lu.valeurs ?? {}),
       assemblee: lu.assemblee ?? {},
     };
   } catch {

@@ -929,13 +929,38 @@ export const MODIFICATIONS: DefinitionModification[] = [
 
       /* ------------------------------------------------------------ L'apporteur */
       {
-        identifiant: "apporteurNomComplet",
-        libelle: "Civilité, prénom et nom",
+        /*
+         * Trois champs, une ligne, comme pour le dirigeant nommé.
+         *
+         * « Civilité, prénom et nom » tenait dans un seul champ de pleine largeur : on y
+         * tapait ce qu'on voulait, dans l'ordre qu'on voulait, et l'acte devait ensuite
+         * deviner où finit le prénom. Le formulaire demande maintenant les trois
+         * séparément, comme il le fait déjà pour la nomination d'un dirigeant.
+         */
+        identifiant: "apporteurCivilite",
+        libelle: "Civilité",
+        groupe: "L'apporteur",
+        type: "choix",
+        options: ["Monsieur", "Madame"],
+        colonnes: 2,
+        obligatoire: true,
+        aide: "L'apport est consenti par une personne physique. C'est elle qui bénéficie du report d'imposition.",
+      },
+      {
+        identifiant: "apporteurPrenom",
+        libelle: "Prénom",
         groupe: "L'apporteur",
         type: "texte",
+        colonnes: 2,
         obligatoire: true,
-        pleineLargeur: true,
-        aide: "L'apport est consenti par une personne physique. C'est elle qui bénéficie du report d'imposition.",
+      },
+      {
+        identifiant: "apporteurNom",
+        libelle: "Nom",
+        groupe: "L'apporteur",
+        type: "texte",
+        colonnes: 2,
+        obligatoire: true,
       },
       { identifiant: "apporteurNeLe", libelle: "Né(e) le", groupe: "L'apporteur", type: "date", obligatoire: true },
       {

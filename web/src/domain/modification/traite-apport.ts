@@ -316,6 +316,28 @@ export function courDAppel(
 /* ------------------------------------------------------ Ce que le dossier décide */
 
 /** L'apporteur signe-t-il aussi pour la bénéficiaire ? */
+/**
+ * Le nom de l'apporteur, tel que les actes le portent.
+ *
+ * Il tenait dans un champ unique - « Civilité, prénom et nom » - où l'on tapait ce
+ * qu'on voulait dans l'ordre qu'on voulait. Le formulaire demande maintenant les trois
+ * séparément, comme il le fait déjà pour la nomination d'un dirigeant.
+ *
+ * Un dossier ouvert avant porte encore l'ancien champ, et le rendre tel quel vaut mieux
+ * que de le laisser vide : il a été rempli à la main, il se lit.
+ */
+export function nomDeLApporteur(valeurs: Valeurs): string {
+  const enTrois = [
+    texte(valeurs.apporteurCivilite),
+    texte(valeurs.apporteurPrenom),
+    texte(valeurs.apporteurNom),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return enTrois || texte(valeurs.apporteurNomComplet);
+}
+
 export function doubleRepresentation(valeurs: Valeurs): boolean {
   /*
    * La qualité de l'apporteur dans la holding le dit : « représentant légal » y
@@ -509,7 +531,7 @@ export function verifierLeTraite(contexte: ContexteGabarit): AlerteDuTraite[] {
   const commissaire = texte(valeurs.apportCommissaireNom);
   if (commissaire) {
     const proches = [
-      texte(valeurs.apporteurNomComplet),
+      nomDeLApporteur(valeurs),
       texte(valeurs.beneficiaireRepresentant),
       ...(contexte.assemblee.associes ?? []).map((associe) =>
         [texte(associe.civilite), texte(associe.prenom), texte(associe.nom)]
@@ -628,7 +650,7 @@ export function donneesDuTraite(contexte: ContexteGabarit): Record<string, unkno
   const actionsNumeraire = nominale > 0 ? Math.round(numeraire / nominale) : 0;
 
   const cible = texte(valeurs.apporteeDenomination);
-  const apporteur = texte(valeurs.apporteurNomComplet);
+  const apporteur = nomDeLApporteur(valeurs);
   const commissaire = texte(valeurs.apportCommissaire) === "Oui";
   const controle = texte(valeurs.apportControle) === "Oui";
 

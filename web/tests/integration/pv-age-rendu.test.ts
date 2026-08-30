@@ -105,7 +105,9 @@ describe("une SAS qui décide plusieurs choses le même jour", () => {
       apportCommissaire: "Oui",
       apportCommissaireNom: "Monsieur Marc COMMISSAIRE",
       apportNominaleBeneficiaire: "10",
-      apporteurNomComplet: "Monsieur Paul DURAND",
+      apporteurCivilite: "Monsieur",
+      apporteurPrenom: "Paul",
+      apporteurNom: "DURAND",
       apportDateSignature: "2026-09-25",
       apportDateEffet: "2026-09-30",
       /*

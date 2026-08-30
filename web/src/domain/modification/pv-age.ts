@@ -3,7 +3,7 @@ import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
 import { auFilDeLaPhrase } from "./traite-apport";
-import { paritéDeLApport } from "./traite-apport";
+import { paritéDeLApport, nomDeLApporteur } from "./traite-apport";
 import { definitions, type Valeurs } from "./types";
 import { planDeCapital } from "./apport";
 import {
@@ -1048,7 +1048,7 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
     donnees.r_apport_titres = {
       ...commun("r_apport_titres", dateEnFrancais(texte(valeurs.apportDateEffet))),
       date_traite: dateEnFrancais(texte(valeurs.apportDateSignature)),
-      identification_apporteur: texte(valeurs.apporteurNomComplet),
+      identification_apporteur: nomDeLApporteur(valeurs),
       nb_titres_apportes: montant(titresApportes),
       nature_titres_apportes:
         motsDeLaForme(texte(valeurs.apporteeForme)).titres === "actions" ? "actions" : "parts sociales",
@@ -1080,7 +1080,7 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
           ? "assorties d'une prime d'apport globale de " + montant(parite.prime) + " euros, "
           : "",
       valeur_nominale: montant(nominale),
-      identification_apporteur_court: texte(valeurs.apporteurNomComplet),
+      identification_apporteur_court: nomDeLApporteur(valeurs),
       capital_avant: montant(plan.capitalApresNumeraireCentimes / 100),
       capital_apres: montant(plan.capitalFinalCentimes / 100),
     };
