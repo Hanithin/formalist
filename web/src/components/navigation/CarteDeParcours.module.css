@@ -173,7 +173,8 @@
   color: #18181b;
   transition:
     background 0.18s ease,
-    color 0.18s ease;
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .fleche svg {
@@ -182,9 +183,19 @@
   display: block;
 }
 
+/*
+ * Au survol, la flèche avance ; elle ne se remplit pas.
+ *
+ * Elle prenait l'encre pleine, qui est justement la marque du parcours mis en avant :
+ * survoler « Modifier ma société » lui donnait la flèche de « Créer une société », et
+ * les deux cartes se ressemblaient jusqu'au cadre près. Une distinction qui disparaît
+ * sous le curseur n'en est plus une.
+ *
+ * Le déplacement dit la même chose - on va quelque part - sans emprunter à personne.
+ */
 .chemin:hover .fleche {
-  background: #18181b;
-  color: #fff;
+  background: #e4e4e7;
+  transform: translateX(2px);
 }
 
 /* ---------- Le parcours mis en avant ---------- */
@@ -212,5 +223,11 @@
 
 .enAvant .fleche {
   background: #18181b;
+  color: #fff;
+}
+
+/* Elle avance comme les autres, et garde son encre. */
+.enAvant:hover .fleche {
+  background: #000;
   color: #fff;
 }
