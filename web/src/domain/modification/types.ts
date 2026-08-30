@@ -115,6 +115,17 @@ export interface ChampModification {
   aide?: string;
   indication?: string;
   /**
+   * Ce qui s'écrit d'avance, faute d'autre réponse.
+   *
+   * Une indication grise se lit et ne se garde pas : « Française par défaut » sous une
+   * case vide laisse l'acte sans nationalité si l'on passe outre. Une valeur par défaut
+   * est là, modifiable, et part avec le dossier.
+   *
+   * Elle ne vaut que pour ce qui est vrai presque toujours et faux sans gravité : la
+   * nationalité d'un apporteur, non le montant d'un apport.
+   */
+  valeurParDefaut?: string;
+  /**
    * Le champ ne s'affiche que si un autre a l'une de ces valeurs.
    *
    * Nommer une personne, en révoquer une et acter une démission ne demandent pas
@@ -976,7 +987,8 @@ export const MODIFICATIONS: DefinitionModification[] = [
         libelle: "Nationalité",
         groupe: "L'apporteur",
         type: "texte",
-        indication: "Française par défaut",
+        /* Écrite d'avance : c'est la réponse de la quasi-totalité des dossiers. */
+        valeurParDefaut: "Française",
       },
       {
         identifiant: "apporteurAdresse",
@@ -1032,7 +1044,14 @@ export const MODIFICATIONS: DefinitionModification[] = [
         libelle: "Lieu de signature",
         groupe: "Le traité d'apport",
         type: "texte",
-        obligatoire: true,
+        /*
+         * Facultatif : le traité prend la ville du siège quand la case est vide.
+         *
+         * Il l'a toujours fait - « texte(valeurs.apportLieuSignature) || societe.ville » -
+         * et le formulaire l'exigeait quand même. On réclamait un renseignement dont
+         * l'acte n'a pas besoin, dans le bloc le plus long de l'application.
+         */
+        indication: "La ville du siège, si vous ne dites rien",
       },
       {
         identifiant: "apportDateLimiteCondition",
@@ -1104,3 +1123,32 @@ export function champsASaisir(
     .flatMap((d) => d.champs)
     .filter((c) => champVisible(c, valeurs, forme));
 }
+
+/**
+ * Ce qui s'écrit d'avance dans un formulaire qui s'ouvre.
+ *
+ * Le bloc de l'apport de titres compte trente-quatre cases. Toutes n'appellent pas une
+ * décision : la nationalité de l'apporteur est française neuf fois sur dix, et la date
+ * du traité est celle de l'assemblée qui l'approuve. Les proposer remplies enlève du
+ * travail sans rien enlever à la liberté - elles se modifient comme les autres.
+ *
+ * Rien n'est écrit par-dessus une saisie : la fonction ne rend que ce qui manque.
+ */
+export function valeursParDefautDesChamps(
+  codes: string[],
+  valeurs: Valeurs,
+  forme?: string | null
+): Valeurs {
+  const ajouts: Valeurs = {};
+
+  for (const champ of champsASaisir(codes, valeurs, forme)) {
+    if (!champ.valeurParDefaut) continue;
+    const dejaLa = valeurs[champ.identifiant];
+    if (typeof dejaLa === "string" && dejaLa.trim()) continue;
+    if (typeof dejaLa === "number") continue;
+    ajouts[champ.identifiant] = champ.valeurParDefaut;
+  }
+
+  return ajouts;
+}
+

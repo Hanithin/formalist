@@ -295,6 +295,26 @@ function rempli(valeur: unknown): boolean {
  * qu'il n'en existe, une valeur nominale qui ne divise pas le montant de
  * l'augmentation, un capital annoncé qui ne correspond pas à ce qui est apporté.
  */
+/**
+ * La valeur nominale d'un titre de la société apportée, quand elle se déduit.
+ *
+ * Capital, nombre de titres et nominale sont liés : le capital est le produit des deux
+ * autres. Le registre rend le capital, le client compte ses titres - la nominale n'a
+ * plus à se taper, et une case de moins dans le bloc le plus long de l'application.
+ *
+ * Elle ne se déduit que si le compte tombe juste au centime : `10 000 / 3` ne fait pas
+ * une nominale, il fait une division qu'il faut trancher soi-même. Dans ce cas la case
+ * reparaît, et le contrôle dit pourquoi.
+ */
+export function nominaleDeduite(valeurs: Valeurs): number | null {
+  const capital = nombre(valeurs.apporteeCapital);
+  const titres = nombre(valeurs.apporteeNbTitres);
+  if (capital <= 0 || titres <= 0) return null;
+
+  const nominale = Math.round((capital / titres) * 100) / 100;
+  return Math.abs(nominale * titres - capital) < 0.005 ? nominale : null;
+}
+
 export function verifierApport(valeurs: Valeurs): AnomalieDApport[] {
   const anomalies: AnomalieDApport[] = [];
 
@@ -320,6 +340,38 @@ export function verifierApport(valeurs: Valeurs): AnomalieDApport[] {
   exiger("apporteurNeA", "Le lieu de naissance de l'apporteur est requis");
   exiger("apportMethodeValorisation", "Dites comment les titres ont été valorisés");
   exiger("apportDateEffet", "La date d'effet de l'apport est requise");
+
+  /*
+   * Le compte de la société apportée doit tomber juste.
+   *
+   * Capital, titres et nominale se répondent : le traité les écrit tous les trois, et
+   * un lecteur - un commissaire, un greffe - fait la multiplication. Trois nombres qui
+   * ne s'accordent pas dans un acte enregistré valent une reprise du dossier.
+   *
+   * La nominale se déduit des deux autres quand elle tombe ronde, et l'écran ne la
+   * demande plus alors. Le contrôle reste, pour les dossiers d'avant et pour les cas où
+   * elle a été saisie à la main.
+   */
+  const capitalCible = nombre(valeurs.apporteeCapital);
+  const titresCible = nombre(valeurs.apporteeNbTitres);
+  const nominaleCible = nombre(valeurs.apporteeNominale);
+  if (capitalCible > 0 && titresCible > 0 && nominaleCible > 0) {
+    const produit = Math.round(titresCible * nominaleCible * 100) / 100;
+    if (Math.abs(produit - capitalCible) >= 0.005) {
+      anomalies.push({
+        champ: "apporteeNominale",
+        message:
+          titresCible +
+          " titres à " +
+          nominaleCible +
+          " euros font " +
+          produit +
+          " euros, non le capital de " +
+          capitalCible +
+          " euros déclaré",
+      });
+    }
+  }
 
   const titresApportes = nombre(valeurs.apportNbTitres);
   const titresTotal = nombre(valeurs.apporteeNbTitres);

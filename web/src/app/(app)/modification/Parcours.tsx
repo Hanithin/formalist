@@ -25,6 +25,7 @@ import {
   MODIFICATIONS,
   champVisible,
   definitions,
+  valeursParDefautDesChamps,
   type ChampModification,
   type Valeurs,
 } from "@/domain/modification/types";
@@ -44,6 +45,7 @@ import {
 } from "@/domain/modification/formalites";
 import { anomaliesDuPvAge } from "@/domain/modification/pv-age";
 import { anomaliesDuTraite } from "@/domain/modification/traite-apport";
+import { nominaleDeduite } from "@/domain/modification/apport";
 import { anomaliesDeLActeDeCession } from "@/domain/modification/acte-cession";
 import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification/offre";
 import type { Retouche, Zone } from "@/domain/modification/edition";
@@ -207,7 +209,8 @@ export function Parcours({
   piecesDeposees,
 }: Props) {
   const [etape, setEtape] = useState(etapeInitiale);
-  const [etat, setEtat] = useState<EtatDuDossier>(initial);
+  const [etat, setEtat] = useState<EtatDuDossier>(() => avecCeQuiSeDeduit(initial));
+
   const [erreur, setErreur] = useState<string | null>(null);
   /*
    * Les champs signalés au dernier refus d'avancer.
@@ -275,7 +278,7 @@ export function Parcours({
   const anomaliesSociete = verifierSociete(etat.societe);
 
   function changer(changement: Partial<EtatDuDossier>) {
-    setEtat((precedent) => ({ ...precedent, ...changement }));
+    setEtat((precedent) => avecCeQuiSeDeduit({ ...precedent, ...changement }));
   }
 
   /*
@@ -287,11 +290,11 @@ export function Parcours({
    * s'affichaient, la rue restait celle qu'on avait tapée à moitié.
    */
   function majValeurs(maj: (valeurs: Valeurs) => Valeurs) {
-    setEtat((precedent) => ({ ...precedent, valeurs: maj(precedent.valeurs) }));
+    setEtat((precedent) => avecCeQuiSeDeduit({ ...precedent, valeurs: maj(precedent.valeurs) }));
   }
 
   function majSociete(maj: (societe: EtatDuDossier["societe"]) => EtatDuDossier["societe"]) {
-    setEtat((precedent) => ({ ...precedent, societe: maj(precedent.societe) }));
+    setEtat((precedent) => avecCeQuiSeDeduit({ ...precedent, societe: maj(precedent.societe) }));
   }
 
   /*
@@ -1512,6 +1515,19 @@ function EtapeDetails({
    */
   const [ouvert, setOuvert] = useState<string | null>(null);
 
+  /*
+   * Les blocs dont on a demandé à corriger ce que le registre a rempli.
+   *
+   * Cinq cases - forme, SIREN, siège, capital, greffe - se remplissent seules dès qu'on
+   * cherche la société. Elles s'affichaient vides d'entrée : on voyait neuf champs là où
+   * il n'y a qu'une recherche à faire, et c'est ce qui donnait au bloc de l'apport de
+   * titres sa longueur.
+   *
+   * Elles se lisent donc en une ligne, et se déplient sur demande - le registre ignore
+   * les sociétés étrangères et retarde d'une formalité sur les autres.
+   */
+  const [aCorriger, setACorriger] = useState<string[]>([]);
+
   /**
    * Une société retenue au registre remplit les champs qu'elle sait remplir.
    *
@@ -1725,6 +1741,31 @@ function EtapeDetails({
           <div className={styles.champs}>
             {definition.champs
               .filter((champ) => champVisible(champ, etat.valeurs, etat.societe.forme))
+              /*
+                Une valeur qui se déduit ne se saisit pas.
+
+                La valeur nominale d'un titre de la société apportée est le capital
+                divisé par le nombre de titres. Le registre rend le capital, le client
+                compte ses titres : la case n'a plus rien à demander, et se lit sous les
+                deux autres. Elle reparaît quand la division ne tombe pas ronde - c'est
+                alors une décision, non un calcul.
+              */
+              .filter(
+                (champ) =>
+                  champ.identifiant !== "apporteeNominale" || nominaleDeduite(etat.valeurs) === null
+              )
+              /*
+                Ce que le registre remplit ne se demande pas : il se montre.
+
+                Les cinq cases que la recherche renseigne sortent du formulaire tant
+                qu'on n'a pas demandé à les corriger. Elles se lisent en une ligne, sous
+                la recherche, là où elles se trouvaient.
+              */
+              .filter(
+                (champ) =>
+                  aCorriger.includes(definition.code) ||
+                  !remplisParLeRegistre(definition).includes(champ.identifiant)
+              )
               .map((champ, rang, visibles) => (
                 <Fragment key={champ.identifiant}>
                   {/*
@@ -1771,6 +1812,41 @@ function EtapeDetails({
                     })
                   }
                 />
+
+                {/*
+                  Ce que le registre a rendu, sous la recherche qui l'a rendu.
+                */}
+                {champ.type === "societe" && remplisParLeRegistre(definition).length > 0 && (
+                  <RegistreRempli
+                    champs={remplisParLeRegistre(definition)}
+                    definition={definition}
+                    valeurs={etat.valeurs}
+                    deplie={aCorriger.includes(definition.code)}
+                    surDeplier={() =>
+                      setACorriger((codes) =>
+                        codes.includes(definition.code)
+                          ? codes.filter((c) => c !== definition.code)
+                          : [...codes, definition.code]
+                      )
+                    }
+                  />
+                )}
+
+                {/*
+                  La nominale, lue sous les deux nombres qui la donnent.
+
+                  Elle se pose après le nombre de titres, là où sa case se trouvait :
+                  l'œil la cherche au même endroit, et voit le calcul plutôt que de le
+                  refaire.
+                */}
+                {champ.identifiant === "apporteeNbTitres" &&
+                  nominaleDeduite(etat.valeurs) !== null && (
+                    <p className={styles.deduit}>
+                      Valeur nominale d&apos;un titre :{" "}
+                      <strong>{nominaleDeduite(etat.valeurs)!.toLocaleString("fr-FR")} €</strong>{" "}
+                      - le capital divisé par le nombre de titres.
+                    </p>
+                  )}
                 </Fragment>
               ))}
           </div>
@@ -1781,6 +1857,134 @@ function EtapeDetails({
       })}
     </div>
   );
+}
+
+/**
+ * Ce que l'état porte de lui-même, à chaque écriture.
+ *
+ * Deux règles, posées ici plutôt que dans un effet - une valeur dérivée se calcule au
+ * moment où sa source change, non après coup dans un second rendu.
+ *
+ * La première écrit d'avance ce qui n'appelle pas de décision : la nationalité d'un
+ * apporteur est française neuf fois sur dix. La seconde déduit la valeur nominale d'un
+ * titre de la société apportée - le capital divisé par le nombre de titres - et
+ * l'enregistre : l'acte la lit dans les valeurs comme les autres, et la montrer sans
+ * l'écrire donnerait un traité qui l'ignore.
+ *
+ * Rien n'écrase une saisie : la première ne comble que le vide, la seconde ne parle que
+ * lorsque la division tombe juste, et l'écran laisse alors la case de côté.
+ */
+function avecCeQuiSeDeduit(etat: EtatDuDossier): EtatDuDossier {
+  const defauts = valeursParDefautDesChamps(etat.codes, etat.valeurs, etat.societe.forme);
+  const valeurs = Object.keys(defauts).length > 0 ? { ...etat.valeurs, ...defauts } : etat.valeurs;
+
+  const deduite = nominaleDeduite(valeurs);
+  if (deduite === null || nombreLu(valeurs.apporteeNominale) === deduite) {
+    return valeurs === etat.valeurs ? etat : { ...etat, valeurs };
+  }
+
+  return { ...etat, valeurs: { ...valeurs, apporteeNominale: deduite } };
+}
+
+/**
+ * Une valeur du registre, telle qu'on la lit.
+ *
+ * Un nombre prend ses séparateurs de milliers, et neuf chiffres d'affilée se lisent
+ * par trois - c'est ainsi qu'un SIREN s'écrit partout ailleurs dans l'application, et
+ * le voir nu ici donnerait deux conventions pour la même donnée. La règle porte sur la
+ * forme de la valeur, non sur le nom du champ : elle vaut pour ceux qui viendront.
+ */
+function lisible(valeur: unknown): string {
+  if (typeof valeur === "number") return valeur.toLocaleString("fr-FR");
+
+  const dit = (valeur ?? "").toString().trim();
+  return /^\d{9}$/.test(dit) ? dit.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3") : dit;
+}
+
+/** Les champs qu'une recherche au registre remplit, dans ce changement. */
+function remplisParLeRegistre(definition: { champs: ChampModification[] }): string[] {
+  return definition.champs.flatMap((champ) =>
+    champ.remplit ? Object.values(champ.remplit).filter((c): c is string => !!c) : []
+  );
+}
+
+/**
+ * Ce que le registre a rendu, en une ligne.
+ *
+ * Cinq cases se remplissent seules dès qu'on cherche la société : sa forme, son SIREN,
+ * son siège, son capital et son greffe. Elles s'affichaient vides d'entrée, et l'on
+ * voyait neuf champs là où il n'y a qu'une recherche à faire - c'est ce qui donnait au
+ * bloc de l'apport de titres sa longueur.
+ *
+ * Elles ne disparaissent pas pour autant : le registre ignore les sociétés étrangères
+ * et retarde d'une formalité sur les autres. « Corriger » les rouvre, et ce qui a été
+ * corrigé reste ouvert - on ne referme pas la porte sur les doigts de qui la tenait.
+ */
+function RegistreRempli({
+  champs,
+  definition,
+  valeurs,
+  deplie,
+  surDeplier,
+}: {
+  champs: string[];
+  definition: { champs: ChampModification[] };
+  valeurs: Valeurs;
+  deplie: boolean;
+  surDeplier: () => void;
+}) {
+  const lus = champs
+    .map((identifiant) => ({ identifiant, dit: lisible(valeurs[identifiant]) }))
+    .filter((c) => c.dit);
+
+  if (deplie) {
+    return (
+      <p className={`${styles.pleineLargeur} ${styles.registreLigne}`}>
+        <button type="button" className={styles.registreGeste} onClick={surDeplier}>
+          Reprendre ce que le registre a rendu
+        </button>
+      </p>
+    );
+  }
+
+  if (lus.length === 0) {
+    return (
+      <p className={`${styles.pleineLargeur} ${styles.deduit}`}>
+        Sa forme, son SIREN, son siège, son capital et son greffe se rempliront depuis le
+        registre.{" "}
+        <button type="button" className={styles.registreGeste} onClick={surDeplier}>
+          Les saisir à la main
+        </button>
+      </p>
+    );
+  }
+
+  const libelle = (identifiant: string) =>
+    definition.champs.find((c) => c.identifiant === identifiant)?.libelle ?? identifiant;
+
+  return (
+    <div className={`${styles.pleineLargeur} ${styles.registre}`}>
+      <dl className={styles.registreFaits}>
+        {lus.map((c) => (
+          <div key={c.identifiant}>
+            <dt>{libelle(c.identifiant)}</dt>
+            <dd>{c.dit}</dd>
+          </div>
+        ))}
+      </dl>
+      <button type="button" className={styles.registreGeste} onClick={surDeplier}>
+        Corriger
+      </button>
+    </div>
+  );
+}
+
+/** Un nombre lu d'une valeur de formulaire, qui peut être chaîne ou nombre. */
+function nombreLu(valeur: unknown): number | null {
+  if (typeof valeur === "number") return valeur;
+  if (typeof valeur !== "string" || !valeur.trim()) return null;
+  const lu = Number(valeur.replace(",", "."));
+  return Number.isFinite(lu) ? lu : null;
 }
 
 export function Champ({
