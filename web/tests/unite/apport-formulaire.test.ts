@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { nominaleDeduite, verifierApport } from "@/domain/modification/apport";
-import { valeursParDefautDesChamps, MODIFICATIONS } from "@/domain/modification/types";
+import {
+  champObligatoire,
+  valeursParDefautDesChamps,
+  MODIFICATIONS,
+  type Valeurs,
+} from "@/domain/modification/types";
+
+/** Les valeurs d'un apport, complétées de ce qu'on veut éprouver. */
+const valeursDApport = (sur: Valeurs): Valeurs => ({ ...sur });
 
 /**
  * Ce que le formulaire de l'apport de titres cesse de demander.
@@ -105,5 +113,60 @@ describe("le lieu de signature du traité", () => {
     const champs = MODIFICATIONS.find((m) => m.code === "apport_titres")!.champs;
     const lieu = champs.find((c) => c.identifiant === "apportLieuSignature")!;
     expect(lieu.obligatoire).toBeFalsy();
+  });
+});
+
+describe("la méthode de valorisation", () => {
+  /*
+   * Aucun texte ne l'impose au traité : c'est le rapport du commissaire aux apports qui
+   * indique le mode d'évaluation adopté et les raisons de ce choix. Le formulaire
+   * l'exigeait pourtant dans les deux cas.
+   */
+  const champs = MODIFICATIONS.find((m) => m.code === "apport_titres")!.champs;
+  const methode = champs.find((c) => c.identifiant === "apportMethodeValorisation")!;
+
+  it("n'est due que sous dispense de commissaire", () => {
+    expect(methode.obligatoire).toBeFalsy();
+    expect(methode.obligatoireSi).toEqual({
+      champ: "apportCommissaire",
+      vaut: ["Non, dispense décidée à l'unanimité"],
+    });
+  });
+
+  it("se réclame là où plus personne ne la porte", () => {
+    const sansCommissaire = valeursDApport({
+      apportCommissaire: "Non, dispense décidée à l'unanimité",
+    });
+    expect(champObligatoire(methode, sansCommissaire)).toBe(true);
+  });
+
+  it("se tait là où le rapport du commissaire la porte", () => {
+    expect(champObligatoire(methode, valeursDApport({ apportCommissaire: "Oui" }))).toBe(false);
+    /* Tant que la question n'est pas tranchée, on ne réclame rien non plus. */
+    expect(champObligatoire(methode, valeursDApport({}))).toBe(false);
+  });
+
+  it("bloque le dossier sous dispense, non avec commissaire", () => {
+    const base = {
+      apporteeDenomination: "CIBLE",
+      apporteeSiren: "512345678",
+      apporteurCivilite: "Monsieur",
+      apporteurPrenom: "Jean",
+      apporteurNom: "ESSAI",
+      apporteurAdresse: "3 rue des Lilas, 69003 Lyon",
+      apporteurNeLe: "1980-01-01",
+      apporteurNeA: "Lyon",
+      apportDateEffet: "2026-10-01",
+      apportNbTitres: "100",
+      apporteeNbTitres: "500",
+      apportValeur: "50000",
+      apportNominaleBeneficiaire: "10",
+    };
+
+    const sous = verifierApport({ ...base, apportCommissaire: "Non, dispense décidée à l'unanimité" });
+    expect(sous.map((a) => a.champ)).toContain("apportMethodeValorisation");
+
+    const avec = verifierApport({ ...base, apportCommissaire: "Oui" });
+    expect(avec.map((a) => a.champ)).not.toContain("apportMethodeValorisation");
   });
 });

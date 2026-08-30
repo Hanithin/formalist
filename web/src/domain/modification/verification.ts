@@ -1,4 +1,4 @@
-import { champsASaisir, definitions, type Valeurs } from "./types";
+import { champObligatoire, champsASaisir, definitions, type Valeurs } from "./types";
 import { verifierApport } from "./apport";
 import { anomaliesDuPvAge } from "./pv-age";
 import { anomaliesDuTraite } from "./traite-apport";
@@ -82,7 +82,7 @@ export function verifierChamps(
   const anomalies: Anomalie[] = [];
 
   for (const champ of champsASaisir(codes, valeurs, forme)) {
-    if (!champ.obligatoire) continue;
+    if (!champObligatoire(champ, valeurs)) continue;
     const valeur = valeurs[champ.identifiant];
 
     if (champ.type === "nombre") {

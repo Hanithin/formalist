@@ -338,7 +338,20 @@ export function verifierApport(valeurs: Valeurs): AnomalieDApport[] {
   exiger("apporteurAdresse", "L'adresse de l'apporteur est requise");
   exiger("apporteurNeLe", "La date de naissance de l'apporteur est requise");
   exiger("apporteurNeA", "Le lieu de naissance de l'apporteur est requis");
-  exiger("apportMethodeValorisation", "Dites comment les titres ont été valorisés");
+  /*
+   * La méthode n'est due que sous dispense de commissaire.
+   *
+   * Le rapport du commissaire aux apports indique le mode d'évaluation adopté et les
+   * raisons de ce choix : quand il intervient, le traité s'en remet à lui. Sous
+   * dispense, plus personne ne le porte, et c'est la seule trace devant une
+   * administration qui contrôle un report d'imposition des années plus tard.
+   */
+  if (String(valeurs.apportCommissaire ?? "").startsWith("Non")) {
+    exiger(
+      "apportMethodeValorisation",
+      "Sans commissaire aux apports, dites comment les titres ont été valorisés"
+    );
+  }
   exiger("apportDateEffet", "La date d'effet de l'apport est requise");
 
   /*

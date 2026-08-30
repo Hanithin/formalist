@@ -110,6 +110,19 @@ export interface ChampModification {
   /** Pour les champs de type « societe » : où verser ce que le registre rend. */
   remplit?: ChampsRemplisParLeRegistre;
   obligatoire?: boolean;
+  /**
+   * Obligatoire seulement dans certains cas.
+   *
+   * La méthode de valorisation d'un apport en nature n'est due au traité par aucun
+   * texte : c'est le rapport du commissaire aux apports qui doit indiquer le mode
+   * d'évaluation adopté et les raisons de ce choix. Quand un commissaire intervient, le
+   * traité peut donc s'en remettre à lui.
+   *
+   * Quand la dispense est retenue, plus personne ne la documente - et c'est alors la
+   * seule trace contemporaine devant une administration qui contrôle un report
+   * d'imposition des années plus tard. La case est due là, et là seulement.
+   */
+  obligatoireSi?: { champ: string; vaut: string[] };
   /** Le champ occupe les deux colonnes : une adresse ou un texte long. */
   pleineLargeur?: boolean;
   aide?: string;
@@ -842,7 +855,20 @@ export const MODIFICATIONS: DefinitionModification[] = [
           "Actif net comptable et rentabilité prévisionnelle",
           "Multiple de résultat",
         ],
-        obligatoire: true,
+        /*
+         * Due au traité seulement quand aucun commissaire ne la documente.
+         *
+         * Le rapport du commissaire aux apports indique le mode d'évaluation adopté et
+         * les raisons de ce choix : quand il intervient, le traité s'en remet à lui, et
+         * le formulaire cessait pourtant de tourner sans cette case. Sous dispense, plus
+         * personne ne la porte - et c'est la seule trace devant une administration qui
+         * contrôle un report d'imposition des années plus tard.
+         */
+        obligatoireSi: { champ: "apportCommissaire", vaut: ["Non, dispense décidée à l'unanimité"] },
+        aide:
+          "Le traité n'y est pas tenu quand un commissaire aux apports intervient : son " +
+          "rapport porte le mode d'évaluation. Sous dispense, c'est la seule trace de ce " +
+          "qui fonde la valeur.",
       },
       {
         identifiant: "apportCommissaire",
@@ -1111,6 +1137,21 @@ export function champVisible(
   if (!champ.visibleSi) return true;
   const valeur = valeurs[champ.visibleSi.champ];
   return typeof valeur === "string" && champ.visibleSi.vaut.includes(valeur);
+}
+
+/**
+ * Ce champ est-il dû, l'état du formulaire étant ce qu'il est ?
+ *
+ * `obligatoire` suffit à la plupart : ils sont dus ou ils ne le sont pas. Quelques-uns
+ * dépendent d'une réponse donnée plus haut, et les exiger toujours reviendrait à
+ * réclamer un renseignement dont l'acte n'a que faire.
+ */
+export function champObligatoire(champ: ChampModification, valeurs: Valeurs): boolean {
+  if (champ.obligatoireSi) {
+    const decide = valeurs[champ.obligatoireSi.champ];
+    return typeof decide === "string" && champ.obligatoireSi.vaut.includes(decide);
+  }
+  return !!champ.obligatoire;
 }
 
 /** Les champs réellement affichés pour cette sélection, ces valeurs et cette forme. */

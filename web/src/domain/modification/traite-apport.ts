@@ -649,6 +649,7 @@ export function donneesDuTraite(contexte: ContexteGabarit): Record<string, unkno
   const actionsNature = Math.round(parite.actions);
   const actionsNumeraire = nominale > 0 ? Math.round(numeraire / nominale) : 0;
 
+  const methodeValorisation = texte(valeurs.apportMethodeValorisation).toLowerCase();
   const cible = texte(valeurs.apporteeDenomination);
   const apporteur = nomDeLApporteur(valeurs);
   const commissaire = texte(valeurs.apportCommissaire) === "Oui";
@@ -821,7 +822,27 @@ export function donneesDuTraite(contexte: ContexteGabarit): Record<string, unkno
     fondement_legal_apport: fondementLegalDeLApport(societe.forme),
 
     /* ------------------------------------------------------------ La valorisation */
-    methode_valorisation: texte(valeurs.apportMethodeValorisation).toLowerCase(),
+    /*
+     * La méthode, quand elle est dite - et le renvoi au commissaire sinon.
+     *
+     * Aucun texte ne l'impose au traité : c'est le rapport du commissaire aux apports
+     * qui indique le mode d'évaluation adopté et les raisons de ce choix. Quand il
+     * intervient, le traité s'en remet à lui ; sous dispense, il la porte, parce que
+     * plus personne d'autre ne le fait devant une administration qui contrôle un report
+     * d'imposition des années plus tard.
+     *
+     * Les deux phrases s'écrivent ici plutôt que dans le modèle : le modèle aurait
+     * demandé deux paragraphes concurrents, et l'un des deux aurait fini par dériver.
+     */
+    mention_methode: methodeValorisation
+      ? ", selon la méthode suivante : " + methodeValorisation + ","
+      : "",
+    phrase_valorisation: methodeValorisation
+      ? "Cette valorisation a été déterminée selon la méthode suivante : " +
+        methodeValorisation +
+        ", en tenant compte notamment des éléments suivants :"
+      : "Cette valorisation a été arrêtée par les Parties. Le mode d'évaluation retenu " +
+        "et les raisons de ce choix sont exposés dans le rapport du commissaire aux apports.",
     valeur_titres: montant(valeurApport),
     valeur_titres_lettres: nombreEnFrancais(valeurApport),
     criteres_valorisation: criteresDeValorisation(

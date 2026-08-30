@@ -432,3 +432,37 @@ describe("la numérotation, calculée hors du document", () => {
     expect(avec.a_exemplaires).toBe("26");
   });
 });
+
+describe("la méthode de valorisation, quand le traité la porte", () => {
+  /*
+   * Aucun texte ne l'impose au traité : c'est le rapport du commissaire aux apports qui
+   * indique le mode d'évaluation adopté et les raisons de ce choix. Quand il intervient,
+   * le traité s'en remet à lui ; sous dispense, il la porte, parce que plus personne
+   * d'autre ne le fait devant une administration qui contrôle un report d'imposition des
+   * années plus tard.
+   */
+  it("l'écrit quand elle est donnée", () => {
+    const texte = rendre({ apportMethodeValorisation: "Actif net comptable corrigé" });
+
+    expect(texte).toContain(
+      "selon la méthode suivante : actif net comptable corrigé, à la somme globale de"
+    );
+    expect(texte).toContain(
+      "Cette valorisation a été déterminée selon la méthode suivante : actif net comptable corrigé"
+    );
+  });
+
+  it("renvoie au rapport du commissaire quand elle ne l'est pas", () => {
+    const texte = rendre({ apportMethodeValorisation: "" });
+
+    expect(texte).toContain(
+      "Les Parties sont convenues de valoriser les Titres Apportés à la somme globale de"
+    );
+    expect(texte).toContain(
+      "Le mode d'évaluation retenu et les raisons de ce choix sont exposés dans le rapport du commissaire aux apports."
+    );
+    /* Et pas de phrase suspendue là où la méthode manquait. */
+    expect(texte).not.toContain("selon la méthode suivante : ,");
+    expect(texte).not.toContain("méthode suivante : .");
+  });
+});
