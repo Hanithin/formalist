@@ -4,6 +4,7 @@ import { confirmerPaiement, abandonnerReservation } from "@/infrastructure/db/de
 import { relirePaiement } from "@/infrastructure/paiement/stripe";
 import { journal } from "@/lib/journal";
 import { route } from "@/lib/reponses";
+import { adresseDeRetour } from "@/lib/site";
 
 /**
  * Le retour du client depuis la page de paiement.
@@ -18,7 +19,17 @@ import { route } from "@/lib/reponses";
  * ni une référence de session : ce qui est affiché est relu en base.
  */
 function versLaPage(requete: Request, etat: string) {
-  return NextResponse.redirect(new URL("/consultations?paiement=" + etat, requete.url), 303);
+  /*
+   * L'adresse déclarée de l'application, non celle de la requête.
+   *
+   * En production le conteneur écoute sur 0.0.0.0, et c'est ce nom que `requete.url`
+   * porte : le client revenant de Stripe était renvoyé vers une adresse qui ne mène
+   * nulle part depuis son navigateur, son paiement encaissé.
+   */
+  return NextResponse.redirect(
+    adresseDeRetour(requete, "/consultations?paiement=" + etat),
+    303
+  );
 }
 
 export const GET = route(async (requete: Request) => {

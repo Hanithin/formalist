@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { utilisateurCourant } from "@/infrastructure/db/utilisateur-courant";
 import { accepterInvitation } from "@/infrastructure/db/depots/equipe";
+import { adresseDeRetour } from "@/lib/site";
 
 /**
  * Acceptation d'une invitation.
@@ -14,14 +15,18 @@ export async function GET(requete: Request) {
   const utilisateur = await utilisateurCourant();
 
   if (!utilisateur) {
-    const connexion = new URL("/connexion", requete.url);
+    /*
+     * L'adresse déclarée, non celle de la requête : le conteneur écoute sur 0.0.0.0 et
+     * c'est ce nom que `requete.url` porte en production.
+     */
+    const connexion = new URL(adresseDeRetour(requete, "/connexion"));
     connexion.searchParams.set("suite", "/api/equipe/accepter?jeton=" + jeton);
     return NextResponse.redirect(connexion);
   }
 
   const resultat = await accepterInvitation(utilisateur, jeton);
 
-  const destination = new URL("/equipe", requete.url);
+  const destination = new URL(adresseDeRetour(requete, "/equipe"));
   destination.searchParams.set("invitation", resultat.ok ? "acceptee" : resultat.etat);
   return NextResponse.redirect(destination);
 }
