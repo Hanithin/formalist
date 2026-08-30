@@ -100,14 +100,13 @@ export function DepotFichier({
           Le champ natif reste, caché : c'est lui qui ouvre le sélecteur du système, et
           son étiquette « Aucun fichier choisi » n'a pas à s'afficher.
 
-          Caché aux yeux seulement : il garde sa place dans l'ordre de tabulation, et
-          c'est bien ce qu'il faut - le sélecteur de fichiers doit s'atteindre au
-          clavier. Il lui faut donc un nom, sans quoi la synthèse vocale annonce un
-          bouton « Choisir un fichier » seul au milieu de la page.
+          Il sort de l'arbre d'accessibilité, et c'est « Remplacer » qui le tient.
 
-          Ici un fichier est déjà là : le champ sert à le remplacer, et c'est ce qu'il
-          annonce - l'invite de la zone vide (« Glissez votre fichier ici ») décrirait
-          un geste qui n'est plus celui-là.
+          Réduit à un pixel par le style, il gardait sa place dans l'ordre de
+          tabulation et la synthèse vocale y annonçait un bouton « Choisir un fichier »
+          sans nom, juste après un bouton « Remplacer » qui fait exactement cela. Le
+          nommer aurait donné deux contrôles pour un geste, portant le même nom. Un
+          bouton visible l'ouvre : il n'a pas à être atteint pour lui-même.
         */}
         <input
           ref={champ}
@@ -115,7 +114,8 @@ export function DepotFichier({
           className={styles.natif}
           type="file"
           accept={accepte}
-          aria-label={"Remplacer le fichier déposé" + (depose ? " : " + depose : "")}
+          aria-hidden="true"
+          tabIndex={-1}
           disabled={desactive}
           onChange={(e) => recevoir(e.target.files)}
         />
@@ -157,13 +157,15 @@ export function DepotFichier({
 
       {precision && <p className={styles.precision}>{precision}</p>}
 
+      {/* Hors de l'arbre, comme plus haut : « Parcourir mes fichiers » l'ouvre. */}
       <input
         ref={champ}
         id={id}
         className={styles.natif}
         type="file"
         accept={accepte}
-        aria-label={invite}
+        aria-hidden="true"
+        tabIndex={-1}
         disabled={desactive}
         onChange={(e) => recevoir(e.target.files)}
       />

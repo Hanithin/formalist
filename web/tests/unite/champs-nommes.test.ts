@@ -35,9 +35,15 @@ const COMPOSANTS = [
 /*
  * Ce qui échappe à la règle, et pourquoi.
  *
- * Un champ retiré de l'arbre d'accessibilité - `display: none`, ou l'attribut `hidden` -
- * n'est pas atteignable : c'est le bouton qui l'actionne qui porte le nom. Les listes
- * sont nominatives pour qu'un nouveau cas se présente au lieu de se fondre.
+ * Un champ retiré de l'arbre d'accessibilité n'est pas atteignable : c'est le bouton
+ * qui l'actionne qui porte le nom. Trois façons de l'en retirer, toutes reconnues plus
+ * bas : `display: none` par la feuille de style, l'attribut `hidden`, ou le couple
+ * `aria-hidden` et `tabIndex={-1}` d'un champ que le style réduit à un pixel.
+ *
+ * C'est le cas de tous les champs de fichier de l'application : un bouton visible les
+ * ouvre, et les nommer donnerait deux contrôles pour un geste - « Remplacer » suivi
+ * d'un « Remplacer » qui ne se voit pas. Ce qui reste dans la liste ci-dessous est ce
+ * que le style seul écarte, et que le code ne peut pas savoir.
  */
 const HORS_ARBRE: Record<string, string> = {
   "src/app/(app)/messagerie/Messagerie.tsx":
@@ -142,6 +148,8 @@ describe("les champs de saisie", () => {
         const attrs = source.slice(m.index! + m[0].length, finDeBalise(source, m.index!));
         if (/type=\s*"(hidden|checkbox|radio|submit|button)"/.test(attrs)) continue;
         if (/\bhidden\b/.test(attrs)) continue;
+        /* Retiré de l'arbre et de la tabulation : le bouton qui l'ouvre porte le nom. */
+        if (attrs.includes("aria-hidden") && /tabIndex=\{-1\}/.test(attrs)) continue;
         if (attrs.includes("aria-label")) continue;
         if (/\{\s*\.\.\./.test(attrs)) continue;
         const cle = identifiantDe(attrs);

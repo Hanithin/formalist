@@ -40,6 +40,7 @@ const DONNEES = {
     // le vérifie avant d'encaisser.
     nouveauDirigeantDateNaissance: "1980-04-12",
     nouveauDirigeantLieuNaissance: "Bordeaux, France",
+    nouveauDirigeantNationalite: "Française",
     nouveauDirigeantNomPere: "Michel BERNARD",
     nouveauDirigeantNomMere: "Anne LEROY",
   },
