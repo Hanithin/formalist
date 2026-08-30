@@ -8,7 +8,7 @@
  */
 
 import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
-import { dateEnFrancais } from "@/domain/formalite/lettres";
+import { dateEnFrancais, sirenLisible } from "@/domain/formalite/lettres";
 import { echeancesDe, type Nature, type Periodicite } from "./regles";
 
 const TIRET = "-";
@@ -87,7 +87,8 @@ export function donneesDeLaCessation(contexte: ContexteCessation): Record<string
   return {
     /* ------------------------------------------------------- L'entreprise */
     ENTREPRISE: ou(texte(entreprise.denomination)),
-    SIREN: ou(texte(entreprise.siren)),
+    /* Par groupes de trois, comme dans tous les actes du cabinet. */
+    SIREN: ou(sirenLisible(texte(entreprise.siren))),
     ACTIVITE: ou(texte(entreprise.activite)),
     ADRESSE: adresseSurUneLigne(entreprise),
     VILLE_SIGNATURE: ou(texte(entreprise.ville)),

@@ -12,7 +12,7 @@ import { natureDeLaForme } from "@/domain/formalite/formes";
  * ne dit jamais quel cas. Ici, la phrase sort juste ou ne sort pas.
  */
 
-import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
+import { dateEnFrancais, nombreEnFrancais, sirenLisible } from "@/domain/formalite/lettres";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "@/domain/modification/annonce";
 import { avecElision } from "@/domain/modification/gabarit";
 import { decisionDeDissolution } from "./decision";
@@ -87,17 +87,45 @@ function adresseSurUneLigne(societe: SocieteFermee): string {
   return adresseDuSiege(societe.adresse, societe.codePostal, societe.ville);
 }
 
+/**
+ * « le vingt novembre » : le quantième s'écrit en lettres après l'année.
+ *
+ * Le procès-verbal de clôture ouvrait sur « L'an deux mille vingt-six, le 20 novembre
+ * 2026 » - l'année deux fois, et un chiffre au milieu d'une formule qui les écrit en
+ * toutes lettres. Les procès-verbaux de modification ouvrent depuis toujours sur « le
+ * dix septembre ».
+ *
+ * Le premier du mois fait exception, comme dans tous les actes.
+ */
+function jourEnLettres(iso: string): string {
+  const jour = Number(iso.slice(8, 10));
+  const mois = Number(iso.slice(5, 7));
+  if (!Number.isFinite(jour) || jour < 1 || !Number.isFinite(mois)) return TIRET;
+
+  const nom = [
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre",
+  ][mois - 1];
+  return (jour === 1 ? "premier" : nombreEnFrancais(jour)) + (nom ? " " + nom : "");
+}
+
 /** « L'an deux mille vingt-six » : un acte écrit son année en lettres. */
 function anneeEnLettres(iso: string): string {
   const annee = Number(iso.slice(0, 4));
   return Number.isFinite(annee) && annee > 0 ? nombreEnFrancais(annee) : TIRET;
 }
 
-function nomComplet(personne: {
-  civilite?: unknown;
-  prenom?: unknown;
-  nom?: unknown;
-}): string {
+function nomComplet(personne: { civilite?: unknown; prenom?: unknown; nom?: unknown }): string {
   return [texte(personne.civilite), texte(personne.prenom), texte(personne.nom)]
     .filter(Boolean)
     .join(" ");
@@ -128,7 +156,12 @@ const MOTIFS: Record<string, string> = {
  * trompe une fois sur deux. Ici la civilité est connue, et l'accord n'est pas une
  * inférence.
  */
-function accord(civilite: string): { ne: string; enfantDe: string; nomme: string; soussigne: string } {
+function accord(civilite: string): {
+  ne: string;
+  enfantDe: string;
+  nomme: string;
+  soussigne: string;
+} {
   const femme = /^(madame|mademoiselle|mme)$/i.test(civilite.trim());
   return {
     ne: femme ? "née" : "né",
@@ -197,7 +230,7 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
      * virgule - « La société X, société par actions simplifiée… ».
      */
     FORME_EN_CLAIR_CAPITALE: avecMajusculeInitiale(formeEnToutesLettres(forme).toLowerCase()),
-    SIREN: ou(texte(societe.siren)),
+    SIREN: ou(sirenLisible(texte(societe.siren))),
     SIEGE_SOCIAL: adresseSurUneLigne(societe),
     CAPITAL_FORMATE: montant(societe.capital ?? 0),
     CAPITAL_LETTRES: nombreEnFrancais(societe.capital ?? 0),
@@ -236,8 +269,7 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
     ANNEE_LETTRES: anneeEnLettres(texte(valeurs.dateDissolution)),
     HEURE_DECISION: ou(texte(valeurs.heureDecision), "11 heures"),
     LIEU_DECISION: ou(texte(valeurs.lieuDecision), "au siège social"),
-    MOTIF_DISSOLUTION:
-      MOTIFS[texte(valeurs.motifDissolution)] ?? "la cessation de l'activité",
+    MOTIF_DISSOLUTION: MOTIFS[texte(valeurs.motifDissolution)] ?? "la cessation de l'activité",
     TERME_DU_MANDAT_FR: dateEnFrancais(termeDuMandat(texte(valeurs.dateDissolution))),
 
     /* ------------------------------------------------------ Le liquidateur */
@@ -257,6 +289,7 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
     /* --------------------------------------------------------- La clôture */
     DATE_CLOTURE_FR: dateEnFrancais(texte(valeurs.dateCloture)),
     ANNEE_CLOTURE_LETTRES: anneeEnLettres(texte(valeurs.dateCloture)),
+    JOUR_CLOTURE_LETTRES: jourEnLettres(texte(valeurs.dateCloture)),
     DATE_ARRETE_FR: dateEnFrancais(texte(valeurs.dateArreteDesComptes)),
     LIEU_CLOTURE: ou(texte(valeurs.lieuCloture), "au siège de la liquidation"),
 
@@ -290,7 +323,7 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
     IS_TUP: contexte.voie === "tup",
     ASSOCIE_DENOMINATION: ou(texte(valeurs.associeDenomination)),
     ASSOCIE_FORME: ou(texte(valeurs.associeForme)),
-    ASSOCIE_SIREN: ou(texte(valeurs.associeSiren)),
+    ASSOCIE_SIREN: ou(sirenLisible(texte(valeurs.associeSiren))),
     ASSOCIE_CAPITAL_FORMATE: montant(nombre(valeurs.associeCapital)),
     IS_ASSOCIE_CAPITAL: nombre(valeurs.associeCapital) > 0,
     ASSOCIE_SIEGE: ou(texte(valeurs.associeSiege)),

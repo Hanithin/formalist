@@ -127,13 +127,21 @@ function verifierSociete(societe: Societe): Anomalie[] {
   return anomalies;
 }
 
+/*
+ * « Dénomination de l'associé unique est requis ».
+ *
+ * Le message se composait d'un libellé et d'un adjectif, et l'adjectif ne s'accordait
+ * pas : la moitié des champs sont féminins - une forme juridique, une date, une
+ * dénomination - et le client lisait la faute sous chacun d'eux. « À renseigner » ne
+ * s'accorde avec rien, et dit la même chose.
+ */
 function verifierChamps(contexte: Contexte): Anomalie[] {
   const phase = contexte.voie === "tup" ? "dissolution" : contexte.phase;
   return champsAffiches(contexte)
     .filter((champ) => champ.obligatoire && !rempli(contexte.valeurs[champ.identifiant]))
     .map((champ) => ({
       champ: champ.identifiant,
-      message: champ.libelle + " est requis",
+      message: champ.libelle + " : à renseigner",
       phase,
     }));
 }

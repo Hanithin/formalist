@@ -55,7 +55,7 @@ export function verifierCessation(contexte: Contexte): Anomalie[] {
 
   for (const champ of champsAffiches(contexte)) {
     if (champ.obligatoire && !rempli(valeurs[champ.identifiant])) {
-      anomalies.push({ champ: champ.identifiant, message: champ.libelle + " est requis" });
+      anomalies.push({ champ: champ.identifiant, message: champ.libelle + " : à renseigner" });
     }
   }
 

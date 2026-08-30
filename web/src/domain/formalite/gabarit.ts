@@ -1,4 +1,4 @@
-import { dateEnFrancais, nombreEnFrancais } from "./lettres";
+import { dateEnFrancais, nombreEnFrancais, sirenLisible } from "./lettres";
 import { apportsDe, valeurNominale } from "./capital";
 import { estUnipersonnelle, regle } from "./formes";
 import type { PersonneMorale, PersonnePhysique } from "./etat-civil";
@@ -228,18 +228,7 @@ export function identitePhysique(personne: PersonnePhysique): string {
 }
 
 /** Le SIREN d'une société associée : celui du registre, ou les neuf premiers du SIRET. */
-/**
- * « 842 019 336 » : un SIREN se lit par groupes de trois.
- *
- * Les actes le composaient d'un bloc - « sous le numéro 842019336 » - quand le
- * procès-verbal, l'annonce et l'en-tête des statuts l'espacent. Neuf chiffres à la
- * file se relisent mal, et c'est le numéro qu'un greffier compare.
- */
-export function sirenLisible(siren: string | null | undefined): string {
-  const chiffres = (siren ?? "").replace(/\D/g, "");
-  if (chiffres.length !== 9) return (siren ?? "").trim();
-  return chiffres.slice(0, 3) + " " + chiffres.slice(3, 6) + " " + chiffres.slice(6);
-}
+export { sirenLisible };
 
 export function sirenDe(societe: PersonneMorale | undefined): string {
   const rcs = (societe?.numeroRcs ?? "").replace(/\D/g, "");
@@ -682,7 +671,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
      * le demande à part, et c'est celui-ci qui était écrit. Les neuf premiers chiffres
      * d'un SIRET sont le SIREN : ils servent de repli.
      */
-    SIREN: ou(sirenDe(premier?.societe)),
+    SIREN: ou(sirenLisible(sirenDe(premier?.societe))),
   };
 
   // L'état civil du premier associé, sans préfixe : c'est lui que les gabarits

@@ -277,7 +277,7 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement }: P
               : "Il reste " +
                 manquesCourants.length +
                 " points à régler : " +
-                manquesCourants.map((m) => m.message).join(", ")}
+                manquesCourants.map((m) => m.message).join(" · ")}
           </p>
         )}
 

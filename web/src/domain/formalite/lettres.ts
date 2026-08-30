@@ -137,3 +137,18 @@ export function elider(mot: string): string {
   const net = mot.trim();
   return /^[aeiouyàâéèêëîïôöùûü]/i.test(net) ? "d'" + net : "de " + net;
 }
+
+/**
+ * « 842 019 336 » : un SIREN se lit par groupes de trois.
+ *
+ * Chaque famille d'actes le composait à sa façon - l'en-tête d'un procès-verbal
+ * l'espaçait, le corps d'un autre non - et neuf chiffres à la file se relisent mal.
+ * C'est pourtant le numéro qu'un greffier compare.
+ *
+ * Ce qui n'a pas neuf chiffres reste tel quel : on ne découpe pas au hasard.
+ */
+export function sirenLisible(siren: string | null | undefined): string {
+  const chiffres = (siren ?? "").replace(/\D/g, "");
+  if (chiffres.length !== 9) return (siren ?? "").trim();
+  return chiffres.slice(0, 3) + " " + chiffres.slice(3, 6) + " " + chiffres.slice(6);
+}
