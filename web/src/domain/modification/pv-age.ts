@@ -5,7 +5,7 @@ import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
 import { auFilDeLaPhrase } from "./traite-apport";
 import { paritéDeLApport, nomDeLApporteur } from "./traite-apport";
 import { definitions, type Valeurs } from "./types";
-import { planDeCapital } from "./apport";
+import { capitalAuDepartDeLApport, planDeCapital } from "./apport";
 import {
   adresseLisible,
   adresseSurUneLigne,
@@ -1038,8 +1038,21 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
      * dans la couche du traité, et les deux actes la lisent.
      */
     const parite = paritéDeLApport(valeurs);
+    /*
+     * L'apport part de ce que les résolutions précédentes ont laissé.
+     *
+     * `capitalDepart` est le capital de la société, celui d'avant l'assemblée : c'est
+     * lui qui sert à la ligne d'en-tête et aux contrôles des autres blocs. L'apport,
+     * lui, est décidé après une éventuelle augmentation ou réduction, et le
+     * procès-verbal écrivait « en conséquence de la résolution qui précède » sous des
+     * chiffres qui l'ignoraient - « porté de 20 000 à 50 000 », puis « porté de
+     * 20 000 à 120 000 ». La règle vivait dans le gabarit des statuts, seul à
+     * l'appliquer.
+     */
     const plan = planDeCapital({
-      capitalActuelCentimes: Math.round(capitalDepart * 100),
+      capitalActuelCentimes: Math.round(
+        capitalAuDepartDeLApport({ codes, valeurs, capitalDeLaSociete: capitalDepart }) * 100
+      ),
       numeraireCentimes: Math.round(numeraire * 100),
       valeurApportCentimes: Math.round(valeurApport * 100),
       primeCentimes: Math.round(parite.prime * 100),

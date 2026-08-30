@@ -230,6 +230,39 @@ export interface PlanDeCapital {
   numeraireMinimalCentimes: number;
 }
 
+/**
+ * Le capital d'où part l'apport, non celui d'avant l'assemblée.
+ *
+ * Une même assemblée peut augmenter, réduire, puis rémunérer un apport de titres :
+ * chaque résolution part de ce que la précédente a laissé - c'est ainsi qu'un acte se
+ * lit, de haut en bas. La règle vivait dans le gabarit des statuts, qui l'appliquait
+ * seul : le procès-verbal et le traité repartaient du capital d'aujourd'hui, et l'on
+ * pouvait lire dans le même document « porté de 20 000 à 50 000 » puis, deux
+ * résolutions plus bas, « porté de 20 000 à 120 000 ».
+ *
+ * La réduction passe avant l'augmentation parce que c'est l'ordre où les résolutions
+ * se numérotent : la dernière décidée avant l'apport est celle dont il part.
+ *
+ * Les changements cochés commandent, non les valeurs présentes. Le formulaire masque les
+ * champs d'un changement qu'on décoche ; il ne les efface pas, et un capital saisi puis
+ * abandonné aurait déplacé le point de départ de l'apport sans que rien ne le dise.
+ */
+export function capitalAuDepartDeLApport(args: {
+  codes: string[];
+  valeurs: Valeurs;
+  capitalDeLaSociete: number | null | undefined;
+}): number {
+  const apresReduction = args.codes.includes("reduction_capital")
+    ? nombre(args.valeurs.nouveauCapitalRed)
+    : 0;
+  const apresAugmentation = args.codes.includes("augmentation_capital")
+    ? nombre(args.valeurs.nouveauCapitalAugm)
+    : 0;
+  const actuel = typeof args.capitalDeLaSociete === "number" ? args.capitalDeLaSociete : 0;
+
+  return apresReduction || apresAugmentation || actuel || 0;
+}
+
 export function planDeCapital(args: {
   capitalActuelCentimes: number;
   numeraireCentimes: number;

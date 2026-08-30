@@ -5,7 +5,13 @@ import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
 import { changeDeRessort } from "./formalites";
-import { evaluationDesApports, planDeCapital, regimeApport, REMPLOI } from "./apport";
+import {
+  capitalAuDepartDeLApport,
+  evaluationDesApports,
+  planDeCapital,
+  regimeApport,
+  REMPLOI,
+} from "./apport";
 import { nomDeLApporteur } from "./traite-apport";
 
 /**
@@ -862,7 +868,7 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     IS_CESSION_SANS_AGREMENT: codes.includes("cession_parts") && !agrementDeLaCession,
 
     /* ------------------------------------------ L'apport de titres à une holding */
-    ...donneesDeLApport(societe, valeurs),
+    ...donneesDeLApport(societe, valeurs, codes),
 
     /*
      * La déclaration de non-condamnation, reprise des gabarits de la création.
@@ -977,7 +983,9 @@ export function gabaritProcesVerbal(
  */
 function donneesDeLApport(
   societe: SocieteModifiee,
-  valeurs: Valeurs
+  valeurs: Valeurs,
+  /* Les changements décidés : c'est eux qui disent d'où l'apport part. */
+  codes: string[]
 ): Record<string, string | number | boolean> {
   const enCentimes = (euros: number) => Math.round(euros * 100);
   const enEuros = (centimes: number) => centimes / 100;
@@ -996,18 +1004,16 @@ function donneesDeLApport(
   /*
    * Le capital d'où part l'apport, non celui d'avant l'assemblée.
    *
-   * Une même assemblée peut augmenter, réduire, puis rémunérer un apport de titres :
-   * l'acte disait alors « le capital est porté de 500 euros à 125 500 » après deux
-   * résolutions qui l'avaient déjà mené à 15 500. Chaque résolution part de ce que la
-   * précédente a laissé - c'est ainsi qu'un acte se lit, de haut en bas.
+   * La règle est née ici, et n'y est plus : le procès-verbal et le traité repartaient
+   * du capital d'aujourd'hui, et l'on pouvait lire dans le même dossier trois capitaux
+   * finaux différents pour une seule opération. Elle vit maintenant avec le reste des
+   * calculs de l'apport, et les trois actes la lisent.
    */
-  const capitalApresReduction = nb("nouveauCapitalRed");
-  const capitalApresAugmentation = nb("nouveauCapitalAugm");
-  const capitalActuel =
-    capitalApresReduction ||
-    capitalApresAugmentation ||
-    societe.capital ||
-    0;
+  const capitalActuel = capitalAuDepartDeLApport({
+    codes,
+    valeurs,
+    capitalDeLaSociete: societe.capital,
+  });
 
   const plan = planDeCapital({
     capitalActuelCentimes: enCentimes(capitalActuel),

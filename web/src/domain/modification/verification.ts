@@ -155,6 +155,27 @@ export function verifierCoherence(codes: string[], valeurs: Valeurs): Anomalie[]
    */
   if (codes.includes("apport_titres")) {
     anomalies.push(...verifierApport(valeurs));
+
+    /*
+     * Deux fois la même augmentation en numéraire.
+     *
+     * Le bloc de l'apport porte un champ « Augmentation en numéraire préalable » : il
+     * sert à faire grossir le capital juste avant l'apport, pour passer sous la moitié
+     * et se dispenser d'un commissaire. C'est exactement ce que fait le bloc
+     * « Augmentation de capital » quand on le coche aussi - et l'acte compterait alors
+     * deux fois la même opération, une fois par résolution.
+     *
+     * On tranche plutôt que d'additionner : deux résolutions pour un seul versement
+     * laisseraient une chaîne juste et un récit faux.
+     */
+    if (codes.includes("augmentation_capital") && nombre(valeurs.apportNumeraire)) {
+      anomalies.push({
+        champ: "apportNumeraire",
+        message:
+          "L'augmentation en numéraire est déjà décidée dans le bloc « Augmentation de " +
+          "capital » : laissez ce champ vide, l'apport partira du capital qu'elle laisse.",
+      });
+    }
   }
 
   if (codes.includes("reduction_capital")) {

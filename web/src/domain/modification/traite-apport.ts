@@ -1,6 +1,6 @@
 import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
-import { evaluationDesApports, planDeCapital } from "./apport";
+import { capitalAuDepartDeLApport, evaluationDesApports, planDeCapital } from "./apport";
 import { formeEnToutesLettres } from "./annonce";
 import { adresseLisible, enCapitaleInitiale, type ContexteGabarit } from "./gabarit";
 import type { Valeurs } from "./types";
@@ -461,7 +461,11 @@ export function verifierLeTraite(contexte: ContexteGabarit): AlerteDuTraite[] {
   const { societe, valeurs } = contexte;
   const alertes: AlerteDuTraite[] = [];
 
-  const capitalActuel = typeof societe.capital === "number" ? societe.capital : 0;
+  const capitalActuel = capitalAuDepartDeLApport({
+    codes: contexte.codes ?? [],
+    valeurs,
+    capitalDeLaSociete: societe.capital,
+  });
   const numeraire = nombre(valeurs, "apportNumeraire");
   const valeurApport = nombre(valeurs, "apportValeur");
 
@@ -628,7 +632,20 @@ export function anomaliesDuTraite(contexte: ContexteGabarit): { champ: string; m
 export function donneesDuTraite(contexte: ContexteGabarit): Record<string, unknown> {
   const { societe, valeurs, assemblee } = contexte;
 
-  const capitalActuel = typeof societe.capital === "number" ? societe.capital : 0;
+  /*
+   * Deux capitaux, et il ne faut pas les confondre.
+   *
+   * Celui de l'en-tête est celui du jour où le traité se signe - avant l'assemblée qui
+   * l'approuve : « la société X, au capital de 20 000 euros ». Celui de l'opération est
+   * ce que les résolutions précédentes ont laissé, car l'apport est décidé après une
+   * éventuelle augmentation ou réduction du même jour.
+   */
+  const capitalDeLaSociete = typeof societe.capital === "number" ? societe.capital : 0;
+  const capitalActuel = capitalAuDepartDeLApport({
+    codes: contexte.codes ?? [],
+    valeurs,
+    capitalDeLaSociete: societe.capital,
+  });
   const numeraire = nombre(valeurs, "apportNumeraire");
   const valeurApport = nombre(valeurs, "apportValeur");
   const nominale = nombre(valeurs, "apportNominaleBeneficiaire");
@@ -750,7 +767,7 @@ export function donneesDuTraite(contexte: ContexteGabarit): Record<string, unkno
 
     denomination_beneficiaire: texte(societe.denomination),
     forme_beneficiaire: formeEnToutesLettres(texte(societe.forme)).toLowerCase(),
-    capital_beneficiaire: montant(capitalActuel),
+    capital_beneficiaire: montant(capitalDeLaSociete),
     siege_beneficiaire: adresseLisible(
       [texte(societe.adresse), [texte(societe.codePostal), texte(societe.ville)].filter(Boolean).join(" ")]
         .filter(Boolean)
