@@ -17,6 +17,7 @@ import {
 } from "@/domain/formalite/journal";
 import type { EntreeJournal } from "@/domain/formalite/journal";
 import { ToutesLesAttentes } from "./ToutesLesAttentes";
+import { FAMILLES } from "@/domain/navigation/parcours";
 import styles from "./TableauDeBord.module.css";
 
 /**
@@ -570,6 +571,82 @@ export function ActiviteRecente({
           })}
         </ul>
       )}
+    </section>
+  );
+}
+
+/* ------------------------------------------------------- Ce qu'on sait faire */
+
+const OUVERTURE =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">';
+
+/**
+ * Le catalogue, en pied de tableau de bord.
+ *
+ * Les huit parcours s'affichaient en entier sur l'accueil d'un compte sans société, et
+ * disparaissaient au premier dossier : de là, ils ne vivaient plus que derrière le
+ * bouton « Nouvelle formalité » de la colonne. Le client qui a une SAS depuis mars -
+ * celui-là même qui voudra transférer son siège en juin, déposer ses comptes en
+ * septembre et peut-être la fermer un jour - n'avait plus nulle part où l'apprendre.
+ *
+ * La bande le dit en pied de page : ce n'est pas ce qu'on vient chercher en ouvrant
+ * son tableau de bord, mais c'est ce qu'on découvre en le parcourant.
+ *
+ * Ni prix ni durée ici, à la différence des cartes de l'accueil : on ne choisit pas
+ * encore, on apprend que ça existe. Les quatre familles suivent les moments de la vie
+ * d'une société, comme partout où ce catalogue paraît.
+ */
+export function CeQueNousFaisons() {
+  return (
+    <section className={styles.services} aria-labelledby="ce-que-nous-faisons">
+      <div className={styles.servicesTete}>
+        <h2 id="ce-que-nous-faisons" className={styles.servicesTitre}>
+          Que pouvons-nous faire pour vous ?
+        </h2>
+        <p className={styles.servicesSousTitre}>
+          Tout se lance d&apos;ici, et un avocat relit chaque acte.
+        </p>
+      </div>
+
+      <div className={styles.servicesFamilles}>
+        {FAMILLES.map((famille) => (
+          <div key={famille.titre} className={styles.servicesFamille}>
+            <h3 className={styles.servicesFamilleTitre}>{famille.titre}</h3>
+            <ul className={styles.servicesListe}>
+              {famille.parcours.map((parcours) => (
+                <li key={parcours.titre}>
+                  {/*
+                    Un parcours qui n'est pas ouvert se nomme sans se promettre : la
+                    carte de l'accueil le dit déjà, et un lien mort vaut moins qu'un
+                    mot grisé.
+                  */}
+                  {parcours.bientot ? (
+                    <span className={styles.servicesBientot} aria-disabled="true">
+                      <span
+                        className={`${styles.servicesIcone} ${styles[parcours.teinte]}`}
+                        aria-hidden="true"
+                        dangerouslySetInnerHTML={{ __html: OUVERTURE + parcours.icone + "</svg>" }}
+                      />
+                      {parcours.titre}
+                      <span className={styles.servicesMention}>bientôt</span>
+                    </span>
+                  ) : (
+                    <Link href={parcours.lien} className={styles.servicesLien}>
+                      <span
+                        className={`${styles.servicesIcone} ${styles[parcours.teinte]}`}
+                        aria-hidden="true"
+                        /* Les tracés sont des données du catalogue, pas une saisie. */
+                        dangerouslySetInnerHTML={{ __html: OUVERTURE + parcours.icone + "</svg>" }}
+                      />
+                      {parcours.titre}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

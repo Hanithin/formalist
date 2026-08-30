@@ -33,6 +33,7 @@ import {
   LIGNES_MONTREES,
   Reprendre,
   type LigneDeTravail,
+  CeQueNousFaisons,
 } from "./Sections";
 import styles from "./TableauDeBord.module.css";
 
@@ -301,6 +302,17 @@ export default async function TableauDeBord() {
             <ActiviteRecente activite={activite} lienDossier={lienDu} />
           </aside>
         </div>
+
+        {/*
+          Ce que nous savons faire, en pied de page.
+
+          Le catalogue s'affiche en entier à qui n'a encore aucune société, et
+          disparaît au premier dossier : de là, il ne vit plus que derrière le bouton
+          de la colonne. Le client qui a une SAS depuis mars est justement celui qui
+          voudra transférer son siège en juin et déposer ses comptes en septembre - et
+          il n'avait plus nulle part où l'apprendre.
+        */}
+        <CeQueNousFaisons />
       </div>
     </main>
   );

@@ -72,7 +72,32 @@ export function NouvelleFormalite({
             +
           </span>
         )}
-        {libelle}
+        <span className={styles.libelle}>{libelle}</span>
+
+        {/*
+          Le chevron dit que le bouton ouvre un choix.
+          
+          Le « + » seul promet une page vierge - c'est ce qu'il veut dire partout
+          ailleurs dans l'application, « + Ajouter un associé ». Or ce bouton est la
+          seule porte vers les huit formalités du catalogue, et rien ne le laissait
+          deviner : on l'ouvrait par curiosité, ou pas du tout. Le chevron est la
+          convention de ce qui se déplie, et il pivote une fois la fenêtre ouverte.
+        */}
+        <span
+          className={ouverte ? `${styles.chevron} ${styles.chevronOuvert}` : styles.chevron}
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
       </button>
 
       {/*

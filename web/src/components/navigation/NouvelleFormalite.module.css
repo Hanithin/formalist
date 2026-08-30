@@ -48,6 +48,40 @@
   background: #fff;
 }
 
+/*
+ * Le libellé prend la place qui reste : le chevron se range au bout.
+ *
+ * Sans lui, le chevron collait au texte au milieu du bouton, comme s'il en faisait
+ * partie ; au bord, il se lit comme ce qu'il est - le bouton se déplie.
+ */
+.action .libelle,
+.actionPage .libelle {
+  flex: 1;
+  min-width: 0;
+}
+
+.action .chevron,
+.actionPage .chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  opacity: 0.55;
+  transition: transform 0.15s;
+}
+
+.action .chevron svg,
+.actionPage .chevron svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Ouverte, la fenêtre est au-dessus : le chevron pointe vers elle. */
+.action .chevronOuvert,
+.actionPage .chevronOuvert {
+  transform: rotate(180deg);
+}
+
 /* Le signe tient la place de l'icône des entrées voisines : la colonne reste alignée. */
 .action .signe {
   display: inline-flex;
