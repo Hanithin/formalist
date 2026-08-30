@@ -161,12 +161,107 @@ test.describe("avancement du cabinet", () => {
     });
     expect(depose.uploaded_by).toBe("avocat");
 
+    /*
+     * Et le client l'apprend.
+     *
+     * C'était le seul geste du parcours dont personne n'apprenait rien : la tâche
+     * promettait « le client en est prévenu aussitôt », l'étape 5e était la seule sans
+     * avis, et conclure sans document - le chemin dégradé - envoyait bien un courriel.
+     */
+    const client = await prisma.users.findFirstOrThrow({
+      where: { email: "parcours@exemple.test" },
+    });
+    const avis = await prisma.notifications.findFirst({
+      where: {
+        formalite_id: dossier.id,
+        user_id: client.id,
+        type: "document_final_remis",
+      },
+    });
+    expect(avis).not.toBeNull();
+    expect(avis?.content).toContain("Extrait Kbis");
+
     // Un type inventé n'ouvre pas le dépôt : ce serait un fourre-tout.
     const corps = new FormData();
     corps.append("dossier", String(dossier.id));
     corps.append("type", "n-importe-quoi");
     corps.append("fichier", new Blob([PDF], { type: "application/pdf" }), "x.pdf");
     expect((await request.post("/api/avocat/livrables", { multipart: corps })).status()).toBe(400);
+  });
+
+  /*
+   * Le document porte le nom que le greffe lui donne pour ce dossier.
+   *
+   * Les deux titres étaient fixes : le client d'un dépôt de comptes recevait dans ses
+   * documents une pièce intitulée « Kbis », là où le bouton disait « Déposer le
+   * récépissé de dépôt ».
+   */
+  test("le document du greffe porte le nom du dossier, non celui d'une création", async ({
+    request,
+  }) => {
+    const dossier = await dossierDuCabinet("COMPTES ESSAI " + Date.now());
+    await prisma.formalites.update({ where: { id: dossier.id }, data: { type: "comptes" } });
+
+    for (const etape of ["5a", "5b", "5c", "5d"]) {
+      await request.put("/api/avocat/dossier", { data: { dossier: dossier.id, sousPhase: etape } });
+    }
+
+    const corps = new FormData();
+    corps.append("dossier", String(dossier.id));
+    corps.append("type", "kbis");
+    corps.append("fichier", new Blob([PDF], { type: "application/pdf" }), "recepisse.pdf");
+    expect((await request.post("/api/avocat/livrables", { multipart: corps })).status()).toBe(201);
+
+    const depose = await prisma.documents.findFirstOrThrow({
+      where: { formalite_id: dossier.id, type: "kbis" },
+    });
+    expect(depose.name).toBe("Récépissé de dépôt");
+  });
+
+  /*
+   * Aucun écran ne clôturait un dossier : il restait « en attente de validation » à
+   * vie, sa date de fin n'était jamais écrite, et son client le voyait indéfiniment
+   * parmi ses formalités en cours.
+   */
+  test("le dossier se clôture, une fois le document remis", async ({ request }) => {
+    const dossier = await dossierDuCabinet("CLOTURE ESSAI " + Date.now());
+
+    /* Avant la remise, le geste est refusé : c'est le travail fini qu'on clôt. */
+    const trop_tot = await request.put("/api/avocat/cloture", { data: { dossier: dossier.id } });
+    expect(trop_tot.status()).toBe(403);
+    expect((await trop_tot.json()).error).toContain("extrait Kbis");
+
+    for (const etape of ["5a", "5b", "5c", "5d"]) {
+      await request.put("/api/avocat/dossier", { data: { dossier: dossier.id, sousPhase: etape } });
+    }
+    const corps = new FormData();
+    corps.append("dossier", String(dossier.id));
+    corps.append("type", "kbis");
+    corps.append("fichier", new Blob([PDF], { type: "application/pdf" }), "kbis.pdf");
+    await request.post("/api/avocat/livrables", { multipart: corps });
+
+    const reponse = await request.put("/api/avocat/cloture", { data: { dossier: dossier.id } });
+    expect(reponse.status()).toBe(200);
+    expect((await reponse.json()).deja).toBe(false);
+
+    const apres = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier.id } });
+    expect(apres.status).toBe("terminee");
+    /* La date de fin n'était jamais écrite : rien ne posait cet état. */
+    expect(apres.finalized_at).not.toBeNull();
+
+    const client = await prisma.users.findFirstOrThrow({
+      where: { email: "parcours@exemple.test" },
+    });
+    const avis = await prisma.notifications.findMany({
+      where: { formalite_id: dossier.id, user_id: client.id },
+    });
+    /* La fin se dit une fois : le passage par « validé » est silencieux. */
+    expect(avis.filter((a) => a.type === "dossier_termine")).toHaveLength(1);
+    expect(avis.filter((a) => a.type === "dossier_valide")).toHaveLength(0);
+
+    // Reclôturer ne fait rien, et ne réécrit pas la date.
+    const encore = await request.put("/api/avocat/cloture", { data: { dossier: dossier.id } });
+    expect((await encore.json()).deja).toBe(true);
   });
 
   test("« KBIS délivré » exige le Kbis", async ({ request }) => {

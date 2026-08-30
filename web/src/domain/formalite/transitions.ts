@@ -53,6 +53,33 @@ export function etatsSuivants(depuis: string): EtatDossier[] {
   return estEtat(depuis) ? SUITES[depuis] : [];
 }
 
+/**
+ * Le chemin d'un dossier jusqu'à sa clôture.
+ *
+ * « Validé » est le cran que le cabinet n'a jamais employé : le dossier vivait en
+ * « attente de validation » du début à la fin, et rien ne le fermait. Le franchir
+ * plutôt que de l'ignorer garde la table des transitions vraie - on ne saute pas un
+ * état parce qu'on ne s'en sert pas.
+ */
+export function etatsJusquALaFin(depuis: string): EtatDossier[] {
+  if (!estEtat(depuis) || depuis === "terminee") return [];
+
+  /* Le plus court chemin, pour ne pas faire passer un dossier par un refus. */
+  const files: EtatDossier[][] = [[depuis]];
+  const vus = new Set<EtatDossier>([depuis]);
+
+  while (files.length > 0) {
+    const chemin = files.shift()!;
+    for (const suivant of etatsSuivants(chemin[chemin.length - 1])) {
+      if (vus.has(suivant)) continue;
+      if (suivant === "terminee") return [...chemin.slice(1), suivant];
+      vus.add(suivant);
+      files.push([...chemin, suivant]);
+    }
+  }
+  return [];
+}
+
 export function libelleEtat(etat: string): string {
   const libelles: Record<EtatDossier, string> = {
     en_cours: "En cours",
@@ -60,7 +87,7 @@ export function libelleEtat(etat: string): string {
     corrections_demandees: "Corrections demandées",
     valide: "Validé",
     rejete: "Refusé",
-    terminee: "Immatriculée",
+    terminee: "Terminé",
   };
   return estEtat(etat) ? libelles[etat] : etat;
 }

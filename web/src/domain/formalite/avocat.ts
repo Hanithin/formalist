@@ -7,6 +7,8 @@
  * filtres recalculaient chacun leur version.
  */
 
+import { avecArticle } from "./cabinet";
+
 export type Teinte = "orange" | "blue" | "green" | "gray";
 
 export interface DossierCabinet {
@@ -100,6 +102,29 @@ export function sousPhaseSuivante(actuelle: string | null | undefined): SousPhas
   return SOUS_PHASES_ORDONNEES[rang + 1] ?? null;
 }
 
+/**
+ * Ce qui précède, quand le travail défait ce qu'il annonçait.
+ *
+ * L'avancement ne savait que monter : un acte repris repassait en relecture pendant
+ * que le suivi du client continuait d'annoncer « Vérifié ».
+ */
+export function sousPhasePrecedente(actuelle: string | null | undefined): SousPhase | null {
+  if (!estSousPhase(actuelle)) return null;
+  return SOUS_PHASES_ORDONNEES[SOUS_PHASES_ORDONNEES.indexOf(actuelle) - 1] ?? null;
+}
+
+/**
+ * Jusqu'où l'on redescend.
+ *
+ * Deux bornes, symétriques du plafond. « Transmis » est le plancher : un dossier pris
+ * reste pris. Et l'on ne redescend jamais depuis « Dépôt » ni « Terminé » - le dossier
+ * est parti au guichet, c'est un fait du dehors, et reprendre un acte ici ne le
+ * rappelle pas.
+ */
+export function descentePermise(actuelle: string | null | undefined): boolean {
+  return actuelle === "5b" || actuelle === "5c";
+}
+
 export function passageSousPhasePermis(
   depuis: string | null | undefined,
   vers: string
@@ -171,15 +196,27 @@ export function laMoinsAvancee(a: SousPhase, b: SousPhase): SousPhase {
 }
 
 /**
- * Le Kbis conditionne la dernière étape.
+ * Le document du greffe conditionne la dernière étape.
  *
- * « KBIS délivré » sans Kbis déposé serait une pastille verte qui ment, et le message
- * de fin promet au client de le trouver dans ses documents. Le registre des
- * bénéficiaires, lui, n'est pas exigé : il n'est pas systématiquement établi.
+ * Une pastille verte sans document déposé mentirait, et le message de fin promet au
+ * client de le trouver dans ses documents. Son nom change avec le type de dossier -
+ * un dépôt de comptes reçoit un récépissé, une fermeture une attestation de radiation
+ * - et le refus le nommait « Kbis » quel que soit le dossier, en parlant
+ * d'immatriculation à une société qu'on ferme.
+ *
+ * Le registre des bénéficiaires, lui, n'est pas exigé : il n'est pas systématiquement
+ * établi.
  */
-export function passageBloque(vers: string, aLeKbis: boolean): string | null {
-  if (vers === "5e" && !aLeKbis) {
-    return "Déposez le Kbis avant de marquer le dossier comme immatriculé";
+export function passageBloque(
+  vers: string,
+  aLeDocument: boolean,
+  /** Le nom du document que le greffe délivre pour ce type de dossier. */
+  documentFinal = "Kbis"
+): string | null {
+  if (vers === "5e" && !aLeDocument) {
+    return (
+      "Déposez " + avecArticle(documentFinal) + " avant de marquer le dossier comme terminé"
+    );
   }
   return null;
 }

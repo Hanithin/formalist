@@ -200,6 +200,23 @@ export const LIBELLES_SOUS_PHASES: Record<TypeDeDossier, Record<string, string>>
   },
 };
 
+/**
+ * Le nom d'un document au fil d'une phrase.
+ *
+ * `toLowerCase()` en écrasait le nom propre : « Remettre kbis à jour », « Déposez le
+ * kbis ». Seule l'initiale tombe, et pas celle du Kbis, qui n'est pas un mot commun.
+ */
+export function nomEnPhrase(nom: string): string {
+  const propre = nom.startsWith("Kbis");
+  return propre ? nom : nom.charAt(0).toLowerCase() + nom.slice(1);
+}
+
+/** « le récépissé de dépôt », « l'attestation de radiation ». */
+export function avecArticle(nom: string): string {
+  const enPhrase = nomEnPhrase(nom);
+  return /^[aeiouyéèêh]/i.test(enPhrase) ? "l\u2019" + enPhrase : "le " + enPhrase;
+}
+
 export function libelleSousPhase(type: TypeDeDossier, sousPhase: string): string {
   return LIBELLES_SOUS_PHASES[type]?.[sousPhase] ?? sousPhase;
 }
@@ -406,9 +423,11 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     bloquee: verifie ? undefined : "Le dossier n'est pas encore vérifié.",
   });
 
+  const finalRemis = etat.finalRemis || etat.sousPhase === "5e";
+
   taches.push({
     identifiant: "final",
-    titre: "Remettre " + DOCUMENT_FINAL[etat.type].toLowerCase(),
+    titre: "Remettre " + nomEnPhrase(DOCUMENT_FINAL[etat.type]),
     explication: "Déposez le document délivré par le greffe : le client en est prévenu aussitôt.",
     /*
      * Le greffe ne délivre pas toujours de document.
@@ -417,9 +436,31 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
      * restait en suspens : l'avocat peut la clore en le disant, et le client est
      * prévenu que le dépôt est fait mais qu'il ne recevra rien.
      */
-    etat: etat.finalRemis || etat.sousPhase === "5e" ? "faite" : "a_faire",
+    etat: finalRemis ? "faite" : "a_faire",
     onglet: "avancement",
     bloquee: depose ? undefined : "Le dépôt n'a pas encore eu lieu.",
+  });
+
+  /*
+   * Clore le dossier, et le dire.
+   *
+   * Rien ne le clôturait : les deux seuls états que l'interface posait étaient
+   * « corrections demandées » et « en attente de validation ». Un dossier déposé,
+   * document du greffe remis, restait « en attente » à vie - le client le voyait
+   * indéfiniment parmi ses formalités en cours, et le courriel qui annonce la fin ne
+   * partait jamais.
+   *
+   * Le geste reste explicite : remettre un fichier ne dit pas que tout est en ordre,
+   * c'est l'avocat qui le constate.
+   */
+  taches.push({
+    identifiant: "cloture",
+    titre: "Clôturer le dossier",
+    explication:
+      "Le dossier sort de la file du cabinet et le client apprend que tout est terminé.",
+    etat: etat.status === "terminee" ? "faite" : "a_faire",
+    onglet: "avancement",
+    bloquee: finalRemis ? undefined : "Le document du greffe n'est pas encore remis.",
   });
 
   return taches;

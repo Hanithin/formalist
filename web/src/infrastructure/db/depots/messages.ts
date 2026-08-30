@@ -2,6 +2,8 @@ import { prisma } from "../client";
 import { exigerDossier, mesDossiers } from "./dossiers";
 import { typeValide, LONGUEUR_MAXIMALE } from "@/domain/messagerie/messages";
 import type { UtilisateurConnecte } from "../sessions";
+import { prevenir } from "./avis";
+import { messageRecu, redireParCourriel } from "@/domain/formalite/avis";
 
 /**
  * Messages rattachés à un dossier.
@@ -39,9 +41,20 @@ export async function envoyerMessage(
   dossierId: number,
   contenu: string,
   type?: string,
-  options: { repondA?: number | null; fichier?: string | null } = {}
+  options: {
+    repondA?: number | null;
+    fichier?: string | null;
+    /**
+     * Prévenir l'autre partie, ou non.
+     *
+     * Les messages que le cabinet pose lui-même en refusant une pièce n'en envoient
+     * pas un second : l'avis du refus dit déjà tout, et part par courriel avec son
+     * motif.
+     */
+    prevenirLAutre?: boolean;
+  } = {}
 ) {
-  await exigerDossier(utilisateur, dossierId);
+  const dossier = await exigerDossier(utilisateur, dossierId);
 
   // On ne cite que dans son propre fil : un identifiant venu de l'extérieur ne doit
   // pas permettre de recopier un extrait du dossier de quelqu'un d'autre.
@@ -65,6 +78,10 @@ export async function envoyerMessage(
     },
   });
 
+  if (options.prevenirLAutre !== false) {
+    await prevenirLAutrePartie(utilisateur, dossier, cree.id, cree.content);
+  }
+
   return {
     id: cree.id,
     expediteurId: cree.sender_id,
@@ -76,6 +93,53 @@ export async function envoyerMessage(
     lu: false,
     envoyeLe: cree.created_at,
   };
+}
+
+/**
+ * L'autre partie apprend qu'on lui a écrit.
+ *
+ * Le fil s'écrivait en base et rien d'autre : ni cloche, ni courriel. Un avocat qui
+ * demandait une pièce dans la conversation n'était lu que si le client repassait sur
+ * le site ; un client qui répondait attendait de même. Le refus d'une pièce, lui,
+ * prévenait par les deux canaux depuis toujours - c'est la même urgence, et le même
+ * fil.
+ *
+ * Une réserve : on ne redit pas ce qui n'a pas encore été lu. Trois messages écrits
+ * dans la même minute feraient trois courriels dont les deux derniers n'apprendraient
+ * rien, et l'on cesse d'ouvrir ceux qui comptent. La cloche, elle, prend tout.
+ */
+async function prevenirLAutrePartie(
+  utilisateur: UtilisateurConnecte,
+  dossier: {
+    id: number;
+    user_id: number;
+    assigned_avocat_id: number | null;
+    societe: string | null;
+  },
+  messageId: number,
+  contenu: string
+) {
+  const destinataire =
+    utilisateur.id === dossier.user_id ? dossier.assigned_avocat_id : dossier.user_id;
+
+  /* Un dossier que personne n'a pris n'a pas d'autre partie à qui écrire. */
+  if (!destinataire || destinataire === utilisateur.id) return;
+
+  const enAttente = await prisma.messages.count({
+    where: {
+      formalite_id: dossier.id,
+      read: false,
+      sender_id: { not: destinataire },
+      id: { not: messageId },
+    },
+  });
+
+  await prevenir(
+    destinataire,
+    dossier.id,
+    messageRecu(utilisateur.nom, dossier.societe || "votre dossier", contenu),
+    { courriel: redireParCourriel(enAttente) }
+  );
 }
 
 /** Marque comme lus les messages reçus dans ce dossier. Les siens sont ignorés. */

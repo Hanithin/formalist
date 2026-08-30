@@ -6,6 +6,8 @@ import {
   sousPhaseSuivante,
   passageSousPhasePermis,
   passageBloque,
+  descentePermise,
+  sousPhasePrecedente,
 } from "@/domain/formalite/avocat";
 
 describe("l'avancement du travail du cabinet", () => {
@@ -60,13 +62,55 @@ describe("ce que le Kbis conditionne", () => {
      * « KBIS délivré » sans Kbis déposé serait une pastille verte qui ment, et le
      * message de fin promet au client de le trouver dans ses documents.
      */
-    expect(passageBloque("5e", false)).toContain("Kbis");
+    expect(passageBloque("5e", false)).toContain("le Kbis");
     expect(passageBloque("5e", true)).toBeNull();
+
+    /*
+     * Et il nomme le document du dossier, non le Kbis de tout le monde : une société
+     * qu'on ferme ne s'immatricule pas, elle se radie.
+     */
+    expect(passageBloque("5e", false, "Attestation de radiation")).toBe(
+      "Déposez l\u2019attestation de radiation avant de marquer le dossier comme terminé"
+    );
+    expect(passageBloque("5e", false, "Récépissé de dépôt")).toContain("le récépissé de dépôt");
   });
 
   it("les autres étapes n'exigent rien", () => {
     for (const sousPhase of ["5a", "5b", "5c", "5d"]) {
       expect(passageBloque(sousPhase, false)).toBeNull();
     }
+  });
+});
+
+describe("l'étape redescend quand le travail se défait", () => {
+  /*
+   * L'avancement ne savait que monter : reprendre un acte le remettait en relecture
+   * pendant que le suivi du client continuait d'annoncer « Vérifié ». On lui écrivait
+   * par courriel qu'on retirait ses documents, et son étape disait que tout allait
+   * bien.
+   */
+  it("« Vérifié » et « Révision » se rendent", () => {
+    expect(descentePermise("5b")).toBe(true);
+    expect(descentePermise("5c")).toBe(true);
+  });
+
+  /* Un dépôt au guichet est un fait du dehors : reprendre un acte ne le rappelle pas. */
+  it("le dépôt et la fin ne se défont pas d'un clic", () => {
+    expect(descentePermise("5d")).toBe(false);
+    expect(descentePermise("5e")).toBe(false);
+  });
+
+  /* « Transmis » est le plancher : un dossier pris reste pris. */
+  it("on ne redescend pas en deçà de la prise", () => {
+    expect(descentePermise("5a")).toBe(false);
+    expect(sousPhasePrecedente("5a")).toBeNull();
+    expect(sousPhasePrecedente(null)).toBeNull();
+  });
+
+  it("le cran précédent est celui d'avant, et le passage en arrière est permis", () => {
+    expect(sousPhasePrecedente("5c")).toBe("5b");
+    expect(passageSousPhasePermis("5c", "5b")).toBe(true);
+    /* Un cran, pas deux : redescendre de « Vérifié » à « Transmis » saute une étape. */
+    expect(passageSousPhasePermis("5c", "5a")).toBe(false);
   });
 });

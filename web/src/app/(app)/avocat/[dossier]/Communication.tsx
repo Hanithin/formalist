@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "../Avocat.module.css";
@@ -29,6 +29,7 @@ export function Communication({
   client,
   documents,
   aVerifier,
+  nonLus,
 }: {
   dossier: number;
   /** Pour distinguer ce que le cabinet a écrit de ce que le client répond. */
@@ -37,12 +38,37 @@ export function Communication({
   client: { nom: string; courriel: string | null };
   documents: number;
   aVerifier: number;
+  /** Ce que le client a écrit et qu'on n'avait pas encore ouvert. */
+  nonLus: number;
 }) {
   const [texte, setTexte] = useState("");
   const [refus, setRefus] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const champ = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const marque = useRef(false);
+
+  /*
+   * Ouvrir le fil, c'est le lire.
+   *
+   * L'onglet affichait les messages sans jamais les marquer lus : seule la messagerie
+   * appelait ce point d'entrée. L'avocat qui lisait et répondait ici gardait « 2 non
+   * lus » sur sa ligne de liste, sur l'onglet et dans le récapitulatif, jusqu'à ce
+   * qu'il aille rouvrir le même fil ailleurs.
+   *
+   * Une seule fois par montage : le rafraîchissement qui suit rend `nonLus` à zéro,
+   * et le repère empêche d'y revenir si le serveur répond plus lentement.
+   */
+  useEffect(() => {
+    if (nonLus === 0 || marque.current) return;
+    marque.current = true;
+
+    fetch("/api/messages/lus", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dossier }),
+    }).then(() => router.refresh());
+  }, [dossier, nonLus, router]);
 
   function envoyer(fichier?: File) {
     const contenu = texte.trim();

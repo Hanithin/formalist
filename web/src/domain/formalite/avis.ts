@@ -23,7 +23,10 @@ export type GenreDAvis =
   | "depot_sans_document"
   | "attestation_attendue"
   | "depot_en_cours"
-  | "immatriculee"
+  | "dossier_termine"
+  | "document_final_remis"
+  | "message_recu"
+  | "dossier_retransmis"
   | "dossier_a_prendre"
   | "dossier_pris_en_charge"
   | "actes_disponibles"
@@ -67,7 +70,24 @@ const PAR_COURRIEL = new Set<GenreDAvis>([
   "actes_retires",
   "dossier_rejete",
   "attestation_attendue",
-  "immatriculee",
+  "dossier_termine",
+  /*
+   * Le document du greffe se dit.
+   *
+   * Sa remise était le seul geste du parcours dont personne n'apprenait rien, alors
+   * que la tâche promettait « le client en est prévenu aussitôt ».
+   */
+  "document_final_remis",
+  /*
+   * Un message n'atteignait son destinataire que s'il revenait de lui-même.
+   *
+   * Le fil s'écrivait en base et rien d'autre : ni cloche, ni courriel. Un avocat qui
+   * demandait une pièce dans la conversation attendait une réponse que personne ne
+   * savait devoir donner - et le client qui répondait attendait de même.
+   */
+  "message_recu",
+  // Un dossier corrigé et retransmis revient à son avocat, qui ne l'apprenait jamais.
+  "dossier_retransmis",
   "dossier_a_prendre",
   /*
    * La prise en charge se dit par courriel.
@@ -83,6 +103,18 @@ const PAR_COURRIEL = new Set<GenreDAvis>([
 
 export function partParCourriel(genre: GenreDAvis): boolean {
   return PAR_COURRIEL.has(genre);
+}
+
+/**
+ * On ne redit pas par courriel ce qui n'a pas encore été lu.
+ *
+ * Trois messages écrits dans la même minute feraient trois courriels dont les deux
+ * derniers n'apprendraient rien - et l'on cesse alors d'ouvrir ceux qui comptent. Tant
+ * qu'un message attend d'être lu, le destinataire est déjà prévenu : la cloche prend
+ * la suite, c'est sa raison d'être.
+ */
+export function redireParCourriel(messagesEnAttente: number): boolean {
+  return messagesEnAttente === 0;
 }
 
 /* ---------- Les avis, un par événement ---------- */
@@ -226,19 +258,114 @@ export function depotEnCours(societe: string): Avis {
   };
 }
 
-export function immatriculee(societe: string, avecRbe: boolean): Avis {
+/**
+ * Ce qu'on annonce en clôturant, selon ce qui a été fait.
+ *
+ * L'avis parlait d'immatriculation à tout le monde : une société qu'on ferme ne
+ * s'immatricule pas, un dépôt de comptes non plus, et le courriel promettait « votre
+ * Kbis » à qui recevait une attestation de radiation.
+ */
+const FIN: Record<string, (societe: string) => string> = {
+  creation: (s) => s + " est immatriculée",
+  modification: (s) => "la modification de " + s + " est enregistrée",
+  fermeture: (s) => "la fermeture de " + s + " est enregistrée",
+  cessation: () => "la cessation d'activité est enregistrée",
+  comptes: (s) => "les comptes de " + s + " sont déposés",
+  "auto-entrepreneur": () => "votre auto-entreprise est déclarée",
+};
+
+export function dossierTermine(
+  societe: string,
+  type: string,
+  /** Le document que le greffe a délivré, déjà nommé pour ce type de dossier. */
+  document: string,
+  avecRbe: boolean
+): Avis {
+  const fait = (FIN[type] ?? FIN.creation)(societe);
+  const phrase = fait.charAt(0).toUpperCase() + fait.slice(1);
+
   return {
-    genre: "immatriculee",
-    contenu: "Votre société " + societe + " est immatriculée",
-    sujet: "Votre société est immatriculée - " + societe,
+    genre: "dossier_termine",
+    contenu: phrase,
+    sujet: phrase + " - " + societe,
     corps:
       "C'est fait : " +
-      societe +
-      " est immatriculée.\n\nVotre Kbis" +
+      fait +
+      ".\n\n" +
+      document +
       (avecRbe ? " et le registre des bénéficiaires effectifs sont" : " est") +
       " dans vos documents.",
     bouton: "Voir mes documents",
     destination: "documents",
+  };
+}
+
+/**
+ * Le document que le greffe délivre est arrivé.
+ *
+ * Il se dit à part de la clôture : entre les deux, l'avocat vérifie ce qu'il vient de
+ * recevoir. Le client, lui, n'a pas à attendre pour aller le chercher.
+ */
+export function documentFinalRemis(societe: string, document: string): Avis {
+  return {
+    genre: "document_final_remis",
+    contenu: document + " est dans vos documents (" + societe + ")",
+    sujet: document + " - " + societe,
+    corps:
+      "Le greffe a délivré " +
+      document.charAt(0).toLowerCase() +
+      document.slice(1) +
+      " de " +
+      societe +
+      ".\n\nIl est dans vos documents, où vous pouvez le télécharger.",
+    bouton: "Voir mes documents",
+    destination: "documents",
+  };
+}
+
+/**
+ * Quelqu'un a écrit dans le fil du dossier.
+ *
+ * Le message s'écrivait en base et rien d'autre. Un avocat qui demandait une pièce
+ * dans la conversation n'était lu que si le client repassait sur le site ; un client
+ * qui répondait attendait de même. Le refus d'une pièce, lui, prévenait par les deux
+ * canaux depuis toujours - c'est la même urgence.
+ *
+ * L'extrait tient dans l'objet du courriel : il évite d'ouvrir pour découvrir qu'il
+ * s'agissait d'un mot de trois lignes.
+ */
+export function messageRecu(auteur: string, societe: string, extrait: string): Avis {
+  const court = extrait.length > 140 ? extrait.slice(0, 140).trimEnd() + "\u2026" : extrait;
+
+  return {
+    genre: "message_recu",
+    contenu: "Message de " + auteur + " (" + societe + ")",
+    sujet: "Message de " + auteur + " - " + societe,
+    corps: auteur + " vous a écrit :\n\n" + court,
+    bouton: "Répondre",
+    destination: "messagerie",
+  };
+}
+
+/**
+ * Le client a corrigé son dossier et l'a retransmis.
+ *
+ * La proposition aux avocats renonçait quand le dossier était déjà pris - juste pour
+ * le cabinet, muet pour celui qui l'avait pris : après un aller-retour de corrections,
+ * le dossier revenait en attente et son avocat ne l'apprenait jamais.
+ */
+export function dossierRetransmis(societe: string, client: string): Avis {
+  return {
+    genre: "dossier_retransmis",
+    contenu: client + " a repris son dossier " + societe,
+    sujet: "Dossier repris - " + societe,
+    corps:
+      client +
+      " a corrigé " +
+      societe +
+      " et vous l'a retransmis.\n\nIl attend votre relecture.",
+    bouton: "Ouvrir le dossier",
+    destination: "avocat",
   };
 }
 

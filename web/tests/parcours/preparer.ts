@@ -62,9 +62,17 @@ export default async function preparer() {
     await prisma.documents.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     // Les fichiers déposés retiennent aussi le dossier par leur clé étrangère.
     await prisma.uploaded_files.deleteMany({ where: { formalites: { user_id: ancien.id } } });
-    // Les avis émis à chaque étape du dossier retiennent la ligne par leur clé
-    // étrangère : sans eux, la suppression du compte échoue.
-    await prisma.notifications.deleteMany({ where: { user_id: ancien.id } });
+    /*
+     * Les avis émis à chaque étape du dossier retiennent la ligne par leur clé
+     * étrangère : sans eux, la suppression du compte échoue.
+     *
+     * Les siens, et ceux qui portent sur ses dossiers : depuis que la retransmission
+     * et les messages préviennent l'avocat assigné, un avis rattaché au dossier
+     * appartient à quelqu'un d'autre et survivait au nettoyage du seul propriétaire.
+     */
+    await prisma.notifications.deleteMany({
+      where: { OR: [{ user_id: ancien.id }, { formalites: { user_id: ancien.id } }] },
+    });
     // Les essais créent des contrats et des déclarations à chaque série.
     await prisma.contrats.deleteMany({ where: { user_id: ancien.id } });
     await prisma.formalites.deleteMany({ where: { user_id: ancien.id } });

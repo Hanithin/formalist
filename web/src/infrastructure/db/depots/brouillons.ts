@@ -92,13 +92,35 @@ export async function commencerFormalite(utilisateur: UtilisateurConnecte, type 
  * On fusionne au lieu de remplacer : chaque étape n'envoie que ses champs, et un
  * remplacement effacerait les précédentes.
  */
+/**
+ * Une relecture porte sur ce qui était écrit ce jour-là.
+ *
+ * Le client reste propriétaire de son dossier après l'avoir transmis : il peut y
+ * revenir, et il le doit quand on lui demande des corrections. La fusion conservait
+ * `revue` telle quelle, si bien que la case « J'ai vérifié les informations » restait
+ * cochée sur un capital ou un siège modifiés depuis - et l'avancement continuait de
+ * compter la vérification comme faite.
+ *
+ * Une écriture qui ne vient pas du relecteur la retire. L'avocat la recoche d'un
+ * clic ; ce qui compte est qu'il la revoie.
+ */
+function relectureTenue(
+  brouillon: Brouillon,
+  utilisateur: UtilisateurConnecte
+): Partial<Brouillon> {
+  const revue = (brouillon as { revue?: { informations?: boolean; par?: number } }).revue;
+  if (!revue?.informations || revue.par === utilisateur.id) return {};
+
+  return { revue: { ...revue, informations: false } } as Partial<Brouillon>;
+}
+
 export async function enregistrerBrouillon(
   utilisateur: UtilisateurConnecte,
   dossierId: number,
   modifications: Partial<Brouillon>
 ) {
   const { dossier, brouillon } = await ouvrirBrouillon(utilisateur, dossierId);
-  const fusionne: Brouillon = { ...brouillon, ...modifications };
+  const fusionne: Brouillon = { ...brouillon, ...modifications, ...relectureTenue(brouillon, utilisateur) };
 
   // La dénomination et la forme sont recopiées dans leurs colonnes : les listes
   // et l'espace avocat les lisent là, sans avoir à ouvrir le brouillon.

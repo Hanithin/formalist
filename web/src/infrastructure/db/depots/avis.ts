@@ -16,7 +16,19 @@ import type { UtilisateurConnecte } from "../sessions";
  * pas défaire son refus.
  */
 
-export async function prevenir(destinataireId: number, dossierId: number | null, avis: Avis) {
+export async function prevenir(
+  destinataireId: number,
+  dossierId: number | null,
+  avis: Avis,
+  /**
+   * De quoi taire le courriel d'un avis qui le mérite d'ordinaire.
+   *
+   * On ne redit pas ce qui n'a pas encore été lu : trois messages écrits dans la même
+   * minute feraient trois courriels dont les deux derniers n'apprendraient rien. La
+   * cloche, elle, prend tout.
+   */
+  options: { courriel?: boolean } = {}
+) {
   await prisma.notifications.create({
     data: {
       user_id: destinataireId,
@@ -26,6 +38,7 @@ export async function prevenir(destinataireId: number, dossierId: number | null,
     },
   });
 
+  if (options.courriel === false) return;
   if (!partParCourriel(avis.genre) || !avis.sujet || !avis.corps) return;
 
   const destinataire = await prisma.users.findUnique({

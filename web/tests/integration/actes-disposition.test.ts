@@ -3,6 +3,7 @@ import { prisma } from "@/infrastructure/db/client";
 import {
   mettreLesActesADisposition,
   retirerLesActesDeLEspaceClient,
+  avancerSelonLeTravail,
 } from "@/infrastructure/db/depots/avocat";
 import { A_RELIRE } from "@/domain/document/publication";
 import { TITRE_STATUTS_EN_VIGUEUR, TITRE_STATUTS_A_JOUR } from "@/domain/modification/formalites";
@@ -133,5 +134,47 @@ avecBase("les actes mis à disposition", () => {
   it("un acte signé ne se reprend pas", async () => {
     // La signature est un fait : elle ne s'annule pas d'un clic.
     expect((await etats())["Traité d'apport"]).toBe("signed");
+  });
+
+  /*
+   * L'étape suivait le travail dans un seul sens.
+   *
+   * Elle montait à mesure qu'on relisait, et ne redescendait jamais : on écrivait au
+   * client que ses actes étaient retirés pendant que son suivi continuait d'annoncer
+   * « Vérifié ». Deux voix pour un même dossier, dont l'une mentait.
+   */
+  it("le retrait ramène l'étape à « Révision »", async () => {
+    await mettreLesActesADisposition(avocat as never, dossier);
+    await prisma.formalites.update({
+      where: { id: dossier },
+      data: { data_json: JSON.stringify({ revue: { informations: true, par: avocat.id } }) },
+    });
+    await avancerSelonLeTravail(avocat as never, dossier);
+
+    expect(
+      (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } })).business_sub_phase
+    ).toBe("5c");
+
+    await retirerLesActesDeLEspaceClient(avocat as never, dossier);
+
+    expect(
+      (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } })).business_sub_phase
+    ).toBe("5b");
+  });
+
+  /* Un dépôt au guichet est un fait du dehors : reprendre un acte ne le rappelle pas. */
+  it("mais il ne défait pas un dépôt déjà déclaré", async () => {
+    await mettreLesActesADisposition(avocat as never, dossier);
+    await avancerSelonLeTravail(avocat as never, dossier);
+    await prisma.formalites.update({
+      where: { id: dossier },
+      data: { business_sub_phase: "5d" },
+    });
+
+    await retirerLesActesDeLEspaceClient(avocat as never, dossier);
+
+    expect(
+      (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } })).business_sub_phase
+    ).toBe("5d");
   });
 });

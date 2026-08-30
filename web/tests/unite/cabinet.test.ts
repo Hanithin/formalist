@@ -7,7 +7,10 @@ import {
   resteAFaire,
   libelleSousPhase,
   DOCUMENT_FINAL,
+  nomEnPhrase,
+  avecArticle,
   type EtatDuCabinet,
+  type TypeDeDossier,
 } from "@/domain/formalite/cabinet";
 
 /**
@@ -64,6 +67,7 @@ describe("les tâches d'une modification", () => {
       "annonce",
       "depot",
       "final",
+      "cloture",
     ]);
   });
 
@@ -154,8 +158,10 @@ describe("les tâches d'une création", () => {
       "actes",
       "depot",
       "final",
+      "cloture",
     ]);
-    expect(taches[taches.length - 1].titre).toContain("extrait kbis");
+    /* Le Kbis garde sa majuscule : c'est un nom propre, non un mot commun. */
+    expect(taches.find((t) => t.identifiant === "final")?.titre).toContain("extrait Kbis");
   });
 });
 
@@ -249,5 +255,71 @@ describe("les quatre temps du dossier", () => {
   it("tout fait ne laisse aucune phase en cours", () => {
     const finies = travailDuCabinet(etat()).map((t) => ({ ...t, etat: "faite" as const }));
     expect(phasesDuCabinet(finies).every((p) => p.etat === "faite")).toBe(true);
+  });
+});
+
+describe("la clôture du dossier", () => {
+  /*
+   * Rien ne fermait un dossier : les deux seuls états que l'interface posait étaient
+   * « corrections demandées » et « en attente de validation ». Un dossier déposé,
+   * document du greffe remis, restait « en attente » à vie.
+   */
+  it("attend que le document du greffe soit remis", () => {
+    const avant = travailDuCabinet(etat({ sousPhase: "5d" })).find(
+      (t) => t.identifiant === "cloture"
+    );
+    expect(avant?.etat).toBe("a_faire");
+    expect(avant?.bloquee).toBe("Le document du greffe n'est pas encore remis.");
+  });
+
+  it("s'ouvre dès que le document est au dossier", () => {
+    const apres = travailDuCabinet(etat({ sousPhase: "5d", finalRemis: true })).find(
+      (t) => t.identifiant === "cloture"
+    );
+    expect(apres?.etat).toBe("a_faire");
+    expect(apres?.bloquee).toBeUndefined();
+  });
+
+  /* Conclure sans document mène en 5e : le dossier se clôt aussi de là. */
+  it("s'ouvre également quand le dossier a été conclu sans document", () => {
+    const conclu = travailDuCabinet(etat({ sousPhase: "5e" })).find(
+      (t) => t.identifiant === "cloture"
+    );
+    expect(conclu?.bloquee).toBeUndefined();
+  });
+
+  it("se coche quand le dossier est clos, et lui seul le fait", () => {
+    const clos = travailDuCabinet(etat({ sousPhase: "5e", status: "terminee" })).find(
+      (t) => t.identifiant === "cloture"
+    );
+    expect(clos?.etat).toBe("faite");
+  });
+});
+
+describe("le nom du document du greffe", () => {
+  /*
+   * `toLowerCase()` écrasait le nom propre : la tâche disait « Remettre kbis à jour ».
+   */
+  it("garde sa majuscule quand c'est un nom propre", () => {
+    expect(nomEnPhrase("Kbis à jour")).toBe("Kbis à jour");
+    expect(nomEnPhrase("Extrait Kbis")).toBe("extrait Kbis");
+    expect(nomEnPhrase("Récépissé de dépôt")).toBe("récépissé de dépôt");
+  });
+
+  it("prend l'article qui convient", () => {
+    expect(avecArticle("Attestation de radiation")).toBe("l’attestation de radiation");
+    expect(avecArticle("Récépissé de dépôt")).toBe("le récépissé de dépôt");
+    expect(avecArticle("Kbis à jour")).toBe("le Kbis à jour");
+    expect(avecArticle("Avis de situation SIRENE")).toBe("l’avis de situation SIRENE");
+  });
+
+  /* Chaque type a le sien : le greffe ne délivre pas un Kbis à qui ferme sa société. */
+  it("la tâche de remise nomme celui du dossier", () => {
+    const titre = (type: TypeDeDossier) =>
+      travailDuCabinet(etat({ type })).find((t) => t.identifiant === "final")?.titre;
+
+    expect(titre("creation")).toBe("Remettre extrait Kbis");
+    expect(titre("comptes")).toBe("Remettre récépissé de dépôt");
+    expect(titre("fermeture")).toBe("Remettre attestation de radiation");
   });
 });

@@ -83,7 +83,7 @@ export function Avancement({ dossierId, sousPhase, aLeKbis, type, documentFinal 
       : null;
 
   function avancer(vers: string) {
-    const refus = passageBloque(vers, aLeKbis);
+    const refus = passageBloque(vers, aLeKbis, documentFinal);
     if (refus) {
       setErreur(refus);
       return;

@@ -6,6 +6,7 @@ import {
   libelleEtat,
   monteeEnOffrePermise,
   OFFRES,
+  etatsJusquALaFin,
 } from "@/domain/formalite/transitions";
 
 describe("transitions d'état", () => {
@@ -79,5 +80,37 @@ describe("montée en offre", () => {
 
   it("les offres sont classées de la plus légère à la plus complète", () => {
     expect(OFFRES).toEqual(["starter", "business", "premium"]);
+  });
+});
+
+describe("le chemin jusqu'à la clôture", () => {
+  /*
+   * Aucun écran ne clôturait un dossier : les deux seuls états que l'interface posait
+   * étaient « corrections demandées » et « en attente de validation ». Le dossier y
+   * restait à vie - sa date de fin n'était jamais écrite, et son client le voyait
+   * indéfiniment parmi ses formalités en cours.
+   */
+  it("passe par « validé », le cran que le cabinet n'employait jamais", () => {
+    expect(etatsJusquALaFin("en_attente_validation")).toEqual(["valide", "terminee"]);
+    expect(etatsJusquALaFin("valide")).toEqual(["terminee"]);
+  });
+
+  /* Chaque cran du chemin est une transition que la table autorise. */
+  it("n'invente aucun passage", () => {
+    let depuis = "en_attente_validation";
+    for (const vers of etatsJusquALaFin(depuis)) {
+      expect(transitionPermise(depuis, vers), depuis + " -> " + vers).toBe(true);
+      depuis = vers;
+    }
+  });
+
+  it("un dossier déjà clos n'a plus de chemin", () => {
+    expect(etatsJusquALaFin("terminee")).toEqual([]);
+    expect(etatsJusquALaFin("n'importe quoi")).toEqual([]);
+  });
+
+  /* « Immatriculée » ne vaut que pour une création : cinq autres types s'y rangeaient. */
+  it("l'état de fin se dit sans parler d'immatriculation", () => {
+    expect(libelleEtat("terminee")).toBe("Terminé");
   });
 });

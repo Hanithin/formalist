@@ -1,4 +1,5 @@
 import { prisma } from "../client";
+import { STATUTS_HORS_PROPOSITION } from "@/domain/acces/regles";
 import { mesDossiers } from "./dossiers";
 import { nonLus as nonLusDuSupport } from "./support";
 import type { UtilisateurConnecte } from "../sessions";
@@ -43,7 +44,7 @@ async function dossiersAReviser(utilisateur: UtilisateurConnecte): Promise<numbe
 
   return prisma.formalites.count({
     where: {
-      status: { notIn: ["en_cours", "terminee", "archive", "rejete"] },
+      status: { notIn: [...STATUTS_HORS_PROPOSITION] },
       OR: [{ assigned_avocat_id: utilisateur.id }, { assigned_avocat_id: null }],
     },
   });

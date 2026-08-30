@@ -68,12 +68,34 @@ export function voitToutLEquipe(appartenance: Appartenance | null): boolean {
  */
 const CLOS = new Set(["terminee", "archive", "rejete"]);
 
+/** Un dossier dont le travail est fini, d'une manière ou d'une autre. */
+export function estClos(statut: string | null | undefined): boolean {
+  return !!statut && CLOS.has(statut);
+}
+
+/**
+ * Les statuts qui peuvent encore attendre un avocat.
+ *
+ * La liste vivait recopiée dans trois requêtes - la liste du cabinet, le compte de
+ * l'écran d'un dossier, la pastille de la colonne - et dans le contrôle de la prise,
+ * qui n'en retenait qu'une moitié : on ne pouvait pas prendre un dossier clos depuis
+ * la liste, qui ne le proposait pas, mais l'appel direct l'attribuait quand même.
+ *
+ * Une seule liste, lue partout, y compris par la requête : Prisma la reçoit en
+ * `notIn`, ce qui la garde vraie des deux côtés.
+ */
+export const STATUTS_HORS_PROPOSITION = ["en_cours", ...CLOS] as const;
+
+/** Le statut permet-il encore qu'un avocat prenne ce dossier ? */
+export function statutProposable(statut: string | null | undefined): boolean {
+  return !!statut && statut !== "en_cours" && !estClos(statut);
+}
+
 export function estPropose(dossier: Dossier | null): boolean {
   if (!dossier) return false;
   if (dossier.avocatAssigneId !== null) return false;
-  if (!dossier.statut || dossier.statut === "en_cours") return false;
-  // Un dossier clos n'attend plus personne : proposer de le prendre n'a pas de sens.
-  return !CLOS.has(dossier.statut);
+  // Tant que le client remplit, rien n'est à réviser ; un dossier clos n'attend plus.
+  return statutProposable(dossier.statut);
 }
 
 export function peutLire(
@@ -90,16 +112,6 @@ export function peutLire(
 
   if (!appartenance || dossier.equipeId !== appartenance.equipeId) return false;
   return voitToutLEquipe(appartenance);
-}
-
-/**
- * Peut-il prendre ce dossier en charge ?
- *
- * Lire un dossier proposé ne donne pas le droit de le modifier : c'est la prise qui
- * l'assigne, et elle seule ouvre le reste.
- */
-export function peutPrendre(utilisateur: Utilisateur, dossier: Dossier | null): boolean {
-  return aLeRole(utilisateur, "avocat") && estPropose(dossier);
 }
 
 /** Lire ne suffit pas : modifier demande un droit distinct. */

@@ -804,6 +804,7 @@ export default async function DossierAvocat({
             client={{ nom: client?.name ?? "Client", courriel: client?.email ?? null }}
             documents={documents.length}
             aVerifier={aVerifier}
+            nonLus={nonLus}
           />
         )}
 

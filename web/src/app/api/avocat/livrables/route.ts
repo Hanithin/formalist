@@ -5,7 +5,10 @@ import {
   LIVRABLES,
   estLivrable,
   avancerSelonLeTravail,
+  documentFinalDuDossier,
+  annoncerLeDocumentFinal,
 } from "@/infrastructure/db/depots/avocat";
+import { TYPE_KBIS } from "@/infrastructure/db/depots/suivi";
 import { DepotRefuse } from "@/lib/fichiers";
 import { route } from "@/lib/reponses";
 
@@ -43,18 +46,35 @@ export const POST = route(async (requete: Request) => {
 
   const livrable = LIVRABLES[type];
 
+  /*
+   * Le document porte le nom que le greffe lui donne pour ce dossier.
+   *
+   * Les deux titres étaient fixes : le client d'un dépôt de comptes recevait dans ses
+   * documents une pièce intitulée « Kbis », là où le bouton disait « Déposer le
+   * récépissé de dépôt » - et une société qu'on ferme recevait un Kbis au lieu de son
+   * attestation de radiation. Le domaine nomme déjà le document de chaque type.
+   */
+  const titre =
+    type === TYPE_KBIS ? await documentFinalDuDossier(dossierId) : livrable.titre;
+
   try {
     const depose = await deposerPiece(
       utilisateur,
       dossierId,
-      { identifiant: type, titre: livrable.titre },
+      { identifiant: type, titre },
       fichier,
       [...livrable.formats]
     );
     /*
-     * Le document du greffe clôt le parcours : l'étape suit, et le client est prévenu.
+     * Le document du greffe clôt le travail : l'étape suit, et le client est prévenu.
+     *
+     * C'était le seul geste du parcours dont personne n'apprenait rien : la tâche
+     * promettait pourtant « le client en est prévenu aussitôt », et le chemin dégradé
+     * - conclure sans document - envoyait bien un courriel. Le chemin normal était
+     * muet.
      */
     await avancerSelonLeTravail(utilisateur, dossierId);
+    if (type === TYPE_KBIS) await annoncerLeDocumentFinal(utilisateur, dossierId, titre);
 
     return NextResponse.json({ ok: true, document: depose }, { status: 201 });
   } catch (e) {

@@ -8,7 +8,9 @@ import {
   type Dossier,
   type Utilisateur,
   estPropose,
-  peutPrendre,
+  estClos,
+  statutProposable,
+  STATUTS_HORS_PROPOSITION,
 } from "@/domain/acces/regles";
 
 const client: Utilisateur = { id: 10, roles: ["user"] };
@@ -127,7 +129,6 @@ describe("un dossier proposé aux avocats", () => {
     // Sans cela, un avocat prévenu ouvrirait un dossier qu'il n'a pas le droit de lire.
     expect(estPropose(propose)).toBe(true);
     expect(peutLire(avocat, propose, null)).toBe(true);
-    expect(peutPrendre(avocat, propose)).toBe(true);
   });
 
   it("un brouillon que le client remplit encore n'est pas proposé", () => {
@@ -138,7 +139,6 @@ describe("un dossier proposé aux avocats", () => {
 
   it("un dossier déjà pris cesse d'être proposé", () => {
     expect(estPropose({ ...propose, avocatAssigneId: 3 })).toBe(false);
-    expect(peutPrendre(avocat, { ...propose, avocatAssigneId: 3 })).toBe(false);
   });
 
   it("un dossier clos n'attend plus personne", () => {
@@ -147,7 +147,27 @@ describe("un dossier proposé aux avocats", () => {
     }
   });
 
-  it("un client ne prend pas un dossier proposé", () => {
-    expect(peutPrendre({ id: 5, roles: ["user"] }, propose)).toBe(false);
+  /*
+   * La même liste sert la lecture et l'écriture.
+   *
+   * Elle était recopiée dans trois requêtes et dans le contrôle de la prise, qui n'en
+   * retenait qu'une moitié : la liste ne proposait pas un dossier clos, et l'appel
+   * direct l'attribuait quand même.
+   */
+  it("les statuts hors proposition sont ceux que le domaine refuse", () => {
+    for (const statut of STATUTS_HORS_PROPOSITION) {
+      expect(statutProposable(statut)).toBe(false);
+      expect(estPropose({ ...propose, statut })).toBe(false);
+    }
+    expect(statutProposable("en_attente_validation")).toBe(true);
+    expect(statutProposable("corrections_demandees")).toBe(true);
+  });
+
+  it("un dossier clos se reconnaît sans recopier la liste", () => {
+    expect(estClos("terminee")).toBe(true);
+    expect(estClos("archive")).toBe(true);
+    expect(estClos("rejete")).toBe(true);
+    expect(estClos("en_attente_validation")).toBe(false);
+    expect(estClos(null)).toBe(false);
   });
 });

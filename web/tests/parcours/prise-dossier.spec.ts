@@ -95,6 +95,57 @@ test.describe("prise d'un dossier", () => {
       expect((await encore.json()).deja).toBe(true);
     });
 
+    /*
+     * La prise était le seul geste du parcours dont le client n'apprenait rien.
+     *
+     * L'avis existait, partait par courriel, et son commentaire disait pourquoi : « le
+     * client a réglé, puis plus rien pendant des heures ». Seule l'assignation par
+     * l'administration le déclenchait - les deux vrais boutons passent par cette
+     * route, et ne disaient rien.
+     */
+    test("prendre un dossier le dit au client", async ({ request }) => {
+      const dossier = await dossierEnAttente("PRISE AVIS " + Date.now());
+
+      await request.post("/api/avocat/prise", { data: { dossier: dossier.id } });
+
+      const client = await prisma.users.findFirstOrThrow({
+        where: { email: "parcours@exemple.test" },
+      });
+      const avis = await prisma.notifications.findFirst({
+        where: {
+          formalite_id: dossier.id,
+          user_id: client.id,
+          type: "dossier_pris_en_charge",
+        },
+      });
+
+      expect(avis).not.toBeNull();
+      expect(avis?.content).toContain("PRISE AVIS");
+    });
+
+    /*
+     * La liste appliquait la règle du domaine et ne proposait pas un dossier clos ;
+     * ce contrôle-ci n'en retenait que la moitié, et l'appel direct l'attribuait.
+     */
+    test("un dossier clos ne se prend pas", async ({ request }) => {
+      for (const statut of ["terminee", "archive", "rejete"]) {
+        const dossier = await dossierEnAttente("CLOS " + statut + " " + Date.now());
+        await prisma.formalites.update({
+          where: { id: dossier.id },
+          data: { status: statut },
+        });
+
+        const reponse = await request.post("/api/avocat/prise", {
+          data: { dossier: dossier.id },
+        });
+        expect(reponse.status(), statut).toBe(403);
+        expect((await reponse.json()).error, statut).toContain("clos");
+
+        const apres = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier.id } });
+        expect(apres.assigned_avocat_id, statut).toBeNull();
+      }
+    });
+
     test("un dossier déjà pris par un confrère est refusé, en le nommant", async ({ request }) => {
       const dossier = await dossierEnAttente("DEJA PRIS " + Date.now());
 
@@ -193,6 +244,51 @@ test.describe("prise d'un dossier", () => {
         where: { formalite_id: dossier.id, type: "dossier_a_prendre" },
       });
       expect(avis.length).toBe(corps.proposes);
+    });
+
+    /*
+     * Un dossier repris après corrections revenait en attente sans que personne ne le
+     * sache : la proposition renonçait - juste pour le cabinet, muet pour l'avocat qui
+     * l'avait pris - et le dossier dormait jusqu'à ce qu'il pense à le rouvrir.
+     */
+    test("le dossier corrigé revient, et son avocat l'apprend", async ({ request }) => {
+      const client = await prisma.users.findFirstOrThrow({
+        where: { email: "parcours@exemple.test" },
+      });
+      const avocat = await prisma.users.findFirstOrThrow({
+        where: { email: "avocat-parcours@exemple.test" },
+      });
+
+      const dossier = await prisma.formalites.create({
+        data: {
+          user_id: client.id,
+          type: "creation",
+          forme: "SASU",
+          societe: "RETOUR ESSAI " + Date.now(),
+          status: "corrections_demandees",
+          phase: 5,
+          assigned_avocat_id: avocat.id,
+          data_json: JSON.stringify(SASU_COMPLETE),
+        },
+      });
+      ouverts.push(dossier.id);
+
+      const reponse = await request.post("/api/formalites/transmission", {
+        data: { dossier: dossier.id },
+      });
+      expect(reponse.status()).toBe(200);
+
+      /* Il n'est pas reproposé au cabinet : il appartient toujours au même avocat. */
+      expect((await reponse.json()).proposes).toBe(0);
+
+      const avis = await prisma.notifications.findFirst({
+        where: {
+          formalite_id: dossier.id,
+          user_id: avocat.id,
+          type: "dossier_retransmis",
+        },
+      });
+      expect(avis).not.toBeNull();
     });
 
     test("un dossier vide ne se transmet pas", async ({ page, request }) => {

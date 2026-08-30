@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { type Tache } from "@/domain/formalite/cabinet";
+import { nomEnPhrase, type Tache } from "@/domain/formalite/cabinet";
 import { Piece, estUnActeProduit, type PieceAffichee } from "./Piece";
 import { deposerUnLivrable } from "./Avancement";
 import styles from "../Avocat.module.css";
@@ -347,7 +347,19 @@ export function Travail({
      * client » redemandait le même document : deux endroits pour un seul geste.
      */
     if (tache.identifiant === "final") {
-      return { libelle: "Déposer " + livrables.documentFinal.toLowerCase(), depot: "kbis" };
+      /* Le Kbis garde sa majuscule : « Déposer extrait kbis » n'est pas son nom. */
+      return { libelle: "Déposer " + nomEnPhrase(livrables.documentFinal), depot: "kbis" };
+    }
+    /*
+     * Clore le dossier est un geste, non une conséquence.
+     *
+     * Rien ne le faisait : le dossier restait « en attente de validation » une fois le
+     * document du greffe remis, et le client le voyait indéfiniment parmi ses
+     * formalités en cours. Remettre un fichier ne dit pas que tout est en ordre -
+     * c'est l'avocat qui le constate, d'où un bouton à lui.
+     */
+    if (tache.identifiant === "cloture") {
+      return { libelle: "Clôturer le dossier", faire: cloturer };
     }
     /*
      * Le dépôt se déclare ici même.
@@ -388,6 +400,32 @@ export function Travail({
         return;
       }
       setRetour("Le dossier est clos : le client sait qu'il ne recevra pas de document.");
+      router.refresh();
+    });
+  }
+
+  /**
+   * Clore le dossier : il sort de la file du cabinet, et le client l'apprend.
+   *
+   * C'est le dernier geste du parcours, et le seul qui écrive la date de fin. Sans
+   * lui, la formalité restait ouverte des mois après avoir été déposée et remise.
+   */
+  function cloturer() {
+    setRefus(null);
+
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/cloture", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier }),
+      });
+
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "Le dossier n'a pas pu être clôturé.");
+        return;
+      }
+      setRetour("Le dossier est clôturé : le client est prévenu que tout est terminé.");
       router.refresh();
     });
   }

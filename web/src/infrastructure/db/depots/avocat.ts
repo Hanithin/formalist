@@ -1,11 +1,15 @@
 import { prisma } from "../client";
 import { Interdit } from "../utilisateur-courant";
-import { estPropose } from "@/domain/acces/regles";
-import { DOCUMENT_FINAL, typeDeDossier } from "@/domain/formalite/cabinet";
+import { estPropose, estClos, STATUTS_HORS_PROPOSITION } from "@/domain/acces/regles";
+import { DOCUMENT_FINAL, typeDeDossier, avecArticle } from "@/domain/formalite/cabinet";
 import { envoyerMessage } from "./messages";
 import { objetDuDossier, brouillonLisible } from "@/domain/formalite/demande";
 import { exigerDossier, listerDossiers } from "./dossiers";
-import { transitionPermise, libelleEtat } from "@/domain/formalite/transitions";
+import {
+  transitionPermise,
+  libelleEtat,
+  etatsJusquALaFin,
+} from "@/domain/formalite/transitions";
 import {
   passageSousPhasePermis,
   passageBloque,
@@ -15,19 +19,23 @@ import {
   laMoinsAvancee,
   estSousPhase,
   sousPhaseSuivante,
+  sousPhasePrecedente,
+  descentePermise,
   SOUS_PHASES_ORDONNEES,
 } from "@/domain/formalite/avocat";
 import {
   correctionsDemandees,
   dossierValide,
   dossierRejete,
-  immatriculee,
+  dossierTermine,
+  documentFinalRemis,
   documentRefuse,
   messageDeRefusDePiece,
   documentValide,
   actesDisponibles,
   actesRetires,
   dossierPrisEnCharge,
+  dossierRetransmis,
 } from "@/domain/formalite/avis";
 import { prevenir } from "./avis";
 import { A_RELIRE } from "@/domain/document/publication";
@@ -73,7 +81,7 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
     prisma.formalites.findMany({
       where: {
         assigned_avocat_id: null,
-        status: { notIn: ["en_cours", "terminee", "archive", "rejete"] },
+        status: { notIn: [...STATUTS_HORS_PROPOSITION] },
       },
       orderBy: { updated_at: "desc" },
     }),
@@ -234,7 +242,7 @@ export async function dossierPourAvocat(utilisateur: UtilisateurConnecte, dossie
   const aPrendre = await prisma.formalites.count({
     where: {
       assigned_avocat_id: null,
-      status: { notIn: ["en_cours", "terminee", "archive", "rejete"] },
+      status: { notIn: [...STATUTS_HORS_PROPOSITION] },
     },
   });
 
@@ -299,7 +307,15 @@ export async function changerEtatDossier(
   utilisateur: UtilisateurConnecte,
   dossierId: number,
   vers: string,
-  commentaire?: string
+  commentaire?: string,
+  /**
+   * Un passage intermédiaire ne se dit pas.
+   *
+   * La clôture monte « en attente » → « validé » → « terminé », comme le dépôt monte
+   * les sous-phases. On n'apprend pas au client qu'on a validé son dossier une
+   * seconde avant de lui dire qu'il est terminé.
+   */
+  options: { silencieux?: boolean } = {}
 ) {
   exigerAvocat(utilisateur);
   const dossier = await exigerDossier(utilisateur, dossierId);
@@ -367,10 +383,15 @@ export async function changerEtatDossier(
         : vers === "rejete"
           ? dossierRejete(societe)
           : vers === "terminee"
-            ? immatriculee(societe, await aLeRbe(dossierId))
+            ? dossierTermine(
+                societe,
+                dossier.type ?? "creation",
+                DOCUMENT_FINAL[typeDeDossier(dossier.type)],
+                await aLeRbe(dossierId)
+              )
             : null;
 
-  if (avis) await prevenir(dossier.user_id, dossierId, avis);
+  if (avis && !options.silencieux) await prevenir(dossier.user_id, dossierId, avis);
 
   await prisma.audit_log.create({
     data: {
@@ -556,7 +577,10 @@ export async function statuerSurDocument(
     await envoyerMessage(
       utilisateur,
       document.formalite_id,
-      messageDeRefusDePiece(document.name, misAJour.rejection_reason ?? "Document non conforme")
+      messageDeRefusDePiece(document.name, misAJour.rejection_reason ?? "Document non conforme"),
+      undefined,
+      /* L'avis du refus est déjà parti, avec son motif : un second dirait la même chose. */
+      { prevenirLAutre: false }
     );
   }
 
@@ -638,6 +662,27 @@ export async function avancerSelonLeTravail(
     courante = suivante;
   }
 
+  /*
+   * Et il redescend, ce qu'il ne savait pas faire.
+   *
+   * Reprendre un acte le remettait en relecture pendant que le client continuait de
+   * lire « Vérifié » sur son suivi - on lui annonçait par courriel qu'on retirait ses
+   * documents, et son étape disait que tout était en ordre.
+   *
+   * La descente s'arrête à « Révision » et ne part jamais de « Dépôt » : un dossier
+   * déposé au guichet l'est, et reprendre un acte ne rappelle pas ce qui est parti.
+   */
+  while (rang(courante) > rang(vise) && descentePermise(courante)) {
+    const precedente = sousPhasePrecedente(courante);
+    if (!precedente) break;
+    try {
+      await changerSousPhase(utilisateur, dossierId, precedente, { silencieux: true });
+    } catch {
+      break;
+    }
+    courante = precedente;
+  }
+
   return { sousPhase: courante };
 }
 
@@ -654,7 +699,15 @@ export async function avancerSelonLeTravail(
 export async function changerSousPhase(
   utilisateur: UtilisateurConnecte,
   dossierId: number,
-  vers: string
+  vers: string,
+  /**
+   * Un retour en arrière ne s'annonce pas.
+   *
+   * Le client a déjà reçu le mot qui dit ce qui a été défait - « vos actes ont été
+   * retirés » - et lui annoncer par-dessus qu'il repasse en « Révision » ferait deux
+   * avis pour un seul geste, dont le second l'inquiéterait sans rien lui apprendre.
+   */
+  options: { silencieux?: boolean } = {}
 ) {
   exigerAvocat(utilisateur);
   const dossier = await exigerDossier(utilisateur, dossierId);
@@ -672,7 +725,11 @@ export async function changerSousPhase(
   }
 
   const types = await typesDeposes(dossierId);
-  const refus = passageBloque(vers, types.has(TYPE_KBIS));
+  const refus = passageBloque(
+    vers,
+    types.has(TYPE_KBIS),
+    DOCUMENT_FINAL[typeDeDossier(dossier.type)]
+  );
   if (refus) throw new Interdit(refus);
 
   await prisma.formalites.update({
@@ -698,7 +755,7 @@ export async function changerSousPhase(
           ? depotEnCours(societe)
           : null;
 
-  if (avis) await prevenir(dossier.user_id, dossierId, avis);
+  if (avis && !options.silencieux) await prevenir(dossier.user_id, dossierId, avis);
 
   await prisma.audit_log.create({
     data: {
@@ -797,6 +854,42 @@ export function estLivrable(type: string): type is keyof typeof LIVRABLES {
   return type in LIVRABLES;
 }
 
+/** Le nom que le greffe donne au document final de ce dossier. */
+export async function documentFinalDuDossier(dossierId: number): Promise<string> {
+  const dossier = await prisma.formalites.findUnique({
+    where: { id: dossierId },
+    select: { type: true },
+  });
+  return DOCUMENT_FINAL[typeDeDossier(dossier?.type ?? null)];
+}
+
+/**
+ * Le client apprend que le document du greffe est arrivé.
+ *
+ * Le dépôt menait en 5e, seul cran de l'avancement à n'envoyer aucun avis : le
+ * dossier passait « Terminé » sans un mot, alors que la tâche promettait « le client
+ * en est prévenu aussitôt » et que conclure sans document, lui, envoyait un courriel.
+ * Le chemin normal était muet, le chemin dégradé parlait.
+ *
+ * C'est la remise, non la clôture : celle-ci reste un geste que l'avocat pose.
+ */
+export async function annoncerLeDocumentFinal(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  document: string
+) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  await prevenir(
+    dossier.user_id,
+    dossierId,
+    documentFinalRemis(dossier.societe || "votre société", document)
+  );
+
+  return { annonce: document };
+}
+
 /**
  * Les avocats à prévenir qu'un dossier attend.
  *
@@ -823,10 +916,38 @@ export async function avocatsANotifier(): Promise<{ id: number }[]> {
 export async function proposerAuxAvocats(dossierId: number) {
   const dossier = await prisma.formalites.findUnique({
     where: { id: dossierId },
-    select: { societe: true, forme: true, assigned_avocat_id: true },
+    select: {
+      societe: true,
+      forme: true,
+      assigned_avocat_id: true,
+      user_id: true,
+    },
   });
-  // Un dossier déjà pris ne se propose pas : ce serait rappeler un travail fait.
-  if (!dossier || dossier.assigned_avocat_id !== null) return { proposes: 0 };
+  if (!dossier) return { proposes: 0 };
+
+  /*
+   * Un dossier déjà pris ne se propose pas - mais son avocat, lui, doit l'apprendre.
+   *
+   * La règle était juste pour le cabinet et muette pour celui qui l'avait pris : après
+   * un aller-retour de corrections, le client corrigeait, retransmettait, et le dossier
+   * revenait en attente sans que personne ne le sache. Il y dormait jusqu'à ce que son
+   * avocat pense à le rouvrir.
+   *
+   * Les sept parcours passent par ici : c'est le seul endroit où la règle tienne.
+   */
+  if (dossier.assigned_avocat_id !== null) {
+    const client = await prisma.users.findUnique({
+      where: { id: dossier.user_id },
+      select: { name: true },
+    });
+
+    await prevenir(
+      dossier.assigned_avocat_id,
+      dossierId,
+      dossierRetransmis(dossier.societe || "un dossier", client?.name ?? "Le client")
+    );
+    return { proposes: 0 };
+  }
 
   const avocats = await avocatsANotifier();
   const avis = dossierAPrendre(dossier.societe || "Sans nom", dossier.forme);
@@ -868,13 +989,31 @@ export async function prendreLeDossier(utilisateur: UtilisateurConnecte, dossier
    */
   const dossier = await prisma.formalites.findUnique({
     where: { id: dossierId },
-    select: { id: true, status: true, assigned_avocat_id: true },
+    select: {
+      id: true,
+      status: true,
+      assigned_avocat_id: true,
+      user_id: true,
+      societe: true,
+    },
   });
   if (!dossier) throw new Interdit("Ce dossier n'existe pas ou ne vous est pas accessible");
 
   // Tant que le client remplit, il n'y a rien à réviser.
   if (dossier.status === "en_cours") {
     throw new Interdit("Ce dossier n'a pas encore été transmis");
+  }
+
+  /*
+   * Un dossier clos ne se prend pas non plus.
+   *
+   * La liste appliquait la règle du domaine et ne le proposait pas ; ce contrôle-ci
+   * n'en retenait que la moitié, si bien qu'un appel direct attribuait un dossier
+   * terminé, archivé ou refusé - à charge pour le confrère de comprendre ensuite
+   * pourquoi il tenait un dossier dont il n'y avait rien à faire.
+   */
+  if (estClos(dossier.status)) {
+    throw new Interdit("Ce dossier est clos : il n'attend plus d'avocat");
   }
 
   const { count } = await prisma.formalites.updateMany({
@@ -912,6 +1051,26 @@ export async function prendreLeDossier(utilisateur: UtilisateurConnecte, dossier
       after_value: utilisateur.nom,
     },
   });
+
+  /*
+   * Le client apprend que quelqu'un s'occupe de son dossier.
+   *
+   * L'avis existait, partait par courriel, et son commentaire disait précisément
+   * pourquoi : « le client a réglé, puis plus rien pendant des heures ». Seul
+   * `assignerAvocat` le déclenchait, joignable de la seule administration - les deux
+   * vrais boutons, la ligne de la liste et le bandeau du dossier, passent par ici et
+   * ne disaient rien. Le courriel n'était donc jamais envoyé.
+   *
+   * Il ne fait pas échouer la prise : l'avocat a pris le dossier, et un envoi
+   * manqué ne doit pas le lui reprendre.
+   */
+  if (dossier.user_id !== utilisateur.id) {
+    await prevenir(
+      dossier.user_id,
+      dossierId,
+      dossierPrisEnCharge(dossier.societe || "votre société", utilisateur.nom)
+    );
+  }
 
   /* Prendre un dossier, c'est l'ouvrir : le client le voit passer en « Transmis ». */
   await avancerSelonLeTravail(utilisateur, dossierId);
@@ -1120,6 +1279,62 @@ export async function conclureSansDocumentFinal(
 }
 
 /**
+ * Clore le dossier, une fois le travail fini.
+ *
+ * Aucun écran ne le faisait : les seuls états que l'interface posait étaient
+ * « corrections demandées » et « en attente de validation ». Le dossier restait donc
+ * « en attente » à vie - sa date de fin n'était jamais écrite, le courriel qui annonce
+ * la fin ne partait jamais, l'onglet « Terminés » de la bibliothèque du client restait
+ * vide, et sa société figurait indéfiniment parmi ses formalités en cours.
+ *
+ * Le geste reste explicite : c'est l'avocat qui décide que tout est en ordre, non le
+ * dépôt d'un fichier. Il monte les états un par un, comme le dépôt monte les
+ * sous-phases - « validé » est le cran que le cabinet n'a jamais employé, et le
+ * franchir en silence évite d'annoncer deux fins pour une.
+ */
+export async function cloturerLeDossier(utilisateur: UtilisateurConnecte, dossierId: number) {
+  exigerAvocat(utilisateur);
+  const dossier = await exigerDossier(utilisateur, dossierId);
+
+  if (dossier.status === "terminee") return { deja: true as const };
+
+  /*
+   * Le travail du cabinet doit être fini : c'est lui qu'on clôt.
+   *
+   * On laisse d'abord l'étape rattraper ce qui est fait, plutôt que de refuser un
+   * geste que la tâche vient d'ouvrir : elle se déverrouille dès que le document du
+   * greffe est au dossier, et l'étape suit d'ordinaire dans la foulée. Les deux
+   * doivent dire la même chose, sans quoi le bouton existe et se refuse.
+   */
+  let etape = dossier.business_sub_phase;
+  if (etape !== "5e") {
+    ({ sousPhase: etape } = await avancerSelonLeTravail(utilisateur, dossierId));
+  }
+  if (etape !== "5e") {
+    throw new Interdit(
+      "Le travail n'est pas terminé : remettez " +
+        avecArticle(DOCUMENT_FINAL[typeDeDossier(dossier.type)]) +
+        " ou concluez sans document"
+    );
+  }
+
+  const chemin = etatsJusquALaFin(dossier.status ?? "");
+  if (chemin.length === 0) {
+    throw new Interdit(
+      "Un dossier « " + libelleEtat(dossier.status ?? "") + " » ne se clôt pas"
+    );
+  }
+
+  for (const etape of chemin) {
+    await changerEtatDossier(utilisateur, dossierId, etape, undefined, {
+      silencieux: etape !== "terminee",
+    });
+  }
+
+  return { deja: false as const, etat: "terminee" as const };
+}
+
+/**
  * Les versions d'un acte, de la plus récente à la plus ancienne.
  *
  * Elles se rattachent à l'acte, non au document : reproduire supprime la ligne de
@@ -1288,6 +1503,9 @@ export async function reprendreUnActe(utilisateur: UtilisateurConnecte, document
     actesRetires(dossier.societe || "votre société")
   );
 
+  /* L'étape suit ce qui vient d'être défait, comme elle suit ce qui est fait. */
+  await avancerSelonLeTravail(utilisateur, document.formalite_id);
+
   return { repris: document.name };
 }
 
@@ -1334,6 +1552,8 @@ export async function retirerLesActesDeLEspaceClient(
   });
 
   await prevenir(dossier.user_id, dossierId, actesRetires(dossier.societe || "votre société"));
+
+  await avancerSelonLeTravail(utilisateur, dossierId);
 
   return { retires: count };
 }
