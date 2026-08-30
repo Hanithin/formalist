@@ -130,13 +130,53 @@ describe("les étapes du suivi", () => {
   it("une étape remplie par avance ne fait pas sauter la file", () => {
     /*
      * Un Kbis déposé avant le dépôt au greffe ne signale pas un dossier plus avancé :
-     * il signale une erreur de saisie, qu'il vaut mieux voir.
+     * il signale une erreur de saisie, qu'il vaut mieux voir. C'est la condition de
+     * l'étape qui le dit, non l'ordre du rail.
      */
-    const etapes = etapesDuSuivi(
-      etat({ status: "en_attente_validation", aLeKbis: true })
-    );
+    const etapes = etapesDuSuivi(etat({ status: "en_attente_validation", aLeKbis: true }));
     expect(etapes.find((e) => e.identifiant === "kbis")?.etat).toBe("a_venir");
     expect(etapes.find((e) => e.etat === "en_cours")?.identifiant).toBe("verification");
+  });
+
+  /*
+   * Les étapes ne se suivent pas toujours dans l'ordre.
+   *
+   * La parution d'un journal arrive quand elle arrive, et le reste n'attend pas : un
+   * dossier immatriculé dont le cabinet n'avait pas encore joint l'attestation de
+   * parution annonçait « Dépôt au greffe : à venir » et « Kbis délivré : à venir » au
+   * client qui avait son Kbis dans ses documents. La barre s'arrêtait à 50 % sur un
+   * dossier clos.
+   */
+  it("une étape faite se dit faite, même si une précédente manque", () => {
+    const etapes = etapesDuSuivi(
+      etat({
+        status: "terminee",
+        sousPhase: "5e",
+        aLAttestationDeCapital: true,
+        aLAnnoncePubliee: false,
+        aLeKbis: true,
+      })
+    );
+
+    expect(etapes.find((e) => e.identifiant === "greffe")?.etat).toBe("faite");
+    expect(etapes.find((e) => e.identifiant === "kbis")?.etat).toBe("faite");
+    /* Une seule reste en cours : celle qui manque vraiment. */
+    expect(etapes.filter((e) => e.etat === "en_cours").map((e) => e.identifiant)).toEqual([
+      "annonce",
+    ]);
+  });
+
+  it("l'avancement compte tout ce qui est fait", () => {
+    const clos = etat({
+      status: "terminee",
+      sousPhase: "5e",
+      aLAttestationDeCapital: true,
+      aLAnnoncePubliee: false,
+      aLeKbis: true,
+    });
+
+    // Cinq étapes sur six : le dossier est clos, seule la parution manque au dossier.
+    expect(avancementDuSuivi(clos)).toBe(83);
   });
 
   it("les sous-phases se comparent, elles ne s'égalent pas", () => {

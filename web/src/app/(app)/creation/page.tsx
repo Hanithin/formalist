@@ -8,6 +8,7 @@ import {
 } from "@/infrastructure/db/depots/brouillons";
 import { actesDuDossier, documentsDuDossier } from "@/infrastructure/db/depots/documents";
 import { dernierMotDuCabinet } from "@/infrastructure/db/depots/messages";
+import { estClos } from "@/domain/acces/regles";
 import { A_RELIRE } from "@/domain/document/publication";
 import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
@@ -208,6 +209,8 @@ export default async function Creation({
               statut: A_RELIRE,
             })),
           ]}
+          /* Une société immatriculée ne signe plus ses statuts constitutifs. */
+          dossierClos={estClos(ligne?.status)}
         />
       </div>
     </main>

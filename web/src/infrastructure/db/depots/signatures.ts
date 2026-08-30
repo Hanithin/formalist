@@ -1,5 +1,7 @@
 import { prisma } from "../client";
-import { desActesEnRelecture } from "./suivi";
+import { desActesEnRelecture, typesDeposes } from "./suivi";
+import { piecesAttendues, PIECE_DEPOT_CAPITAL } from "@/domain/formalite/documents";
+import { estClos } from "@/domain/acces/regles";
 import { exigerDossier, exigerDossierModifiable } from "./dossiers";
 import {
   etatDemande,
@@ -51,6 +53,18 @@ export async function demandesDuDossier(utilisateur: UtilisateurConnecte, dossie
 }
 
 /** Ouvre le circuit : une demande par associé. */
+/** La forme du dossier : la colonne d'abord, le brouillon à défaut. */
+function formeDuDossier(dossier: { forme: string | null; data_json: string | null } | null) {
+  if (dossier?.forme) return dossier.forme;
+  try {
+    const lu: unknown = JSON.parse(dossier?.data_json ?? "{}");
+    if (lu && typeof lu === "object") return (lu as { forme?: string }).forme ?? null;
+  } catch {
+    /* Un brouillon illisible ne dit rien de la forme : on s'en tient à la colonne. */
+  }
+  return null;
+}
+
 export async function demanderSignatures(
   utilisateur: UtilisateurConnecte,
   dossierId: number,
@@ -68,9 +82,44 @@ export async function demanderSignatures(
    *
    * C'est ainsi que l'avocat accorde la mise en signature : en validant les actes.
    */
+  /* Une société immatriculée ne signe plus ses statuts constitutifs. */
+  const clos = await prisma.formalites.findUnique({
+    where: { id: dossierId },
+    select: { status: true },
+  });
+  if (estClos(clos?.status)) {
+    throw new SignatureRetenue("Ce dossier est clos : il n'y a plus rien à signer.");
+  }
+
   if (await desActesEnRelecture(dossierId)) {
     throw new SignatureRetenue(
       "Vos actes sont en relecture chez l'avocat. La signature s'ouvrira dès qu'il les aura validés."
+    );
+  }
+
+  /*
+   * On ne signe pas non plus des statuts datés d'avant le capital.
+   *
+   * L'écran cache tout le bloc de signature tant que l'attestation de dépôt n'est pas
+   * au dossier - c'est elle qui date les actes du jour où la banque l'a délivrée. Mais
+   * un écran se contourne, et la demande part par courriel avec un jeton : le circuit
+   * s'ouvrait sur des statuts que la re-datation allait remplacer, et les signataires
+   * auraient signé une version périmée.
+   *
+   * Une SCI ne dépose pas de capital : la réserve ne vaut que pour les formes qui en
+   * libèrent, celles-là mêmes dont la liste des pièces réclame l'attestation.
+   */
+  const dossier = await prisma.formalites.findUnique({
+    where: { id: dossierId },
+    select: { forme: true, data_json: true },
+  });
+  const attendue = piecesAttendues(formeDuDossier(dossier)).some(
+    (p) => p.identifiant === PIECE_DEPOT_CAPITAL
+  );
+
+  if (attendue && !(await typesDeposes(dossierId)).has(PIECE_DEPOT_CAPITAL)) {
+    throw new SignatureRetenue(
+      "Déposez d'abord votre attestation de dépôt de capital : vos actes seront datés du jour où la banque vous l'a délivrée, et c'est cette version qui se signe."
     );
   }
 

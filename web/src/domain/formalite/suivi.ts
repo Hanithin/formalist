@@ -189,7 +189,13 @@ const TOUTES: Definition[] = [
     explication:
       "Votre société est immatriculée. Le Kbis, et le registre des bénéficiaires s'il a été établi, sont dans vos documents.",
     main: "avocat",
-    faite: (e) => e.aLeKbis || e.status === "terminee",
+    /*
+     * Un Kbis déposé avant le dépôt au greffe ne signale pas un dossier plus avancé :
+     * il signale une erreur de saisie, qu'il vaut mieux voir. La réserve vit ici, dans
+     * la condition de l'étape, plutôt que dans l'ordre du rail - où elle faisait passer
+     * pour « à venir » des étapes bel et bien franchies.
+     */
+    faite: (e) => (e.aLeKbis && auMoins(e.sousPhase, "5d")) || e.status === "terminee",
   },
 ];
 
@@ -409,7 +415,21 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
     const faite = d.faite(etat);
     let etatEtape: EtatEtape;
 
-    if (faite && !enCoursTrouvee) {
+    /*
+     * Une étape faite se dit faite, où qu'elle soit dans le rail.
+     *
+     * Elle ne l'était qu'avant la première étape en attente : tout ce qui suivait
+     * passait « à venir », fait ou non. Un dossier immatriculé dont le cabinet n'avait
+     * pas encore joint la parution annonçait donc « Dépôt au greffe : à venir » et
+     * « Kbis délivré : à venir » - au client qui avait le Kbis dans ses documents et le
+     * courriel d'immatriculation dans sa boîte. La barre d'avancement s'arrêtait à
+     * 50 % sur un dossier clos.
+     *
+     * Les étapes ne se suivent pas toujours dans l'ordre : la parution d'un journal
+     * arrive quand elle arrive, et le reste n'attend pas. Une seule reste « en cours »,
+     * la première qui manque - c'est elle qu'on vient lire.
+     */
+    if (faite) {
       etatEtape = "faite";
     } else if (!enCoursTrouvee) {
       enCoursTrouvee = true;

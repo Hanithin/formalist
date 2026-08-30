@@ -53,6 +53,8 @@ interface Props {
    * vit ici parce que le titre suit la frappe.
    */
   suivi?: React.ReactNode;
+  /** Le dossier est clos : il n'y a plus rien à signer ni à reprendre. */
+  dossierClos?: boolean;
   /** La date de l'en-tête, arrêtée par le serveur : le navigateur n'a pas à la deviner. */
   quand?: Date;
   /**
@@ -143,6 +145,7 @@ export function Parcours({
   actesProduits,
   dernierMot,
   suivi,
+  dossierClos,
   quand,
   connuDuDossier,
   paiementAnnule,
@@ -941,7 +944,9 @@ export function Parcours({
               brouillon={brouillon}
               actes={actesProduits}
               dernierMot={dernierMot}
-              attestationRecue={piecesDeposees.some((p) => p.type === PIECE_DEPOT_CAPITAL)}
+              attestationRecue={
+                piecesDeposees.some((p) => p.type === PIECE_DEPOT_CAPITAL) && !dossierClos
+              }
             />
           )}
         </div>

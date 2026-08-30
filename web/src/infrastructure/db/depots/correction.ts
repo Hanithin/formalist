@@ -40,6 +40,9 @@ import { lireModification } from "./modifications";
 import { lireFermeture } from "./fermeture";
 import { lireCessation } from "./cessation";
 import { produireLesActes } from "@/infrastructure/documents/actes";
+import { prevenir } from "./avis";
+import { actesRetires } from "@/domain/formalite/avis";
+import { avancerSelonLeTravail } from "./avocat";
 import { produireLesActesDesComptes } from "@/infrastructure/documents/actes-comptes";
 import { produireLesActesDeLaModification } from "@/infrastructure/documents/actes-modification";
 import { produireLesActesDeLaFermeture } from "@/infrastructure/documents/actes-fermeture";
@@ -207,7 +210,33 @@ export async function corrigerEtReproduire(
   const par = utilisateur.id;
 
   if (dossier.type === "creation") {
-    const { produits } = await produireLesActes(utilisateur, dossierId);
+    /*
+     * Un acte corrigé repasse devant l'avocat, comme dans les quatre autres parcours.
+     *
+     * Eux produisent toujours `aRelire` ; la création s'en remettait à l'état courant,
+     * si bien qu'un dossier dont les actes étaient déjà chez le client - donc validés -
+     * les voyait remplacés en silence par d'autres, qu'aucune relecture n'avait vus. Le
+     * client pouvait avoir téléchargé les premiers la veille. La fenêtre de correction
+     * promet d'ailleurs l'inverse : « ils repasseront en relecture ».
+     */
+    const chezLeClient = await prisma.documents.count({
+      where: { formalite_id: dossierId, uploaded_by: "system", status: "generated" },
+    });
+
+    const { produits } = await produireLesActes(utilisateur, dossierId, {
+      forcerLaRelecture: true,
+    });
+
+    /* Des documents qui quittent son espace sans un mot inquiètent plus qu'ils n'informent. */
+    if (chezLeClient > 0) {
+      await prevenir(
+        dossier.user_id,
+        dossierId,
+        actesRetires(dossier.societe || "votre société")
+      );
+      await avancerSelonLeTravail(utilisateur, dossierId);
+    }
+
     return { produits: produits.length };
   }
   if (dossier.type === "comptes") {

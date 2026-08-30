@@ -49,6 +49,7 @@ export function Travail({
   dossier,
   taches,
   peutProduireLesActes,
+  routeDeProduction,
   informationsVerifiees,
   pieces,
 }: {
@@ -80,6 +81,14 @@ export function Travail({
   };
   /** Les actes se produisent d'ici : c'est une commande, non un écran. */
   peutProduireLesActes: boolean;
+  /**
+   * Où les produire, selon le parcours.
+   *
+   * Une modification a la sienne - un seul procès-verbal porte toutes les résolutions ;
+   * les autres passent par la route commune. Elle était écrite en dur, si bien que le
+   * geste ne pouvait servir qu'aux modifications.
+   */
+  routeDeProduction: string;
   /**
    * L'avocat a déclaré avoir relu le récapitulatif.
    *
@@ -141,11 +150,20 @@ export function Travail({
     });
   }
 
+  /*
+   * Produire les actes, quel que soit le parcours.
+   *
+   * Le geste n'existait que pour une modification : sur une création, les actes
+   * naissent à l'encaissement, et le code qui les produit là-bas rattrape son propre
+   * échec d'un « les actes se régénèrent d'un clic côté cabinet » - un clic qui
+   * n'existait pas. Le dossier restait alors sans actes, la tâche « Produire les
+   * actes » renvoyait vers l'onglet des documents, et rien ne les y produisait.
+   */
   function produire() {
     setRefus(null);
     setRetour(null);
     demarrer(async () => {
-      const reponse = await fetch("/api/formalites/modification/documents", {
+      const reponse = await fetch(routeDeProduction, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dossier }),

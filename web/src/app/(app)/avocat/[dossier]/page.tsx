@@ -650,7 +650,21 @@ export default async function DossierAvocat({
             <Travail
               dossier={dossier.id}
               taches={taches}
-              peutProduireLesActes={type === "modification"}
+              /*
+               * Une modification les produit toujours ; les autres parcours quand ils
+               * n'en ont pas. À la création, les actes naissent à l'encaissement, dont
+               * l'échec est rattrapé par un commentaire promettant « les actes se
+               * régénèrent d'un clic côté cabinet » - un clic qui n'existait pas. La
+               * tâche renvoyait vers l'onglet des documents, où rien ne les produit.
+               */
+              peutProduireLesActes={
+                type === "modification" || !documents.some((d) => d.uploaded_by === "system")
+              }
+              routeDeProduction={
+                type === "modification"
+                  ? "/api/formalites/modification/documents"
+                  : "/api/formalites/documents"
+              }
               informationsVerifiees={informationsVerifiees}
               dossiersAPrendre={dossiersAPrendre}
               etapePrecedente={etapePrecedente}

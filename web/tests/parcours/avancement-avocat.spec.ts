@@ -111,16 +111,84 @@ test.describe("avancement du cabinet", () => {
       expect(reponse.status()).toBe(200);
     }
 
-    const avis = await prisma.notifications.findFirst({
-      where: { formalite_id: dossier.id, type: "dossier_verifie" },
+    /*
+     * À « Vérifié », les actes sont chez lui : c'est le moment où sa banque peut lui
+     * délivrer l'attestation de dépôt, et donc celui où on la lui demande. L'avis part
+     * à la place de l'annonce de vérification - c'est la même nouvelle, dont l'une dit
+     * en plus ce qu'il reste à faire.
+     */
+    const demande = await prisma.notifications.findFirst({
+      where: { formalite_id: dossier.id, type: "attestation_attendue" },
     });
-    expect(avis?.content).toContain("vérifié");
+    expect(demande?.content).toContain("attestation de dépôt de capital");
 
     // Et plus rien ne l'invite à publier quoi que ce soit.
     const invitation = await prisma.notifications.count({
       where: { formalite_id: dossier.id, type: "annonce_a_publier" },
     });
     expect(invitation).toBe(0);
+  });
+
+  /*
+   * L'attestation ne se réclamait pas au bon moment.
+   *
+   * L'avis partait à l'entrée en « Révision », c'est-à-dire à la seconde où l'avocat
+   * prenait le dossier : la banque n'ouvre le compte que sur présentation des statuts,
+   * et les statuts étaient précisément ce qu'il était en train de relire.
+   */
+  test("l'attestation ne se demande pas tant que les actes sont en relecture", async ({
+    request,
+  }) => {
+    const dossier = await dossierDuCabinet("ATTESTATION ESSAI " + Date.now());
+
+    for (const etape of ["5a", "5b"]) {
+      await request.put("/api/avocat/dossier", { data: { dossier: dossier.id, sousPhase: etape } });
+    }
+
+    expect(
+      await prisma.notifications.count({
+        where: { formalite_id: dossier.id, type: "attestation_attendue" },
+      })
+    ).toBe(0);
+
+    await request.put("/api/avocat/dossier", { data: { dossier: dossier.id, sousPhase: "5c" } });
+
+    expect(
+      await prisma.notifications.count({
+        where: { formalite_id: dossier.id, type: "attestation_attendue" },
+      })
+    ).toBe(1);
+  });
+
+  /*
+   * Une fois l'attestation au dossier, « Vérifié » redevient une nouvelle simple.
+   */
+  test("l'attestation reçue, « Vérifié » ne redemande rien", async ({ request }) => {
+    const dossier = await dossierDuCabinet("VERIFIE ESSAI " + Date.now());
+    await prisma.documents.create({
+      data: {
+        formalite_id: dossier.id,
+        name: "Attestation de dépôt de capital",
+        type: "depot-capital",
+        file_path: "essai-attestation.pdf",
+        uploaded_by: "user",
+        status: "verified",
+      },
+    });
+
+    for (const etape of ["5a", "5b", "5c"]) {
+      await request.put("/api/avocat/dossier", { data: { dossier: dossier.id, sousPhase: etape } });
+    }
+
+    const avis = await prisma.notifications.findFirst({
+      where: { formalite_id: dossier.id, type: "dossier_verifie" },
+    });
+    expect(avis?.content).toContain("vérifié");
+    expect(
+      await prisma.notifications.count({
+        where: { formalite_id: dossier.id, type: "attestation_attendue" },
+      })
+    ).toBe(0);
   });
 
   test("le Kbis se dépose et arrive chez le client", async ({ page, request }) => {
@@ -382,5 +450,149 @@ test.describe("suivi côté client", () => {
     const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
     await page.goto("/creation?dossier=" + dossier);
     await expect(page.getByRole("region", { name: "Avancement du dossier" })).toHaveCount(0);
+  });
+});
+
+/**
+ * Corriger un dossier depuis l'espace avocat.
+ *
+ * La fenêtre promet que « les actes seront reproduits à partir de ces valeurs, et
+ * repasseront en relecture ». Les quatre autres parcours le faisaient ; la création
+ * s'en remettait à l'état courant, si bien que des actes déjà validés - donc déjà chez
+ * le client, qui avait pu les télécharger - étaient remplacés en silence par d'autres,
+ * qu'aucune relecture n'avait vus.
+ */
+test.describe("la correction d'un dossier de création", () => {
+  test.use({ storageState: "./tests/parcours/session-avocat.json" });
+
+  const ouverts: number[] = [];
+
+  test.afterAll(async () => {
+    if (ouverts.length > 0) await retirerDossiers(ouverts);
+  });
+
+  async function dossierAvecActes(societe: string) {
+    const client = await prisma.users.findFirstOrThrow({
+      where: { email: "parcours@exemple.test" },
+    });
+    const avocat = await prisma.users.findFirstOrThrow({
+      where: { email: "avocat-parcours@exemple.test" },
+    });
+
+    const dossier = await prisma.formalites.create({
+      data: {
+        user_id: client.id,
+        assigned_avocat_id: avocat.id,
+        type: "creation",
+        forme: "SASU",
+        societe,
+        status: "en_attente_validation",
+        phase: 5,
+        business_sub_phase: "5c",
+        data_json: JSON.stringify({
+          forme: "SASU",
+          denomination: societe,
+          activite: "Conseil aux entreprises",
+          adresse: "3 rue Centrale",
+          codePostal: "33000",
+          ville: "Bordeaux",
+          capital: 1000,
+          capitalLibere: 1000,
+          partsTotales: 100,
+          offre: "business",
+          revue: { informations: true, par: avocat.id },
+          associes: [
+            {
+              type: "physique",
+              parts: 100,
+              versement: 1000,
+              personne: {
+                civilite: "Madame",
+                prenom: "Camille",
+                nom: "Durand",
+                dateDeNaissance: "1990-06-24",
+                villeDeNaissance: "Bordeaux",
+                nationalite: "Française",
+                situationMatrimoniale: "Célibataire",
+                adresse: "3 rue Centrale, 33000 Bordeaux",
+                email: "camille@exemple.test",
+              },
+            },
+          ],
+          dirigeants: [{ associe: 0 }],
+        }),
+      },
+    });
+    ouverts.push(dossier.id);
+    return dossier;
+  }
+
+  test("elle remet les actes en relecture, et le client en est prévenu", async ({ request }) => {
+    const dossier = await dossierAvecActes("CORRECTION ESSAI " + Date.now());
+
+    /* Les actes sont produits, relus, et chez le client. */
+    await request.post("/api/formalites/documents", { data: { dossier: dossier.id } });
+    await prisma.documents.updateMany({
+      where: { formalite_id: dossier.id, uploaded_by: "system" },
+      data: { status: "generated" },
+    });
+
+    const reponse = await request.put("/api/avocat/correction", {
+      data: { dossier: dossier.id, valeurs: { capital: 2000, capitalLibere: 2000 } },
+    });
+    expect(reponse.status()).toBe(200);
+    expect((await reponse.json()).produits).toBeGreaterThan(0);
+
+    /* Aucun acte ne reste chez le client : ils ne sont plus ceux qu'on avait validés. */
+    expect(
+      await prisma.documents.count({
+        where: { formalite_id: dossier.id, uploaded_by: "system", status: "generated" },
+      })
+    ).toBe(0);
+
+    const client = await prisma.users.findFirstOrThrow({
+      where: { email: "parcours@exemple.test" },
+    });
+    expect(
+      await prisma.notifications.count({
+        where: { formalite_id: dossier.id, user_id: client.id, type: "actes_retires" },
+      })
+    ).toBe(1);
+
+    /* Et l'étape redescend : rien n'est plus vérifié. */
+    expect(
+      (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier.id } }))
+        .business_sub_phase
+    ).toBe("5b");
+  });
+
+  /*
+   * À la création, les actes naissent à l'encaissement, dont l'échec est rattrapé par
+   * un commentaire promettant « les actes se régénèrent d'un clic côté cabinet ». Le
+   * clic n'existait que pour les modifications : le dossier restait sans actes, et la
+   * tâche renvoyait vers un onglet où rien ne les produisait.
+   */
+  test("les actes manquants se produisent depuis l'espace avocat", async ({ page }) => {
+    const dossier = await dossierAvecActes("SANS ACTES " + Date.now());
+
+    await page.goto("/avocat/" + dossier.id + "?onglet=travail");
+    await page.getByRole("button", { name: "Produire les actes" }).click();
+
+    await expect
+      .poll(
+        async () =>
+          prisma.documents.count({
+            where: { formalite_id: dossier.id, uploaded_by: "system" },
+          }),
+        { timeout: 30_000 }
+      )
+      .toBeGreaterThan(0);
+
+    /* Et ils attendent l'avocat : un acte produit après transmission n'est pas relu. */
+    expect(
+      await prisma.documents.count({
+        where: { formalite_id: dossier.id, uploaded_by: "system", status: "generated" },
+      })
+    ).toBe(0);
   });
 });

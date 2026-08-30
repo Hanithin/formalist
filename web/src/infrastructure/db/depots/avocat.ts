@@ -41,7 +41,7 @@ import { prevenir } from "./avis";
 import { A_RELIRE } from "@/domain/document/publication";
 import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
 import { LONGUEUR_COMMENTAIRE } from "@/domain/formalite/avocat";
-import { TYPE_RBE, TYPE_KBIS, typesDeposes } from "./suivi";
+import { TYPE_RBE, TYPE_KBIS, TYPE_ATTESTATION_CAPITAL, typesDeposes } from "./suivi";
 import {
   dossierVerifie,
   depotSansDocument,
@@ -746,14 +746,31 @@ export async function changerSousPhase(
    * eu à choisir un journal. Et l'attestation de dépôt de capital n'a de sens qu'à la
    * constitution - une modification ou un dépôt de comptes ne libère aucun capital.
    */
+  /*
+   * L'attestation se réclame quand elle peut être obtenue, non avant.
+   *
+   * Elle partait à l'entrée en « Révision » - c'est-à-dire à la seconde où l'avocat
+   * prend le dossier. Or la banque n'ouvre le compte que sur présentation des statuts,
+   * et les statuts sont précisément ce que l'avocat est en train de relire : on
+   * demandait au client d'aller chercher une pièce qu'aucune banque ne pouvait lui
+   * délivrer. La liste des pièces a été corrigée pour cette raison - elle la range en
+   * « après relecture » - et l'avis, lui, était resté en arrière.
+   *
+   * Elle part donc avec « Vérifié », qui est le moment où les actes sont chez lui, et
+   * elle remplace alors l'annonce de vérification : c'est la même nouvelle, dont l'une
+   * dit en plus ce qu'il reste à faire.
+   */
+  const attestationAReclamer =
+    dossier.type === "creation" && !types.has(TYPE_ATTESTATION_CAPITAL);
+
   const avis =
     vers === "5c"
-      ? dossierVerifie(societe)
-      : vers === "5b" && dossier.type === "creation" && !types.has("depot-capital")
+      ? attestationAReclamer
         ? attestationAttendue(societe)
-        : vers === "5d"
-          ? depotEnCours(societe)
-          : null;
+        : dossierVerifie(societe)
+      : vers === "5d"
+        ? depotEnCours(societe)
+        : null;
 
   if (avis && !options.silencieux) await prevenir(dossier.user_id, dossierId, avis);
 

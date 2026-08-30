@@ -881,6 +881,101 @@ test.describe("la relecture retient la signature", () => {
     ).toBeVisible();
   });
 
+  /*
+   * L'écran cache le bloc de signature tant que l'attestation n'est pas au dossier.
+   * Un écran se contourne : la demande part par courriel avec un jeton, et le circuit
+   * s'ouvrait sur des statuts que la re-datation allait remplacer.
+   */
+  test("la signature attend aussi l'attestation, même hors de l'écran", async ({
+    page,
+    request,
+  }) => {
+    const dossier = await dossierEnRelecture(page, request);
+
+    /* Les actes sont relus : il ne reste que l'attestation à attendre. */
+    await prisma.documents.updateMany({
+      where: { formalite_id: Number(dossier), uploaded_by: "system" },
+      data: { status: "generated" },
+    });
+
+    const refus = await request.post("/api/signature", {
+      data: {
+        dossier: Number(dossier),
+        signataires: [{ nom: "Camille Durand", email: "camille@exemple.test" }],
+      },
+    });
+    expect(refus.status()).toBe(409);
+    expect((await refus.json()).error).toMatch(/attestation de dépôt de capital/i);
+
+    /* Déposée, elle ouvre le circuit. */
+    const attestation = new FormData();
+    attestation.append("dossier", dossier);
+    attestation.append("piece", "depot-capital");
+    attestation.append(
+      "fichier",
+      new Blob([Buffer.from("%PDF-1.4\nattestation")], { type: "application/pdf" }),
+      "attestation.pdf"
+    );
+    expect((await request.post("/api/formalites/pieces", { multipart: attestation })).status()).toBe(
+      201
+    );
+
+    /* Elle re-date les actes, qui repassent en relecture : l'avocat les revalide. */
+    await prisma.documents.updateMany({
+      where: { formalite_id: Number(dossier), uploaded_by: "system" },
+      data: { status: "generated" },
+    });
+
+    const ouvert = await request.post("/api/signature", {
+      data: {
+        dossier: Number(dossier),
+        signataires: [{ nom: "Camille Durand", email: "camille@exemple.test" }],
+      },
+    });
+    expect(ouvert.status()).toBe(201);
+  });
+
+  /*
+   * Une société immatriculée ne signe plus ses statuts constitutifs.
+   *
+   * L'écran offrait encore « Demander les signatures » sur un dossier clos, et le
+   * circuit s'ouvrait : des courriels partaient aux associés d'une société qui existe
+   * depuis des semaines.
+   */
+  test("un dossier clos ne signe plus rien", async ({ page, request }) => {
+    const dossier = await dossierEnRelecture(page, request);
+    await prisma.documents.updateMany({
+      where: { formalite_id: Number(dossier), uploaded_by: "system" },
+      data: { status: "generated" },
+    });
+    await prisma.documents.create({
+      data: {
+        formalite_id: Number(dossier),
+        name: "Attestation de dépôt de capital",
+        type: "depot-capital",
+        file_path: "essai-attestation-close.pdf",
+        uploaded_by: "user",
+        status: "verified",
+      },
+    });
+    await prisma.formalites.update({
+      where: { id: Number(dossier) },
+      data: { status: "terminee", business_sub_phase: "5e" },
+    });
+
+    const refus = await request.post("/api/signature", {
+      data: {
+        dossier: Number(dossier),
+        signataires: [{ nom: "Camille Durand", email: "camille@exemple.test" }],
+      },
+    });
+    expect(refus.status()).toBe(409);
+    expect((await refus.json()).error).toMatch(/clos/i);
+
+    await page.goto("/creation?dossier=" + dossier + "&etape=7");
+    await expect(page.getByRole("button", { name: "Demander les signatures" })).toHaveCount(0);
+  });
+
   test("régénérer ne publie pas ce qui attend l'avocat", async ({ page, request }) => {
     /*
      * Un clic sur « Régénérer les documents » déverrouillait les cinq actes : le
