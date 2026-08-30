@@ -146,11 +146,11 @@ test.describe("prise d'un dossier", () => {
       }
     });
 
-    test("un dossier déjà pris par un confrère est refusé, en le nommant", async ({ request }) => {
+    test("un dossier déjà pris par un autre avocat est refusé, en le nommant", async ({ request }) => {
       const dossier = await dossierEnAttente("DEJA PRIS " + Date.now());
 
       /*
-       * Un confrère créé pour l'occasion, non un compte trouvé en base.
+       * Un avocat créé pour l'occasion, non un compte trouvé en base.
        *
        * Le test visait une adresse réelle du développeur : sur une base neuve - celle
        * de la vérification automatique - elle n'existe pas, et le test échouait sans
@@ -441,7 +441,7 @@ test.describe("les compteurs du cabinet", () => {
  * Trois gestes n'existaient pas : refuser un dossier impossible - les seuls états que
  * l'interface posait étaient « corrections demandées » et « en attente de validation »,
  * si bien qu'un objet illicite ne pouvait que boucler en demandes de reprise -, rendre
- * au cabinet un dossier qu'on ne peut pas suivre, et appeler un confrère autrement
+ * d'un dossier qu'on ne peut pas suivre, et inviter un autre avocat autrement
  * qu'en lui rendant le dossier en entier.
  */
 test.describe("le dossier lui-même", () => {
@@ -524,7 +524,7 @@ test.describe("le dossier lui-même", () => {
   test("il invite un avocat, qui voit le dossier et le travaille", async ({ request }) => {
     const dossier = await dossierPris("CONFRERE " + Date.now());
 
-    const confrere = await prisma.users.upsert({
+    const invite = await prisma.users.upsert({
       where: { email: "confrere-parcours@exemple.test" },
       update: { role: "avocat", suspended: false, name: "Maître Rousseau" },
       create: {
@@ -538,16 +538,16 @@ test.describe("le dossier lui-même", () => {
       },
     });
 
-    const reponse = await request.post("/api/avocat/confreres", {
+    const reponse = await request.post("/api/avocat/invitations", {
       data: { dossier: dossier.id, courriel: "confrere-parcours@exemple.test" },
     });
     expect(reponse.status()).toBe(200);
-    expect((await reponse.json()).confrere).toBe("Maître Rousseau");
+    expect((await reponse.json()).avocat).toBe("Maître Rousseau");
 
     /* Il l'apprend : une invitation qu'il faut annoncer de vive voix n'en est pas une. */
     expect(
       await prisma.notifications.count({
-        where: { formalite_id: dossier.id, user_id: confrere.id, type: "confrere_invite" },
+        where: { formalite_id: dossier.id, user_id: invite.id, type: "avocat_invite" },
       })
     ).toBe(1);
 
@@ -557,43 +557,43 @@ test.describe("le dossier lui-même", () => {
      * le second heurtait l'index unique - l'avocat lisait « Erreur serveur » sur une
      * invitation qui venait pourtant d'aboutir.
      */
-    const encore = await request.post("/api/avocat/confreres", {
+    const encore = await request.post("/api/avocat/invitations", {
       data: { dossier: dossier.id, courriel: "confrere-parcours@exemple.test" },
     });
     expect((await encore.json()).deja).toBe(true);
 
     const simultanees = await Promise.all(
       Array.from({ length: 4 }, () =>
-        request.post("/api/avocat/confreres", {
+        request.post("/api/avocat/invitations", {
           data: { dossier: dossier.id, courriel: "confrere-parcours@exemple.test" },
         })
       )
     );
     expect(simultanees.every((r) => r.status() === 200)).toBe(true);
     expect(
-      await prisma.dossier_confreres.count({ where: { formalite_id: dossier.id } })
+      await prisma.avocats_invites.count({ where: { formalite_id: dossier.id } })
     ).toBe(1);
 
     /* Il se lit, et se retire. */
-    const liste = await request.get("/api/avocat/confreres?dossier=" + dossier.id);
-    expect((await liste.json()).confreres).toHaveLength(1);
+    const liste = await request.get("/api/avocat/invitations?dossier=" + dossier.id);
+    expect((await liste.json()).avocats).toHaveLength(1);
 
     expect(
       (
-        await request.delete("/api/avocat/confreres", {
-          data: { dossier: dossier.id, avocat: confrere.id },
+        await request.delete("/api/avocat/invitations", {
+          data: { dossier: dossier.id, avocat: invite.id },
         })
       ).status()
     ).toBe(200);
     expect(
-      await prisma.dossier_confreres.count({ where: { formalite_id: dossier.id } })
+      await prisma.avocats_invites.count({ where: { formalite_id: dossier.id } })
     ).toBe(0);
   });
 
   test("on n'invite qu'un avocat", async ({ request }) => {
     const dossier = await dossierPris("CONFRERE REFUS " + Date.now());
 
-    const reponse = await request.post("/api/avocat/confreres", {
+    const reponse = await request.post("/api/avocat/invitations", {
       data: { dossier: dossier.id, courriel: "parcours@exemple.test" },
     });
     expect(reponse.status()).toBe(403);

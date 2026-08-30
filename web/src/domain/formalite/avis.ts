@@ -28,7 +28,7 @@ export type GenreDAvis =
   | "message_recu"
   | "dossier_retransmis"
   | "dossier_rendu"
-  | "confrere_invite"
+  | "avocat_invite"
   | "dossier_a_prendre"
   | "dossier_pris_en_charge"
   | "actes_disponibles"
@@ -99,7 +99,7 @@ const PAR_COURRIEL = new Set<GenreDAvis>([
   /*
    * Une invitation qui n'arrive pas ne vaut que le coup de téléphone qui la suit.
    */
-  "confrere_invite",
+  "avocat_invite",
   "dossier_a_prendre",
   /*
    * La prise en charge se dit par courriel.
@@ -388,9 +388,9 @@ export function dossierRendu(societe: string): Avis {
 }
 
 /** Un avocat est invité sur un dossier : il faut qu'il l'apprenne. */
-export function confrereInvite(societe: string, avocat: string): Avis {
+export function avocatInvite(societe: string, avocat: string): Avis {
   return {
-    genre: "confrere_invite",
+    genre: "avocat_invite",
     contenu: avocat + " vous invite sur le dossier " + societe,
     sujet: "Invitation sur un dossier - " + societe,
     corps:

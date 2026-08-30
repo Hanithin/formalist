@@ -10,6 +10,7 @@ import { actesDuDossier, documentsDuDossier } from "@/infrastructure/db/depots/d
 import { dernierMotDuCabinet } from "@/infrastructure/db/depots/messages";
 import { estClos } from "@/domain/acces/regles";
 import { A_RELIRE } from "@/domain/document/publication";
+import { rangDeLActe } from "@/domain/formalite/documents";
 import { etapeAccessible, ETAPES } from "@/domain/formalite/parcours";
 import { Parcours } from "./Parcours";
 import { ETAPES_PLEINE_LARGEUR } from "./etapes-larges";
@@ -208,7 +209,16 @@ export default async function Creation({
               fichier: null,
               statut: A_RELIRE,
             })),
-          ]}
+            /*
+             * Les statuts en tête.
+             *
+             * La liste sortait dans l'ordre de la base - à égalité de date de
+             * production, le dernier écrit en premier : le client ouvrait ses documents
+             * sur le procès-verbal de nomination et descendait chercher ses statuts,
+             * l'acte qui fonde la société, celui qu'il porte à sa banque et qu'il signe
+             * en premier.
+             */
+          ].sort((a, b) => rangDeLActe(a.nom) - rangDeLActe(b.nom))}
           /* Une société immatriculée ne signe plus ses statuts constitutifs. */
           dossierClos={estClos(ligne?.status)}
         />

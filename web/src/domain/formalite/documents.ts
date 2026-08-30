@@ -73,6 +73,23 @@ export interface DocumentAProduire {
   gabarit: string;
 }
 
+/**
+ * L'ordre dans lequel les actes se lisent : les statuts d'abord.
+ *
+ * La liste les rendait dans l'ordre où la base les rendait - c'est-à-dire, à égalité
+ * de date de production, le dernier écrit en premier : le client ouvrait ses documents
+ * sur le procès-verbal de nomination, et devait descendre pour trouver ses statuts.
+ * C'est pourtant l'acte qui fonde la société, celui qu'il porte à sa banque et qu'il
+ * signe en premier.
+ *
+ * L'ordre est celui de la table ci-dessus, qui est déjà le bon : statuts, souscripteurs,
+ * déclaration, domiciliation, nomination. Ce qu'elle ne connaît pas se range à la fin.
+ */
+export function rangDeLActe(titre: string): number {
+  const rang = DOCUMENTS.findIndex((d) => d.titre === titre);
+  return rang === -1 ? DOCUMENTS.length : rang;
+}
+
 /** La liste des documents à produire pour ce dossier, gabarit compris. */
 export function documentsAProduire(contexte: Contexte): DocumentAProduire[] {
   const prefixe = prefixeGabarit(contexte.forme);

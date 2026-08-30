@@ -10,6 +10,7 @@ import { estPropose } from "@/domain/acces/regles";
 import { etatDesPieces } from "@/domain/formalite/pieces";
 import { piecesAttenduesDuDossier } from "@/infrastructure/documents/pieces-attendues";
 import { libelleDuType } from "@/domain/formalite/liste";
+import { rangDeLActe } from "@/domain/formalite/documents";
 import { libelleJournal } from "@/domain/formalite/journal";
 import { SOUS_PHASES_ORDONNEES, estSousPhase } from "@/domain/formalite/avocat";
 import { Notes } from "./Notes";
@@ -448,17 +449,26 @@ export default async function DossierAvocat({
   /* Les versions antérieures des actes produits, rangées par titre. */
   const versionsParActe = await versionsDuDossier(dossier.id);
 
-  const pieces: PieceAffichee[] = documents.map((d) => ({
-    id: d.id,
-    nom: d.name,
-    statut: d.status,
-    motifRejet: d.rejection_reason,
-    fichier: d.file_path,
-    source: d.source_path,
-    depose: d.uploaded_by,
-    creeLe: d.created_at?.toISOString() ?? null,
-    versions: versionsParActe.get(d.name),
-  }));
+  const pieces: PieceAffichee[] = documents
+    .map((d) => ({
+      id: d.id,
+      nom: d.name,
+      statut: d.status,
+      motifRejet: d.rejection_reason,
+      fichier: d.file_path,
+      source: d.source_path,
+      depose: d.uploaded_by,
+      creeLe: d.created_at?.toISOString() ?? null,
+      versions: versionsParActe.get(d.name),
+    }))
+    /*
+     * Les actes se lisent dans leur ordre, les statuts d'abord.
+     *
+     * La base les rend par date décroissante, et ils sont produits dans la même
+     * seconde : la liste sortait donc à l'envers, du procès-verbal de nomination aux
+     * statuts. L'avocat relit dans l'ordre où le greffe lira.
+     */
+    .sort((a, b) => rangDeLActe(a.nom) - rangDeLActe(b.nom));
 
   const suivante = prochaineTache(taches);
 

@@ -46,7 +46,7 @@ export interface Dossier {
    *
    * Facultatif, comme le statut : la plupart des règles n'en dépendent pas.
    */
-  confreresInvites?: number[];
+  avocatsInvites?: number[];
 }
 
 export function aLeRole(utilisateur: Utilisateur, role: Role): boolean {
@@ -56,7 +56,7 @@ export function aLeRole(utilisateur: Utilisateur, role: Role): boolean {
 /**
  * Voit-il l'ensemble des dossiers de son équipe ?
  * L'administrateur d'équipe, oui. Dans un cabinet, les avocats aussi : ils doivent
- * pouvoir reprendre le dossier d'un confrère.
+ * pouvoir reprendre le dossier d'un autre.
  */
 export function voitToutLEquipe(appartenance: Appartenance | null): boolean {
   if (!appartenance) return false;
@@ -110,8 +110,8 @@ export function estPropose(dossier: Dossier | null): boolean {
 }
 
 /** Cet avocat a-t-il été invité sur ce dossier ? */
-export function estConfrereInvite(utilisateur: Utilisateur, dossier: Dossier | null): boolean {
-  return !!dossier?.confreresInvites?.includes(utilisateur.id);
+export function estAvocatInvite(utilisateur: Utilisateur, dossier: Dossier | null): boolean {
+  return !!dossier?.avocatsInvites?.includes(utilisateur.id);
 }
 
 export function peutLire(
@@ -124,7 +124,7 @@ export function peutLire(
   if (dossier.proprietaireId === utilisateur.id) return true;
   if (dossier.avocatAssigneId === utilisateur.id) return true;
   // L'avocat invité travaille le dossier : le lui cacher viderait l'invitation.
-  if (estConfrereInvite(utilisateur, dossier)) return true;
+  if (estAvocatInvite(utilisateur, dossier)) return true;
   // Un dossier proposé se lit par tout avocat : c'est ce qui lui permet de décider.
   if (aLeRole(utilisateur, "avocat") && estPropose(dossier)) return true;
 
@@ -143,7 +143,7 @@ export function peutModifier(
   if (dossier.proprietaireId === utilisateur.id) return true;
   if (dossier.avocatAssigneId === utilisateur.id) return true;
   // Inviter quelqu'un pour qu'il ne puisse rien faire n'aurait pas de sens.
-  if (estConfrereInvite(utilisateur, dossier)) return true;
+  if (estAvocatInvite(utilisateur, dossier)) return true;
 
   if (!appartenance || dossier.equipeId !== appartenance.equipeId) return false;
   if (appartenance.role === "admin") return true;

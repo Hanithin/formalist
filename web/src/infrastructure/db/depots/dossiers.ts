@@ -38,7 +38,7 @@ function versDossier(
     team_id: number | null;
     status?: string | null;
   },
-  confreres: number[] = []
+  invites: number[] = []
 ): Dossier {
   return {
     id: ligne.id,
@@ -47,7 +47,7 @@ function versDossier(
     equipeId: ligne.team_id,
     // Le statut sert à la seule règle des dossiers proposés aux avocats.
     statut: ligne.status ?? null,
-    confreresInvites: confreres,
+    avocatsInvites: invites,
   };
 }
 
@@ -60,8 +60,8 @@ function versDossier(
  * l'utilisateur est avocat et que le dossier n'est déjà ni le sien ni celui de son
  * client.
  */
-export async function confreresDuDossier(dossierId: number): Promise<number[]> {
-  const lignes = await prisma.dossier_confreres.findMany({
+export async function avocatsInvitesDe(dossierId: number): Promise<number[]> {
+  const lignes = await prisma.avocats_invites.findMany({
     where: { formalite_id: dossierId },
     select: { avocat_id: true },
   });
@@ -84,8 +84,8 @@ export async function lireDossier(utilisateur: UtilisateurConnecte, id: number) 
 
   /* Reste l'invitation, la seule voie qui demande une lecture de plus. */
   if (!utilisateur.roles.includes("avocat")) return null;
-  const confreres = await confreresDuDossier(id);
-  if (!peutLire(utilisateur, versDossier(ligne, confreres), appartenance)) return null;
+  const invites = await avocatsInvitesDe(id);
+  if (!peutLire(utilisateur, versDossier(ligne, invites), appartenance)) return null;
   return ligne;
 }
 
@@ -104,8 +104,8 @@ export async function exigerDossierModifiable(utilisateur: UtilisateurConnecte, 
   const appartenance = await appartenanceDe(utilisateur.id);
   if (peutModifier(utilisateur, versDossier(ligne), appartenance)) return ligne;
 
-  const confreres = utilisateur.roles.includes("avocat") ? await confreresDuDossier(id) : [];
-  if (!peutModifier(utilisateur, versDossier(ligne, confreres), appartenance)) {
+  const invites = utilisateur.roles.includes("avocat") ? await avocatsInvitesDe(id) : [];
+  if (!peutModifier(utilisateur, versDossier(ligne, invites), appartenance)) {
     throw new Interdit("Vous n'avez pas le droit de modifier ce dossier");
   }
   return ligne;

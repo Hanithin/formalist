@@ -3,6 +3,7 @@ import {
   prefixeGabarit,
   documentsAProduire,
   piecesAttendues,
+  rangDeLActe,
 } from "@/domain/formalite/documents";
 
 describe("choix du gabarit", () => {
@@ -70,5 +71,39 @@ describe("pièces attendues du client", () => {
   it("l'attestation de dépôt n'accepte que le PDF", () => {
     const piece = piecesAttendues("SASU").find((p) => p.identifiant === "depot-capital");
     expect(piece?.formats).toEqual([".pdf"]);
+  });
+});
+
+describe("l'ordre dans lequel les actes se lisent", () => {
+  /*
+   * La liste sortait dans l'ordre de la base - à égalité de date de production, le
+   * dernier écrit en premier : le client ouvrait ses documents sur le procès-verbal de
+   * nomination et descendait chercher ses statuts, l'acte qui fonde la société, celui
+   * qu'il porte à sa banque et qu'il signe en premier.
+   */
+  it("met les statuts en tête", () => {
+    const titres = [
+      "Procès-verbal de nomination",
+      "Attestation de domiciliation",
+      "Déclaration de non-condamnation et de filiation",
+      "Liste des souscripteurs",
+      "Statuts constitutifs",
+    ].sort((a, b) => rangDeLActe(a) - rangDeLActe(b));
+
+    expect(titres).toEqual([
+      "Statuts constitutifs",
+      "Liste des souscripteurs",
+      "Déclaration de non-condamnation et de filiation",
+      "Attestation de domiciliation",
+      "Procès-verbal de nomination",
+    ]);
+  });
+
+  /* Ce que la table ne connaît pas - une pièce du client, un Kbis - se range après. */
+  it("range à la fin ce qui n'est pas un acte produit", () => {
+    expect(rangDeLActe("Pièce d'identité")).toBeGreaterThan(
+      rangDeLActe("Procès-verbal de nomination")
+    );
+    expect(rangDeLActe("Extrait Kbis")).toBe(rangDeLActe("Justificatif de domicile"));
   });
 });

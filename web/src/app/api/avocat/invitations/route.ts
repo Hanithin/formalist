@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import {
-  inviterUnConfrere,
-  retirerUnConfrere,
-  confreresNommes,
+  inviterUnAvocat,
+  retirerUnAvocat,
+  avocatsInvitesDuDossier,
 } from "@/infrastructure/db/depots/avocat";
 import { exigerDossier } from "@/infrastructure/db/depots/dossiers";
 import { validerCorps, validerParametres, schemas } from "@/lib/valider";
@@ -26,7 +26,7 @@ export const GET = route(async (requete: Request) => {
 
   /* L'accès au dossier commande l'accès à la liste : elle nomme des personnes. */
   await exigerDossier(utilisateur, dossier);
-  return NextResponse.json({ confreres: await confreresNommes(dossier) });
+  return NextResponse.json({ avocats: await avocatsInvitesDuDossier(dossier) });
 });
 
 export const POST = route(async (requete: Request) => {
@@ -36,7 +36,7 @@ export const POST = route(async (requete: Request) => {
     requete
   );
 
-  return NextResponse.json(await inviterUnConfrere(utilisateur, dossier, courriel));
+  return NextResponse.json(await inviterUnAvocat(utilisateur, dossier, courriel));
 });
 
 export const DELETE = route(async (requete: Request) => {
@@ -46,5 +46,5 @@ export const DELETE = route(async (requete: Request) => {
     requete
   );
 
-  return NextResponse.json(await retirerUnConfrere(utilisateur, dossier, avocat));
+  return NextResponse.json(await retirerUnAvocat(utilisateur, dossier, avocat));
 });

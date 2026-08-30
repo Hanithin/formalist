@@ -56,7 +56,7 @@ export function etatCabinet(dossier: DossierCabinet): { libelle: string; teinte:
    * Un dossier que personne n'a pris se dit d'abord.
    *
    * Il affichait « En traitement », l'état de tout dossier réglé : rien ne distinguait
-   * celui qu'un confrère révise de celui qui attend qu'on le prenne, et il fallait
+   * celui qu'un autre avocat révise de celui qui attend qu'on le prenne, et il fallait
    * ouvrir le panneau de chaque ligne pour savoir laquelle portait le bouton.
    */
   if (dossier.libre && dossier.status !== "terminee") {

@@ -9,7 +9,7 @@ import { deposerUnLivrable } from "./Avancement";
 import styles from "../Avocat.module.css";
 
 /** Les quatre gestes qui s'écrivent dans la fenêtre. */
-type Geste = "corrections" | "refus" | "dessaisissement" | "confrere";
+type Geste = "corrections" | "refus" | "dessaisissement" | "invitation";
 
 interface Formulaire {
   titre: string;
@@ -363,7 +363,7 @@ export function Travail({
         }),
       succes: "Vous n'êtes plus sur ce dossier : il repart dans la file.",
     },
-    confrere: {
+    invitation: {
       titre: "Inviter un avocat sur le dossier",
       detail:
         "Il pourra le lire et y travailler avec vous, et il en est prévenu par courriel. Vous en restez l'avocat responsable.",
@@ -372,7 +372,7 @@ export function Travail({
       bouton: "Inviter",
       exige: true,
       envoyer: (texte) =>
-        fetch("/api/avocat/confreres", {
+        fetch("/api/avocat/invitations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ dossier, courriel: texte }),
@@ -822,7 +822,7 @@ export function Travail({
             <button
               type="button"
               className={styles.travailTertiaire}
-              onClick={() => setFenetre("confrere")}
+              onClick={() => setFenetre("invitation")}
               disabled={enCours}
             >
               Inviter un avocat
@@ -1055,7 +1055,7 @@ export function Travail({
               Une adresse tient sur une ligne ; un motif, non. Le champ suit ce qu'on
               lui demande d'écrire.
             */}
-            {fenetre === "confrere" ? (
+            {fenetre === "invitation" ? (
               <input
                 id="motif-du-geste"
                 type="email"

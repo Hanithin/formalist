@@ -40,7 +40,7 @@ describe("où en est le travail du cabinet", () => {
 
   it("un dossier que personne n'a pris appelle un preneur", () => {
     // Il affichait « En traitement » comme tout dossier réglé : rien ne distinguait
-    // celui qu'un confrère révise de celui qui attend qu'on le prenne.
+    // celui qu'un autre avocat révise de celui qui attend qu'on le prenne.
     expect(etatCabinet(dossier({ phase: 5, libre: true }))).toEqual({
       libelle: "À prendre",
       teinte: "orange",
