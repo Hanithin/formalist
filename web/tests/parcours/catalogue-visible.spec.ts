@@ -53,3 +53,54 @@ test("le bouton de la colonne dit qu'il ouvre un choix", async ({ page }) => {
   await expect(bouton).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByRole("dialog", { name: "Nouvelle formalité" })).toBeVisible();
 });
+
+test("la fenêtre dit ce que chaque formalité coûte et prend de temps", async ({ page }) => {
+  /*
+   * Elle montrait une version appauvrie de la carte de l'accueil : ni durée, ni prix,
+   * ni flèche, ni la mention du parcours recommandé - au moment précis où l'on choisit
+   * entre créer une société et créer une auto-entreprise. Les deux endroits où le
+   * catalogue paraît emploient désormais la même carte.
+   */
+  await page.goto("/tableau-de-bord");
+  await page.getByRole("button", { name: "Nouvelle formalité" }).click();
+
+  const fenetre = page.getByRole("dialog", { name: "Nouvelle formalité" });
+  await expect(fenetre).toBeVisible();
+
+  for (const parcours of PARCOURS.filter((p) => !p.bientot)) {
+    const carte = fenetre.getByRole("link", { name: new RegExp(parcours.titre) });
+    await expect(carte, parcours.titre).toHaveAttribute("href", parcours.lien);
+    await expect(carte, parcours.titre).toContainText(parcours.duree!);
+    await expect(carte, parcours.titre).toContainText(parcours.prix!);
+  }
+
+  /* Le parcours recommandé se signale, comme sur l'accueil. */
+  const recommande = PARCOURS.find((p) => p.recommande)!;
+  await expect(
+    fenetre.getByRole("link", { name: new RegExp(recommande.titre) })
+  ).toContainText("Recommandé");
+});
+
+test("le catalogue tient dans l'écran sans se couper", async ({ page }) => {
+  /*
+   * Quatre familles empilées faisaient descendre l'œil sur autant d'écrans de liste ;
+   * rangées par deux, le catalogue se voit d'un coup. La fenêtre défilait par ailleurs
+   * de la hauteur de son propre retrait - dix-huit pixels, que payait la dernière
+   * ligne de cartes, et qui donnaient l'air d'un contenu tronqué.
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/tableau-de-bord");
+  await page.getByRole("button", { name: "Nouvelle formalité" }).click();
+
+  const mesures = await page.evaluate(() => {
+    const fenetre = document.querySelector('[role="dialog"]')!;
+    const familles = fenetre.querySelector('[class*="familles"]') as HTMLElement;
+    return {
+      defile: familles.scrollHeight > familles.clientHeight,
+      dansLEcran: fenetre.getBoundingClientRect().bottom <= window.innerHeight,
+    };
+  });
+
+  expect(mesures.defile).toBe(false);
+  expect(mesures.dansLEcran).toBe(true);
+});

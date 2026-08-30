@@ -124,7 +124,16 @@
 
 .fenetre {
   width: 100%;
-  max-width: 720px;
+  /*
+   * Deux familles par ligne demandent de la largeur.
+   *
+   * À 720, les huit cartes s'empilaient sur quatre lignes de familles ; la fenêtre
+   * tenait dans l'écran mais se lisait comme une liste qu'on descend. À 940, les
+   * quatre familles se rangent en deux lignes de deux : le catalogue se voit d'un
+   * coup, et chaque carte garde ses quatre cent quarante pixels - de quoi porter sa
+   * durée et son prix sans les serrer.
+   */
+  max-width: 940px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
@@ -209,16 +218,21 @@
  * Rangées, on saute à celle qui nous concerne - et l'on découvre au passage ce que la
  * plateforme sait faire d'autre, ce qu'une grille indifférenciée ne montre pas.
  */
+/*
+ * Les familles par deux, dans l'ordre de la vie d'une société.
+ *
+ * Empilées, elles faisaient descendre l'œil sur quatre écrans de liste avant qu'il
+ * ait vu ce qu'on sait faire. Côte à côte, le catalogue tient dans un regard.
+ */
+.familles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px 20px;
+  padding: 18px;
+}
+
 .famille {
-  padding: 0 18px;
-}
-
-.famille:first-of-type {
-  padding-top: 16px;
-}
-
-.famille:last-of-type {
-  padding-bottom: 18px;
+  min-width: 0;
 }
 
 .familleTitre {
@@ -230,15 +244,11 @@
   color: #a1a1aa;
 }
 
+/* Les deux parcours d'une famille se suivent, l'un sous l'autre. */
 .grille {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
-  padding: 0 0 16px;
-}
-
-.famille:last-of-type .grille {
-  padding-bottom: 0;
 }
 
 /*
@@ -248,8 +258,16 @@
  * rien ne l'indique - et l'en-tête sortait de l'écran avec elle.
  */
 .fenetre {
-  max-height: 88vh;
-  max-height: 88dvh;
+  /*
+   * Dix-huit pixels manquaient, et c'est la dernière ligne de cartes qui les payait.
+   *
+   * À 88 %, la fenêtre s'arrêtait juste au-dessus du bas de ses familles : elle
+   * défilait de la hauteur de son propre retrait, ce qui donne l'air d'un contenu
+   * coupé plutôt que d'une liste à parcourir. Le défilement reste là où il sert -
+   * un portable de sept cents pixels de haut ne tient pas les quatre familles.
+   */
+  max-height: 92vh;
+  max-height: 92dvh;
   display: flex;
   flex-direction: column;
 }
@@ -258,13 +276,24 @@
   overflow-y: auto;
 }
 
-@media (max-width: 600px) {
-  .grille {
-    grid-template-columns: 1fr;
+/*
+ * Sous neuf cents pixels, les familles reprennent la file.
+ *
+ * Deux colonnes de deux cent quarante ne portent plus une carte à deux étages : le
+ * prix passerait sous la durée, et la description se couperait en trois lignes.
+ */
+@media (max-width: 900px) {
+  .familles {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
-.carte,
+/*
+ * Ce qu'il reste du dessin d'origine : la carte d'un parcours qui n'est pas ouvert.
+ *
+ * Les autres emploient la carte partagée du catalogue, celle de l'accueil. Celle-ci
+ * n'est pas un lien - elle ne mène nulle part - et n'a donc ni prix, ni flèche.
+ */
 .carteBientot {
   display: flex;
   align-items: center;
@@ -280,20 +309,20 @@
     transform 0.05s;
 }
 
-.carte:hover {
-  border-color: #111;
-  background: #fafafa;
-}
-
-.carte:active {
-  transform: scale(0.99);
-}
-
 /* Les deux parcours annoncés portaient un href="#" qui renvoyait en haut de la
    page. La carte reste visible, et dit qu'elle n'est pas ouverte. */
 .carteBientot {
   opacity: 0.55;
   cursor: default;
+}
+
+/* Le mot le dit, là où les autres portent leur prix. */
+.bientot {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #a1a1aa;
 }
 
 .pastille {
@@ -371,9 +400,15 @@
   white-space: nowrap;
 }
 
-@media (max-width: 600px) {
-  .grille {
-    grid-template-columns: 1fr;
+/*
+ * Sous neuf cents pixels, les familles reprennent la file.
+ *
+ * Deux colonnes de deux cent quarante ne portent plus une carte à deux étages : le
+ * prix passerait sous la durée, et la description se couperait en trois lignes.
+ */
+@media (max-width: 900px) {
+  .familles {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

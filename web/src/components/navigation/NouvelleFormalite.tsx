@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { FAMILLES } from "@/domain/navigation/parcours";
+import { CarteDeParcours } from "./CarteDeParcours";
 import styles from "./NouvelleFormalite.module.css";
 
 /**
@@ -134,7 +134,14 @@ export function NouvelleFormalite({
                   <h2 id="nouvelle-formalite" className={styles.titre}>
                     Nouvelle formalité
                   </h2>
-                  <p className={styles.soustitre}>Choisissez l&apos;opération à lancer</p>
+                  {/*
+                    Le sous-titre disait à quoi sert la fenêtre à qui venait de
+                    l'ouvrir : « Choisissez l'opération à lancer ». Il dit maintenant ce
+                    qu'on veut savoir au moment de choisir - qui tient la plume derrière.
+                  */}
+                  <p className={styles.soustitre}>
+                    Un avocat relit chaque acte, du premier document au greffe.
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -162,51 +169,35 @@ export function NouvelleFormalite({
                   <section key={famille.titre} className={styles.famille}>
                     <h3 className={styles.familleTitre}>{famille.titre}</h3>
                     <div className={styles.grille}>
-                      {famille.parcours.map((c) => {
-                        const dessin = (
+                      {famille.parcours.map((parcours) =>
+                        /*
+                          Un parcours pas encore ouvert se nomme sans se promettre.
+                          La page d'origine posait un href="#" sur les deux : la carte
+                          renvoyait en haut de page sans que rien ne l'explique.
+                        */
+                        parcours.bientot ? (
                           <span
-                            className={`${styles.pastille} ${styles[c.teinte]}`}
-                            aria-hidden="true"
-                            /* Les tracés sont des données de ce fichier, pas une saisie. */
-                            dangerouslySetInnerHTML={{ __html: OUVERTURE + c.icone + "</svg>" }}
-                          />
-                        );
-
-                        const corps = (
-                          <span className={styles.corps}>
-                            <span className={styles.carteTitre}>{c.titre}</span>
-                            <span className={styles.carteDesc}>{c.description}</span>
-                          </span>
-                        );
-
-                        // La page d'origine posait un href="#" sur les deux parcours non
-                        // ouverts : la carte renvoyait en haut de page. Ici elle le dit.
-                        if (c.bientot) {
-                          return (
-                            <span
-                              key={c.titre}
-                              className={styles.carteBientot}
-                              aria-disabled="true"
-                            >
-                              {dessin}
-                              {corps}
-                              <span className={styles.bientot}>Bientôt</span>
-                            </span>
-                          );
-                        }
-
-                        return (
-                          <Link
-                            key={c.titre}
-                            href={c.lien}
-                            className={styles.carte}
-                            onClick={() => setOuverte(false)}
+                            key={parcours.titre}
+                            className={styles.carteBientot}
+                            aria-disabled="true"
                           >
-                            {dessin}
-                            {corps}
-                          </Link>
-                        );
-                      })}
+                            <span
+                              className={`${styles.pastille} ${styles[parcours.teinte]}`}
+                              aria-hidden="true"
+                              dangerouslySetInnerHTML={{
+                                __html: OUVERTURE + parcours.icone + "</svg>",
+                              }}
+                            />
+                            <span className={styles.corps}>
+                              <span className={styles.carteTitre}>{parcours.titre}</span>
+                              <span className={styles.carteDesc}>{parcours.description}</span>
+                            </span>
+                            <span className={styles.bientot}>Bientôt</span>
+                          </span>
+                        ) : (
+                          <CarteDeParcours key={parcours.titre} parcours={parcours} />
+                        )
+                      )}
                     </div>
                   </section>
                 ))}
