@@ -320,6 +320,18 @@ describe("le nom du document du greffe", () => {
 
     expect(titre("creation")).toBe("Remettre extrait Kbis");
     expect(titre("comptes")).toBe("Remettre récépissé de dépôt");
-    expect(titre("fermeture")).toBe("Remettre attestation de radiation");
+
+    /*
+     * Une fermeture se joue en deux temps : au dépôt de la dissolution, le greffe
+     * inscrit la mise en liquidation et délivre un extrait qui la mentionne ; la
+     * radiation, et son attestation, ne viennent qu'à la clôture. La tâche nommait la
+     * radiation dès la première phase.
+     */
+    expect(titre("fermeture")).toBe("Remettre extrait Kbis de dissolution");
+    expect(
+      travailDuCabinet(etat({ type: "fermeture", phaseDeFermeture: "cloture" })).find(
+        (t) => t.identifiant === "final"
+      )?.titre
+    ).toBe("Remettre attestation de radiation");
   });
 });

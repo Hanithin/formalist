@@ -33,7 +33,7 @@ import { Communication, type MessageDuFil } from "./Communication";
 import { Avancement } from "./Avancement";
 import { PriseEnCharge } from "./PriseEnCharge";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
-import { DOCUMENT_FINAL } from "@/domain/formalite/cabinet";
+import { documentFinalDe } from "@/domain/formalite/cabinet";
 import { Vide } from "@/components/liste/Vide";
 import {
   estUneModification,
@@ -219,7 +219,17 @@ export default async function DossierAvocat({
     libre,
   });
 
-  const aVerifier = documents.filter((d) => d.status === "uploaded").length;
+  /*
+   * Ce que le client a déposé, non ce que le cabinet dépose.
+   *
+   * Le compte prenait tout ce qui portait « déposé » : le Kbis, le récépissé, le
+   * registre des bénéficiaires - remis par l'avocat lui-même - rejoignaient la file des
+   * justificatifs à vérifier. Un dossier clos finissait sur « 1 pièce à vérifier », et
+   * l'on demandait à l'avocat de valider le document qu'il venait de déposer.
+   */
+  const aVerifier = documents.filter(
+    (d) => d.status === "uploaded" && d.uploaded_by !== "avocat"
+  ).length;
 
   /*
    * Ce que le dossier réclame, comparé à ce qu'il porte.
@@ -307,6 +317,9 @@ export default async function DossierAvocat({
   const routeDeLAnnonce =
     type === "modification" ? "/api/formalites/modification/annonce" : "/api/formalites/annonce";
 
+  /* La phase d'une fermeture décide du nom du document que le greffe délivre. */
+  const phaseDeLaFermeture = donnees.phase === "cloture" ? ("cloture" as const) : undefined;
+
   const taches = travailDuCabinet({
     type,
     informationsVerifiees,
@@ -343,6 +356,8 @@ export default async function DossierAvocat({
      * URSSAF et de l'espace fiscal de la société - mais il doit savoir si elles
      * manquent, parce que c'est lui qui déposera et lui qui essuiera le refus.
      */
+    /* Une fermeture en est-elle à sa dissolution ou à sa clôture ? */
+    phaseDeFermeture: phaseDeLaFermeture,
     attestationsReunies:
       typeof donnees.jalons === "object" && donnees.jalons !== null
         ? (donnees.jalons as Record<string, unknown>).attestationFiscale === true &&
@@ -675,7 +690,7 @@ export default async function DossierAvocat({
                 type={type}
                 sousPhase={dossier.business_sub_phase}
                 aLeKbis={remis(TYPE_KBIS)}
-                documentFinal={DOCUMENT_FINAL[type]}
+                documentFinal={documentFinalDe(type, phaseDeLaFermeture)}
                 aLeRbe={remis(TYPE_RBE)}
               />
             </div>
@@ -719,7 +734,7 @@ export default async function DossierAvocat({
               pieces={pieces}
               /* Les documents remis sont les pièces de l'étape « Déposer ». */
               livrables={{
-                documentFinal: DOCUMENT_FINAL[type],
+                documentFinal: documentFinalDe(type, phaseDeLaFermeture),
                 aLeKbis: remis(TYPE_KBIS),
                 aLeRbe: remis(TYPE_RBE),
                 /*

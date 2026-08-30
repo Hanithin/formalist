@@ -6,6 +6,7 @@ import { SOCIETE_A_IDENTIFIER } from "@/domain/formalite/liste";
 import type { Nature } from "@/domain/cessation/regles";
 import type { EntrepriseCessee } from "@/domain/cessation/gabarit";
 import { journal } from "@/lib/journal";
+import { produireLesActesDeLaCessation } from "@/infrastructure/documents/actes-cessation";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -174,6 +175,29 @@ export async function confirmerLeReglementDeLaCessation(
       after_value: reference,
     },
   });
+
+  /*
+   * Les actes suivent le paiement, comme dans les autres parcours.
+   *
+   * Ils n'étaient produits nulle part : le dossier arrivait chez l'avocat sans la
+   * déclaration récapitulative ni le pouvoir, et la tâche « Produire les actes »
+   * restait à faire sans qu'aucun geste ne l'accomplisse.
+   */
+  try {
+    const { produits } = await produireLesActesDeLaCessation(dossier.id, {
+      ...cessation,
+      paye: true,
+    });
+    journal.info(
+      { dossier: dossier.id, actes: produits.length },
+      "Actes de la cessation produits après règlement"
+    );
+  } catch (e) {
+    journal.error(
+      { dossier: dossier.id, err: e },
+      "Actes de la cessation non produits après règlement"
+    );
+  }
 
   const { proposes } = await proposerAuxAvocats(dossier.id);
   return { dossierId: dossier.id, paye: true, proposes };

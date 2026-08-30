@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
-import { produireLesActes, DossierIncomplet } from "@/infrastructure/documents/actes";
+import { produireLesActesDuDossier, DossierIncomplet } from "@/infrastructure/documents/actes";
 import { prisma } from "@/infrastructure/db/client";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
@@ -36,7 +36,7 @@ export const POST = route(async (requete: Request) => {
   });
 
   try {
-    const { produits, conserves } = await produireLesActes(utilisateur, dossier, {
+    const { produits, conserves } = await produireLesActesDuDossier(utilisateur, dossier, {
       forcerLaRelecture: ligne?.status !== "en_cours",
     });
     return NextResponse.json(

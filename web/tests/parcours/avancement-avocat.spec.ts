@@ -308,6 +308,19 @@ test.describe("avancement du cabinet", () => {
     corps.append("fichier", new Blob([PDF], { type: "application/pdf" }), "kbis.pdf");
     await request.post("/api/avocat/livrables", { multipart: corps });
 
+    /*
+     * Et l'avis doit avoir paru : la constitution s'annonce, la parution fait partie
+     * du dossier déposé. Un dossier se terminait en laissant l'étape « Annonce légale
+     * publiée » en cours à vie sur le suivi du client, sur une société immatriculée.
+     */
+    const sansAvis = await request.put("/api/avocat/cloture", { data: { dossier: dossier.id } });
+    expect(sansAvis.status()).toBe(403);
+    expect((await sansAvis.json()).error).toContain("avis de constitution");
+
+    await request.post("/api/formalites/annonce", {
+      data: { dossier: dossier.id, publies: true },
+    });
+
     const reponse = await request.put("/api/avocat/cloture", { data: { dossier: dossier.id } });
     expect(reponse.status()).toBe(200);
     expect((await reponse.json()).deja).toBe(false);
@@ -678,5 +691,53 @@ test.describe("l'avis de constitution", () => {
 
     await page.goto("/avocat/" + dossier.id + "?onglet=annonce");
     await expect(page.getByRole("button", { name: "Revenir sur la publication" })).toBeVisible();
+  });
+});
+
+/*
+ * Le cabinet ne se vérifie pas lui-même.
+ *
+ * Le compte des pièces à vérifier prenait tout ce qui portait « déposé » : le Kbis, le
+ * récépissé, le registre des bénéficiaires - remis par l'avocat - rejoignaient la file
+ * des justificatifs du client. Un dossier clos finissait sur « 1 pièce à vérifier », et
+ * l'on demandait à l'avocat de valider le document qu'il venait de déposer.
+ */
+test.describe("les pièces à vérifier", () => {
+  test.use({ storageState: "./tests/parcours/session-avocat.json" });
+
+  const ouverts: number[] = [];
+  test.afterAll(async () => {
+    if (ouverts.length > 0) await retirerDossiers(ouverts);
+  });
+
+  test("ne comptent pas ce que le cabinet a déposé", async ({ page, request }) => {
+    const client = await prisma.users.findFirstOrThrow({
+      where: { email: "parcours@exemple.test" },
+    });
+    const avocat = await prisma.users.findFirstOrThrow({
+      where: { email: "avocat-parcours@exemple.test" },
+    });
+    const dossier = await prisma.formalites.create({
+      data: {
+        user_id: client.id,
+        assigned_avocat_id: avocat.id,
+        type: "creation",
+        forme: "SASU",
+        societe: "PIECES CABINET " + Date.now(),
+        status: "en_attente_validation",
+        phase: 5,
+        business_sub_phase: "5d",
+      },
+    });
+    ouverts.push(dossier.id);
+
+    const corps = new FormData();
+    corps.append("dossier", String(dossier.id));
+    corps.append("type", "kbis");
+    corps.append("fichier", new Blob([PDF], { type: "application/pdf" }), "kbis.pdf");
+    expect((await request.post("/api/avocat/livrables", { multipart: corps })).status()).toBe(201);
+
+    await page.goto("/avocat/" + dossier.id + "?onglet=travail");
+    await expect(page.getByText(/pièce à vérifier|pièces à vérifier/)).toHaveCount(0);
   });
 });

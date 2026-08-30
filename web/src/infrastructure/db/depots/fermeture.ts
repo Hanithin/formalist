@@ -5,6 +5,7 @@ import { relirePaiement } from "@/infrastructure/paiement/stripe";
 import type { Voie } from "@/domain/fermeture/voie";
 import type { SocieteFermee, AssociePresent } from "@/domain/fermeture/gabarit";
 import { journal } from "@/lib/journal";
+import { produireLesActesDeLaFermeture } from "@/infrastructure/documents/actes-fermeture";
 import type { UtilisateurConnecte } from "../sessions";
 import { SOCIETE_A_IDENTIFIER } from "@/domain/formalite/liste";
 
@@ -256,6 +257,33 @@ export async function confirmerLeReglementDeLaFermeture(
       after_value: reference,
     },
   });
+
+  /*
+   * Les actes suivent le paiement, comme dans les trois autres parcours.
+   *
+   * Ils n'étaient produits nulle part : le dossier arrivait chez l'avocat sans un
+   * document, et la tâche « Produire les actes » restait à faire sans qu'aucun geste
+   * ne l'accomplisse. La création, la modification et le dépôt des comptes les
+   * produisent à l'encaissement depuis longtemps.
+   *
+   * L'échec ne défait pas le règlement : l'argent est encaissé, le dossier est confié,
+   * et le cabinet peut relancer la production d'un clic.
+   */
+  try {
+    const { produits } = await produireLesActesDeLaFermeture(dossier.id, {
+      ...fermeture,
+      paye: true,
+    });
+    journal.info(
+      { dossier: dossier.id, actes: produits.length },
+      "Actes de la fermeture produits après règlement"
+    );
+  } catch (e) {
+    journal.error(
+      { dossier: dossier.id, err: e },
+      "Actes de la fermeture non produits après règlement"
+    );
+  }
 
   const { proposes } = await proposerAuxAvocats(dossier.id);
   return { dossierId: dossier.id, paye: true, proposes };

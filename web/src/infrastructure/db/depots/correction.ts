@@ -20,6 +20,7 @@
  */
 
 import { prisma } from "../client";
+import { nomDeLaSociete } from "@/domain/formalite/demande";
 import { Interdit } from "../utilisateur-courant";
 import type { UtilisateurConnecte } from "../sessions";
 import { exigerDossier } from "./dossiers";
@@ -232,7 +233,7 @@ export async function corrigerEtReproduire(
       await prevenir(
         dossier.user_id,
         dossierId,
-        actesRetires(dossier.societe || "votre société")
+        actesRetires(nomDeLaSociete(dossier) || "votre société")
       );
       await avancerSelonLeTravail(utilisateur, dossierId);
     }

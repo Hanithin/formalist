@@ -9,6 +9,15 @@ import { genererDocument } from "@/infrastructure/documents/generation";
 import { remplacerDocumentsProduits } from "@/infrastructure/documents/depot";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import type { UtilisateurConnecte } from "@/infrastructure/db/sessions";
+import { exigerDossier } from "@/infrastructure/db/depots/dossiers";
+import { lireComptes } from "@/infrastructure/db/depots/comptes";
+import { lireModification } from "@/infrastructure/db/depots/modifications";
+import { lireFermeture } from "@/infrastructure/db/depots/fermeture";
+import { lireCessation } from "@/infrastructure/db/depots/cessation";
+import { produireLesActesDesComptes } from "@/infrastructure/documents/actes-comptes";
+import { produireLesActesDeLaModification } from "@/infrastructure/documents/actes-modification";
+import { produireLesActesDeLaFermeture } from "@/infrastructure/documents/actes-fermeture";
+import { produireLesActesDeLaCessation } from "@/infrastructure/documents/actes-cessation";
 
 /**
  * La production des actes d'un dossier.
@@ -38,6 +47,48 @@ export class DossierIncomplet extends Error {
  * `forcerLaRelecture` sert au cas inverse : l'acte change - il est re-daté du jour de
  * l'attestation - et doit repasser devant l'avocat même s'il était déjà remis.
  */
+/**
+ * Produit les actes d'un dossier, quel qu'il soit.
+ *
+ * `produireLesActes` ne connaît que la création : elle lit le brouillon et compose ses
+ * statuts. La route qui la sert est pourtant celle du bouton « Produire les actes » de
+ * l'espace avocat, offert depuis peu sur tous les parcours - une fermeture y produisait
+ * donc des actes de constitution, ou plus exactement échouait sans dire pourquoi.
+ *
+ * Le dispatch existait déjà, enfoui dans la correction d'un dossier : il est ici, où
+ * les deux le trouvent.
+ */
+export async function produireLesActesDuDossier(
+  utilisateur: UtilisateurConnecte,
+  dossierId: number,
+  options: { forcerLaRelecture?: boolean } = {}
+) {
+  const dossier = await exigerDossier(utilisateur, dossierId);
+  const json = dossier.data_json;
+
+  if (dossier.type === "comptes") {
+    return produireLesActesDesComptes(dossierId, lireComptes(json), { par: utilisateur.id });
+  }
+  if (dossier.type === "modification") {
+    return produireLesActesDeLaModification(dossierId, lireModification(json), {
+      par: utilisateur.id,
+    });
+  }
+  if (dossier.type === "fermeture") {
+    return produireLesActesDeLaFermeture(dossierId, lireFermeture(json), { par: utilisateur.id });
+  }
+  if (dossier.type === "cessation") {
+    return produireLesActesDeLaCessation(dossierId, lireCessation(json), { par: utilisateur.id });
+  }
+  /*
+   * Une auto-entreprise n'a pas d'acte à rédiger : sa valeur est dans la déclaration
+   * au guichet et le calendrier des échéances qui suivent.
+   */
+  if (dossier.type === "auto-entrepreneur") return { produits: [], conserves: [] };
+
+  return produireLesActes(utilisateur, dossierId, options);
+}
+
 export async function produireLesActes(
   utilisateur: UtilisateurConnecte,
   dossierId: number,

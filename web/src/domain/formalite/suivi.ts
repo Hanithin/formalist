@@ -58,6 +58,16 @@ export interface EtatDuDossier {
    * qui menait à un dépôt impossible.
    */
   actesEnRelecture?: boolean;
+  /**
+   * La phase d'une fermeture : dissolution, puis clôture.
+   *
+   * Une fermeture se joue en deux temps séparés de plusieurs mois - la dissolution met
+   * la société en liquidation, la clôture la radie. Le suivi les confondait : il
+   * annonçait « Attestation de radiation » au dépôt de la dissolution, alors que le
+   * greffe délivre à ce moment-là un extrait mentionnant la liquidation, et que la
+   * radiation ne se demandera qu'à la seconde phase.
+   */
+  phaseDeFermeture?: "dissolution" | "cloture";
 }
 
 export type Main = "vous" | "avocat";
@@ -389,6 +399,128 @@ const COMPTES: Definition[] = [
 ];
 
 /**
+ * Le parcours d'une fermeture de société.
+ *
+ * Il empruntait celui de la création, faute d'avoir le sien : le client qui ferme sa
+ * société lisait « Attestation de dépôt de capital · à vous » - l'étape mise en avant,
+ * avec son bouton - alors qu'on ne dépose aucun capital pour dissoudre, et « Kbis
+ * délivré » alors que le greffe radie et délivre une attestation de radiation.
+ *
+ * L'avis de dissolution, lui, est bien à publier : c'est le cabinet qui s'en charge.
+ */
+const FERMETURE: Definition[] = [
+  {
+    identifiant: "transmis",
+    titre: "Dossier transmis à un avocat",
+    explication:
+      "Votre dossier de dissolution est réglé et proposé à nos avocats. Le premier disponible le prend en main.",
+    main: "avocat",
+    faite: (e) => !!e.avocatAssigne,
+  },
+  {
+    identifiant: "verification",
+    titre: "Vérification par un avocat",
+    explication:
+      "Votre avocat contrôle la décision de dissolution, la nomination du liquidateur et vos justificatifs. Il vous écrit si un point doit être repris.",
+    main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
+    action: "Voir ce qui est demandé",
+    ou: "messagerie",
+    faite: (e) =>
+      e.status !== "corrections_demandees" &&
+      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+  },
+  {
+    identifiant: "annonce",
+    titre: "Publication de l'avis de dissolution",
+    explication:
+      "Nous publions l'avis dans un support habilité du département de votre siège. La dissolution n'est opposable aux tiers qu'une fois parue.",
+    main: "avocat",
+    faite: (e) => e.aLAnnoncePubliee,
+  },
+  {
+    identifiant: "greffe",
+    titre: "Dépôt au guichet unique",
+    explication:
+      "Votre avocat dépose la dissolution en votre nom. La radiation se demandera à la clôture de la liquidation, des mois plus tard.",
+    main: "avocat",
+    faite: (e) => auMoins(e.sousPhase, "5d"),
+  },
+  {
+    identifiant: "dissolution",
+    titre: "Dissolution enregistrée",
+    explication:
+      "Le greffe inscrit la dissolution : la société entre en liquidation et son nom porte désormais la mention « en liquidation ». Le document délivré rejoint vos documents.",
+    main: "avocat",
+    faite: (e) => auMoins(e.sousPhase, "5e") || e.aLeKbis || e.status === "terminee",
+  },
+  {
+    identifiant: "radiation",
+    titre: "Clôture de la liquidation et radiation",
+    /*
+     * Les deux temps d'une fermeture.
+     *
+     * Cette étape ne s'atteint pas dans la foulée : le liquidateur réalise l'actif,
+     * apure le passif, et l'assemblée approuve les comptes définitifs - des mois plus
+     * tard. L'étape l'annonçait comme la suite immédiate du dépôt, et se cochait avec
+     * lui : le client lisait sa société radiée le jour où elle entrait en liquidation.
+     */
+    explication:
+      "Une fois l'actif réalisé et le passif apuré, l'assemblée approuve les comptes de liquidation et donne quitus au liquidateur. Le greffe radie alors la société et en délivre l'attestation. Comptez plusieurs mois.",
+    main: "avocat",
+    faite: (e) =>
+      e.phaseDeFermeture === "cloture" &&
+      (auMoins(e.sousPhase, "5e") || e.status === "terminee"),
+  },
+];
+
+/**
+ * Le parcours d'une cessation d'activité.
+ *
+ * Il empruntait lui aussi celui de la création : une auto-entreprise qui cesse y
+ * lisait qu'on attendait d'elle une attestation de dépôt de capital, une annonce
+ * légale et un Kbis. Elle n'a ni capital, ni support habilité, ni registre du
+ * commerce - le guichet unique enregistre la cessation et en accuse réception.
+ */
+const CESSATION: Definition[] = [
+  {
+    identifiant: "transmis",
+    titre: "Déclaration transmise à un avocat",
+    explication:
+      "Votre déclaration de cessation est réglée et proposée à nos avocats. Le premier disponible la prend en main.",
+    main: "avocat",
+    faite: (e) => !!e.avocatAssigne,
+  },
+  {
+    identifiant: "verification",
+    titre: "Vérification par un avocat",
+    explication:
+      "Votre avocat contrôle la déclaration et la date de cessation : c'est elle qui arrête vos obligations. Il vous écrit si un point doit être repris.",
+    main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
+    action: "Voir ce qui est demandé",
+    ou: "messagerie",
+    faite: (e) =>
+      e.status !== "corrections_demandees" &&
+      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+  },
+  {
+    identifiant: "guichet",
+    titre: "Dépôt au guichet unique",
+    explication:
+      "Votre avocat déclare la cessation à l'INPI en votre nom, sur mandat. La démarche est gratuite.",
+    main: "avocat",
+    faite: (e) => auMoins(e.sousPhase, "5d"),
+  },
+  {
+    identifiant: "recepisse",
+    titre: "Récépissé de cessation",
+    explication:
+      "Le guichet unique enregistre la cessation et en accuse réception. Le récépissé rejoint vos documents : c'est la preuve de votre radiation.",
+    main: "avocat",
+    faite: (e) => auMoins(e.sousPhase, "5e") || e.aLeKbis || e.status === "terminee",
+  },
+];
+
+/**
  * Les étapes du dossier, avec celle qui est en cours.
  *
  * Une seule étape est « en cours » : la première qui n'est pas faite. Les suivantes
@@ -397,6 +529,13 @@ const COMPTES: Definition[] = [
  * saisie qu'il vaut mieux voir.
  */
 export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
+  /*
+   * Chaque formalité a son parcours.
+   *
+   * Fermeture et cessation retombaient sur celui de la création, faute du leur : on
+   * demandait une attestation de dépôt de capital à qui dissout sa société, et l'on
+   * promettait un Kbis à qui se fait radier.
+   */
   const parcours =
     etat.type === "auto-entrepreneur"
       ? AUTO_ENTREPRISE
@@ -404,7 +543,11 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
         ? MODIFICATION
         : etat.type === "comptes"
           ? COMPTES
-          : TOUTES;
+          : etat.type === "fermeture"
+            ? FERMETURE
+            : etat.type === "cessation"
+              ? CESSATION
+              : TOUTES;
   const retenues = parcours.filter(
     (d) => d.identifiant !== "attestation" || attestationRequise(etat.forme)
   );

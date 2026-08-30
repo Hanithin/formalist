@@ -1,4 +1,5 @@
 import { prisma } from "../client";
+import { nomDeLaSociete } from "@/domain/formalite/demande";
 import { exigerDossier, mesDossiers } from "./dossiers";
 import { typeValide, LONGUEUR_MAXIMALE } from "@/domain/messagerie/messages";
 import type { UtilisateurConnecte } from "../sessions";
@@ -115,6 +116,7 @@ async function prevenirLAutrePartie(
     user_id: number;
     assigned_avocat_id: number | null;
     societe: string | null;
+    data_json: string | null;
   },
   messageId: number,
   contenu: string
@@ -137,7 +139,7 @@ async function prevenirLAutrePartie(
   await prevenir(
     destinataire,
     dossier.id,
-    messageRecu(utilisateur.nom, dossier.societe || "votre dossier", contenu),
+    messageRecu(utilisateur.nom, nomDeLaSociete(dossier) || "votre dossier", contenu),
     { courriel: redireParCourriel(enAttente) }
   );
 }

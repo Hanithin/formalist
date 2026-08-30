@@ -37,6 +37,34 @@ export function objetDuDossier(type: string, donnees: unknown): string[] {
 }
 
 /** Le brouillon d'un dossier, quand il est lisible. */
+/**
+ * Le nom de la société, tel qu'on l'écrit au client.
+ *
+ * La colonne `societe` porte le libellé de travail du cabinet, et une fermeture y
+ * ajoute sa phase : « ATELIER MARCHAND - dissolution », pour distinguer dans la liste
+ * un dossier qui dure des mois. Ce suffixe partait ensuite dans tout ce qu'on écrivait
+ * au client - « La fermeture de ATELIER MARCHAND - dissolution est enregistrée » - et
+ * dans l'objet de ses courriels.
+ *
+ * Le dossier porte la dénomination réelle : chaque parcours la range à sa façon, et
+ * c'est elle qu'on lui adresse.
+ */
+export function nomDeLaSociete(dossier: {
+  societe: string | null;
+  data_json: string | null;
+}): string {
+  const donnees = brouillonLisible(dossier.data_json);
+  const sous = (cle: string) =>
+    (donnees[cle] as { denomination?: unknown } | undefined)?.denomination;
+
+  const nom = [donnees.denomination, sous("societe"), sous("entreprise")].find(
+    (v) => typeof v === "string" && v.trim()
+  );
+
+  if (typeof nom === "string") return nom.trim();
+  return dossier.societe?.trim() || "";
+}
+
 export function brouillonLisible(dataJson: string | null): Record<string, unknown> {
   if (!dataJson) return {};
   try {

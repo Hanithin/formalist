@@ -396,3 +396,73 @@ describe("où mène le geste attendu", () => {
     }
   });
 });
+
+describe("chaque formalité a son parcours", () => {
+  /*
+   * Fermeture et cessation retombaient sur celui de la création, faute du leur : on
+   * demandait une attestation de dépôt de capital à qui dissout sa société - l'étape
+   * mise en avant, avec son bouton - et l'on promettait un Kbis à qui se fait radier.
+   */
+  it("une fermeture ne dépose aucun capital et ne reçoit pas de Kbis", () => {
+    const titres = etapesDuSuivi(
+      etat({ type: "fermeture", forme: "SARL", status: "en_attente_validation" })
+    ).map((e) => e.titre);
+
+    expect(titres).not.toContain("Attestation de dépôt de capital");
+    expect(titres).not.toContain("Kbis délivré");
+    expect(titres).toContain("Publication de l'avis de dissolution");
+    expect(titres).toContain("Clôture de la liquidation et radiation");
+  });
+
+  /*
+   * Une fermeture se joue en deux temps séparés de plusieurs mois : la dissolution
+   * met la société en liquidation, la clôture la radie. L'étape finale se cochait
+   * avec le dépôt de la dissolution - le client lisait sa société radiée le jour où
+   * elle entrait en liquidation.
+   */
+  it("la radiation attend la seconde phase", () => {
+    const enDissolution = etapesDuSuivi(
+      etat({
+        type: "fermeture",
+        forme: "SARL",
+        status: "terminee",
+        sousPhase: "5e",
+        phaseDeFermeture: "dissolution",
+        aLAnnoncePubliee: true,
+        avocatAssigne: true,
+      })
+    );
+    expect(enDissolution.find((e) => e.identifiant === "dissolution")?.etat).toBe("faite");
+    expect(enDissolution.find((e) => e.identifiant === "radiation")?.etat).toBe("en_cours");
+
+    const close = etapesDuSuivi(
+      etat({
+        type: "fermeture",
+        forme: "SARL",
+        status: "terminee",
+        sousPhase: "5e",
+        phaseDeFermeture: "cloture",
+        aLAnnoncePubliee: true,
+        avocatAssigne: true,
+      })
+    );
+    expect(close.find((e) => e.identifiant === "radiation")?.etat).toBe("faite");
+  });
+
+  /*
+   * Une auto-entreprise qui cesse n'a ni capital, ni support habilité, ni registre du
+   * commerce : le guichet unique enregistre la cessation et en accuse réception.
+   */
+  it("une cessation ne publie rien et ne reçoit pas de Kbis", () => {
+    const titres = etapesDuSuivi(
+      etat({ type: "cessation", forme: null, status: "en_attente_validation" })
+    ).map((e) => e.titre);
+
+    expect(titres).toEqual([
+      "Déclaration transmise à un avocat",
+      "Vérification par un avocat",
+      "Dépôt au guichet unique",
+      "Récépissé de cessation",
+    ]);
+  });
+});

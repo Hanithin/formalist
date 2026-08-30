@@ -1,9 +1,15 @@
 import { prisma } from "../client";
 import { Interdit } from "../utilisateur-courant";
 import { estPropose, estClos, STATUTS_HORS_PROPOSITION } from "@/domain/acces/regles";
-import { DOCUMENT_FINAL, typeDeDossier, avecArticle } from "@/domain/formalite/cabinet";
+import {
+  DOCUMENT_FINAL,
+  documentFinalDe,
+  OBJET_DE_L_AVIS,
+  typeDeDossier,
+  avecArticle,
+} from "@/domain/formalite/cabinet";
 import { envoyerMessage } from "./messages";
-import { objetDuDossier, brouillonLisible } from "@/domain/formalite/demande";
+import { objetDuDossier, brouillonLisible, nomDeLaSociete } from "@/domain/formalite/demande";
 import { exigerDossier, listerDossiers } from "./dossiers";
 import {
   transitionPermise,
@@ -43,7 +49,13 @@ import { prevenir } from "./avis";
 import { A_RELIRE } from "@/domain/document/publication";
 import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
 import { LONGUEUR_COMMENTAIRE } from "@/domain/formalite/avocat";
-import { TYPE_RBE, TYPE_KBIS, TYPE_ATTESTATION_CAPITAL, typesDeposes } from "./suivi";
+import {
+  TYPE_RBE,
+  TYPE_KBIS,
+  TYPE_ATTESTATION_CAPITAL,
+  typesDeposes,
+  etatDuDossier,
+} from "./suivi";
 import {
   dossierVerifie,
   depotSansDocument,
@@ -116,7 +128,12 @@ export async function dossiersDuCabinet(utilisateur: UtilisateurConnecte) {
     }),
     prisma.documents.groupBy({
       by: ["formalite_id"],
-      where: { formalite_id: { in: identifiants }, status: "uploaded" },
+      /* Ce que le client a déposé : le cabinet ne se vérifie pas lui-même. */
+      where: {
+        formalite_id: { in: identifiants },
+        status: "uploaded",
+        uploaded_by: { not: "avocat" },
+      },
       _count: { _all: true },
     }),
     prisma.team_notes.groupBy({
@@ -395,7 +412,7 @@ export async function changerEtatDossier(
    * L'ancien code écrivait une notification que rien ne lisait : quelqu'un dont
    * l'avocat demandait des corrections ne l'apprenait qu'en revenant de lui-même.
    */
-  const societe = dossier.societe || "votre société";
+  const societe = nomDeLaSociete(dossier) || "votre société";
   const avis =
     vers === "corrections_demandees"
       ? correctionsDemandees(societe)
@@ -455,7 +472,7 @@ export async function assignerAvocat(
   const ligne = await prisma.formalites.update({
     where: { id: dossierId },
     data: { assigned_avocat_id: avocatId, updated_at: new Date() },
-    select: { user_id: true, societe: true },
+    select: { user_id: true, societe: true, data_json: true },
   });
 
   await prisma.audit_log.create({
@@ -483,7 +500,7 @@ export async function assignerAvocat(
     await prevenir(
       ligne.user_id,
       dossierId,
-      dossierPrisEnCharge(ligne.societe || "votre société", cible.name)
+      dossierPrisEnCharge(nomDeLaSociete(ligne) || "votre société", cible.name)
     );
   }
 
@@ -573,11 +590,11 @@ export async function statuerSurDocument(
    */
   const dossier = await prisma.formalites.findUnique({
     where: { id: document.formalite_id },
-    select: { user_id: true, societe: true },
+    select: { user_id: true, societe: true, data_json: true },
   });
 
   if (dossier && decision !== "reprendre") {
-    const societe = dossier.societe || "votre société";
+    const societe = nomDeLaSociete(dossier) || "votre société";
     await prevenir(
       dossier.user_id,
       document.formalite_id,
@@ -746,11 +763,7 @@ export async function changerSousPhase(
   }
 
   const types = await typesDeposes(dossierId);
-  const refus = passageBloque(
-    vers,
-    types.has(TYPE_KBIS),
-    DOCUMENT_FINAL[typeDeDossier(dossier.type)]
-  );
+  const refus = passageBloque(vers, types.has(TYPE_KBIS), await documentFinalDuDossier(dossierId));
   if (refus) throw new Interdit(refus);
 
   await prisma.formalites.update({
@@ -758,7 +771,7 @@ export async function changerSousPhase(
     data: { business_sub_phase: vers, updated_at: new Date() },
   });
 
-  const societe = dossier.societe || "votre société";
+  const societe = nomDeLaSociete(dossier) || "votre société";
   /*
    * Ce qu'on annonce au client, et ce qu'on ne lui demande pas.
    *
@@ -892,13 +905,36 @@ export function estLivrable(type: string): type is keyof typeof LIVRABLES {
   return type in LIVRABLES;
 }
 
+/**
+ * Ce parcours fait-il paraître un avis ?
+ *
+ * La constitution, la modification et la dissolution s'annoncent ; un dépôt de
+ * comptes, une auto-entreprise et une cessation d'activité, non.
+ */
+function avisAPublierPour(type: string | null): boolean {
+  const t = typeDeDossier(type);
+  return t === "creation" || t === "modification" || t === "fermeture";
+}
+
 /** Le nom que le greffe donne au document final de ce dossier. */
 export async function documentFinalDuDossier(dossierId: number): Promise<string> {
   const dossier = await prisma.formalites.findUnique({
     where: { id: dossierId },
-    select: { type: true },
+    select: { type: true, data_json: true },
   });
-  return DOCUMENT_FINAL[typeDeDossier(dossier?.type ?? null)];
+  if (!dossier) return DOCUMENT_FINAL.creation;
+
+  /* Une fermeture en est-elle à sa dissolution ou à sa clôture ? */
+  const { phaseDeFermeture } = await etatDuDossier({
+    id: dossierId,
+    type: dossier.type,
+    forme: null,
+    status: null,
+    business_sub_phase: null,
+    data_json: dossier.data_json,
+  });
+
+  return documentFinalDe(typeDeDossier(dossier.type), phaseDeFermeture);
 }
 
 /**
@@ -922,7 +958,7 @@ export async function annoncerLeDocumentFinal(
   await prevenir(
     dossier.user_id,
     dossierId,
-    documentFinalRemis(dossier.societe || "votre société", document)
+    documentFinalRemis(nomDeLaSociete(dossier) || "votre société", document)
   );
 
   return { annonce: document };
@@ -959,6 +995,7 @@ export async function proposerAuxAvocats(dossierId: number) {
       forme: true,
       assigned_avocat_id: true,
       user_id: true,
+      data_json: true,
     },
   });
   if (!dossier) return { proposes: 0 };
@@ -982,13 +1019,13 @@ export async function proposerAuxAvocats(dossierId: number) {
     await prevenir(
       dossier.assigned_avocat_id,
       dossierId,
-      dossierRetransmis(dossier.societe || "un dossier", client?.name ?? "Le client")
+      dossierRetransmis(nomDeLaSociete(dossier) || "un dossier", client?.name ?? "Le client")
     );
     return { proposes: 0 };
   }
 
   const avocats = await avocatsANotifier();
-  const avis = dossierAPrendre(dossier.societe || "Sans nom", dossier.forme);
+  const avis = dossierAPrendre(nomDeLaSociete(dossier) || "Sans nom", dossier.forme);
 
   for (const avocat of avocats) {
     await prevenir(avocat.id, dossierId, avis);
@@ -1033,6 +1070,7 @@ export async function prendreLeDossier(utilisateur: UtilisateurConnecte, dossier
       assigned_avocat_id: true,
       user_id: true,
       societe: true,
+      data_json: true,
     },
   });
   if (!dossier) throw new Interdit("Ce dossier n'existe pas ou ne vous est pas accessible");
@@ -1106,7 +1144,7 @@ export async function prendreLeDossier(utilisateur: UtilisateurConnecte, dossier
     await prevenir(
       dossier.user_id,
       dossierId,
-      dossierPrisEnCharge(dossier.societe || "votre société", utilisateur.nom)
+      dossierPrisEnCharge(nomDeLaSociete(dossier) || "votre société", utilisateur.nom)
     );
   }
 
@@ -1164,7 +1202,11 @@ export async function mettreLesActesADisposition(
     },
   });
 
-  await prevenir(dossier.user_id, dossierId, actesDisponibles(dossier.societe || "votre société"));
+  await prevenir(
+    dossier.user_id,
+    dossierId,
+    actesDisponibles(nomDeLaSociete(dossier) || "votre société")
+  );
 
   await avancerSelonLeTravail(utilisateur, dossierId);
 
@@ -1228,7 +1270,7 @@ export async function mettreUnActeADisposition(
     await prevenir(
       dossier.user_id,
       document.formalite_id,
-      actesDisponibles(dossier.societe || "votre société")
+      actesDisponibles(nomDeLaSociete(dossier) || "votre société")
     );
   }
 
@@ -1308,7 +1350,7 @@ export async function conclureSansDocumentFinal(
     dossier.user_id,
     dossierId,
     depotSansDocument(
-      dossier.societe || "votre société",
+      nomDeLaSociete(dossier) || "votre société",
       DOCUMENT_FINAL[typeDeDossier(dossier.type)]
     )
   );
@@ -1367,7 +1409,7 @@ export async function seDessaisirDuDossier(
   await prevenir(
     dossier.user_id,
     dossierId,
-    dossierRendu(dossier.societe || "votre société")
+    dossierRendu(nomDeLaSociete(dossier) || "votre société")
   );
 
   /* Et il repart dans la file : les confrères en sont prévenus comme au premier jour. */
@@ -1441,7 +1483,7 @@ export async function inviterUnConfrere(
   await prevenir(
     confrere.id,
     dossierId,
-    confrereInvite(dossier.societe || "un dossier", utilisateur.nom)
+    confrereInvite(nomDeLaSociete(dossier) || "un dossier", utilisateur.nom)
   );
 
   return { deja: false as const, confrere: confrere.name };
@@ -1530,8 +1572,39 @@ export async function cloturerLeDossier(utilisateur: UtilisateurConnecte, dossie
   if (etape !== "5e") {
     throw new Interdit(
       "Le travail n'est pas terminé : remettez " +
-        avecArticle(DOCUMENT_FINAL[typeDeDossier(dossier.type)]) +
+        avecArticle(await documentFinalDuDossier(dossierId)) +
         " ou concluez sans document"
+    );
+  }
+
+  /*
+   * Un dossier ne se clôt pas sur un avis qui n'a pas paru.
+   *
+   * La constitution, la modification et la dissolution s'annoncent : c'est une
+   * obligation légale, et l'attestation de parution fait partie du dossier déposé.
+   * Rien ne l'exigeait - un dossier se terminait en laissant l'étape « Annonce légale
+   * publiée » en cours à vie sur le suivi du client, sur une société pourtant
+   * immatriculée.
+   */
+  const etatDuSuivi = await etatDuDossier(dossier);
+  if (avisAPublierPour(dossier.type) && !etatDuSuivi.aLAnnoncePubliee) {
+    throw new Interdit(
+      "L'avis " +
+        OBJET_DE_L_AVIS[typeDeDossier(dossier.type)] +
+        " n'est pas déclaré publié : la parution fait partie du dossier"
+    );
+  }
+
+  /*
+   * Et une fermeture ne se clôt pas sur sa dissolution.
+   *
+   * Elle se joue en deux temps séparés de plusieurs mois : la dissolution met la
+   * société en liquidation, la clôture la radie. Clore le dossier au premier laissait
+   * le second sans dossier où se faire.
+   */
+  if (dossier.type === "fermeture" && etatDuSuivi.phaseDeFermeture !== "cloture") {
+    throw new Interdit(
+      "La liquidation n'est pas close : la radiation se demande à la seconde phase"
     );
   }
 
@@ -1717,7 +1790,7 @@ export async function reprendreUnActe(utilisateur: UtilisateurConnecte, document
   await prevenir(
     dossier.user_id,
     document.formalite_id,
-    actesRetires(dossier.societe || "votre société")
+    actesRetires(nomDeLaSociete(dossier) || "votre société")
   );
 
   /* L'étape suit ce qui vient d'être défait, comme elle suit ce qui est fait. */
@@ -1768,7 +1841,11 @@ export async function retirerLesActesDeLEspaceClient(
     },
   });
 
-  await prevenir(dossier.user_id, dossierId, actesRetires(dossier.societe || "votre société"));
+  await prevenir(
+    dossier.user_id,
+    dossierId,
+    actesRetires(nomDeLaSociete(dossier) || "votre société")
+  );
 
   await avancerSelonLeTravail(utilisateur, dossierId);
 

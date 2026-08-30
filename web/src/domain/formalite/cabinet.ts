@@ -98,6 +98,13 @@ export interface EtatDuCabinet {
   confidentialiteDemandee?: boolean;
   /** Sur une fermeture : les deux attestations exigées à la radiation sont au dossier. */
   attestationsReunies?: boolean;
+  /**
+   * La phase d'une fermeture : dissolution, puis clôture.
+   *
+   * Elle décide du nom du document que le greffe délivre - un extrait mentionnant la
+   * liquidation, puis l'attestation de radiation.
+   */
+  phaseDeFermeture?: "dissolution" | "cloture";
 }
 
 const ORDRE = ["5a", "5b", "5c", "5d", "5e"];
@@ -151,6 +158,26 @@ export const OBJET_DE_L_AVIS: Record<TypeDeDossier, string> = {
   comptes: "",
   "auto-entrepreneur": "",
 };
+
+/**
+ * Le document que le greffe délivre, selon le moment.
+ *
+ * Une fermeture se joue en deux temps : au dépôt de la dissolution, le greffe inscrit
+ * la mise en liquidation et délivre un extrait qui la mentionne ; c'est à la clôture,
+ * des mois plus tard, qu'il radie et atteste. La table nommait « Attestation de
+ * radiation » dès la première phase - sur la tâche de l'avocat, sur le champ de dépôt,
+ * et dans les documents du client, à qui l'on remettait la radiation d'une société qui
+ * venait seulement d'entrer en liquidation.
+ */
+export function documentFinalDe(
+  type: TypeDeDossier,
+  phaseDeFermeture?: "dissolution" | "cloture"
+): string {
+  if (type === "fermeture" && phaseDeFermeture !== "cloture") {
+    return "Extrait Kbis de dissolution";
+  }
+  return DOCUMENT_FINAL[type];
+}
 
 export const DOCUMENT_FINAL: Record<TypeDeDossier, string> = {
   creation: "Extrait Kbis",
@@ -302,20 +329,29 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
     onglet: "pieces",
   });
 
-  taches.push({
-    identifiant: "actes",
-    titre: "Produire les actes",
-    explication:
-      etat.type === "comptes"
-        ? "Procès-verbal d'approbation, rapport spécial sur les conventions quand la loi l'exige, et déclaration de confidentialité quand elle est demandée."
-        : etat.type === "fermeture"
-          ? "Décision de dissolution rédigée à la majorité propre à la forme, nomination du liquidateur, déclaration de non-condamnation et pouvoir. Les comptes définitifs et le quitus viendront à la clôture, des mois plus tard."
-          : etat.type === "cessation"
-            ? "Déclaration récapitulative de cessation et pouvoir. Une auto-entreprise n'a pas d'acte à rédiger : la valeur est dans le calendrier des échéances qui suivent."
-            : "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
-    etat: etat.actesProduits ? "faite" : "a_faire",
-    onglet: "pieces",
-  });
+  /*
+   * Une auto-entreprise n'a pas d'acte à rédiger.
+   *
+   * Sa valeur est dans la déclaration au guichet et le calendrier des échéances qui
+   * suivent - la tâche le disait elle-même, tout en restant « à faire » à vie sur un
+   * dossier qui n'avait rien à produire.
+   */
+  if (etat.type !== "auto-entrepreneur") {
+    taches.push({
+      identifiant: "actes",
+      titre: "Produire les actes",
+      explication:
+        etat.type === "comptes"
+          ? "Procès-verbal d'approbation, rapport spécial sur les conventions quand la loi l'exige, et déclaration de confidentialité quand elle est demandée."
+          : etat.type === "fermeture"
+            ? "Décision de dissolution rédigée à la majorité propre à la forme, nomination du liquidateur, déclaration de non-condamnation et pouvoir. Les comptes définitifs et le quitus viendront à la clôture, des mois plus tard."
+            : etat.type === "cessation"
+              ? "Déclaration récapitulative de cessation et pouvoir. Une auto-entreprise n'a pas d'acte à rédiger : la valeur est dans le calendrier des échéances qui suivent."
+              : "Procès-verbal, avenant aux statuts et, selon le cas, acte de cession ou déclaration de non-condamnation.",
+      etat: etat.actesProduits ? "faite" : "a_faire",
+      onglet: "pieces",
+    });
+  }
 
   /*
    * Les statuts à jour, avant la relecture.
@@ -385,7 +421,9 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
           : "Le texte est rédigé : copiez-le dans le formulaire du support habilité, puis déclarez la parution. Le suivi du client s'en sert - c'est cette étape qu'il attend.",
       etat: etat.avisPublies ? "faite" : "a_faire",
       onglet: "annonce",
-      bloquee: verifie ? undefined : "Vérifiez d'abord le dossier : un avis erroné se republie à vos frais.",
+      bloquee: verifie
+        ? undefined
+        : "Vérifiez d'abord le dossier : un avis erroné se republie à vos frais.",
     });
   }
 
@@ -443,7 +481,7 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
 
   taches.push({
     identifiant: "final",
-    titre: "Remettre " + nomEnPhrase(DOCUMENT_FINAL[etat.type]),
+    titre: "Remettre " + nomEnPhrase(documentFinalDe(etat.type, etat.phaseDeFermeture)),
     explication: "Déposez le document délivré par le greffe : le client en est prévenu aussitôt.",
     /*
      * Le greffe ne délivre pas toujours de document.
@@ -472,8 +510,7 @@ export function travailDuCabinet(etat: EtatDuCabinet): Tache[] {
   taches.push({
     identifiant: "cloture",
     titre: "Clôturer le dossier",
-    explication:
-      "Le dossier sort de la file du cabinet et le client apprend que tout est terminé.",
+    explication: "Le dossier sort de la file du cabinet et le client apprend que tout est terminé.",
     etat: etat.status === "terminee" ? "faite" : "a_faire",
     onglet: "avancement",
     bloquee: finalRemis ? undefined : "Le document du greffe n'est pas encore remis.",
