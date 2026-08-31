@@ -72,6 +72,8 @@ describe("les modes d'augmentation", () => {
       posteIncorpore: "Réserves",
       montantIncorpore: 10000,
       dateEffetAugm: "2026-09-15",
+      /* Le rapport du président est dû même là : R. 225-113. */
+      motifsAugmentation: "renforcer les fonds propres",
     });
     expect(manques).toEqual([]);
   });

@@ -69,6 +69,8 @@ const VALEURS: Record<string, string> = {
   nbPartsNouvelles: "3000",
   valeurNominaleAugm: "10",
   dateEffetAugm: "2026-10-10",
+  /* Le rapport du président est dû pour toute augmentation : R. 225-113. */
+  motifsAugmentation: "doter la holding des fonds propres de l'opération",
 
   apporteeDenomination: "CIBLE",
   apporteeForme: "SARL",

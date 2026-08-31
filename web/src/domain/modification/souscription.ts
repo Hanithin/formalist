@@ -68,6 +68,24 @@ export function regimeDuDroitPreferentiel(args: {
 }): Regime {
   const tousAProportion = args.souscripteurs === SOUSCRIPTEURS[0];
 
+  /*
+   * Tant que la question n'a pas de réponse, on ne suppose pas la réponse.
+   *
+   * Le dernier cas de cette fonction est la renonciation : un dossier où « qui
+   * souscrit » n'était pas encore rempli y tombait, et le procès-verbal sortait avec
+   * une mention de renonciation que personne n'avait décidée. C'est le formulaire, et
+   * non le gabarit, qui doit réclamer la réponse manquante.
+   */
+  if (!args.souscripteurs) {
+    return {
+      regime: "sans-objet",
+      article: "",
+      commissaireRequis: false,
+      rapportDuDirigeant: false,
+      explication: "",
+    };
+  }
+
   if (!parActions(args.forme)) {
     return {
       regime: "sans-objet",
@@ -140,6 +158,28 @@ export function regimeDeLAugmentation(
   valeurs: Valeurs
 ): Regime {
   const lire = (cle: string) => String(valeurs[cle] ?? "").trim();
+
+  /*
+   * Sans souscription, pas de droit de souscrire.
+   *
+   * Une incorporation de réserves distribue des titres aux associés existants, un
+   * apport en nature les remet à l'apporteur : rien n'est souscrit, et le droit
+   * préférentiel - qui ne vise que les actions de numéraire - n'a rien à écarter. Le
+   * garde-fou était posé sur les actes, un par un, et le procès-verbal d'une
+   * incorporation portait donc une mention de renonciation sans objet.
+   */
+  if (!augmentationSouscrite(lire("modeAugmentation"))) {
+    return {
+      regime: "sans-objet",
+      article: "",
+      commissaireRequis: false,
+      rapportDuDirigeant: false,
+      explication:
+        "Cette augmentation ne donne pas lieu à souscription : le droit préférentiel de " +
+        "souscription, qui ne vise que les titres de numéraire, n'a pas à s'exercer.",
+    };
+  }
+
   return regimeDuDroitPreferentiel({
     forme,
     souscripteurs: lire("souscripteursAugm"),

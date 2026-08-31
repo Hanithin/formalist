@@ -206,9 +206,19 @@ describe("le rapport du dirigeant", () => {
     );
   };
 
-  it("n'est pas produit quand il n'y a rien à écarter", () => {
-    expect(rapportDe("SAS", A_PROPORTION)).toBeUndefined();
-    /* Ni dans une société de personnes, qui ne connaît pas ce droit. */
+  /*
+   * L'assemblée statue « sur le rapport » du dirigeant, article L. 225-129, quelle que
+   * soit la répartition des souscriptions. Il n'est plus réservé aux dossiers où
+   * quelqu'un est dilué.
+   */
+  it("est produit même quand chacun souscrit à proportion", () => {
+    expect(rapportDe("SAS", A_PROPORTION)?.titre).toBe(
+      "Rapport du président sur l'augmentation de capital"
+    );
+  });
+
+  /* Le droit préférentiel de souscription est propre aux sociétés par actions. */
+  it("n'est pas produit dans une société de personnes", () => {
     expect(rapportDe("SARL", { souscripteursAugm: SOUSCRIPTEURS[2] })).toBeUndefined();
   });
 

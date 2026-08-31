@@ -564,22 +564,91 @@ export const MODIFICATIONS: DefinitionModification[] = [
         type: "long",
         obligatoire: true,
         pleineLargeur: true,
-        visibleSi: {
-          champ: "souscripteursAugm",
-          vaut: [SOUSCRIPTEURS[1], SOUSCRIPTEURS[2]],
-        },
+        /*
+         * Le rapport est dû pour toute augmentation, non pour les seules dilutions.
+         *
+         * L'assemblée d'une société par actions statue « sur le rapport » du dirigeant -
+         * article L. 225-129 - quelle que soit la répartition des souscriptions. Ces deux
+         * champs ne s'affichaient que lorsque quelqu'un était dilué, et une augmentation
+         * souscrite à proportion sortait donc sans le rapport que le texte exige.
+         */
+        formes: FORMES_A_ACTIONS,
         aide: "Le rapport du dirigeant doit dire les motifs de l'opération, et le prix retenu doit pouvoir s'expliquer. C'est la seule pièce contemporaine si un associé dilué conteste des mois plus tard.",
+      },
+      /*
+       * La suppression demande deux justifications de plus.
+       *
+       * L'article R. 225-114 veut que le rapport dise les motifs de la suppression - qui
+       * ne sont pas ceux de l'augmentation : l'un explique pourquoi lever de l'argent,
+       * l'autre pourquoi écarter le droit des associés qui restent - et qu'il justifie le
+       * prix d'émission. Le prix est précisément ce qu'un associé dilué attaque, et ce
+       * que le commissaire aux comptes doit corroborer.
+       */
+      {
+        identifiant: "motifsSuppressionDps",
+        libelle: "Pourquoi écarter le droit préférentiel des autres associés",
+        type: "long",
+        pleineLargeur: true,
+        obligatoireSi: {
+          champ: "voieDuDroitPreferentiel",
+          vaut: [VOIES_DU_DROIT_PREFERENTIEL[1]],
+        },
+        visibleSi: {
+          champ: "voieDuDroitPreferentiel",
+          vaut: [VOIES_DU_DROIT_PREFERENTIEL[1]],
+        },
+        aide: "La raison de faire entrer ces personnes-là plutôt que d'ouvrir la souscription à tous : un partenaire industriel, un investisseur, un salarié clé, une créance à convertir.",
+      },
+      {
+        identifiant: "justificationPrixEmission",
+        libelle: "Comment le prix d'émission a été fixé",
+        type: "long",
+        pleineLargeur: true,
+        obligatoireSi: {
+          champ: "voieDuDroitPreferentiel",
+          vaut: [VOIES_DU_DROIT_PREFERENTIEL[1]],
+        },
+        visibleSi: {
+          champ: "voieDuDroitPreferentiel",
+          vaut: [VOIES_DU_DROIT_PREFERENTIEL[1]],
+        },
+        aide: "La méthode retenue et ce qu'elle donne : valeur nominale seule, situation nette comptable, multiple de résultat, prix d'un tour précédent. Le commissaire aux comptes se prononce sur ce prix.",
       },
       {
         identifiant: "marcheDesAffaires",
         libelle: "La marche des affaires depuis l'ouverture de l'exercice",
         type: "long",
         pleineLargeur: true,
-        visibleSi: {
-          champ: "souscripteursAugm",
-          vaut: [SOUSCRIPTEURS[1], SOUSCRIPTEURS[2]],
-        },
+        formes: FORMES_A_ACTIONS,
         aide: "Quelques lignes suffisent : le rapport doit renseigner les associés sur l'activité de l'exercice en cours. Laissé vide, le rapport renvoie aux comptes du dernier exercice clos.",
+      },
+      /*
+       * Deux exercices quand les comptes du dernier ne sont pas encore approuvés.
+       *
+       * L'article R. 225-113 veut la marche des affaires « depuis le début de l'exercice
+       * en cours et, si l'assemblée générale ordinaire appelée à statuer sur les comptes
+       * n'a pas encore été tenue, pendant l'exercice précédent ». Une augmentation votée
+       * en mars, avant l'assemblée d'approbation, doit donc couvrir les deux : sinon les
+       * associés se prononcent sans avoir rien lu de l'exercice écoulé.
+       */
+      {
+        identifiant: "comptesApprouves",
+        libelle: "Les comptes du dernier exercice clos ont-ils été approuvés ?",
+        type: "choix",
+        options: ["Oui, l'assemblée d'approbation s'est tenue", "Non, pas encore"],
+        pleineLargeur: true,
+        formes: FORMES_A_ACTIONS,
+        valeurParDefaut: "Oui, l'assemblée d'approbation s'est tenue",
+        aide: "Si l'assemblée d'approbation n'a pas encore eu lieu, le rapport doit aussi rendre compte de l'exercice précédent.",
+      },
+      {
+        identifiant: "marcheDesAffairesPrecedent",
+        libelle: "La marche des affaires du dernier exercice clos",
+        type: "long",
+        pleineLargeur: true,
+        formes: FORMES_A_ACTIONS,
+        visibleSi: { champ: "comptesApprouves", vaut: ["Non, pas encore"] },
+        aide: "Les associés n'ont pas encore vu ces comptes : quelques lignes sur l'activité, le résultat et ce qui a marqué l'exercice.",
       },
       {
         identifiant: "commissaireDps",

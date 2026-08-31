@@ -1044,7 +1044,7 @@ function donneesDuRapportSurLAugmentation(
   societe: SocieteModifiee,
   valeurs: Valeurs,
   titres: string
-): Record<string, string> {
+): Record<string, string | boolean> {
   const regime = regimeDeLAugmentation(societe.forme, valeurs);
   const nombre = (cle: string): number => {
     const v = valeurs[cle];
@@ -1060,16 +1060,46 @@ function donneesDuRapportSurLAugmentation(
   const nommes = texteBrut(valeurs.souscripteursNommes);
   const parActionsSociete = parActions(societe.forme);
 
-  const modalites =
-    "Les " +
-    titres +
-    " nouvelles seront souscrites en numéraire et intégralement libérées à la souscription" +
-    (nominale > 0 ? ", à raison de " + montant(nominale) + " euros de valeur nominale" : "") +
-    (prime > 0 ? " et d'une prime d'émission de " + montant(prime) + " euros par titre" : "") +
-    ". Le versement sera constaté par le dépositaire des fonds, qui en délivrera le certificat.";
+  const mode = texteBrut(valeurs.modeAugmentation);
+  const valeurDuTitre = nominale > 0 ? ", à raison de " + montant(nominale) + " euros de valeur nominale" : "";
+
+  /*
+   * Ce que le titre nouveau paie, et qui le reçoit.
+   *
+   * Une incorporation de réserves ne demande rien aux associés : elle prélève sur les
+   * fonds propres et leur distribue des titres. Un apport en nature rémunère l'apporteur.
+   * Une seule phrase pour les trois cas parlait de « souscription en numéraire » et de
+   * dépositaire des fonds là où rien n'est versé.
+   */
+  const modalites = !augmentationSouscrite(mode)
+    ? mode.startsWith("Apport en nature")
+      ? "Les " + titres + " nouvelles rémunèrent l'apport en nature" + valeurDuTitre +
+        ", et sont attribuées à l'apporteur. Aucun versement n'est demandé aux associés."
+      : "Les " + titres + " nouvelles seront attribuées aux associés sans versement de leur " +
+        "part" + valeurDuTitre + ", par prélèvement sur les sommes incorporées au capital."
+    : "Les " +
+      titres +
+      " nouvelles seront souscrites en numéraire et intégralement libérées à la souscription" +
+      valeurDuTitre +
+      (prime > 0 ? " et d'une prime d'émission de " + montant(prime) + " euros par titre" : "") +
+      ". Le versement sera constaté par le dépositaire des fonds, qui en délivrera le certificat.";
+
+  /*
+   * Le prix se justifie, il ne s'annonce pas.
+   *
+   * L'article R. 225-114 réclame « le prix d'émission ou les modalités de sa
+   * détermination », avec leur justification, dès que le droit préférentiel est
+   * supprimé. Le rapport donnait la valeur nominale et la prime sans jamais dire d'où
+   * elles venaient - or c'est là-dessus qu'un associé dilué attaque, et c'est cela que
+   * le commissaire aux comptes doit corroborer.
+   */
+  const justificationDuPrix = phraseClose(
+    avecMajusculeInitiale(texteBrut(valeurs.justificationPrixEmission))
+  );
 
   return {
-    RAPPORT_DE_QUI: parActionsSociete ? "DU PRÉSIDENT" : "DE LA GÉRANCE",
+    /* Le rapport n'existe que dans une société par actions : c'est le président. */
+    RAPPORT_DE_QUI: "DU PRÉSIDENT",
     /*
      * La qualité signe, non un nom.
      *
@@ -1077,7 +1107,7 @@ function donneesDuRapportSurLAugmentation(
      * dirigeant décrit celui qu'on nomme, pas celui qui signe. Le procès-verbal fait
      * le même choix, et inventer un nom vaudrait moins que de n'en pas mettre.
      */
-    QUALITE_SIGNATAIRE_RAPPORT: parActionsSociete ? "Le Président" : "La Gérance",
+    QUALITE_SIGNATAIRE_RAPPORT: "Le Président",
     MONTANT_AUGMENTATION: montant(Math.max(0, apres - avant)),
     CAPITAL_AVANT_AUGM: montant(avant),
     CAPITAL_APRES_AUGM: montant(apres),
@@ -1101,8 +1131,24 @@ function donneesDuRapportSurLAugmentation(
     MARCHE_DES_AFFAIRES:
       phraseClose(avecMajusculeInitiale(texteBrut(valeurs.marcheDesAffaires))) ||
       "L'activité de l'exercice en cours se poursuit dans les conditions décrites par les comptes du dernier exercice clos, qui sont à votre disposition au siège social.",
-    MODALITES_EMISSION_RAPPORT: modalites,
-    TEXTE_RAPPORT_DPS: texteDuRapportSurLeDroitPreferentiel(regime, nommes, titres),
+    MODALITES_EMISSION_RAPPORT:
+      modalites + (justificationDuPrix ? " " + justificationDuPrix : ""),
+    /*
+     * L'exercice précédent, tant que ses comptes n'ont pas été approuvés.
+     *
+     * L'article R. 225-113 le demande explicitement dans ce cas : les associés se
+     * prononceraient sinon sans avoir rien lu de l'exercice écoulé.
+     */
+    MARCHE_DES_AFFAIRES_PRECEDENT: phraseClose(
+      avecMajusculeInitiale(texteBrut(valeurs.marcheDesAffairesPrecedent))
+    ),
+    IS_MARCHE_PRECEDENT: Boolean(texteBrut(valeurs.marcheDesAffairesPrecedent)),
+    TEXTE_RAPPORT_DPS: texteDuRapportSurLeDroitPreferentiel(
+      regime,
+      nommes,
+      titres,
+      phraseClose(avecMajusculeInitiale(texteBrut(valeurs.motifsSuppressionDps)))
+    ),
     SOUSCRIPTEURS_NOMMES: nommes,
     /* « à l'attention du Président », « de la Gérance » : la lettre s'adresse. */
     DESTINATAIRE_LETTRE: parActionsSociete ? "du Président" : "de la Gérance",
@@ -1171,7 +1217,8 @@ export function acceptationsDesSouscripteurs(
 function texteDuRapportSurLeDroitPreferentiel(
   regime: ReturnType<typeof regimeDeLAugmentation>,
   nommes: string,
-  titres: string
+  titres: string,
+  motifsDeLaSuppression: string
 ): string {
   if (regime.regime === "renonciation") {
     return (
@@ -1195,11 +1242,35 @@ function texteDuRapportSurLeDroitPreferentiel(
       regime.article +
       ", au profit des personnes ci-après dénommées : " +
       nommes +
-      ". Cette suppression est motivée par les raisons exposées au premier paragraphe du " +
-      "présent rapport. Le prix d'émission a été arrêté sur cette base, et le commissaire " +
-      "aux comptes se prononce sur ce prix ainsi que sur l'incidence de l'émission pour " +
-      "les associés dont le droit est supprimé, dans le rapport spécial qui vous est " +
-      "également présenté."
+      ". " +
+      /*
+       * Les motifs de la suppression ne sont pas ceux de l'augmentation.
+       *
+       * Le rapport renvoyait à son premier paragraphe : l'un dit pourquoi lever de
+       * l'argent, l'autre pourquoi écarter le droit de ceux qui restent. Ce sont deux
+       * questions, et R. 225-114 réclame la seconde.
+       */
+      (motifsDeLaSuppression
+        ? "Cette suppression est motivée par ce qui suit. " + motifsDeLaSuppression
+        : "Cette suppression est motivée par les raisons exposées au premier paragraphe du " +
+          "présent rapport.") +
+      " Le commissaire aux comptes se prononce sur le prix d'émission ainsi que sur " +
+      "l'incidence de l'émission pour les associés dont le droit est supprimé, dans le " +
+      "rapport spécial qui vous est également présenté."
+    );
+  }
+
+  /*
+   * Une augmentation qui ne se souscrit pas n'écarte rien.
+   *
+   * Incorporation de réserves, apport en nature : les titres ne sont pas souscrits en
+   * numéraire, et le droit préférentiel n'a pas d'objet. Le dire vaut mieux que passer
+   * la rubrique sous silence - le lecteur cherche cette réponse.
+   */
+  if (regime.regime === "sans-objet") {
+    return (
+      regime.explication ||
+      "Le droit préférentiel de souscription n'a pas d'objet pour cette opération."
     );
   }
 
@@ -1516,25 +1587,24 @@ export function actesAProduire(
   }
 
   /*
-   * Le rapport du dirigeant, dès que le droit préférentiel est écarté.
+   * Le rapport du dirigeant, pour toute augmentation d'une société par actions.
    *
-   * Il n'est dû ni quand chacun souscrit à proportion - il n'y a rien à écarter - ni
-   * dans une société de personnes, qui ne connaît pas ce droit. Il l'est dans les deux
-   * autres cas, et il porte le nom de qui le signe : le président, ou la gérance.
+   * Il était réservé aux dossiers où le droit préférentiel est écarté. Mais l'assemblée
+   * statue « sur le rapport » du dirigeant - article L. 225-129 - quelle que soit la
+   * répartition des souscriptions, et l'article R. 225-113 en fixe le contenu : les
+   * motifs de l'opération et la marche des affaires sociales. Une augmentation souscrite
+   * à proportion, cas le plus fréquent, sortait donc sans la pièce que le texte exige.
    *
-   * C'est la pièce qui explique à un associé dilué pourquoi on a fait entrer quelqu'un,
-   * à quel prix, et sur quelle base. Sans elle, il n'a que le procès-verbal, qui décide
-   * sans expliquer.
+   * Le texte de ce cas était d'ailleurs déjà écrit - « le droit préférentiel s'exerce,
+   * la répartition demeure inchangée » - et personne ne pouvait le lire.
+   *
+   * Une société à responsabilité limitée reste hors du champ : le droit préférentiel de
+   * souscription est propre aux sociétés par actions, et aucun texte n'impose à la
+   * gérance un rapport pour une augmentation en numéraire.
    */
-  if (
-    codes.includes("augmentation_capital") &&
-    augmentationSouscrite(texte(valeurs.modeAugmentation)) &&
-    regimeDeLAugmentation(forme, valeurs).rapportDuDirigeant
-  ) {
+  if (codes.includes("augmentation_capital") && parActions(forme)) {
     actes.push({
-      titre: parActions(forme)
-        ? "Rapport du président sur l'augmentation de capital"
-        : "Rapport de la gérance sur l'augmentation de capital",
+      titre: "Rapport du président sur l'augmentation de capital",
       gabarit: MODELE_RAPPORT_AUGMENTATION,
     });
 

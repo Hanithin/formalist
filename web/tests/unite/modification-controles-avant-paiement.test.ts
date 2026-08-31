@@ -42,6 +42,8 @@ const AUGMENTATION = {
   dateEffetAugm: "2026-10-01",
   banqueDepot: "Banque Essai",
   dateDepotFonds: "2026-09-10",
+  /* Le rapport du président est dû pour toute augmentation : R. 225-113. */
+  motifsAugmentation: "financer le second atelier",
 };
 
 function anomalies(valeurs: Record<string, string>) {
