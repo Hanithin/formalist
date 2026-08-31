@@ -556,8 +556,14 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     DATE_CLOTURE: jourEtMois(brouillon.dateCloturePremierExercice),
     DATE_CLOTURE_PREMIER_EXERCICE: dateEnFrancais(brouillon.dateCloturePremierExercice),
     ANNEE_PREMIER_EXERCICE: brouillon.dateCloturePremierExercice?.split("-")[0] ?? TIRET,
+    /* « Fait le 1 septembre » : le quantième du premier s'écrit « 1er », comme le fait
+       déjà `dateEnFrancais` pour toutes les autres dates de l'acte. */
     DATE_SIGNATURE:
-      maintenant.getDate() + " " + MOIS[maintenant.getMonth()] + " " + maintenant.getFullYear(),
+      (maintenant.getDate() === 1 ? "1er" : String(maintenant.getDate())) +
+      " " +
+      MOIS[maintenant.getMonth()] +
+      " " +
+      maintenant.getFullYear(),
     DATE_SIGNATURE_COURTE: dateCourte(maintenant),
 
     /* ---------- L'objet social, six lignes au plus ---------- */
@@ -839,6 +845,18 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
 
     liste.push({
       CIVILITE_NOM_PRENOM: identite,
+      /*
+       * La phrase entière, dans l'élément de la liste et non au-dessus.
+       *
+       * La liste des souscripteurs boucle sur les associés et écrit
+       * `{{IDENTITE_SIGNATAIRE}}` à chaque tour. Cette clé n'existait qu'au niveau du
+       * document, où elle désigne le premier associé : docxtemplater remontait donc au
+       * document faute de la trouver dans l'élément, et les dix blocs nommaient tous le
+       * premier. Une SAS à deux actionnaires attribuait ainsi les 600 actions de la
+       * seconde au premier, dans une pièce déposée au greffe - et le bloc de signatures,
+       * qui emploie une autre clé, la nommait correctement deux paragraphes plus bas.
+       */
+      IDENTITE_SIGNATAIRE: estMorale ? designation : identitePhysique(personne),
       DATE_NAISSANCE: dateEnFrancais(personne.dateDeNaissance),
       LIEU_NAISSANCE: ou(personne.villeDeNaissance),
       NATIONALITE: ou(personne.nationalite, "Française"),

@@ -94,7 +94,8 @@ describe("ce que l'attestation porte du dossier", () => {
      * retenue partout.
      */
     expect(texte).toContain("à Lyon.");
-    expect(texte).toMatch(/Fait le \d+ \S+ \d{4} à Lyon\./);
+    /* Le quantième du premier s'écrit « 1er » : la date du jour peut en être un. */
+    expect(texte).toMatch(/Fait le (?:1er|\d+) \S+ \d{4} à Lyon\./);
   });
 
   it("vise l'article qui fonde la domiciliation au domicile", () => {

@@ -724,6 +724,15 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
 
     /* ------------------------------------------------------- L'ouverture */
     date_assemblee: dateEnFrancais(assemblee.date),
+    /*
+     * Le titre est en petites capitales : ce qui s'y glisse en minuscules se voit.
+     *
+     * « EN DATE DU 10 octobre 2026 » - les trois premiers mots sont frappés en capitales
+     * dans le modèle, la date arrive en bas de casse, et la petite capitale du gabarit
+     * rend « octobre » d'une hauteur inférieure au reste de la ligne. Les deux lignes de
+     * titre au-dessus sont en capitales pleines : celle-ci doit l'être aussi.
+     */
+    date_assemblee_capitale: dateEnFrancais(assemblee.date).toLocaleUpperCase("fr-FR"),
     annee_lettres: anneeEnLettres(assemblee.date),
     jour_lettres: jourEnLettres(assemblee.date),
     associes_pluriel: mots.associesPluriel,
