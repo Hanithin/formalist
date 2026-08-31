@@ -339,11 +339,18 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   }
   doc.render(cleanData);
 
+  /* Une seule forme Unicode, avant toute règle qui lit le texte. */
+  doc.getZip().file(
+    "word/document.xml",
+    normaliserLeTexte(doc.getZip().file("word/document.xml").asText())
+  );
+
   // Fix "né(e)" → "né" or "née" based on civility in same paragraph
   {
     let xml = doc.getZip().file("word/document.xml").asText();
     xml = xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function(para) {
-      if (para.indexOf("né(e)") === -1 && para.indexOf("né(e)") === -1) return para;
+      /* Le texte est normalisé en amont : une seule forme à chercher. */
+      if (para.indexOf("né(e)") === -1) return para;
       var texts = [];
       para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, function(m, t) { texts.push(t); });
       var fullText = texts.join('');
@@ -1367,6 +1374,23 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
  * poser le choix dans vingt-quatre fichiers binaires ; il tient ici, en un endroit, et
  * s'applique aussi aux modèles rendus par l'autre chemin.
  */
+/**
+ * Le texte du document, sous une seule forme Unicode.
+ *
+ * Un « é » s'écrit de deux façons : le caractère composé, ou un « e » suivi de l'accent.
+ * Les deux s'affichent pareil et ne se comparent pas. Les statuts de SAS portaient la
+ * seconde forme, et la règle qui accorde « né(e) » cherchait la première : dix mentions
+ * par jeu de statuts sortaient donc « Monsieur Jean Dupont, né(e) le 12 avril 1980 »,
+ * dans un acte déposé au greffe. La règle avait bien deux branches pour les deux formes,
+ * mais la même chaîne écrite deux fois - le défaut ne pouvait pas se voir en la relisant.
+ *
+ * Normaliser une fois au départ vaut mieux que de dédoubler chaque comparaison : la
+ * typographie, les accords et les recherches qui suivent portent tous sur du texte lu.
+ */
+function normaliserLeTexte(xml) {
+  return xml.normalize("NFC");
+}
+
 function auFerAGauche(xml) {
   return xml.replace(/<w:jc w:val="both"\s*\/>/g, '<w:jc w:val="left"/>');
 }
@@ -1523,4 +1547,4 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
   return zip.generate({ type: "nodebuffer" });
 }
 
-module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature, auFerAGauche, uniformiserLaPolice };
+module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature, auFerAGauche, uniformiserLaPolice, normaliserLeTexte };

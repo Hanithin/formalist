@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { typographier } from "@/domain/document/typographie";
+import { INSECABLE, typographier } from "@/domain/document/typographie";
 
 /* Comme pour la renumérotation : pizzip est un module CommonJS. */
 const requerir = createRequire(import.meta.url);
@@ -29,8 +29,27 @@ export function typographierLeDocument(docx: Buffer): Buffer {
       ouverture + echapper(typographier(desechapper(contenu))) + fermeture
   );
 
-  archive.file("word/document.xml", rendu);
+  archive.file("word/document.xml", lierAuTravers(rendu));
   return archive.generate({ type: "nodebuffer" });
+}
+
+/**
+ * Le nombre d'un nœud et l'unité du suivant.
+ *
+ * Les règles portent sur le contenu d'un nœud, et le montant se substitue dans le sien :
+ * l'en-tête des statuts se compose de « au capital de », « 20 000 », « euros » en trois
+ * nœuds voisins, si bien que la règle qui lie un nombre à son unité ne voyait jamais les
+ * deux ensemble. Le capital d'une société pouvait donc se couper en fin de ligne dans le
+ * document que le greffe conserve - exactement ce que cette passe devait empêcher.
+ *
+ * On ne franchit pas la fin du paragraphe : deux paragraphes qui se suivent ne forment
+ * pas une phrase, et lier leur dernier chiffre au premier mot du suivant serait faux.
+ */
+function lierAuTravers(xml: string): string {
+  return xml.replace(
+    /(\d)(<\/w:t>(?:(?!<w:t[ >])(?!<\/w:p>)[\s\S])*?<w:t[^>]*>)[\u0020](?=(?:euros?|ans?|années?|parts?|actions?)\b|[€%])/g,
+    (_tout, chiffre: string, entreDeux: string) => chiffre + entreDeux + INSECABLE
+  );
 }
 
 /*

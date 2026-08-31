@@ -72,13 +72,15 @@ export function rendreUnModeleDuCabinet(
 
     document.render(donnees);
 
-    const { auFerAGauche, uniformiserLaPolice } = requerir("./docx.cjs") as {
+    const { auFerAGauche, uniformiserLaPolice, normaliserLeTexte } = requerir("./docx.cjs") as {
       auFerAGauche: (xml: string) => string;
       uniformiserLaPolice: <T>(zip: T) => T;
+      normaliserLeTexte: (xml: string) => string;
     };
     const zipRendu = document.getZip();
     const xml = zipRendu.file("word/document.xml");
-    if (xml) zipRendu.file("word/document.xml", auFerAGauche(accorder(xml.asText())));
+    /* Une seule forme Unicode avant d'accorder : « né » ne se compare pas à « né ». */
+    if (xml) zipRendu.file("word/document.xml", auFerAGauche(accorder(normaliserLeTexte(xml.asText()))));
 
     return uniformiserLaPolice(zipRendu).generate({ type: "nodebuffer", compression: "DEFLATE" });
   } catch (e) {

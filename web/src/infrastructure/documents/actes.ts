@@ -6,6 +6,7 @@ import { conjointRequis } from "@/domain/formalite/etat-civil";
 import { donneesDeGabarit } from "@/domain/formalite/gabarit";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { genererDocument } from "@/infrastructure/documents/generation";
+import { typographierLeDocument } from "@/infrastructure/documents/typographie-docx";
 import { remplacerDocumentsProduits } from "@/infrastructure/documents/depot";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import type { UtilisateurConnecte } from "@/infrastructure/db/sessions";
@@ -160,7 +161,16 @@ export async function produireLesActesDuBrouillon(
   // pas laisser le dossier avec la moitié d'un jeu d'actes.
   const actes = aProduire.map((document) => ({
     titre: document.titre,
-    contenu: genererDocument(document.gabarit, donnees),
+    /*
+     * La typographie française, comme sur les autres parcours.
+     *
+     * La modification, la fermeture, la cessation et le dépôt des comptes passent tous
+     * leurs actes par cette passe ; la création était seule à ne pas le faire. Les
+     * statuts sortaient donc avec des espaces sécables entre « 20 » et « 000 », entre un
+     * montant et « euros », entre « L. » et son article - de quoi couper un capital en
+     * deux au bas d'une page, dans le document que le greffe conserve.
+     */
+    contenu: typographierLeDocument(genererDocument(document.gabarit, donnees)),
   }));
 
   return remplacerDocumentsProduits(dossierId, actes, { aRelire: options.aRelire });
