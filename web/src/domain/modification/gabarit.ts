@@ -2,6 +2,7 @@ import { natureDeLaForme, fonctionsDuDirigeant } from "@/domain/formalite/formes
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
+import { sirenEspace } from "./pv-age";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
 import { changeDeRessort } from "./formalites";
@@ -13,6 +14,7 @@ import {
   REMPLOI,
 } from "./apport";
 import { nomDeLApporteur } from "./traite-apport";
+import { augmentationSouscrite, parActions, regimeDeLAugmentation } from "./souscription";
 
 /**
  * Les champs attendus par les gabarits Word de modification.
@@ -46,6 +48,9 @@ const TIRET = "-";
  */
 export const MODELE_UNIVERSEL = "modif-pv-age-universel.docx";
 export const MODELE_TRAITE = "modif-traite-apport-universel.docx";
+
+/** Le rapport du dirigeant sur une augmentation de capital, quand le droit est écarté. */
+export const MODELE_RAPPORT_AUGMENTATION = "modif-rapport-augmentation.docx";
 export const MODELE_CESSION = "modif-acte-cession-universel.docx";
 
 export interface SocieteModifiee {
@@ -521,6 +526,8 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     SOCIETE: ou(societe.denomination),
     FORME_JURIDIQUE: forme,
     SIREN: ou(societe.siren),
+    /* « 552 100 554 » : un numéro d'immatriculation se lit par trois, comme partout. */
+    SIREN_ESPACE: sirenEspace(ou(societe.siren, "")),
     SIEGE_SOCIAL: siege,
     ADRESSE_ACTUELLE: ou(societe.adresse),
     VILLE_ACTUELLE: ou(societe.ville),
@@ -749,6 +756,17 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
       typeof valeurs.dateEffetAugm === "string" ? valeurs.dateEffetAugm : null
     ),
 
+    /* ------------------- Le rapport du dirigeant sur l'augmentation ------------ */
+    /*
+     * Ce que le rapport dit, et pourquoi il existe.
+     *
+     * Dès qu'un tiers entre au capital - ou qu'un associé prend plus que sa part -
+     * ceux qui restent sont dilués. Le rapport est ce qui explique pourquoi, à quel
+     * prix, et sur quelle base : c'est la seule pièce contemporaine si l'un d'eux
+     * conteste des mois plus tard, et le texte l'exige de qui dirige.
+     */
+    ...donneesDuRapportSurLAugmentation(societe, valeurs, titres),
+
     /* --------------------------------------------------- Réduction de capital */
     CAPITAL_ACTUEL_RED: nombreOuTiret(valeurs.capitalActuelRed),
     NOUVEAU_CAPITAL_RED: nombreOuTiret(valeurs.nouveauCapitalRed),
@@ -966,6 +984,140 @@ export function gabaritProcesVerbal(
   return f === "EURL"
     ? "modif-pv-transfert-siege-eurl.docx"
     : "modif-pv-transfert-siege-sasu.docx";
+}
+
+/**
+ * Une phrase saisie à la main se ferme.
+ *
+ * Le client écrit « financer l'ouverture d'un second atelier » sans y penser, et l'acte
+ * l'imprimait tel quel : un paragraphe d'acte qui s'arrête sans point se lit comme une
+ * phrase coupée. Rien n'est ajouté à ce qui se termine déjà.
+ */
+function phraseClose(texte: string): string {
+  const net = texte.trim();
+  if (!net) return "";
+  return /[.!?…]$/.test(net) ? net : net + ".";
+}
+
+/**
+ * Le rapport du dirigeant sur le projet d'augmentation de capital.
+ *
+ * Il est dû dès que le droit préférentiel de souscription est écarté - renoncé ou
+ * supprimé - et son contenu est celui que les textes réclament : les motifs de
+ * l'opération, la marche des affaires sociales depuis l'ouverture de l'exercice, les
+ * modalités de l'émission, et les motifs de l'écartement du droit avec le nom des
+ * bénéficiaires.
+ *
+ * Il porte le nom de qui le signe : le président dans une société par actions, la
+ * gérance ailleurs - c'est ce que dit le renvoi de la SAS aux règles de la société
+ * anonyme, où les attributions du conseil reviennent au président.
+ */
+function donneesDuRapportSurLAugmentation(
+  societe: SocieteModifiee,
+  valeurs: Valeurs,
+  titres: string
+): Record<string, string> {
+  const regime = regimeDeLAugmentation(societe.forme, valeurs);
+  const nombre = (cle: string): number => {
+    const v = valeurs[cle];
+    if (typeof v === "number") return v;
+    const n = Number(String(v ?? "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const avant = nombre("capitalActuelAugm");
+  const apres = nombre("nouveauCapitalAugm");
+  const nominale = nombre("valeurNominaleAugm");
+  const prime = nombre("primeEmission");
+  const nommes = texteBrut(valeurs.souscripteursNommes);
+  const parActionsSociete = parActions(societe.forme);
+
+  const modalites =
+    "Les " +
+    titres +
+    " nouvelles seront souscrites en numéraire et intégralement libérées à la souscription" +
+    (nominale > 0 ? ", à raison de " + montant(nominale) + " euros de valeur nominale" : "") +
+    (prime > 0 ? " et d'une prime d'émission de " + montant(prime) + " euros par titre" : "") +
+    ". Le versement sera constaté par le dépositaire des fonds, qui en délivrera le certificat.";
+
+  return {
+    RAPPORT_DE_QUI: parActionsSociete ? "DU PRÉSIDENT" : "DE LA GÉRANCE",
+    /*
+     * La qualité signe, non un nom.
+     *
+     * Un dossier de modification ne connaît pas le dirigeant en place - le bloc du
+     * dirigeant décrit celui qu'on nomme, pas celui qui signe. Le procès-verbal fait
+     * le même choix, et inventer un nom vaudrait moins que de n'en pas mettre.
+     */
+    QUALITE_SIGNATAIRE_RAPPORT: parActionsSociete ? "Le Président" : "La Gérance",
+    MONTANT_AUGMENTATION: montant(Math.max(0, apres - avant)),
+    CAPITAL_AVANT_AUGM: montant(avant),
+    CAPITAL_APRES_AUGM: montant(apres),
+    NB_TITRES_NOUVEAUX: montant(nombre("nbPartsNouvelles")),
+    TITRES_SOCIETE: titres,
+    /*
+     * La lecture brute, non celle qui rend un tiret.
+     *
+     * `texte` rend « - » sur une valeur vide : c'est ce qu'il faut dans un acte où le
+     * blanc se voit, et c'est un piège ici - un tiret est une valeur, il l'emportait
+     * sur la phrase de repli, et le rapport annonçait « 2. Marche des affaires » suivi
+     * d'un tiret seul.
+     */
+    MOTIFS_AUGMENTATION: phraseClose(avecMajusculeInitiale(texteBrut(valeurs.motifsAugmentation))),
+    /*
+     * Laissée vide, la marche des affaires renvoie aux derniers comptes.
+     *
+     * Mieux vaut une phrase vraie qu'un paragraphe inventé : le rapport doit
+     * renseigner les associés, non meubler une rubrique.
+     */
+    MARCHE_DES_AFFAIRES:
+      phraseClose(avecMajusculeInitiale(texteBrut(valeurs.marcheDesAffaires))) ||
+      "L'activité de l'exercice en cours se poursuit dans les conditions décrites par les comptes du dernier exercice clos, qui sont à votre disposition au siège social.",
+    MODALITES_EMISSION_RAPPORT: modalites,
+    TEXTE_RAPPORT_DPS: texteDuRapportSurLeDroitPreferentiel(regime, nommes, titres),
+  };
+}
+
+/** Ce que le rapport dit du droit préférentiel, selon la voie retenue. */
+function texteDuRapportSurLeDroitPreferentiel(
+  regime: ReturnType<typeof regimeDeLAugmentation>,
+  nommes: string,
+  titres: string
+): string {
+  if (regime.regime === "renonciation") {
+    return (
+      "Le droit préférentiel de souscription attaché aux " +
+      titres +
+      " existantes est maintenu. Les associés qui ne souhaitent pas souscrire y renonceront " +
+      "à titre individuel, au profit des souscripteurs désignés ci-après, conformément à " +
+      "l'article " +
+      regime.article +
+      ". Aucune suppression n'étant proposée, l'intervention d'un commissaire aux comptes " +
+      "n'est pas requise. Les souscripteurs pressentis sont : " +
+      nommes +
+      "."
+    );
+  }
+
+  if (regime.regime === "suppression") {
+    return (
+      "Nous vous proposons de supprimer le droit préférentiel de souscription des associés, " +
+      "en application des articles " +
+      regime.article +
+      ", au profit des personnes ci-après dénommées : " +
+      nommes +
+      ". Cette suppression est motivée par les raisons exposées au premier paragraphe du " +
+      "présent rapport. Le prix d'émission a été arrêté sur cette base, et le commissaire " +
+      "aux comptes se prononce sur ce prix ainsi que sur l'incidence de l'émission pour " +
+      "les associés dont le droit est supprimé, dans le rapport spécial qui vous est " +
+      "également présenté."
+    );
+  }
+
+  return (
+    "Le droit préférentiel de souscription s'exerce : chaque associé souscrit à proportion " +
+    "de ce qu'il détient, et la répartition du capital demeure inchangée."
+  );
 }
 
 /**
@@ -1272,6 +1424,30 @@ export function actesAProduire(
   const declaration = gabaritDeLaDeclaration(forme, valeurs);
   if (codes.includes("dirigeant") && valeurs.typeChangementDirigeant === "Nomination" && declaration) {
     actes.push({ titre: "Déclaration de non-condamnation et de filiation", gabarit: declaration });
+  }
+
+  /*
+   * Le rapport du dirigeant, dès que le droit préférentiel est écarté.
+   *
+   * Il n'est dû ni quand chacun souscrit à proportion - il n'y a rien à écarter - ni
+   * dans une société de personnes, qui ne connaît pas ce droit. Il l'est dans les deux
+   * autres cas, et il porte le nom de qui le signe : le président, ou la gérance.
+   *
+   * C'est la pièce qui explique à un associé dilué pourquoi on a fait entrer quelqu'un,
+   * à quel prix, et sur quelle base. Sans elle, il n'a que le procès-verbal, qui décide
+   * sans expliquer.
+   */
+  if (
+    codes.includes("augmentation_capital") &&
+    augmentationSouscrite(texte(valeurs.modeAugmentation)) &&
+    regimeDeLAugmentation(forme, valeurs).rapportDuDirigeant
+  ) {
+    actes.push({
+      titre: parActions(forme)
+        ? "Rapport du président sur l'augmentation de capital"
+        : "Rapport de la gérance sur l'augmentation de capital",
+      gabarit: MODELE_RAPPORT_AUGMENTATION,
+    });
   }
 
   return actes;

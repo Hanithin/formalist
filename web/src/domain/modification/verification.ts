@@ -1,4 +1,5 @@
 import { champObligatoire, champsASaisir, definitions, type Valeurs } from "./types";
+import { regimeDeLAugmentation } from "./souscription";
 import { verifierApport } from "./apport";
 import { anomaliesDuPvAge } from "./pv-age";
 import { anomaliesDuTraite } from "./traite-apport";
@@ -107,7 +108,12 @@ export function verifierChamps(
  * Elles ne se voient pas à la lecture d'un formulaire rempli : « augmentation de
  * 5 000 à 1 000 » se saisit sans effort et ne se remarque qu'au refus du greffe.
  */
-export function verifierCoherence(codes: string[], valeurs: Valeurs): Anomalie[] {
+export function verifierCoherence(
+  codes: string[],
+  valeurs: Valeurs,
+  /* La forme décide du droit préférentiel : une société de personnes n'en a pas. */
+  forme?: string | null
+): Anomalie[] {
   const anomalies: Anomalie[] = [];
 
   if (codes.includes("transfert_siege")) {
@@ -178,6 +184,28 @@ export function verifierCoherence(codes: string[], valeurs: Valeurs): Anomalie[]
     }
   }
 
+  /*
+   * Ce que la voie retenue impose, et que le formulaire seul ne dit pas.
+   *
+   * Supprimer le droit préférentiel exige le rapport spécial d'un commissaire aux
+   * comptes : l'assemblée écarte le droit de tous, y compris de ceux qui votent contre,
+   * et c'est un tiers indépendant qui se prononce alors sur le prix. Une société qui
+   * n'a pas de commissaire doit en désigner un avant de voter la suppression - le
+   * dossier ne peut pas partir sans son nom.
+   */
+  if (codes.includes("augmentation_capital")) {
+    const regime = regimeDeLAugmentation(forme, valeurs);
+    if (regime.commissaireRequis && !String(valeurs.commissaireDps ?? "").trim()) {
+      anomalies.push({
+        champ: "commissaireDps",
+        message:
+          "La suppression du droit préférentiel exige le rapport spécial d'un commissaire " +
+          "aux comptes. Si la société n'en a pas, l'assemblée doit en désigner un pour " +
+          "cette seule opération, avant de voter la suppression.",
+      });
+    }
+  }
+
   if (codes.includes("reduction_capital")) {
     const avant = nombre(valeurs.capitalActuelRed);
     const apres = nombre(valeurs.nouveauCapitalRed);
@@ -235,7 +263,7 @@ export function verifierModification(
   return [
     ...verifierSociete(societe),
     ...verifierChamps(codes, valeurs, societe.forme),
-    ...verifierCoherence(codes, valeurs),
+    ...verifierCoherence(codes, valeurs, societe.forme),
     /*
      * Sans assemblée transmise, on ne reproche pas son absence.
      *

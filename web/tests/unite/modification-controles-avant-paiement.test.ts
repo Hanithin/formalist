@@ -33,6 +33,8 @@ const ASSEMBLEE = {
 /** Une augmentation régulière : 5 000 titres à 10 euros, de 50 000 à 100 000. */
 const AUGMENTATION = {
   modeAugmentation: "Apport en numéraire",
+  /* Le cas ordinaire : chacun souscrit à proportion, rien à écarter. */
+  souscripteursAugm: "Les associés actuels, à proportion de leurs droits",
   capitalActuelAugm: "50000",
   nouveauCapitalAugm: "100000",
   nbPartsNouvelles: "5000",

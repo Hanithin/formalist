@@ -6,6 +6,7 @@ import { auFilDeLaPhrase } from "./traite-apport";
 import { paritéDeLApport, nomDeLApporteur } from "./traite-apport";
 import { definitions, type Valeurs } from "./types";
 import { capitalAuDepartDeLApport, planDeCapital } from "./apport";
+import { parActions, regimeDeLAugmentation } from "./souscription";
 import {
   adresseLisible,
   adresseSurUneLigne,
@@ -566,6 +567,100 @@ export function verifierLePvAge(contexte: ContexteGabarit): AlerteDuPv[] {
  * docxtemplater résout d'abord dans la portée du bloc : sans cela, la date d'effet d'un
  * transfert s'appliquerait à une augmentation de capital.
  */
+/**
+ * Ce que la résolution dit du droit préférentiel de souscription.
+ *
+ * Rien quand chacun souscrit à proportion : le droit s'exerce, personne n'est dilué.
+ * Rien non plus dans une société de personnes, qui n'en connaît pas - c'est l'agrément
+ * qui y commande l'entrée d'un nouvel associé, et il a sa propre phrase.
+ *
+ * Dans les deux autres cas, la phrase dit qui souscrit, à quel titre le droit des
+ * autres est écarté, et sur quel fondement. Un associé dilué qui relit l'acte des mois
+ * plus tard doit y trouver la réponse.
+ */
+function mentionDuDroitPreferentiel(
+  forme: string | null | undefined,
+  valeurs: Valeurs,
+  titres: string
+): { mention_dps: boolean; texte_dps: string } {
+  const regime = regimeDeLAugmentation(forme, valeurs);
+  /*
+   * La liste garde ses majuscules : elle suit un deux-points, non le fil d'une phrase.
+   *
+   * « au profit de : monsieur Marc BERTIN » se lisait dans l'acte - la minuscule des
+   * insertions au fil du texte, appliquée là où elle n'a rien à faire.
+   */
+  const nommes = texte(valeurs.souscripteursNommes);
+
+  if (regime.regime === "renonciation") {
+    return {
+      mention_dps: true,
+      texte_dps:
+        "Les associés qui ne souscrivent pas déclarent renoncer, à titre individuel et " +
+        "au profit des souscripteurs ci-après désignés, au droit préférentiel de " +
+        "souscription que leur confère l'article " +
+        regime.article +
+        ", pour la totalité des " +
+        titres +
+        " nouvelles auxquelles ils auraient pu prétendre. Le droit préférentiel de " +
+        "souscription est ainsi maintenu, et les " +
+        titres +
+        " nouvelles sont souscrites par : " +
+        nommes +
+        ".",
+    };
+  }
+
+  if (regime.regime === "suppression") {
+    const commissaire = texte(valeurs.commissaireDps);
+    return {
+      mention_dps: true,
+      texte_dps:
+        "L'Assemblée, après avoir pris connaissance du rapport " +
+        motDuDirigeant(forme) +
+        " et du rapport spécial " +
+        (commissaire ? "de " + commissaire + ", " : "") +
+        "commissaire aux comptes, décide de supprimer le droit préférentiel de " +
+        "souscription des associés, en application des articles " +
+        regime.article +
+        ", au profit des personnes ci-après dénommées : " +
+        nommes +
+        ".",
+    };
+  }
+
+  /*
+   * L'agrément, là où il n'y a pas de droit de préférence à écarter.
+   *
+   * Une société de personnes ne connaît pas le droit préférentiel de souscription :
+   * ce qui commande l'entrée d'un nouvel associé est l'agrément, et l'acte doit le
+   * constater - c'est lui qui rend la souscription opposable.
+   */
+  const agrement = texte(valeurs.agrementNouvelAssocie);
+  if (regime.regime === "sans-objet" && agrement && !agrement.startsWith("Il est déjà")) {
+    return {
+      mention_dps: true,
+      texte_dps:
+        "L'Assemblée agrée, " +
+        (agrement.includes("unanimité")
+          ? "à l'unanimité"
+          : "à la majorité prévue par les statuts") +
+        ", la souscription des " +
+        titres +
+        " nouvelles par : " +
+        nommes +
+        ".",
+    };
+  }
+
+  return { mention_dps: false, texte_dps: "" };
+}
+
+/** « du Président », « de la Gérance » : le rapport porte le nom de qui le signe. */
+function motDuDirigeant(forme: string | null | undefined): string {
+  return parActions(forme) ? "du Président" : "de la Gérance";
+}
+
 export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknown> {
   const { societe, assemblee, codes, valeurs } = contexte;
   const mots = motsDeLaForme(societe.forme);
@@ -909,8 +1004,16 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
             " euros, dont l'arrêté de compte a été établi le " +
             dateEnFrancais(texte(valeurs.dateArreteCompte))
           : "par versement en espèces, les titres étant libérés en totalité à la souscription",
-        mention_dps: false,
-        texte_dps: "",
+        /*
+         * Le droit préférentiel de souscription, quand quelqu'un d'autre souscrit.
+         *
+         * La balise dormait dans le modèle depuis sa reprise, alimentée par un « false »
+         * en dur : le procès-verbal sortait sans un mot d'une décision qui, dès qu'un
+         * tiers entre au capital, est obligatoire. La façon de l'écarter décide de la
+         * suite - une renonciation individuelle n'appelle aucun commissaire aux comptes,
+         * une suppression par l'assemblée en exige un.
+         */
+        ...mentionDuDroitPreferentiel(societe.forme, valeurs, mots.titres),
         justification_liberation: compensation
           ? "par la production de l'arrêté de compte certifié"
           : "par la production du certificat du dépositaire établi par " +

@@ -248,7 +248,7 @@ export function Parcours({
    */
   const anomalies = [
     ...verifierChamps(etat.codes, etat.valeurs, etat.societe.forme),
-    ...verifierCoherence(etat.codes, etat.valeurs),
+    ...verifierCoherence(etat.codes, etat.valeurs, etat.societe.forme),
     ...anomaliesDuPvAge({
       societe: etat.societe,
       assemblee: etat.assemblee,

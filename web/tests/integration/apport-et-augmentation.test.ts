@@ -63,6 +63,8 @@ const VALEURS: Record<string, string> = {
   capitalActuelAugm: "20000",
   nouveauCapitalAugm: "50000",
   modeAugmentation: "Apport en numéraire",
+  /* Le cas ordinaire : chacun souscrit à proportion, rien à écarter. */
+  souscripteursAugm: "Les associés actuels, à proportion de leurs droits",
   banqueDepot: "Crédit Mutuel",
   nbPartsNouvelles: "3000",
   valeurNominaleAugm: "10",

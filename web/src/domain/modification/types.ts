@@ -1,4 +1,5 @@
 import { NATURES_PROPOSEES, natureDeLaForme } from "@/domain/formalite/formes";
+import { SOUSCRIPTEURS, VOIES_DU_DROIT_PREFERENTIEL } from "./souscription";
 
 /**
  * Les formes dont les titres ne sont pas négociables.
@@ -11,6 +12,18 @@ import { NATURES_PROPOSEES, natureDeLaForme } from "@/domain/formalite/formes";
  */
 const FORMES_A_PARTS = NATURES_PROPOSEES.filter(
   (f) => natureDeLaForme(f).titres === "parts sociales"
+);
+
+/**
+ * Les formes dont les titres sont des actions.
+ *
+ * Le droit préférentiel de souscription n'existe que chez elles : le code l'organise
+ * pour les actions de numéraire, et une société de personnes ne le connaît pas - c'est
+ * l'agrément qui y commande l'entrée d'un nouvel associé. La liste se déduit de la
+ * table des formes, comme sa jumelle : une SELAS écrite à la main y aurait manqué.
+ */
+const FORMES_A_ACTIONS = NATURES_PROPOSEES.filter(
+  (f) => natureDeLaForme(f).titres === "actions"
 );
 /**
  * Ce qu'on peut changer dans une société, et ce qu'il faut saisir pour chaque
@@ -489,6 +502,122 @@ export const MODIFICATIONS: DefinitionModification[] = [
         libelle: "Date du dépôt des fonds",
         type: "date",
         visibleSi: { champ: "modeAugmentation", vaut: ["Apport en numéraire"] },
+      },
+
+      /* ---------- Qui souscrit, et ce que le droit en tire ---------- */
+      /*
+       * Une seule question dans le cas courant.
+       *
+       * Le formulaire ne demandait pas qui met l'argent, et le procès-verbal sortait
+       * sans un mot du droit préférentiel de souscription. Or dès qu'un tiers entre au
+       * capital - ou qu'un associé prend plus que sa part - ce droit doit être écarté,
+       * et la façon de l'écarter décide de la suite : une renonciation individuelle
+       * n'appelle aucun commissaire aux comptes, une suppression par l'assemblée en
+       * exige un, que la société doit désigner si elle n'en a pas.
+       *
+       * Les associés qui souscrivent à proportion, cas le plus fréquent, ne voient donc
+       * qu'une case de plus - et rien après.
+       */
+      {
+        identifiant: "souscripteursAugm",
+        libelle: "Qui souscrit les titres nouveaux ?",
+        type: "choix",
+        options: [...SOUSCRIPTEURS],
+        obligatoire: true,
+        pleineLargeur: true,
+        visibleSi: {
+          champ: "modeAugmentation",
+          vaut: ["Apport en numéraire", "Compensation de créances"],
+        },
+        aide: "Si chacun souscrit à proportion de ce qu'il détient, personne n'est dilué et il n'y a rien d'autre à décider.",
+      },
+      {
+        identifiant: "voieDuDroitPreferentiel",
+        libelle: "Comment le droit préférentiel de souscription est-il écarté ?",
+        type: "choix",
+        options: [...VOIES_DU_DROIT_PREFERENTIEL],
+        obligatoire: true,
+        pleineLargeur: true,
+        /* Le droit préférentiel n'existe que dans les sociétés par actions. */
+        formes: FORMES_A_ACTIONS,
+        visibleSi: {
+          champ: "souscripteursAugm",
+          vaut: [SOUSCRIPTEURS[1], SOUSCRIPTEURS[2]],
+        },
+        aide: "La renonciation individuelle maintient le droit : chacun décide pour lui-même, et aucun commissaire aux comptes n'est requis. La suppression l'écarte pour tous, y compris pour ceux qui votent contre, et exige un rapport spécial du commissaire.",
+      },
+      {
+        identifiant: "souscripteursNommes",
+        libelle: "Qui souscrit, et combien de titres chacun",
+        type: "long",
+        obligatoire: true,
+        pleineLargeur: true,
+        visibleSi: {
+          champ: "souscripteursAugm",
+          vaut: [SOUSCRIPTEURS[1], SOUSCRIPTEURS[2]],
+        },
+        aide: "Une ligne par souscripteur, avec son nom et le nombre de titres qu'il prend. L'assemblée ne peut écarter le droit des autres qu'au profit de personnes qu'elle nomme.",
+      },
+      {
+        identifiant: "motifsAugmentation",
+        libelle: "Pourquoi cette augmentation",
+        type: "long",
+        obligatoire: true,
+        pleineLargeur: true,
+        visibleSi: {
+          champ: "souscripteursAugm",
+          vaut: [SOUSCRIPTEURS[1], SOUSCRIPTEURS[2]],
+        },
+        aide: "Le rapport du dirigeant doit dire les motifs de l'opération, et le prix retenu doit pouvoir s'expliquer. C'est la seule pièce contemporaine si un associé dilué conteste des mois plus tard.",
+      },
+      {
+        identifiant: "marcheDesAffaires",
+        libelle: "La marche des affaires depuis l'ouverture de l'exercice",
+        type: "long",
+        pleineLargeur: true,
+        visibleSi: {
+          champ: "souscripteursAugm",
+          vaut: [SOUSCRIPTEURS[1], SOUSCRIPTEURS[2]],
+        },
+        aide: "Quelques lignes suffisent : le rapport doit renseigner les associés sur l'activité de l'exercice en cours. Laissé vide, le rapport renvoie aux comptes du dernier exercice clos.",
+      },
+      {
+        identifiant: "commissaireDps",
+        libelle: "Commissaire aux comptes qui établit le rapport spécial",
+        type: "texte",
+        /*
+         * Exigé, mais par le contrôle de l'opération, non par la règle générale.
+         *
+         * « Commissaire aux comptes qui établit le rapport spécial est requis » ne dit
+         * pas quoi faire à qui n'en a pas. Le contrôle de l'augmentation le dit : il
+         * faut en désigner un avant de voter la suppression.
+         */
+        pleineLargeur: true,
+        formes: FORMES_A_ACTIONS,
+        visibleSi: {
+          champ: "voieDuDroitPreferentiel",
+          vaut: [VOIES_DU_DROIT_PREFERENTIEL[1]],
+        },
+        aide: "La suppression du droit préférentiel exige son rapport. Si la société n'a pas de commissaire aux comptes, l'assemblée doit en désigner un pour cette seule opération, avant de voter la suppression.",
+      },
+      {
+        identifiant: "agrementNouvelAssocie",
+        libelle: "Les associés agréent-ils le nouveau souscripteur ?",
+        type: "choix",
+        options: [
+          "Oui, à l'unanimité",
+          "Oui, à la majorité prévue par les statuts",
+          "Il est déjà associé : aucun agrément n'est requis",
+        ],
+        obligatoire: true,
+        pleineLargeur: true,
+        /* Là où il n'y a pas de droit préférentiel, c'est l'agrément qui commande. */
+        formes: FORMES_A_PARTS,
+        visibleSi: {
+          champ: "souscripteursAugm",
+          vaut: [SOUSCRIPTEURS[1], SOUSCRIPTEURS[2]],
+        },
+        aide: "Une société de personnes n'a pas de droit préférentiel de souscription : ce qui commande l'entrée d'un nouvel associé est l'agrément, et le procès-verbal doit le constater.",
       },
 
       /* ---------- Compensation de créances ---------- */
