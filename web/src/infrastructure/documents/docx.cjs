@@ -1356,7 +1356,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   });
   doc.getZip().file("word/document.xml", docXml);
 
-  return doc.getZip().generate({ type: "nodebuffer" });
+  return uniformiserLaPolice(doc.getZip()).generate({ type: "nodebuffer" });
 }
 
 /**
@@ -1369,6 +1369,42 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
  */
 function auFerAGauche(xml) {
   return xml.replace(/<w:jc w:val="both"\s*\/>/g, '<w:jc w:val="left"/>');
+}
+
+/**
+ * Une seule police pour tous les documents que Formalist produit.
+ *
+ * Cinq gabarits venaient du cabinet avec sa feuille de styles : Garamond 11,5 points,
+ * interligne 1,25. Les cinquante autres sont en Cambria 12, interligne 1,15. Un même
+ * dossier mêlait donc deux typographies - le procès-verbal dans l'une, le rapport et les
+ * bulletins dans l'autre - et cela se voyait au premier coup d'œil.
+ *
+ * La police se pose ici, comme l'alignement, plutôt que dans les fichiers : les gabarits
+ * restent ceux que le cabinet a livrés, et revenir en arrière tient en une ligne. La
+ * feuille de styles est touchée avec le document, sans quoi le corps par défaut - celui
+ * des paragraphes qui ne déclarent rien - resterait à 11,5.
+ *
+ * Les corps de titres gardent leur échelle : seul le corps de texte est ramené au commun.
+ */
+const POLICE = "Cambria";
+/* Ce que la feuille de styles du cabinet pose : 11,5 points, interligne 1,25. */
+const CORPS_CABINET = "23";
+const INTERLIGNE_CABINET = "300";
+
+function uniformiserLaPolice(zip) {
+  for (const nom of ["word/document.xml", "word/styles.xml", "word/fontTable.xml", "word/theme/theme1.xml"]) {
+    const fichier = zip.file(nom);
+    if (!fichier) continue;
+    let xml = fichier.asText().replace(/Garamond/g, POLICE);
+    if (nom === "word/document.xml" || nom === "word/styles.xml") {
+      xml = xml
+        .replace(new RegExp('<w:sz w:val="' + CORPS_CABINET + '"\\s*/>', "g"), '<w:sz w:val="' + CORPS + '"/>')
+        .replace(new RegExp('<w:szCs w:val="' + CORPS_CABINET + '"\\s*/>', "g"), '<w:szCs w:val="' + CORPS + '"/>')
+        .replace(new RegExp('w:line="' + INTERLIGNE_CABINET + '"', "g"), 'w:line="' + INTERLIGNE + '"');
+    }
+    zip.file(nom, xml);
+  }
+  return zip;
 }
 
 function generateDocx(templateName, data) {
@@ -1487,4 +1523,4 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
   return zip.generate({ type: "nodebuffer" });
 }
 
-module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature, auFerAGauche };
+module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature, auFerAGauche, uniformiserLaPolice };

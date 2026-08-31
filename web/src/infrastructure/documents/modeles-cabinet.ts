@@ -16,10 +16,14 @@ import { journal } from "@/lib/journal";
  * sur des paragraphes entiers, et les délimiteurs à une seule accolade du modèle. Rien
  * d'autre - la typographie française est appliquée ensuite, comme sur les autres actes.
  *
- * Une exception : l'alignement. Le modèle du cabinet justifie chacun de ses paragraphes,
- * et le reste des documents est au fer à gauche depuis qu'on a vu ce que la justification
- * fait d'une ligne coupée. Un dossier ne peut pas mêler les deux, et la règle est celle
- * de docx.cjs - une seule, pour les deux chemins.
+ * Deux exceptions, l'alignement et la police. Le modèle du cabinet justifie chacun de ses
+ * paragraphes et les compose en Garamond 11,5 ; le reste des documents est au fer à gauche
+ * et en Cambria 12. Un dossier ne peut pas mêler les deux - le client ouvrait son
+ * procès-verbal dans une typographie et son rapport dans une autre. Les deux règles sont
+ * celles de docx.cjs, une seule fois écrites, pour les deux chemins.
+ *
+ * Ce qui reste du modèle est ce pour quoi il a été repris : sa numérotation, son pied de
+ * page paginé, ses retraits de citation, sa mise en page.
  */
 const requerir = createRequire(import.meta.url);
 
@@ -68,12 +72,15 @@ export function rendreUnModeleDuCabinet(
 
     document.render(donnees);
 
-    const { auFerAGauche } = requerir("./docx.cjs") as { auFerAGauche: (xml: string) => string };
+    const { auFerAGauche, uniformiserLaPolice } = requerir("./docx.cjs") as {
+      auFerAGauche: (xml: string) => string;
+      uniformiserLaPolice: <T>(zip: T) => T;
+    };
     const zipRendu = document.getZip();
     const xml = zipRendu.file("word/document.xml");
     if (xml) zipRendu.file("word/document.xml", auFerAGauche(accorder(xml.asText())));
 
-    return zipRendu.generate({ type: "nodebuffer", compression: "DEFLATE" });
+    return uniformiserLaPolice(zipRendu).generate({ type: "nodebuffer", compression: "DEFLATE" });
   } catch (e) {
     throw new ModeleDuCabinetIllisible(modele, e);
   }
