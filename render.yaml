@@ -29,6 +29,15 @@ services:
         sync: false
       - key: INPI_PASSWORD
         sync: false
+      # Guichet unique — dépôt des formalités. Autre portail, autre compte que le RNE
+      # ci-dessus. GUICHET_HOTE vide = démonstration : une configuration incomplète ne
+      # doit jamais déposer en production.
+      - key: GUICHET_HOTE
+        sync: false
+      - key: GUICHET_USERNAME
+        sync: false
+      - key: GUICHET_PASSWORD
+        sync: false
       # Base Postgres (Neon) : l'application n'utilise plus SQLite.
       - key: DATABASE_URL
         sync: false
