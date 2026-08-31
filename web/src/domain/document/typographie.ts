@@ -81,6 +81,17 @@ export function unitesLiees(texte: string): string {
 }
 
 /**
+ * L'article et son numéro ne se séparent pas.
+ *
+ * « conformément à l'article L. » en fin de ligne, « 225-132 du code de commerce » à la
+ * suivante : la référence se lit en deux fois, et c'est justement elle qu'un lecteur
+ * vérifie. Le procès-verbal d'une renonciation au droit préférentiel la coupait ainsi.
+ */
+export function referencesLiees(texte: string): string {
+  return texte.replace(/\b(art\.|[LRD]\.|n°)\s+(?=\d)/g, "$1" + INSECABLE);
+}
+
+/**
  * Toute la typographie d'un acte, en une passe.
  *
  * L'ordre compte : les tirets d'abord - un cadratin suivi d'un deux-points ne doit pas
@@ -88,7 +99,7 @@ export function unitesLiees(texte: string): string {
  * ponctuation, et les unités en dernier.
  */
 export function typographier(texte: string): string {
-  return unitesLiees(ponctuationDouble(guillemets(tiretsSimples(texte))));
+  return referencesLiees(unitesLiees(ponctuationDouble(guillemets(tiretsSimples(texte)))));
 }
 
 /**

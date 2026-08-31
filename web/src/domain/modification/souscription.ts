@@ -152,6 +152,36 @@ export function regimeDuDroitPreferentiel(args: {
   };
 }
 
+/**
+ * Le champ « qui souscrit, et combien de titres chacun », ligne par ligne.
+ *
+ * Une ligne par souscripteur, c'est ce que le formulaire demande. Les puces et la
+ * ponctuation finale se retirent : elles viennent de la frappe, non du contenu.
+ */
+export function lignesDesSouscripteurs(nommes: string): string[] {
+  return nommes
+    .split(/\r?\n/)
+    .map((ligne) => ligne.trim().replace(/^[-•*]\s+/, "").replace(/[.,;]+\s*$/, ""))
+    .filter(Boolean);
+}
+
+/**
+ * La même liste, mais au fil d'une phrase.
+ *
+ * Le champ est saisi sur plusieurs lignes, et les actes l'insèrent au milieu d'un
+ * paragraphe : « ... au profit de : {liste}. » Les retours à la ligne y étaient rendus
+ * tels quels, si bien que la ligne coupée se voyait étirée d'un bord à l'autre par la
+ * justification - « 1 500 actions » à gauche, « nouvelles » collé à la marge droite, et
+ * un vide au milieu. Une phrase ne se coupe pas : les souscripteurs s'y suivent,
+ * séparés par un point-virgule, et le paragraphe se justifie comme les autres.
+ *
+ * Là où la liste doit rester une liste - un bulletin par souscripteur - c'est
+ * `lignesDesSouscripteurs` qui sert.
+ */
+export function souscripteursEnUneLigne(nommes: string): string {
+  return lignesDesSouscripteurs(nommes).join(" ; ");
+}
+
 /** Le régime d'un dossier, lu dans ses valeurs. */
 export function regimeDeLAugmentation(
   forme: string | null | undefined,

@@ -14,7 +14,13 @@ import {
   REMPLOI,
 } from "./apport";
 import { nomDeLApporteur } from "./traite-apport";
-import { augmentationSouscrite, parActions, regimeDeLAugmentation } from "./souscription";
+import {
+  augmentationSouscrite,
+  lignesDesSouscripteurs,
+  parActions,
+  regimeDeLAugmentation,
+  souscripteursEnUneLigne,
+} from "./souscription";
 
 /**
  * Les champs attendus par les gabarits Word de modification.
@@ -1098,7 +1104,7 @@ function donneesDuRapportSurLAugmentation(
   const apres = nombre("nouveauCapitalAugm");
   const nominale = nombre("valeurNominaleAugm");
   const prime = nombre("primeEmission");
-  const nommes = texteBrut(valeurs.souscripteursNommes);
+  const nommes = souscripteursEnUneLigne(texteBrut(valeurs.souscripteursNommes));
   const parActionsSociete = parActions(societe.forme);
 
   const mode = texteBrut(valeurs.modeAugmentation);
@@ -1308,19 +1314,6 @@ export function acceptationsDesSouscripteurs(
           ".",
       };
   });
-}
-
-/**
- * Le champ « qui souscrit, et combien de titres chacun », ligne par ligne.
- *
- * Une ligne par souscripteur, c'est ce que le formulaire demande. Les puces et la
- * ponctuation finale se retirent : elles viennent de la frappe, non du contenu.
- */
-export function lignesDesSouscripteurs(nommes: string): string[] {
-  return nommes
-    .split(/\r?\n/)
-    .map((ligne) => ligne.trim().replace(/^[-•*]\s+/, "").replace(/[.,;]+\s*$/, ""))
-    .filter(Boolean);
 }
 
 /** Ce que le rapport dit du droit préférentiel, selon la voie retenue. */

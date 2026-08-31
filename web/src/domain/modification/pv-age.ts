@@ -6,7 +6,7 @@ import { auFilDeLaPhrase } from "./traite-apport";
 import { paritéDeLApport, nomDeLApporteur } from "./traite-apport";
 import { definitions, type Valeurs } from "./types";
 import { capitalAuDepartDeLApport, planDeCapital } from "./apport";
-import { parActions, regimeDeLAugmentation } from "./souscription";
+import { parActions, regimeDeLAugmentation, souscripteursEnUneLigne } from "./souscription";
 import {
   adresseLisible,
   adresseSurUneLigne,
@@ -590,7 +590,7 @@ function mentionDuDroitPreferentiel(
    * « au profit de : monsieur Marc BERTIN » se lisait dans l'acte - la minuscule des
    * insertions au fil du texte, appliquée là où elle n'a rien à faire.
    */
-  const nommes = texte(valeurs.souscripteursNommes);
+  const nommes = souscripteursEnUneLigne(texte(valeurs.souscripteursNommes));
 
   if (regime.regime === "renonciation") {
     return {
