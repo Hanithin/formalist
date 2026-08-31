@@ -486,10 +486,17 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
       const t = txt(partsSig[i]);
       if (!t) continue;
       // a) "Bon pour acceptation" follows (DG name in PV)
+      //
+      // Le paragraphe qui précède immédiatement, et lui seul.
+      //
+      // La fenêtre portait sur deux paragraphes : dans une lettre, où le nom suit la
+      // formule de politesse, elle posait un pouce de blanc avant « Je vous prie
+      // d'agréer » autant qu'avant la signature - deux trous au milieu d'une page.
+      // Le blanc est là pour signer : il revient au nom, non à ce qui le précède.
       let trigger = false;
       let beforeVal = '1440';
-      for (let j = i + 1; j <= i + 2 && j < partsSig.length; j++) {
-        if (/Bon pour acceptation/i.test(txt(partsSig[j]))) { trigger = true; break; }
+      if (i + 1 < partsSig.length && /Bon pour acceptation/i.test(txt(partsSig[i + 1]))) {
+        trigger = true;
       }
       // b) "Signée électroniquement" precedes (signing name in déclaration de non-condamnation)
       if (!trigger) {
@@ -1209,7 +1216,16 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     return p;
   });
   // Center any short paragraph containing only an address (in attestation de domiciliation, etc.)
+  //
+  // Sauf là où le gabarit a déjà choisi de l'aligner à droite.
+  //
+  // La règle est née pour l'attestation de domiciliation, où l'adresse se pose seule
+  // au milieu de la page. Dans une lettre, elle se range dans le bloc du destinataire,
+  // à droite avec les lignes qui l'entourent - et la règle la ramenait au centre, une
+  // ligne sur trois flottant entre deux autres. Un alignement écrit dans le gabarit est
+  // une décision : on ne la reprend pas.
   docXml = docXml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function(p) {
+    if (/<w:jc w:val="right"\s*\/>/.test(p)) return p;
     const txts = [];
     p.replace(/<w:t[^>]*>([^<]+)<\/w:t>/g, function(_, t) { txts.push(t); });
     const full = txts.join('').trim();
