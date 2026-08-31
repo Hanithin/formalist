@@ -193,6 +193,22 @@ function improveLayout(docXml) {
     if (tk.type !== 'p') continue;
     let p = tk.xml;
     p = addPara(p, 'keepLines');
+    /*
+     * Une phrase qui annonce ne se sépare pas de ce qu'elle annonce.
+     *
+     * « La Société a pour objet en France et dans tous autres pays : » restait au bas
+     * d'une page, et la liste des activités commençait sur la suivante. Le titre de
+     * l'article était déjà lié à cette phrase : c'est donc l'article entier qui aurait
+     * dû changer de page, et il se coupait en deux.
+     *
+     * Le critère est celui qui sert déjà à l'alignement - une ligne courte qui finit par
+     * deux-points - et le lien ne porte que sur le paragraphe suivant, pas au-delà.
+     */
+    if (!isTitle(p)) {
+      const t = getText(p);
+      if (t.length < 140 && t.endsWith(':')) p = addPara(p, 'keepNext');
+    }
+
     if (isTitle(p)) {
       // Title gets keepNext so it stays bound to its body paragraph.
       // Do NOT add keepNext to the body itself - that would create overly-long chains
