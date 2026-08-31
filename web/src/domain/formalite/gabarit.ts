@@ -836,9 +836,10 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     donnees["HAS_APPORT_NATURE_" + rang] = a.enNature > 0;
 
     // Les parts sont numérotées en continu : « de la part 1 à la part 500 ».
-    donnees["PARTS_DE_" + rang] = a.parts > 0 ? String(cumulParts + 1) : TIRET;
+    /* « de 1 à 1400 » à côté de « 1 400 actions » : le séparateur vaut pour les deux. */
+    donnees["PARTS_DE_" + rang] = a.parts > 0 ? montant(cumulParts + 1) : TIRET;
     cumulParts += a.parts;
-    donnees["PARTS_A_" + rang] = a.parts > 0 ? String(cumulParts) : TIRET;
+    donnees["PARTS_A_" + rang] = a.parts > 0 ? montant(cumulParts) : TIRET;
 
     totalVerse += a.verse;
     totalReste += a.reste;
