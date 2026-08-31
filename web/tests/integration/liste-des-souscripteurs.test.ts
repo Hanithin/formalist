@@ -43,6 +43,19 @@ describe("la liste des souscripteurs", () => {
     expect(t.match(/Monsieur Jean Dupont, né le/g)).toHaveLength(1);
   });
 
+  /*
+   * La pièce se signe : elle doit porter une ligne par signataire.
+   *
+   * La mise au propre efface les lignes de soulignés, parce qu'elle en dessine une en
+   * bordure au-dessus du nom - mais seulement après « Signature » ou « Fait à », et cet
+   * acte annonce « Signatures » au pluriel. Les soulignés étaient donc retirés sans
+   * remplaçant.
+   */
+  it("porte une ligne à signer par actionnaire", () => {
+    const lignes = texte().match(/_{5,}/g) ?? [];
+    expect(lignes).toHaveLength(2);
+  });
+
   /* « Fait le 1 septembre » : le quantième du premier s'écrit « 1er ». */
   it("écrit le premier du mois en abrégé ordinal", () => {
     expect(texte(new Date(2026, 8, 1))).toContain("Fait le 1er septembre 2026");

@@ -1308,19 +1308,56 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     if (/^-\s*Reste à libérer\s*:\s*0\s*euros?\s*\.?$/i.test(full)) return '';
     return p;
   });
-  // Remove the legacy signature underline (paragraph containing only "____...") OR
-  // an empty paragraph with a bottom-border - both are redundant now that we draw the line
-  // ABOVE the bold name paragraph.
-  docXml = docXml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function(p) {
-    const txt = [];
-    p.replace(/<w:t[^>]*>([^<]+)<\/w:t>/g, function(_, t) { txt.push(t); });
-    const full = txt.join('').trim();
-    // Pure underscores line
-    if (/^_+$/.test(full) && full.length >= 5) return '';
-    // Empty paragraph with bottom border (signature underline placeholder)
-    if (!full && /<w:pBdr\b[\s\S]*?<w:bottom\b/.test(p)) return '';
-    return p;
-  });
+  /*
+   * Le trait à signer ne se retire que s'il a été remplacé.
+   *
+   * Cette passe efface les lignes de soulignés des gabarits, parce que la passe
+   * précédente en dessine une, en bordure, au-dessus du nom en gras. Encore faut-il
+   * qu'elle l'ait dessinée : elle se déclenche sur « Signature » ou « Fait à », et la
+   * liste des souscripteurs annonce « Signatures des actionnaires » - au pluriel, que
+   * la limite de mot refuse. Les soulignés étaient donc retirés sans remplaçant, et une
+   * pièce du dépôt qui se signe sortait sans une seule ligne où signer.
+   *
+   * On regarde maintenant le paragraphe suivant : s'il porte le trait, celui-ci fait
+   * double emploi et s'efface ; sinon il est le seul qu'il y ait, et il reste. Les deux
+   * passes parcourent les paragraphes dans le même ordre, d'où l'index partagé.
+   */
+  {
+    const texteDu = (p) => {
+      const txt = [];
+      p.replace(/<w:t[^>]*>([^<]+)<\/w:t>/g, function(_, t) { txt.push(t); });
+      return txt.join('').trim();
+    };
+    const paragraphes = docXml.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
+    const aRetirer = new Set();
+    for (let i = 0; i < paragraphes.length; i++) {
+      const full = texteDu(paragraphes[i]);
+      const souligne = /^_+$/.test(full) && full.length >= 5;
+      const videBorde = !full && /<w:pBdr\b[\s\S]*?<w:bottom\b/.test(paragraphes[i]);
+      if (!souligne && !videBorde) continue;
+      /* Le placeholder à bordure basse s'efface toujours : il ne dessine rien. */
+      if (videBorde) { aRetirer.add(i); continue; }
+      const suivant = paragraphes[i + 1] || '';
+      if (/<w:pBdr\b[\s\S]*?<w:top\b/.test(suivant)) aRetirer.add(i);
+    }
+    /*
+     * Le trait qui reste ne se sépare pas du nom qu'il annonce.
+     *
+     * Une ligne à signer seule au bas d'une page, le nom au verso, c'est la même faute
+     * que le « Bon pour acceptation » d'une page vierge : on signe sans savoir sous quoi.
+     * Le bloc entier change de page plutôt que de se couper.
+     */
+    let rang = -1;
+    docXml = docXml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function(p) {
+      rang++;
+      if (aRetirer.has(rang)) return '';
+      const full = texteDu(p);
+      if (!/^_+$/.test(full) || full.length < 5) return p;
+      if (/<w:keepNext\s*\/?>/.test(p)) return p;
+      if (/<w:pPr>/.test(p)) return p.replace(/<w:pPr>/, '<w:pPr><w:keepNext/>');
+      return p.replace(/(<w:p\b[^>]*>)/, '$1<w:pPr><w:keepNext/></w:pPr>');
+    });
+  }
   doc.getZip().file("word/document.xml", docXml);
 
   // Remove bold from specific defined terms that shouldn't be bold
