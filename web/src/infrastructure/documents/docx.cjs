@@ -524,6 +524,13 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
         }
       }
       if (!trigger) continue;
+      // Le gabarit qui a déjà choisi son blanc le garde.
+      //
+      // Un pouce sous la dernière ligne convient à une page de signatures, où il n'y a
+      // rien d'autre. Dans une lettre, il pousse l'acceptation du bénéficiaire sur la
+      // page suivante - le lecteur signe alors une page qui ne dit plus à quoi. Un
+      // gabarit qui écrit son propre `w:before` sait ce qu'il fait.
+      if (/<w:spacing\b[^/]*w:before="/.test(partsSig[i])) continue;
       if (!/<w:pPr>/.test(partsSig[i])) {
         partsSig[i] = partsSig[i].replace(/(<w:p\b[^>]*>)/, '$1<w:pPr></w:pPr>');
       }
