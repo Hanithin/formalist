@@ -15,6 +15,11 @@ import { journal } from "@/lib/journal";
  * D'où ce chemin séparé : docxtemplater, `paragraphLoop` pour que les boucles portent
  * sur des paragraphes entiers, et les délimiteurs à une seule accolade du modèle. Rien
  * d'autre - la typographie française est appliquée ensuite, comme sur les autres actes.
+ *
+ * Une exception : l'alignement. Le modèle du cabinet justifie chacun de ses paragraphes,
+ * et le reste des documents est au fer à gauche depuis qu'on a vu ce que la justification
+ * fait d'une ligne coupée. Un dossier ne peut pas mêler les deux, et la règle est celle
+ * de docx.cjs - une seule, pour les deux chemins.
  */
 const requerir = createRequire(import.meta.url);
 
@@ -63,9 +68,10 @@ export function rendreUnModeleDuCabinet(
 
     document.render(donnees);
 
+    const { auFerAGauche } = requerir("./docx.cjs") as { auFerAGauche: (xml: string) => string };
     const zipRendu = document.getZip();
     const xml = zipRendu.file("word/document.xml");
-    if (xml) zipRendu.file("word/document.xml", accorder(xml.asText()));
+    if (xml) zipRendu.file("word/document.xml", auFerAGauche(accorder(xml.asText())));
 
     return zipRendu.generate({ type: "nodebuffer", compression: "DEFLATE" });
   } catch (e) {

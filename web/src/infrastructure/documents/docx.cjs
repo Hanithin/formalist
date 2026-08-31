@@ -394,7 +394,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
 
   // Layout pass: collapse empty paragraphs + keepLines/keepNext to avoid orphans
   docXml = doc.getZip().file("word/document.xml").asText();
-  docXml = improveLayout(docXml);
+  docXml = auFerAGauche(improveLayout(docXml));
   // Cap excessive w:after values (template body paragraphs sometimes have 480 = 24pt that adds
   // unwanted gap before the next subtitle). Skip 600 (our explicit section-title after value)
   // and other small/medium values.
@@ -464,7 +464,16 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     const endsWithColon = /[: ]\s*$/.test(txt) && txt.endsWith(':');
     const isShortIntroducer = endsWithColon && txt.length < 140;
     const startsWithResolution = /^R[ÉE]SOLUTION\b/i.test(txt);
-    const align = (isShortIntroducer || startsWithResolution) ? 'left' : 'both';
+    /*
+     * Le fer à gauche, partout.
+     *
+     * Les actes étaient justifiés. Sur une mesure de seize centimètres, avec des montants
+     * et des références que rien ne coupe - « 30 000 euros », « L. 225-132 » - la
+     * justification ouvrait des rivières entre les mots, et une ligne qui portait un
+     * retour à la ligne s'étirait d'un bord à l'autre. Le bord droit libre se lit mieux,
+     * et c'est le même choix pour tous les documents, du procès-verbal au bulletin.
+     */
+    const align = 'left';
     if (/<w:pPr>/.test(p)) {
       return p.replace(/<w:pPr>/, '<w:pPr><w:jc w:val="' + align + '"/>');
     }
@@ -833,7 +842,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
       function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
       const newPara =
         '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>' +
-        '<w:jc w:val="both"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
+        '<w:jc w:val="left"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
         '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>' +
         '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
         '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>' +
@@ -996,7 +1005,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
         // Build a fresh paragraph with our text, justified, not bold
         const newPara =
           '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>' +
-          '<w:jc w:val="both"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
+          '<w:jc w:val="left"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
           '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>' +
           '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
           '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>' +
@@ -1350,6 +1359,18 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   return doc.getZip().generate({ type: "nodebuffer" });
 }
 
+/**
+ * Le fer à gauche, y compris là où le gabarit justifie en dur.
+ *
+ * Vingt-quatre gabarits portent `w:jc="both"` sur chacun de leurs paragraphes - les
+ * statuts, les déclarations, les modèles du cabinet. Les reprendre un à un reviendrait à
+ * poser le choix dans vingt-quatre fichiers binaires ; il tient ici, en un endroit, et
+ * s'applique aussi aux modèles rendus par l'autre chemin.
+ */
+function auFerAGauche(xml) {
+  return xml.replace(/<w:jc w:val="both"\s*\/>/g, '<w:jc w:val="left"/>');
+}
+
 function generateDocx(templateName, data) {
   const buf = loadTemplate(templateName);
   return generateDocxFromBuffer(buf, data, templateName);
@@ -1466,4 +1487,4 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
   return zip.generate({ type: "nodebuffer" });
 }
 
-module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature };
+module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature, auFerAGauche };
