@@ -1,6 +1,6 @@
 import { natureDeLaForme, fonctionsDuDirigeant } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
-import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
+import { agrementDeDroit, cessionsRedigees, nomDeLAssocie, type Cession } from "./cession";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { sirenEspace } from "./pv-age";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
@@ -51,6 +51,9 @@ export const MODELE_TRAITE = "modif-traite-apport-universel.docx";
 
 /** Le rapport du dirigeant sur une augmentation de capital, quand le droit est écarté. */
 export const MODELE_RAPPORT_AUGMENTATION = "modif-rapport-augmentation.docx";
+
+/** Les lettres que signent les associés qui renoncent à leur droit de souscrire. */
+export const MODELE_RENONCIATION_DPS = "modif-renonciation-dps.docx";
 export const MODELE_CESSION = "modif-acte-cession-universel.docx";
 
 export interface SocieteModifiee {
@@ -767,6 +770,19 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      */
     ...donneesDuRapportSurLAugmentation(societe, valeurs, titres),
 
+    /*
+     * Une lettre de renonciation par associé.
+     *
+     * On ne sait pas lequel souscrit - le formulaire demande qui souscrit en toutes
+     * lettres, non par rang - et deviner déciderait à la place de l'associé. Le
+     * document porte donc une lettre pour chacun, et la page de tête dit lesquelles
+     * signer : celles des associés qui ne souscrivent pas.
+     */
+    RENONCANTS: (assemblee.associes ?? []).map((associe, rang) => ({
+      NOM: nomDeLAssocie(associe, rang),
+      PARTS: montant(typeof associe.parts === "number" ? associe.parts : 0),
+    })),
+
     /* --------------------------------------------------- Réduction de capital */
     CAPITAL_ACTUEL_RED: nombreOuTiret(valeurs.capitalActuelRed),
     NOUVEAU_CAPITAL_RED: nombreOuTiret(valeurs.nouveauCapitalRed),
@@ -1075,6 +1091,9 @@ function donneesDuRapportSurLAugmentation(
       "L'activité de l'exercice en cours se poursuit dans les conditions décrites par les comptes du dernier exercice clos, qui sont à votre disposition au siège social.",
     MODALITES_EMISSION_RAPPORT: modalites,
     TEXTE_RAPPORT_DPS: texteDuRapportSurLeDroitPreferentiel(regime, nommes, titres),
+    SOUSCRIPTEURS_NOMMES: nommes,
+    /* « à l'attention du Président », « de la Gérance » : la lettre s'adresse. */
+    DESTINATAIRE_LETTRE: parActionsSociete ? "du Président" : "de la Gérance",
   };
 }
 
@@ -1448,6 +1467,24 @@ export function actesAProduire(
         : "Rapport de la gérance sur l'augmentation de capital",
       gabarit: MODELE_RAPPORT_AUGMENTATION,
     });
+
+    /*
+     * Les lettres de renonciation, seulement là où l'on renonce.
+     *
+     * La voie de la renonciation individuelle exige une pièce que personne ne
+     * fournissait : chaque associé qui ne souscrit pas déclare renoncer, au profit du
+     * souscripteur, et le notifie à la société. C'est cette notification qui fixe la
+     * date, et c'est elle qu'on cherche si la souscription est un jour contestée.
+     *
+     * Une suppression par l'assemblée n'en appelle aucune : le droit y est écarté par
+     * la collectivité, non abandonné un à un.
+     */
+    if (regimeDeLAugmentation(forme, valeurs).regime === "renonciation") {
+      actes.push({
+        titre: "Lettres de renonciation au droit préférentiel de souscription",
+        gabarit: MODELE_RENONCIATION_DPS,
+      });
+    }
   }
 
   return actes;

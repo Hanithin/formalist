@@ -278,3 +278,75 @@ describe("ce que la suppression impose", () => {
     expect(anomalies.filter((a) => a.champ === "commissaireDps")).toEqual([]);
   });
 });
+
+describe("les lettres de renonciation", () => {
+  /*
+   * La voie de la renonciation exige une pièce que personne ne fournissait : chaque
+   * associé qui ne souscrit pas déclare renoncer, au profit du souscripteur, et le
+   * notifie à la société. C'est cette notification qui fixe la date, et c'est elle
+   * qu'on cherche si la souscription est un jour contestée.
+   */
+  const avecDeuxAssocies = (sur: Record<string, string>) =>
+    ({
+      societe: SOCIETE("SAS"),
+      assemblee: {
+        date: "2026-10-10",
+        totalParts: 2000,
+        associes: [
+          { nature: "physique", civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 1400 },
+          { nature: "physique", civilite: "Madame", prenom: "Claire", nom: "MARTIN", parts: 600 },
+        ],
+      },
+      codes: ["augmentation_capital"],
+      valeurs: { ...BASE, ...sur },
+      cessions: [],
+    }) as unknown as ContexteGabarit;
+
+  it("ne paraissent que là où l'on renonce", () => {
+    const lettresDe = (sur: Record<string, string>) => {
+      const c = avecDeuxAssocies(sur);
+      return actesAProduire(c.codes, "SAS", c.valeurs, 2, []).find((a) =>
+        a.gabarit.includes("renonciation")
+      );
+    };
+
+    expect(lettresDe(RENONCIATION)?.titre).toBe(
+      "Lettres de renonciation au droit préférentiel de souscription"
+    );
+    /* Une suppression écarte le droit par la collectivité : personne n'y renonce. */
+    expect(lettresDe(SUPPRESSION)).toBeUndefined();
+    expect(lettresDe(A_PROPORTION)).toBeUndefined();
+  });
+
+  it("en portent une par associé, chacune à son nom et à ses titres", () => {
+    const texte = texteDu(
+      genererDocument("modif-renonciation-dps.docx", donneesDuGabarit(avecDeuxAssocies(RENONCIATION)))
+    );
+
+    expect(texte).toContain("Titulaire de 1 400 actions de la société ATELIER MERIDIEN");
+    expect(texte).toContain("Titulaire de 600 actions de la société ATELIER MERIDIEN");
+    /* Chacune se signe : deux noms au bas de deux lettres. */
+    expect(texte.match(/Jean DUPONT/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(texte.match(/Claire MARTIN/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("disent au profit de qui, et ce qu'elles ne cèdent pas", () => {
+    const texte = texteDu(
+      genererDocument("modif-renonciation-dps.docx", donneesDuGabarit(avecDeuxAssocies(RENONCIATION)))
+    );
+
+    expect(texte).toContain("au profit de : Monsieur Marc BERTIN");
+    expect(texte).toContain("ne me prive d'aucun des droits que je tiens par ailleurs");
+    /* Et la façon de la notifier, qui est ce qui lui donne date. */
+    expect(texte).toContain("Lettre recommandée avec demande d'avis de réception");
+    expect(texte).toContain("Bon pour acceptation de la renonciation ci-dessus");
+  });
+
+  it("disent lesquelles signer, en tête du document", () => {
+    const texte = texteDu(
+      genererDocument("modif-renonciation-dps.docx", donneesDuGabarit(avecDeuxAssocies(RENONCIATION)))
+    );
+
+    expect(texte).toContain("Sont à signer celles des associés qui ne souscrivent pas");
+  });
+});
