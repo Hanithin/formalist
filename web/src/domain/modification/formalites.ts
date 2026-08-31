@@ -1,4 +1,5 @@
 import { definitions, type TypeModification, type Valeurs } from "./types";
+import { VOIES_DU_DROIT_PREFERENTIEL } from "./souscription";
 import { REMPLOI, reserveSurLaDispense } from "./apport";
 
 /**
@@ -248,6 +249,31 @@ export function piecesAFournir(codes: string[], valeurs: Valeurs = {}): PieceAFo
         titre: "Arrêté de compte de la créance",
         explication:
           "Il établit que la créance est liquide et exigible. Certifié par le commissaire aux comptes s'il en existe un, à défaut établi par l'expert-comptable.",
+        obligatoire: true,
+        formats: [".pdf"],
+      });
+    }
+
+    /*
+     * Le rapport spécial du commissaire aux comptes, quand le droit est supprimé.
+     *
+     * On demandait son nom, la vérification bloquait le dossier sans lui, et le
+     * procès-verbal écrivait que l'assemblée en avait pris connaissance - mais rien ne
+     * réclamait jamais le rapport lui-même. L'acte affirmait l'existence d'une pièce
+     * que le dossier ne contenait pas, et c'est au greffe qu'on s'en apercevait.
+     *
+     * La renonciation individuelle n'en appelle aucun : le droit y est maintenu.
+     */
+    if (valeurs.voieDuDroitPreferentiel === VOIES_DU_DROIT_PREFERENTIEL[1]) {
+      const commissaire = (valeurs.commissaireDps ?? "").toString().trim();
+      pieces.push({
+        identifiant: "commissaire-dps",
+        titre: "Rapport spécial du commissaire aux comptes sur la suppression du droit préférentiel",
+        explication:
+          "Il se prononce sur le prix d'émission et sur l'incidence de l'émission pour les " +
+          "associés dont le droit est supprimé" +
+          (commissaire ? ", et vous l'avez annoncé comme établi par " + commissaire : "") +
+          ". Le procès-verbal en fait état : sans lui, l'assemblée délibère sur un rapport absent.",
         obligatoire: true,
         formats: [".pdf"],
       });

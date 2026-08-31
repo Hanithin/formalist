@@ -497,6 +497,22 @@ export const MODIFICATIONS: DefinitionModification[] = [
         visibleSi: { champ: "modeAugmentation", vaut: ["Apport en numéraire"] },
         indication: "Celle qui délivrera l'attestation de dépôt",
       },
+      /*
+       * L'adresse du dépositaire, que le bulletin de souscription doit porter.
+       *
+       * L'article R. 225-128 veut « le nom ou la dénomination sociale et l'adresse de la
+       * personne qui recevra les fonds ». On ne demandait que le nom, et le bulletin
+       * sortait avec un blanc au milieu d'une mention obligatoire.
+       */
+      {
+        identifiant: "banqueDepotAdresse",
+        libelle: "Adresse de l'agence",
+        type: "texte",
+        pleineLargeur: true,
+        obligatoireSi: { champ: "modeAugmentation", vaut: ["Apport en numéraire"] },
+        visibleSi: { champ: "modeAugmentation", vaut: ["Apport en numéraire"] },
+        indication: "Elle figure sur le bulletin de souscription, que le texte l'exige",
+      },
       {
         identifiant: "dateDepotFonds",
         libelle: "Date du dépôt des fonds",

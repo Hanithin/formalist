@@ -616,9 +616,8 @@ function mentionDuDroitPreferentiel(
     return {
       mention_dps: true,
       texte_dps:
-        "L'Assemblée, après avoir pris connaissance du rapport " +
-        motDuDirigeant(forme) +
-        " et du rapport spécial " +
+        /* Le rapport du dirigeant est visé en tête de résolution : ne le dire qu'ici. */
+        "L'Assemblée, après avoir pris connaissance du rapport spécial " +
         (commissaire ? "de " + commissaire + ", " : "") +
         "commissaire aux comptes, décide de supprimer le droit préférentiel de " +
         "souscription des associés, en application des articles " +
@@ -979,6 +978,20 @@ export function donneesDuPvAge(contexte: ContexteGabarit): Record<string, unknow
             /* La libération qualifie les titres qu'on crée, non ceux qu'on élève. */
             " et entièrement libérées"
           : "par élévation de la valeur nominale des " + mots.titres + " existantes",
+      /*
+       * L'assemblée statue sur le rapport : l'acte doit dire qu'elle l'a lu.
+       *
+       * Le rapport du dirigeant est désormais produit pour toute augmentation d'une
+       * société par actions - article L. 225-129 - et le procès-verbal ne le visait que
+       * dans la branche de la suppression. La résolution attaquait par « L'Assemblée
+       * décide d'augmenter », sans dire sur quoi elle se prononçait : une pièce du
+       * dossier n'était rattachée à rien.
+       *
+       * Une SARL n'en produit pas : la mention s'efface avec le rapport.
+       */
+      visa_rapport: parActions(societe.forme)
+        ? ", après avoir pris connaissance du rapport " + motDuDirigeant(societe.forme) + ","
+        : "",
     };
 
     if (augmentation === "r_augmentation_numeraire") {

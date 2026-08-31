@@ -54,6 +54,24 @@ export const MODELE_RAPPORT_AUGMENTATION = "modif-rapport-augmentation.docx";
 
 /** Les lettres que signent les associés qui renoncent à leur droit de souscrire. */
 export const MODELE_RENONCIATION_DPS = "modif-renonciation-dps.docx";
+/**
+ * Le bulletin par lequel se constate une souscription.
+ *
+ * L'article L. 225-143 l'impose pour toute souscription à une augmentation en numéraire,
+ * et R. 225-128 en fixe les mentions. Ce n'est pas une formalité de plus : l'article
+ * L. 225-146 fait établir le certificat du dépositaire « sur présentation des bulletins ».
+ * Le dossier réclamait l'attestation de la banque sans jamais fournir la pièce qui permet
+ * de l'obtenir - le client se présentait à son agence les mains vides.
+ */
+export const MODELE_BULLETIN_SOUSCRIPTION = "modif-bulletin-souscription.docx";
+/**
+ * La feuille de présence, que le procès-verbal cite depuis toujours.
+ *
+ * « La feuille de présence, arrêtée et certifiée exacte par le bureau, fait apparaître
+ * que... » : l'acte affirmait l'existence d'une pièce qu'aucun gabarit ne produisait.
+ * Elle ne se pose pas pour un associé unique, dont la décision n'est pas une assemblée.
+ */
+export const MODELE_FEUILLE_PRESENCE = "modif-feuille-presence.docx";
 export const MODELE_CESSION = "modif-acte-cession-universel.docx";
 
 export interface SocieteModifiee {
@@ -795,6 +813,29 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
       ),
     })),
 
+    /* ---------------------------- La feuille de présence ---------------------- */
+    PRESENTS: (assemblee.associes ?? []).map((associe, rang) => ({
+      NOM: nomDeLAssocie(associe, rang),
+      PARTS: montant(typeof associe.parts === "number" ? associe.parts : 0),
+    })),
+    /*
+     * Le total déclaré de la société, quand il est connu.
+     *
+     * La feuille de présence sert à montrer que le quorum est atteint : elle compare ce
+     * que les présents détiennent au capital entier. `TOTAL_PARTS_FORMATE` compte les
+     * présents ; celui-ci compte la société. Faute de total déclaré, les deux se
+     * rejoignent - la phrase reste vraie, elle ne prouve simplement plus rien de plus.
+     */
+    TOTAL_PARTS_SOCIETE: montant(
+      typeof assemblee.totalParts === "number" && assemblee.totalParts > 0
+        ? assemblee.totalParts
+        : totalParts
+    ),
+    TITRES_SOCIETE_CAPITALE: avecMajusculeInitiale(titres),
+
+    /* ---------------------------- Les bulletins de souscription --------------- */
+    ...donneesDesBulletins(assemblee, valeurs, titres),
+
     /* --------------------------------------------------- Réduction de capital */
     CAPITAL_ACTUEL_RED: nombreOuTiret(valeurs.capitalActuelRed),
     NOUVEAU_CAPITAL_RED: nombreOuTiret(valeurs.nouveauCapitalRed),
@@ -1156,6 +1197,66 @@ function donneesDuRapportSurLAugmentation(
 }
 
 /**
+ * Qui souscrit, et ce que son bulletin doit porter.
+ *
+ * L'article R. 225-128 énumère les mentions : les modalités de l'augmentation, la somme à
+ * souscrire en numéraire, le nom et l'adresse de qui reçoit les fonds, l'identité du
+ * souscripteur et le nombre de titres qu'il prend, et la remise d'une copie. Le nombre en
+ * toutes lettres n'est pas de nous : le texte veut qu'il soit écrit de la main du
+ * souscripteur, et le gabarit lui laisse donc la ligne.
+ *
+ * Les souscripteurs se lisent là où ils sont dits. Quand un tiers entre - ou qu'un associé
+ * prend plus que sa part - le formulaire les nomme un par un. Quand chacun souscrit à
+ * proportion de ce qu'il détient, ce sont les associés eux-mêmes, et personne d'autre.
+ */
+function donneesDesBulletins(
+  assemblee: Assemblee,
+  valeurs: Valeurs,
+  titres: string
+): Record<string, unknown> {
+  const nommes = lignesDesSouscripteurs(texteBrut(valeurs.souscripteursNommes));
+  const souscriptions = nommes.length
+    ? nommes.map((ligne) => ({ IDENTITE: ligne }))
+    : (assemblee.associes ?? []).map((associe, rang) => ({
+        IDENTITE: nomDeLAssocie(associe, rang),
+      }));
+
+  const brut = Number(String(valeurs.primeEmission ?? "").replace(",", "."));
+  const prime = Number.isFinite(brut) ? brut : 0;
+  const banque = texteBrut(valeurs.banqueDepot);
+  const adresse = texteBrut(valeurs.banqueDepotAdresse);
+  const compensation = texteBrut(valeurs.modeAugmentation).startsWith("Compensation");
+
+  return {
+    SOUSCRIPTIONS: souscriptions,
+    PRIME_EN_CLAIR:
+      prime > 0 ? ", assorties d'une prime d'émission de " + montant(prime) + " euros par titre" : "",
+    MODE_SOUSCRIPTION_BULLETIN: compensation
+      ? "Les " +
+        titres +
+        " nouvelles sont souscrites en numéraire et libérées par compensation avec une créance " +
+        "liquide et exigible sur la société, dont l'arrêté de compte est joint."
+      : "La totalité de l'augmentation est à souscrire en numéraire et à libérer par versement " +
+        "en espèces. Aucun apport en nature n'est compris dans cette émission.",
+    /*
+     * Le dépositaire se nomme et s'adresse : c'est lui qui délivrera le certificat.
+     *
+     * Une compensation de créances n'en a pas - rien n'est versé, l'arrêté de compte tient
+     * lieu de justification - et le bulletin le dit plutôt que de laisser un blanc.
+     */
+    DEPOSITAIRE_BULLETIN: compensation
+      ? "La souscription étant libérée par compensation, aucun versement n'est reçu par un " +
+        "dépositaire : la libération se justifie par l'arrêté de compte de la créance."
+      : "Les fonds seront reçus par " +
+        (banque || "…………………………………………………") +
+        ", " +
+        (adresse || "…………………………………………………………………………") +
+        ", qui délivrera le certificat du dépositaire prévu par l'article L. 225-146 du code " +
+        "de commerce.",
+  };
+}
+
+/**
  * Les blocs d'acceptation joints à chaque lettre de renonciation.
  *
  * L'article R. 225-122 du code de commerce ne se contente pas de la renonciation : celle
@@ -1179,11 +1280,7 @@ export function acceptationsDesSouscripteurs(
   nommes: string,
   renoncant: string
 ): { PHRASE: string }[] {
-  return nommes
-    .split(/\r?\n/)
-    .map((ligne) => ligne.trim().replace(/^[-•*]\s+/, "").replace(/[.,;]+\s*$/, ""))
-    .filter(Boolean)
-    .map((ligne) => {
+  return lignesDesSouscripteurs(nommes).map((ligne) => {
       /* Le nombre de titres suit le nom : il fait apposition, et la virgule est due. */
       const apposition = ligne.includes(",") ? "," : "";
       const civilite = /^(Monsieur|Madame|Mademoiselle|M\.|Mme|Mlle)\s+/i.exec(ligne);
@@ -1210,7 +1307,20 @@ export function acceptationsDesSouscripteurs(
           renoncant +
           ".",
       };
-    });
+  });
+}
+
+/**
+ * Le champ « qui souscrit, et combien de titres chacun », ligne par ligne.
+ *
+ * Une ligne par souscripteur, c'est ce que le formulaire demande. Les puces et la
+ * ponctuation finale se retirent : elles viennent de la frappe, non du contenu.
+ */
+export function lignesDesSouscripteurs(nommes: string): string[] {
+  return nommes
+    .split(/\r?\n/)
+    .map((ligne) => ligne.trim().replace(/^[-•*]\s+/, "").replace(/[.,;]+\s*$/, ""))
+    .filter(Boolean);
 }
 
 /** Ce que le rapport dit du droit préférentiel, selon la voie retenue. */
@@ -1625,6 +1735,31 @@ export function actesAProduire(
         gabarit: MODELE_RENONCIATION_DPS,
       });
     }
+
+    /*
+     * Le bulletin, dès qu'il y a quelque chose à souscrire.
+     *
+     * L'article L. 225-143 le veut pour toute souscription à une augmentation en
+     * numéraire - une compensation de créances en est une, libérée autrement - et
+     * l'article L. 225-146 fait établir le certificat du dépositaire sur sa présentation.
+     * Une incorporation de réserves n'en appelle aucun : rien n'y est souscrit.
+     */
+    if (augmentationSouscrite(texte(valeurs.modeAugmentation))) {
+      actes.push({
+        titre: "Bulletins de souscription",
+        gabarit: MODELE_BULLETIN_SOUSCRIPTION,
+      });
+    }
+  }
+
+  /*
+   * La feuille de présence, celle que le procès-verbal cite.
+   *
+   * Elle ne vaut que pour une assemblée : l'associé unique décide seul, et son acte
+   * ne dresse aucune liste de présents.
+   */
+  if (typeof nombreDAssocies === "number" && nombreDAssocies > 1) {
+    actes.push({ titre: "Feuille de présence", gabarit: MODELE_FEUILLE_PRESENCE });
   }
 
   return actes;

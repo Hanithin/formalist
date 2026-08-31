@@ -66,6 +66,8 @@ const VALEURS: Record<string, string> = {
   /* Le cas ordinaire : chacun souscrit à proportion, rien à écarter. */
   souscripteursAugm: "Les associés actuels, à proportion de leurs droits",
   banqueDepot: "Crédit Mutuel",
+  /* Le bulletin de souscription porte l'adresse du dépositaire : R. 225-128. */
+  banqueDepotAdresse: "18 place Bellecour, 69002 Lyon",
   nbPartsNouvelles: "3000",
   valeurNominaleAugm: "10",
   dateEffetAugm: "2026-10-10",

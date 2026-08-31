@@ -41,6 +41,8 @@ const AUGMENTATION = {
   valeurNominaleAugm: "10",
   dateEffetAugm: "2026-10-01",
   banqueDepot: "Banque Essai",
+  /* Le bulletin de souscription porte l'adresse du dépositaire : R. 225-128. */
+  banqueDepotAdresse: "3 rue de l'Essai, 75002 Paris",
   dateDepotFonds: "2026-09-10",
   /* Le rapport du président est dû pour toute augmentation : R. 225-113. */
   motifsAugmentation: "financer le second atelier",
