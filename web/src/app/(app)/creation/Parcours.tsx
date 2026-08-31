@@ -744,7 +744,8 @@ export function Parcours({
                 ne dit rien.
               */}
 
-              <Champ id="banque" libelle="Banque">
+              {/* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */}
+              <Champ id="banque" libelle="Banque" requis anomalie={anomalies["banque"]}>
                 <Choix
                   id="banque"
                   valeur={brouillon.banque ?? ""}

@@ -19,6 +19,8 @@ const societe: Brouillon = {
   adresse: "12 rue des Lilas",
   codePostal: "75011",
   ville: "Paris",
+  /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+  banque: "Qonto",
   associes: [
     {
       type: "physique",
@@ -523,7 +525,24 @@ describe("l'avancement d'un dossier neuf", () => {
       adresse: "14 rue de Cléry",
       codePostal: "75002",
       ville: "Paris",
+      /* L'étape n'est faite que si la banque l'est : c'est elle qui écrit l'article des apports. */
+      banque: "Qonto" as const,
     };
     expect(avancementParcours(societe)).toBe(25);
+  });
+});
+
+/**
+ * La banque décide du texte d'un article des statuts, pas seulement d'une mention.
+ *
+ * L'article des apports est écrit en quatre versions, une par dépositaire. Sans banque
+ * choisie, les quatre conditions sont fausses et l'article sort entièrement vide - pas
+ * un tiret ni un blanc à compléter, mais un article de statuts sans une ligne.
+ */
+describe("la banque du dépôt de capital", () => {
+  it("est due dès l'étape de la société", () => {
+    const sansBanque = { ...societe };
+    delete sansBanque.banque;
+    expect(verifierEtape(1, sansBanque).map((a) => a.champ)).toContain("banque");
   });
 });

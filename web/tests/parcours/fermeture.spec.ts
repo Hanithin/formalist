@@ -21,6 +21,8 @@ const SOCIETE = {
   adresse: "12 rue de la Paix",
   codePostal: "75002",
   ville: "Paris",
+  /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+  banque: "Qonto",
   capital: 10000,
   villeRcs: "Paris",
 };

@@ -125,6 +125,8 @@ test("le dossier naît au premier enregistrement, sous son nom", async ({ page, 
   await page.getByLabel("Adresse du siège").fill("12 rue des Lilas");
   await page.getByRole("option", { name: /Paris/ }).first().click();
   await page.getByLabel(/Objet social/).fill("Conseil en informatique");
+  /* L'article des apports est écrit par dépositaire : l'étape ne passe pas sans banque. */
+  await choisir(page, "Banque", /Qonto/);
   await page.getByRole("button", { name: "Continuer" }).click();
 
   // L'adresse porte l'identifiant : un rechargement ne rouvrira pas un dossier.
@@ -225,6 +227,7 @@ test("une société de domiciliation demande ce que le greffe exige", async ({ p
 
   await page.getByLabel("Nom de la société de domiciliation").fill("SEDOMICILIER");
   await page.getByLabel("SIREN de la société de domiciliation").fill("1234");
+  await choisir(page, "Banque", /Qonto/);
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expect(page.getByText(/SIREN de la société de domiciliation comporte neuf/)).toBeVisible();
@@ -269,6 +272,7 @@ test("le brouillon est retrouvé après un rechargement complet", async ({ page,
   await page.getByLabel("Adresse du siège").fill("1 rue de la Paix");
   await page.getByLabel("Code postal").fill("75002");
   await page.getByLabel("Ville").fill("Paris");
+  await choisir(page, "Banque", /Qonto/);
   await page.getByRole("button", { name: "Continuer" }).click();
 
   // Une SASU a un actionnaire, pas des associés : le mot suit la forme, comme dans
@@ -290,6 +294,8 @@ test("le mot employé pour le dirigeant suit la forme choisie", async ({ page, r
     adresse: "2 rue Neuve",
     codePostal: "69001",
     ville: "Lyon",
+    /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+    banque: "Qonto",
   };
 
   // Une SARL demande deux associés : avec un seul, l'étape ne passe pas.
@@ -339,6 +345,8 @@ test("le capital se saisit une fois, avant de se répartir", async ({ page, requ
         adresse: "2 rue Neuve",
         codePostal: "69001",
         ville: "Lyon",
+        /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+        banque: "Qonto",
         associes: [associe("Camille", "Durand"), associe("Alex", "Martin")],
         dirigeants: [{ associe: 0 }],
       },
@@ -393,6 +401,8 @@ test("la valeur d'une action donne leur nombre", async ({ page, request }) => {
         adresse: "3 rue Centrale",
         codePostal: "33000",
         ville: "Bordeaux",
+        /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+        banque: "Qonto",
         capital: 2000,
         associes: [associe("Camille", "Durand")],
         dirigeants: [{ associe: 0 }],
@@ -433,6 +443,8 @@ test("une valeur qui ne tombe pas juste laisse le capital intact", async ({ page
         adresse: "3 rue Centrale",
         codePostal: "33000",
         ville: "Bordeaux",
+        /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+        banque: "Qonto",
         capital: 2000,
         partsTotales: 200,
         associes: [{ ...associe("Camille", "Durand"), parts: 200 }],
@@ -477,6 +489,8 @@ test("l'étape des offres prend toute la largeur", async ({ page, request }) => 
         adresse: "3 rue Centrale",
         codePostal: "33000",
         ville: "Bordeaux",
+        /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+        banque: "Qonto",
         capital: 1000,
         capitalLibere: 1000,
         partsTotales: 100,
@@ -522,6 +536,8 @@ test("l'étape des offres règle et confie d'un seul geste", async ({ page, requ
         adresse: "3 rue Centrale",
         codePostal: "33000",
         ville: "Bordeaux",
+        /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+        banque: "Qonto",
         capital: 1000,
         capitalLibere: 1000,
         partsTotales: 100,
@@ -570,6 +586,8 @@ test("un dossier confié s'ouvre sur ses documents", async ({ page, request }) =
         adresse: "3 rue Centrale",
         codePostal: "33000",
         ville: "Bordeaux",
+        /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+        banque: "Qonto",
         capital: 1000,
         partsTotales: 100,
         offre: "business",
@@ -623,6 +641,8 @@ test("les échanges renvoient à la messagerie du dossier", async ({ page, reque
         adresse: "3 rue Centrale",
         codePostal: "33000",
         ville: "Bordeaux",
+        /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+        banque: "Qonto",
         capital: 1000,
         partsTotales: 100,
         offre: "business",
@@ -685,6 +705,8 @@ test.describe("le règlement d'une création", () => {
           adresse: "3 rue Centrale",
           codePostal: "33000",
           ville: "Bordeaux",
+          /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+          banque: "Qonto",
           capital: 1000,
           capitalLibere: 1000,
           partsTotales: 100,
@@ -827,6 +849,8 @@ test.describe("la relecture retient la signature", () => {
           adresse: "3 rue Centrale",
           codePostal: "33000",
           ville: "Bordeaux",
+          /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+          banque: "Qonto",
           capital: 1000,
           capitalLibere: 1000,
           partsTotales: 100,
@@ -1008,6 +1032,8 @@ test.describe("pièces et documents", () => {
     adresse: "3 rue Centrale",
     codePostal: "33000",
     ville: "Bordeaux",
+    /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+    banque: "Qonto",
     capital: 1000,
     capitalLibere: 1000,
     partsTotales: 100,
@@ -1247,6 +1273,8 @@ test("une date de naissance se tape, elle ne se cherche pas au calendrier", asyn
         adresse: "2 rue Neuve",
         codePostal: "69001",
         ville: "Lyon",
+        /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+        banque: "Qonto",
       },
     },
   });

@@ -17,6 +17,8 @@ const ENTREPRISE = {
   adresse: "8 rue des Lilas",
   codePostal: "75011",
   ville: "Paris",
+  /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+  banque: "Qonto",
 };
 
 const ENTREPRENEUR = {

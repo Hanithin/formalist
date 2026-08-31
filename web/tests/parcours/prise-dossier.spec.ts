@@ -27,6 +27,8 @@ const SASU_COMPLETE = {
   adresse: "3 rue Centrale",
   codePostal: "33000",
   ville: "Bordeaux",
+  /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+  banque: "Qonto",
   capital: 1000,
   capitalLibere: 1000,
   partsTotales: 100,

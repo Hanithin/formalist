@@ -20,6 +20,8 @@ const SOCIETE = {
   adresse: "34 rue Laugier",
   codePostal: "75017",
   ville: "Paris",
+  /* L'article des apports est écrit par dépositaire : sans banque, il sort vide. */
+  banque: "Qonto",
   villeRcs: "Paris",
   capital: 20000,
 };

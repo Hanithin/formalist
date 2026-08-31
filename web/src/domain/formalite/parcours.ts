@@ -334,6 +334,21 @@ function verifierSociete(brouillon: Brouillon): Anomalie[] {
     anomalies.push({ champ: "ville", message: "Indiquez la ville" });
   }
 
+  /*
+   * La banque décide du texte d'un article des statuts, pas seulement d'une mention.
+   *
+   * L'article des apports est écrit en quatre versions, une par dépositaire. Sans banque
+   * choisie, les quatre conditions sont fausses et l'article sort entièrement vide - pas
+   * un tiret ni un blanc à compléter, mais un article de statuts sans une ligne, déposé
+   * au greffe. La liste des souscripteurs, elle, annonçait « déposé auprès de - ».
+   *
+   * Rien ne l'exigeait : seul le nom libre l'était, et seulement si l'on avait choisi
+   * « Autre ».
+   */
+  if (!brouillon.banque) {
+    anomalies.push({ champ: "banque", message: "Choisissez la banque qui recevra le capital" });
+  }
+
   // « Autre » ouvre la saisie : sans nom, l'attestation de dépôt reste en blanc.
   if (brouillon.banque === "Autre" && !brouillon.banqueAutre?.nom?.trim()) {
     anomalies.push({ champ: "banqueAutre.nom", message: "Indiquez le nom de la banque" });
