@@ -781,6 +781,18 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     RENONCANTS: (assemblee.associes ?? []).map((associe, rang) => ({
       NOM: nomDeLAssocie(associe, rang),
       PARTS: montant(typeof associe.parts === "number" ? associe.parts : 0),
+      /*
+       * Chaque lettre porte l'acceptation de ceux au profit de qui l'on renonce.
+       *
+       * Une renonciation faite au profit de personnes dénommées n'est complète que si
+       * elle est accompagnée de leur acceptation - article R. 225-122 du code de
+       * commerce. Elle voyage avec la lettre, non à part : c'est la lettre que le
+       * souscripteur accepte, et une acceptation détachée ne dit plus laquelle.
+       */
+      ACCEPTANTS: acceptationsDesSouscripteurs(
+        texteBrut(valeurs.souscripteursNommes),
+        nomDeLAssocie(associe, rang)
+      ),
     })),
 
     /* --------------------------------------------------- Réduction de capital */
@@ -1095,6 +1107,64 @@ function donneesDuRapportSurLAugmentation(
     /* « à l'attention du Président », « de la Gérance » : la lettre s'adresse. */
     DESTINATAIRE_LETTRE: parActionsSociete ? "du Président" : "de la Gérance",
   };
+}
+
+/**
+ * Les blocs d'acceptation joints à chaque lettre de renonciation.
+ *
+ * L'article R. 225-122 du code de commerce ne se contente pas de la renonciation : celle
+ * qui est faite au profit de personnes dénommées « est accompagnée de l'acceptation de
+ * ces bénéficiaires ». Sans elle, la souscription reste attaquable par l'associé dilué.
+ *
+ * Le champ demande une ligne par souscripteur, et la lettre les rassemblait toutes sous
+ * un seul « Bon pour acceptation » : à trois souscripteurs, un seul paraphe valait pour
+ * les trois, et l'on ne savait plus qui avait accepté quoi. Chacun a désormais son bloc,
+ * son lieu, sa date et sa signature.
+ *
+ * La ligne est reprise telle qu'elle a été saisie - on ne devine pas où finit le nom et
+ * où commence le nombre de titres. Elle devient le sujet d'une phrase, ce qui change une
+ * redite de la clause de souscription en un engagement.
+ *
+ * Elle nomme aussi le renonçant. « La renonciation qui précède » suppose de l'avoir sous
+ * les yeux : quand les acceptations sont nombreuses et passent à la page suivante, cette
+ * phrase-là dit encore de quelle renonciation il s'agit.
+ */
+export function acceptationsDesSouscripteurs(
+  nommes: string,
+  renoncant: string
+): { PHRASE: string }[] {
+  return nommes
+    .split(/\r?\n/)
+    .map((ligne) => ligne.trim().replace(/^[-•*]\s+/, "").replace(/[.,;]+\s*$/, ""))
+    .filter(Boolean)
+    .map((ligne) => {
+      /* Le nombre de titres suit le nom : il fait apposition, et la virgule est due. */
+      const apposition = ligne.includes(",") ? "," : "";
+      const civilite = /^(Monsieur|Madame|Mademoiselle|M\.|Mme|Mlle)\s+/i.exec(ligne);
+      /*
+       * Une société ne se soussigne pas : elle accepte par qui la représente.
+       *
+       * La civilité est ce qui distingue les deux, faute de mieux dans un champ libre.
+       */
+      if (!civilite) {
+        return {
+          PHRASE:
+            ligne + apposition + " accepte la renonciation qui précède, faite à son profit par " + renoncant + ".",
+        };
+      }
+      const feminin = /^(Madame|Mme|Mademoiselle|Mlle)/i.test(civilite[1]);
+      return {
+        PHRASE:
+          "Je soussigné" +
+          (feminin ? "e" : "") +
+          " " +
+          ligne.slice(civilite[0].length) +
+          apposition +
+          " accepte la renonciation qui précède, faite à mon profit par " +
+          renoncant +
+          ".",
+      };
+    });
 }
 
 /** Ce que le rapport dit du droit préférentiel, selon la voie retenue. */

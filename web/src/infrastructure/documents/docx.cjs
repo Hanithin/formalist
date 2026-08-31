@@ -705,8 +705,18 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   // to keep them in the chain so the whole signature block (label + space + name) stays on the
   // same page.
   for (let i = 0; i < 2; i++) {
+    //
+    // Chaque tour de la répétition prend un paragraphe, et un seul.
+    //
+    // `(?:<w:p[ >][\s\S]*?<\/w:p>)*?` en laissait passer plusieurs : la partie paresseuse
+    // pouvait franchir une balise de fin pour aller à la suivante, si bien que N
+    // paragraphes se découpaient de 2^N façons. Sur un acte à deux blocs de signature,
+    // la mise au propre ne rendait plus la main - et c'est la lettre de renonciation,
+    // qui écrit « Fait à ... » sous chaque acceptation, qui l'a montré.
+    //
+    // Interdire la balise de fin à l'intérieur ne laisse qu'un seul découpage possible.
     docXml = docXml.replace(
-      /(<w:t[^>]*>\s*(?:Signature\b|Fait\s+(?:à|le)\s)[^<]*<\/w:t>[\s\S]*?<\/w:p>(?:<w:p[ >][\s\S]*?<\/w:p>)*?)(<w:p[ >])((?:(?!<w:t[ >])[\s\S])*?<\/w:p>)/,
+      /(<w:t[^>]*>\s*(?:Signature\b|Fait\s+(?:à|le)\s)[^<]*<\/w:t>(?:(?!<\/w:p>)[\s\S])*<\/w:p>(?:<w:p[ >](?:(?!<\/w:p>)[\s\S])*<\/w:p>)*?)(<w:p[ >])((?:(?!<w:t[ >])[\s\S])*?<\/w:p>)/,
       function(_, before, popen, rest) {
         if (/<w:keepNext/.test(popen + rest)) return _;
         if (/<w:pPr>/.test(rest)) {
@@ -722,7 +732,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   // Add a horizontal signature line ABOVE the bold name paragraph in signature blocks,
   // and FORCE the name to be bold. Pattern: "Signature de..." / "Fait à..." → (empties) → name.
   docXml = docXml.replace(
-    /(<w:t[^>]*>\s*(?:Signature\b|Fait\s+(?:à|le)\s)[^<]*<\/w:t>[\s\S]*?<\/w:p>(?:<w:p[ >](?:(?!<w:t[ >])[\s\S])*?<\/w:p>)*?)(<w:p[ >][\s\S]*?<\/w:p>)/g,
+    /(<w:t[^>]*>\s*(?:Signature\b|Fait\s+(?:à|le)\s)[^<]*<\/w:t>(?:(?!<\/w:p>)[\s\S])*<\/w:p>(?:<w:p[ >](?:(?!<\/w:p>)(?!<w:t[ >])[\s\S])*<\/w:p>)*?)(<w:p[ >][\s\S]*?<\/w:p>)/g,
     function(m, before, namePara) {
       // Check the name paragraph has text content (skip empty paragraphs)
       const txts = [];
@@ -904,8 +914,25 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
      * Faute de civilité, il n'y a rien à reconstruire : on laisse le document tel que le
      * gabarit l'a rendu.
      */
+    /*
+     * Cette passe appartient aux déclarations, non à tout ce qui dit « Je soussigné ».
+     *
+     * Elle reconnaissait son paragraphe au seul mot « Je soussigné », et réécrivait le
+     * premier qu'elle trouvait, où qu'il soit. La lettre de renonciation fait accepter le
+     * souscripteur - « Je soussigné Marc BERTIN, 3 000 actions nouvelles, accepte la
+     * renonciation qui précède » - et c'est cet engagement que la passe remplaçait par un
+     * état civil vide : « Je soussigné, -, né le - à -, fils de - et de - ». La première
+     * lettre du document, elle seule, et sans que rien ne le signale.
+     *
+     * Le nom du gabarit dit à qui elle s'adresse. Les quatre déclarations de non
+     * condamnation sont les seuls actes qui portent cette phrase, et l'attestation de
+     * domiciliation se reconnaît à son contenu comme avant.
+     */
+    const acteADeclarer =
+      !nomDuGabarit || /non-condamnation|domicil/i.test(nomDuGabarit) || isAttestationDomicile;
+
     let finalText;
-    if (!civNomPrenom) {
+    if (!civNomPrenom || !acteADeclarer) {
       finalText = null;
     } else if (isAttestationDomicile) {
       // Attestation de domiciliation: include "agissant en qualité de Président..." and "déclare domicilier..."
