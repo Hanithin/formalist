@@ -59,10 +59,15 @@ services:
       - key: STRIPE_SECRET_KEY
         sync: false
       # Secret du point de terminaison à créer dans le tableau de bord Stripe, sur
-      # https://app.formalist.fr/api/paiement/webhook, abonné aux événements
-      # checkout.session.completed et checkout.session.expired. Le secret du
-      # tableau de bord et celui de « stripe listen » sont différents : celui-ci est
-      # le premier.
+      # https://app.formalist.fr/api/paiement/webhook, abonné aux quatre événements
+      # que le code traite (voir encaissementDe, infrastructure/paiement/stripe.ts) :
+      # checkout.session.completed, .expired, .async_payment_succeeded et
+      # .async_payment_failed. Les deux derniers ne sont pas facultatifs : avec un
+      # prélèvement SEPA ou un virement, « completed » arrive alors que rien n'est
+      # encaissé, et c'est « async_payment_succeeded » qui confirme le règlement.
+      # Sans eux, le client paierait et le dossier resterait impayé.
+      # Le secret du tableau de bord et celui de « stripe listen » sont différents :
+      # celui-ci est le premier.
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
     disk:
