@@ -487,16 +487,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     const endsWithColon = /[: ]\s*$/.test(txt) && txt.endsWith(':');
     const isShortIntroducer = endsWithColon && txt.length < 140;
     const startsWithResolution = /^R[ÉE]SOLUTION\b/i.test(txt);
-    /*
-     * Le fer à gauche, partout.
-     *
-     * Les actes étaient justifiés. Sur une mesure de seize centimètres, avec des montants
-     * et des références que rien ne coupe - « 30 000 euros », « L. 225-132 » - la
-     * justification ouvrait des rivières entre les mots, et une ligne qui portait un
-     * retour à la ligne s'étirait d'un bord à l'autre. Le bord droit libre se lit mieux,
-     * et c'est le même choix pour tous les documents, du procès-verbal au bulletin.
-     */
-    const align = 'left';
+    const align = alignementDuParagraphe(p, { isShortIntroducer, startsWithResolution });
     if (/<w:pPr>/.test(p)) {
       return p.replace(/<w:pPr>/, '<w:pPr><w:jc w:val="' + align + '"/>');
     }
@@ -1444,8 +1435,51 @@ function normaliserLeTexte(xml) {
   return xml.normalize("NFC");
 }
 
+/**
+ * L'alignement d'un paragraphe de corps : justifié, sauf là où cela ouvre un trou.
+ *
+ * Les actes sont justifiés - c'est la forme d'un acte, et le bord droit régulier se lit
+ * comme tel. Deux cas font exception, parce que la justification y étire une ligne d'un
+ * bord à l'autre au lieu de la laisser courte :
+ *
+ * - une ligne d'introduction qui finit par deux points - « Sont présents : » - occupe
+ *   seule son paragraphe, et se retrouvait étalée sur seize centimètres ;
+ * - un paragraphe qui porte un retour à la ligne manuel : Word justifie la ligne qui
+ *   précède le retour comme n'importe quelle autre, et « une action ⟶ nouvelle » se
+ *   séparait d'un grand vide. C'est le défaut qui avait fait passer tous les actes au
+ *   fer à gauche ; le corriger ici permet de rendre la justification au reste.
+ *
+ * Un saut de page n'est pas un retour à la ligne : il termine le paragraphe, il n'étire
+ * rien.
+ */
+function alignementDuParagraphe(paragraphe, { isShortIntroducer, startsWithResolution }) {
+  if (isShortIntroducer || startsWithResolution) return 'left';
+
+  const retourManuel = /<w:br(?![^>]*w:type="page")[^>]*\/>/i.test(paragraphe);
+  return retourManuel ? 'left' : 'both';
+}
+
+/**
+ * Les gabarits justifient en dur : on n'y touche que pour les mêmes exceptions.
+ *
+ * Vingt-quatre gabarits portent `w:jc="both"` sur chacun de leurs paragraphes, sans
+ * distinguer une phrase d'un intitulé ni voir les retours à la ligne qu'ils contiennent.
+ * La règle qui vaut pour les paragraphes sans alignement vaut pour eux : elle tient en
+ * un endroit plutôt que dans vingt-quatre fichiers binaires.
+ */
 function auFerAGauche(xml) {
-  return xml.replace(/<w:jc w:val="both"\s*\/>/g, '<w:jc w:val="left"/>');
+  return xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function (p) {
+    if (!/<w:jc w:val="both"\s*\/>/.test(p)) return p;
+
+    const texts = [];
+    p.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, function (_, t) { texts.push(t); });
+    const txt = texts.join('').trim();
+    const isShortIntroducer = txt.endsWith(':') && txt.length < 140;
+    const startsWithResolution = /^R[ÉE]SOLUTION\b/i.test(txt);
+
+    if (alignementDuParagraphe(p, { isShortIntroducer, startsWithResolution }) === 'both') return p;
+    return p.replace(/<w:jc w:val="both"\s*\/>/g, '<w:jc w:val="left"/>');
+  });
 }
 
 /**
