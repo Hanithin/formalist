@@ -9,6 +9,8 @@ import {
   type PersonnePhysique,
 } from "@/domain/formalite/etat-civil";
 import { AdresseComposee, Ville } from "@/components/formulaire/Adresse";
+import { ChampListe } from "@/components/formulaire/ChampListe";
+import { NATIONALITES, NOMS_DE_PAYS } from "@/domain/formalite/pays";
 import { Choix } from "./Choix";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./Parcours.module.css";
@@ -204,11 +206,16 @@ export function EtatCivil({
       </Champ>
 
       <Champ id={"paysNaissance-" + rang} libelle="Pays de naissance">
-        <input
+        {/*
+          La liste propose, elle n'impose pas : on naît dans des États qui n'existent
+          plus, et l'acte doit pouvoir les nommer.
+        */}
+        <ChampListe
           id={"paysNaissance-" + rang}
           placeholder="France"
-          value={personne.paysDeNaissance ?? ""}
-          onChange={(e) => surChangement({ paysDeNaissance: e.target.value })}
+          valeur={personne.paysDeNaissance ?? ""}
+          options={NOMS_DE_PAYS}
+          surChangement={(paysDeNaissance) => surChangement({ paysDeNaissance })}
         />
       </Champ>
 
@@ -231,11 +238,14 @@ export function EtatCivil({
       </Champ>
 
       <Champ id={"nationalite-" + rang} libelle="Nationalité">
-        <input
+        {/* Au féminin : « de nationalité française » s'accorde avec le mot, pas avec
+            la personne. La liste porte donc la seule forme qu'un acte emploie. */}
+        <ChampListe
           id={"nationalite-" + rang}
           placeholder="Française"
-          value={personne.nationalite ?? ""}
-          onChange={(e) => surChangement({ nationalite: e.target.value })}
+          valeur={personne.nationalite ?? ""}
+          options={NATIONALITES}
+          surChangement={(nationalite) => surChangement({ nationalite })}
         />
       </Champ>
 

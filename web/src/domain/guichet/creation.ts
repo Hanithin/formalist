@@ -1,6 +1,7 @@
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { estForme } from "@/domain/formalite/formes";
 import { apportsDe } from "@/domain/formalite/capital";
+import { codeDuPays } from "@/domain/formalite/pays";
 import {
   codeSituationMatrimoniale,
   FORME_JURIDIQUE,
@@ -143,6 +144,23 @@ function pouvoirs(brouillon: Brouillon, manques: Manque[]): Record<string, unkno
       origine: "nomenclature",
     });
 
+    /*
+     * Un pays de naissance qu'on ne sait pas coder se signale.
+     *
+     * Le dépôt écrivait « FRA » quoi qu'on ait saisi : une personne née à Alger y était
+     * déclarée née en France, et le registre n'avait aucun moyen de s'en apercevoir. La
+     * table couvre les États actuels ; ce qu'elle ne connaît pas - un État disparu, une
+     * graphie inhabituelle - reste à trancher plutôt qu'à deviner.
+     */
+    const paysSaisi = personne?.paysDeNaissance?.trim();
+    if (paysSaisi && !codeDuPays(paysSaisi)) {
+      manques.push({
+        chemin: "personneMorale.composition.pouvoirs." + rang + ".paysNaissance",
+        quoi: "Le pays de naissance « " + paysSaisi + " » n'a pas de code ISO connu",
+        origine: "formulaire",
+      });
+    }
+
     return {
       typeDePersonne: "INDIVIDU",
       isRepresentantLegal: true,
@@ -153,7 +171,7 @@ function pouvoirs(brouillon: Brouillon, manques: Manque[]): Record<string, unkno
           dateDeNaissance: texte(personne?.dateDeNaissance) ?? "",
           lieuDeNaissance: texte(personne?.villeDeNaissance) ?? "",
           codePostalNaissance: texte(personne?.codePostalDeNaissance) ?? "",
-          paysNaissance: PAYS_FRANCE,
+          paysNaissance: codeDuPays(personne?.paysDeNaissance) ?? PAYS_FRANCE,
           nationalite: texte(personne?.nationalite) ?? "Française",
           situationMatrimoniale: codeSituationMatrimoniale(personne?.situationMatrimoniale) ?? "",
         },

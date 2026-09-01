@@ -158,6 +158,69 @@ describe("le contenu d'une création", () => {
   });
 });
 
+describe("le pays de naissance", () => {
+  /*
+   * Le dépôt écrivait « FRA » quoi qu'on ait saisi.
+   *
+   * Une personne née à Alger était déclarée née en France, et rien dans le dossier ne
+   * permettait de s'en apercevoir : le champ du formulaire disait « Algérie », le
+   * contenu envoyé disait la France.
+   */
+  it("suit le pays saisi plutôt que la France", () => {
+    const ne = (pays: string): Brouillon => ({
+      ...BROUILLON,
+      associes: [
+        {
+          ...BROUILLON.associes![0],
+          personne: { ...BROUILLON.associes![0].personne, paysDeNaissance: pays },
+        },
+        BROUILLON.associes![1],
+      ],
+    });
+
+    const pouvoirs = (b: Brouillon) =>
+      (contenuDeLaCreation(b).contenu.personneMorale as { composition: { pouvoirs: unknown[] } })
+        .composition.pouvoirs[0] as { individu: { descriptionPersonne: { paysNaissance: string } } };
+
+    expect(pouvoirs(ne("Algérie")).individu.descriptionPersonne.paysNaissance).toBe("DZA");
+    expect(pouvoirs(ne("Belgique")).individu.descriptionPersonne.paysNaissance).toBe("BEL");
+  });
+
+  /* Sans réponse, la France : c'est le cas de très loin le plus fréquent. */
+  it("retient la France quand rien n'est saisi", () => {
+    const pouvoir = (
+      contenuDeLaCreation(BROUILLON).contenu.personneMorale as {
+        composition: { pouvoirs: unknown[] };
+      }
+    ).composition.pouvoirs[0] as {
+      individu: { descriptionPersonne: { paysNaissance: string } };
+    };
+    expect(pouvoir.individu.descriptionPersonne.paysNaissance).toBe("FRA");
+  });
+
+  /*
+   * Un État disparu se signale plutôt que de se faire coder de force : la saisie reste
+   * libre pour qui y est né, et c'est au dépôt de trancher.
+   */
+  it("signale un pays qu'il ne sait pas coder", () => {
+    const brouillon: Brouillon = {
+      ...BROUILLON,
+      associes: [
+        {
+          ...BROUILLON.associes![0],
+          personne: { ...BROUILLON.associes![0].personne, paysDeNaissance: "Yougoslavie" },
+        },
+        BROUILLON.associes![1],
+      ],
+    };
+    const manque = contenuDeLaCreation(brouillon).manques.find((m) =>
+      m.chemin.endsWith("paysNaissance")
+    );
+    expect(manque?.quoi).toContain("Yougoslavie");
+    expect(manque?.origine).toBe("formulaire");
+  });
+});
+
 describe("ce qui manque encore", () => {
   it("nomme le déclarant, la catégorie d'activité et le rôle du dirigeant", () => {
     const chemins = contenuDeLaCreation(BROUILLON).manques.map((m) => m.chemin);

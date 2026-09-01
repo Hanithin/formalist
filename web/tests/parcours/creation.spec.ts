@@ -1452,3 +1452,72 @@ test.describe("l'adresse d'un associé se complète en une fois", () => {
     expect(affichee).toBe(garde.adresse + ", " + garde.codePostal + " " + garde.ville);
   });
 });
+
+test.describe("le pays et la nationalité se choisissent dans une liste", () => {
+  /*
+   * Les deux champs partent tels quels dans les actes : « de nationalité Marocainne »
+   * se dépose au greffe aussi bien que la bonne graphie, et rien ne la relit. La liste
+   * met l'orthographe à portée de frappe sans interdire le reste - on naît dans des
+   * États qui n'existent plus, et l'acte doit pouvoir les nommer.
+   */
+  async function poser(page: import("@playwright/test").Page, request: import("@playwright/test").APIRequestContext) {
+    const dossier = await ouvrirCreation(page, request);
+    await request.put("/api/formalites/brouillon", {
+      data: {
+        dossier: Number(dossier),
+        modifications: {
+          forme: "SASU",
+          denomination: "ESSAI PAYS",
+          activite: "le conseil",
+          adresse: "1 rue de la Gare",
+          codePostal: "69001",
+          ville: "Lyon",
+          banque: "Qonto",
+          associes: [{ type: "physique", personne: { prenom: "Camille", nom: "Durand" } }],
+        },
+      },
+    });
+    await page.goto("/creation?dossier=" + dossier + "&etape=2");
+    return dossier;
+  }
+
+  test("la frappe sans accent propose la graphie de l'acte", async ({ page, request }) => {
+    await poser(page, request);
+
+    const pays = page.getByLabel("Pays de naissance");
+    await pays.fill("algerie");
+    await page.getByRole("option", { name: "Algérie", exact: true }).click();
+    await expect(pays).toHaveValue("Algérie");
+
+    /* La nationalité s'écrit au féminin : elle s'accorde avec le mot, pas la personne. */
+    const nationalite = page.getByLabel("Nationalité");
+    await nationalite.fill("algerienne");
+    await page.getByRole("option", { name: "Algérienne", exact: true }).click();
+    await expect(nationalite).toHaveValue("Algérienne");
+  });
+
+  /* La recherche porte sur tout le libellé : les deux Congo commencent par « République ». */
+  test("cherche au milieu du nom, pas seulement à son début", async ({ page, request }) => {
+    await poser(page, request);
+
+    await page.getByLabel("Pays de naissance").fill("congo");
+    const propositions = page.getByRole("option");
+    await expect(propositions).toHaveCount(2);
+    await expect(propositions.first()).toContainText("Congo");
+  });
+
+  /*
+   * La liste propose, elle n'impose pas.
+   *
+   * Une personne née en 1970 peut l'être en Yougoslavie : une liste fermée bloquerait
+   * un acte parfaitement légitime.
+   */
+  test("laisse écrire un pays qui n'est plus", async ({ page, request }) => {
+    await poser(page, request);
+
+    const pays = page.getByLabel("Pays de naissance");
+    await pays.fill("Yougoslavie");
+    await expect(page.getByRole("option")).toHaveCount(0);
+    await expect(pays).toHaveValue("Yougoslavie");
+  });
+});
