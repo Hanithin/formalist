@@ -328,11 +328,35 @@ export function Parcours({
         return;
       }
 
-      await fetch("/api/formalites/brouillon", {
+      /*
+       * Un enregistrement refusé ne se poursuit pas.
+       *
+       * La réponse était ignorée : on passait à l'étape suivante quoi qu'il arrive, et
+       * le serveur - qui n'avait rien reçu - renvoyait à l'étape d'avant. La page ne
+       * bougeait pas, aucun message n'apparaissait, et le seul indice était une réponse
+       * 400 dans un onglet que personne n'ouvre. Un objet social trop long suffisait.
+       */
+      const ecriture = await fetch("/api/formalites/brouillon", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dossier: identifiant, modifications: brouillon }),
       });
+
+      if (!ecriture.ok) {
+        const corps = (await ecriture.json().catch(() => ({}))) as {
+          error?: string;
+          details?: Record<string, string[]>;
+        };
+        /* Le motif porte le nom du champ : « modifications.activite » désigne l'objet. */
+        const [chemin, messages] = Object.entries(corps.details ?? {})[0] ?? [];
+        const champ = (chemin ?? "").split(".").pop() ?? "forme";
+        setAnomalies({
+          [champ]: messages?.[0] ?? corps.error ?? "L'enregistrement a été refusé",
+        });
+        remonterAuPremierManque(champ);
+        return;
+      }
+
       router.push("/creation?dossier=" + identifiant + "&etape=" + suite);
       router.refresh();
     });

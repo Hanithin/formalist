@@ -487,11 +487,36 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     : civiliteNomPrenom(dirigeant);
   const conjoint = a1.conjoint;
 
-  // L'objet social est découpé ligne par ligne : les statuts en réservent six.
-  const lignesObjet = (brouillon.activite ?? "")
+  /*
+   * L'objet social, ligne par ligne - et rien ne se perd au passage.
+   *
+   * Les statuts réservent un nombre fixe d'emplacements : six en SAS, trois en SARL. Un
+   * objet de holding en compte huit - participations, animation du groupe, prestations
+   * aux filiales, trésorerie, propriété intellectuelle - et les derniers disparaissaient
+   * sans un mot des statuts déposés au greffe.
+   *
+   * Ce qui dépasse rejoint donc le dernier emplacement plutôt que le néant. La
+   * présentation y perd - plusieurs clauses sous une seule puce - mais un acte amputé
+   * n'est pas un acte mal présenté, c'est un acte faux.
+   */
+  /*
+   * Le nombre d'emplacements n'est pas le même partout : les statuts de SARL en
+   * réservent trois, ceux de SAS six. Il se lit sur la forme, où il est déclaré avec
+   * le reste de ce qui la distingue - une liste de formes écrite ici dériverait du
+   * jour où un gabarit change.
+   */
+  const EMPLACEMENTS_OBJET = regleForme?.emplacementsObjet ?? 6;
+  const toutesLesLignes = (brouillon.activite ?? "")
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
+  const lignesObjet =
+    toutesLesLignes.length > EMPLACEMENTS_OBJET
+      ? [
+          ...toutesLesLignes.slice(0, EMPLACEMENTS_OBJET - 1),
+          toutesLesLignes.slice(EMPLACEMENTS_OBJET - 1).join("\n"),
+        ]
+      : toutesLesLignes;
 
   /**
    * L'adresse du siège s'écrit en entier dans les actes.

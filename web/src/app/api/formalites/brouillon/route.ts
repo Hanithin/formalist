@@ -99,7 +99,17 @@ const DIRIGEANT = z.object({
 const BROUILLON = z.object({
   forme: z.string().trim().max(10).optional(),
   denomination: z.string().trim().max(150).optional(),
-  activite: z.string().trim().max(2000).optional(),
+  /*
+   * L'objet social d'une holding tient rarement en deux mille caractères.
+   *
+   * La borne les refusait : chaque enregistrement répondait « Entrée invalide », le
+   * formulaire l'ignorait, et l'étape ne passait pas - sans que rien ne le dise. Un
+   * objet de trois mille caractères est une clause ordinaire de société de tête, huit
+   * paragraphes qui énumèrent les participations, l'animation du groupe, les
+   * prestations aux filiales. Dix mille laissent la place à la plus longue sans ouvrir
+   * la porte à un roman dans un acte.
+   */
+  activite: z.string().trim().max(10_000).optional(),
   descriptionActivite: z.string().trim().max(500).optional(),
   adresse: z.string().trim().max(200).optional(),
   codePostal: z.string().trim().max(5).optional(),

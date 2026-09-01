@@ -27,6 +27,15 @@ export interface RegleForme {
   liberationMinimale: number;
   description: string;
   /**
+   * Combien de clauses d'objet social les statuts savent porter.
+   *
+   * Le gabarit en réserve un nombre fixe - six emplacements en SAS, trois en SARL - et
+   * ce qui dépasse rejoint le dernier plutôt que le néant. Le compte vit ici parce que
+   * c'est une propriété de la forme et de ses statuts, non une liste de formes écrite
+   * au milieu de la composition des actes.
+   */
+  emplacementsObjet: number;
+  /**
    * Proposée au client ?
    *
    * Une forme sans gabarit de statuts ne peut aboutir à rien : la proposer
@@ -47,6 +56,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Président",
     liberationMinimale: 0.5,
     description: "Société par actions simplifiée à associé unique.",
+    emplacementsObjet: 6,
   disponible: true,
   },
   SAS: {
@@ -59,6 +69,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Président",
     liberationMinimale: 0.5,
     description: "Société par actions simplifiée, à plusieurs associés.",
+    emplacementsObjet: 6,
   disponible: true,
   },
   EURL: {
@@ -71,6 +82,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Gérant",
     liberationMinimale: 0.2,
     description: "Société à responsabilité limitée à associé unique.",
+    emplacementsObjet: 3,
   disponible: true,
   },
   SARL: {
@@ -83,6 +95,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Gérant",
     liberationMinimale: 0.2,
     description: "Société à responsabilité limitée, de 2 à 100 associés.",
+    emplacementsObjet: 3,
   disponible: true,
   },
   SCI: {
@@ -95,6 +108,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Gérant",
     liberationMinimale: 0,
     description: "Société civile immobilière, pour détenir un bien à plusieurs.",
+    emplacementsObjet: 6,
   disponible: true,
   },
   SA: {
@@ -107,6 +121,7 @@ export const FORMES: Record<Forme, RegleForme> = {
     titreDirigeant: "Président",
     liberationMinimale: 0.5,
     description: "Société anonyme. Capital minimum de 37 000 euros.",
+    emplacementsObjet: 6,
     // Aucun gabarit de statuts n'existe pour la SA : voir templates/.
     disponible: false,
   },
