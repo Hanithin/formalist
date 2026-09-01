@@ -243,7 +243,7 @@ test("une société de domiciliation demande ce que le greffe exige", async ({ p
   // de la société de domiciliation, qui est ouvert à cet instant.
   await choisir(page, "Forme juridique", /^SASU/);
   await page.locator("#denomination").fill("ESSAI DOMICILIATION");
-  await page.getByLabel("Objet social", { exact: true }).fill("Conseil");
+  await page.getByLabel("Objet social retenu").fill("Conseil");
   await page.locator("#adresse").fill("1 rue de la Paix");
   await page.locator("#codePostal").fill("75002");
   await page.locator("#ville").fill("Paris");
@@ -268,7 +268,7 @@ test("le brouillon est retrouvé après un rechargement complet", async ({ page,
 
   await choisir(page, "Forme juridique", /^SASU/);
   await page.getByLabel("Nom de la société").fill("ESSAI PERSISTANCE");
-  await page.getByLabel("Objet social", { exact: true }).fill("Conseil");
+  await page.getByLabel("Objet social retenu").fill("Conseil");
   await page.getByLabel("Adresse du siège").fill("1 rue de la Paix");
   await page.getByLabel("Code postal").fill("75002");
   await page.getByLabel("Ville").fill("Paris");

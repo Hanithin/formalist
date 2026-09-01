@@ -603,11 +603,34 @@
   }
 }
 
+/*
+ * Le cadre qui compte porte son nom.
+ *
+ * Les deux saisies se ressemblaient : une ligne d'exemples en haut, un grand cadre en
+ * dessous, et rien pour dire lequel des deux part dans les statuts. On écrivait son
+ * activité dans la première - celle qui porte les exemples et le bouton - et l'étape
+ * refusait de passer sur un « Décrivez l'activité » qui visait la seconde.
+ */
+.objetIntitule {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.objetIntitule span {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: 12.5px;
+  color: #71717a;
+}
+
 .objetTexte {
   width: 100%;
   max-width: none;
   min-height: 260px;
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .objetErreur {

@@ -321,8 +321,26 @@ function verifierSociete(brouillon: Brouillon): Anomalie[] {
   if (!brouillon.denomination?.trim()) {
     anomalies.push({ champ: "denomination", message: "Indiquez le nom de la société" });
   }
+  /*
+   * « Décrivez l'activité » là où l'on vient précisément de la décrire.
+   *
+   * Le bloc de l'objet social a deux cadres : une ligne où l'on résume son activité en
+   * quelques mots, et en dessous l'objet social lui-même - celui qui partira dans les
+   * statuts. C'est le second qui est exigé, et c'est le premier qui attire l'œil : il
+   * porte les exemples, il est en haut, et le bouton « Générer » est à côté de lui.
+   *
+   * Quelqu'un qui a écrit son résumé et rien d'autre se voyait donc reprocher de ne pas
+   * avoir décrit son activité, sous un cadre vide, avec sa description affichée juste
+   * au-dessus. Le message dit maintenant ce qu'il reste à faire, et il y a deux façons
+   * de le faire.
+   */
   if (!brouillon.activite?.trim()) {
-    anomalies.push({ champ: "activite", message: "Décrivez l'activité" });
+    anomalies.push({
+      champ: "activite",
+      message: brouillon.descriptionActivite?.trim()
+        ? "Cliquez sur « Générer » pour rédiger l'objet social à partir de votre description, ou écrivez-le vous-même dans « Objet social retenu »"
+        : "Décrivez l'activité",
+    });
   }
   if (!brouillon.adresse?.trim()) {
     anomalies.push({ champ: "adresse", message: "Indiquez l'adresse du siège" });

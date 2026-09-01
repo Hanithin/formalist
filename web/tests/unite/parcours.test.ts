@@ -546,3 +546,42 @@ describe("la banque du dépôt de capital", () => {
     expect(verifierEtape(1, sansBanque).map((a) => a.champ)).toContain("banque");
   });
 });
+
+/**
+ * « Décrivez l'activité » là où l'on vient précisément de la décrire.
+ *
+ * Le bloc de l'objet social a deux cadres : une ligne où l'on résume son activité en
+ * quelques mots, et en dessous l'objet social lui-même. C'est le second qui est exigé,
+ * et c'est le premier qui attire l'œil - il porte les exemples, il est en haut, et le
+ * bouton « Générer » est à côté de lui. Quelqu'un qui a écrit son résumé et rien
+ * d'autre se voyait reprocher de ne pas avoir décrit son activité, sous un cadre vide,
+ * avec sa description affichée juste au-dessus.
+ */
+describe("l'objet social", () => {
+  const sansObjet = { ...societe, activite: undefined };
+
+  it("se réclame simplement quand rien n'est écrit", () => {
+    const anomalie = verifierEtape(1, sansObjet).find((a) => a.champ === "activite");
+    expect(anomalie?.message).toBe("Décrivez l'activité");
+  });
+
+  it("dit quoi faire quand la description est là et l'objet non", () => {
+    const anomalie = verifierEtape(1, {
+      ...sansObjet,
+      descriptionActivite: "vente de mobilier",
+    }).find((a) => a.champ === "activite");
+
+    expect(anomalie?.message).toContain("Générer");
+    expect(anomalie?.message).toContain("Objet social retenu");
+  });
+
+  it("ne reproche rien quand l'objet est écrit", () => {
+    const champs = verifierEtape(1, {
+      ...societe,
+      descriptionActivite: "vente de mobilier",
+      activite: "la vente de mobilier contemporain et toute activité connexe",
+    }).map((a) => a.champ);
+
+    expect(champs).not.toContain("activite");
+  });
+});

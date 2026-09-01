@@ -184,12 +184,17 @@ export function ObjetSocial({
         </div>
       )}
 
+      {/* C'est ce cadre-ci que l'étape exige, non la ligne de description au-dessus. */}
+      <p className={styles.objetIntitule}>
+        <label htmlFor="activite">Objet social retenu</label>
+        <span>C&apos;est ce texte qui figurera dans les statuts.</span>
+      </p>
+
       <textarea
         id="activite"
         className={styles.objetTexte}
         value={valeur}
         placeholder="L'objet social apparaîtra ici après génération, ou rédigez-le vous-même..."
-        aria-label="Objet social"
         onChange={(e) => surChangement(e.target.value)}
       />
 
