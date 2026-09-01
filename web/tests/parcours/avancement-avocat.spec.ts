@@ -582,6 +582,72 @@ test.describe("la correction d'un dossier de création", () => {
   });
 
   /*
+   * L'état civil des personnes se corrige aussi.
+   *
+   * La fenêtre ne portait que ce que le brouillon range à plat : l'avocat qui lisait
+   * « DUPOND » au lieu de « DUPONT » dans les statuts ne pouvait corriger ni le nom, ni
+   * la date de naissance, ni le domicile - c'est-à-dire ce qui remplit les actes. Il
+   * lui restait à reprendre le Word à la main, ce que cette fenêtre existe pour éviter.
+   */
+  test("elle atteint le nom d'un associé et le rejoue dans les actes", async ({ page, request }) => {
+    const dossier = await dossierAvecActes("CORRECTION PERSONNE " + Date.now());
+
+    /* La correction vit sous l'onglet des documents, à côté des actes qu'elle reproduit. */
+    await page.goto("/avocat/" + dossier.id + "?onglet=documents");
+    await page.getByRole("button", { name: "Corriger le formulaire" }).click();
+
+    const fenetre = page.getByRole("dialog", { name: "Corriger le dossier" });
+    await expect(fenetre).toBeVisible();
+
+    /* Le groupe porte le mot de la forme : une SASU a un actionnaire, non un associé. */
+    await expect(fenetre.getByRole("heading", { name: "Actionnaire 1" })).toBeVisible();
+
+    const nom = fenetre.getByLabel("Nom", { exact: true });
+    await expect(nom).toHaveValue("Durand");
+    await nom.fill("DURAND-LOMBARD");
+
+    /*
+     * La fenêtre ne se ferme qu'une fois les actes reproduits : six documents Word,
+     * plusieurs secondes, et davantage quand la suite tourne à plusieurs.
+     */
+    await fenetre.getByRole("button", { name: /Enregistrer et reproduire/ }).click();
+    await expect(fenetre).toHaveCount(0, { timeout: 60_000 });
+
+    /* La valeur est écrite là où le modèle la range, et le reste de la personne tient. */
+    await expect
+      .poll(async () => {
+        const ligne = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier.id } });
+        return JSON.parse(ligne.data_json ?? "{}")?.associes?.[0]?.personne ?? {};
+      })
+      .toMatchObject({ nom: "DURAND-LOMBARD", prenom: "Camille" });
+  });
+
+  /* La route accepte un chemin comme identifiant, et n'écrase pas ses voisins. */
+  test("elle corrige une personne sans toucher aux autres", async ({ request }) => {
+    const dossier = await dossierAvecActes("CORRECTION VOISINS " + Date.now());
+
+    const reponse = await request.put("/api/avocat/correction", {
+      data: {
+        dossier: dossier.id,
+        valeurs: {
+          "associes.0.personne.nom": "BERTHIN",
+          "associes.0.personne.villeDeNaissance": "Lyon",
+        },
+      },
+    });
+    expect(reponse.status()).toBe(200);
+
+    const ligne = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier.id } });
+    const brouillon = JSON.parse(ligne.data_json ?? "{}");
+    expect(brouillon.associes[0].personne).toMatchObject({
+      nom: "BERTHIN",
+      villeDeNaissance: "Lyon",
+      prenom: "Camille",
+    });
+    expect(brouillon.denomination).toContain("CORRECTION VOISINS");
+  });
+
+  /*
    * À la création, les actes naissent à l'encaissement, dont l'échec est rattrapé par
    * un commentaire promettant « les actes se régénèrent d'un clic côté cabinet ». Le
    * clic n'existait que pour les modifications : le dossier restait sans actes, et la

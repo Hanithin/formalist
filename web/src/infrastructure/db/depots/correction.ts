@@ -27,7 +27,7 @@ import { exigerDossier } from "./dossiers";
 import type { ChampModification } from "@/domain/modification/types";
 import { champsASaisir } from "@/domain/modification/types";
 import {
-  CHAMPS_CREATION,
+  champsDeLaCreation,
   valeursDuBrouillon,
   brouillonAvecValeurs,
 } from "@/domain/formalite/champs-creation";
@@ -87,7 +87,7 @@ export async function formulaireDuDossier(
     const brouillon = lireBrouillon(json) as unknown as Record<string, unknown>;
     const valeurs = valeursDuBrouillon(brouillon);
     return {
-      champs: CHAMPS_CREATION.filter((c) => visible(c, valeurs)),
+      champs: champsDeLaCreation(brouillon).filter((c) => visible(c, valeurs)),
       valeurs,
       reproductible: true,
     };

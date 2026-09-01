@@ -3287,7 +3287,13 @@ button.ligneCorps:disabled {
   display: flex;
   flex-direction: column;
   width: min(760px, calc(100vw - 32px));
-  max-height: min(82dvh, 900px);
+  /*
+   * La fenêtre prend la hauteur disponible.
+   *
+   * Plafonnée à 900 px, elle montrait six champs sur trente et laissait le reste sous
+   * la ligne de flottaison, sur des écrans qui avaient la place de l'afficher.
+   */
+  max-height: min(90dvh, 1200px);
   padding: 24px 26px;
   border: 1px solid #e5e5e7;
   border-radius: 16px;
@@ -3345,6 +3351,27 @@ button.ligneCorps:disabled {
   gap: 16px 24px;
   align-items: start;
   padding-right: 6px;
+
+  /*
+   * Deux ombres qui disent qu'il reste à lire.
+   *
+   * Le formulaire tient une trentaine de champs et la fenêtre en montre six : rien ne
+   * signalait que la liste continuait, et le filet au-dessus des boutons se lisait
+   * comme une fin de contenu. On croyait ne pouvoir corriger que la dénomination et la
+   * forme juridique.
+   *
+   * Les deux premiers dégradés sont fixés au contenu, les deux suivants au cadre : en
+   * haut de liste le blanc recouvre l'ombre haute, en bas de liste il recouvre la
+   * basse. Elles n'apparaissent donc que du côté où quelque chose est masqué, sans une
+   * ligne de JavaScript ni un écouteur de défilement.
+   */
+  background:
+    linear-gradient(#fff 30%, rgba(255, 255, 255, 0)) top / 100% 24px no-repeat local,
+    linear-gradient(rgba(255, 255, 255, 0), #fff 70%) bottom / 100% 24px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(17, 17, 17, 0.12), rgba(17, 17, 17, 0))
+      top / 100% 12px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(17, 17, 17, 0.12), rgba(17, 17, 17, 0))
+      bottom / 100% 12px no-repeat scroll;
 }
 
 .correctionGroupe {
