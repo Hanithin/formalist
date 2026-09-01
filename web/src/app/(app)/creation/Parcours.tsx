@@ -31,6 +31,7 @@ import { Capital } from "./Capital";
 import { Dirigeants } from "./Dirigeants";
 import { Offres } from "./Offres";
 import { ObjetSocial } from "./ObjetSocial";
+import { useSauvegardeContinue } from "./sauvegarde";
 import { piecesAttendues, PIECE_DEPOT_CAPITAL } from "@/domain/formalite/documents";
 import { offre } from "@/domain/formalite/offres";
 import { Pieces } from "@/components/formulaire/Pieces";
@@ -182,6 +183,30 @@ export function Parcours({
   const [dossier, setDossier] = useState<number | null>(dossierId);
   const [reglementEnCours, setReglementEnCours] = useState(false);
 
+  /*
+   * La saisie se garde au fil de la frappe.
+   *
+   * `enregistrer` vérifie l'étape avant d'écrire, et sortait donc sans rien garder
+   * quand une règle bloquait. Ce n'est pas la validation qui décide de ce qu'on garde ;
+   * c'est elle qui décide qu'on avance. L'ouverture du dossier est partagée avec elle -
+   * les deux gestes peuvent partir ensemble, et un seul dossier doit s'ouvrir.
+   */
+  const { ouvrirLeDossier, enregistrerMaintenant } = useSauvegardeContinue({
+    brouillon,
+    dossier,
+    surOuverture: setDossier,
+    /*
+     * L'adresse porte le dossier dès qu'il existe.
+     *
+     * Sans cela, revenir sur « Nouvelle formalité » rouvrait une page vierge : la
+     * saisie était bien gardée, mais il fallait la retrouver dans « Mes formalités »
+     * pour la revoir - ce qui, du point de vue de qui l'a écrite, revient à l'avoir
+     * perdue. `replace` plutôt que `push` : ce n'est pas une étape de l'historique.
+     */
+    surPremierEnregistrement: (identifiant) =>
+      router.replace("/creation?dossier=" + identifiant, { scroll: false }),
+  });
+
   const etape = etapes.find((e) => e.numero === etapeCourante) ?? etapes[0];
   const avancement = avancementParcours(brouillon);
 
@@ -251,23 +276,23 @@ export function Parcours({
     const manques = verifierEtape(etape.numero, brouillon);
     if (manques.length > 0 && suite > etape.numero) {
       setAnomalies(Object.fromEntries(manques.map((a) => [a.champ, a.message])));
+      /*
+       * Ce qui bloque l'étape ne doit pas coûter la saisie.
+       *
+       * C'est le moment exact où l'on quitte : on a cliqué, on a lu le reproche, et on
+       * s'en va. Attendre le repos d'une seconde et demie perdrait la dernière frappe.
+       */
+      void enregistrerMaintenant();
       return;
     }
     setAnomalies({});
 
     demarrer(async () => {
-      // Le dossier s'ouvre au premier enregistrement, une fois les règles de
-      // l'étape passées : ce qui est écrit en base porte alors une information.
-      let identifiant = dossier;
+      /* Le dossier a pu s'ouvrir seul, dès que la société a reçu un nom. */
+      const identifiant = await ouvrirLeDossier();
       if (identifiant === null) {
-        const reponse = await fetch("/api/formalites/brouillon", { method: "POST" });
-        const corps = await reponse.json().catch(() => ({}));
-        if (!reponse.ok || typeof corps.dossier !== "number") {
-          setAnomalies({ forme: "Le dossier n'a pas pu être ouvert" });
-          return;
-        }
-        identifiant = corps.dossier;
-        setDossier(identifiant);
+        setAnomalies({ forme: "Le dossier n'a pas pu être ouvert" });
+        return;
       }
 
       await fetch("/api/formalites/brouillon", {
