@@ -239,6 +239,23 @@ export function sirenDe(societe: PersonneMorale | undefined): string {
 }
 
 /**
+ * La puce que l'on a tapée, retirée : le gabarit pose déjà la sienne.
+ *
+ * Les statuts listent l'objet social en alinéas, chacun précédé d'un tiret par le
+ * modèle Word. Qui rédige son objet le présente naturellement de la même façon, une
+ * clause par ligne introduite par un tiret - et l'acte sortait « - - la prise de
+ * participations ». Le double tiret se voit dans une pièce déposée au greffe, et rien
+ * dans le formulaire ne prévenait qu'il ne fallait pas les écrire.
+ *
+ * Seul un marqueur en tête de ligne tombe, suivi d'une espace ou non. Un tiret à
+ * l'intérieur du texte - « sous-traitance », « L. 225-132 » - n'est pas une puce et ne
+ * doit pas disparaître.
+ */
+function sansPuceDeTete(ligne: string): string {
+  return ligne.replace(/^[-–—•*·]+\s*/, "").trim();
+}
+
+/**
  * « 8 quai de la Gare, 75013 Paris » : la virgule sépare la voie de la commune.
  *
  * Le siège d'une société morale se composait sans elle - « 8 quai de la Gare 75013
@@ -526,7 +543,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   const EMPLACEMENTS_OBJET = regleForme?.emplacementsObjet ?? 6;
   const toutesLesLignes = (brouillon.activite ?? "")
     .split("\n")
-    .map((l) => l.trim())
+    .map((l) => sansPuceDeTete(l.trim()))
     .filter(Boolean);
   const lignesObjet =
     toutesLesLignes.length > EMPLACEMENTS_OBJET
@@ -610,7 +627,8 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     DATE_SIGNATURE_COURTE: dateCourte(maintenant),
 
     /* ---------- L'objet social, six lignes au plus ---------- */
-    OBJET_SOCIAL: ou(brouillon.activite),
+    /* Le texte entier, puces de saisie retirées comme dans les alinéas. */
+    OBJET_SOCIAL: ou(toutesLesLignes.join("\n")),
     OBJET_SOCIAL_1: lignesObjet[0] ?? ou(brouillon.activite),
     OBJET_SOCIAL_2: lignesObjet[1] ?? "",
     OBJET_SOCIAL_3: lignesObjet[2] ?? "",

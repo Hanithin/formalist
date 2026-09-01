@@ -455,6 +455,36 @@ describe("l'identité, en une phrase", () => {
   });
 
   /*
+   * La puce du gabarit ne se double pas de celle que l'on a tapée.
+   *
+   * Les statuts listent l'objet en alinéas, chacun précédé d'un tiret par le modèle
+   * Word. Qui rédige son objet le présente de la même façon, et l'acte sortait
+   * « - - la prise de participations » - dans une pièce déposée au greffe.
+   */
+  it("retire le tiret de tête des clauses de l'objet social", () => {
+    const donnees = donneesDeGabarit({
+      forme: "SASU",
+      denomination: "ESSAI OBJET",
+      activite:
+        "- la prise de participations dans toutes sociétés\n• la gestion de son patrimoine\n– la fourniture de prestations de sous-traitance",
+    });
+
+    expect(donnees.OBJET_SOCIAL_1).toBe("la prise de participations dans toutes sociétés");
+    expect(donnees.OBJET_SOCIAL_2).toBe("la gestion de son patrimoine");
+    /* Le tiret de « sous-traitance » n'est pas une puce : il reste. */
+    expect(donnees.OBJET_SOCIAL_3).toBe("la fourniture de prestations de sous-traitance");
+  });
+
+  it("laisse intacte une clause qui ne commence pas par une puce", () => {
+    const donnees = donneesDeGabarit({
+      forme: "SASU",
+      denomination: "ESSAI OBJET",
+      activite: "La prise de participations, et l'animation d'un groupe de sociétés",
+    });
+    expect(donnees.OBJET_SOCIAL_1).toBe("La prise de participations, et l'animation d'un groupe de sociétés");
+  });
+
+  /*
    * Le domicile porte sa commune.
    *
    * Les actes écrivaient « demeurant 34 Rue Laugier » : la voie seule. Le code postal

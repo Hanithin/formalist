@@ -21,6 +21,14 @@ const HUIT_CLAUSES = [
   "– la prise à bail et l'exploitation de tous établissements ;",
 ];
 
+/*
+ * La puce de saisie ne survit pas au gabarit, qui pose la sienne.
+ *
+ * Les clauses ci-dessus sont écrites comme on les écrit vraiment, tiret compris. Ce qui
+ * doit se retrouver dans l'acte, c'est leur texte - le tiret, lui, viendrait en double.
+ */
+const sansPuce = (clause: string) => clause.replace(/^[-–—•*·]+\s*/, "");
+
 function objetDesStatuts(forme: string, lignes: string[]): string[] {
   const donnees = donneesDeGabarit({
     forme,
@@ -49,7 +57,18 @@ describe("l'objet social des statuts", () => {
     const rendu = objetDesStatuts("SAS", HUIT_CLAUSES);
     expect(rendu).toHaveLength(6);
     for (const clause of HUIT_CLAUSES) {
-      expect(rendu.join("\n"), "clause perdue : " + clause).toContain(clause);
+      expect(rendu.join("\n"), "clause perdue : " + clause).toContain(sansPuce(clause));
+    }
+  });
+
+  /*
+   * Le gabarit pose déjà un tiret devant chaque alinéa : celui qu'on a tapé ferait
+   * double emploi, et l'acte sortait « - - la prise de participations ».
+   */
+  it("retire la puce que l'on a tapée devant chaque clause", () => {
+    for (const clause of objetDesStatuts("SAS", HUIT_CLAUSES)) {
+      expect(clause.startsWith("–"), "puce doublée : " + clause).toBe(false);
+      expect(clause.startsWith("-"), "puce doublée : " + clause).toBe(false);
     }
   });
 
@@ -58,7 +77,7 @@ describe("l'objet social des statuts", () => {
     const rendu = objetDesStatuts("SARL", HUIT_CLAUSES);
     expect(rendu).toHaveLength(3);
     for (const clause of HUIT_CLAUSES) {
-      expect(rendu.join("\n"), "clause perdue : " + clause).toContain(clause);
+      expect(rendu.join("\n"), "clause perdue : " + clause).toContain(sansPuce(clause));
     }
   });
 });
