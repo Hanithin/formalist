@@ -3135,3 +3135,16 @@
 .ecrireSecondaire:hover {
   color: #18181b;
 }
+
+/*
+ * Le compte des champs manquants, à côté du bouton.
+ *
+ * Le formulaire tient sur deux écrans et le bouton est en bas : un reproche affiché en
+ * haut ne se voyait pas. On défile jusqu'au champ, et l'on dit ici combien il en reste -
+ * pour qu'aucun refus ne soit muet, même quand le champ n'est pas à l'écran.
+ */
+.manques {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: #b91c1c;
+}

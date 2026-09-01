@@ -61,10 +61,21 @@ export function ObjetSocial({
           proposition?: string;
           avertissement?: string;
           error?: string;
+          details?: Record<string, string[]>;
         };
 
         if (!reponse.ok || !donnees.proposition) {
-          setErreur(donnees.error ?? "La rédaction assistée n'a rien renvoyé");
+          /*
+           * Le motif, non son étiquette.
+           *
+           * Une description refusée répond « Entrée invalide » avec la raison dans
+           * `details` : « Décrivez votre activité en quelques mots, au moins dix
+           * caractères ». L'écran n'affichait que l'étiquette, qui ne dit pas quoi
+           * corriger - et l'on croyait la rédaction assistée en panne alors qu'elle
+           * attendait deux mots de plus.
+           */
+          const motif = Object.values(donnees.details ?? {})[0]?.[0];
+          setErreur(motif ?? donnees.error ?? "La rédaction assistée n'a rien renvoyé");
           return;
         }
 

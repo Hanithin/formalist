@@ -66,3 +66,44 @@ test("rien n'est ouvert tant que la société n'a pas de nom", async ({ page, re
     (listeApres.formalites ?? listeApres).length ?? 0
   ).toBe((listeAvant.formalites ?? listeAvant).length ?? 0);
 });
+
+/**
+ * Un refus muet n'est pas un refus.
+ *
+ * Le formulaire de la société tient sur deux écrans, et le bouton est en bas. Un champ
+ * manquant en haut affichait son reproche hors de vue : on cliquait, la page ne bougeait
+ * pas, et rien ne disait pourquoi. « Il ne se passe rien » est la description exacte de
+ * ce qu'on voyait.
+ */
+test("un champ qui bloque se montre, où qu'il soit dans la page", async ({ page }) => {
+  await page.goto("/creation");
+
+  /* Une saisie partielle, et le bouton tout en bas. */
+  await page.locator("#activite").fill("la vente de mobilier contemporain");
+  await page.getByRole("button", { name: "Continuer" }).scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  /* Le compte, là où l'on vient de cliquer. */
+  await expect(page.getByText(/champs? reste/)).toBeVisible();
+
+  /* Et le premier champ qui bloque a le curseur : la page est remontée jusqu'à lui. */
+  await expect(page.locator("#forme")).toBeFocused();
+  await expect(page.getByText("Choisissez une forme juridique")).toBeVisible();
+});
+
+/**
+ * « Entrée invalide » est une étiquette, pas un motif.
+ *
+ * Une description trop courte répond avec la raison dans `details` ; l'écran n'affichait
+ * que l'étiquette, et l'on croyait la rédaction assistée en panne alors qu'elle
+ * attendait deux mots de plus.
+ */
+test("la rédaction assistée dit pourquoi elle refuse", async ({ page }) => {
+  await page.goto("/creation");
+
+  await page.locator("#descriptionActivite").fill("mobilier");
+  await page.getByRole("button", { name: "Générer" }).click();
+
+  await expect(page.getByText(/au moins dix caractères/)).toBeVisible();
+  await expect(page.getByText("Entrée invalide")).toHaveCount(0);
+});

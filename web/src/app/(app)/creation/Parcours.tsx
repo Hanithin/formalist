@@ -210,6 +210,30 @@ export function Parcours({
   const etape = etapes.find((e) => e.numero === etapeCourante) ?? etapes[0];
   const avancement = avancementParcours(brouillon);
 
+  const nombreDeManques = Object.keys(anomalies).length;
+
+  /**
+   * Défile jusqu'au champ qui bloque, et lui donne le curseur.
+   *
+   * L'identifiant d'un champ est celui de l'anomalie, sauf pour les sous-champs du
+   * domiciliataire, que le formulaire nomme en un seul mot. Un champ introuvable ne
+   * fait rien : le compte affiché près du bouton reste là pour le dire.
+   */
+  function remonterAuPremierManque(champ: string) {
+    const identifiants: Record<string, string> = {
+      "domiciliataire.denomination": "domiciliataireNom",
+      "domiciliataire.siren": "domiciliataireSiren",
+      "domiciliataire.agrement": "domiciliataireAgrement",
+      "banqueAutre.nom": "banqueNom",
+    };
+
+    const cible = document.getElementById(identifiants[champ] ?? champ);
+    if (!cible) return;
+
+    cible.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (cible instanceof HTMLElement) cible.focus({ preventScroll: true });
+  }
+
   function modifier(champ: keyof Brouillon, valeur: unknown) {
     setBrouillon((actuel) => ({ ...actuel, [champ]: valeur }));
   }
@@ -276,6 +300,15 @@ export function Parcours({
     const manques = verifierEtape(etape.numero, brouillon);
     if (manques.length > 0 && suite > etape.numero) {
       setAnomalies(Object.fromEntries(manques.map((a) => [a.champ, a.message])));
+      /*
+       * On emmène l'œil là où ça bloque.
+       *
+       * Le formulaire de la société tient sur deux écrans, et le bouton est en bas.
+       * Un champ manquant en haut affichait son reproche hors de vue : on cliquait, la
+       * page ne bougeait pas, et rien ne disait pourquoi. « Il ne se passe rien » est
+       * la description exacte de ce qu'on voyait.
+       */
+      remonterAuPremierManque(manques[0].champ);
       /*
        * Ce qui bloque l'étape ne doit pas coûter la saisie.
        *
@@ -976,6 +1009,21 @@ export function Parcours({
             />
           )}
         </div>
+
+        {/*
+          Le compte des manques, là où l'on clique.
+
+          Défiler jusqu'au premier champ résout le cas courant ; il reste celui où le
+          reproche porte sur un champ qui n'existe pas à l'écran - un dossier qui n'a
+          pas pu s'ouvrir, par exemple. Le dire ici garantit qu'aucun refus n'est muet.
+        */}
+        {nombreDeManques > 0 && (
+          <p className={styles.manques} role="alert">
+            {nombreDeManques === 1
+              ? "Un champ reste à compléter avant de continuer."
+              : nombreDeManques + " champs restent à compléter avant de continuer."}
+          </p>
+        )}
 
         <div className={styles.formActions}>
           {etape.numero > 1 && (
