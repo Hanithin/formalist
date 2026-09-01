@@ -88,6 +88,27 @@ export interface DemandeDePaiement {
 export async function ouvrirPaiement(demande: DemandeDePaiement) {
   const session = await stripe().checkout.sessions.create({
     mode: "payment",
+    /*
+     * Le prix reste en euros, quel que soit l'endroit d'où l'on se connecte.
+     *
+     * Sans ce réglage, Stripe suit le tableau de bord, et sa tarification adaptative
+     * proposait au client une devise locale - « 497,00 $US » à côté de « 414,00 € » -
+     * avec 3,60 % de frais de conversion à sa charge. Nos offres sont annoncées en
+     * euros hors taxes, la TVA est française, et personne n'a demandé cette conversion.
+     *
+     * Posé ici plutôt que dans le tableau de bord : un réglage d'interface se remet un
+     * jour sans que personne le remarque, et c'est le prix affiché au client qui change.
+     */
+    adaptive_pricing: { enabled: false },
+    /*
+     * Les codes promotionnels s'appliquent sur la page de Stripe.
+     *
+     * Les coupons se créent dans le tableau de bord et n'ont donc rien à déployer. Une
+     * remise ne perturbe rien en aval : la confirmation ne regarde que l'état du
+     * paiement, jamais le montant, et l'application ne conserve que la référence de
+     * session - aucun montant réglé qu'une remise rendrait faux.
+     */
+    allow_promotion_codes: true,
     customer_email: demande.email,
     client_reference_id: String(demande.consultationId ?? demande.dossierId),
     /*
@@ -155,7 +176,19 @@ function lire(session: Stripe.Checkout.Session): Encaissement {
     reference: session.id,
     consultationId,
     dossierId,
-    payee: session.payment_status === "paid",
+    /*
+     * « Payé » couvre aussi ce qui n'avait rien à payer.
+     *
+     * Stripe rend trois états : « paid », « unpaid » et « no_payment_required ». Le
+     * dernier désigne une session menée à son terme sans qu'un moyen de paiement ait
+     * été demandé. Un code promotionnel de cent pour cent, lui, rend bien « paid » sur
+     * ce chemin - vérifié sur une session à zéro euro menée jusqu'au bout - mais ne
+     * reconnaître que « paid » ferait dépendre la confirmation d'un détail de Stripe
+     * qui ne nous appartient pas : le troisième état existe, et l'ignorer laisserait
+     * un client aller au bout du parcours sans que rien ne parte chez l'avocat.
+     */
+    payee:
+      session.payment_status === "paid" || session.payment_status === "no_payment_required",
     expiree: session.status === "expired",
   };
 }
