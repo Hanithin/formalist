@@ -248,7 +248,7 @@ test("une société de domiciliation demande ce que le greffe exige", async ({ p
   await page.locator("#codePostal").fill("75002");
   await page.locator("#ville").fill("Paris");
   await page.getByRole("button", { name: "Continuer" }).click();
-  await expect(page.getByRole("heading", { level: 2 })).toContainText("Actionnaire");
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Associé");
 
   await page.goto(adresse);
   await expect(page.getByLabel("Numéro d'agrément préfectoral")).toHaveValue("2023 A 00123");
@@ -275,9 +275,9 @@ test("le brouillon est retrouvé après un rechargement complet", async ({ page,
   await choisir(page, "Banque", /Qonto/);
   await page.getByRole("button", { name: "Continuer" }).click();
 
-  // Une SASU a un actionnaire, pas des associés : le mot suit la forme, comme dans
-  // la page d'origine.
-  await expect(page.getByRole("heading", { level: 2 })).toContainText("Actionnaire");
+  // Le mot est le même pour toutes les formes : l'article L. 227-1 du code de
+  // commerce nomme « associés » les titulaires d'une société par actions simplifiée.
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Associé");
 
   // Rechargement complet : rien ne vient du navigateur.
   await page.goto(adresse);
@@ -416,10 +416,10 @@ test("la valeur d'une action donne leur nombre", async ({ page, request }) => {
   await expect(page.getByLabel(/Nombre total d'actions/)).toHaveValue("200");
   await expect(page.getByText(/200 actions à 10\s€ l'une/)).toBeVisible();
 
-  // L'actionnaire unique détient tout : son nombre suit, et ne se saisit pas.
+  // L'associé unique détient tout : son nombre suit, et ne se saisit pas.
   await expect(page.locator("#parts-0")).toHaveValue("200");
   await expect(page.locator("#parts-0")).toHaveAttribute("readonly", "");
-  await expect(page.getByText(/actionnaire unique détient les 200 actions/)).toBeVisible();
+  await expect(page.getByText(/associé unique détient les 200 actions/)).toBeVisible();
 
   /*
    * Et l'étape passe. Elle ne passait pas : `capitalLibere` n'est écrit par aucun

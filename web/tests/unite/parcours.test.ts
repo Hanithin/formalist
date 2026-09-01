@@ -61,16 +61,16 @@ describe("le parcours suit les sept étapes d'origine", () => {
 });
 
 describe("le mot qui désigne les porteurs de parts", () => {
-  it("une société par actions a des actionnaires", () => {
-    expect(motAssocie("SAS")).toBe("Actionnaire");
-    expect(motAssocie("SASU")).toBe("Actionnaire");
-    expect(motAssocie("SA")).toBe("Actionnaire");
-  });
-
-  it("les autres formes ont des associés", () => {
-    expect(motAssocie("SARL")).toBe("Associé");
-    expect(motAssocie("SCI")).toBe("Associé");
-    expect(motAssocie(undefined)).toBe("Associé");
+  /*
+   * « Associé » vaut pour toutes les formes du parcours.
+   *
+   * L'interface disait « Actionnaire » aux sociétés par actions, quand les actes disaient
+   * « associé » : deux mots pour la même personne dans le même dossier. C'est le second
+   * qui a raison - l'article L. 227-1 du code de commerce nomme « associés » les
+   * titulaires d'une société par actions simplifiée.
+   */
+  it("dit associé, quelle que soit la forme", () => {
+    expect(motAssocie()).toBe("Associé");
   });
 
   it("le pluriel n'apparaît qu'au deuxième", () => {
@@ -79,7 +79,7 @@ describe("le mot qui désigne les porteurs de parts", () => {
   });
 
   it("une forme unipersonnelle reste au singulier", () => {
-    expect(libellesDesAssocies("SASU", 1).libelleCourt).toBe("Actionnaire");
+    expect(libellesDesAssocies("SASU", 1).libelleCourt).toBe("Associé");
     expect(libellesDesAssocies("SASU", 1).description).toContain("unique");
   });
 });
@@ -117,12 +117,12 @@ describe("étape 1, la société", () => {
   });
 
   it("un porteur sans nom est signalé, avec son rang et le bon mot", () => {
-    // La société d'essai est une SASU : on parle donc d'actionnaire.
+    // Le mot est le même pour toutes les formes : « associé ».
     const anomalies = verifierEtape(2, {
       ...societe,
       associes: [{ type: "physique", personne: { prenom: "Camille" } }],
     });
-    expect(anomalies.some((a) => a.message.includes("actionnaire 1"))).toBe(true);
+    expect(anomalies.some((a) => a.message.includes("associé 1"))).toBe(true);
 
     const sarl = verifierEtape(2, {
       ...societe,

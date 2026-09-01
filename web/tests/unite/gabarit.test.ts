@@ -191,7 +191,7 @@ describe("les champs remis aux gabarits Word", () => {
 
   it("les champs indexés portent le rang de l'associé", () => {
     expect(donnees.HAS_ASSOC_1).toBe(true);
-    expect(donnees.ASSOCIE_1).toBe("Madame Camille Durand");
+    expect(donnees.ASSOCIE_1).toBe("Madame Camille DURAND");
     expect(donnees.DATE_NAISSANCE_1).toBe("12 avril 1990");
     expect(donnees.NOM_JEUNE_FILLE_1).toBe("MARTIN");
     expect(donnees.MONTANT_SOUSCRIT_1).toBe("1 000");
@@ -210,13 +210,13 @@ describe("les champs remis aux gabarits Word", () => {
 
   it("le conjoint et son régime figurent dans l'acte", () => {
     // Les gabarits ne nomment le conjoint que du premier associé, sans indice.
-    expect(donnees.CONJOINT_DE).toBe("Madame Camille Durand");
+    expect(donnees.CONJOINT_DE).toBe("Madame Camille DURAND");
     expect(donnees.CONJOINT_NOM).toBe("Paul Durand");
     expect(donnees.REGIME_MATRIMONIAL).toBe("Séparation de biens");
   });
 
   it("le dirigeant reprend l'état civil de l'associé désigné", () => {
-    expect(donnees.GERANT_CIVILITE_NOM_PRENOM).toBe("Madame Camille Durand");
+    expect(donnees.GERANT_CIVILITE_NOM_PRENOM).toBe("Madame Camille DURAND");
     expect(donnees.GERANT_EST_FEMME).toBe(true);
     expect(donnees.GERANT_LIEU_NAISSANCE).toBe("Lyon");
     // La rémunération n'est pas un mot mais la phrase des statuts ; le choix brut
@@ -243,7 +243,7 @@ describe("les champs remis aux gabarits Word", () => {
   it("la liste ASSOCIES double les champs indexés, pour les gabarits qui bouclent", () => {
     const liste = donnees.ASSOCIES as Record<string, unknown>[];
     expect(liste).toHaveLength(1);
-    expect(liste[0].CIVILITE_NOM_PRENOM).toBe("Madame Camille Durand");
+    expect(liste[0].CIVILITE_NOM_PRENOM).toBe("Madame Camille DURAND");
     expect(liste[0].MONTANT_VERSE).toBe("1 000");
   });
 

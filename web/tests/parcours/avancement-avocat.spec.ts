@@ -599,8 +599,8 @@ test.describe("la correction d'un dossier de création", () => {
     const fenetre = page.getByRole("dialog", { name: "Corriger le dossier" });
     await expect(fenetre).toBeVisible();
 
-    /* Le groupe porte le mot de la forme : une SASU a un actionnaire, non un associé. */
-    await expect(fenetre.getByRole("heading", { name: "Actionnaire 1" })).toBeVisible();
+    /* Chaque personne du dossier a son groupe, sous son rang. */
+    await expect(fenetre.getByRole("heading", { name: "Associé 1" })).toBeVisible();
 
     const nom = fenetre.getByLabel("Nom", { exact: true });
     await expect(nom).toHaveValue("Durand");

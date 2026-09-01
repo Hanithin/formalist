@@ -74,7 +74,14 @@ export function unitesLiees(texte: string): string {
        * règle ne s'appliquait donc qu'aux unités écrites, silencieusement.
        */
       .replace(/(\d)\s+(euros?|ans?|années?|parts?|actions?)\b/g, "$1" + INSECABLE + "$2")
-      .replace(/(\d)\s+([€%])/g, "$1" + INSECABLE + "$2")
+      /*
+       * L'espace manquait quand elle n'était pas déjà là.
+       *
+       * La règle liait un nombre à son symbole lorsqu'une espace les séparait, et
+       * laissait « (10€) » tel quel - à côté de « 1 000 € » composé correctement deux
+       * lignes plus haut, dans les mêmes statuts.
+       */
+      .replace(/(\d)\s*([€%])/g, "$1" + INSECABLE + "$2")
       // Les groupes de milliers déjà séparés par une espace ordinaire deviennent insécables.
       .replace(/(\d)[\u0020\u202f\u00a0](?=\d{3}\b)/g, "$1" + INSECABLE)
   );
@@ -98,8 +105,24 @@ export function referencesLiees(texte: string): string {
  * recevoir sa fine avant d'être devenu un tiret simple - puis les guillemets, la
  * ponctuation, et les unités en dernier.
  */
+/**
+ * « de » s'élide devant une voyelle.
+ *
+ * Les actes composent leurs phrases à partir de valeurs saisies, et la préposition est
+ * écrite dans le gabarit sans savoir ce qui la suivra : « Signature de Amel Belouafi »,
+ * « déposés auprès de Etude Notariale ». Personne ne relit un acte pour cela, et il part
+ * ainsi au greffe.
+ *
+ * Le « h » reste dehors : il est tantôt muet - « d'honneur » - tantôt aspiré - « de
+ * haut » - et rien dans le texte ne les distingue. Une règle qui trancherait au hasard
+ * ferait une faute une fois sur deux plutôt qu'une fois de temps en temps.
+ */
+function elisions(texte: string): string {
+  return texte.replace(/\bde\s+(?=[aàâeéèêëiîïoôuùûüyAÀÂEÉÈÊËIÎÏOÔUÙÛÜY])/g, "d'");
+}
+
 export function typographier(texte: string): string {
-  return referencesLiees(unitesLiees(ponctuationDouble(guillemets(tiretsSimples(texte)))));
+  return referencesLiees(unitesLiees(ponctuationDouble(guillemets(elisions(tiretsSimples(texte))))));
 }
 
 /**

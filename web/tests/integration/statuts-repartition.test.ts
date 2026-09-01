@@ -38,9 +38,9 @@ describe("la répartition du capital", () => {
       dirigeants: [{ associe: 0 }],
     });
 
-    expect(t).toContain("Ces actions sont réparties entre les actionnaires comme suit :");
-    expect(t).toContain("Monsieur Jean Dupont : 1 400 actions, numérotées de 1 à 1 400.");
-    expect(t).toContain("Madame Claire Martin : 600 actions, numérotées de 1 401 à 2 000.");
+    expect(t).toContain("Ces actions sont réparties entre les associés comme suit :");
+    expect(t).toContain("Monsieur Jean DUPONT : 1 400 actions, numérotées de 1 à 1 400.");
+    expect(t).toContain("Madame Claire MARTIN : 600 actions, numérotées de 1 401 à 2 000.");
   });
 
   /* Un seul actionnaire ne se répartit rien : il détient tout. */

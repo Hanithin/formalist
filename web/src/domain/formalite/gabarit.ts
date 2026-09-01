@@ -55,8 +55,23 @@ function ou(valeur: string | undefined | null, defaut = TIRET): string {
 }
 
 /** « Monsieur Jean DUPONT » : la civilité fait partie du nom dans un acte. */
+/**
+ * « Monsieur Hani MADFAI » : le prénom, puis le nom en capitales.
+ *
+ * Une seule convention pour tout le dossier. Le nom sortait en capitales là où le
+ * gabarit demandait la clé NOM, et tel qu'on l'avait tapé partout ailleurs : la
+ * déclaration disait « Monsieur Hani Madfai » quand le procès-verbal, dans le même
+ * dossier et pour la même personne, disait « Monsieur MADFAI Hani ». Deux écritures
+ * pour un seul état civil, dans des pièces qui se lisent ensemble.
+ *
+ * L'ordre est celui de la phrase - on nomme quelqu'un par son prénom d'abord - et les
+ * capitales marquent le nom de famille, comme l'état civil l'écrit.
+ */
 function civiliteNomPrenom(personne: PersonnePhysique): string {
-  const morceaux = [personne.civilite, personne.prenom, personne.nom].filter((m) => m?.trim());
+  const nom = personne.nom?.trim();
+  const morceaux = [personne.civilite, personne.prenom, nom ? nom.toUpperCase() : ""].filter(
+    (m) => m?.trim()
+  );
   return morceaux.length ? morceaux.join(" ") : TIRET;
 }
 
@@ -236,6 +251,12 @@ export function sirenDe(societe: PersonneMorale | undefined): string {
   if (rcs) return rcs;
   const siret = (societe?.siret ?? "").replace(/\D/g, "");
   return siret.length >= 9 ? siret.slice(0, 9) : "";
+}
+
+/** La première lettre en minuscule : une valeur de liste posée dans une phrase. */
+function enMinusculeInitiale(valeur: string | undefined): string {
+  const propre = valeur?.trim();
+  return propre ? propre[0].toLowerCase() + propre.slice(1) : "";
 }
 
 /**
@@ -586,7 +607,14 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
      * commerce ne borne que le cas où un bail ou un règlement de copropriété
      * l'interdit - hors de ce cas, la mise à disposition n'a pas de terme.
      */
-    STATUT_OCCUPATION: brouillon.occupationDomicile ?? "propriétaire",
+    /*
+     * Le titre d'occupation se glisse au milieu d'une phrase.
+     *
+     * La liste de choix l'écrit avec sa majuscule - « Propriétaire », « Locataire » -
+     * et l'acte disait « dont il est Propriétaire », majuscule en plein milieu. Ce qui
+     * convient à un menu ne convient pas à une phrase.
+     */
+    STATUT_OCCUPATION: enMinusculeInitiale(brouillon.occupationDomicile) || "propriétaire",
     DUREE_LIMITEE: brouillon.domiciliationRestreinte === true,
     MENTION_DUREE_TITRE:
       brouillon.domiciliationRestreinte === true

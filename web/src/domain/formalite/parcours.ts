@@ -102,13 +102,20 @@ export const ETAPES: Etape[] = [
  * updateAssocieLabel() dans associes.js, et le fil d'étapes d'origine portait pour
  * cela un identifiant sur ce seul libellé.
  */
-export function motAssocie(forme: string | null | undefined): "Actionnaire" | "Associé" {
+export function motAssocie(): "Associé" {
   /*
-   * Cet ensemble listait sept formes et oubliait la SELAFA, la SELCA et les holdings de
-   * profession libérale, qui ont pourtant des actionnaires. La nature de la forme est
-   * déclarée une fois, dans formes.ts.
+   * « Associé » partout, y compris pour une société par actions.
+   *
+   * L'interface disait « Actionnaire » aux sociétés par actions, quand les actes disaient
+   * « associé » : deux mots pour la même personne, dans le même dossier. C'est le second
+   * qui a raison - l'article L. 227-1 du code de commerce nomme « associés » les
+   * titulaires d'une société par actions simplifiée, et réserve « actionnaire » à la
+   * société anonyme, que le parcours ne propose pas.
+   *
+   * La fonction subsiste plutôt que de disparaître : elle marque l'endroit où le mot se
+   * décide, si une forme à actionnaires venait à s'ajouter.
    */
-  return natureDeLaForme(forme).titres === "actions" ? "Actionnaire" : "Associé";
+  return "Associé";
 }
 
 /**
@@ -126,7 +133,7 @@ export function libellesDesAssocies(
   forme: string | null | undefined,
   nombre: number
 ): { libelleCourt: string; titre: string; description: string } {
-  const mot = motAssocie(forme);
+  const mot = motAssocie();
   const unique = estUnipersonnelle(forme, nombre);
   // Au singulier tant qu'il n'y en a qu'un : « Associé » puis « Associés ».
   const pluriel = mot + (unique || nombre < 2 ? "" : "s");
@@ -423,7 +430,7 @@ function verifierDomiciliation(brouillon: Brouillon): Anomalie[] {
 function verifierLesAssocies(brouillon: Brouillon): Anomalie[] {
   const anomalies: Anomalie[] = [];
   const associes = brouillon.associes ?? [];
-  const mot = motAssocie(brouillon.forme).toLowerCase();
+  const mot = motAssocie().toLowerCase();
 
   // Sans associé, l'étape n'est pas faite - même si la forme n'est pas encore
   // choisie. Se reposer sur les règles de forme rendait l'étape vide « complète ».

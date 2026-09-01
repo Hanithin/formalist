@@ -58,8 +58,8 @@ describe("les statuts d'une SAS", () => {
   it("accorde le participe sur la civilité de chacun", () => {
     const texte = texteDesStatuts(false);
     expect(texte).not.toContain("né(e)");
-    expect(texte).toContain("Monsieur Jean Dupont, né le");
-    expect(texte).toContain("Madame Claire Martin, née le");
+    expect(texte).toContain("Monsieur Jean DUPONT, né le");
+    expect(texte).toContain("Madame Claire MARTIN, née le");
   });
 
   it("ne laisse pas un montant se couper en fin de ligne", () => {

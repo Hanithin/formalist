@@ -29,7 +29,7 @@ export function typographierLeDocument(docx: Buffer): Buffer {
       ouverture + echapper(typographier(desechapper(contenu))) + fermeture
   );
 
-  archive.file("word/document.xml", lierAuTravers(rendu));
+  archive.file("word/document.xml", elidersAuTravers(lierAuTravers(rendu)));
   return archive.generate({ type: "nodebuffer" });
 }
 
@@ -45,9 +45,34 @@ export function typographierLeDocument(docx: Buffer): Buffer {
  * On ne franchit pas la fin du paragraphe : deux paragraphes qui se suivent ne forment
  * pas une phrase, et lier leur dernier chiffre au premier mot du suivant serait faux.
  */
+/**
+ * « de » et le mot qu'il élide, de part et d'autre d'un nœud.
+ *
+ * Le gabarit écrit « Signature de {{CONJOINT_NOM}} » : la préposition finit un nœud, le
+ * nom rendu commence le suivant. La règle d'élision porte sur le texte d'un nœud et ne
+ * les voyait jamais ensemble - l'acte sortait « Signature de Amel Belouafi ».
+ *
+ * Comme pour les unités, on ne franchit pas la fin du paragraphe : deux paragraphes qui
+ * se suivent ne forment pas une phrase.
+ */
+function elidersAuTravers(xml: string): string {
+  return xml.replace(
+    /\bde[\u0020]?(<\/w:t>(?:(?!<w:t[ >])(?!<\/w:p>)[\s\S])*?<w:t[^>]*>)[\u0020]?(?=[aàâeéèêëiîïoôuùûüyAÀÂEÉÈÊËIÎÏOÔUÙÛÜY])/g,
+    (_tout, entreDeux: string) => "d'" + entreDeux
+  );
+}
+
 function lierAuTravers(xml: string): string {
   return xml.replace(
-    /(\d)(<\/w:t>(?:(?!<w:t[ >])(?!<\/w:p>)[\s\S])*?<w:t[^>]*>)[\u0020](?=(?:euros?|ans?|années?|parts?|actions?)\b|[€%])/g,
+    /*
+     * L'espace peut manquer entre les deux nœuds.
+     *
+     * Le gabarit écrit « ( {{VALEUR_NOMINALE}} €) » : la valeur finit un nœud, le
+     * symbole commence le suivant, sans rien entre les deux. La règle n'agissait que
+     * lorsqu'une espace les séparait, et les statuts sortaient « dix euros (10€) » deux
+     * lignes sous « mille euros (1 000 €) », composé correctement.
+     */
+    /(\d)(<\/w:t>(?:(?!<w:t[ >])(?!<\/w:p>)[\s\S])*?<w:t[^>]*>)[\u0020]?(?=(?:euros?|ans?|années?|parts?|actions?)\b|[€%])/g,
     (_tout, chiffre: string, entreDeux: string) => chiffre + entreDeux + INSECABLE
   );
 }

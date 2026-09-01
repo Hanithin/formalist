@@ -342,11 +342,10 @@ function champsDeLApport(chemin: string, groupe: string): ChampModification[] {
  * ouvrirait la porte à deux vérités.
  */
 export function champsDeLaCreation(brouillon: Record<string, unknown>): ChampModification[] {
-  const forme = typeof brouillon.forme === "string" ? brouillon.forme : null;
   const associes = Array.isArray(brouillon.associes) ? brouillon.associes : [];
   const dirigeants = Array.isArray(brouillon.dirigeants) ? brouillon.dirigeants : [];
 
-  const mot = motAssocie(forme);
+  const mot = motAssocie();
   const champs = [...CHAMPS_CREATION];
 
   associes.forEach((brut, rang) => {

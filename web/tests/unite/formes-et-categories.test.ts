@@ -223,17 +223,20 @@ describe("les règles du dépôt des comptes", () => {
 });
 
 describe("les autres écrans et documents", () => {
-  it("dit « actionnaire » pour toutes les formes par actions", () => {
-    /*
-     * Un ensemble de sept formes servait ici, et oubliait la SELAFA, la SELCA et les
-     * holdings de profession libérale : leurs actionnaires y étaient des associés.
-     */
+  /*
+   * Le mot qui désigne la personne ne suit pas celui qui désigne le titre.
+   *
+   * Une société par actions émet bien des actions, mais l'article L. 227-1 du code de
+   * commerce nomme « associés » ceux qui les détiennent - « actionnaire » est réservé à
+   * la société anonyme. Les actes le disaient déjà ; l'interface disait l'inverse.
+   */
+  it("dit « associé » partout, et distingue les actions des parts", () => {
     for (const f of ["SELAFA", "SELCA", "SPFPL SAS", "SCA", "SE"]) {
-      expect(motAssocie(f)).toBe("Actionnaire");
+      expect(motAssocie()).toBe("Associé");
       expect(motPart(f, true)).toBe("actions");
     }
     for (const f of ["SELARL", "SCP", "SCM", "SNC"]) {
-      expect(motAssocie(f)).toBe("Associé");
+      expect(motAssocie()).toBe("Associé");
       expect(motPart(f, true)).toBe("parts");
     }
   });

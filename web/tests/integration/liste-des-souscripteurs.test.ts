@@ -37,10 +37,10 @@ function texte(maintenant = new Date(2026, 8, 15)): string {
 describe("la liste des souscripteurs", () => {
   it("nomme chaque souscripteur, et non le premier dix fois", () => {
     const t = texte();
-    expect(t).toContain("Monsieur Jean Dupont, né le 12 avril 1980");
-    expect(t).toContain("Madame Claire Martin, née le 3 septembre 1986");
+    expect(t).toContain("Monsieur Jean DUPONT, né le 12 avril 1980");
+    expect(t).toContain("Madame Claire MARTIN, née le 3 septembre 1986");
     /* Le premier était écrit deux fois : une par bloc. */
-    expect(t.match(/Monsieur Jean Dupont, né le/g)).toHaveLength(1);
+    expect(t.match(/Monsieur Jean DUPONT, né le/g)).toHaveLength(1);
   });
 
   /*

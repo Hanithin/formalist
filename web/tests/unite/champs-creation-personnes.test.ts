@@ -33,11 +33,10 @@ const DOSSIER = {
 };
 
 describe("les champs d'une création", () => {
-  it("déplie chaque associé sous le mot que la forme emploie", () => {
+  it("déplie chaque associé sous son rang", () => {
     const groupes = new Set(champsDeLaCreation(DOSSIER).map((c) => c.groupe));
-    /* Une société par actions a des actionnaires, non des associés. */
-    expect(groupes).toContain("Actionnaire 1");
-    expect(groupes).toContain("Actionnaire 2");
+    expect(groupes).toContain("Associé 1");
+    expect(groupes).toContain("Associé 2");
 
     const enSarl = new Set(champsDeLaCreation({ ...DOSSIER, forme: "SARL" }).map((c) => c.groupe));
     expect(enSarl).toContain("Associé 1");

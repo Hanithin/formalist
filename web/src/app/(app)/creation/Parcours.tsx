@@ -978,7 +978,7 @@ export function Parcours({
               associes={brouillon.associes ?? []}
               surChangement={(v) => modifier("associes", v)}
               anomalies={anomalies}
-              mot={motAssocie(brouillon.forme)}
+              mot={motAssocie()}
             />
           )}
 

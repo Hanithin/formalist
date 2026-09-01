@@ -1273,7 +1273,29 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
 
   // Text replacements (typos / capitalization fixes)
   docXml = doc.getZip().file("word/document.xml").asText();
-  docXml = docXml.replace(/Etude Notariale De Maître/g, 'Etude Notariale de Maître');
+  /*
+   * « auprès de Etude Notariale » : la préposition attend un article.
+   *
+   * Le gabarit nomme le dépositaire sans article, et la phrase sortait telle quelle dans
+   * l'article des apports. L'élision seule donnerait « d'Etude », qui n'est pas mieux :
+   * c'est l'article qui manque, non l'apostrophe.
+   */
+  /*
+   * L'article des apports parle au pluriel d'une société qui n'a qu'un associé.
+   *
+   * « dûment mandatée par chacun des associés », « la somme versée par les associés » :
+   * la phrase est écrite pour plusieurs, et sort telle quelle sur une SASU ou une EURL,
+   * où il n'y en a qu'un. Le gabarit ne peut pas le savoir - il ne compte pas - alors
+   * que les données, elles, le disent.
+   */
+  if (data && data.HAS_ASSOC_1 && !data.HAS_ASSOC_2) {
+    docXml = docXml
+      .replace(/par chacun des associés/g, "par l'associé unique")
+      .replace(/la somme versée par les associés/g, "la somme versée par l'associé unique");
+  }
+
+  docXml = docXml.replace(/\bde\s+Etude Notariale [Dd]e Maître/g, "de l'Étude notariale de Maître");
+  docXml = docXml.replace(/Etude Notariale De Maître/g, 'Étude notariale de Maître');
   docXml = docXml.replace(/Quentin Fourez Notaires à/g, 'Quentin Fourez, Notaires situés');
   // Attestation de domiciliation: rephrase "à mon domicile personnel sis :" so it includes
   // the occupation status (propriétaire / locataire) inline, and remove the now-redundant

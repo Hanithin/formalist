@@ -94,8 +94,8 @@ describe("les associés", () => {
     const trois = [personne("A", "Un"), personne("B", "Deux"), personne("C", "Trois")];
 
     expect(ligne({ forme: "SARL", associes: trois }, "associes")?.valeur).toBe("3 associés");
-    // Une société par actions n'a pas d'associés mais des actionnaires.
-    expect(ligne({ forme: "SAS", associes: trois }, "associes")?.valeur).toBe("3 actionnaires");
+    // Le mot est le même pour toutes les formes : l. 227-1 dit « associés ».
+    expect(ligne({ forme: "SAS", associes: trois }, "associes")?.valeur).toBe("3 associés");
   });
 
   it("ne compte pas une ligne encore vide", () => {
@@ -111,7 +111,7 @@ describe("les associés", () => {
   it("s'intitule au singulier quand la forme n'en admet qu'un", () => {
     expect(ligne({ forme: "EURL" }, "associes")?.libelle).toBe("Associé");
     expect(ligne({ forme: "SARL" }, "associes")?.libelle).toBe("Associés");
-    expect(ligne({ forme: "SAS" }, "associes")?.libelle).toBe("Actionnaires");
+    expect(ligne({ forme: "SAS" }, "associes")?.libelle).toBe("Associés");
   });
 });
 

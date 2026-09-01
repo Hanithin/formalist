@@ -95,7 +95,7 @@ export function Capital({ brouillon, surChangement, surAssocies, anomalies }: Pr
   const nominale = valeurNominale(brouillon);
 
   const forme = regle(brouillon.forme);
-  const mot = motAssocie(brouillon.forme);
+  const mot = motAssocie();
   const minimumLiberation = Math.round((forme?.liberationMinimale ?? 0) * 100);
 
   /*
