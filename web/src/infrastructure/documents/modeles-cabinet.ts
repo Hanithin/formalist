@@ -72,15 +72,21 @@ export function rendreUnModeleDuCabinet(
 
     document.render(donnees);
 
-    const { auFerAGauche, uniformiserLaPolice, normaliserLeTexte } = requerir("./docx.cjs") as {
-      auFerAGauche: (xml: string) => string;
+    const { uniformiserLaPolice, normaliserLeTexte } = requerir("./docx.cjs") as {
       uniformiserLaPolice: <T>(zip: T) => T;
       normaliserLeTexte: (xml: string) => string;
     };
     const zipRendu = document.getZip();
     const xml = zipRendu.file("word/document.xml");
-    /* Une seule forme Unicode avant d'accorder : « né » ne se compare pas à « né ». */
-    if (xml) zipRendu.file("word/document.xml", auFerAGauche(accorder(normaliserLeTexte(xml.asText()))));
+    /*
+     * Une seule forme Unicode avant d'accorder : « né » ne se compare pas à « né ».
+     *
+     * L'alignement des modèles du cabinet n'est plus touché : ils justifient, comme les
+     * actes que Formalist produit. Ce qui faisait renoncer à la justification - une
+     * ligne terminée par un retour manuel étalée d'un bord à l'autre - est réglé par
+     * `uniformiserLaPolice`, qui pose `doNotExpandShiftReturn` sur le document.
+     */
+    if (xml) zipRendu.file("word/document.xml", accorder(normaliserLeTexte(xml.asText())));
 
     return uniformiserLaPolice(zipRendu).generate({ type: "nodebuffer", compression: "DEFLATE" });
   } catch (e) {

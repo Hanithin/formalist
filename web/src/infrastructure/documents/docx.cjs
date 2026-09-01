@@ -417,7 +417,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
 
   // Layout pass: collapse empty paragraphs + keepLines/keepNext to avoid orphans
   docXml = doc.getZip().file("word/document.xml").asText();
-  docXml = auFerAGauche(improveLayout(docXml));
+  docXml = improveLayout(docXml);
   // Cap excessive w:after values (template body paragraphs sometimes have 480 = 24pt that adds
   // unwanted gap before the next subtitle). Skip 600 (our explicit section-title after value)
   // and other small/medium values.
@@ -474,20 +474,20 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     /(<w:p[ >][\s\S]*?<w:t[^>]*>(?:ARTICLE|TITRE|ANNEXE)[^<]*<\/w:t>[\s\S]*?<\/w:p>)(<w:p[ >](?:(?!<w:t[ >])[\s\S])*?<\/w:p>)/g,
     '$1'
   );
-  // Default-justify body paragraphs: paragraphs without any <w:jc> alignment get w:jc="both".
-  // (Title paragraphs typically already have <w:jc w:val="center"/>, so they're not affected.)
-  // EXCEPTION: short introducer lines ending with ":" (ex: "Représentant la totalité des actions
-  // afin de participer à :", "Sont présents :", "Le Cédant :") get left-aligned, because
-  // justification spreads single-line text and creates huge ugly gaps between words.
+  /*
+   * Les paragraphes de corps se justifient.
+   *
+   * C'est la forme d'un acte, et le bord droit régulier se lit comme tel. Un titre
+   * porte déjà w:jc="center" : il n'est pas concerné.
+   *
+   * Ce qui avait fait renoncer à la justification - une ligne terminée par un retour
+   * manuel étalée d'un bord à l'autre - est réglé à la source par le réglage
+   * `doNotExpandShiftReturn`, posé sur le document produit. Il n'y a donc plus
+   * d'exception à faire ici.
+   */
+  const align = 'both';
   docXml = docXml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function(p) {
     if (/<w:jc\b/.test(p)) return p;
-    const texts = [];
-    p.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, function(_, t) { texts.push(t); });
-    const txt = texts.join('').trim();
-    const endsWithColon = /[: ]\s*$/.test(txt) && txt.endsWith(':');
-    const isShortIntroducer = endsWithColon && txt.length < 140;
-    const startsWithResolution = /^R[ÉE]SOLUTION\b/i.test(txt);
-    const align = alignementDuParagraphe(p, { isShortIntroducer, startsWithResolution });
     if (/<w:pPr>/.test(p)) {
       return p.replace(/<w:pPr>/, '<w:pPr><w:jc w:val="' + align + '"/>');
     }
@@ -1016,27 +1016,35 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     if (finalText) docXml = docXml.replace(
       /(<w:p[ >][^<]*(?:<(?!w:p[ >])[^<]*)*?<w:t[^>]*>Je soussigné[\s\S]*?<\/w:p>)((?:<w:p[ >][\s\S]*?<\/w:p>){0,12})/,
       function(_, soussignePara, followingParas) {
-        // Build a fresh paragraph with our text, justified, not bold
-        const newPara =
-          '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>' +
-          '<w:jc w:val="left"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
-          '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>' +
-          '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
-          '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>' +
-          '<w:t xml:space="preserve">' + fnEsc(finalText) + '</w:t></w:r></w:p>';
         // Walk through followingParas, consume those matching intro keywords.
         // SKIP empty paragraphs (residual Mustache control tags become empty after render)
         // so they don't break the chain.
         const paras = followingParas.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
         let consumed = 0;
+        let phrase = finalText;
+
         for (const fp of paras) {
           const textsArr = [];
           fp.replace(/<w:t[^>]*>([^<]+)<\/w:t>/g, function(_m, t) { textsArr.push(t); });
-          const fullText = textsArr.join('').trim().toLowerCase();
+          const brut = textsArr.join('').trim();
+          const fullText = brut.toLowerCase();
           if (!fullText) {
             // Empty paragraph (control tag remnant) → consume and continue
             consumed++;
             continue;
+          }
+          /*
+           * « déclare accepter les fonctions » achève la phrase, elle ne la recommence pas.
+           *
+           * L'état civil se termine par une virgule - « et demeurant 34 Rue Laugier, 75017
+           * Paris, » - et le verbe qui la suit partait au paragraphe suivant, séparé par un
+           * blanc. On lisait une phrase coupée en deux au milieu d'un acte : le sujet d'un
+           * côté, le verbe de l'autre. Le texte rejoint donc la phrase qu'il termine.
+           */
+          if (fullText.startsWith('déclare') || fullText.startsWith('declare')) {
+            phrase = phrase.replace(/\s*$/, '') + ' ' + brut;
+            consumed++;
+            break;
           }
           if (introKeywords.some(kw => fullText.startsWith(kw.toLowerCase()))) {
             consumed++;
@@ -1044,6 +1052,16 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
             break;
           }
         }
+
+        // Build a fresh paragraph with our text, justified, not bold
+        const newPara =
+          '<w:p><w:pPr><w:keepLines/><w:spacing w:before="240" w:after="240" w:line="' + INTERLIGNE + '" w:lineRule="auto"/>' +
+          '<w:jc w:val="both"/><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
+          '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>' +
+          '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:cs="Cambria" w:eastAsia="Cambria" w:hAnsi="Cambria"/>' +
+          '<w:b w:val="0"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>' +
+          '<w:t xml:space="preserve">' + fnEsc(phrase) + '</w:t></w:r></w:p>';
+
         const remaining = paras.slice(consumed).join('');
         return newPara + remaining;
       }
@@ -1435,52 +1453,9 @@ function normaliserLeTexte(xml) {
   return xml.normalize("NFC");
 }
 
-/**
- * L'alignement d'un paragraphe de corps : justifié, sauf là où cela ouvre un trou.
- *
- * Les actes sont justifiés - c'est la forme d'un acte, et le bord droit régulier se lit
- * comme tel. Deux cas font exception, parce que la justification y étire une ligne d'un
- * bord à l'autre au lieu de la laisser courte :
- *
- * - une ligne d'introduction qui finit par deux points - « Sont présents : » - occupe
- *   seule son paragraphe, et se retrouvait étalée sur seize centimètres ;
- * - un paragraphe qui porte un retour à la ligne manuel : Word justifie la ligne qui
- *   précède le retour comme n'importe quelle autre, et « une action ⟶ nouvelle » se
- *   séparait d'un grand vide. C'est le défaut qui avait fait passer tous les actes au
- *   fer à gauche ; le corriger ici permet de rendre la justification au reste.
- *
- * Un saut de page n'est pas un retour à la ligne : il termine le paragraphe, il n'étire
- * rien.
- */
-function alignementDuParagraphe(paragraphe, { isShortIntroducer, startsWithResolution }) {
-  if (isShortIntroducer || startsWithResolution) return 'left';
 
-  const retourManuel = /<w:br(?![^>]*w:type="page")[^>]*\/>/i.test(paragraphe);
-  return retourManuel ? 'left' : 'both';
-}
 
-/**
- * Les gabarits justifient en dur : on n'y touche que pour les mêmes exceptions.
- *
- * Vingt-quatre gabarits portent `w:jc="both"` sur chacun de leurs paragraphes, sans
- * distinguer une phrase d'un intitulé ni voir les retours à la ligne qu'ils contiennent.
- * La règle qui vaut pour les paragraphes sans alignement vaut pour eux : elle tient en
- * un endroit plutôt que dans vingt-quatre fichiers binaires.
- */
-function auFerAGauche(xml) {
-  return xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function (p) {
-    if (!/<w:jc w:val="both"\s*\/>/.test(p)) return p;
 
-    const texts = [];
-    p.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, function (_, t) { texts.push(t); });
-    const txt = texts.join('').trim();
-    const isShortIntroducer = txt.endsWith(':') && txt.length < 140;
-    const startsWithResolution = /^R[ÉE]SOLUTION\b/i.test(txt);
-
-    if (alignementDuParagraphe(p, { isShortIntroducer, startsWithResolution }) === 'both') return p;
-    return p.replace(/<w:jc w:val="both"\s*\/>/g, '<w:jc w:val="left"/>');
-  });
-}
 
 /**
  * Une seule police pour tous les documents que Formalist produit.
@@ -1515,6 +1490,41 @@ function uniformiserLaPolice(zip) {
     }
     zip.file(nom, xml);
   }
+
+  return sansEtirerLesRetoursManuels(zip);
+}
+
+/**
+ * Une ligne terminée par un retour manuel ne s'étire pas.
+ *
+ * C'est la règle qui manquait. Word justifie par défaut la ligne qui précède un retour
+ * à la ligne - elle n'est pas la dernière du paragraphe, donc il l'étale d'un bord à
+ * l'autre : « RÉSOLUTION UNIQUE : » occupait seize centimètres, et « une action ⟶
+ * nouvelle » se séparait d'un grand vide.
+ *
+ * Le format prévoit ce cas : `doNotExpandShiftReturn` est le réglage de compatibilité
+ * qui l'interdit. Le poser vaut mieux que de renoncer à justifier ces paragraphes -
+ * l'acte reste justifié d'un bout à l'autre, et aucune ligne ne s'étale.
+ */
+function sansEtirerLesRetoursManuels(zip) {
+  const fichier = zip.file("word/settings.xml");
+  if (!fichier) return zip;
+
+  let xml = fichier.asText();
+  if (xml.includes("doNotExpandShiftReturn")) return zip;
+
+  if (/<w:compat\s*\/>/.test(xml)) {
+    xml = xml.replace(/<w:compat\s*\/>/, "<w:compat><w:doNotExpandShiftReturn/></w:compat>");
+  } else if (/<w:compat>/.test(xml)) {
+    xml = xml.replace("<w:compat>", "<w:compat><w:doNotExpandShiftReturn/>");
+  } else {
+    xml = xml.replace(
+      /(<w:settings\b[^>]*>)/,
+      "$1<w:compat><w:doNotExpandShiftReturn/></w:compat>"
+    );
+  }
+
+  zip.file("word/settings.xml", xml);
   return zip;
 }
 
@@ -1634,4 +1644,4 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
   return zip.generate({ type: "nodebuffer" });
 }
 
-module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature, auFerAGauche, uniformiserLaPolice, normaliserLeTexte };
+module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature, uniformiserLaPolice, normaliserLeTexte };
