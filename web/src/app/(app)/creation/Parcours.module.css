@@ -1627,6 +1627,123 @@
   line-height: 1.5;
 }
 
+/*
+ * L'attente pendant que les actes se produisent.
+ *
+ * Le règlement confirmé, six documents se fabriquent. Tant qu'ils n'existent pas, la
+ * page annonçait « Aucun document pour l'instant » - une phrase juste en général, fausse
+ * à cet instant précis, et qui laissait croire que le paiement n'avait rien déclenché.
+ *
+ * Une machine à écrire qui sort ses feuilles, plutôt qu'un disque qui tourne : c'est
+ * littéralement ce qui se passe - des actes se rédigent - et l'attente dure quelques
+ * secondes, le temps de la regarder.
+ */
+.actesEnProduction {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 0 4px;
+}
+
+.actesEnProductionTexte {
+  margin: 0;
+  font-size: 13.5px;
+  color: #71717a;
+  line-height: 1.5;
+}
+
+.machine {
+  flex-shrink: 0;
+  display: block;
+}
+
+/*
+ * Les feuilles montent derrière le rouleau et sortent par la fente.
+ *
+ * Le découpage s'arrête à la ligne du rouleau : une feuille au repos est entièrement
+ * cachée dessous, et n'apparaît qu'en s'élevant. Sans lui, elles flotteraient
+ * au-dessus de la machine sans en sortir.
+ */
+.feuille {
+  animation: sortieDeFeuille 3.6s cubic-bezier(0.33, 0, 0.2, 1) infinite;
+}
+
+.feuille2 {
+  animation-delay: 1.2s;
+}
+
+.feuille3 {
+  animation-delay: 2.4s;
+}
+
+@keyframes sortieDeFeuille {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(-26px);
+    opacity: 1;
+  }
+  92%,
+  100% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+}
+
+/* Le chariot accompagne la frappe, d'un côté puis de l'autre. */
+.chariot {
+  animation: chariotQuiFrappe 3.6s ease-in-out infinite;
+}
+
+@keyframes chariotQuiFrappe {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+/*
+ * Une animation en boucle gêne qui a demandé qu'on l'en dispense.
+ *
+ * Tout s'immobilise, et la première feuille reste sortie : l'image dit encore qu'une
+ * page est en train de se faire, sans rien faire bouger.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .feuille,
+  .chariot {
+    animation: none;
+  }
+
+  .feuille {
+    opacity: 0;
+  }
+
+  .feuille1 {
+    opacity: 1;
+    transform: translateY(-22px);
+  }
+}
+
+.actesRelance {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #111;
+  font-family: inherit;
+  font-size: 13.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .actesListe {
   display: flex;
   flex-direction: column;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { dateHeureLongue } from "@/lib/dates";
 import { presentation } from "@/domain/messagerie/messages";
@@ -231,7 +231,9 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
         plus haut - « Mes documents / Les actes produits, à relire et à signer ».
       */}
       <div className={styles.genSection}>
-        {actes.length === 0 ? (
+        {actes.length === 0 && brouillon.paye ? (
+          <EnProduction />
+        ) : actes.length === 0 ? (
           <p className={styles.actesVide}>
             Aucun document pour l&apos;instant. Les statuts, la liste des souscripteurs et les
             déclarations sont produits au règlement, à partir de ce que vous avez saisi.
@@ -537,5 +539,143 @@ function Echanges({ dossierId, dernierMot }: { dossierId: number; dernierMot: De
         <EcrireAuCabinet dossierId={dossierId} surFermeture={() => setOuverte(false)} />
       )}
     </section>
+  );
+}
+
+
+/* Le temps d'un aller-retour en base, sans marteler le serveur. */
+const REPOS_MS = 2_000;
+/* Au-delà, la production a échoué : on arrête d'interroger et on le dit. */
+const PATIENCE_MS = 60_000;
+
+/**
+ * L'attente pendant que les actes se produisent.
+ *
+ * Le règlement se confirme par deux chemins - le retour du client depuis Stripe et
+ * l'avis du relais - et celui qui arrive second ressort aussitôt, sans attendre. Quand
+ * le relais gagne la course, il marque le dossier réglé et fabrique les six actes
+ * pendant que la page, elle, se rend sur une liste encore vide. Il fallait recharger.
+ *
+ * `router.refresh()` rejoue le composant serveur : la base est relue, la position dans
+ * la page est gardée, et aucune route nouvelle n'est nécessaire. On s'arrête au bout
+ * d'une minute - une production ratée ne doit pas faire tourner un compteur devant
+ * quelqu'un qui attend.
+ */
+function EnProduction() {
+  const router = useRouter();
+  const [renonce, setRenonce] = useState(false);
+
+  useEffect(() => {
+    if (renonce) return;
+
+    const rappel = setInterval(() => router.refresh(), REPOS_MS);
+    const limite = setTimeout(() => setRenonce(true), PATIENCE_MS);
+
+    return () => {
+      clearInterval(rappel);
+      clearTimeout(limite);
+    };
+  }, [router, renonce]);
+
+  return (
+    <div className={styles.actesEnProduction}>
+      <MachineAEcrire />
+      <p className={styles.actesEnProductionTexte}>
+        {renonce ? (
+          <>
+            La production prend plus de temps que prévu. Vos actes ne sont pas perdus - le
+            cabinet les voit de son côté.{" "}
+            <button
+              type="button"
+              className={styles.actesRelance}
+              onClick={() => {
+                setRenonce(false);
+                router.refresh();
+              }}
+            >
+              Regarder à nouveau
+            </button>
+          </>
+        ) : (
+          <>
+            Vos actes sont en cours de rédaction.
+            <br />
+            Ils apparaîtront ici dans quelques secondes, sans rien recharger.
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Une machine à écrire qui sort ses feuilles.
+ *
+ * Trois feuilles se suivent derrière le rouleau et montent à travers la fente ; le
+ * découpage s'arrête à la ligne du rouleau, si bien qu'une feuille au repos est
+ * entièrement cachée dessous. C'est ce que fait l'application à cet instant, et cela se
+ * regarde mieux qu'un disque qui tourne.
+ */
+function MachineAEcrire() {
+  return (
+    <svg
+      className={styles.machine}
+      width="72"
+      height="58"
+      viewBox="0 0 72 58"
+      fill="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <clipPath id="fenteDeLaMachine">
+          <rect x="12" y="0" width="48" height="27" />
+        </clipPath>
+      </defs>
+
+      <g clipPath="url(#fenteDeLaMachine)">
+        {[styles.feuille1, styles.feuille2, styles.feuille3].map((rang, i) => (
+          <g key={rang} className={`${styles.feuille} ${rang}`}>
+            <rect x="21" y="27" width="30" height="24" rx="1.5" fill="#fff" stroke="#d4d4d8" />
+            {/* Deux lignes frappées : la page n'est pas vide quand elle sort. */}
+            <rect x="25" y="32" width="18" height="1.5" rx="0.75" fill="#d4d4d8" />
+            <rect x="25" y="36" width={[22, 14, 19][i]} height="1.5" rx="0.75" fill="#d4d4d8" />
+          </g>
+        ))}
+      </g>
+
+      {/*
+        Le rouleau et ses molettes : c'est ce qui fait lire une machine à écrire plutôt
+        qu'une imprimante. Sans elles, le dessin est un bloc d'où sort du papier.
+      */}
+      <rect x="13" y="25" width="46" height="8" rx="4" fill="#f4f4f5" stroke="#111" />
+      <circle cx="13" cy="29" r="5" fill="#fff" stroke="#111" />
+      <circle cx="59" cy="29" r="5" fill="#fff" stroke="#111" />
+
+      <g className={styles.chariot}>
+        {/* Le corps, incliné comme le clavier d'une machine. */}
+        <path
+          d="M14 34h44l6 15a2 2 0 0 1-2 2.6H10A2 2 0 0 1 8 49z"
+          fill="#f4f4f5"
+          stroke="#111"
+          strokeLinejoin="round"
+        />
+
+        {/* Deux rangs de touches, puis la barre d'espace. */}
+        {[0, 1].map((rang) =>
+          [0, 1, 2, 3, 4, 5].map((colonne) => (
+            <circle
+              key={rang + "-" + colonne}
+              cx={23 + colonne * 5.2 + rang * 2.6}
+              cy={39.5 + rang * 5}
+              r="1.5"
+              fill="#fff"
+              stroke="#111"
+              strokeWidth="0.9"
+            />
+          ))
+        )}
+        <rect x="22" y="47.5" width="28" height="2.6" rx="1.3" fill="#d4d4d8" />
+      </g>
+    </svg>
   );
 }
