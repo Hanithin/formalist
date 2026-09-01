@@ -1347,3 +1347,88 @@ test.describe("un dossier transmis s'ouvre sur ses documents", () => {
     await expect(page.getByRole("heading", { name: "Pièces justificatives" })).toBeVisible();
   });
 });
+
+test.describe("l'adresse d'un associé se complète en une fois", () => {
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({
+      connectionString: process.env.DATABASE_URL ?? "",
+      options: "-c timezone=UTC",
+    }),
+  });
+
+  test.afterAll(() => prisma.$disconnect());
+
+  /*
+   * Retenir une proposition écrit trois valeurs - la voie, le code postal, la ville -
+   * et l'écran des associés compose son état à partir de la liste qu'il reçoit. Quand
+   * elles partaient en deux écritures, la seconde repartait du même point que la
+   * première et l'effaçait : la ligne gardait ce qu'on avait tapé, jamais l'adresse
+   * choisie. Le code postal et la ville ne s'affichent nulle part ici - ils ne se
+   * vérifient donc qu'à la relecture du brouillon.
+   */
+  async function retenirLaPremiere(
+    page: import("@playwright/test").Page,
+    champ: import("@playwright/test").Locator,
+    saisie: string
+  ) {
+    await champ.type(saisie, { delay: 30 });
+    const propositions = page.getByRole("listbox").first();
+    await propositions.waitFor({ timeout: 15_000 });
+    const premiere = propositions.getByRole("option").first();
+    const libelle = (await premiere.textContent()) ?? "";
+    await premiere.click();
+    return libelle;
+  }
+
+  test("la ligne porte l'adresse retenue, et non ce qu'on avait tapé", async ({
+    page,
+    request,
+  }) => {
+    const dossier = await ouvrirCreation(page, request);
+    await request.put("/api/formalites/brouillon", {
+      data: {
+        dossier: Number(dossier),
+        modifications: {
+          forme: "SASU",
+          denomination: "ESSAI ADRESSE",
+          activite: "le conseil",
+          adresse: "1 rue de la Gare",
+          codePostal: "69001",
+          ville: "Lyon",
+          banque: "Qonto",
+          associes: [{ type: "physique", personne: { prenom: "Camille", nom: "Durand" } }],
+        },
+      },
+    });
+    await page.goto("/creation?dossier=" + dossier + "&etape=2");
+
+    const champ = page.getByPlaceholder("Rechercher l'adresse…");
+    const libelle = await retenirLaPremiere(page, champ, "34 rue laugier");
+
+    /* La proposition s'écrit « 34 Rue Laugier » ; la frappe, « 34 rue laugier ». */
+    await expect(champ).not.toHaveValue("34 rue laugier");
+    const valeur = (await champ.inputValue()).trim();
+    expect(valeur.length).toBeGreaterThan(0);
+    expect(libelle).toContain(valeur);
+
+    /*
+     * Le code postal et la ville suivent la voie, dans la même écriture.
+     *
+     * Ils ne s'affichent pas sur cet écran : c'est en base qu'on les relit, une fois
+     * la sauvegarde continue passée.
+     */
+    await expect
+      .poll(
+        async () => {
+          const ligne = await prisma.formalites.findUnique({
+            where: { id: Number(dossier) },
+            select: { data_json: true },
+          });
+          const donnees = JSON.parse(ligne?.data_json ?? "{}");
+          return donnees?.associes?.[0]?.personne ?? {};
+        },
+        { timeout: 15_000 }
+      )
+      .toMatchObject({ adresse: valeur, codePostal: /^\d{5}$/, ville: /\S/ });
+  });
+});

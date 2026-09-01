@@ -149,7 +149,19 @@ export function EtatCivil({
           id={"adresse-" + rang}
           valeur={personne.adresse ?? ""}
           surChangement={(v) => surChangement({ adresse: v })}
-          surCompletion={(codePostal, ville) => surChangement({ codePostal, ville })}
+          /*
+            La proposition retenue arrive en un seul appel.
+            
+            Retenir une adresse déclenche deux écritures dans le même cycle - la voie,
+            puis le couple code postal et ville - et cet écran compose son état à partir
+            de la liste reçue en propriété. Les deux partaient donc du même point, et la
+            seconde effaçait la première : la ligne gardait ce qu'on avait tapé au lieu
+            de l'adresse choisie. Le composant rend la voie en troisième argument pour
+            que tout s'écrive d'un coup ; il suffisait de la lire.
+          */
+          surCompletion={(codePostal, ville, voie) =>
+            surChangement({ adresse: voie, codePostal, ville })
+          }
           /*
             L'écran sert aux associés comme aux dirigeants, et une SASU n'a ni l'un ni
             l'autre mais un actionnaire : l'invite dit ce que le champ fait, non qui il

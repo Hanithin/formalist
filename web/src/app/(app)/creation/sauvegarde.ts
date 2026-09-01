@@ -49,6 +49,16 @@ export function useSauvegardeContinue(args: {
   const annonce = useRef(false);
 
   /*
+   * Le dossier est-il né ici, ou existait-il déjà ?
+   *
+   * Sans cette distinction, la première sauvegarde d'un dossier repris annonçait une
+   * naissance : l'adresse était réécrite, l'étape en cours tombait, et on se retrouvait
+   * ramené au premier écran en pleine saisie. Ce n'est pas « le premier enregistrement »
+   * qui intéresse celui qui écoute, c'est le premier d'un dossier qui vient de naître.
+   */
+  const neIci = useRef(false);
+
+  /*
    * Ce qui est déjà en base, tel qu'on l'a envoyé.
    *
    * Initialisé à l'état d'ouverture : le brouillon reçu du serveur, augmenté des
@@ -93,6 +103,7 @@ export function useSauvegardeContinue(args: {
       if (!reponse.ok || typeof corps.dossier !== "number") return null;
 
       identifiant.current = corps.dossier;
+      neIci.current = true;
       surOuverture(corps.dossier);
       return corps.dossier;
     })();
@@ -131,7 +142,7 @@ export function useSauvegardeContinue(args: {
 
     dernierEnvoi.current = serialise;
 
-    if (!annonce.current) {
+    if (neIci.current && !annonce.current) {
       annonce.current = true;
       surPremierEnregistrement?.(cible);
     }
