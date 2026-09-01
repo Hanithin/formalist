@@ -42,7 +42,24 @@ const DOCUMENTS: Definition[] = [
   },
   { type: "attestation-domicile", titre: "Attestation de domiciliation" },
   { type: "pv-nomination", titre: "Procès-verbal de nomination", condition: "avec-dirigeant" },
-  { type: "conjoint", titre: "Attestation du conjoint", condition: "conjoint-marie" },
+  /*
+   * L'information du conjoint ne vaut que pour les titres non négociables.
+   *
+   * L'article 1832-2 du code civil vise « l'emploi de biens communs pour faire un apport
+   * à une société ou acquérir des parts sociales non négociables ». Les actions d'une SAS
+   * sont négociables : le texte ne s'y applique pas, et l'attestation sortait pourtant,
+   * citant en tête un article qui ne concernait pas la société qu'elle accompagne.
+   *
+   * Le parcours de modification appliquait déjà cette règle - elle est écrite dans
+   * `modification/types.ts`, sur les champs qu'il n'affiche pas à une SAS. Deux parties
+   * du même produit répondaient différemment à la même question de droit.
+   */
+  {
+    type: "conjoint",
+    titre: "Attestation du conjoint",
+    condition: "conjoint-marie",
+    saufFormes: ["SAS", "SASU"],
+  },
 ];
 
 /**

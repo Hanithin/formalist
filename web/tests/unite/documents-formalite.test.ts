@@ -50,6 +50,29 @@ describe("documents à produire", () => {
     ).toBe(true);
   });
 
+  /*
+   * L'article 1832-2 du code civil vise « l'emploi de biens communs pour faire un apport
+   * à une société ou acquérir des parts sociales non négociables ». Les actions d'une SAS
+   * sont négociables : le texte ne s'y applique pas, et l'attestation sortait pourtant,
+   * citant en tête un article qui ne concernait pas la société qu'elle accompagne.
+   */
+  it("ne demande rien au conjoint quand les titres sont négociables", () => {
+    for (const forme of ["SAS", "SASU"] as const) {
+      expect(
+        documentsAProduire({ forme, conjointMarie: true }).some((d) => d.type === "conjoint"),
+        forme + " : le conjoint n'a rien à déclarer sur des actions"
+      ).toBe(false);
+    }
+
+    /* Les formes à parts sociales continuent de la produire. */
+    for (const forme of ["SARL", "EURL", "SCI"] as const) {
+      expect(
+        documentsAProduire({ forme, conjointMarie: true }).some((d) => d.type === "conjoint"),
+        forme + " : les parts sociales ne sont pas négociables"
+      ).toBe(true);
+    }
+  });
+
   it("une forme inconnue ne produit rien plutôt qu'un gabarit inventé", () => {
     expect(documentsAProduire({ forme: "SNC" })).toEqual([]);
   });
