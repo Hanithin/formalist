@@ -13,6 +13,7 @@ import { ouvrirPaiement, PaiementIndisponible } from "@/infrastructure/paiement/
 import { adresseDeRetour } from "@/lib/site";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
+import { journal } from "@/lib/journal";
 import { cequiRetientLeReglement } from "@/infrastructure/documents/verifier-pieces";
 
 const SCHEMA = z.object({ dossier: schemas.identifiant });
@@ -107,6 +108,15 @@ export const POST = route(async (requete: Request) => {
     return NextResponse.json({ adresse });
   } catch (e) {
     if (e instanceof PaiementIndisponible) {
+      /*
+       * La raison ne se lit que dans les traces.
+       *
+       * « Réessayez dans un instant » convient à une panne passagère, et c'est ce que
+       * lit le client. Mais la cause la plus fréquente n'est pas passagère - une clé
+       * Stripe absente de l'environnement - et réessayer n'y changera jamais rien.
+       * Sans cette ligne, un dépôt bloqué ne laissait aucune trace de son motif.
+       */
+      journal.error({ err: e, dossier }, "Paiement indisponible, règlement non ouvert");
       return NextResponse.json(
         { error: "Le paiement est momentanément indisponible. Réessayez dans un instant." },
         { status: 503 }

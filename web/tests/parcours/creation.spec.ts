@@ -1521,3 +1521,55 @@ test.describe("le pays et la nationalité se choisissent dans une liste", () => 
     await expect(pays).toHaveValue("Yougoslavie");
   });
 });
+
+test.describe("un refus de paiement ne se fait pas passer pour un champ vide", () => {
+  /*
+   * Le refus du serveur s'écrivait dans les anomalies de champ.
+   *
+   * Le compte des manques les lit toutes : « Le paiement est momentanément
+   * indisponible » s'affichait donc, puis « Un champ reste à compléter avant de
+   * continuer » juste en dessous - sous un formulaire complet, et sans dire lequel.
+   * On cherchait un champ vide qui n'existait pas.
+   */
+  test("le message du serveur s'affiche seul", async ({ page, request }) => {
+    const dossier = await ouvrirCreation(page, request);
+    await request.put("/api/formalites/brouillon", {
+      data: {
+        dossier: Number(dossier),
+        modifications: {
+          forme: "SASU",
+          denomination: "ESSAI REFUS",
+          activite: "Conseil aux entreprises",
+          adresse: "3 rue Centrale",
+          codePostal: "33000",
+          ville: "Bordeaux",
+          banque: "Qonto",
+          capital: 1000,
+          capitalLibere: 1000,
+          partsTotales: 100,
+          offre: "business",
+          associes: [{ ...associe("Camille", "Durand"), parts: 100, versement: 1000 }],
+          dirigeants: [{ associe: 0 }],
+        },
+      },
+    });
+
+    /* Le paiement refuse : c'est ce que voit quelqu'un dont la banque ne répond pas. */
+    await page.route("**/api/formalites/creation/paiement", (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "Le paiement est momentanément indisponible. Réessayez dans un instant.",
+        }),
+      })
+    );
+
+    await page.goto("/creation?dossier=" + dossier + "&etape=6");
+    /* Le bouton figure deux fois : dans le rappel de l'offre et dans les actions. */
+    await page.getByRole("button", { name: /Régler et confier/ }).last().click();
+
+    await expect(page.getByText(/paiement est momentanément indisponible/)).toBeVisible();
+    await expect(page.getByText(/reste à compléter|restent à compléter/)).toHaveCount(0);
+  });
+});

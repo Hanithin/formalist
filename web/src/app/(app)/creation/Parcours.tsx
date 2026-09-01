@@ -184,6 +184,16 @@ export function Parcours({
   const [reglementEnCours, setReglementEnCours] = useState(false);
 
   /*
+   * Le refus du serveur, tenu à l'écart des champs manquants.
+   *
+   * Il s'écrivait dans les anomalies, sous la clé « offre ». Le compte des manques les
+   * lit toutes : un paiement indisponible s'affichait donc deux fois - le vrai message,
+   * puis « Un champ reste à compléter avant de continuer » juste en dessous. Le second
+   * envoyait chercher un champ vide qui n'existait pas, sous un formulaire complet.
+   */
+  const [refus, setRefus] = useState<string | null>(null);
+
+  /*
    * La saisie se garde au fil de la frappe.
    *
    * `enregistrer` vérifie l'étape avant d'écrire, et sortait donc sans rien garder
@@ -384,6 +394,7 @@ export function Parcours({
 
     setReglementEnCours(true);
     setAnomalies({});
+    setRefus(null);
 
     try {
       let identifiant = dossier;
@@ -391,7 +402,7 @@ export function Parcours({
         const ouverture = await fetch("/api/formalites/brouillon", { method: "POST" });
         const corps = await ouverture.json().catch(() => ({}));
         if (!ouverture.ok || typeof corps.dossier !== "number") {
-          setAnomalies({ offre: "Le dossier n'a pas pu être ouvert" });
+          setRefus("Le dossier n'a pas pu être ouvert");
           setReglementEnCours(false);
           return;
         }
@@ -413,7 +424,7 @@ export function Parcours({
       const corps = await reponse.json().catch(() => ({}));
 
       if (!reponse.ok || typeof corps.adresse !== "string") {
-        setAnomalies({ offre: corps.error ?? "Le règlement n'a pas pu être ouvert" });
+        setRefus(corps.error ?? "Le règlement n'a pas pu être ouvert");
         setReglementEnCours(false);
         return;
       }
@@ -421,7 +432,7 @@ export function Parcours({
       // On quitte l'application : l'état de chargement reste, il ne se rendra plus.
       window.location.href = corps.adresse;
     } catch {
-      setAnomalies({ offre: "Le règlement n'a pas pu être ouvert" });
+      setRefus("Le règlement n'a pas pu être ouvert");
       setReglementEnCours(false);
     }
   }
@@ -1016,7 +1027,8 @@ export function Parcours({
               <Offres
                 choisie={brouillon.offre}
                 surChangement={(code) => modifier("offre", code)}
-                anomalie={anomalies.offre}
+                /* Le champ non renseigné d'abord, le refus du serveur à défaut. */
+                anomalie={anomalies.offre ?? refus ?? undefined}
               />
             </>
           )}
