@@ -9,7 +9,7 @@ import {
   type PersonnePhysique,
 } from "@/domain/formalite/etat-civil";
 import type { Associe } from "@/domain/formalite/parcours";
-import { Adresse } from "@/components/formulaire/Adresse";
+import { AdresseComposee } from "@/components/formulaire/Adresse";
 import { Choix } from "./Choix";
 import { Champ, EtatCivil } from "./EtatCivil";
 import { RechercheSociete } from "./RechercheSociete";
@@ -230,23 +230,13 @@ function Morale({
       </Champ>
 
       <Champ id={"siegeMorale-" + rang} libelle="Siège social" pleineLargeur>
-        <Adresse
+        {/* Même raison qu'au domicile d'un associé : la commune s'affiche sur la ligne. */}
+        <AdresseComposee
           id={"siegeMorale-" + rang}
           valeur={societe.adresse ?? ""}
-          surChangement={(v) => surChangement({ adresse: v })}
-          /*
-            La proposition retenue arrive en un seul appel.
-            
-            Retenir une adresse déclenche deux écritures dans le même cycle - la voie,
-            puis le couple code postal et ville - et cet écran compose son état à partir
-            de la liste reçue en propriété. Les deux partaient donc du même point, et la
-            seconde effaçait la première : la ligne gardait ce qu'on avait tapé au lieu
-            de l'adresse choisie. Le composant rend la voie en troisième argument pour
-            que tout s'écrive d'un coup ; il suffisait de la lire.
-          */
-          surCompletion={(codePostal, ville, voie) =>
-            surChangement({ adresse: voie, codePostal, ville })
-          }
+          codePostal={societe.codePostal}
+          ville={societe.ville}
+          surChangement={(parts) => surChangement(parts)}
           placeholder="Adresse du siège"
         />
       </Champ>

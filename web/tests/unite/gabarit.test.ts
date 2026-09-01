@@ -454,6 +454,40 @@ describe("l'identité, en une phrase", () => {
     );
   });
 
+  /*
+   * Le domicile porte sa commune.
+   *
+   * Les actes écrivaient « demeurant 34 Rue Laugier » : la voie seule. Le code postal
+   * et la commune sont saisis - ils viennent de la Base Adresse Nationale avec la
+   * proposition retenue - mais rien ne les relisait, et l'associé sortait domicilié
+   * dans une rue sans ville. Un acte qui désigne quelqu'un ainsi ne le désigne pas.
+   */
+  it("écrit le domicile avec son code postal et sa commune", () => {
+    const phrase = identitePhysique({
+      civilite: "Monsieur",
+      prenom: "Marc",
+      nom: "BERTIN",
+      adresse: "34 Rue Laugier",
+      codePostal: "75017",
+      ville: "Paris",
+    });
+
+    expect(phrase).toContain("demeurant 34 Rue Laugier, 75017 Paris");
+  });
+
+  /* La virgule ne sépare que ce qui existe : une voie seule reste une voie seule. */
+  it("n'invente pas de ponctuation quand la commune manque", () => {
+    const phrase = identitePhysique({
+      civilite: "Monsieur",
+      prenom: "Marc",
+      nom: "BERTIN",
+      adresse: "34 Rue Laugier",
+    });
+
+    expect(phrase).toContain("demeurant 34 Rue Laugier");
+    expect(phrase).not.toContain("Laugier,");
+  });
+
   /* Une société n'a ni naissance ni situation : sa désignation dit ce qui la nomme. */
   it("une société est désignée par son immatriculation et son représentant", () => {
     expect(

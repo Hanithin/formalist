@@ -240,6 +240,61 @@ export function AdresseUneLigne({
 }
 
 /**
+ * Une adresse qui s'affiche entière et se garde en trois morceaux.
+ *
+ * Là où le code postal et la commune n'ont pas de champ à eux - le domicile d'un
+ * associé, le siège d'un associé personne morale - le champ ne montrait que la voie.
+ * On cliquait « 34 Rue Laugier 75017 Paris » et il restait « 34 Rue Laugier » : rien à
+ * l'écran ne disait ce qui avait été retenu, ni si la bonne commune l'avait été.
+ *
+ * `AdresseUneLigne` répond au même besoin en aplatissant tout dans un seul texte. Ici
+ * les trois morceaux se gardent séparés : c'est ce que le guichet unique exige - il
+ * veut la voie, le code postal et la commune dans trois champs distincts - et c'est
+ * aussi ce qui permet aux actes de les ponctuer comme ils l'entendent.
+ *
+ * Taper à la main remet tout dans la voie et efface le couple : le champ montre alors
+ * exactement ce qu'on a écrit, et l'écart ne peut pas s'installer sans se voir.
+ */
+export function AdresseComposee({
+  id,
+  valeur,
+  codePostal,
+  ville,
+  surChangement,
+  placeholder,
+}: {
+  id: string;
+  valeur: string;
+  codePostal?: string;
+  ville?: string;
+  surChangement: (parts: { adresse: string; codePostal: string; ville: string }) => void;
+  placeholder?: string;
+}) {
+  const commune = [codePostal?.trim(), ville?.trim()].filter(Boolean).join(" ");
+  /*
+   * La voie ne se rogne pas tant qu'on écrit.
+   *
+   * Composer avec `valeur.trim()` à chaque frappe mangeait l'espace qu'on venait de
+   * taper : « 8 quai de la gare » se saisissait « 8quaidelagare ». La ponctuation n'a
+   * de sens qu'une fois la commune connue - et taper l'efface - donc tant qu'elle
+   * manque, le champ rend exactement ce qu'on a écrit.
+   */
+  const affichee = commune ? [valeur.trim(), commune].filter(Boolean).join(", ") : valeur;
+
+  return (
+    <Adresse
+      id={id}
+      valeur={affichee}
+      placeholder={placeholder}
+      surChangement={(saisie) => surChangement({ adresse: saisie, codePostal: "", ville: "" })}
+      surCompletion={(cp, commune, voie) =>
+        surChangement({ adresse: voie, codePostal: cp, ville: commune })
+      }
+    />
+  );
+}
+
+/**
  * Autocomplétion de commune, sur l'API Découpage administratif.
  *
  * Elle sert quand on part de la ville plutôt que de l'adresse : le code postal

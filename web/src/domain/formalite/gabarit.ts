@@ -222,7 +222,8 @@ export function identitePhysique(personne: PersonnePhysique): string {
    * sur la civilité, comme pour « né » et « fille ».
    */
   morceaux.push(situationAccordee(personne));
-  if (personne.adresse?.trim()) morceaux.push("demeurant " + personne.adresse.trim());
+  const demeure = domicile(personne);
+  if (demeure) morceaux.push("demeurant " + demeure);
 
   return morceaux.join(", ");
 }
@@ -244,9 +245,26 @@ export function sirenDe(societe: PersonneMorale | undefined): string {
  * Paris » - à côté de l'adresse d'une personne physique, qui la porte. Deux adresses
  * dans le même acte, ponctuées de deux façons.
  */
-function adresseSurUneLigne(societe: PersonneMorale): string {
-  const commune = [societe.codePostal?.trim(), societe.ville?.trim()].filter(Boolean).join(" ");
-  return [societe.adresse?.trim(), commune].filter(Boolean).join(", ");
+function adresseSurUneLigne(lieu: {
+  adresse?: string;
+  codePostal?: string;
+  ville?: string;
+}): string {
+  const commune = [lieu.codePostal?.trim(), lieu.ville?.trim()].filter(Boolean).join(" ");
+  return [lieu.adresse?.trim(), commune].filter(Boolean).join(", ");
+}
+
+/**
+ * Le domicile d'une personne, tel qu'un acte l'écrit.
+ *
+ * Les actes écrivaient « demeurant 34 Rue Laugier » : la voie seule. Le code postal et
+ * la commune étaient bien saisis - ils viennent de la Base Adresse Nationale, avec la
+ * proposition qu'on retient - mais rien ne les relisait, et l'associé sortait domicilié
+ * dans une rue sans ville. Le siège de la même société, lui, se composait entier deux
+ * cents lignes plus haut : deux adresses ponctuées de deux façons dans le même acte.
+ */
+function domicile(personne: PersonnePhysique): string {
+  return adresseSurUneLigne(personne);
 }
 
 export function societeDesignee(societe: PersonneMorale): string {
@@ -405,7 +423,7 @@ function etatCivilSous(prefixe: string, personne: PersonnePhysique, donnees: Don
   // Le nom de famille s'écrit en capitales dans les actes.
   donnees[prefixe + "NOM"] = personne.nom?.trim() ? personne.nom.trim().toUpperCase() : TIRET;
   donnees[prefixe + "CIVILITE_NOM_PRENOM"] = civiliteNomPrenom(personne);
-  donnees[prefixe + "ADRESSE"] = ou(personne.adresse);
+  donnees[prefixe + "ADRESSE"] = ou(domicile(personne));
   donnees[prefixe + "DATE_NAISSANCE"] = dateEnFrancais(personne.dateDeNaissance);
   donnees[prefixe + "LIEU_NAISSANCE"] = ou(personne.villeDeNaissance);
   donnees[prefixe + "CP_NAISSANCE"] = ou(personne.codePostalDeNaissance);
@@ -652,11 +670,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     DIRIGEANT_EST_MORALE: societeDirigeante !== null,
     DIRIGEANT_EST_PHYSIQUE: societeDirigeante === null,
     ADRESSE_DIRIGEANT: ou(
-      societeDirigeante
-        ? [societeDirigeante.adresse, societeDirigeante.codePostal, societeDirigeante.ville]
-            .filter((m) => m?.trim())
-            .join(" ")
-        : dirigeant.adresse
+      societeDirigeante ? adresseSurUneLigne(societeDirigeante) : domicile(dirigeant)
     ),
     FONCTION_DIRIGEANT: regleForme?.titreDirigeant ?? "Président",
     REMUNERATION_PRESIDENT: phraseRemuneration("présidence", remuneration, qui),
@@ -708,7 +722,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   // L'état civil du premier associé, sans préfixe : c'est lui que les gabarits
   // désignent par CIVILITE, NOM, PRENOM, ADRESSE_PERSO…
   etatCivilSous("", a1, donnees);
-  donnees.ADRESSE_PERSO = ou(a1.adresse);
+  donnees.ADRESSE_PERSO = ou(domicile(a1));
   donnees.CODE_POSTAL_NAISSANCE = ou(a1.codePostalDeNaissance);
 
   /*
@@ -831,7 +845,9 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
       : identitePhysique(personne);
     donnees["ACTIONNAIRE_" + rang] = identite;
     donnees["ASSOCIE_" + rang] = identite;
-    donnees["ADRESSE_ASSOCIE_" + rang] = ou(estMorale ? associe.societe?.adresse : personne.adresse);
+    donnees["ADRESSE_ASSOCIE_" + rang] = ou(
+      estMorale ? adresseSurUneLigne(associe.societe ?? {}) : domicile(personne)
+    );
     donnees["EMAIL_ASSOCIE_" + rang] = personne.email?.trim() ?? "";
     donnees["DATE_NAISSANCE_" + rang] = dateEnFrancais(personne.dateDeNaissance);
     donnees["LIEU_NAISSANCE_" + rang] = ou(personne.villeDeNaissance);
@@ -887,7 +903,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
       LIEU_NAISSANCE: ou(personne.villeDeNaissance),
       NATIONALITE: ou(personne.nationalite, "Française"),
       SITUATION_MATRIMONIALE: situationAccordee(personne),
-      ADRESSE: ou(estMorale ? associe.societe?.adresse : personne.adresse),
+      ADRESSE: ou(estMorale ? adresseSurUneLigne(associe.societe ?? {}) : domicile(personne)),
       EST_HOMME: personne.civilite === "Monsieur",
       EST_FEMME: personne.civilite === "Madame",
       NB_PARTS: a.parts ? montant(a.parts) : TIRET,

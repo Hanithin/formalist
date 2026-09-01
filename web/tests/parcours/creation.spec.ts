@@ -1405,11 +1405,18 @@ test.describe("l'adresse d'un associé se complète en une fois", () => {
     const champ = page.getByPlaceholder("Rechercher l'adresse…");
     const libelle = await retenirLaPremiere(page, champ, "34 rue laugier");
 
-    /* La proposition s'écrit « 34 Rue Laugier » ; la frappe, « 34 rue laugier ». */
+    /*
+     * Le champ porte l'adresse entière : « 34 Rue Laugier, 75017 Paris ».
+     *
+     * Le code postal et la commune n'ont pas de champ à eux sur cet écran. Tant qu'ils
+     * ne s'affichaient pas, rien ne disait laquelle des six propositions avait été
+     * retenue - « 34 Rue Laugier » vaut pour Paris comme pour Toulon.
+     */
     await expect(champ).not.toHaveValue("34 rue laugier");
-    const valeur = (await champ.inputValue()).trim();
-    expect(valeur.length).toBeGreaterThan(0);
-    expect(libelle).toContain(valeur);
+    const affichee = (await champ.inputValue()).trim();
+    const mots = libelle.trim().split(/\s+/);
+    for (const mot of mots) expect(affichee).toContain(mot);
+    expect(affichee).toContain(",");
 
     /*
      * Le code postal et la ville suivent la voie, dans la même écriture.
@@ -1429,6 +1436,19 @@ test.describe("l'adresse d'un associé se complète en une fois", () => {
         },
         { timeout: 15_000 }
       )
-      .toMatchObject({ adresse: valeur, codePostal: /^\d{5}$/, ville: /\S/ });
+      .toMatchObject({ adresse: /\S/, codePostal: /^\d{5}$/, ville: /\S/ });
+
+    /*
+     * La voie reste seule en base : le guichet unique veut la voie, le code postal et
+     * la commune dans trois champs distincts. C'est l'affichage qui les réunit, pas
+     * l'enregistrement.
+     */
+    const ligne = await prisma.formalites.findUnique({
+      where: { id: Number(dossier) },
+      select: { data_json: true },
+    });
+    const garde = JSON.parse(ligne?.data_json ?? "{}")?.associes?.[0]?.personne ?? {};
+    expect(garde.adresse).not.toContain(garde.codePostal);
+    expect(affichee).toBe(garde.adresse + ", " + garde.codePostal + " " + garde.ville);
   });
 });
