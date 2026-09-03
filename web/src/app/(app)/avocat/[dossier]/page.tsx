@@ -540,7 +540,7 @@ export default async function DossierAvocat({
         </Link>
       </div>
 
-      <div className={styles.content}>
+      <div className={`${styles.content} ${styles.contentDossier}`}>
         <div className={styles.colonnePrincipale}>
         {/* Avant les onglets : on décide de prendre le dossier avant de travailler
             dedans, et le bandeau dit pourquoi rien n'y répond encore. */}

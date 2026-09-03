@@ -1778,12 +1778,22 @@
  * défilement : le récapitulatif sert pendant qu'on relit, pas avant.
  */
 .content {
+  padding: 16px 48px 48px;
+  flex: 1;
+}
+
+/*
+ * La grille n'appartient qu'à la page d'un dossier.
+ *
+ * Elle avait été posée sur `.content`, que la liste des dossiers et les disponibilités
+ * partagent : leur tableau se retrouvait rangé dans la colonne de droite, large de
+ * trois cent quarante pixels, et leurs filtres dans celle de gauche.
+ */
+.contentDossier {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 0 28px;
   align-items: start;
-  padding: 16px 48px 48px;
-  flex: 1;
 }
 
 .colonnePrincipale {
@@ -1816,7 +1826,7 @@
  * qu'on vérifie précisément en relisant les actes.
  */
 @media (max-width: 1100px) {
-  .content {
+  .contentDossier {
     grid-template-columns: 1fr;
     gap: 22px;
   }
