@@ -70,3 +70,74 @@ describe("les statuts d'une SAS", () => {
     expect(texte).not.toMatch(/\b[LR]\. \d/);
   });
 });
+
+/**
+ * Une associée unique lit un acte qui parle d'elle.
+ *
+ * Les gabarits écrivent « L'ASSOCIÉ UNIQUE SOUSSIGNÉ », « né le » et « QU'IL A DÉCIDÉ
+ * DE CONSTITUER » en toutes lettres, hors de portée des variables. Une femme seule à
+ * constituer sa société lisait donc son acte au masculin, du titre à la formule de
+ * constitution, dans des statuts déposés au greffe.
+ */
+describe("l'accord en genre des statuts", () => {
+  const seule = (civilite: "Madame" | "Monsieur") => ({
+    forme: "SASU",
+    denomination: "ROSEBERRY CAPITAL",
+    activite: "Le conseil",
+    adresse: "34 Rue Laugier",
+    codePostal: "75017",
+    ville: "Paris",
+    banque: "Qonto",
+    capital: 1000,
+    capitalLibere: 1000,
+    partsTotales: 100,
+    dureeDeVie: 99,
+    dateCloturePremierExercice: "2027-12-31",
+    associes: [
+      {
+        type: "physique",
+        parts: 100,
+        versement: 1000,
+        personne: {
+          civilite,
+          prenom: "Amel",
+          nom: "Belouafi",
+          dateDeNaissance: "1996-01-27",
+          villeDeNaissance: "Argenteuil",
+          nationalite: "Française",
+          situationMatrimoniale: "Marié(e)",
+          adresse: "34 Rue Laugier",
+          codePostal: "75017",
+          ville: "Paris",
+        },
+      },
+    ],
+    dirigeants: [{ associe: 0 }],
+  });
+
+  const statuts = (civilite: "Madame" | "Monsieur") =>
+    new PizZip(genererDocument("sasu-statuts.docx", donneesDeGabarit(seule(civilite) as never)))
+      .file("word/document.xml")!
+      .asText()
+      .replace(/<[^>]+>/g, "");
+
+  it("accorde le titre, la naissance et la formule de constitution", () => {
+    const texte = statuts("Madame");
+
+    expect(texte).toContain("L’ASSOCIÉE UNIQUE SOUSSIGNÉE");
+    expect(texte).toContain("née le 27 janvier 1996");
+    expect(texte).toContain("QU’ELLE A DÉCIDÉ DE CONSTITUER");
+    /* La nationalité est un adjectif au milieu d'une phrase, non une entrée de menu. */
+    expect(texte).toContain("de nationalité française");
+    expect(texte).not.toContain("de nationalité Française");
+  });
+
+  /* Le masculin l'emporte dès qu'un homme signe : il ne faut pas accorder à tort. */
+  it("laisse le masculin quand un homme signe", () => {
+    const texte = statuts("Monsieur");
+
+    expect(texte).toContain("L’ASSOCIÉ UNIQUE SOUSSIGNÉ");
+    expect(texte).toContain("né le 27 janvier 1996");
+    expect(texte).toContain("QU’IL A DÉCIDÉ DE CONSTITUER");
+  });
+});

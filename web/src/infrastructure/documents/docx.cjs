@@ -1294,6 +1294,37 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
       .replace(/la somme versée par les associés/g, "la somme versée par l'associé unique");
   }
 
+  /*
+   * Ce que les gabarits écrivent au masculin, accordé.
+   *
+   * « L'ASSOCIÉ UNIQUE SOUSSIGNÉ », « né le », « QU'IL A DÉCIDÉ DE CONSTITUER » : ces
+   * mots sont dans le modèle Word, hors de portée des variables. Une associée unique
+   * lisait donc un acte qui parlait d'elle au masculin, du titre jusqu'à la formule de
+   * constitution - dans des statuts déposés au greffe.
+   *
+   * L'accord ne se fait que si aucun homme ne signe : le masculin l'emporte dès qu'il y
+   * en a un, il ne s'impose pas quand il n'y en a aucun. Les apostrophes sont écrites
+   * des deux façons dans les gabarits, droite et courbe.
+   */
+  if (data && data.TOUTES_DES_FEMMES) {
+    const seule = !data.HAS_ASSOC_2;
+    const accords = seule
+      ? [
+          [/L[’']ASSOCIÉ UNIQUE SOUSSIGNÉ/g, "L’ASSOCIÉE UNIQUE SOUSSIGNÉE"],
+          [/L[’']ACTIONNAIRE UNIQUE SOUSSIGNÉ/g, "L’ACTIONNAIRE UNIQUE SOUSSIGNÉE"],
+          [/QU[’']IL A DÉCIDÉ DE CONSTITUER/g, "QU’ELLE A DÉCIDÉ DE CONSTITUER"],
+          [/A ÉTABLI/g, "A ÉTABLI"],
+        ]
+      : [
+          [/LES ASSOCIÉS SOUSSIGNÉS/g, "LES ASSOCIÉES SOUSSIGNÉES"],
+          [/QU[’']ILS ONT DÉCIDÉ DE CONSTITUER/g, "QU’ELLES ONT DÉCIDÉ DE CONSTITUER"],
+        ];
+
+    for (const [motif, remplacement] of accords) docXml = docXml.replace(motif, remplacement);
+    /* « né le » se dit d'une personne : le rang ne change rien, seul le genre. */
+    docXml = docXml.replace(/([,\s])né le\b/g, "$1née le");
+  }
+
   docXml = docXml.replace(/\bde\s+Etude Notariale [Dd]e Maître/g, "de l'Étude notariale de Maître");
   docXml = docXml.replace(/Etude Notariale De Maître/g, 'Étude notariale de Maître');
   docXml = docXml.replace(/Quentin Fourez Notaires à/g, 'Quentin Fourez, Notaires situés');

@@ -228,7 +228,7 @@ export function identitePhysique(personne: PersonnePhysique): string {
     );
   }
 
-  morceaux.push("de nationalité " + ou(personne.nationalite, "Française"));
+  morceaux.push("de nationalité " + (enMinusculeInitiale(personne.nationalite) || "française"));
   /*
    * « marié(e) » ne s'écrit pas dans un acte.
    *
@@ -466,7 +466,15 @@ function etatCivilSous(prefixe: string, personne: PersonnePhysique, donnees: Don
   donnees[prefixe + "LIEU_NAISSANCE"] = ou(personne.villeDeNaissance);
   donnees[prefixe + "CP_NAISSANCE"] = ou(personne.codePostalDeNaissance);
   donnees[prefixe + "PAYS_NAISSANCE"] = ou(personne.paysDeNaissance, "France");
-  donnees[prefixe + "NATIONALITE"] = ou(personne.nationalite, "Française");
+  /*
+   * « de nationalité française », sans majuscule.
+   *
+   * La liste du formulaire écrit « Française » avec sa capitale - c'est une entrée de
+   * menu, elle commence une ligne. Dans la phrase de l'acte, elle est un adjectif au
+   * milieu d'une énumération, et la majuscule s'y voit.
+   */
+  donnees[prefixe + "NATIONALITE"] =
+    enMinusculeInitiale(personne.nationalite) || "française";
   donnees[prefixe + "SITUATION_MATRIMONIALE"] = situationAccordee(personne);
   donnees[prefixe + "NOM_PERE"] = ou(personne.nomDuPere);
   donnees[prefixe + "NOM_MERE"] = ou(personne.nomDeLaMere);
@@ -534,6 +542,11 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   const unique = estUnipersonnelle(brouillon.forme, associes.length);
 
   const premier = associes[0];
+  /* Les personnes physiques du dossier : une société n'a pas de genre grammatical. */
+  const physiques = associes
+    .filter((a) => a.type !== "morale")
+    .map((a) => a.personne)
+    .filter((p): p is NonNullable<typeof p> => !!p);
   const a1 = physique(premier);
   const dirigeant = personneDuDirigeant(dirigeants[0], tous);
   /* Le dirigeant peut être une société : elle n'a ni naissance ni filiation. */
@@ -742,6 +755,16 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
       .join(", "),
     nomComplet: civiliteNomPrenom(a1),
     EST_PERSONNE_PHYSIQUE: premier?.type !== "morale",
+    /*
+     * Les signataires sont-ils tous des femmes ?
+     *
+     * Les gabarits écrivent « L'ASSOCIÉ UNIQUE SOUSSIGNÉ » et « QU'IL A DÉCIDÉ DE
+     * CONSTITUER » en toutes lettres : une associée unique lisait un acte qui parlait
+     * d'elle au masculin, du titre à la signature. Le masculin l'emporte dès qu'un
+     * homme est présent ; il ne s'impose pas quand il n'y en a aucun.
+     */
+    TOUTES_DES_FEMMES:
+      physiques.length > 0 && physiques.every((p) => p.civilite === "Madame"),
     EST_PERSONNE_MORALE: premier?.type === "morale",
 
     /* ---------- Le conjoint ---------- */
@@ -833,7 +856,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
       donnees["EMAIL_ASSOCIE_" + rang] = "";
       donnees["DATE_NAISSANCE_" + rang] = TIRET;
       donnees["LIEU_NAISSANCE_" + rang] = TIRET;
-      donnees["NATIONALITE_" + rang] = "Française";
+      donnees["NATIONALITE_" + rang] = "française";
       donnees["SITUATION_MATRIMONIALE_" + rang] = "célibataire";
       donnees["NOM_PERE_" + rang] = TIRET;
       donnees["NOM_MERE_" + rang] = TIRET;
@@ -897,7 +920,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     donnees["EMAIL_ASSOCIE_" + rang] = personne.email?.trim() ?? "";
     donnees["DATE_NAISSANCE_" + rang] = dateEnFrancais(personne.dateDeNaissance);
     donnees["LIEU_NAISSANCE_" + rang] = ou(personne.villeDeNaissance);
-    donnees["NATIONALITE_" + rang] = ou(personne.nationalite, "Française");
+    donnees["NATIONALITE_" + rang] = enMinusculeInitiale(personne.nationalite) || "française";
     donnees["SITUATION_MATRIMONIALE_" + rang] = situationAccordee(personne);
     donnees["NOM_PERE_" + rang] = ou(personne.nomDuPere);
     donnees["NOM_MERE_" + rang] = ou(personne.nomDeLaMere);
@@ -947,7 +970,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
       IDENTITE_SIGNATAIRE: estMorale ? designation : identitePhysique(personne),
       DATE_NAISSANCE: dateEnFrancais(personne.dateDeNaissance),
       LIEU_NAISSANCE: ou(personne.villeDeNaissance),
-      NATIONALITE: ou(personne.nationalite, "Française"),
+      NATIONALITE: enMinusculeInitiale(personne.nationalite) || "française",
       SITUATION_MATRIMONIALE: situationAccordee(personne),
       ADRESSE: ou(estMorale ? adresseSurUneLigne(associe.societe ?? {}) : domicile(personne)),
       EST_HOMME: personne.civilite === "Monsieur",

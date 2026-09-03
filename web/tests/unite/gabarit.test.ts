@@ -236,7 +236,7 @@ describe("les champs remis aux gabarits Word", () => {
   it("un champ vide s'écrit « - » : dans un acte, un blanc se lit comme un oubli", () => {
     const vide = donneesDeGabarit({});
     expect(vide.NOM_SOCIETE).toBe("-");
-    expect(vide.NATIONALITE).toBe("Française");
+    expect(vide.NATIONALITE).toBe("française");
     expect(vide.SITUATION_MATRIMONIALE).toBe("célibataire");
   });
 
@@ -450,7 +450,7 @@ describe("l'identité, en une phrase", () => {
 
     expect(phrase).toBe(
       "Madame Claire MARCHAND, née le 12 avril 1988 à Lyon (69003), " +
-        "de nationalité Française, célibataire, demeurant 9 rue Oberkampf"
+        "de nationalité française, célibataire, demeurant 9 rue Oberkampf"
     );
   });
 
