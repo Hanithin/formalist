@@ -85,16 +85,6 @@ const ONGLETS = [
 ] as const;
 type Onglet = (typeof ONGLETS)[number];
 
-const NOMS: Record<Onglet, string> = {
-  historique: "Historique",
-  communication: "Communication",
-  dossier: "Récapitulatif",
-  travail: "À faire",
-  documents: "Documents",
-  statuts: "Statuts",
-  annonce: "Annonce légale",
-};
-
 /*
  * Les anciens noms d'onglets mènent toujours quelque part.
  *
@@ -376,12 +366,7 @@ export default async function DossierAvocat({
    * la barre pour tout le monde.
    */
   const retoucheDesStatuts = type === "modification" && statutsAMettreAJour(codes);
-  const annonceAPublier = taches.some((t) => t.identifiant === "annonce");
 
-  const onglets = ONGLETS.filter(
-    (o) =>
-      (o !== "statuts" || retoucheDesStatuts) && (o !== "annonce" || annonceAPublier)
-  );
 
   /*
    * Les pièces telles que le navigateur les reçoit.
@@ -506,8 +491,6 @@ export default async function DossierAvocat({
     : -1;
   const etapePrecedente = rang > 0 ? SOUS_PHASES_ORDONNEES[rang - 1] : null;
 
-  /* Ce qu'il reste à faire, pour la pastille de l'onglet. */
-  const restantes = taches.length - faites;
 
   return (
     <main className={styles.page}>
@@ -558,6 +541,7 @@ export default async function DossierAvocat({
       </div>
 
       <div className={styles.content}>
+        <div className={styles.colonnePrincipale}>
         {/* Avant les onglets : on décide de prendre le dossier avant de travailler
             dedans, et le bandeau dit pourquoi rien n'y répond encore. */}
         {libre && <PriseEnCharge dossier={dossier.id} />}
@@ -637,55 +621,6 @@ export default async function DossierAvocat({
           </section>
         )}
 
-        <nav className={styles.detailTabs} aria-label="Sections du dossier">
-          {onglets.map((o) => (
-            <Link
-              key={o}
-              href={adresse(o)}
-              className={o === onglet ? `${styles.detailTab} ${styles.active}` : styles.detailTab}
-              aria-current={o === onglet ? "page" : undefined}
-            >
-              {NOMS[o]}
-              {/*
-                Ce qu'il reste à faire se compte sur l'onglet.
-                
-                « À faire » n'en portait aucun : il fallait l'ouvrir pour savoir s'il
-                restait quelque chose, alors que c'est la question qu'on se pose en
-                arrivant.
-              */}
-              {o === "travail" && restantes > 0 && (
-                <span className={styles.tabCount}>{restantes}</span>
-              )}
-              {/*
-                Un compte sur un onglet dit de quoi il s'agit.
-                
-                « Récapitulatif 1 » ne disait pas ce qu'était ce 1 - une note ? une
-                pièce ? Les pièces à vérifier appartiennent aux documents depuis qu'ils
-                ont leur onglet.
-              */}
-              {o === "dossier" && notes.length > 0 && (
-                <span className={styles.tabCount}>
-                  {notes.length} note{notes.length > 1 ? "s" : ""}
-                </span>
-              )}
-              {/*
-                Ce qui attend une décision passe avant le décompte : « 3 documents »
-                n'apprend rien à qui doit en vérifier un.
-              */}
-              {o === "documents" &&
-                (aVerifier > 0 ? (
-                  <span className={styles.tabCount}>{aVerifier} à vérifier</span>
-                ) : (
-                  documents.length > 0 && (
-                    <span className={styles.tabCount}>{documents.length}</span>
-                  )
-                ))}
-            </Link>
-          ))}
-        </nav>
-
-        {onglet === "travail" && (
-          <>
             {/*
               L'avancement au-dessus des tâches, sur une ligne.
 
@@ -694,18 +629,123 @@ export default async function DossierAvocat({
               geste qu'il porte est le passage d'un cran : le reste se lit en une ligne.
               Le bloc garde son ancre, où mène la tâche « Déposer au guichet unique ».
             */}
-            <div id="avancement" className={styles.ancreAvancement}>
-              <Avancement
-                dossierId={dossier.id}
-                type={type}
-                sousPhase={dossier.business_sub_phase}
-                aLeKbis={remis(TYPE_KBIS)}
-                documentFinal={documentFinalDe(type, phaseDeLaFermeture)}
-                aLeRbe={remis(TYPE_RBE)}
-              />
-            </div>
 
             <Travail
+              apresLaTacheDuMoment={
+          <section id="documents" className={styles.sectionDuDossier}>
+            <h2 className={styles.sectionDuDossierTitre}>Les documents du dossier</h2>
+              <div className={styles.documentsTete}>
+                <h3 className={styles.sectionTitre}>Documents du dossier</h3>
+                {/*
+                  Corriger la source, plutôt que le document.
+                  Reprendre un acte au Word laissait la faute dans le dossier : l'acte
+                  suivant la reprenait, et le document remis ne correspondait plus aux
+                  données dont il sortait.
+                */}
+                <Corriger
+                  dossier={dossier.id}
+                  champs={formulaire.champs}
+                  valeurs={formulaire.valeurs}
+                />
+              </div>
+          {/*
+            Ce que le dossier réclame et qui n'y est pas.
+            La liste ne montrait que les documents présents : rien n'y disait qu'il
+            manquait le rapport du commissaire aux apports, et il fallait connaître par
+            cœur la liste attendue de chaque type de formalité pour s'en apercevoir. Un
+            dossier incomplet avait exactement l'air d'un dossier complet.
+          */}
+          {/*
+            Un panneau, non un message d'état.
+            
+            Il portait role="status" : une région vivante, que le lecteur d'écran
+            annonce à chaque rendu alors qu'elle ne change pas. Depuis que le dossier
+            tient sur un écran, elle voisinait avec le vrai message de la production -
+            « 2 actes produits » - et c'est elle que l'on entendait.
+          */}
+          {(pieces_.manquantes.length > 0 || pieces_.refusees.length > 0) && (
+              <div className={styles.piecesManquantes} aria-label="Pièces manquantes">
+                <p className={styles.piecesManquantesTitre}>
+                  {pieces_.manquantes.length + pieces_.refusees.length === 1
+                    ? "Une pièce empêche le dépôt"
+                    : pieces_.manquantes.length + pieces_.refusees.length +
+                      " pièces empêchent le dépôt"}
+                </p>
+                <ul className={styles.piecesManquantesListe}>
+                  {pieces_.manquantes.map((piece) => (
+                    <li key={piece.identifiant}>
+                      {piece.titre}
+                      <span className={styles.piecesManquantesMotif}>jamais déposée</span>
+                    </li>
+                  ))}
+                  {pieces_.refusees.map((piece) => (
+                    <li key={piece.identifiant}>
+                      {piece.titre}
+                      <span className={styles.piecesManquantesMotif}>
+                        refusée, en attente de remplacement
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className={styles.piecesManquantesNote}>
+                  Le client la voit manquante de son côté. Écrivez-lui si elle tarde.
+                </p>
+              </div>
+            )}
+              {pieces.length === 0 ? (
+                <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />
+              ) : (
+                pieces.map((piece) => (
+                  <Piece key={piece.id} piece={piece} dossier={dossier.id} />
+                ))
+              )}
+          {/*
+            Les statuts à jour, annoncés avant d'exister.
+            Ils ne sont produits qu'à la sortie de l'éditeur de retouches : la liste des
+            pièces ne les montrait donc pas, et rien n'y disait qu'un document manquait
+            encore au dossier ni où on le fabrique. La ligne dit l'un et mène à l'autre.
+          */}
+          {statutsAProduire && (
+            <div className={styles.docCard}>
+              <div className={styles.docIcon}>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div className={styles.docInfo}>
+                <div className={styles.docName}>Statuts mis à jour</div>
+                <div className={styles.docMeta}>
+                  <span className={`${styles.docEtat} ${styles.attente}`}>En cours de révision</span>
+                  <span>
+                    chaque passage que les décisions changent est repris dans les statuts en
+                    vigueur
+                  </span>
+                </div>
+              </div>
+              <div className={styles.docActions}>
+                <Link href={adresse("statuts")} className={styles.decisionPrincipale}>
+                  Mettre à jour les statuts
+                </Link>
+              </div>
+            </div>
+          )}
+          {/*
+            Écrire au client sans quitter le dossier.
+            Il fallait passer par la messagerie, y retrouver le bon fil, puis revenir :
+            on écrivait de mémoire, sans ce qu'on voulait commenter sous les yeux. C'est
+            le même fil - la même table, le même point d'entrée.
+          */}
+          </section>
+              }
               dossier={dossier.id}
               taches={taches}
               /* La tâche nomme ce qu'elle réclame, au lieu de le compter. */
@@ -754,8 +794,6 @@ export default async function DossierAvocat({
                 registreConcerne: type === "creation" || type === "modification",
               }}
             />
-          </>
-        )}
 
         {/*
           Tous les documents du dossier, avec ce qu'on peut en faire.
@@ -765,123 +803,27 @@ export default async function DossierAvocat({
           déjà décidée - n'avait aucun chemin. Ici, chacun porte ses gestes : ouvrir,
           corriger le Word, déposer sa version, valider, revenir sur la décision.
         */}
-        {onglet === "documents" && (
-          <>
-            <div className={styles.documentsTete}>
-              <h3 className={styles.sectionTitre}>Documents du dossier</h3>
-              {/*
-                Corriger la source, plutôt que le document.
-                
-                Reprendre un acte au Word laissait la faute dans le dossier : l'acte
-                suivant la reprenait, et le document remis ne correspondait plus aux
-                données dont il sortait.
-              */}
-              <Corriger
-                dossier={dossier.id}
-                champs={formulaire.champs}
-                valeurs={formulaire.valeurs}
-              />
-            </div>
+
+
         {/*
-          Ce que le dossier réclame et qui n'y est pas.
-
-          La liste ne montrait que les documents présents : rien n'y disait qu'il
-          manquait le rapport du commissaire aux apports, et il fallait connaître par
-          cœur la liste attendue de chaque type de formalité pour s'en apercevoir. Un
-          dossier incomplet avait exactement l'air d'un dossier complet.
-        */}
-        {(pieces_.manquantes.length > 0 || pieces_.refusees.length > 0) && (
-            <div className={styles.piecesManquantes} role="status">
-              <p className={styles.piecesManquantesTitre}>
-                {pieces_.manquantes.length + pieces_.refusees.length === 1
-                  ? "Une pièce empêche le dépôt"
-                  : pieces_.manquantes.length + pieces_.refusees.length +
-                    " pièces empêchent le dépôt"}
-              </p>
-              <ul className={styles.piecesManquantesListe}>
-                {pieces_.manquantes.map((piece) => (
-                  <li key={piece.identifiant}>
-                    {piece.titre}
-                    <span className={styles.piecesManquantesMotif}>jamais déposée</span>
-                  </li>
-                ))}
-                {pieces_.refusees.map((piece) => (
-                  <li key={piece.identifiant}>
-                    {piece.titre}
-                    <span className={styles.piecesManquantesMotif}>
-                      refusée, en attente de remplacement
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className={styles.piecesManquantesNote}>
-                Le client la voit manquante de son côté. Écrivez-lui si elle tarde.
-              </p>
-            </div>
-          )}
-
-
-            {pieces.length === 0 ? (
-              <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />
-            ) : (
-              pieces.map((piece) => (
-                <Piece key={piece.id} piece={piece} dossier={dossier.id} />
-              ))
-            )}
-        {/*
-          Les statuts à jour, annoncés avant d'exister.
+          Une section qui n'a rien à dire ne s'affiche pas.
           
-          Ils ne sont produits qu'à la sortie de l'éditeur de retouches : la liste des
-          pièces ne les montrait donc pas, et rien n'y disait qu'un document manquait
-          encore au dossier ni où on le fabrique. La ligne dit l'un et mène à l'autre.
+          Les onglets avaient ce défaut : « Annonce légale » et « Statuts » existaient
+          pour tous les dossiers, et s'ouvraient sur un encart d'excuses - « ce dossier
+          ne fait paraître aucune annonce ». Sur une page unique, un titre sans contenu
+          se voit encore plus : il allonge le défilement pour ne rien apprendre.
         */}
-        {statutsAProduire && (
-          <div className={styles.docCard}>
-            <div className={styles.docIcon}>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-            </div>
-
-            <div className={styles.docInfo}>
-              <div className={styles.docName}>Statuts mis à jour</div>
-              <div className={styles.docMeta}>
-                <span className={`${styles.docEtat} ${styles.attente}`}>En cours de révision</span>
-                <span>
-                  chaque passage que les décisions changent est repris dans les statuts en
-                  vigueur
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.docActions}>
-              <Link href={adresse("statuts")} className={styles.decisionPrincipale}>
-                Mettre à jour les statuts
-              </Link>
-            </div>
-          </div>
+        {avisAPublier > 0 && (
+          <section id="annonce" className={styles.sectionDuDossier}>
+            <h2 className={styles.sectionDuDossierTitre}>L&apos;annonce légale</h2>
+            <Annonce dossier={dossier.id} route={routeDeLAnnonce} />
+          </section>
         )}
 
-          </>
-        )}
+        
 
-        {/*
-          Écrire au client sans quitter le dossier.
-
-          Il fallait passer par la messagerie, y retrouver le bon fil, puis revenir :
-          on écrivait de mémoire, sans ce qu'on voulait commenter sous les yeux. C'est
-          le même fil - la même table, le même point d'entrée.
-        */}
-        {onglet === "communication" && (
+        <section id="communication" className={styles.sectionDuDossier}>
+          <h2 className={styles.sectionDuDossierTitre}>Les échanges avec le client</h2>
           <Communication
             dossier={dossier.id}
             moi={utilisateur.id}
@@ -891,43 +833,39 @@ export default async function DossierAvocat({
             aVerifier={aVerifier}
             nonLus={nonLus}
           />
-        )}
-
         {/*
           Le journal du dossier, dans son onglet.
-          
           Il s'ouvrait en fenêtre depuis les gestes rapides du récapitulatif : on le
           cherchait dans une colonne, alors qu'il se lit comme le reste du dossier.
         */}
-        {onglet === "historique" && <Historique entrees={entreesDuJournal} />}
+        </section>
 
-        {onglet === "statuts" &&
-          (type === "modification" ? (
-            <Statuts dossier={dossier.id} />
-          ) : (
-            <Vide
-              ton="encart"
-              texte="La retouche des statuts ne concerne que les modifications de société."
-            />
-          ))}
+        <section id="historique" className={styles.sectionDuDossier}>
+          <h2 className={styles.sectionDuDossierTitre}>L&apos;historique</h2>
+        <Historique entrees={entreesDuJournal} />
+        </section>
+
+        </div>
 
         {/*
-          L'écran disait « sur ce dossier, l'annonce légale est publiée par le client »
-          - le contraire de ce que le suivi promet au client, et de ce que la route de
-          déclaration dit d'elle-même. Le cabinet publie, ici comme ailleurs ; ne
-          restent sans avis que les parcours qui n'en font paraître aucun.
+          Ce qui situe le dossier, à côté de ce qu'on y fait.
+          
+          Le suivi et le récapitulatif vivaient chacun dans son onglet : on relisait
+          un acte sans avoir sous les yeux ni la forme de la société, ni son capital,
+          ni l'endroit où le dossier en est. La colonne suit le défilement, parce que
+          c'est pendant la relecture qu'on les consulte.
         */}
-        {onglet === "annonce" &&
-          (avisAPublier > 0 ? (
-            <Annonce dossier={dossier.id} route={routeDeLAnnonce} />
-          ) : (
-            <Vide
-              ton="encart"
-              texte="Ce dossier ne fait paraître aucune annonce légale."
-            />
-          ))}
-
-        {onglet === "dossier" && (
+        <aside className={styles.colonneDossier} aria-label="Le dossier en un coup d’œil">
+            <div id="avancement" className={styles.ancreAvancement}>
+              <Avancement
+                dossierId={dossier.id}
+                type={type}
+                sousPhase={dossier.business_sub_phase}
+                aLeKbis={remis(TYPE_KBIS)}
+                documentFinal={documentFinalDe(type, phaseDeLaFermeture)}
+                aLeRbe={remis(TYPE_RBE)}
+              />
+            </div>
           <div className={styles.recapGrid}>
             <div className={styles.recapGridLeft}>
               <div className={styles.recapCard}>
@@ -1068,25 +1006,44 @@ export default async function DossierAvocat({
                 />
               </div>
 
+              {/*
+                Aller à une section de la même page, non à un onglet.
+                
+                Ces liens menaient aux onglets ; il n'y en a plus. Ils deviennent des
+                ancres : le dossier tient sur un écran, et ce qui reste à faire est de
+                descendre jusqu'à l'endroit qui le porte.
+              */}
               <div className={styles.recapSideCard}>
-                <h3>Actions rapides</h3>
-                {/*
-                  Deux des quatre menaient à des sections qui n'existent plus : les
-                  pièces vivent dans l'onglet des documents, les notes juste au-dessus,
-                  et le journal s'ouvre en fenêtre.
-                */}
+                <h3>Aller à</h3>
                 <div className={styles.recapQuickActions}>
-                  <Link href={adresse("documents")}>Voir les documents</Link>
-                  <Link href={adresse("communication")}>
-                    Écrire au client
+                  <a href="#documents">Les documents</a>
+                  <a href="#communication">
+                    Les échanges
                     {nonLus > 0 && <span className={styles.pastilleRouge}>{nonLus}</span>}
-                  </Link>
-                  <Link href={adresse("historique")}>Voir l&apos;historique</Link>
+                  </a>
+                  <a href="#historique">L&apos;historique</a>
                 </div>
               </div>
             </div>
           </div>
+        </aside>
+
+        {/*
+          L'éditeur des statuts prend la page entière.
+          
+          Rangé dans la colonne du travail, il perdait la moitié de sa largeur : la page
+          du PDF s'affichait plus petite, et avec elle les poignées des cadres - sept
+          pixels de côté au lieu de dix. On ne saisit pas un cadre à cette taille. Un
+          éditeur n'est pas un panneau de lecture : il traverse les deux colonnes.
+        */}
+        <div className={styles.pleineLargeur}>
+{retoucheDesStatuts && (
+          <section id="statuts" className={styles.sectionDuDossier}>
+            <h2 className={styles.sectionDuDossierTitre}>Les statuts</h2>
+            <Statuts dossier={dossier.id} />
+          </section>
         )}
+        </div>
 
       </div>
     </main>

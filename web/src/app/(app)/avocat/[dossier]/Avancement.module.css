@@ -18,6 +18,23 @@
   background: #fff;
 }
 
+/*
+ * Dans la colonne du dossier, l'avancement s'empile.
+ *
+ * Il tenait la largeur de la page, sur une ligne : la légende, les crans, le nom de
+ * l'étape et ses boutons côte à côte. Rangé dans une colonne de trois cent quarante
+ * pixels, « Rien n'est encore annoncé » se coupait sur trois lignes contre la marge.
+ * La mesure du conteneur décide, non celle de l'écran : une requête de conteneur, parce
+ * que la page entière reste large pendant que la colonne, elle, est étroite.
+ */
+@container (max-width: 420px) {
+  .etat {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+}
+
 .legende {
   font-size: 11.5px;
   font-weight: 600;

@@ -127,7 +127,18 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
    */
   await expect(page.getByText("À faire maintenant")).toBeVisible();
   await expect(page.getByText(/Kbis à jour/i).first()).toBeVisible();
-  await expect(page.getByText(/immatriculation|dépôt du capital/i)).toHaveCount(0);
+  /*
+   * L'absence se vérifie sur les tâches, non sur la page entière.
+   *
+   * Le dossier tient désormais sur un seul écran, l'annonce légale comprise. Or l'avis
+   * d'arrivée d'un transfert hors ressort annonce précisément l'immatriculation au
+   * nouveau greffe : le mot y est légitime, et il n'y était pas quand cette section
+   * dormait derrière un onglet. Ce que le test surveille est le vocabulaire de ce
+   * qu'on demande à l'avocat de faire.
+   */
+  await expect(
+    page.locator('section[aria-label="À faire maintenant"]').getByText(/immatriculation|dépôt du capital/i)
+  ).toHaveCount(0);
 });
 
 test("une tâche qui attend autre chose dit quoi", async ({ page }) => {
@@ -262,10 +273,19 @@ test("un dossier de création ne montre pas de statuts à retoucher", async ({ p
   });
   semes.push(creation.id);
 
-  await page.goto("/avocat/" + creation.id + "?onglet=statuts");
-  await expect(page.getByText(/ne concerne que les modifications/)).toBeVisible();
+  await page.goto("/avocat/" + creation.id);
 
-  await page.goto("/avocat/" + creation.id + "?onglet=annonce");
+  /*
+   * La section ne paraît plus du tout.
+   *
+   * Elle existait pour tous les dossiers et s'ouvrait sur un encart d'excuses - « cet
+   * écran ne concerne que les modifications ». Sur une page unique, un titre sans
+   * contenu allonge le défilement pour ne rien apprendre : il vaut mieux qu'il ne soit
+   * pas là.
+   */
+  await expect(page.locator("#statuts")).toHaveCount(0);
+
+  /* L'annonce, elle, concerne bien une création : la constitution s'annonce. */
   await expect(page.getByRole("button", { name: "Marquer comme publiés" })).toBeVisible();
 });
 
@@ -279,8 +299,8 @@ test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {
   const { PDFDocument, StandardFonts } = await import("pdf-lib");
   const dossier = await dossierDeModification();
 
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
-  await expect(page.getByRole("alert").filter({ hasText: /statuts/i })).toBeVisible();
+  await page.goto("/avocat/" + dossier);
+  await expect(page.getByRole("alert").filter({ hasText: /statuts/i }).first()).toBeVisible();
 
   const document = await PDFDocument.create();
   const police = await document.embedFont(StandardFonts.Helvetica);
@@ -293,7 +313,14 @@ test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {
       font: police,
     });
 
-  await page.setInputFiles('input[type="file"]', {
+  /*
+   * Le champ de la section des statuts, non le premier de la page.
+   *
+   * Le dossier tient sur un écran : le premier « input[type=file] » est celui des
+   * documents, et le dépôt partait dans la mauvaise porte - le message rendu n'était
+   * plus « Statuts reçus » mais celui d'un document quelconque.
+   */
+  await page.locator('#statuts input[type="file"]').setInputFiles({
     name: "statuts.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from(await document.save()),
@@ -357,6 +384,15 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   const cadre = page.locator("div[class*='repere']").first();
   await expect(cadre).toBeVisible({ timeout: 30_000 });
 
+  /*
+   * Le cadre entre dans l'écran avant qu'on le vise.
+   *
+   * `boundingBox` rend des coordonnées de fenêtre, et la souris clique là où elles
+   * pointent. Depuis que le dossier tient sur une page, l'éditeur des statuts est loin
+   * sous la ligne de flottaison : les coordonnées tombaient hors de l'écran et le clic
+   * n'atteignait rien.
+   */
+  await cadre.scrollIntoViewIfNeeded();
   const boite = (await cadre.boundingBox())!;
   await page.mouse.move(boite.x + boite.width / 2, boite.y + boite.height / 2);
   await page.mouse.down();
@@ -434,6 +470,15 @@ test("l'historique dit qui a fait quoi, et on revient dessus", async ({ page, re
   // Premier geste : on écrit dans le cadre repéré, pour avoir un état où revenir.
   const cadre = page.locator("div[class*='repere']").first();
   await expect(cadre).toBeVisible({ timeout: 30_000 });
+  /*
+   * Le cadre entre dans l'écran avant qu'on le vise.
+   *
+   * `boundingBox` rend des coordonnées de fenêtre, et la souris clique là où elles
+   * pointent. Depuis que le dossier tient sur une page, l'éditeur des statuts est loin
+   * sous la ligne de flottaison : les coordonnées tombaient hors de l'écran et le clic
+   * n'atteignait rien.
+   */
+  await cadre.scrollIntoViewIfNeeded();
   const boite = (await cadre.boundingBox())!;
   await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
   await page
@@ -664,14 +709,24 @@ test("poser un cadre libre s'atteint sans faire défiler", async ({ page, reques
   });
 
   await page.setViewportSize({ width: 1600, height: 700 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier);
 
   const poser = page.getByRole("button", { name: /Ajouter un cadre libre/ });
   await expect(poser).toBeVisible();
 
-  // Dans la fenêtre, sans défiler : c'est tout l'objet du déplacement.
+  /*
+   * Sans défiler dans l'éditeur, non dans la page.
+   *
+   * La commande se mesurait au haut de la fenêtre, quand l'éditeur occupait l'écran
+   * seul, derrière son onglet. Le dossier tient maintenant sur une page et l'éditeur
+   * vient après le reste : ce qu'on vérifie est qu'une fois arrivé dessus, la commande
+   * est là - non qu'elle soit au sommet du dossier.
+   */
+  const editeur = page.locator("#statuts");
+  await editeur.scrollIntoViewIfNeeded();
+  const hautDeLEditeur = (await editeur.boundingBox())!.y;
   const boite = (await poser.boundingBox())!;
-  expect(boite.y).toBeLessThan(700);
+  expect(boite.y - hautDeLEditeur).toBeLessThan(700);
 
   /*
    * On juge le résultat au panneau, non au nombre de cadres sur la page : un cadre
@@ -858,6 +913,15 @@ test("le texte écrit dans un cadre s'affiche vraiment une fois refermé", async
   );
 
   const cadre = page.locator("div[class*='repere']").first();
+  /*
+   * Le cadre entre dans l'écran avant qu'on le vise.
+   *
+   * `boundingBox` rend des coordonnées de fenêtre, et la souris clique là où elles
+   * pointent. Depuis que le dossier tient sur une page, l'éditeur des statuts est loin
+   * sous la ligne de flottaison : les coordonnées tombaient hors de l'écran et le clic
+   * n'atteignait rien.
+   */
+  await cadre.scrollIntoViewIfNeeded();
   const boite = (await cadre.boundingBox())!;
   await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
 
@@ -922,7 +986,10 @@ test("la barre de mise en forme se règle vraiment", async ({ page, request }) =
     { timeout: 30_000 }
   );
 
-  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  /* Le cadre entre dans l'écran avant qu'on le vise : l'éditeur est bas dans la page. */
+  const cadreVise = page.locator("div[class*='repere']").first();
+  await cadreVise.scrollIntoViewIfNeeded();
+  const boite = (await cadreVise.boundingBox())!;
   await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
   await page.getByRole("button", { name: "Mise en forme" }).click();
 
@@ -1019,7 +1086,10 @@ test("un clic dehors referme le cadre et sa barre", async ({ page, request }) =>
     { timeout: 30_000 }
   );
 
-  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  /* Le cadre entre dans l'écran avant qu'on le vise : l'éditeur est bas dans la page. */
+  const cadreVise = page.locator("div[class*='repere']").first();
+  await cadreVise.scrollIntoViewIfNeeded();
+  const boite = (await cadreVise.boundingBox())!;
   await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
   await page.getByRole("button", { name: "Mise en forme" }).click();
 
@@ -1087,7 +1157,17 @@ test("les poignées montrent ce qui se saisit", async ({ page, request }) => {
     { timeout: 30_000 }
   );
 
-  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  /*
+   * Le cadre est amené au milieu de l'écran, non simplement rendu visible.
+   *
+   * Les poignées se mesurent au pixel près, et l'une d'elles se retrouvait coupée par
+   * le bord de la fenêtre : elle rendait cinquante-huit pixels carrés au lieu de
+   * quatre-vingt-seize. Ce n'est pas la poignée qui a rétréci, c'est l'éditeur qui est
+   * descendu dans la page.
+   */
+  const cadreVise = page.locator("div[class*='repere']").first();
+  await cadreVise.evaluate((e) => e.scrollIntoView({ block: "center" }));
+  const boite = (await cadreVise.boundingBox())!;
   await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
 
   const reperes = await page.evaluate(() => {
@@ -1161,7 +1241,10 @@ test("la taille se règle aussi à la flèche", async ({ page, request }) => {
     { timeout: 30_000 }
   );
 
-  const boite = (await page.locator("div[class*='repere']").first().boundingBox())!;
+  /* Le cadre entre dans l'écran avant qu'on le vise : l'éditeur est bas dans la page. */
+  const cadreVise = page.locator("div[class*='repere']").first();
+  await cadreVise.scrollIntoViewIfNeeded();
+  const boite = (await cadreVise.boundingBox())!;
   await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
   await page.getByRole("button", { name: "Mise en forme" }).click();
 

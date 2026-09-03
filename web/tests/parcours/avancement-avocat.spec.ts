@@ -221,8 +221,19 @@ test.describe("avancement du cabinet", () => {
       buffer: PDF,
     });
 
-    // Le dépôt aboutit, et le dire est ce qui permet d'attendre qu'il ait eu lieu.
-    await expect(page.getByRole("status")).toContainText("déposé", { timeout: 20_000 });
+    /*
+     * Le dépôt s'attend sur son résultat, non sur un message.
+     *
+     * Le test guettait le premier élément de rôle « status » portant « déposé ». Depuis
+     * que le dossier tient sur un écran, l'encart des pièces manquantes est là aussi -
+     * « jamais déposée » - et l'attente passait avant que le fichier soit écrit.
+     */
+    await expect
+      .poll(
+        () => prisma.documents.count({ where: { formalite_id: dossier.id, type: "kbis" } }),
+        { timeout: 20_000 }
+      )
+      .toBe(1);
 
     const depose = await prisma.documents.findFirstOrThrow({
       where: { formalite_id: dossier.id, type: "kbis" },
@@ -739,7 +750,8 @@ test.describe("l'avis de constitution", () => {
 
     await page.goto("/avocat/" + dossier.id + "?onglet=annonce");
     /* Le texte est composé depuis le dossier : il n'y a qu'à le copier. */
-    await expect(page.getByText(new RegExp("AVIS ESSAI"))).toBeVisible();
+    /* Le nom paraît deux fois : en titre de page et dans le récapitulatif de la colonne. */
+    await expect(page.getByRole("heading", { name: /AVIS ESSAI/ })).toBeVisible();
 
     await page.getByRole("button", { name: "Marquer comme publiés" }).click();
 

@@ -56,6 +56,7 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
  * l'ordre, chacune dit pourquoi elle existe, et celle qui attend dit ce qu'elle attend.
  */
 export function Travail({
+  apresLaTacheDuMoment,
   dossiersAPrendre,
   etapePrecedente,
   termineLe,
@@ -69,6 +70,8 @@ export function Travail({
   informationsVerifiees,
   pieces,
 }: {
+  /** Ce qui s'intercale entre la tâche du moment et la liste de ce qui suit. */
+  apresLaTacheDuMoment?: React.ReactNode;
   dossier: number;
   taches: Tache[];
   /** Les pièces du dossier : les tâches montrent celles dont elles parlent. */
@@ -207,7 +210,8 @@ export function Travail({
         setRefus(corps.error ?? "Les actes n'ont pas pu être produits");
         return;
       }
-      setRetour((corps.documents?.length ?? 0) + " actes produits, visibles dans l'onglet Pièces.");
+      /* Les onglets n'existent plus : les actes sont sur la même page, un peu plus bas. */
+      setRetour((corps.documents?.length ?? 0) + " actes produits, ci-dessous.");
       router.refresh();
     });
   }
@@ -994,6 +998,16 @@ export function Travail({
         </section>
       )}
 
+      {/*
+        Les actes se glissent entre la tâche du moment et ce qui viendra.
+        
+        Ils vivaient derrière un onglet, et le travail du jour - relire, corriger,
+        valider - demandait d'en changer. Ils prennent la place qu'ils occupent dans la
+        journée : juste après ce qu'il y a à faire maintenant, avant la liste de ce qui
+        attend.
+      */}
+      {apresLaTacheDuMoment}
+
       {aVenir.length > 0 && (
         <section>
           <h3 className={styles.suiteTitre}>Ensuite</h3>
@@ -1012,9 +1026,7 @@ export function Travail({
         <div className={styles.travailPiedNotes}>
           {actesValides && (
             <p className={styles.renvoi}>
-              Les actes du dossier sont dans{" "}
-              <Link href={"/avocat/" + dossier + "?onglet=documents"}>l&apos;onglet Documents</Link>
-              .
+              Les actes du dossier sont <a href="#documents">un peu plus bas</a>.
             </p>
           )}
 

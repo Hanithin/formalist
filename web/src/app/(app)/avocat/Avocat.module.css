@@ -1186,20 +1186,24 @@
   margin-bottom: 12px;
 }
 /* Layout deux colonnes pour le récap dossier */
+/*
+ * Le récapitulatif tient dans la colonne du dossier, sur une seule file.
+ *
+ * Il occupait la largeur de la page, en deux colonnes : les faits à gauche, les cartes
+ * de contexte à droite. Rangé dans une colonne de trois cent quarante pixels, cette
+ * grille se serrait sur elle-même. Une file suffit - c'est la forme d'une colonne.
+ */
 .recapGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 18px;
-  align-items: start;
-}
-@media (max-width: 1100px) {
-  .recapGrid {
-    grid-template-columns: 1fr;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 .recapGridLeft,
 .recapGridRight {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 .recapSideCard {
   background: #fff;
@@ -1441,8 +1445,36 @@
   height: 20px;
   color: #666;
 }
+/*
+ * Le nom de l'acte prend sa ligne, les gestes prennent la leur.
+ *
+ * La carte posait tout côte à côte : l'icône, le nom, l'état, la date et quatre
+ * boutons. Sur la largeur de la page cela tenait ; dans la colonne du dossier -
+ * sept cents pixels au lieu de mille quatre cents - « Déclaration de non-condamnation
+ * et de filiation » se coupait sur trois lignes contre sa pastille.
+ *
+ * La mesure est celle de la carte, non de l'écran : la page reste large pendant que
+ * la colonne, elle, s'est resserrée.
+ */
 .docInfo {
   flex: 1;
+  min-width: 0;
+}
+
+/*
+ * La mesure est celle de la colonne, non de l'écran.
+ *
+ * Le conteneur se déclare sur le parent : un élément ne peut pas s'interroger
+ * lui-même, et la règle posée sur la carte ne s'appliquait à rien.
+ */
+@container (max-width: 800px) {
+  .docCard {
+    align-items: flex-start;
+    row-gap: 12px;
+  }
+  .docInfo {
+    flex: 1 1 100%;
+  }
 }
 .docName {
   display: block;
@@ -1733,9 +1765,88 @@
   margin: 4px 0 24px;
   border-bottom: 1px solid #eee;
 }
+/*
+ * Le dossier tient sur un écran, en deux colonnes.
+ *
+ * Il vivait derrière six onglets - à faire, documents, récapitulatif, annonce,
+ * communication, historique - et l'avocat qui relisait un acte devait ouvrir l'un pour
+ * voir ce qu'il relit, un autre pour savoir de quelle société il s'agit, un troisième
+ * pour l'annonce. Trois clics pour une seule question, et rien ne tenait sous les yeux
+ * en même temps.
+ *
+ * Les actes sont au centre, ce qui les situe est à droite. La colonne suit le
+ * défilement : le récapitulatif sert pendant qu'on relit, pas avant.
+ */
 .content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 0 28px;
+  align-items: start;
   padding: 16px 48px 48px;
   flex: 1;
+}
+
+.colonnePrincipale {
+  /* Ce qui s'y range se mesure à la colonne : elle a perdu la moitié de sa largeur. */
+  container-type: inline-size;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.colonneDossier {
+  /* Ce qui s'y range se mesure à la colonne, non à l'écran. */
+  container-type: inline-size;
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* Le récapitulatif d'un dossier chargé dépasse la hauteur d'écran : il défile seul. */
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+/*
+ * Sous mille cent pixels, la colonne se range après le travail.
+ *
+ * Elle ne se supprime pas : c'est là que se lisent la forme, le capital et le siège,
+ * qu'on vérifie précisément en relisant les actes.
+ */
+@media (max-width: 1100px) {
+  .content {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .colonneDossier {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* Ce qui a besoin de la page entière traverse les deux colonnes. */
+.pleineLargeur {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+/* Ce qui séparait les onglets sépare maintenant les sections d'une même page. */
+.sectionDuDossier {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-margin-top: 16px;
+}
+
+.sectionDuDossierTitre {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #71717a;
+  text-transform: uppercase;
 }
 @media (max-width: 768px) {
   .topbar {

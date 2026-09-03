@@ -262,24 +262,21 @@ test.describe("espace avocat", () => {
      */
     await expect(page.getByText(/À faire maintenant|Tout est fait sur ce dossier/)).toBeVisible();
     /*
-      Les onglets ont été regroupés : le récapitulatif et les pièces forment « Le
-      dossier », devenu « Récapitulatif », qui accueille aussi les notes internes et le
-      journal - « Coulisses » nommait mal ce qu'il contenait. Les anciennes adresses
-      mènent toujours au bon endroit, mais aucun lien ne porte plus les anciens noms.
+      Le récapitulatif n'est plus derrière un onglet : il tient dans la colonne du
+      dossier, à côté de ce qu'on y fait. On ne clique plus pour le lire.
     */
-    await page.getByRole("link", { name: /^Récapitulatif/ }).first().click();
-    await page.waitForURL(/onglet=dossier/);
 
-    await expect(page.getByRole("heading", { name: "Informations du dossier" })).toBeVisible();
+    /* La tâche du moment s'intitule « Vérifier les informations du dossier » : le
+       titre du récapitulatif se vise exactement. */
+    await expect(
+      page.getByRole("heading", { name: "Informations du dossier", exact: true })
+    ).toBeVisible();
     // Le dossier d'essai est vide : tout doit être annoncé comme non renseigné.
     await expect(page.getByText(/Pas encore renseigné par le client/)).toBeVisible();
   });
 
   test("une note interne s'ajoute et s'affiche", async ({ page }) => {
     await ouvrirLeDossier(page, "PARCOURS EN COURS");
-    /* Les notes ont rejoint le récapitulatif : on les écrit là où l'on relit. */
-    await page.getByRole("link", { name: /^Récapitulatif/ }).first().click();
-    await page.waitForURL(/onglet=dossier/);
 
     const texte = "Point de vigilance " + Date.now();
     /*
@@ -296,8 +293,6 @@ test.describe("espace avocat", () => {
 
   test("une pièce déposée peut être refusée avec son motif", async ({ page }) => {
     await ouvrirLeDossier(page, "PARCOURS EN COURS");
-    await page.getByRole("link", { name: /^Récapitulatif/ }).first().click();
-    await page.waitForURL(/onglet=dossier/);
 
     const boutons = page.getByRole("button", { name: "Demander une autre pièce" });
     if ((await boutons.count()) === 0) test.skip();
