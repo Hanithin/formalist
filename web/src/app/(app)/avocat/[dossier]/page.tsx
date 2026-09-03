@@ -28,6 +28,9 @@ import { publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { aRelire } from "@/domain/document/publication";
 import { Piece, type PieceAffichee } from "./Piece";
+import { Parcours } from "@/app/(app)/creation/Parcours";
+import { ETAPES as ETAPES_DE_CREATION } from "@/domain/formalite/parcours";
+import type { Brouillon } from "@/domain/formalite/parcours";
 import { adresseDuDossier } from "@/domain/formalite/liste";
 import { Corriger } from "./Corriger";
 import { Historique, type EntreeDuJournal } from "./Historique";
@@ -709,6 +712,23 @@ export default async function DossierAvocat({
                     dossier={dossier.id}
                     champs={formulaire.champs}
                     valeurs={formulaire.valeurs}
+                    parcours={
+                      type === "creation" ? (
+                        <Parcours
+                          dansUneFenetre
+                          dossierId={dossier.id}
+                          etapes={ETAPES_DE_CREATION}
+                          etapeCourante={1}
+                          brouillonInitial={donnees as Brouillon}
+                          piecesDeposees={documents
+                            .filter((d) => d.status !== "generated")
+                            .map((d) => ({ type: d.type, nom: d.name }))}
+                          actesProduits={[]}
+                          dernierMot={{ message: null, nonLus: 0 }}
+                          quand={new Date()}
+                        />
+                      ) : undefined
+                    }
                   />
                 </span>
               </div>

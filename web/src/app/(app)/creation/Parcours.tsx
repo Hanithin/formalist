@@ -80,6 +80,18 @@ interface Props {
    * était en train de relire.
    */
   retour?: { adresse: string; libelle: string };
+  /**
+   * Le parcours vit dans une fenêtre, non sur sa page.
+   *
+   * L'avocat corrige le dossier depuis l'espace du cabinet, et veut le formulaire du
+   * client tel qu'il est - ses étapes, ses aides, son « Continuer ». Deux choses ne
+   * suivent pas : l'en-tête de page, qui redirait le nom déjà écrit au-dessus de la
+   * fenêtre, et la colonne du récapitulatif, que le dossier porte déjà à droite.
+   *
+   * L'étape se garde alors ici plutôt que dans l'adresse : pousser une adresse ferait
+   * quitter la page et refermerait la fenêtre à chaque « Continuer ».
+   */
+  dansUneFenetre?: boolean;
 }
 
 /** La coche des étapes franchies. */
@@ -160,6 +172,7 @@ export function Parcours({
   connuDuDossier,
   paiementAnnule,
   retour,
+  dansUneFenetre,
 }: Props) {
   /*
    * Les réponses courantes sont écrites dès l'ouverture, pas à la génération : elles
@@ -227,7 +240,9 @@ export function Parcours({
       router.replace("/creation?dossier=" + identifiant, { scroll: false }),
   });
 
-  const etape = etapes.find((e) => e.numero === etapeCourante) ?? etapes[0];
+  const [etapeDansLaFenetre, setEtapeDansLaFenetre] = useState(etapeCourante);
+  const etapeVue = dansUneFenetre ? etapeDansLaFenetre : etapeCourante;
+  const etape = etapes.find((e) => e.numero === etapeVue) ?? etapes[0];
   const avancement = avancementParcours(brouillon);
 
   const nombreDeManques = Object.keys(anomalies).length;
@@ -374,6 +389,12 @@ export function Parcours({
           [champ]: messages?.[0] ?? corps.error ?? "L'enregistrement a été refusé",
         });
         remonterAuPremierManque(champ);
+        return;
+      }
+
+      if (dansUneFenetre) {
+        setEtapeDansLaFenetre(suite);
+        router.refresh();
         return;
       }
 
@@ -524,6 +545,7 @@ export function Parcours({
 
   return (
     <>
+      {!dansUneFenetre && (
       <div className={styles.tete}>
         {/*
           La date cède la place au retour.
@@ -557,6 +579,7 @@ export function Parcours({
           }
         />
       </div>
+      )}
 
       {/*
         Un seul indicateur d'avancement à la fois.
@@ -1175,7 +1198,7 @@ export function Parcours({
         sa place. Il tenait toute la largeur au-dessus du formulaire, et l'écran se
         lisait comme deux pages posées l'une sur l'autre.
       */}
-      {suivi ? (
+      {dansUneFenetre ? null : suivi ? (
         <aside className={styles.colonneSuivi} aria-label="Suivi de votre dossier">
           {suivi}
         </aside>

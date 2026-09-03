@@ -1854,6 +1854,34 @@
   line-height: 1.5;
 }
 
+/*
+ * La fenêtre s'élargit pour un formulaire entier.
+ *
+ * Sept cent soixante pixels suffisent à une liste de champs ; le parcours du client y
+ * serre ses colonnes, et sa frise de sept étapes n'a plus la place de nommer les
+ * étapes qu'on ne fait pas.
+ */
+.correctionLarge {
+  width: min(1080px, calc(100vw - 32px));
+}
+
+/*
+ * Le parcours du client, rangé dans la fenêtre.
+ *
+ * Il est bâti pour une page : une grille à deux colonnes, dont la seconde - le
+ * récapitulatif - ne suit pas ici. Ce qui reste tient sur une file, et défile comme le
+ * reste de la fenêtre.
+ */
+.correctionParcours {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 6px;
+}
+
 /* Les deux façons de reprendre le dossier, côte à côte. */
 .documentsGestes {
   display: flex;

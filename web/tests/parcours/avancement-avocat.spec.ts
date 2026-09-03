@@ -603,25 +603,29 @@ test.describe("la correction d'un dossier de création", () => {
   test("elle atteint le nom d'un associé et le rejoue dans les actes", async ({ page, request }) => {
     const dossier = await dossierAvecActes("CORRECTION PERSONNE " + Date.now());
 
-    /* La correction vit sous l'onglet des documents, à côté des actes qu'elle reproduit. */
-    await page.goto("/avocat/" + dossier.id + "?onglet=documents");
+    await page.goto("/avocat/" + dossier.id);
     await page.getByRole("button", { name: "Corriger le formulaire" }).click();
 
     const fenetre = page.getByRole("dialog", { name: "Corriger le dossier" });
     await expect(fenetre).toBeVisible();
 
-    /* Chaque personne du dossier a son groupe, sous son rang. */
-    await expect(fenetre.getByRole("heading", { name: "Associé 1" })).toBeVisible();
+    /*
+     * La fenêtre porte le formulaire du client : on rejoint l'associé par son étape,
+     * comme lui l'a rempli, plutôt que par un groupe de champs à plat.
+     */
+    await fenetre.getByRole("button", { name: "Continuer" }).click();
+    await expect(fenetre.getByRole("heading", { level: 2 })).toContainText("Associé");
 
     const nom = fenetre.getByLabel("Nom", { exact: true });
     await expect(nom).toHaveValue("Durand");
     await nom.fill("DURAND-LOMBARD");
 
     /*
-     * La fenêtre ne se ferme qu'une fois les actes reproduits : six documents Word,
-     * plusieurs secondes, et davantage quand la suite tourne à plusieurs.
+     * Le parcours enregistre au fil de la frappe : la fenêtre n'a plus qu'à reproduire.
+     * Elle ne se ferme qu'une fois les six actes refaits - plusieurs secondes, et
+     * davantage quand la suite tourne à plusieurs.
      */
-    await fenetre.getByRole("button", { name: /Enregistrer et reproduire/ }).click();
+    await fenetre.getByRole("button", { name: /Reproduire les actes/ }).click();
     await expect(fenetre).toHaveCount(0, { timeout: 60_000 });
 
     /* La valeur est écrite là où le modèle la range, et le reste de la personne tient. */

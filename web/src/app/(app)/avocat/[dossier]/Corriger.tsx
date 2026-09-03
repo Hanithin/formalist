@@ -23,10 +23,20 @@ export function Corriger({
   dossier,
   champs,
   valeurs,
+  parcours,
 }: {
   dossier: number;
   champs: ChampModification[];
   valeurs: Valeurs;
+  /**
+   * Le formulaire du client, tel qu'il l'a rempli.
+   *
+   * Les champs à plat vont vite pour une coquille et perdent tout ce qui les entoure :
+   * l'ordre des étapes, les aides, les listes de personnes. Quand le parcours du type
+   * sait s'afficher dans une fenêtre - la création aujourd'hui - c'est lui qu'on rend,
+   * avec son « Continuer » d'une étape à l'autre.
+   */
+  parcours?: React.ReactNode;
 }) {
   const [ouverte, setOuverte] = useState(false);
   const [saisie, setSaisie] = useState<Valeurs>(valeurs);
@@ -37,6 +47,35 @@ export function Corriger({
 
   function poser(identifiant: string, valeur: string | number) {
     setSaisie((avant) => ({ ...avant, [identifiant]: valeur }));
+  }
+
+  /*
+   * Le parcours a déjà tout écrit : il ne reste qu'à refaire les actes.
+   *
+   * Envoyer les valeurs des champs à plat écraserait ce que le formulaire vient
+   * d'enregistrer, avec l'état qu'ils avaient à l'ouverture de la fenêtre.
+   */
+  function reproduireSeulement() {
+    setRefus(null);
+    setManques([]);
+
+    demarrer(async () => {
+      const reponse = await fetch("/api/avocat/correction", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, valeurs: {} }),
+      });
+
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "La correction n'a pas abouti");
+        setManques(Array.isArray(retour.manques) ? retour.manques : []);
+        return;
+      }
+
+      setOuverte(false);
+      router.refresh();
+    });
   }
 
   function enregistrer() {
@@ -90,7 +129,9 @@ export function Corriger({
           />
 
           <div
-            className={styles.correction}
+            className={
+              parcours ? `${styles.correction} ${styles.correctionLarge}` : styles.correction
+            }
             role="dialog"
             aria-modal="true"
             aria-label="Corriger le dossier"
@@ -150,6 +191,13 @@ export function Corriger({
               </div>
             )}
 
+            {parcours ? (
+              /*
+                Le parcours enregistre au fil de la frappe : il n'y a rien à
+                soumettre, seulement à reproduire les actes quand on a fini.
+              */
+              <div className={styles.correctionParcours}>{parcours}</div>
+            ) : (
             <div className={styles.correctionChamps}>
               {champs.map((champ, rang) => (
                 <Fragment key={champ.identifiant}>
@@ -175,6 +223,7 @@ export function Corriger({
                 </Fragment>
               ))}
             </div>
+            )}
 
             <div className={styles.correctionActions}>
               <button
@@ -188,10 +237,14 @@ export function Corriger({
               <button
                 type="button"
                 className={styles.decisionValider}
-                onClick={enregistrer}
+                onClick={parcours ? reproduireSeulement : enregistrer}
                 disabled={enCours}
               >
-                {enCours ? "Reproduction…" : "Enregistrer et reproduire les actes"}
+                {enCours
+                  ? "Reproduction…"
+                  : parcours
+                    ? "Reproduire les actes"
+                    : "Enregistrer et reproduire les actes"}
               </button>
             </div>
           </div>

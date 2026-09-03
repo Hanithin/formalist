@@ -63,3 +63,49 @@ test("l'avocat ouvre le formulaire du client, et le décalage se voit", async ({
   await prisma.formalites.delete({ where: { id: d.id } });
   await prisma.$disconnect();
 });
+
+/**
+ * Le formulaire du client, dans la fenêtre de correction.
+ *
+ * Les champs à plat vont vite pour une coquille et perdent ce qui les entoure : l'ordre
+ * des étapes, les aides, les listes de personnes. La fenêtre porte donc le parcours du
+ * client tel qu'il est - même composant, mêmes règles - avec son « Continuer » d'une
+ * étape à l'autre. L'étape se garde alors dans la fenêtre : pousser une adresse la
+ * refermerait à chaque pas.
+ */
+test("la fenêtre porte le formulaire du client, étape par étape", async ({ page }) => {
+  const client = await prisma.users.findFirstOrThrow({ where: { email: "parcours@exemple.test" } });
+  const avocat = await prisma.users.findFirstOrThrow({ where: { email: "avocat-parcours@exemple.test" } });
+  const d = await prisma.formalites.create({
+    data: {
+      user_id: client.id, assigned_avocat_id: avocat.id, type: "creation", forme: "SASU",
+      societe: "FENETRE ESSAI", status: "en_attente_validation", phase: 5, business_sub_phase: "5c",
+      data_json: JSON.stringify({
+        forme: "SASU", denomination: "FENETRE ESSAI", activite: "Conseil", adresse: "3 rue Centrale",
+        codePostal: "33000", ville: "Bordeaux", banque: "Qonto", capital: 1000, capitalLibere: 1000,
+        partsTotales: 100, offre: "business", paye: true, dureeDeVie: 99,
+        dateCloturePremierExercice: "2027-12-31",
+        associes: [{ type: "physique", parts: 100, versement: 1000, personne: {
+          civilite: "Monsieur", prenom: "Camille", nom: "Durand", dateDeNaissance: "1985-04-12",
+          villeDeNaissance: "Bordeaux", adresse: "3 rue Centrale", codePostal: "33000", ville: "Bordeaux" } }],
+        dirigeants: [{ associe: 0 }],
+      }),
+    },
+  });
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/avocat/" + d.id);
+  await page.getByRole("button", { name: "Corriger le formulaire" }).click();
+
+  const fenetre = page.getByRole("dialog", { name: "Corriger le dossier" });
+  await expect(fenetre.getByRole("heading", { name: "Informations de la société" })).toBeVisible();
+  await expect(fenetre.getByLabel("Nom de la société")).toHaveValue("FENETRE ESSAI");
+
+  /* Le « Continuer » du client mène à l'étape suivante, sans quitter la fenêtre. */
+  await fenetre.getByRole("button", { name: "Continuer" }).click();
+  await expect(fenetre.getByRole("heading", { level: 2 })).toContainText("Associé");
+  await expect(page.getByRole("dialog", { name: "Corriger le dossier" })).toBeVisible();
+
+  await prisma.audit_log.deleteMany({ where: { formalite_id: d.id } });
+  await prisma.formalites.delete({ where: { id: d.id } });
+});
