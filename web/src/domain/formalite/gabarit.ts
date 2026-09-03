@@ -828,6 +828,17 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   donnees.LE_SOUSSIGNE = dirigeanteEstUneFemme ? "La soussignée" : "Le soussigné";
   donnees.DONT_IL_EST = dirigeanteEstUneFemme ? "dont elle est" : "dont il est";
 
+  /*
+   * Le titre du dirigeant, quand il qualifie la personne.
+   *
+   * « Madame Amel BELOUAFI, président de cette assemblée », « dont elle est gérant » :
+   * le titre est ici l'attribut d'une femme, et il s'accorde. Les articles des statuts
+   * - « Le Président est nommé pour une durée fixée par les associés » - désignent
+   * l'organe et non celle qui l'occupe : ils restent au masculin, comme le code de
+   * commerce les écrit.
+   */
+  donnees.DIRIGEANTE_EST_UNE_FEMME = dirigeanteEstUneFemme;
+
   // La société associée, quand le premier associé est une personne morale.
   societeSous("", premier?.societe ?? {}, donnees);
   donnees.SOCIETE_SIEGE = ou(premier?.societe?.adresse);
@@ -1049,6 +1060,18 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   donnees.IDENTITE_GERANT = societeDirigeante
     ? societeDesignee(societeDirigeante)
     : identitePhysique(dirigeant);
+
+  /*
+   * Qui signe l'attestation de domiciliation.
+   *
+   * Le corps de l'acte est celui du dirigeant - c'est lui qui met son logement à
+   * disposition - mais la ligne de signature portait « {{CIVILITE_NOM_PRENOM_1}} »,
+   * c'est-à-dire le premier associé. Dès que le gérant n'est pas cet associé, l'acte
+   * s'ouvrait au nom de l'un et se signait au nom de l'autre.
+   */
+  donnees.CIVILITE_NOM_PRENOM_DIRIGEANT = societeDirigeante
+    ? societeDirigeante.denomination ?? ""
+    : civiliteNomPrenom(dirigeant);
 
   donnees.DG_1_EST_HOMME = personneDuDirigeant(generaux[0], tous).civilite === "Monsieur";
   donnees.DG_1_EST_FEMME = personneDuDirigeant(generaux[0], tous).civilite === "Madame";

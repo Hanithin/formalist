@@ -141,3 +141,133 @@ describe("l'accord en genre des statuts", () => {
     expect(texte).toContain("QU’IL A DÉCIDÉ DE CONSTITUER");
   });
 });
+
+/**
+ * Les autres actes du jeu, quand toutes les signataires sont des femmes.
+ *
+ * Les statuts s'accordaient déjà - leurs mots sont en capitales suivies d'espaces. Nulle
+ * part ailleurs : en JavaScript, « \b » se définit sur [A-Za-z0-9_], et « soussigné\b »
+ * exigeait donc une lettre après le « é ». Devant une espace ou un point - c'est-à-dire
+ * partout - la règle ne s'appliquait jamais. La liste des souscripteurs ouvrait sur
+ * « L'associé unique soussigné » et le procès-verbal sur « le soussigné », pour une
+ * femme seule à signer.
+ *
+ * L'accord ne peut pas porter sur un mot isolé : « présent » désigne une personne dans
+ * « est présent au siège » et un acte dans « le présent procès-verbal », et le
+ * « Président » des articles de statuts est un organe, non celle qui l'occupe.
+ */
+describe("l'accord en genre des autres actes", () => {
+  const jeu = (civilites: ("Madame" | "Monsieur")[], dirigeant = 0) => ({
+    forme: civilites.length > 1 ? "SARL" : "SASU",
+    denomination: "ROSEBERRY CAPITAL",
+    activite: "Le conseil",
+    adresse: "34 Rue Laugier",
+    codePostal: "75017",
+    ville: "Paris",
+    modeDomiciliation: "Domicile personnel du dirigeant",
+    occupationDomicile: "Propriétaire",
+    banque: "Qonto",
+    capital: 1000,
+    partsTotales: 100,
+    associes: civilites.map((civilite, rang) => ({
+      type: "physique",
+      parts: rang === 0 ? 60 : 40,
+      versement: rang === 0 ? 600 : 400,
+      personne: {
+        civilite,
+        prenom: rang === 0 ? "Amel" : "Karim",
+        nom: rang === 0 ? "Belouafi" : "Nadir",
+        dateDeNaissance: "1996-01-27",
+        villeDeNaissance: "Argenteuil",
+        nationalite: "Française",
+        nomDuPere: "BELOUAFI Karim",
+        nomDeLaMere: "SAADI Nadia",
+        adresse: "34 Rue Laugier",
+        codePostal: "75017",
+        ville: "Paris",
+      },
+    })),
+    dirigeants: [{ associe: dirigeant }],
+  });
+
+  const texte = (gabarit: string, brouillon: unknown) =>
+    new PizZip(genererDocument(gabarit, donneesDeGabarit(brouillon as never)))
+      .file("word/document.xml")!
+      .asText()
+      .replace(/<[^>]+>/g, "");
+
+  it("ouvre la liste des souscripteurs au féminin", () => {
+    expect(texte("sasu-liste-souscripteurs.docx", jeu(["Madame"]))).toContain(
+      "L’associée unique soussignée"
+    );
+    expect(texte("sarl-liste-souscripteurs.docx", jeu(["Madame", "Madame"]))).toContain(
+      "Les associées soussignées"
+    );
+    expect(texte("sas-liste-souscripteurs.docx", jeu(["Madame", "Madame"]))).toContain(
+      "Les actionnaires soussignées"
+    );
+  });
+
+  it("accorde la présence et le titre dans le procès-verbal", () => {
+    const seule = texte("sasu-pv-nomination.docx", jeu(["Madame"]));
+    expect(seule).toContain("est présente au siège de la société, la soussignée");
+    expect(seule).toContain("présidente de cette assemblée");
+
+    const deux = texte("sarl-pv-nomination.docx", jeu(["Madame", "Madame"]));
+    expect(deux).toContain("sont présentes au siège de la société, les soussignées");
+  });
+
+  it("accorde l'attestation de domiciliation, jusqu'au titre sous la signature", () => {
+    const attestation = texte("sarl-attestation-domicile.docx", jeu(["Madame", "Madame"]));
+    expect(attestation).toContain("La soussignée");
+    expect(attestation).toContain("résidente habituelle");
+    expect(attestation).toContain("dont elle est gérante");
+    expect(attestation).toMatch(/Madame Amel BELOUAFI\s*Gérante/);
+  });
+
+  /*
+   * L'attestation est celle du dirigeant : c'est lui qui met son logement à disposition.
+   * Elle se signait pourtant au nom du premier associé - ouverte au nom de l'un, signée
+   * au nom de l'autre dès que le gérant n'était pas cet associé.
+   */
+  it("signe l'attestation au nom du dirigeant, pas du premier associé", () => {
+    const attestation = texte(
+      "sarl-attestation-domicile.docx",
+      jeu(["Madame", "Monsieur"], 1)
+    );
+    expect(attestation).toContain("Le soussigné :Monsieur Karim NADIR");
+    expect(attestation).toMatch(/Monsieur Karim NADIR\s*Gérant\b/);
+    expect(attestation).not.toContain("Amel");
+  });
+
+  /* Le masculin l'emporte dès qu'un homme signe : ne rien accorder à tort. */
+  it("laisse le masculin quand un homme signe", () => {
+    const deux = texte("sarl-pv-nomination.docx", jeu(["Madame", "Monsieur"], 1));
+    expect(deux).toContain("sont présents au siège de la société, les soussignés");
+    expect(deux).toContain("président de cette assemblée");
+    /* Chaque personne garde son propre participe : elle est née, il est né. */
+    expect(deux).toContain("Madame Amel BELOUAFI, née le");
+    expect(deux).toContain("Monsieur Karim NADIR, né le");
+  });
+
+  /*
+   * Les articles des statuts décrivent un organe. « Le Président est nommé pour une
+   * durée fixée par les associés » ne parle pas de celle qui l'occupe, et le code de
+   * commerce l'écrit ainsi : l'accord s'arrête à ce qui désigne la signataire.
+   */
+  /*
+   * Le titre suit la personne qui l'occupe, non la composition du capital : une gérante
+   * préside l'assemblée de deux associés dont l'un est un homme.
+   */
+  it("accorde le titre sur la dirigeante, même en présence d'un associé", () => {
+    const deux = texte("sarl-pv-nomination.docx", jeu(["Madame", "Monsieur"], 0));
+    expect(deux).toContain("les soussignés");
+    expect(deux).toContain("présidente de cette assemblée");
+  });
+
+  it("ne touche pas aux articles qui décrivent un organe", () => {
+    const statuts = texte("sasu-statuts.docx", jeu(["Madame"]));
+    expect(statuts).toContain("Le Président est nommé");
+    expect(statuts).toContain("les présents statuts");
+  });
+});

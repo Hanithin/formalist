@@ -1297,32 +1297,106 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   /*
    * Ce que les gabarits écrivent au masculin, accordé.
    *
-   * « L'ASSOCIÉ UNIQUE SOUSSIGNÉ », « né le », « QU'IL A DÉCIDÉ DE CONSTITUER » : ces
-   * mots sont dans le modèle Word, hors de portée des variables. Une associée unique
-   * lisait donc un acte qui parlait d'elle au masculin, du titre jusqu'à la formule de
-   * constitution - dans des statuts déposés au greffe.
+   * « L'ASSOCIÉ UNIQUE SOUSSIGNÉ », « né le », « fils de », « QU'IL A DÉCIDÉ DE
+   * CONSTITUER » : ces mots sont dans les modèles Word, hors de portée des variables.
+   * Une femme seule à signer lisait donc un acte qui parlait d'elle au masculin, du
+   * titre à la formule de clôture - dans des pièces déposées au greffe.
    *
    * L'accord ne se fait que si aucun homme ne signe : le masculin l'emporte dès qu'il y
-   * en a un, il ne s'impose pas quand il n'y en a aucun. Les apostrophes sont écrites
-   * des deux façons dans les gabarits, droite et courbe.
+   * en a un, il ne s'impose pas quand il n'y en a aucun.
+   *
+   * Ce qui désigne une fonction ne s'accorde pas ici - « le Président », « le
+   * Liquidateur », « un mandataire désigné » nomment un organe, non la personne qui
+   * l'occupe, et les statuts les emploient au masculin quel que soit le titulaire.
+   * L'accord porte sur celui ou celle qui signe.
+   *
+   * Les apostrophes sont écrites des deux façons dans les gabarits, droite et courbe.
    */
   if (data && data.TOUTES_DES_FEMMES) {
     const seule = !data.HAS_ASSOC_2;
-    const accords = seule
-      ? [
-          [/L[’']ASSOCIÉ UNIQUE SOUSSIGNÉ/g, "L’ASSOCIÉE UNIQUE SOUSSIGNÉE"],
-          [/L[’']ACTIONNAIRE UNIQUE SOUSSIGNÉ/g, "L’ACTIONNAIRE UNIQUE SOUSSIGNÉE"],
-          [/QU[’']IL A DÉCIDÉ DE CONSTITUER/g, "QU’ELLE A DÉCIDÉ DE CONSTITUER"],
-          [/A ÉTABLI/g, "A ÉTABLI"],
-        ]
-      : [
-          [/LES ASSOCIÉS SOUSSIGNÉS/g, "LES ASSOCIÉES SOUSSIGNÉES"],
-          [/QU[’']ILS ONT DÉCIDÉ DE CONSTITUER/g, "QU’ELLES ONT DÉCIDÉ DE CONSTITUER"],
-        ];
+
+    /*
+     * Pas de « \b » après une lettre accentuée.
+     *
+     * En JavaScript, la limite de mot se définit sur [A-Za-z0-9_] : « é » n'en fait pas
+     * partie, et « soussigné\b » exige donc que le caractère suivant soit une lettre.
+     * Devant une espace ou un point - c'est-à-dire toujours - la règle ne s'appliquait
+     * jamais. Les accords passaient sur les statuts, dont les mots sont en capitales
+     * suivies d'espaces, et nulle part ailleurs.
+     */
+    const accords = [
+      /* Le titre de l'acte, puis la formule qui ouvre le corps. */
+      [/L[’']associé unique soussigné(?!e)/g, "L’associée unique soussignée"],
+      [/L[’']ASSOCIÉ UNIQUE SOUSSIGNÉ(?!E)/g, "L’ASSOCIÉE UNIQUE SOUSSIGNÉE"],
+      [/\bLes associés soussignés/g, "Les associées soussignées"],
+      [/\bLES ASSOCIÉS SOUSSIGNÉS/g, "LES ASSOCIÉES SOUSSIGNÉES"],
+      [/\bLes actionnaires soussignés/g, "Les actionnaires soussignées"],
+      [/\bLes soussignés/g, "Les soussignées"],
+      [/\bles soussignés/g, "les soussignées"],
+      [/\bLES SOUSSIGNÉS/g, "LES SOUSSIGNÉES"],
+      [/\bLe soussigné(?!e)/g, "La soussignée"],
+      [/\ble soussigné(?!e)/g, "la soussignée"],
+      [/\bLE SOUSSIGNÉ(?!E)/g, "LA SOUSSIGNÉE"],
+      /* Ce qui reste sans article : « Je soussigné », « soussignés, agissant… ». */
+      [/\bsoussignés\b/g, "soussignées"],
+      [/\bsoussigné(?!e)/g, "soussignée"],
+      [/\bSOUSSIGNÉS\b/g, "SOUSSIGNÉES"],
+      [/\bSOUSSIGNÉ(?!E)/g, "SOUSSIGNÉE"],
+      /*
+       * La présence à l'assemblée, ancrée sur le siège : partout ailleurs, « le présent »
+       * et « les présents » qualifient l'acte, non la personne qui le signe.
+       */
+      [/\best présent au siège/g, "est présente au siège"],
+      [/\bsont présents au siège/g, "sont présentes au siège"],
+      /* L'état civil et le domicile. */
+      [/([,\s])né le/g, "$1née le"],
+      [/\bfils de\b/g, "fille de"],
+      [/\bdomicilié(?!e)/g, "domiciliée"],
+      [/\bdont il est\b/g, "dont elle est"],
+      [/\brésident habituel(?!le)/g, "résidente habituelle"],
+    ];
+
+    if (seule) {
+      accords.push(
+        [/L[’']ASSOCIÉ UNIQUE/g, "L’ASSOCIÉE UNIQUE"],
+        [/L[’']associé unique/g, "L’associée unique"],
+        [/QU[’']IL A DÉCIDÉ/g, "QU’ELLE A DÉCIDÉ"],
+        [/qu[’']il a décidé/g, "qu’elle a décidé"]
+      );
+    } else {
+      accords.push(
+        [/LES ASSOCIÉS SOUSSIGNÉS/g, "LES ASSOCIÉES SOUSSIGNÉES"],
+        [/QU[’']ILS ONT DÉCIDÉ/g, "QU’ELLES ONT DÉCIDÉ"]
+      );
+    }
 
     for (const [motif, remplacement] of accords) docXml = docXml.replace(motif, remplacement);
-    /* « né le » se dit d'une personne : le rang ne change rien, seul le genre. */
-    docXml = docXml.replace(/([,\s])né le\b/g, "$1née le");
+  }
+
+  /*
+   * Le titre de la dirigeante, là où il la qualifie.
+   *
+   * « Madame Amel BELOUAFI, président de cette assemblée », « dont elle est gérant » :
+   * le titre est ici l'attribut d'une femme. Les articles des statuts - « Le Président
+   * est nommé pour une durée fixée par les associés » - désignent l'organe et non celle
+   * qui l'occupe : ils gardent le masculin du code de commerce, et cette passe ne les
+   * touche pas.
+   *
+   * L'étiquette seule sous la ligne de signature n'est reprise que dans l'attestation
+   * de domiciliation : ailleurs, « Président » isolé dans un paragraphe appartient au
+   * corps des statuts.
+   */
+  if (data && data.DIRIGEANTE_EST_UNE_FEMME) {
+    docXml = docXml
+      .replace(/dont elle est ([Gg])érant\b/g, "dont elle est $1érante")
+      .replace(/dont elle est ([Pp])résident\b/g, "dont elle est $1résidente")
+      .replace(/, ([pP])résident de cette assemblée/g, ", $1résidente de cette assemblée");
+
+    if (/domicil/i.test(nomDuGabarit || "")) {
+      docXml = docXml
+        .replace(/>Gérant<\/w:t>/g, ">Gérante</w:t>")
+        .replace(/>Président<\/w:t>/g, ">Présidente</w:t>");
+    }
   }
 
   docXml = docXml.replace(/\bde\s+Etude Notariale [Dd]e Maître/g, "de l'Étude notariale de Maître");
