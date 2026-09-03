@@ -34,10 +34,12 @@ export default async function Creation({
     etape?: string;
     session?: string;
     paiement?: string;
+    /* D'où l'on vient : l'espace avocat s'y renvoie lui-même. */
+    retour?: string;
   }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { dossier, etape, session, paiement } = await searchParams;
+  const { dossier, etape, session, paiement, retour } = await searchParams;
 
   /*
    * Le retour de paiement est relu avant tout affichage.
@@ -196,6 +198,12 @@ export default async function Creation({
           quand={new Date()}
           dernierMot={dernierMot}
           paiementAnnule={paiement === "annule"}
+          /* Le retour ne se déduit pas du rôle : c'est l'adresse d'où l'on vient qui le dit. */
+          retour={
+            retour && retour.startsWith("/avocat/")
+              ? { adresse: retour, libelle: "Le dossier au cabinet" }
+              : undefined
+          }
           connuDuDossier={
             ligne
               ? {

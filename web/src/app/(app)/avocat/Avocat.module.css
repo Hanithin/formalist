@@ -1837,6 +1837,31 @@
   }
 }
 
+/*
+ * Les actes ne correspondent plus au dossier.
+ *
+ * Ni rouge ni encadré : ce n'est pas une panne, c'est un décalage qui se rattrape d'un
+ * clic. Le fond ambré est celui des pièces manquantes, pour la même raison - quelque
+ * chose attend, rien n'est cassé.
+ */
+.actesPerimes {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fdf6e7;
+  color: #8a6116;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* Les deux façons de reprendre le dossier, côte à côte. */
+.documentsGestes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* Ce qui a besoin de la page entière traverse les deux colonnes. */
 .pleineLargeur {
   grid-column: 1 / -1;

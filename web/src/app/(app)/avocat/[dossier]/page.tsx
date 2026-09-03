@@ -28,6 +28,7 @@ import { publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { aRelire } from "@/domain/document/publication";
 import { Piece, type PieceAffichee } from "./Piece";
+import { adresseDuDossier } from "@/domain/formalite/liste";
 import { Corriger } from "./Corriger";
 import { Historique, type EntreeDuJournal } from "./Historique";
 import { Communication, type MessageDuFil } from "./Communication";
@@ -173,6 +174,34 @@ export default async function DossierAvocat({
    * Activité, Capital social - sous « Le client n'a encore rien renseigné ». La société
    * est immatriculée depuis des années ; c'est son exercice qu'on approuve.
    */
+  /*
+   * Les actes datent-ils d'avant la dernière correction ?
+   *
+   * L'avocat peut reprendre le dossier dans le formulaire du client, qui enregistre au
+   * fil de la frappe. Un capital corrigé là-bas laisse les actes tels quels : les
+   * statuts déposés diraient une chose, le dossier une autre, et rien ne le dirait.
+   *
+   * La production pose sa date en dernier ; toute écriture postérieure porte donc une
+   * date plus récente. Une seconde de marge absorbe l'écart entre les deux écritures
+   * d'une même production.
+   */
+  const produitsLe = documents
+    .filter((d) => d.uploaded_by === "system" && d.created_at)
+    .reduce<number>((tard, d) => Math.max(tard, d.created_at!.getTime()), 0);
+
+  /*
+   * Les deux dates viennent de la même source.
+   *
+   * Une marque posée par l'application et comparée à une colonne écrite par la base ne
+   * se comparent pas : deux minutes d'écart suffisent à mentir dans un sens comme dans
+   * l'autre. La date des actes est celle de leur ligne, celle du dossier est la sienne,
+   * et les deux passent par le même chemin.
+   *
+   * Cinq secondes de marge : produire les actes touche le dossier au passage, et les
+   * deux écritures d'une même production ne sont pas un décalage.
+   */
+  const actesPerimes = produitsLe > 0 && dossier.updated_at.getTime() > produitsLe + 5_000;
+
   const sections = estUneModification(donnees)
     ? recapitulatifDeModification(donnees)
     : dossier.type === "comptes"
@@ -634,6 +663,21 @@ export default async function DossierAvocat({
               apresLaTacheDuMoment={
           <section id="documents" className={styles.sectionDuDossier}>
             <h2 className={styles.sectionDuDossierTitre}>Les documents du dossier</h2>
+              {/*
+                Ce qui est dit ne correspond plus à ce qui est écrit.
+                
+                Le dossier a changé après la production : les actes portent encore les
+                valeurs d'avant. Le dire ici, au-dessus d'eux, plutôt que de laisser
+                déposer au greffe des statuts qui contredisent le dossier dont ils
+                sortent.
+              */}
+              {actesPerimes && (
+                <p className={styles.actesPerimes} role="alert">
+                  Le dossier a changé depuis la production des actes. Reproduisez-les
+                  avant de les valider, sinon ils diront autre chose que le dossier.
+                </p>
+              )}
+
               <div className={styles.documentsTete}>
                 <h3 className={styles.sectionTitre}>Documents du dossier</h3>
                 {/*
@@ -642,11 +686,31 @@ export default async function DossierAvocat({
                   suivant la reprenait, et le document remis ne correspondait plus aux
                   données dont il sortait.
                 */}
-                <Corriger
-                  dossier={dossier.id}
-                  champs={formulaire.champs}
-                  valeurs={formulaire.valeurs}
-                />
+                <span className={styles.documentsGestes}>
+                  {/*
+                    Le vrai formulaire, avec ses étapes.
+                    
+                    La fenêtre de correction rend les champs à plat : elle va vite pour
+                    une coquille, et perd ce qui les entoure - l'ordre des étapes, les
+                    aides, les listes de personnes. L'avocat assigné a toujours eu le
+                    droit de modifier le dossier ; le parcours du client s'ouvre donc
+                    tel quel, avec ce que le client avait sous les yeux.
+                  */}
+                  <Link
+                    href={
+                      adresseDuDossier(dossier) +
+                      "&retour=" + encodeURIComponent("/avocat/" + dossier.id)
+                    }
+                    className={styles.decisionSecondaire}
+                  >
+                    Ouvrir le formulaire
+                  </Link>
+                  <Corriger
+                    dossier={dossier.id}
+                    champs={formulaire.champs}
+                    valeurs={formulaire.valeurs}
+                  />
+                </span>
               </div>
           {/*
             Ce que le dossier réclame et qui n'y est pas.

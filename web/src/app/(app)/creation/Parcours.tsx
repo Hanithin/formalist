@@ -71,6 +71,15 @@ interface Props {
   connuDuDossier?: { denomination: string | null; forme: string | null; capital: number | null };
   /** Le client revient d'un paiement qu'il a abandonné : rien n'a été débité. */
   paiementAnnule?: boolean;
+  /**
+   * D'où l'on vient, quand ce n'est pas de ses propres formalités.
+   *
+   * L'avocat assigné peut reprendre le dossier dans ce formulaire - c'est le même que
+   * celui du client, avec ses étapes et ses aides. Le renvoyer vers « Mes formalités »
+   * le sortirait de l'espace du cabinet sans chemin de retour vers le dossier qu'il
+   * était en train de relire.
+   */
+  retour?: { adresse: string; libelle: string };
 }
 
 /** La coche des étapes franchies. */
@@ -150,6 +159,7 @@ export function Parcours({
   quand,
   connuDuDossier,
   paiementAnnule,
+  retour,
 }: Props) {
   /*
    * Les réponses courantes sont écrites dès l'ouverture, pas à la génération : elles
@@ -529,7 +539,7 @@ export function Parcours({
           quand={quand}
           sansDate
           action={
-            <Link href="/formalites" className={styles.retour}>
+            <Link href={retour?.adresse ?? "/formalites"} className={styles.retour}>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -542,7 +552,7 @@ export function Parcours({
                 <line x1="19" y1="12" x2="5" y2="12" />
                 <polyline points="12 19 5 12 12 5" />
               </svg>
-              Mes formalités
+              {retour?.libelle ?? "Mes formalités"}
             </Link>
           }
         />
