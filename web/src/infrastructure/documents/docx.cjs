@@ -1312,7 +1312,14 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
    *
    * Les apostrophes sont écrites des deux façons dans les gabarits, droite et courbe.
    */
-  if (data && data.TOUTES_DES_FEMMES) {
+  /*
+   * La déclaration de confidentialité est signée par la société, non par une personne :
+   * « le Déclarant » y désigne la personne morale qui dépose ses comptes. La civilité de
+   * qui détient le capital n'y accorde rien.
+   */
+  const signeParUnePersonneMorale = /confidentialite/i.test(nomDuGabarit || "");
+
+  if (data && data.TOUTES_DES_FEMMES && !signeParUnePersonneMorale) {
     const seule = !data.HAS_ASSOC_2;
 
     /*
@@ -1352,14 +1359,61 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
       [/([,\s])né le/g, "$1née le"],
       [/\bfils de\b/g, "fille de"],
       [/\bdomicilié(?!e)/g, "domiciliée"],
-      [/\bdont il est\b/g, "dont elle est"],
       [/\brésident habituel(?!le)/g, "résidente habituelle"],
+      /*
+       * La présence en assemblée, dans les procès-verbaux des autres parcours.
+       *
+       * « Sont présents : » ouvre la liste des personnes. Le « ce dont il est justifié
+       * par le présent acte » du procès-verbal d'assemblée porte au contraire un « il »
+       * impersonnel : c'est pourquoi rien ici ne s'accroche au seul mot.
+       */
+      [/\bSont présents\b/g, "Sont présentes"],
+      /*
+       * L'associée unique des actes de décision.
+       *
+       * « L'associé unique décide de transférer le siège social » nomme celle qui décide,
+       * et l'acte porte sa signature. Les articles de statuts - « en cas d'associé unique,
+       * les prérogatives revenant aux associés sont exercées par l'associé unique » -
+       * décrivent l'organe. Ils s'écrivent en minuscule, et la majuscule suffit donc à
+       * séparer les deux : dans tous les gabarits, « L'associé unique » commence la
+       * phrase de celle qui décide.
+       *
+       * L'apostrophe se capture au lieu de s'écrire : le texte venu des données arrive
+       * échappé - « L&apos;associé unique donne au liquidateur » - et le remplacer par une
+       * apostrophe courbe poserait deux graphies dans la même phrase.
+       */
+      [/L((?:[’']|&apos;))associé unique/g, "L$1associée unique"],
+      [/L((?:[’']|&apos;))associée unique, consulté\b/g, "L$1associée unique, consultée"],
+      [/L((?:[’']|&apos;))ASSOCIÉ UNIQUE/g, "L$1ASSOCIÉE UNIQUE"],
+      /*
+       * En minuscule, l'accord se gagne sur le verbe ou sur la phrase qui l'entoure : la
+       * même graphie sert aux articles de statuts, qu'il ne faut pas toucher.
+       */
+      [
+        /l((?:[’']|&apos;))associé unique(?=,?\s(?:approuve|décide|prend acte|donne|constate|prononce|nomme|confère|statuant|consulté|après avoir))/g,
+        "l$1associée unique",
+      ],
+      [
+        /registre des décisions de l((?:[’']|&apos;))associé unique/g,
+        "registre des décisions de l$1associée unique",
+      ],
+      [/signé par l((?:[’']|&apos;))associé unique/g, "signé par l$1associée unique"],
+      [/attention de l((?:[’']|&apos;))associé unique/g, "attention de l$1associée unique"],
+      [/qualité d((?:[’']|&apos;))associé unique/g, "qualité d$1associée unique"],
+      [/, associé unique de la société/g, ", associée unique de la société"],
+      /*
+       * Le titre du dirigeant, là encore quand il qualifie la signataire : « agissant en
+       * qualité d'associée unique et de Président » désigne une seule personne, et c'est
+       * elle. Le titre reste au masculin dans les articles qui décrivent l'organe.
+       */
+      [
+        /qualité d((?:[’']|&apos;))associée unique et de ([PG])(résident|érant)\b/g,
+        "qualité d$1associée unique et de $2$3e",
+      ],
     ];
 
     if (seule) {
       accords.push(
-        [/L[’']ASSOCIÉ UNIQUE/g, "L’ASSOCIÉE UNIQUE"],
-        [/L[’']associé unique/g, "L’associée unique"],
         [/QU[’']IL A DÉCIDÉ/g, "QU’ELLE A DÉCIDÉ"],
         [/qu[’']il a décidé/g, "qu’elle a décidé"]
       );

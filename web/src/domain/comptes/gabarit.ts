@@ -1,5 +1,6 @@
 import { adresseSurUneLigne as adresseDuSiege, adresseLisible } from "@/domain/modification/gabarit";
 import { sirenLisible } from "@/domain/modification/annonce";
+import { toutesDesFemmes } from "@/domain/formalite/etat-civil";
 import { natureDeLaForme, fonctionDuDirigeant } from "@/domain/formalite/formes";
 /**
  * Ce que les actes d'approbation ont besoin de savoir.
@@ -239,6 +240,15 @@ export function donneesDesComptes(contexte: ContexteComptes): Record<string, unk
     IS_UNIPERSONNELLE: unipersonnelle,
     IS_ASSEMBLEE: !unipersonnelle,
     ORGANE: organe,
+
+    /*
+     * Ce que les gabarits Word écrivent au masculin, accordé quand toutes signent.
+     *
+     * « Sont présents », « L'associé unique décide », « le soussigné » sont dans les
+     * modèles, hors de portée des variables. La passe de génération les accorde sur ce
+     * drapeau ; le masculin l'emporte dès qu'un homme signe.
+     */
+    TOUTES_DES_FEMMES: toutesDesFemmes(associes),
     /*
      * Le dirigeant se saisit en trois champs ; l'acte l'écrit sur une ligne. Les
      * dossiers commencés avant le découpage gardent leur ligne libre : elle sert de

@@ -1,4 +1,5 @@
 import { natureDeLaForme, fonctionsDuDirigeant } from "@/domain/formalite/formes";
+import { toutesDesFemmes } from "@/domain/formalite/etat-civil";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { agrementDeDroit, cessionsRedigees, nomDeLAssocie, type Cession } from "./cession";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
@@ -610,15 +611,24 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      * unique » : deux accords fautifs dans la même ligne, sur un acte qui part au
      * greffe et que l'intéressée signe.
      *
-     * Seule cette phrase-là est accordée. Ailleurs, « l'associé unique décide »
-     * désigne l'organe et non la personne : c'est la formule des actes, et la
-     * réécrire quinze fois par gabarit ferait courir un risque sans rien corriger.
-     *
      * Une société associée unique - une holding détenant sa filiale - reste au
      * masculin : « le soussigné » y renvoie à un associé, non à quelqu'un.
      */
     SOUSSIGNE: feminin ? "La soussignée" : "Le soussigné",
     QUALITE_ASSOCIE_UNIQUE: feminin ? "associée unique" : "associé unique",
+    /*
+     * Ce que les gabarits Word écrivent au masculin, accordé quand toutes signent.
+     *
+     * « Sont présents », « L'associé unique décide de transférer le siège social » sont
+     * dans les modèles, hors de portée des variables : dix-sept mentions par décision.
+     * La passe de génération les accorde sur ce drapeau, et le masculin l'emporte dès
+     * qu'un homme signe.
+     *
+     * Le drapeau se lit sur les associés du contexte, non sur la liste rendue : celle-ci
+     * remplace une dénomination absente par un tiret, et chaque personne physique y
+     * passerait pour une société.
+     */
+    TOUTES_DES_FEMMES: toutesDesFemmes(assemblee.associes ?? []),
     ASSOCIES: associes,
     ASSOCIE_LISTE: associes.length
       ? associes

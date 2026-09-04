@@ -10,6 +10,7 @@
 import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
 import { dateEnFrancais, dateDeTitre, sirenLisible } from "@/domain/formalite/lettres";
 import { echeancesDe, type Nature, type Periodicite } from "./regles";
+import { toutesDesFemmes } from "@/domain/formalite/etat-civil";
 
 const TIRET = "-";
 
@@ -98,6 +99,11 @@ export function donneesDeLaCessation(contexte: ContexteCessation): Record<string
     ENTREPRENEUR_ADRESSE: ou(texte(entrepreneur.adresse), adresseSurUneLigne(entreprise)),
     /* L'accord se lit sur la civilité, non sur un indicateur séparé qui pourrait la contredire. */
     SOUSSIGNE: femme ? "Je soussignée" : "Je soussigné",
+    /*
+     * L'entrepreneur individuel signe seul : le drapeau que la passe de génération lit
+     * pour accorder les autres parcours vaut ici sur cette seule civilité.
+     */
+    TOUTES_DES_FEMMES: toutesDesFemmes([entrepreneur]),
     INSCRIT: femme ? "inscrite" : "inscrit",
 
     /* ------------------------------------------------------- La cessation */

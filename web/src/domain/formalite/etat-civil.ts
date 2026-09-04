@@ -143,3 +143,30 @@ export function nomDeLaPartie(partie: {
   if (partie.type === "morale") return partie.societe?.denomination?.trim() ?? "";
   return nomComplet(partie.personne ?? {});
 }
+
+/**
+ * Toutes les signataires sont-elles des femmes ?
+ *
+ * La question se pose dans les quatre parcours, et chacun y répondait à sa façon - ou
+ * n'y répondait pas. Elle se décide sur la civilité saisie, jamais sur le prénom :
+ * deviner le genre d'après un prénom se trompe, et se trompe justement sur les noms que
+ * la France compte le moins.
+ *
+ * Trois réponses possibles, et une seule accorde :
+ *
+ * - personne à qui poser la question - un acte entre sociétés - reste au masculin ;
+ * - un seul homme parmi les signataires suffit à garder le masculin, qui l'emporte ;
+ * - une civilité manquante compte comme un homme, faute de savoir : mieux vaut un acte
+ *   au masculin qu'un acte accordé à tort au nom de quelqu'un.
+ *
+ * Une personne morale ne compte pas : une société n'a pas de genre grammatical, et
+ * l'écarter permet à une associée unique de signer face à une holding sans que l'acte
+ * repasse au masculin.
+ */
+export function toutesDesFemmes(
+  signataires: { civilite?: string | null; denomination?: string | null }[]
+): boolean {
+  const personnes = signataires.filter((s) => !s.denomination?.trim());
+  if (personnes.length === 0) return false;
+  return personnes.every((s) => /^(madame|mademoiselle|mme)$/i.test((s.civilite ?? "").trim()));
+}

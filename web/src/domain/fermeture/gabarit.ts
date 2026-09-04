@@ -1,5 +1,6 @@
 import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
 import { natureDeLaForme } from "@/domain/formalite/formes";
+import { toutesDesFemmes } from "@/domain/formalite/etat-civil";
 /**
  * Ce que les actes de fermeture ont besoin de savoir.
  *
@@ -244,6 +245,19 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
     VILLE_SIGNATURE: ou(texte(societe.ville)),
     /* Même table que partout ailleurs : trois formes nommées ici en oubliaient douze. */
     MOT_TITRES: natureDeLaForme(forme).titres,
+
+
+    /*
+     * Ce que les gabarits Word écrivent au masculin, accordé quand toutes signent.
+     *
+     * « Sont présents », « L'associé unique décide », « le soussigné » sont dans les
+     * modèles, hors de portée des variables. La passe de génération les accorde sur ce
+     * drapeau ; le masculin l'emporte dès qu'un homme signe.
+     */
+    TOUTES_DES_FEMMES: toutesDesFemmes([
+      ...associes,
+      { civilite: texte(valeurs.liquidateurCivilite) },
+    ]),
 
     /* -------------------------------------------------------- Qui décide */
     IS_UNIPERSONNELLE: unipersonnelle,
