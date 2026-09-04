@@ -164,9 +164,15 @@ test("les documents ouvrent la page, la colonne dit ce qui manque", async ({ pag
   await expect(colonne.getByText("Aperçu")).toHaveCount(0);
   await expect(colonne.getByText("Aller à")).toHaveCount(0);
 
-  /* Les notes internes se lisent avec les échanges et le journal, non dans la colonne. */
+  /*
+   * Les notes, le journal et l'avis tiennent chacun derrière un bouton : aucun ne se
+   * consulte en continu, et tous les trois s'interposaient entre l'avocat et les actes.
+   * Il reste sur la page ce sur quoi on travaille - les documents, et la conversation.
+   */
   await expect(colonne.getByText("Notes internes")).toHaveCount(0);
-  await expect(page.locator("#notes")).toBeVisible();
+  await expect(page.getByRole("button", { name: /notes?$/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Le journal" })).toBeVisible();
+  await expect(page.locator("#communication")).toBeVisible();
 });
 
 /**
@@ -248,11 +254,14 @@ test("les deux avis sont rédigés, et ils diffèrent", async ({ page }) => {
    * d'arrivée l'immatriculation. Publier deux fois le même est la faute courante.
    */
   const dossier = await dossierDeModification();
-  await page.goto("/avocat/" + dossier + "?onglet=annonce");
+  await page.goto("/avocat/" + dossier);
 
-  await expect(page.getByRole("heading", { name: /2 avis à publier/ })).toBeVisible();
+  /* L'avis tient derrière son bouton : le compte est dans le titre de la fenêtre. */
+  await page.getByRole("button", { name: "L'avis à publier" }).click();
+  const avis = page.getByRole("dialog", { name: /2 avis à publier/ });
+  await expect(avis).toBeVisible();
 
-  const textes = await page.locator("pre").allTextContents();
+  const textes = await avis.locator("pre").allTextContents();
   expect(textes).toHaveLength(2);
   expect(textes[0]).toContain("radiée du registre du commerce et des sociétés de Paris");
   expect(textes[1]).toContain("immatriculée au registre du commerce et des sociétés de Lyon");
@@ -267,9 +276,13 @@ test("les deux avis sont rédigés, et ils diffèrent", async ({ page }) => {
 test("la publication se déclare, et le suivi du client avance", async ({ page }) => {
   // Il n'y a pas d'attestation de parution : le client a payé pour ne pas s'en occuper.
   const dossier = await dossierDeModification("5c");
-  await page.goto("/avocat/" + dossier + "?onglet=annonce");
+  await page.goto("/avocat/" + dossier);
 
-  await page.getByRole("button", { name: "Marquer comme publiés" }).click();
+  await page.getByRole("button", { name: "L'avis à publier" }).click();
+  await page
+    .getByRole("dialog", { name: /avis à publier/ })
+    .getByRole("button", { name: "Marquer comme publiés" })
+    .click();
   await expect(page.getByText("Publication déclarée")).toBeVisible();
 
   const apres = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } });
@@ -382,7 +395,7 @@ test("un dossier de création ne montre pas de statuts à retoucher", async ({ p
   await expect(page.locator("#statuts")).toHaveCount(0);
 
   /* L'annonce, elle, concerne bien une création : la constitution s'annonce. */
-  await expect(page.getByRole("button", { name: "Marquer comme publiés" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "L'avis à publier" })).toBeVisible();
 });
 
 test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {

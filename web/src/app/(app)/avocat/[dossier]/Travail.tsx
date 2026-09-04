@@ -72,6 +72,7 @@ const ANCRES: Record<string, string> = {
 
 export function Travail({
   apresLaTacheDuMoment,
+  volets,
   dossiersAPrendre,
   etapePrecedente,
   termineLe,
@@ -86,6 +87,14 @@ export function Travail({
 }: {
   /** Ce qui s'intercale entre la tâche du moment et la liste de ce qui suit. */
   apresLaTacheDuMoment?: React.ReactNode;
+  /**
+   * Les sections du dossier rangées derrière leur bouton.
+   *
+   * Elles viennent de la page, qui seule sait lesquelles ont lieu d'être - un dossier
+   * sans annonce à publier n'a pas de bouton pour elle - et se posent sur la ligne qui
+   * dit où l'on est, avec le compte des étapes.
+   */
+  volets?: React.ReactNode;
   dossier: number;
   taches: Tache[];
   /** Les pièces du dossier : les tâches montrent celles dont elles parlent. */
@@ -906,17 +915,20 @@ export function Travail({
           greffe.
         </p>
 
-        {restantes.length > 0 && (
-          <button
-            type="button"
-            className={styles.situationEtapes}
-            onClick={() => setEtapesOuvertes(true)}
-          >
-            {restantes.length === 1
-              ? "1 étape à faire"
-              : restantes.length + " étapes à faire"}
-          </button>
-        )}
+        <span className={styles.situationVolets}>
+          {restantes.length > 0 && (
+            <button
+              type="button"
+              className={styles.situationEtapes}
+              onClick={() => setEtapesOuvertes(true)}
+            >
+              {restantes.length === 1
+                ? "1 étape à faire"
+                : restantes.length + " étapes à faire"}
+            </button>
+          )}
+          {volets}
+        </span>
       </div>
 
       {/*

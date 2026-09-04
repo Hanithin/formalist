@@ -124,10 +124,14 @@ export function Annonce({
 
   return (
     <div className={styles.travail}>
+      {/*
+        Le titre est celui de la fenêtre.
+        
+        La section portait le sien - « L'avis à publier » - sous celui du volet qui
+        l'ouvre : deux intitulés à deux lignes d'écart, dont le second ne disait rien de
+        plus. Le compte des avis est remonté dans le titre du volet, qui le connaît.
+      */}
       <div className={styles.travailTete}>
-        <h2 className={styles.titre}>
-          {avis.length === 1 ? "L'avis à publier" : "Les " + avis.length + " avis à publier"}
-        </h2>
         {publies ? (
           <button
             type="button"

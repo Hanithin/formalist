@@ -33,6 +33,7 @@ import type { Brouillon } from "@/domain/formalite/parcours";
 import { Corriger } from "./Corriger";
 import { Historique, type EntreeDuJournal } from "./Historique";
 import { Communication, type MessageDuFil } from "./Communication";
+import { Volet } from "./Volet";
 import { PriseEnCharge } from "./PriseEnCharge";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
 import { documentFinalDe, libelleSousPhase } from "@/domain/formalite/cabinet";
@@ -582,6 +583,57 @@ export default async function DossierAvocat({
             */}
 
             <Travail
+              /*
+               * L'avis, le journal et les notes tiennent chacun dans un bouton.
+               *
+               * Ils s'interposaient entre l'avocat et les actes qu'il vient lire : trois
+               * sections dépliées en permanence, dont l'une porte le texte de l'avis en
+               * toutes lettres. Aucune ne se consulte en continu - on publie l'avis une
+               * fois, on relit le journal quand quelque chose cloche.
+               */
+              volets={
+                <>
+                  {avisAPublier > 0 && (
+                    <Volet
+                      libelle="L'avis à publier"
+                      titre={
+                        avisAPublier === 1
+                          ? "L'avis à publier"
+                          : "Les " + avisAPublier + " avis à publier"
+                      }
+                      large
+                    >
+                      <Annonce dossier={dossier.id} route={routeDeLAnnonce} />
+                    </Volet>
+                  )}
+
+                  <Volet libelle="Le journal" titre="L'historique du dossier" large>
+                    <Historique entrees={entreesDuJournal} />
+                  </Volet>
+
+                  <Volet
+                    libelle={notes.length > 0 ? notes.length + " notes" : "Les notes"}
+                    titre="Les notes internes"
+                  >
+                    {/*
+                      L'avertissement tenait dans un encadré violet de trois lignes : il
+                      pesait plus que les notes qu'il annonce. Une ligne grise suffit.
+                    */}
+                    <p className={styles.notesMention}>
+                      Votre équipe seulement. Le client ne les voit jamais.
+                    </p>
+                    <Notes
+                      dossierId={dossier.id}
+                      notes={notes.map((n) => ({
+                        id: n.id,
+                        contenu: n.content,
+                        auteur: n.users?.name ?? "Inconnu",
+                        date: n.created_at?.toISOString() ?? null,
+                      }))}
+                    />
+                  </Volet>
+                </>
+              }
               apresLaTacheDuMoment={
           <section id="documents" className={styles.sectionDuDossier}>
               {/*
@@ -751,68 +803,19 @@ export default async function DossierAvocat({
         */}
 
         {/*
-          Une section qui n'a rien à dire ne s'affiche pas.
-          
-          Les onglets avaient ce défaut : « Annonce légale » et « Statuts » existaient
-          pour tous les dossiers, et s'ouvraient sur un encart d'excuses - « ce dossier
-          ne fait paraître aucune annonce ». Sur une page unique, un titre sans contenu
-          se voit encore plus : il allonge le défilement pour ne rien apprendre.
+          Les échanges restent sur la page : écrire au client fait partie du travail.
+
+          Relire un acte et le commenter se fait d'un même geste, et une conversation
+          rangée derrière un bouton ne se voit plus. La colonne qui l'accompagnait, elle,
+          redisait le nom du client et deux compteurs déjà à l'écran.
         */}
-        {avisAPublier > 0 && (
-          <section id="annonce" className={styles.sectionDuDossier}>
-            <h2 className={styles.sectionDuDossierTitre}>L&apos;annonce légale</h2>
-            <Annonce dossier={dossier.id} route={routeDeLAnnonce} />
-          </section>
-        )}
-
-        
-
         <section id="communication" className={styles.sectionDuDossier}>
           <h2 className={styles.sectionDuDossierTitre}>Les échanges avec le client</h2>
           <Communication
             dossier={dossier.id}
             moi={utilisateur.id}
             messages={fil}
-            client={{ nom: client?.name ?? "Client", courriel: client?.email ?? null }}
-            documents={documents.length}
-            aVerifier={aVerifier}
             nonLus={nonLus}
-          />
-        {/*
-          Le journal du dossier, dans son onglet.
-          Il s'ouvrait en fenêtre depuis les gestes rapides du récapitulatif : on le
-          cherchait dans une colonne, alors qu'il se lit comme le reste du dossier.
-        */}
-        </section>
-
-        <section id="historique" className={styles.sectionDuDossier}>
-          <h2 className={styles.sectionDuDossierTitre}>L&apos;historique</h2>
-        <Historique entrees={entreesDuJournal} />
-        </section>
-
-        {/*
-          Les notes internes se lisent avec les échanges et le journal : elles disent ce
-          qui s'est passé sur le dossier, comme eux. Dans la colonne, elles voisinaient
-          avec ce que le dossier porte - la forme, le capital, ce qui manque - qu'on
-          consulte en relisant un acte et qui ne se rédige pas.
-        */}
-        <section id="notes" className={styles.sectionDuDossier}>
-          <h2 className={styles.sectionDuDossierTitre}>Les notes internes</h2>
-          {/*
-            L'avertissement tenait dans un encadré violet de trois lignes : il pesait
-            plus que les notes qu'il annonce. Une ligne grise suffit.
-          */}
-          <p className={styles.notesMention}>
-            Votre équipe seulement. Le client ne les voit jamais.
-          </p>
-          <Notes
-            dossierId={dossier.id}
-            notes={notes.map((n) => ({
-              id: n.id,
-              contenu: n.content,
-              auteur: n.users?.name ?? "Inconnu",
-              date: n.created_at?.toISOString() ?? null,
-            }))}
           />
         </section>
 

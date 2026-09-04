@@ -2726,6 +2726,11 @@
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
 }
 
+/* L'avis et le journal se lisent large ; les étapes tiennent en colonne. */
+.fenetreLarge {
+  width: min(900px, calc(100vw - 40px));
+}
+
 .fenetreEtapesTete {
   display: flex;
   align-items: center;
@@ -3931,18 +3936,6 @@ button.ligneCorps:disabled {
  * Écrire au client demandait de le quitter, d'y retrouver le bon fil, puis de revenir :
  * on écrivait de mémoire, sans ce qu'on voulait commenter sous les yeux.
  */
-/*
- * La conversation dans un panneau, et ce qu'il faut savoir à côté.
- *
- * Les bulles flottaient sur le fond de la page, la barre d'écriture plus bas, sans
- * rien qui les tienne ensemble : deux messages et l'écran paraissait vide.
- */
-.filGrille {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  align-items: start;
-  gap: 20px;
-}
 
 .fil {
   display: flex;
@@ -3961,72 +3954,11 @@ button.ligneCorps:disabled {
 }
 
 @media (max-width: 1100px) {
-  .filGrille {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 
-/* ---------- Ce qu'on a sous les yeux en écrivant ---------- */
-
-.filColonne {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.filFiche {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
-  border: 1px solid #ececee;
-  border-radius: 14px;
-  background: #fff;
-}
-
-.filFicheNom {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
-}
-
-.filFicheMail {
-  font-size: 12.5px;
-  color: #a1a1aa;
-  overflow-wrap: anywhere;
-}
-
-.filFicheLigne {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
-  color: #71717a;
-}
-
-/* Un compte qui mène quelque part se comporte comme un lien : il s'allume au survol. */
-.filFicheLien {
-  margin: 0 -8px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: background 0.12s ease, color 0.12s ease;
-}
-
-.filFicheLien:hover {
-  background: #f4f4f5;
-  color: #111;
-}
-
-.filFicheNombre {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  color: #111;
 }
 
 .filFicheNote {
-  margin: 0;
+  margin: 10px 0 0;
   padding: 0 4px;
   font-size: 12px;
   line-height: 1.5;
@@ -4304,23 +4236,8 @@ button.ligneCorps:disabled {
 
 /* ---------- L'historique du dossier ---------- */
 
-/*
- * Le journal, dans son panneau.
- *
- * Il occupait le bas du récapitulatif, déroulé quel que soit son âge, puis une fenêtre
- * ouverte depuis les gestes rapides - où on ne la cherchait pas. Il a son onglet.
- */
-.journalGrille {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  align-items: start;
-  gap: 20px;
-}
-
 @media (max-width: 1100px) {
-  .journalGrille {
-    grid-template-columns: minmax(0, 1fr);
-  }
+
 }
 
 .journal {
@@ -4335,32 +4252,6 @@ button.ligneCorps:disabled {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0;
-  color: #111;
-}
-
-/* ---------- La colonne du journal ---------- */
-
-.journalColonne {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.journalColonneTitre {
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: #a1a1aa;
-}
-
-.journalAuteur {
-  font-size: 13px;
-  color: #111;
-}
-
-.journalDate {
-  font-size: 12px;
   color: #111;
 }
 

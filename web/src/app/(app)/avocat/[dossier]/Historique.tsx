@@ -31,13 +31,8 @@ export function Historique({ entrees }: { entrees: EntreeDuJournal[] }) {
   const montrees = entrees.slice(0, visibles);
   const restantes = entrees.length - montrees.length;
 
-  /* Qui est intervenu : le journal ne dit que les gestes, pas qui les a faits. */
-  const auteurs = [...new Set(entrees.map((e) => e.auteur))];
-
   return (
-    <div className={styles.journalGrille}>
     <section className={styles.journal} aria-label="Historique du dossier">
-      <h3 className={styles.journalTitre}>Historique du dossier</h3>
 
       {entrees.length === 0 ? (
         <p className={styles.journalVide}>Aucune intervention enregistrée.</p>
@@ -95,46 +90,18 @@ export function Historique({ entrees }: { entrees: EntreeDuJournal[] }) {
           <span className={styles.journalReste}>{restantes} restantes</span>
         </button>
       )}
-    </section>
 
-    <aside className={styles.journalColonne}>
-      <div className={styles.filFiche}>
-        <div className={styles.filFicheLigne}>
-          <span>Interventions</span>
-          <span className={styles.filFicheNombre}>{entrees.length}</span>
-        </div>
-        {entrees.length > 0 && (
-          <>
-            <div className={styles.filFicheLigne}>
-              <span>Dernière</span>
-              <span className={styles.journalDate}>{entrees[0].quand}</span>
-            </div>
-            <div className={styles.filFicheLigne}>
-              <span>Première</span>
-              <span className={styles.journalDate}>
-                {entrees[entrees.length - 1].quand}
-              </span>
-            </div>
-          </>
-        )}
-      </div>
+      {/*
+        Une trace qui ne s'efface pas.
 
-      {auteurs.length > 0 && (
-        <div className={styles.filFiche}>
-          <span className={styles.journalColonneTitre}>Sont intervenus</span>
-          {auteurs.map((auteur) => (
-            <span key={auteur} className={styles.journalAuteur}>
-              {auteur}
-            </span>
-          ))}
-        </div>
-      )}
-
+        La phrase vivait dans une colonne qui comptait par ailleurs les interventions, la
+        première et la dernière - trois nombres que le journal donne ligne par ligne,
+        juste à côté.
+      */}
       <p className={styles.filFicheNote}>
         Rien ne s&apos;efface ici : c&apos;est cette trace qui permet d&apos;instruire un
         litige, et le client n&apos;y a pas accès.
       </p>
-    </aside>
-    </div>
+    </section>
   );
 }

@@ -774,11 +774,19 @@ test.describe("l'avis de constitution", () => {
     await expect(etapes.getByText("Publier l'avis de constitution")).toBeVisible();
 
     await page.goto("/avocat/" + dossier.id);
-    /* Le texte est composé depuis le dossier : il n'y a qu'à le copier. */
     /* Le nom paraît deux fois : en titre de page et dans le récapitulatif de la colonne. */
     await expect(page.getByRole("heading", { name: /AVIS ESSAI/ })).toBeVisible();
 
-    await page.getByRole("button", { name: "Marquer comme publiés" }).click();
+    /*
+     * L'avis tient derrière son bouton : on le publie une fois, et son texte en toutes
+     * lettres s'interposait en permanence entre l'avocat et les actes qu'il vient lire.
+     */
+    await page.getByRole("button", { name: "L'avis à publier" }).click();
+    const avis = page.getByRole("dialog", { name: /avis à publier/ });
+    /* Le texte est composé depuis le dossier : il n'y a qu'à le copier. */
+    await expect(avis.getByRole("button", { name: "Copier le texte" })).toBeVisible();
+
+    await avis.getByRole("button", { name: "Marquer comme publiés" }).click();
 
     await expect
       .poll(async () => {
@@ -796,8 +804,13 @@ test.describe("l'avis de constitution", () => {
       data: { dossier: dossier.id, publies: true },
     });
 
-    await page.goto("/avocat/" + dossier.id + "?onglet=annonce");
-    await expect(page.getByRole("button", { name: "Revenir sur la publication" })).toBeVisible();
+    await page.goto("/avocat/" + dossier.id);
+    await page.getByRole("button", { name: "L'avis à publier" }).click();
+    await expect(
+      page
+        .getByRole("dialog", { name: /avis à publier/ })
+        .getByRole("button", { name: "Revenir sur la publication" })
+    ).toBeVisible();
   });
 });
 

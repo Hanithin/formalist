@@ -76,14 +76,17 @@ test.describe("notes internes", () => {
     const { dossiers } = await (await request.get("/api/formalites")).json();
     const dossier = dossiers.find((d: { societe: string }) => d.societe === "PARCOURS EN COURS");
 
-    // Les notes internes ont leur onglet dans la fiche.
-    await page.goto("/avocat/" + dossier.id + "?onglet=notes");
+    /* Les notes tiennent derrière leur bouton : elles ne se consultent pas en continu. */
+    await page.goto("/avocat/" + dossier.id);
+    await page.getByRole("button", { name: /notes?$/i }).click();
+    const volet = page.getByRole("dialog", { name: "Les notes internes" });
+
     const texte = "Note à supprimer " + Date.now();
-    await page.getByLabel("Ajouter une note").fill(texte);
+    await volet.getByLabel("Ajouter une note").fill(texte);
     /* Le bouton dit « Ajouter » : le formulaire est déjà celui des notes, et « la
        note » y répétait ce que le champ d'à côté annonce. */
-    await page.getByRole("button", { name: "Ajouter", exact: true }).click();
-    await expect(page.getByText(texte)).toBeVisible();
+    await volet.getByRole("button", { name: "Ajouter", exact: true }).click();
+    await expect(volet.getByText(texte)).toBeVisible();
 
     // On retrouve son identifiant par l'API, faute de bouton dédié pour l'instant.
     const notes = await request.post("/api/avocat/notes", {

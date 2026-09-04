@@ -285,11 +285,15 @@ test.describe("espace avocat", () => {
      * note » a cédé la place à un champ qui porte son propre nom, et le bouton dit
      * simplement « Ajouter ».
      */
-    await page.getByLabel("Ajouter une note interne").fill(texte);
-    await page.getByRole("button", { name: "Ajouter", exact: true }).click();
+    /* Les notes tiennent derrière leur bouton, avec les autres sections rangées. */
+    await page.getByRole("button", { name: /notes?$/i }).click();
+    const volet = page.getByRole("dialog", { name: "Les notes internes" });
 
-    await expect(page.getByText(texte)).toBeVisible();
-    await expect(page.getByText("Maître Dupont").first()).toBeVisible();
+    await volet.getByLabel("Ajouter une note interne").fill(texte);
+    await volet.getByRole("button", { name: "Ajouter", exact: true }).click();
+
+    await expect(volet.getByText(texte)).toBeVisible();
+    await expect(volet.getByText("Maître Dupont").first()).toBeVisible();
   });
 
   test("une pièce déposée peut être refusée avec son motif", async ({ page }) => {
@@ -311,9 +315,16 @@ test.describe("espace avocat", () => {
 
     /*
      * L'intervention est tracée : c'est ce qui permet d'instruire un litige. Le journal
-     * la dit en français - il affichait sa clé de base, « document_refuse ».
+     * la dit en français - il affichait sa clé de base, « document_refuse ». Il tient
+     * derrière son bouton : on le relit quand quelque chose cloche, non en continu.
      */
-    await expect(page.getByText("Justificatif refusé").first()).toBeVisible();
+    await page.getByRole("button", { name: "Le journal" }).click();
+    await expect(
+      page
+        .getByRole("dialog", { name: "L'historique du dossier" })
+        .getByText("Justificatif refusé")
+        .first()
+    ).toBeVisible();
   });
 });
 

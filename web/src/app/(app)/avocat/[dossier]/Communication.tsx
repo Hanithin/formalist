@@ -25,18 +25,12 @@ export function Communication({
   dossier,
   moi,
   messages,
-  client,
-  documents,
-  aVerifier,
   nonLus,
 }: {
   dossier: number;
   /** Pour distinguer ce que le cabinet a écrit de ce que le client répond. */
   moi: number;
   messages: MessageDuFil[];
-  client: { nom: string; courriel: string | null };
-  documents: number;
-  aVerifier: number;
   /** Ce que le client a écrit et qu'on n'avait pas encore ouvert. */
   nonLus: number;
 }) {
@@ -98,7 +92,6 @@ export function Communication({
   }
 
   return (
-    <div className={styles.filGrille}>
     <section className={styles.fil} aria-label="Conversation avec le client">
       {messages.length === 0 ? (
         <p className={styles.filVide}>
@@ -227,47 +220,20 @@ export function Communication({
           </button>
         </div>
       </div>
-    </section>
-
-    {/*
-      Ce qu'on a sous les yeux en écrivant.
-      
-      Écrire au client demandait de se rappeler de tête à qui l'on parle et où en est
-      son dossier : la colonne le dit, et mène à ce qu'on veut lui commenter.
-    */}
-    <aside className={styles.filColonne}>
-      <div className={styles.filFiche}>
-        <span className={styles.filFicheNom}>{client.nom}</span>
-        {client.courriel && (
-          <span className={styles.filFicheMail}>{client.courriel}</span>
-        )}
-      </div>
 
       {/*
-        Les deux comptes mènent où ils se lisent.
+        Ce fil est celui de la messagerie.
 
-        Ils annonçaient un nombre sans donner le chemin : voir de quels documents il
-        s'agit demandait de repartir dans les onglets, en haut de la page, et de
-        retrouver lequel les portait. Les onglets ont disparu ; le lien est devenu
-        l'ancre de la section, sur la même page.
+        La phrase vivait dans une colonne de deux cent quatre-vingts pixels qui redisait
+        par ailleurs le nom du client et deux compteurs déjà à l'écran. Elle seule
+        apprenait quelque chose : elle passe sous la barre d'écriture, qui est une ligne
+        et ne peut rien contenir d'autre.
       */}
-      <div className={styles.filFiche}>
-        <a className={`${styles.filFicheLigne} ${styles.filFicheLien}`} href="#documents">
-          <span>Documents au dossier</span>
-          <span className={styles.filFicheNombre}>{documents}</span>
-        </a>
-        <a className={`${styles.filFicheLigne} ${styles.filFicheLien}`} href="#documents">
-          <span>Pièces à vérifier</span>
-          <span className={styles.filFicheNombre}>{aVerifier}</span>
-        </a>
-      </div>
-
       <p className={styles.filFicheNote}>
         Ce fil est celui de la messagerie : ce que vous écrivez ici arrive dans la sienne,
         et dans la vôtre.
       </p>
-    </aside>
-    </div>
+    </section>
   );
 }
 
