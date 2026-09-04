@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "../Avocat.module.css";
 
@@ -249,23 +248,18 @@ export function Communication({
 
         Ils annonçaient un nombre sans donner le chemin : voir de quels documents il
         s'agit demandait de repartir dans les onglets, en haut de la page, et de
-        retrouver lequel les portait.
+        retrouver lequel les portait. Les onglets ont disparu ; le lien est devenu
+        l'ancre de la section, sur la même page.
       */}
       <div className={styles.filFiche}>
-        <Link
-          className={`${styles.filFicheLigne} ${styles.filFicheLien}`}
-          href={"/avocat/" + dossier + "?onglet=documents"}
-        >
+        <a className={`${styles.filFicheLigne} ${styles.filFicheLien}`} href="#documents">
           <span>Documents au dossier</span>
           <span className={styles.filFicheNombre}>{documents}</span>
-        </Link>
-        <Link
-          className={`${styles.filFicheLigne} ${styles.filFicheLien}`}
-          href={"/avocat/" + dossier + "?onglet=documents"}
-        >
+        </a>
+        <a className={`${styles.filFicheLigne} ${styles.filFicheLien}`} href="#documents">
           <span>Pièces à vérifier</span>
           <span className={styles.filFicheNombre}>{aVerifier}</span>
-        </Link>
+        </a>
       </div>
 
       <p className={styles.filFicheNote}>

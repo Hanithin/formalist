@@ -19,7 +19,6 @@ import { Statuts } from "./Statuts";
 import { Annonce } from "./Annonce";
 import {
   travailDuCabinet,
-  prochaineTache,
   typeDeDossier,
   type TypeDeDossier,
 } from "@/domain/formalite/cabinet";
@@ -31,7 +30,6 @@ import { Piece, type PieceAffichee } from "./Piece";
 import { Parcours } from "@/app/(app)/creation/Parcours";
 import { ETAPES as ETAPES_DE_CREATION } from "@/domain/formalite/parcours";
 import type { Brouillon } from "@/domain/formalite/parcours";
-import { adresseDuDossier } from "@/domain/formalite/liste";
 import { Corriger } from "./Corriger";
 import { Historique, type EntreeDuJournal } from "./Historique";
 import { Communication, type MessageDuFil } from "./Communication";
@@ -64,46 +62,6 @@ const CHAMPS: { cle: string; libelle: string }[] = [
   { cle: "capitalLibere", libelle: "Capital libéré" },
 ];
 
-/*
- * Cinq onglets au plus, et seulement ceux qui servent.
- *
- * Il y en avait huit, tous affichés quel que soit le dossier - « Statuts » sur une
- * création qui n'en a pas à retoucher, « Annonce légale » sur une cession qui n'en
- * publie aucune. Chercher où l'on travaille prenait plus de temps que le travail.
- *
- * Le travail d'abord, puis les documents, puis le récapitulatif - qu'on relit rarement,
- * et jamais avant de savoir ce qu'il reste à faire.
- *
- * « Coulisses » nommait mal ce qu'il contenait - des notes internes et un journal - et
- * les cachait derrière un mot qui ne dit rien. Les deux rejoignent le bas du
- * récapitulatif, où l'on relit le dossier.
- */
-const ONGLETS = [
-  "travail",
-  "documents",
-  "dossier",
-  "statuts",
-  "annonce",
-  "communication",
-  "historique",
-] as const;
-type Onglet = (typeof ONGLETS)[number];
-
-/*
- * Les anciens noms d'onglets mènent toujours quelque part.
- *
- * Ils sont écrits dans les tâches du domaine, dans les liens des écrans, et dans les
- * adresses que l'on a pu mettre en signet : « ?onglet=pieces » doit ouvrir la section
- * des pièces, non retomber en silence sur « À faire ».
- */
-const ALIAS: Record<string, Onglet> = {
-  recapitulatif: "dossier",
-  pieces: "documents",
-  avancement: "travail",
-  notes: "dossier",
-  journal: "dossier",
-  coulisses: "dossier",
-};
 
 /** La teinte du picto d'une entrée de journal, selon ce qu'elle raconte. */
 function teinteJournal(action: string): string {
@@ -128,10 +86,8 @@ function quand(date: Date | null): string {
 
 export default async function DossierAvocat({
   params,
-  searchParams,
 }: {
   params: Promise<{ dossier: string }>;
-  searchParams: Promise<{ onglet?: string }>;
 }) {
   const utilisateur = await exigerUtilisateur();
   if (!utilisateur.roles.includes("avocat") && !utilisateur.roles.includes("admin")) notFound();
@@ -141,17 +97,6 @@ export default async function DossierAvocat({
   if (!vue) notFound();
 
   const { dossier, client, documents, notes, historique, donnees, nonLus, payeCentimes, dossiersAPrendre } = vue;
-
-  const demande = (await searchParams).onglet;
-  /*
-   * On ouvre sur ce qu'il reste à faire, non sur le récapitulatif.
-   *
-   * L'avocat qui vient de prendre un dossier veut savoir par où commencer, non relire
-   * une fiche. Le récapitulatif est à un clic.
-   */
-  const onglet: Onglet = ONGLETS.includes(demande as Onglet)
-    ? (demande as Onglet)
-    : (ALIAS[demande ?? ""] ?? "travail");
 
   /*
    * Une modification ne se range pas comme une création.
@@ -267,7 +212,6 @@ export default async function DossierAvocat({
   // Un document refusé ne compte pas comme remis : il attend son remplacement.
   const remis = (type: string) =>
     documents.some((d) => d.type === type && !d.rejection_reason);
-  const adresse = (o: Onglet) => "/avocat/" + dossier.id + "?onglet=" + o;
 
   /*
    * Ce qu'il reste à faire, déduit de l'état du dossier.
@@ -390,7 +334,6 @@ export default async function DossierAvocat({
    */
   const retoucheDesStatuts = type === "modification" && statutsAMettreAJour(codes);
 
-
   /*
    * Les pièces telles que le navigateur les reçoit.
    *
@@ -478,8 +421,6 @@ export default async function DossierAvocat({
      */
     .sort((a, b) => rangDeLActe(a.nom) - rangDeLActe(b.nom));
 
-  const suivante = prochaineTache(taches);
-
   /*
    * Les statuts à jour restent à produire.
    *
@@ -513,7 +454,6 @@ export default async function DossierAvocat({
     ? SOUS_PHASES_ORDONNEES.indexOf(dossier.business_sub_phase)
     : -1;
   const etapePrecedente = rang > 0 ? SOUS_PHASES_ORDONNEES[rang - 1] : null;
-
 
   return (
     <main className={styles.page}>
@@ -617,30 +557,12 @@ export default async function DossierAvocat({
             </span>
 
             {/*
-              La barre dit ce qu'il y a à faire, et rien d'autre.
+              La barre dit à qui est le dossier et où il en est, non ce qu'il y a à faire.
 
-              Elle portait un bouton « Y aller » qui menait à l'onglet nommé par la
-              tâche - « pieces », un ancien nom qui retombait sur celui d'où l'on
-              venait. Un bouton qui ne mène nulle part apprend à ne plus les lire. Le
-              nom de la tâche suffit, et il conduit à la liste quand on n'y est pas.
+              Elle nommait la tâche du moment - « À faire · Vérifier les informations du
+              dossier » - au-dessus de la liste qui la porte désormais en première ligne,
+              avec son geste. Deux fois la même phrase, dont l'une ne fait rien.
             */}
-            <span className={styles.bandeauAssigneEtape}>
-              <span className={styles.bandeauAssigneLegende}>À faire</span>
-              {suivante ? (
-                onglet === "travail" ? (
-                  suivante.titre
-                ) : (
-                  <Link href={adresse("travail")} className={styles.bandeauAssigneLien}>
-                    {suivante.titre}
-                  </Link>
-                )
-              ) : (
-                "rien, vous avez fait tout ce qui vous revenait"
-              )}
-              {suivante?.bloquee && (
-                <span className={styles.bandeauAssigneBlocage}>{suivante.bloquee}</span>
-              )}
-            </span>
           </section>
         )}
 
@@ -671,25 +593,19 @@ export default async function DossierAvocat({
                   suivant la reprenait, et le document remis ne correspondait plus aux
                   données dont il sortait.
                 */}
+                {/*
+                  Un seul bouton, et le vrai formulaire dedans.
+
+                  Deux gestes y menaient : « Ouvrir le formulaire », qui emmenait sur le
+                  parcours du client et faisait quitter le dossier, et « Corriger le
+                  formulaire », qui l'ouvre en fenêtre. Le second fait ce que le premier
+                  faisait, sans perdre l'écran d'où l'on vient.
+
+                  L'avocat assigné a toujours eu le droit de modifier le dossier ; le
+                  parcours du client s'ouvre donc tel quel, avec ses étapes, ses aides et
+                  ses listes de personnes - ce que le client avait sous les yeux.
+                */}
                 <span className={styles.documentsGestes}>
-                  {/*
-                    Le vrai formulaire, avec ses étapes.
-                    
-                    La fenêtre de correction rend les champs à plat : elle va vite pour
-                    une coquille, et perd ce qui les entoure - l'ordre des étapes, les
-                    aides, les listes de personnes. L'avocat assigné a toujours eu le
-                    droit de modifier le dossier ; le parcours du client s'ouvre donc
-                    tel quel, avec ce que le client avait sous les yeux.
-                  */}
-                  <Link
-                    href={
-                      adresseDuDossier(dossier) +
-                      "&retour=" + encodeURIComponent("/avocat/" + dossier.id)
-                    }
-                    className={styles.decisionSecondaire}
-                  >
-                    Ouvrir le formulaire
-                  </Link>
                   <Corriger
                     dossier={dossier.id}
                     champs={formulaire.champs}
@@ -769,7 +685,7 @@ export default async function DossierAvocat({
                 </div>
               </div>
               <div className={styles.docActions}>
-                <Link href={adresse("statuts")} className={styles.decisionPrincipale}>
+                <Link href="#statuts" className={styles.decisionPrincipale}>
                   Mettre à jour les statuts
                 </Link>
               </div>
@@ -827,7 +743,6 @@ export default async function DossierAvocat({
           déjà décidée - n'avait aucun chemin. Ici, chacun porte ses gestes : ouvrir,
           corriger le Word, déposer sa version, valider, revenir sur la décision.
         */}
-
 
         {/*
           L'avancement annoncé au client, sous le travail qui le fait avancer.

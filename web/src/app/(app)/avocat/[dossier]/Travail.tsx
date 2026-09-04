@@ -55,6 +55,21 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
  * lui-même l'état du dossier pour savoir par où commencer. Ici, les tâches sont dans
  * l'ordre, chacune dit pourquoi elle existe, et celle qui attend dit ce qu'elle attend.
  */
+/*
+ * Où mène chaque tâche, maintenant que le dossier tient sur une page.
+ *
+ * « recapitulatif » n'y figure pas : il n'est plus une section mais la colonne, visible
+ * sans avoir à s'y rendre. La tâche qui le nommait porte son propre geste.
+ */
+const ANCRES: Record<string, string> = {
+  pieces: "#documents",
+  documents: "#documents",
+  statuts: "#statuts",
+  annonce: "#annonce",
+  communication: "#communication",
+  historique: "#historique",
+};
+
 export function Travail({
   apresLaTacheDuMoment,
   dossiersAPrendre,
@@ -414,10 +429,18 @@ export function Travail({
    * faite ni empêchée. Elle prend la tête de l'écran, avec sa phrase et son geste. Ce
    * qui vient après se lit en lignes, sans bouton ; ce qui est fait se replie.
    */
+  /*
+   * Une seule liste, dans l'ordre du travail.
+   *
+   * La tâche du moment était sortie du lot : elle ouvrait la page sur une carte, puis
+   * sur une ligne, au-dessus des documents qu'un avocat vient relire. Les autres se
+   * lisaient plus bas, sous « Ensuite ». Deux endroits pour une même suite d'étapes,
+   * dont le premier passait avant le travail lui-même.
+   *
+   * `maintenant` reste calculé : c'est ce qui dit si le dossier est fini.
+   */
   const maintenant = taches.find((t) => t.etat !== "faite" && !t.bloquee);
-  const aVenir = taches.filter(
-    (t) => t.etat !== "faite" && t.identifiant !== maintenant?.identifiant
-  );
+  const restantes = taches.filter((t) => t.etat !== "faite");
   /*
    * Les actes validés ne s'affichent plus ici.
    *
@@ -496,8 +519,17 @@ export function Travail({
     if (tache.onglet === "avancement") {
       return { libelle: "Marquer comme effectué", faire: marquerLeDepot };
     }
+    /*
+     * Une ancre, non un onglet.
+     *
+     * Les tâches nomment encore l'onglet qui les portait - « pieces », « annonce »,
+     * « recapitulatif ». Il n'y a plus d'onglets : le dossier tient sur une page, et
+     * « ?onglet=pieces » n'y était plus lu par personne. Le lien rechargeait la page à
+     * l'endroit d'où l'on venait, ce qui apprend à ne plus cliquer.
+     */
     if (tache.onglet) {
-      return { libelle: "Y aller", href: "/avocat/" + dossier + "?onglet=" + tache.onglet };
+      const ancre = ANCRES[tache.onglet];
+      return ancre ? { libelle: "Y aller", href: ancre } : null;
     }
     return null;
   }
@@ -698,6 +730,23 @@ export function Travail({
             {corps}
             {champDeDepot(geste.depot)}
           </label>
+          {/*
+            Le greffe ne délivre pas toujours de document.
+            
+            Le dire clôt le dossier, et le client apprend que le dépôt est fait mais
+            qu'il ne recevra rien. Le geste vivait dans la carte de la tâche du moment ;
+            il suit la tâche dans la liste, sous la ligne qu'il concerne.
+          */}
+          {tache.identifiant === "final" && (
+            <button
+              type="button"
+              className={styles.ligneAutre}
+              onClick={conclureSansDocument}
+              disabled={enCours}
+            >
+              Le greffe n&apos;en délivre pas
+            </button>
+          )}
         </li>
       );
     }
@@ -744,7 +793,6 @@ export function Travail({
     );
   }
 
-  const geste = maintenant ? gesteDe(maintenant) : null;
 
   return (
     <div className={styles.travail}>
@@ -840,174 +888,97 @@ export function Travail({
           </span>
         )}
       </div>
-      {maintenant ? (
-        /*
-          Ce qu'il y a à faire, sur une ligne.
+      {/*
+        Où l'on est, et ce qu'on y fait, en une phrase.
 
-          La carte tenait deux cent quatre-vingts pixels en tête du dossier : une
-          légende, un titre, une phrase d'explication, les pièces qui manquent, les
-          documents concernés, puis les boutons. L'avocat qui ouvre un dossier pour
-          relire un acte descendait au-delà de l'écran pour l'atteindre.
+        La page s'ouvrait sur la tâche du moment - « À FAIRE · Vérifier les informations
+        du dossier » - avec ses boutons, avant les documents. Ce n'est pas ce qu'on vient
+        y chercher : on vient relire des actes. La tâche a rejoint la liste, où elle
+        garde son geste comme les autres, et la ligne dit simplement où l'on est.
+      */}
+      <p className={styles.situation}>
+        Espace avocat : vous relisez ici les documents du dossier avant leur dépôt au
+        greffe.
+      </p>
 
-          Ce qui a été retiré est ailleurs, non perdu : les pièces manquantes se lisent
-          dans la colonne du dossier, et les documents dans la liste qui suit, avec les
-          mêmes gestes. La ligne garde ce qu'elle seule porte - le nom de la tâche et
-          le bouton qui la fait.
-        */
-        <section className={styles.maintenant} aria-label="À faire maintenant">
-          <p className={styles.maintenantLegende}>À faire</p>
-          <h2 className={styles.maintenantTitre}>{maintenant.titre}</h2>
+      {/*
+        Le dossier est fini, et cela se voit.
 
-          <div className={styles.maintenantActions}>
-            {geste?.depot ? (
-              <label className={styles.travailPrincipal}>
-                {geste.libelle}
-                {champDeDepot(geste.depot)}
-              </label>
-            ) : geste?.href ? (
-              geste.href.startsWith("#") ? (
-                <a href={geste.href} className={styles.travailPrincipal}>
-                  {geste.libelle}
-                </a>
-              ) : (
-                <Link href={geste.href} className={styles.travailPrincipal}>
-                  {geste.libelle}
-                </Link>
-              )
-            ) : (
-              geste?.faire && (
-                <button
-                  type="button"
-                  className={styles.travailPrincipal}
-                  onClick={geste.faire}
-                  disabled={enCours}
-                >
-                  {enCours ? "…" : geste.libelle}
-                </button>
-              )
-            )}
-
-            {/*
-              Le greffe ne délivre pas toujours de document : le dire clôt le dossier,
-              et le client apprend que le dépôt est fait mais qu'il ne recevra rien.
-            */}
-            {maintenant.identifiant === "final" && (
-              <button
-                type="button"
-                className={styles.travailSecondaire}
-                onClick={conclureSansDocument}
-                disabled={enCours}
-              >
-                Le greffe n&apos;en délivre pas
-              </button>
-            )}
-
-            {/*
-              Lire, puis dire qu'on a lu : deux gestes distincts. Le récapitulatif
-              s'ouvre dans son onglet, et la case ne se coche qu'au retour.
-            */}
-            {maintenant.identifiant === "informations" && (
-              <Link
-                href={"/avocat/" + dossier + "?onglet=" + (maintenant.onglet ?? "dossier")}
-                className={styles.travailSecondaire}
-              >
-                Relire le récapitulatif
-              </Link>
-            )}
-
-            {/*
-              Une tâche qui se fait sur les documents n'a pas de bouton : ce sont eux qui
-              portent les gestes. Sans la liste qu'elle montrait, la ligne resterait
-              muette - elle mène donc là où le travail se fait, juste en dessous.
-            */}
-            {!geste && documentsDe(maintenant).length > 0 && (
-              <a href="#documents" className={styles.travailSecondaire}>
-                {documentsDe(maintenant).length === 1
-                  ? "Voir le document"
-                  : "Voir les " + documentsDe(maintenant).length + " documents"}
-              </a>
-            )}
-          </div>
-        </section>
-      ) : (
-        /*
-         * Le dossier est fini, et cela se voit.
-         *
-         * L'écran annonçait « Tout est fait » dans le même cadre blanc que le reste, et
-         * laissait l'avocat sans rien à faire ni où aller : il repartait à la liste
-         * pour découvrir s'il restait du travail.
-         */
+        L'écran annonçait « Tout est fait » dans le même cadre blanc que le reste, et
+        laissait l'avocat sans rien à faire ni où aller : il repartait à la liste pour
+        découvrir s'il restait du travail.
+      */}
+      {!maintenant && (
         <section className={styles.acheve} aria-label="Dossier terminé">
-          <span className={styles.acheveIcone} aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <span className={styles.acheveIcone} aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        </span>
+
+        <h2 className={styles.acheveTitre}>
+          Dossier terminé{termineLe ? " le " + termineLe : ""}
+        </h2>
+        <p className={styles.achevePhrase}>
+          Tout ce qui vous revenait est fait.
+          <br />
+          Le client a ses documents et suit la suite depuis son espace.
+        </p>
+
+        <div className={styles.acheveActions}>
+          {dossiersAPrendre > 0 ? (
+            <Link href="/avocat?filtre=aprendre" className={styles.travailPrincipal}>
+              {dossiersAPrendre === 1
+                ? "Un dossier attend un preneur"
+                : dossiersAPrendre + " dossiers attendent un preneur"}
+            </Link>
+          ) : (
+            <Link href="/tableau-de-bord" className={styles.travailPrincipal}>
+              Retour au tableau de bord
+            </Link>
+          )}
+
+          {/*
+            Un dossier clos se rouvre : une coquille se voit parfois après coup.
+            
+            Le geste menait à l'ancre de la barre d'avancement, trois lignes plus haut,
+            où un second bouton le faisait : on cliquait, la page sursautait, et rien
+            n'avait bougé.
+          */}
+          {etapePrecedente && (
+            <button
+              type="button"
+              className={styles.acheveReprendre}
+              onClick={() => reprendre(etapePrecedente)}
+              disabled={enCours}
             >
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-          </span>
-
-          <h2 className={styles.acheveTitre}>
-            Dossier terminé{termineLe ? " le " + termineLe : ""}
-          </h2>
-          <p className={styles.achevePhrase}>
-            Tout ce qui vous revenait est fait.
-            <br />
-            Le client a ses documents et suit la suite depuis son espace.
-          </p>
-
-          <div className={styles.acheveActions}>
-            {dossiersAPrendre > 0 ? (
-              <Link href="/avocat?filtre=aprendre" className={styles.travailPrincipal}>
-                {dossiersAPrendre === 1
-                  ? "Un dossier attend un preneur"
-                  : dossiersAPrendre + " dossiers attendent un preneur"}
-              </Link>
-            ) : (
-              <Link href="/tableau-de-bord" className={styles.travailPrincipal}>
-                Retour au tableau de bord
-              </Link>
-            )}
-
-            {/*
-              Un dossier clos se rouvre : une coquille se voit parfois après coup.
-              
-              Le geste menait à l'ancre de la barre d'avancement, trois lignes plus haut,
-              où un second bouton le faisait : on cliquait, la page sursautait, et rien
-              n'avait bougé.
-            */}
-            {etapePrecedente && (
-              <button
-                type="button"
-                className={styles.acheveReprendre}
-                onClick={() => reprendre(etapePrecedente)}
-                disabled={enCours}
-              >
-                {enCours ? "…" : "Reprendre ce dossier"}
-              </button>
-            )}
-          </div>
+              {enCours ? "…" : "Reprendre ce dossier"}
+            </button>
+          )}
+        </div>
         </section>
       )}
 
       {/*
-        Les actes se glissent entre la tâche du moment et ce qui viendra.
+        Les actes ouvrent le travail, et la suite se lit dessous.
         
         Ils vivaient derrière un onglet, et le travail du jour - relire, corriger,
         valider - demandait d'en changer. Ils prennent la place qu'ils occupent dans la
-        journée : juste après ce qu'il y a à faire maintenant, avant la liste de ce qui
-        attend.
+        journée : c'est par eux qu'on commence, et la liste des étapes suit.
       */}
       {apresLaTacheDuMoment}
 
-      {aVenir.length > 0 && (
+      {restantes.length > 0 && (
         <section>
-          <h3 className={styles.suiteTitre}>Ensuite</h3>
-          <ul className={styles.suite}>{aVenir.map((tache) => ligne(tache))}</ul>
+          <h3 className={styles.suiteTitre}>Ce qu&apos;il reste à faire</h3>
+          <ul className={styles.suite}>{restantes.map((tache) => ligne(tache))}</ul>
         </section>
       )}
 

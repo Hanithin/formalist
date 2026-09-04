@@ -604,7 +604,7 @@ test.describe("la correction d'un dossier de création", () => {
     const dossier = await dossierAvecActes("CORRECTION PERSONNE " + Date.now());
 
     await page.goto("/avocat/" + dossier.id);
-    await page.getByRole("button", { name: "Corriger le formulaire" }).click();
+    await page.getByRole("button", { name: "Ouvrir le formulaire" }).click();
 
     const fenetre = page.getByRole("dialog", { name: "Corriger le dossier" });
     await expect(fenetre).toBeVisible();

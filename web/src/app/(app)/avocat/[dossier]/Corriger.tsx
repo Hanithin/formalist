@@ -112,12 +112,19 @@ export function Corriger({
 
   return (
     <>
+      {/*
+        « Ouvrir », non « Corriger ».
+        
+        Deux boutons se partageaient le même formulaire : l'un emmenait sur le parcours
+        du client, l'autre l'ouvrait en fenêtre pour le reprendre. Il n'en reste qu'un,
+        et il fait les deux - on lit le formulaire, on le corrige si besoin.
+      */}
       <button
         type="button"
         className={styles.decisionSecondaire}
         onClick={() => setOuverte(true)}
       >
-        Corriger le formulaire
+        Ouvrir le formulaire
       </button>
 
       {ouverte && (

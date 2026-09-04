@@ -99,17 +99,16 @@ test("le dossier s'ouvre sur ce qu'il reste à faire", async ({ page }) => {
   await page.goto("/avocat/" + dossier);
 
   /*
-   * L'écran s'ouvre sur les documents, et dit sur une ligne ce qu'il reste à faire.
+   * L'écran dit où l'on est, montre les documents, puis ce qu'il reste à faire.
    *
    * La tâche du moment tenait une carte de deux cent quatre-vingts pixels en tête du
-   * dossier, avant les actes qu'on vient relire : sa légende dit désormais « À faire »,
-   * et ce qu'elle montrait - les pièces qui manquent, les documents concernés - se lit
-   * dans la colonne et dans la liste, avec les mêmes gestes.
+   * dossier, avant les actes qu'on vient relire ; puis une ligne, au même endroit. Elle
+   * a rejoint la liste, où elle garde son geste comme les autres, et le haut de la page
+   * ne porte plus qu'une phrase.
    */
-  await expect(page.locator('section[aria-label="À faire maintenant"]')).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Vérifier les informations du dossier" })
-  ).toBeVisible();
+  await expect(page.getByText(/Espace avocat : vous relisez ici les documents/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ce qu'il reste à faire" })).toBeVisible();
+  await expect(page.getByText("Vérifier les informations du dossier")).toBeVisible();
   await expect(page.getByText("Mettre les statuts à jour")).toBeVisible();
 });
 
@@ -132,10 +131,12 @@ test("les documents ouvrent la page, la colonne dit ce qui manque", async ({ pag
   const documents = page.locator("#documents");
   const colonne = page.getByRole("complementary", { name: /coup d/ });
 
-  /* Les documents passent avant la liste des tâches à venir. */
+  /* Les documents passent avant la liste des tâches. */
   await expect(documents).toBeVisible();
   const hautDesDocuments = (await documents.boundingBox())!.y;
-  const hautDeLaSuite = (await page.getByText("Ensuite", { exact: true }).boundingBox())!.y;
+  const hautDeLaSuite = (await page
+    .getByRole("heading", { name: "Ce qu'il reste à faire" })
+    .boundingBox())!.y;
   expect(hautDesDocuments).toBeLessThan(hautDeLaSuite);
 
   /* Un seul titre pour la liste : la section en portait deux, l'un redisant l'autre. */
@@ -205,7 +206,7 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
    * Ce qui distingue vraiment le vocabulaire d'une modification reste vérifié : ni
    * dépôt de capital, ni immatriculation - la société existe déjà.
    */
-  await expect(page.locator('section[aria-label="À faire maintenant"]')).toBeVisible();
+  await expect(page.getByText(/Espace avocat : vous relisez ici les documents/)).toBeVisible();
   await expect(page.getByText(/Kbis à jour/i).first()).toBeVisible();
   /*
    * L'absence se vérifie sur les tâches, non sur la page entière.
@@ -217,7 +218,7 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
    * qu'on demande à l'avocat de faire.
    */
   await expect(
-    page.locator('section[aria-label="À faire maintenant"]').getByText(/immatriculation|dépôt du capital/i)
+    page.getByRole("list").getByText(/immatriculation|dépôt du capital/i)
   ).toHaveCount(0);
 });
 

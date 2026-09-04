@@ -260,14 +260,8 @@ test.describe("espace avocat", () => {
      * le prendre veut savoir par où commencer, non relire une fiche. Le récapitulatif
      * est à un clic.
      */
-    /* La légende de la tâche du moment dit « À faire » depuis qu'elle tient sur une
-       ligne : le repère stable est la section, non son intitulé. */
-    await expect(
-      page
-        .locator('section[aria-label="À faire maintenant"]')
-        .or(page.getByText("Tout est fait sur ce dossier"))
-        .first()
-    ).toBeVisible();
+    /* La page dit d'abord où l'on est ; les tâches se lisent sous les documents. */
+    await expect(page.getByText(/Espace avocat : vous relisez ici les documents/)).toBeVisible();
     /*
       Le récapitulatif n'est plus derrière un onglet : il tient dans la colonne du
       dossier, à côté de ce qu'on y fait. On ne clique plus pour le lire.

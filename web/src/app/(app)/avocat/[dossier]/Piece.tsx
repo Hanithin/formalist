@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { etatDocument, estStatutsRepris } from "@/domain/document/statuts";
 import { A_RELIRE } from "@/domain/document/publication";
 import { TITRE_STATUTS_A_JOUR, TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
@@ -144,12 +143,9 @@ export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: numbe
           par passage.
         */}
         {piece.nom === TITRE_STATUTS_A_JOUR && (
-          <Link
-            href={"/avocat/" + dossier + "?onglet=statuts"}
-            className={styles.decisionPrincipale}
-          >
+          <a href="#statuts" className={styles.decisionPrincipale}>
             Mettre à jour les statuts
-          </Link>
+          </a>
         )}
 
         {/*

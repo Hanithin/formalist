@@ -40,10 +40,17 @@ test("l'avocat ouvre le formulaire du client, et le décalage se voit", async ({
   await page.goto("/avocat/" + d.id);
   await expect(page.getByText(/Le dossier a changé depuis la production/)).toHaveCount(0);
 
-  const lien = page.getByRole("link", { name: "Ouvrir le formulaire" });
-  await lien.click();
-  await page.waitForURL(/\/creation\?/);
-  await expect(page.getByRole("link", { name: /Le dossier au cabinet/ })).toBeVisible();
+  /*
+   * Le formulaire s'ouvre en fenêtre, sans quitter le dossier.
+   *
+   * Deux boutons y menaient : l'un emmenait sur le parcours du client - on perdait
+   * l'écran d'où l'on venait, et il fallait un lien de retour pour y revenir - l'autre
+   * l'ouvrait ici même. Il n'en reste qu'un, et c'est le second.
+   */
+  await page.getByRole("button", { name: "Ouvrir le formulaire" }).click();
+  const fenetre = page.getByRole("dialog", { name: "Corriger le dossier" });
+  await expect(fenetre.getByLabel("Nom de la société")).toHaveValue("FORMULAIRE ESSAI");
+  await fenetre.getByRole("button", { name: "Annuler" }).click();
 
   /*
    * Une vraie correction, par le chemin de l'application.
@@ -95,7 +102,7 @@ test("la fenêtre porte le formulaire du client, étape par étape", async ({ pa
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/avocat/" + d.id);
-  await page.getByRole("button", { name: "Corriger le formulaire" }).click();
+  await page.getByRole("button", { name: "Ouvrir le formulaire" }).click();
 
   const fenetre = page.getByRole("dialog", { name: "Corriger le dossier" });
   await expect(fenetre.getByRole("heading", { name: "Informations de la société" })).toBeVisible();

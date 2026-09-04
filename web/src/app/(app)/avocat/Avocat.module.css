@@ -2664,6 +2664,22 @@
 }
 
 /*
+ * Où l'on est, et ce qu'on y fait.
+ *
+ * La page s'ouvrait sur la tâche du moment, avec ses boutons, avant les documents. Ce
+ * n'est pas ce qu'on vient y chercher : on vient relire des actes. La ligne dit
+ * simplement où l'on est, et la tâche a rejoint la liste où elle garde son geste.
+ */
+.situation {
+  margin: 0 0 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e4e4e7;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #52525b;
+}
+
+/*
  * Une chose à faire, sur une ligne.
  *
  * L'écran racontait l'organisation du travail : trois étapes numérotées, sept tâches
@@ -2797,6 +2813,35 @@ button.ligneCorps:disabled {
 .ligneGeste svg {
   width: 14px;
   height: 14px;
+}
+
+/*
+ * Le second geste d'une tâche, sous la ligne qu'il concerne.
+ *
+ * « Le greffe n'en délivre pas » clôt le dossier quand rien ne viendra. C'est une
+ * issue, non le geste attendu : elle se propose en dessous, en retrait.
+ */
+.ligneAutre {
+  margin: 0 0 12px 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: #71717a;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ligneAutre:hover:not(:disabled) {
+  color: #111;
+}
+
+.ligneAutre:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .ligneDocuments {
