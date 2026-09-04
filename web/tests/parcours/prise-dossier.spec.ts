@@ -461,6 +461,46 @@ test.describe("le dossier lui-même", () => {
     return dossier;
   }
 
+  /**
+   * Les trois gestes sur le dossier, et le chemin qui y mène.
+   *
+   * Ils s'écrivaient en trois liens soulignés à la même hauteur que le seul geste
+   * courant - demander des corrections. Trois traits pèsent plus qu'un bouton, et l'on
+   * ne refuse un dossier qu'une fois : ils tiennent dans un menu.
+   *
+   * Aucun test ne les couvrait, si bien que la refonte est passée sans rien casser -
+   * et sans rien prouver non plus.
+   */
+  test("les gestes sur le dossier tiennent dans un menu", async ({ page }) => {
+    const dossier = await dossierPris("MENU DOSSIER " + Date.now());
+    await page.goto("/avocat/" + dossier.id);
+
+    const menu = page.getByRole("button", { name: "Ce qu'on peut faire de ce dossier" });
+    await expect(menu).toBeVisible();
+
+    /* Rien n'est visible tant qu'on n'a pas ouvert : c'est ce que le menu apporte. */
+    await expect(page.getByRole("menuitem", { name: "Refuser le dossier" })).toHaveCount(0);
+
+    await menu.click();
+    await expect(page.getByRole("menuitem", { name: "Inviter un avocat" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Me retirer du dossier" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Refuser le dossier" })).toBeVisible();
+
+    /*
+     * Un clic dehors referme : un menu qui reste ouvert masque ce qu'on veut lire.
+     *
+     * Le clic se pose sur le voile, non sur ce qu'il recouvre - c'est lui qui l'attrape,
+     * et viser un titre derrière lui ferait échouer le clic plutôt que le geste.
+     */
+    await page.mouse.click(500, 500);
+    await expect(page.getByRole("menuitem", { name: "Refuser le dossier" })).toHaveCount(0);
+
+    /* Et chaque entrée mène à sa fenêtre, où le geste se motive. */
+    await menu.click();
+    await page.getByRole("menuitem", { name: "Refuser le dossier" }).click();
+    await expect(page.getByRole("dialog", { name: /Refuser/ })).toBeVisible();
+  });
+
   test("il refuse un dossier, avec son motif", async ({ request }) => {
     const dossier = await dossierPris("REFUS DOSSIER " + Date.now());
 

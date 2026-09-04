@@ -193,6 +193,15 @@ export function Travail({
    * qui ne se fait pas maintenant. Le bouton les compte ; la fenêtre les montre.
    */
   const [etapesOuvertes, setEtapesOuvertes] = useState(false);
+
+  /*
+   * Les gestes sur le dossier lui-même, dans un menu.
+   *
+   * Ils tenaient trois liens soulignés en haut de l'écran, à la même hauteur que le seul
+   * geste courant - demander des corrections. Trois traits pèsent plus qu'un bouton, et
+   * on ne refuse un dossier qu'une fois. Le menu les range sans les cacher.
+   */
+  const [menuOuvert, setMenuOuvert] = useState(false);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -867,37 +876,81 @@ export function Travail({
 
         {/*
           Ce qu'un avocat peut faire du dossier lui-même, et non de son travail.
-          
+
           Aucun de ces trois gestes n'existait : un dossier impossible ne pouvait que
-          boucler en demandes de reprise, la prise en charge était sans envers, et
-          l'avis d'un autre avocat se payait de lui rendre le dossier en entier.
+          boucler en demandes de reprise, la prise en charge était sans envers, et l'avis
+          d'un autre avocat se payait de lui rendre le dossier en entier.
+
+          Ils se rangent dans un menu : ce sont des gestes rares, et trois liens soulignés
+          en tête d'écran pesaient plus que le seul qui sert tous les jours.
         */}
         {!correctionsEnCours && (
-          <span className={styles.travailGestes}>
+          <span className={styles.menuGestes}>
             <button
               type="button"
-              className={styles.travailTertiaire}
-              onClick={() => setFenetre("invitation")}
+              className={styles.menuGestesBouton}
+              onClick={() => setMenuOuvert((ouvert) => !ouvert)}
               disabled={enCours}
+              aria-expanded={menuOuvert}
+              aria-haspopup="menu"
+              aria-label="Ce qu'on peut faire de ce dossier"
             >
-              Inviter un avocat
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="5" cy="12" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="19" cy="12" r="1.8" />
+              </svg>
             </button>
-            <button
-              type="button"
-              className={styles.travailTertiaire}
-              onClick={() => setFenetre("dessaisissement")}
-              disabled={enCours}
-            >
-              Me retirer du dossier
-            </button>
-            <button
-              type="button"
-              className={styles.travailTertiaire}
-              onClick={() => setFenetre("refus")}
-              disabled={enCours}
-            >
-              Refuser le dossier
-            </button>
+
+            {menuOuvert && (
+              <>
+                {/*
+                  Un voile sans teinte : il ferme le menu au clic dehors, ce qu'un menu
+                  doit faire, sans assombrir la page derrière pour trois lignes.
+                */}
+                <div
+                  className={styles.menuVoile}
+                  onClick={() => setMenuOuvert(false)}
+                  aria-hidden="true"
+                />
+
+                <div className={styles.menuGestesListe} role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOuvert(false);
+                      setFenetre("invitation");
+                    }}
+                  >
+                    Inviter un avocat
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOuvert(false);
+                      setFenetre("dessaisissement");
+                    }}
+                  >
+                    Me retirer du dossier
+                  </button>
+
+                  {/* Refuser sort du dossier pour de bon : il se sépare et se teinte. */}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={styles.menuGestesRupture}
+                    onClick={() => {
+                      setMenuOuvert(false);
+                      setFenetre("refus");
+                    }}
+                  >
+                    Refuser le dossier
+                  </button>
+                </div>
+              </>
+            )}
           </span>
         )}
       </div>

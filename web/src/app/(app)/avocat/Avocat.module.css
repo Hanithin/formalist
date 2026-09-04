@@ -2973,34 +2973,6 @@ button.ligneCorps:disabled {
   white-space: nowrap;
 }
 
-/*
- * Revenir sur une relecture déclarée.
- *
- * Discret : c'est un geste de rattrapage sur une tâche déjà faite, pas une action
- * qu'on propose au même rang que les autres.
- */
-.travailTertiaire {
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  font-family: inherit;
-  font-size: 12.5px;
-  color: #8a8a8f;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.travailTertiaire:hover:not(:disabled) {
-  color: #3f3f46;
-}
-
-.travailTertiaire:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
 .travailRetour,
 .travailRefus {
   margin: 0;
@@ -3836,6 +3808,105 @@ button.ligneCorps:disabled {
  * Le geste fermait la liste, sous le repli de ce qui est fait : on le découvrait au bas
  * de l'écran, après avoir fait défiler ce qu'on venait de faire.
  */
+/*
+ * Les gestes sur le dossier lui-même, dans un menu.
+ *
+ * Ils tenaient trois liens soulignés à la même hauteur que le seul geste courant.
+ * Trois traits pèsent plus qu'un bouton, et l'on ne refuse un dossier qu'une fois.
+ */
+.menuGestes {
+  position: relative;
+  display: inline-flex;
+  margin-left: auto;
+}
+
+.menuGestesBouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: #8a8a8f;
+  cursor: pointer;
+}
+
+.menuGestesBouton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.menuGestesBouton:hover:not(:disabled),
+.menuGestesBouton[aria-expanded="true"] {
+  border-color: #e5e5e7;
+  background: #fff;
+  color: #111;
+}
+
+.menuGestesBouton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Sans teinte : il ferme le menu au clic dehors, il n'assombrit pas la page. */
+.menuVoile {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+}
+
+.menuGestesListe {
+  position: absolute;
+  z-index: 41;
+  top: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.menuGestesListe button {
+  margin: 0;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  letter-spacing: 0;
+  text-align: left;
+  color: #3f3f46;
+  cursor: pointer;
+}
+
+.menuGestesListe button:hover {
+  background: #f4f4f5;
+  color: #111;
+}
+
+/* Refuser sort du dossier pour de bon : un filet l'écarte des deux autres. */
+.menuGestesRupture {
+  margin-top: 6px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid #f2f2f4 !important;
+  border-radius: 0 0 8px 8px !important;
+  color: #b91c1c !important;
+}
+
+.menuGestesRupture:hover {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+}
+
 .travailRenvoi {
   display: inline-flex;
   align-items: center;
@@ -3869,34 +3940,6 @@ button.ligneCorps:disabled {
 .travailRenvoi:disabled {
   opacity: 0.55;
   cursor: default;
-}
-
-/*
- * Ce qu'on fait du dossier, non de son travail.
- *
- * Inviter un avocat, se retirer, refuser le dossier : trois gestes rares, qui ne
- * doivent pas peser autant que la demande de corrections. Ils tiennent à droite, en
- * retrait, et se lisent quand on les cherche.
- */
-.travailGestes {
-  display: inline-flex;
-  align-items: center;
-  /* Ces trois-là sont soulignés : collés, leurs traits n'en font plus qu'un. */
-  gap: 18px;
-  margin-left: auto;
-}
-
-.travailGestes button {
-  height: 34px;
-  padding: 0;
-}
-
-@media (max-width: 720px) {
-  /* En dessous, la barre se replie : les trois gestes passent sous la demande. */
-  .travailGestes {
-    margin-left: 0;
-    flex-wrap: wrap;
-  }
 }
 
 /* ---------- La conversation avec le client ---------- */
