@@ -2562,37 +2562,6 @@
   gap: 16px;
 }
 
-/*
- * Le pied de l'onglet, en une zone.
- *
- * Trois lignes y flottaient, séparées par de grands blancs : le repli de ce qui est
- * fait, le renvoi vers les documents, le registre facultatif, et le renvoi au client
- * tout seul à droite. Elles tiennent sur une bande, sous un filet.
- */
-.travailPied {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px 24px;
-  margin-top: 24px;
-  /* La bulle de discussion flotte dans le coin droit : sans marge, elle recouvrait la
-     fin du libellé du bouton. */
-  padding: 18px 64px 0 0;
-  border-top: 1px solid #ececee;
-}
-
-.travailPiedNotes {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.travailPied .facultatif {
-  margin: 0;
-}
-
 .travailPrincipal,
 .travailSecondaire {
   display: inline-flex;
@@ -2774,9 +2743,22 @@
 
 /* Ce qui se corrige plutôt que se fait : sous un filet, au pied de la liste. */
 .fenetreEtapesPied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
   margin-top: 4px;
   padding-top: 14px;
   border-top: 1px solid #f2f2f4;
+}
+
+.fenetreEtapesPied .ligneAutre {
+  margin: 0;
+}
+
+/* Un dépôt de fichier se propose comme un geste : le label en est un. */
+label.ligneAutre {
+  cursor: pointer;
 }
 
 /*
@@ -2977,17 +2959,6 @@ button.ligneCorps:disabled {
 
 .faites[open] .faitesTete::before {
   content: "▾";
-}
-
-/* Le registre des bénéficiaires : facultatif, et aucune tâche ne le réclame. */
-.facultatif {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px;
-  margin: 14px 0 0;
-  font-size: 12.5px;
-  color: #a1a1aa;
 }
 
 /* Le champ de fichier reste dans le document pour l'accessibilité, mais hors de vue. */

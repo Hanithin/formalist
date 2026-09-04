@@ -1006,30 +1006,6 @@ export function Travail({
       {apresLaTacheDuMoment}
 
 
-      {/*
-        Le pied de l'onglet, en une zone.
-
-        Trois lignes y flottaient, séparées par de grands blancs : le renvoi vers les
-        documents, le registre facultatif, le repli de ce qui est fait, et le renvoi au
-        client tout seul à droite. Elles tiennent sur une bande, sous un filet.
-      */}
-      <footer className={styles.travailPied}>
-        <div className={styles.travailPiedNotes}>
-          {/*
-            Le registre des bénéficiaires effectifs n'est pas une tâche : le greffe ne
-            l'exige pas, et aucune tâche ne le réclame.
-          */}
-          {livrables.registreConcerne && (
-            <p className={styles.facultatif}>
-              Registre des bénéficiaires effectifs, facultatif.
-              <label className={styles.travailTertiaire}>
-                {livrables.aLeRbe ? "Remplacer" : "Déposer"}
-                {champDeDepot("rbe")}
-              </label>
-            </p>
-          )}
-        </div>
-      </footer>
 
       {etapesOuvertes && (
         <>
@@ -1076,18 +1052,32 @@ export function Travail({
               d'autres mots ; le geste, lui, n'existe nulle part ailleurs - une étape
               annoncée trop tôt se corrige, et c'est le client qui la lit.
             */}
-            {etapePrecedente && (
+            {(etapePrecedente || livrables.registreConcerne) && (
               <div className={styles.fenetreEtapesPied}>
-                <button
-                  type="button"
-                  className={styles.ligneAutre}
-                  onClick={() => reprendre(etapePrecedente.code)}
-                  disabled={enCours}
-                >
-                  {enCours
-                    ? "…"
-                    : "Revenir à « " + etapePrecedente.libelle + " »"}
-                </button>
+                {etapePrecedente && (
+                  <button
+                    type="button"
+                    className={styles.ligneAutre}
+                    onClick={() => reprendre(etapePrecedente.code)}
+                    disabled={enCours}
+                  >
+                    {enCours ? "…" : "Revenir à « " + etapePrecedente.libelle + " »"}
+                  </button>
+                )}
+
+                {/*
+                  Le registre des bénéficiaires effectifs n'est pas une tâche : le greffe
+                  ne l'exige pas, et rien ne le réclame. Il occupait pourtant une ligne au
+                  bas de la page, sous un filet, pour ce qui se dépose une fois ou jamais.
+                */}
+                {livrables.registreConcerne && (
+                  <label className={styles.ligneAutre}>
+                    {livrables.aLeRbe
+                      ? "Remplacer le registre des bénéficiaires effectifs"
+                      : "Déposer le registre des bénéficiaires effectifs, facultatif"}
+                    {champDeDepot("rbe")}
+                  </label>
+                )}
               </div>
             )}
 
