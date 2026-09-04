@@ -99,14 +99,94 @@ test("le dossier s'ouvre sur ce qu'il reste à faire", async ({ page }) => {
   await page.goto("/avocat/" + dossier);
 
   /*
-   * L'écran s'ouvre sur une seule chose : celle à faire maintenant. Les autres se
-   * lisent dessous, sans avoir à déplier quoi que ce soit.
+   * L'écran s'ouvre sur les documents, et dit sur une ligne ce qu'il reste à faire.
+   *
+   * La tâche du moment tenait une carte de deux cent quatre-vingts pixels en tête du
+   * dossier, avant les actes qu'on vient relire : sa légende dit désormais « À faire »,
+   * et ce qu'elle montrait - les pièces qui manquent, les documents concernés - se lit
+   * dans la colonne et dans la liste, avec les mêmes gestes.
    */
-  await expect(page.getByText("À faire maintenant")).toBeVisible();
+  await expect(page.locator('section[aria-label="À faire maintenant"]')).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Vérifier les informations du dossier" })
   ).toBeVisible();
   await expect(page.getByText("Mettre les statuts à jour")).toBeVisible();
+});
+
+/**
+ * Ce que la page du dossier montre, et dans quel ordre.
+ *
+ * Elle s'ouvrait sur une carte de deux cent quatre-vingts pixels - « À faire maintenant »,
+ * un titre, une phrase, deux boutons - puis sur les pièces qui manquent, avant les actes
+ * qu'un avocat vient relire. La colonne de droite empilait sept blocs, dont un « Aperçu »
+ * qui comptait quatre choses déjà à l'écran et un sommaire vers trois ancres de la même
+ * page.
+ *
+ * Les documents ouvrent le travail ; la colonne dit ce qui manque et ce que le dossier
+ * porte. Ce qui a été retiré est ailleurs, non perdu.
+ */
+test("les documents ouvrent la page, la colonne dit ce qui manque", async ({ page }) => {
+  const dossier = await dossierDeModification();
+  await page.goto("/avocat/" + dossier);
+
+  const documents = page.locator("#documents");
+  const colonne = page.getByRole("complementary", { name: /coup d/ });
+
+  /* Les documents passent avant la liste des tâches à venir. */
+  await expect(documents).toBeVisible();
+  const hautDesDocuments = (await documents.boundingBox())!.y;
+  const hautDeLaSuite = (await page.getByText("Ensuite", { exact: true }).boundingBox())!.y;
+  expect(hautDesDocuments).toBeLessThan(hautDeLaSuite);
+
+  /* Un seul titre pour la liste : la section en portait deux, l'un redisant l'autre. */
+  await expect(
+    page.getByRole("heading", { name: /documents du dossier/i })
+  ).toHaveCount(1);
+
+  /*
+   * Ce que le dossier porte se lit dans la colonne, non au milieu du travail. Une
+   * modification y range ses propres sections - le siège, le dirigeant - là où une
+   * création affiche « Informations du dossier » ; le client les ouvre dans les deux
+   * cas, parce qu'il en est une.
+   */
+  await expect(colonne.getByRole("heading", { name: "Le client", exact: true })).toBeVisible();
+  await expect(colonne.getByText("AVOCAT ESSAI MODIF").first()).toBeVisible();
+
+  /*
+   * Les quatre compteurs de l'aperçu et le sommaire ont disparu : ils redisaient ce
+   * qui est déjà à l'écran, et renvoyaient à la page qu'on lit.
+   */
+  await expect(colonne.getByText("Aperçu")).toHaveCount(0);
+  await expect(colonne.getByText("Aller à")).toHaveCount(0);
+
+  /* Les notes internes se lisent avec les échanges et le journal, non dans la colonne. */
+  await expect(colonne.getByText("Notes internes")).toHaveCount(0);
+  await expect(page.locator("#notes")).toBeVisible();
+});
+
+/**
+ * Une pièce qui manque se signale par sa pastille, non par un filet en marge.
+ *
+ * Le panneau portait un trait ambré de trois pixels sur son bord gauche. Un trait de
+ * couleur en marge ne se lit pas : il faut déjà savoir ce qu'il veut dire.
+ */
+test("aucun marqueur d'état ne tient dans un filet de bord", async ({ page }) => {
+  const dossier = await dossierDeModification();
+  await page.goto("/avocat/" + dossier);
+
+  const filets = await page.evaluate(() =>
+    [...document.querySelectorAll("main *")].filter((n) => {
+      const style = getComputedStyle(n);
+      const largeur = parseFloat(style.borderLeftWidth);
+      return (
+        largeur >= 2 &&
+        style.borderLeftColor !== style.borderTopColor &&
+        style.borderTopWidth !== style.borderLeftWidth
+      );
+    }).length
+  );
+
+  expect(filets).toBe(0);
 });
 
 test("le vocabulaire est celui d'une modification, pas d'une création", async ({ page }) => {
@@ -125,7 +205,7 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
    * Ce qui distingue vraiment le vocabulaire d'une modification reste vérifié : ni
    * dépôt de capital, ni immatriculation - la société existe déjà.
    */
-  await expect(page.getByText("À faire maintenant")).toBeVisible();
+  await expect(page.locator('section[aria-label="À faire maintenant"]')).toBeVisible();
   await expect(page.getByText(/Kbis à jour/i).first()).toBeVisible();
   /*
    * L'absence se vérifie sur les tâches, non sur la page entière.

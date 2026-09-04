@@ -64,7 +64,6 @@ export function Travail({
   livrables,
   dossier,
   taches,
-  manquantes,
   peutProduireLesActes,
   routeDeProduction,
   informationsVerifiees,
@@ -98,15 +97,6 @@ export function Travail({
      */
     registreConcerne: boolean;
   };
-  /**
-   * Ce que le dossier réclame et qui n'y est pas, nommé.
-   *
-   * La carte s'intitulait « 1 pièce manquante » et listait dessous les pièces
-   * validées : on lisait un titre rouge au-dessus de deux pastilles vertes, et le nom
-   * de celle qui manquait était à un onglet de là. La tâche dit maintenant ce qu'elle
-   * réclame.
-   */
-  manquantes: { identifiant: string; titre: string; motif: string }[];
   /** Les actes se produisent d'ici : c'est une commande, non un écran. */
   peutProduireLesActes: boolean;
   /**
@@ -851,29 +841,22 @@ export function Travail({
         )}
       </div>
       {maintenant ? (
+        /*
+          Ce qu'il y a à faire, sur une ligne.
+
+          La carte tenait deux cent quatre-vingts pixels en tête du dossier : une
+          légende, un titre, une phrase d'explication, les pièces qui manquent, les
+          documents concernés, puis les boutons. L'avocat qui ouvre un dossier pour
+          relire un acte descendait au-delà de l'écran pour l'atteindre.
+
+          Ce qui a été retiré est ailleurs, non perdu : les pièces manquantes se lisent
+          dans la colonne du dossier, et les documents dans la liste qui suit, avec les
+          mêmes gestes. La ligne garde ce qu'elle seule porte - le nom de la tâche et
+          le bouton qui la fait.
+        */
         <section className={styles.maintenant} aria-label="À faire maintenant">
-          <p className={styles.maintenantLegende}>À faire maintenant</p>
+          <p className={styles.maintenantLegende}>À faire</p>
           <h2 className={styles.maintenantTitre}>{maintenant.titre}</h2>
-          <p className={styles.maintenantPhrase}>{maintenant.explication}</p>
-
-          {maintenant.identifiant === "pieces" && manquantes.length > 0 && (
-            <ul className={styles.piecesManquantesListe}>
-              {manquantes.map((piece) => (
-                <li key={piece.identifiant}>
-                  {piece.titre}
-                  <span className={styles.piecesManquantesMotif}>{piece.motif}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {documentsDe(maintenant).length > 0 && (
-            <div className={styles.maintenantDocuments}>
-              {documentsDe(maintenant).map((piece) => (
-                <Piece key={piece.id} piece={piece} dossier={dossier} />
-              ))}
-            </div>
-          )}
 
           <div className={styles.maintenantActions}>
             {geste?.depot ? (
@@ -930,6 +913,19 @@ export function Travail({
               >
                 Relire le récapitulatif
               </Link>
+            )}
+
+            {/*
+              Une tâche qui se fait sur les documents n'a pas de bouton : ce sont eux qui
+              portent les gestes. Sans la liste qu'elle montrait, la ligne resterait
+              muette - elle mène donc là où le travail se fait, juste en dessous.
+            */}
+            {!geste && documentsDe(maintenant).length > 0 && (
+              <a href="#documents" className={styles.travailSecondaire}>
+                {documentsDe(maintenant).length === 1
+                  ? "Voir le document"
+                  : "Voir les " + documentsDe(maintenant).length + " documents"}
+              </a>
             )}
           </div>
         </section>

@@ -457,30 +457,10 @@
   white-space: nowrap;
 }
 
-/*
- * L'intertitre d'une section, dans un onglet qui en réunit deux.
- *
- * « Le dossier » porte le récapitulatif puis les pièces, « Coulisses » les notes puis
- * le journal : sans titre, on ne voyait pas où l'un finit et où l'autre commence.
- */
-.sectionTitre {
-  margin: 32px 0 14px;
-  font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: #111;
-  scroll-margin-top: 24px;
-}
-
 /* L'ancre du dépôt : la tâche y conduit, le titre ne doit pas coller au bord. */
 /* L'avancement ouvre l'onglet : il n'a plus de blanc à prendre au-dessus de lui. */
 .ancreAvancement {
   scroll-margin-top: 24px;
-}
-
-.sectionTitre:first-of-type {
-  margin-top: 26px;
 }
 
 /* ---------- Les pièces d'une tâche, en fenêtre ---------- */
@@ -834,7 +814,6 @@
   border-color: #333;
 }
 
-
 /* ---------- Prendre un dossier depuis sa page ---------- */
 
 /*
@@ -1185,72 +1164,7 @@
   padding: 18px 22px;
   margin-bottom: 12px;
 }
-/* Layout deux colonnes pour le récap dossier */
-/*
- * Le récapitulatif tient dans la colonne du dossier, sur une seule file.
- *
- * Il occupait la largeur de la page, en deux colonnes : les faits à gauche, les cartes
- * de contexte à droite. Rangé dans une colonne de trois cent quarante pixels, cette
- * grille se serrait sur elle-même. Une file suffit - c'est la forme d'une colonne.
- */
-.recapGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.recapGridLeft,
-.recapGridRight {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.recapSideCard {
-  background: #fff;
-  border: 1px solid #e8e8ec;
-  border-radius: 14px;
-  padding: 16px 18px;
-  margin-bottom: 12px;
-}
-.recapSideCard h3 {
-  font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
-  margin: 0 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: 0;
-}
-.recapSideCard h3 svg {
-  width: 14px;
-  height: 14px;
-  color: #888;
-}
-.recapSideRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  font-size: 13px;
-  border-top: 1px solid #f5f5f7;
-}
-.recapSideRow:first-of-type {
-  border-top: none;
-}
-.recapSideRow .lbl {
-  color: #888;
-  flex: 1;
-}
-/* Les chiffres s'alignent : sans chasse fixe, un 1 et un 3 ne tombaient pas au
-   même endroit et la colonne paraissait de travers. */
-.recapSideRow .val {
-  color: #111;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
+
 .recapTitleIcon {
   font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 17px;
@@ -1404,20 +1318,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.auditComment {
-  margin-top: 6px;
-  padding: 8px 12px;
-  background: #fffbeb;
-  border-left: 3px solid #f59e0b;
-  font-size: 13px;
-  color: #78350f;
-  border-radius: 0 8px 8px 0;
-}
-.auditDate {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #999;
-}
+
 /* DOCUMENTS */
 .docCard {
   background: #fff;
@@ -1694,14 +1595,21 @@
   border-color: #fca5a5;
   background: #fffafa;
 }
+/*
+ * Pourquoi une pièce a été refusée.
+ *
+ * Le motif portait un filet rouge de trois pixels sur son bord gauche : un trait de
+ * couleur en marge ne se lit pas, il faut déjà savoir ce qu'il veut dire. Le fond et la
+ * couleur du texte disent le refus, et le motif dit le reste.
+ */
 .docRejectionInfo {
   margin-top: 8px;
-  font-size: 12.5px;
-  color: #991b1b;
+  padding: 8px 12px;
+  border-radius: 8px;
   background: #fef2f2;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border-left: 3px solid #dc2626;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #991b1b;
 }
 /* Le bloc emptyStateHero et ses boutons vivaient ici, avec leurs propres teintes
    en dur. L'absence de dossier passe désormais par components/liste/Vide, comme
@@ -1817,6 +1725,24 @@
   /* Le récapitulatif d'un dossier chargé dépasse la hauteur d'écran : il défile seul. */
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
+}
+
+/*
+ * Le récapitulatif à la mesure de la colonne, non de la page.
+ *
+ * Les libellés réservent cent quatre-vingts pixels : la moitié d'une colonne de trois
+ * cent vingt. « Camille Parcours » s'y coupait en deux et une adresse électronique
+ * sortait de la carte, tronquée au bord. Le libellé prend ce qu'il lui faut, et la
+ * valeur revient à la ligne plutôt que de déborder.
+ */
+.colonneDossier .recapLabel {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.colonneDossier .recapValue {
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 /*
@@ -2069,69 +1995,6 @@
   display: inline-block;
 }
 
-/* La carte Client du récapitulatif : la page d'origine posait ces valeurs en
-   style en ligne, elles reviennent ici sous un nom. */
-
-.clientTete {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0 12px;
-}
-.clientAvatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #111;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.clientIdentite {
-  flex: 1;
-  min-width: 0;
-}
-.clientNom {
-  display: block;
-  font-weight: 600;
-  color: #111;
-  font-size: 13.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.clientMail {
-  display: block;
-  font-size: 12px;
-  color: #888;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.recapQuickActions a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid #e8e8ec;
-  background: #fff;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #333;
-  text-decoration: none;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-.recapQuickActions a:hover {
-  background: #fafafa;
-  border-color: #d4d4d8;
-}
 .pastilleRouge {
   margin-left: auto;
   background: #dc2626;
@@ -2801,22 +2664,27 @@
 }
 
 /*
- * Une chose à faire, et le reste en dessous.
+ * Une chose à faire, sur une ligne.
  *
  * L'écran racontait l'organisation du travail : trois étapes numérotées, sept tâches
- * en cartes, quatre compteurs, huit boutons de même poids. Il n'y a qu'une chose à
- * faire à un instant donné - elle prend la tête, en grand, avec son geste.
+ * en cartes, quatre compteurs, huit boutons de même poids. Réduit à une seule chose à
+ * faire, il en gardait la carte - deux cent quatre-vingts pixels en tête du dossier,
+ * avant les actes qu'on vient relire. La tâche tient sur une ligne : sa légende, son
+ * nom, son geste au bout. Ce qu'elle montrait est en dessous, dans la liste des
+ * documents, avec les mêmes gestes.
  */
 .maintenant {
-  margin-bottom: 28px;
-  padding: 22px 24px 24px;
-  border: 1px solid #d9d9dd;
-  border-radius: 14px;
-  background: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e4e4e7;
 }
 
 .maintenantLegende {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0;
@@ -2825,27 +2693,20 @@
 }
 
 .maintenantTitre {
+  /* Le nom de la tâche porte la ligne : il pousse les gestes au bord opposé. */
+  flex: 1 1 auto;
   margin: 0;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: 0;
   color: #111;
 }
 
-/* La phrase prend la largeur de la carte : bornée à 68 caractères, elle se coupait
-   en deux au milieu d'une ligne à moitié vide. */
-.maintenantPhrase {
-  margin: 8px 0 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #71717a;
-}
-
 .maintenantActions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
-  margin-top: 18px;
 }
 
 /* ---------- Ce qui vient après ---------- */
@@ -2936,19 +2797,6 @@ button.ligneCorps:disabled {
 .ligneGeste svg {
   width: 14px;
   height: 14px;
-}
-
-/*
- * Les documents d'une tâche, dans la tâche.
- *
- * Ils vivaient dans une fenêtre qu'un bouton ouvrait : on cliquait pour découvrir
- * trois lignes, puis on refermait. Ils se lisent maintenant sous le titre.
- */
-.maintenantDocuments {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
 }
 
 .ligneDocuments {
@@ -3389,47 +3237,76 @@ button.ligneCorps:disabled {
 }
 
 /*
- * Ce qui manque au dossier, en tête de la liste des pièces.
+ * Ce qui manque au dossier, dans la colonne qui dit ce qu'il porte.
  *
  * L'écran ne montrait que les documents présents. Une pièce obligatoire jamais déposée
  * n'apparaissait nulle part, et un dossier incomplet avait l'air d'un dossier complet -
  * on le déposait au greffe, qui le renvoyait des semaines plus tard.
+ *
+ * Le panneau portait un filet ambré de trois pixels sur son bord gauche. Un trait de
+ * couleur en marge ne se lit pas : il faut déjà savoir ce qu'il veut dire. C'est la
+ * pastille devant le titre qui porte l'alerte, et la carte a le même contour que celle
+ * des informations, juste en dessous.
  */
 .piecesManquantes {
-  margin: 0 0 18px;
-  padding: 14px 16px;
-  border: 1px solid #f0d9b5;
-  border-left: 3px solid #d18f2b;
-  border-radius: 12px;
-  background: #fdf8f0;
+  padding: 18px 20px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  background: #fff;
 }
 
 .piecesManquantesTitre {
-  margin: 0 0 8px;
-  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 14px;
   font-weight: 600;
-  color: #7a5210;
+  color: #111;
   letter-spacing: 0;
+}
+
+/* La pastille dit qu'il manque quelque chose ; le titre dit quoi. */
+.piecesManquantesTitre::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d18f2b;
 }
 
 .piecesManquantesListe {
   margin: 0;
-  padding: 0 0 0 16px;
+  padding: 0;
+  list-style: none;
   font-size: 13px;
-  line-height: 1.6;
-  color: #5c4a30;
+  line-height: 1.5;
+  color: #3f3f46;
 }
 
+.piecesManquantesListe li {
+  padding: 9px 0;
+  border-bottom: 1px solid #f5f5f7;
+}
+
+.piecesManquantesListe li:last-child {
+  border-bottom: none;
+}
+
+/* Le motif se lit sous le nom : côte à côte, il coupait la ligne en deux à 320 px. */
 .piecesManquantesMotif {
-  margin-left: 8px;
+  display: block;
+  margin-top: 2px;
   font-size: 12px;
-  color: #97794b;
+  color: #8a8a92;
 }
 
 .piecesManquantesNote {
-  margin: 8px 0 0;
+  margin: 12px 0 0;
   font-size: 12.5px;
-  color: #97794b;
+  line-height: 1.5;
+  color: #8a8a92;
 }
 
 /* ---------- Corriger le dossier, et reproduire ses actes ---------- */
@@ -3447,10 +3324,6 @@ button.ligneCorps:disabled {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
-}
-
-.documentsTete .sectionTitre {
-  margin: 0;
 }
 
 .correction {
@@ -3760,13 +3633,6 @@ button.ligneCorps:disabled {
   min-height: 0;
   overflow-y: auto;
   padding-right: 6px;
-}
-
-/* Les gestes rapides s'espacent : quatre liens collés se lisaient comme un bloc. */
-.recapQuickActions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 /* ---------- Les notes internes, dans la colonne ---------- */
