@@ -107,8 +107,15 @@ test("le dossier s'ouvre sur ce qu'il reste à faire", async ({ page }) => {
    * ne porte plus qu'une phrase.
    */
   await expect(page.getByText(/Espace avocat : vous relisez ici les documents/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Ce qu'il reste à faire" })).toBeVisible();
-  await expect(page.getByText("Vérifier les informations du dossier")).toBeVisible();
+
+  /*
+   * Les étapes tiennent dans une fenêtre. Sept cartes s'empilaient sous les documents,
+   * dont cinq disaient seulement pourquoi elles attendent : elles doublaient la hauteur
+   * de la page pour ce qui ne se fait pas maintenant. Le bouton les compte.
+   */
+  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
+  await expect(etapes.getByText("Vérifier les informations du dossier")).toBeVisible();
   await expect(page.getByText("Mettre les statuts à jour")).toBeVisible();
 });
 
@@ -131,13 +138,10 @@ test("les documents ouvrent la page, la colonne dit ce qui manque", async ({ pag
   const documents = page.locator("#documents");
   const colonne = page.getByRole("complementary", { name: /coup d/ });
 
-  /* Les documents passent avant la liste des tâches. */
+  /* Les documents ouvrent le travail ; les étapes sont derrière un bouton. */
   await expect(documents).toBeVisible();
-  const hautDesDocuments = (await documents.boundingBox())!.y;
-  const hautDeLaSuite = (await page
-    .getByRole("heading", { name: "Ce qu'il reste à faire" })
-    .boundingBox())!.y;
-  expect(hautDesDocuments).toBeLessThan(hautDeLaSuite);
+  await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ce qu'il reste à faire" })).toHaveCount(0);
 
   /* Un seul titre pour la liste : la section en portait deux, l'un redisant l'autre. */
   await expect(
@@ -207,7 +211,10 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
    * dépôt de capital, ni immatriculation - la société existe déjà.
    */
   await expect(page.getByText(/Espace avocat : vous relisez ici les documents/)).toBeVisible();
-  await expect(page.getByText(/Kbis à jour/i).first()).toBeVisible();
+
+  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
+  await expect(etapes.getByText(/Kbis à jour/i).first()).toBeVisible();
   /*
    * L'absence se vérifie sur les tâches, non sur la page entière.
    *
@@ -217,9 +224,7 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
    * dormait derrière un onglet. Ce que le test surveille est le vocabulaire de ce
    * qu'on demande à l'avocat de faire.
    */
-  await expect(
-    page.getByRole("list").getByText(/immatriculation|dépôt du capital/i)
-  ).toHaveCount(0);
+  await expect(etapes.getByText(/immatriculation|dépôt du capital/i)).toHaveCount(0);
 });
 
 test("une tâche qui attend autre chose dit quoi", async ({ page }) => {
@@ -230,9 +235,11 @@ test("une tâche qui attend autre chose dit quoi", async ({ page }) => {
   const dossier = await dossierDeModification();
   await page.goto("/avocat/" + dossier);
 
-  /* Les tâches sont toutes à l'écran : un blocage se lit sans rien déplier. */
-  await expect(page.getByText(/Vérifiez d'abord le dossier/)).toBeVisible();
-  await expect(page.getByText(/Les statuts en vigueur ne sont pas au dossier/)).toBeVisible();
+  /* Toutes les étapes tiennent dans la fenêtre : un blocage se lit sans rien déplier. */
+  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
+  await expect(etapes.getByText(/Vérifiez d'abord le dossier/)).toBeVisible();
+  await expect(etapes.getByText(/Les statuts en vigueur ne sont pas au dossier/)).toBeVisible();
 });
 
 test("les deux avis sont rédigés, et ils diffèrent", async ({ page }) => {
@@ -273,7 +280,11 @@ test("l'avocat produit les actes depuis le fil de travail", async ({ page }) => 
   const dossier = await dossierDeModification();
   await page.goto("/avocat/" + dossier);
 
-  await page.getByRole("button", { name: "Produire les actes" }).click();
+  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page
+    .getByRole("dialog", { name: "Ce qu'il reste à faire" })
+    .getByRole("button", { name: "Produire les actes" })
+    .click();
   await expect(page.getByRole("status")).toContainText("actes produits", { timeout: 20_000 });
 
   const produits = await prisma.documents.count({
@@ -312,7 +323,11 @@ test("un dossier incomplet refuse la production, en disant ce qui manque", async
   semes.push(troue.id);
 
   await page.goto("/avocat/" + troue.id);
-  await page.getByRole("button", { name: "Produire les actes" }).click();
+  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page
+    .getByRole("dialog", { name: "Ce qu'il reste à faire" })
+    .getByRole("button", { name: "Produire les actes" })
+    .click();
 
   await expect(page.getByRole("alert").filter({ hasText: /incomplet/ })).toBeVisible();
   expect(await prisma.documents.count({ where: { formalite_id: troue.id } })).toBe(0);
@@ -872,7 +887,11 @@ test("les actes attendent la relecture avant d'atteindre le client", async ({ pa
    */
   const dossier = await dossierDeModification();
   await page.goto("/avocat/" + dossier);
-  await page.getByRole("button", { name: "Produire les actes" }).click();
+  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page
+    .getByRole("dialog", { name: "Ce qu'il reste à faire" })
+    .getByRole("button", { name: "Produire les actes" })
+    .click();
   await expect(page.getByRole("status")).toContainText("actes produits", { timeout: 20_000 });
 
   const enAttente = await prisma.documents.count({

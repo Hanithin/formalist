@@ -458,10 +458,6 @@
 }
 
 /* L'ancre du dépôt : la tâche y conduit, le titre ne doit pas coller au bord. */
-/* L'avancement ouvre l'onglet : il n'a plus de blanc à prendre au-dessus de lui. */
-.ancreAvancement {
-  scroll-margin-top: 24px;
-}
 
 /* ---------- Les pièces d'une tâche, en fenêtre ---------- */
 
@@ -2593,8 +2589,6 @@
   min-width: 0;
 }
 
-.travailPied .faites,
-.travailPied .renvoi,
 .travailPied .facultatif {
   margin: 0;
 }
@@ -2671,12 +2665,113 @@
  * simplement où l'on est, et la tâche a rejoint la liste où elle garde son geste.
  */
 .situation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
   margin: 0 0 24px;
   padding-bottom: 20px;
   border-bottom: 1px solid #e4e4e7;
+}
+
+.situationPhrase {
+  margin: 0;
   font-size: 14px;
   line-height: 1.55;
   color: #52525b;
+}
+
+/*
+ * La suite des étapes, comptée avant d'être ouverte.
+ *
+ * Sept cartes s'empilaient sous les documents, dont cinq disaient seulement pourquoi
+ * elles attendent - « Le dossier n'est pas encore vérifié », « Le dépôt n'a pas encore
+ * eu lieu ». Elles doublaient la hauteur de la page pour ce qui ne se fait pas
+ * maintenant. Le nombre suffit à savoir où l'on en est ; la fenêtre porte le détail.
+ */
+.situationEtapes {
+  flex: none;
+  padding: 8px 14px;
+  border: 1px solid #d9d9dd;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #111;
+  cursor: pointer;
+}
+
+.situationEtapes:hover {
+  border-color: #a1a1aa;
+}
+
+/* La fenêtre des étapes : la liste, et rien autour. */
+.fenetreEtapes {
+  position: fixed;
+  z-index: 60;
+  /* Centrée par les marges : une transformation ferait bloc, voir .fenetreCorrections. */
+  inset: 0;
+  margin: auto;
+  width: min(620px, calc(100vw - 40px));
+  height: fit-content;
+  max-height: calc(100dvh - 80px);
+  overflow-y: auto;
+  padding: 22px 24px 24px;
+  border: 1px solid #e5e5e7;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+}
+
+.fenetreEtapesTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.fenetreEtapesTitre {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.fenetreEtapesFermer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.fenetreEtapesFermer svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fenetreEtapesFermer:hover {
+  background: #f4f4f5;
+  color: #111;
+}
+
+/* Ce qui se corrige plutôt que se fait : sous un filet, au pied de la liste. */
+.fenetreEtapesPied {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid #f2f2f4;
 }
 
 /*
@@ -2842,14 +2937,6 @@ button.ligneCorps:disabled {
 .ligneAutre:disabled {
   cursor: default;
   opacity: 0.5;
-}
-
-.ligneDocuments {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding-left: 4px;
 }
 
 /* ---------- Ce qui est fait, replié ---------- */
@@ -3585,24 +3672,6 @@ button.ligneCorps:disabled {
   padding-left: 18px;
   font-size: 12.5px;
   line-height: 1.55;
-}
-
-/* Où sont passés les actes : la question se pose au moment où l'on valide. */
-.renvoi {
-  margin: 16px 0 0;
-  font-size: 12.5px;
-  color: #a1a1aa;
-}
-
-.renvoi a {
-  color: #52525b;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: #d4d4d8;
-}
-
-.renvoi a:hover {
-  text-decoration-color: #111;
 }
 
 /*

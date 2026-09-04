@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { nomEnPhrase, type Tache } from "@/domain/formalite/cabinet";
-import { Piece, estUnActeProduit, type PieceAffichee } from "./Piece";
+import { estUnActeProduit, type PieceAffichee } from "./Piece";
 import { deposerUnLivrable } from "./Avancement";
 import styles from "../Avocat.module.css";
 
@@ -142,7 +142,14 @@ export function Travail({
    *
    * Nulle quand il n'y a rien à défaire : le dossier n'a pas encore commencé.
    */
-  etapePrecedente: string | null;
+  /**
+   * Le cran précédent de ce que le client voit, nommé.
+   *
+   * Le code seul - « 5b » - ne se met pas dans une phrase, et son libellé dépend du
+   * type de dossier : la dernière étape s'appelle « Kbis » pour une création et
+   * « Récépissé » pour un dépôt de comptes.
+   */
+  etapePrecedente: { code: string; libelle: string } | null;
   /** Quand le dossier s'est achevé, lu au journal. */
   termineLe: string | null;
   /**
@@ -168,6 +175,15 @@ export function Travail({
   const [motif, setMotif] = useState("");
 
   const [retour, setRetour] = useState<string | null>(null);
+  /*
+   * La suite des étapes, derrière un bouton.
+   *
+   * Sept cartes s'empilaient sous les documents - « Publier l'avis de constitution »,
+   * « Déposer au guichet unique », « Remettre extrait Kbis » - dont cinq disaient
+   * seulement pourquoi elles attendent. Elles doublaient la hauteur de la page pour ce
+   * qui ne se fait pas maintenant. Le bouton les compte ; la fenêtre les montre.
+   */
+  const [etapesOuvertes, setEtapesOuvertes] = useState(false);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -441,14 +457,6 @@ export function Travail({
    */
   const maintenant = taches.find((t) => t.etat !== "faite" && !t.bloquee);
   const restantes = taches.filter((t) => t.etat !== "faite");
-  /*
-   * Les actes validés ne s'affichent plus ici.
-   *
-   * Ils y sont restés le temps de comprendre le défaut - valider un acte le faisait
-   * disparaître de l'écran à la seconde du clic - mais leur place est l'onglet des
-   * documents, où ils vivent avec tous les autres. Une ligne y renvoie.
-   */
-  const actesValides = taches.some((t) => t.identifiant === "relecture" && t.etat === "faite");
 
   /**
    * Le geste d'une tâche, quelle que soit sa forme.
@@ -465,8 +473,17 @@ export function Travail({
     depot?: "kbis" | "rbe";
   } | null {
     if (tache.bloquee) return null;
-    /* Une tâche qui montre ses documents n'a pas de geste : ils portent les leurs. */
-    if (documentsDe(tache).length > 0) return null;
+    /*
+     * Une tâche qui porte des documents renvoie à la liste, elle ne les redit pas.
+     *
+     * Elle les affichait sous son titre, avec leurs boutons. C'était juste tant que la
+     * liste des tâches occupait la page ; depuis que les documents l'ouvrent et que les
+     * étapes tiennent dans une fenêtre, les mêmes cartes s'affichaient deux fois, à
+     * quelques centimètres l'une de l'autre.
+     */
+    if (documentsDe(tache).length > 0) {
+      return { libelle: "Voir les documents", href: "#documents" };
+    }
 
     if (tache.etat === "faite") {
       if (tache.identifiant === "relecture") {
@@ -649,10 +666,12 @@ export function Travail({
   }
 
   /**
-   * Les documents d'une tâche, posés dans la page.
+   * Les documents qu'une tâche concerne, pour savoir si elle y renvoie.
    *
-   * Ils vivaient dans une fenêtre qu'un bouton « Voir les documents » ouvrait : on
-   * cliquait pour découvrir trois lignes, puis on refermait. La tâche les porte.
+   * Elle les affichait sous son titre, avec leurs boutons. C'était juste tant que la
+   * liste des tâches occupait la page ; depuis que les documents l'ouvrent, les mêmes
+   * cartes s'affichaient deux fois. Il ne reste de leur compte que le choix du geste :
+   * « Voir les documents », qui mène à la liste.
    */
   function documentsDe(tache: Tache): PieceAffichee[] {
     return tache.onglet === "pieces" ? piecesDeLaTache(pieces, tache.identifiant) : [];
@@ -678,7 +697,6 @@ export function Travail({
   /** Une tâche en ligne : le titre, ce qui l'empêche, et son geste au bout. */
   function ligne(tache: Tache) {
     const geste = gesteDe(tache);
-    const documents = documentsDe(tache);
     const corps = (
       <>
         <span className={styles.ligneTitre}>{tache.titre}</span>
@@ -711,18 +729,6 @@ export function Travail({
      * La ligne entière est le geste : un bouton par tâche en faisait huit sur l'écran,
      * tous de même poids, dont aucun ne disait par où commencer.
      */
-    if (documents.length > 0) {
-      return (
-        <li key={tache.identifiant} className={styles.ligne}>
-          <span className={styles.ligneCorps}>{corps}</span>
-          <div className={styles.ligneDocuments}>
-            {documents.map((piece) => (
-              <Piece key={piece.id} piece={piece} dossier={dossier} />
-            ))}
-          </div>
-        </li>
-      );
-    }
     if (geste?.depot) {
       return (
         <li key={tache.identifiant} className={styles.ligne}>
@@ -753,7 +759,12 @@ export function Travail({
     if (geste?.href) {
       return geste.href.startsWith("#") ? (
         <li key={tache.identifiant} className={styles.ligne}>
-          <a href={geste.href} className={styles.ligneCorps}>
+          {/* Une ancre referme la fenêtre : sinon elle masque ce vers quoi elle mène. */}
+          <a
+            href={geste.href}
+            className={styles.ligneCorps}
+            onClick={() => setEtapesOuvertes(false)}
+          >
             {corps}
           </a>
         </li>
@@ -782,13 +793,6 @@ export function Travail({
     return (
       <li key={tache.identifiant} className={styles.ligne}>
         <span className={styles.ligneCorps}>{corps}</span>
-        {documents.length > 0 && (
-          <div className={styles.ligneDocuments}>
-            {documents.map((piece) => (
-              <Piece key={piece.id} piece={piece} dossier={dossier} />
-            ))}
-          </div>
-        )}
       </li>
     );
   }
@@ -896,10 +900,24 @@ export function Travail({
         y chercher : on vient relire des actes. La tâche a rejoint la liste, où elle
         garde son geste comme les autres, et la ligne dit simplement où l'on est.
       */}
-      <p className={styles.situation}>
-        Espace avocat : vous relisez ici les documents du dossier avant leur dépôt au
-        greffe.
-      </p>
+      <div className={styles.situation}>
+        <p className={styles.situationPhrase}>
+          Espace avocat : vous relisez ici les documents du dossier avant leur dépôt au
+          greffe.
+        </p>
+
+        {restantes.length > 0 && (
+          <button
+            type="button"
+            className={styles.situationEtapes}
+            onClick={() => setEtapesOuvertes(true)}
+          >
+            {restantes.length === 1
+              ? "1 étape à faire"
+              : restantes.length + " étapes à faire"}
+          </button>
+        )}
+      </div>
 
       {/*
         Le dossier est fini, et cela se voit.
@@ -956,7 +974,7 @@ export function Travail({
             <button
               type="button"
               className={styles.acheveReprendre}
-              onClick={() => reprendre(etapePrecedente)}
+              onClick={() => reprendre(etapePrecedente.code)}
               disabled={enCours}
             >
               {enCours ? "…" : "Reprendre ce dossier"}
@@ -975,12 +993,6 @@ export function Travail({
       */}
       {apresLaTacheDuMoment}
 
-      {restantes.length > 0 && (
-        <section>
-          <h3 className={styles.suiteTitre}>Ce qu&apos;il reste à faire</h3>
-          <ul className={styles.suite}>{restantes.map((tache) => ligne(tache))}</ul>
-        </section>
-      )}
 
       {/*
         Le pied de l'onglet, en une zone.
@@ -991,12 +1003,6 @@ export function Travail({
       */}
       <footer className={styles.travailPied}>
         <div className={styles.travailPiedNotes}>
-          {actesValides && (
-            <p className={styles.renvoi}>
-              Les actes du dossier sont <a href="#documents">un peu plus bas</a>.
-            </p>
-          )}
-
           {/*
             Le registre des bénéficiaires effectifs n'est pas une tâche : le greffe ne
             l'exige pas, et aucune tâche ne le réclame.
@@ -1012,6 +1018,75 @@ export function Travail({
           )}
         </div>
       </footer>
+
+      {etapesOuvertes && (
+        <>
+          <div
+            className={styles.voile}
+            onClick={() => setEtapesOuvertes(false)}
+            aria-hidden="true"
+          />
+
+          <div
+            className={styles.fenetreEtapes}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Ce qu'il reste à faire"
+          >
+            <div className={styles.fenetreEtapesTete}>
+              <h3 className={styles.fenetreEtapesTitre}>Ce qu&apos;il reste à faire</h3>
+              <button
+                type="button"
+                className={styles.fenetreEtapesFermer}
+                onClick={() => setEtapesOuvertes(false)}
+                aria-label="Fermer"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <ul className={styles.suite}>{restantes.map((tache) => ligne(tache))}</ul>
+
+            {/*
+              Revenir d'un cran sur ce que le client voit.
+              
+              Le geste vivait sur la carte de l'avancement, une frise de cinq crans posée
+              sous les documents. La frise ne faisait que redire l'état des tâches dans
+              d'autres mots ; le geste, lui, n'existe nulle part ailleurs - une étape
+              annoncée trop tôt se corrige, et c'est le client qui la lit.
+            */}
+            {etapePrecedente && (
+              <div className={styles.fenetreEtapesPied}>
+                <button
+                  type="button"
+                  className={styles.ligneAutre}
+                  onClick={() => reprendre(etapePrecedente.code)}
+                  disabled={enCours}
+                >
+                  {enCours
+                    ? "…"
+                    : "Revenir à « " + etapePrecedente.libelle + " »"}
+                </button>
+              </div>
+            )}
+
+            {refus && (
+              <p className={styles.fenetreCorrectionsRefus} role="alert">
+                {refus}
+              </p>
+            )}
+          </div>
+        </>
+      )}
 
       {fenetre && (
         <>
@@ -1096,7 +1171,14 @@ export function Travail({
           {retour}
         </p>
       )}
-      {refus && (
+      {/*
+        Le refus se dit une fois, là où l'on regarde.
+        
+        La fenêtre des étapes recouvre la page : un message posé dessous s'annonçait au
+        lecteur d'écran sans que personne puisse le lire. Il se déplace dans la fenêtre
+        tant qu'elle est ouverte.
+      */}
+      {refus && !etapesOuvertes && (
         <p className={styles.travailRefus} role="alert">
           {refus}
         </p>

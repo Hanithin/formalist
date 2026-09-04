@@ -56,11 +56,7 @@ test.describe("avancement du cabinet", () => {
   test("les étapes s'allument une à une, sans en sauter", async ({ page, request }) => {
     const dossier = await dossierDuCabinet("AVANCEMENT ESSAI " + Date.now());
 
-    await page.goto("/avocat/" + dossier.id + "?onglet=avancement");
-    /* La carte de cinq étages est devenue une ligne : « Le client voit … ». */
-    await expect(
-      page.getByRole("region", { name: "Avancement annoncé au client" })
-    ).toBeVisible();
+    await page.goto("/avocat/" + dossier.id);
 
     // Un dossier neuf n'entre qu'en 5a.
     const saut = await request.put("/api/avocat/dossier", {
@@ -69,11 +65,12 @@ test.describe("avancement du cabinet", () => {
     expect(saut.status()).toBe(403);
 
     /*
-     * La barre lit, elle n'avance pas.
+     * Les étapes se déduisent du travail fait, elles ne se poussent pas.
      *
-     * Quatre étapes sur cinq se déduisent du travail fait. La cinquième - le dépôt au
-     * guichet - se déclare depuis sa tâche, où elle est expliquée : la barre portait un
-     * second bouton pour le même geste, à trois lignes de distance.
+     * Quatre sur cinq viennent des tâches. La cinquième - le dépôt au guichet - se
+     * déclare depuis sa tâche, où elle est expliquée. La frise qui les affichait portait
+     * un second bouton pour le même geste, à trois lignes de distance ; elle a disparu,
+     * et avec elle le doublon.
      */
     await expect(page.getByRole("button", { name: /Passer à/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /déposé au guichet/i })).toHaveCount(0);
@@ -85,13 +82,22 @@ test.describe("avancement du cabinet", () => {
       });
     }
     await page.reload();
+
+    /* Les étapes tiennent dans une fenêtre : sept cartes doublaient la hauteur de la
+       page pour ce qui ne se fait pas maintenant. */
+    await page.getByRole("button", { name: /étapes? à faire/ }).click();
+    const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
+
     /* La ligne entière est le geste : son nom porte le titre de la tâche puis le sien. */
     await expect(
-      page.getByRole("button", { name: /Marquer comme effectué/ }).first()
+      etapes.getByRole("button", { name: /Marquer comme effectué/ }).first()
     ).toBeVisible();
 
-    // Et le retour d'un cran reste possible : c'est une correction de saisie.
-    await expect(page.getByRole("button", { name: /Revenir à . Révision/ })).toBeVisible();
+    /*
+     * Le retour d'un cran reste possible : c'est une correction de saisie, et le client
+     * lit l'étape annoncée. Il vivait sur la frise ; il est au pied de la fenêtre.
+     */
+    await expect(etapes.getByRole("button", { name: /Revenir à . Révision/ })).toBeVisible();
   });
 
   test("« Vérifié » dit au client où en est son dossier, sans rien lui demander", async ({
@@ -209,13 +215,18 @@ test.describe("avancement du cabinet", () => {
     }
 
     await page.goto("/avocat/" + dossier.id);
+    /* Les étapes tiennent dans une fenêtre : sept cartes doublaient la hauteur de la
+       page pour ce qui ne se fait pas maintenant. */
+    await page.getByRole("button", { name: /étapes? à faire/ }).click();
+    const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
+
     /*
      * Le libellé nomme le document que le greffe délivre pour ce type de dossier :
      * « Extrait Kbis » pour une création, « Kbis à jour » pour une modification. Il
      * était écrit « Kbis » en dur, et l'avocat d'une modification lisait qu'il devait
      * remettre un Kbis, que le greffe ne délivre pas dans ce cas.
      */
-    await page.getByLabel(/Déposer extrait kbis/i).setInputFiles({
+    await etapes.getByLabel(/Déposer extrait kbis/i).setInputFiles({
       name: "kbis.pdf",
       mimeType: "application/pdf",
       buffer: PDF,
@@ -671,8 +682,13 @@ test.describe("la correction d'un dossier de création", () => {
   test("les actes manquants se produisent depuis l'espace avocat", async ({ page }) => {
     const dossier = await dossierAvecActes("SANS ACTES " + Date.now());
 
-    await page.goto("/avocat/" + dossier.id + "?onglet=travail");
-    await page.getByRole("button", { name: "Produire les actes" }).click();
+    await page.goto("/avocat/" + dossier.id);
+    /* Les étapes tiennent dans une fenêtre : sept cartes doublaient la hauteur de la
+       page pour ce qui ne se fait pas maintenant. */
+    await page.getByRole("button", { name: /étapes? à faire/ }).click();
+    const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
+
+    await etapes.getByRole("button", { name: "Produire les actes" }).click();
 
     await expect
       .poll(
@@ -749,10 +765,15 @@ test.describe("l'avis de constitution", () => {
   test("le cabinet a une tâche, un texte, et de quoi déclarer la parution", async ({ page }) => {
     const dossier = await creation("AVIS ESSAI " + Date.now());
 
-    await page.goto("/avocat/" + dossier.id + "?onglet=travail");
-    await expect(page.getByText("Publier l'avis de constitution")).toBeVisible();
+    await page.goto("/avocat/" + dossier.id);
+    /* Les étapes tiennent dans une fenêtre : sept cartes doublaient la hauteur de la
+       page pour ce qui ne se fait pas maintenant. */
+    await page.getByRole("button", { name: /étapes? à faire/ }).click();
+    const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
 
-    await page.goto("/avocat/" + dossier.id + "?onglet=annonce");
+    await expect(etapes.getByText("Publier l'avis de constitution")).toBeVisible();
+
+    await page.goto("/avocat/" + dossier.id);
     /* Le texte est composé depuis le dossier : il n'y a qu'à le copier. */
     /* Le nom paraît deux fois : en titre de page et dans le récapitulatif de la colonne. */
     await expect(page.getByRole("heading", { name: /AVIS ESSAI/ })).toBeVisible();

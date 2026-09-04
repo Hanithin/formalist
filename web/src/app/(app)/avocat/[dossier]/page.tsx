@@ -33,10 +33,9 @@ import type { Brouillon } from "@/domain/formalite/parcours";
 import { Corriger } from "./Corriger";
 import { Historique, type EntreeDuJournal } from "./Historique";
 import { Communication, type MessageDuFil } from "./Communication";
-import { Avancement } from "./Avancement";
 import { PriseEnCharge } from "./PriseEnCharge";
 import { TYPE_KBIS, TYPE_RBE } from "@/infrastructure/db/depots/suivi";
-import { documentFinalDe } from "@/domain/formalite/cabinet";
+import { documentFinalDe, libelleSousPhase } from "@/domain/formalite/cabinet";
 import { Vide } from "@/components/liste/Vide";
 import {
   estUneModification,
@@ -453,7 +452,14 @@ export default async function DossierAvocat({
   const rang = estSousPhase(dossier.business_sub_phase)
     ? SOUS_PHASES_ORDONNEES.indexOf(dossier.business_sub_phase)
     : -1;
-  const etapePrecedente = rang > 0 ? SOUS_PHASES_ORDONNEES[rang - 1] : null;
+  const etapePrecedente =
+    rang > 0
+      ? {
+          code: SOUS_PHASES_ORDONNEES[rang - 1],
+          /* Le nom du cran dépend du parcours : « Kbis » ici, « Récépissé » ailleurs. */
+          libelle: libelleSousPhase(type, SOUS_PHASES_ORDONNEES[rang - 1]),
+        }
+      : null;
 
   return (
     <main className={styles.page}>
@@ -743,25 +749,6 @@ export default async function DossierAvocat({
           déjà décidée - n'avait aucun chemin. Ici, chacun porte ses gestes : ouvrir,
           corriger le Word, déposer sa version, valider, revenir sur la décision.
         */}
-
-        {/*
-          L'avancement annoncé au client, sous le travail qui le fait avancer.
-
-          Il ouvrait la colonne du dossier, au-dessus des informations : on y lisait ce
-          que le client voit de son côté avant même d'avoir vu les actes. C'est une
-          suite d'étapes que l'on franchit, non un repère que l'on consulte - sa place
-          est dans le fil du travail.
-        */}
-        <div id="avancement" className={styles.ancreAvancement}>
-              <Avancement
-                dossierId={dossier.id}
-                type={type}
-                sousPhase={dossier.business_sub_phase}
-                aLeKbis={remis(TYPE_KBIS)}
-                documentFinal={documentFinalDe(type, phaseDeLaFermeture)}
-                aLeRbe={remis(TYPE_RBE)}
-              />
-            </div>
 
         {/*
           Une section qui n'a rien à dire ne s'affiche pas.
