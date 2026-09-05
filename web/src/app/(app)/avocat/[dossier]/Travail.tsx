@@ -824,6 +824,15 @@ export function Travail({
         Le geste fermait la liste, sous le repli de ce qui est fait : on le découvrait
         au bas de l'écran, après avoir fait défiler ce qu'on venait de faire.
       */}
+      {/*
+        La barre du haut ne paraît que s'il y a une demande à clore.
+
+        Elle portait « Demander des corrections au client » et, à l'autre bout, le menu
+        des gestes sur le dossier. Les deux sont partis - le premier dans le menu, le
+        second sur la ligne des sections - et il restait une bande vide de cinquante
+        pixels au-dessus des documents.
+      */}
+      {correctionsEnCours && (
       <div className={styles.travailTete}>
         {/*
           Clore la demande, quand le client y a répondu.
@@ -852,27 +861,37 @@ export function Travail({
             {enCours ? "…" : "Le client a répondu, clore la demande"}
           </button>
         )}
+      </div>
+      )}
+      {/*
+        Où l'on est, et ce qu'on y fait, en une phrase.
 
-        <button
-          type="button"
-          className={styles.travailRenvoi}
-          onClick={() => setFenetre("corrections")}
-          disabled={enCours}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="9 14 4 9 9 4" />
-            <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-          </svg>
-          Demander des corrections au client
-        </button>
+        La page s'ouvrait sur la tâche du moment - « À FAIRE · Vérifier les informations
+        du dossier » - avec ses boutons, avant les documents. Ce n'est pas ce qu'on vient
+        y chercher : on vient relire des actes. La tâche a rejoint la liste, où elle
+        garde son geste comme les autres, et la ligne dit simplement où l'on est.
+      */}
+      {/*
+        La ligne ne porte plus que les sections rangées.
+
+        Elle disait « Espace avocat : vous relisez ici les documents du dossier avant
+        leur dépôt au greffe ». On le sait en y étant : le menu de gauche marque l'espace
+        avocat, le titre porte le dossier, et les documents ouvrent la page.
+      */}
+      <div className={styles.situation}>
+        <span className={styles.situationVolets}>
+          {restantes.length > 0 && (
+            <button
+              type="button"
+              className={styles.situationEtapes}
+              onClick={() => setEtapesOuvertes(true)}
+            >
+              {restantes.length === 1
+                ? "1 étape à faire"
+                : restantes.length + " étapes à faire"}
+            </button>
+          )}
+          {volets}
 
         {/*
           Ce qu'un avocat peut faire du dossier lui-même, et non de son travail.
@@ -915,6 +934,25 @@ export function Travail({
                 />
 
                 <div className={styles.menuGestesListe} role="menu">
+                  {/*
+                    Demander des corrections n'est pas écrire au client.
+
+                    Le fil, en bas de page, envoie un message et le dossier reste dans la
+                    file du cabinet. Ce geste-ci le rend au client : il repasse de son
+                    côté, il en est prévenu par courriel, et son espace lui dit ce qu'il
+                    doit reprendre. Il quitte la barre - il n'y a qu'un dossier sur cent
+                    qu'on renvoie - mais il ne se remplace pas par une phrase écrite.
+                  */}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOuvert(false);
+                      setFenetre("corrections");
+                    }}
+                  >
+                    Demander des corrections au client
+                  </button>
                   <button
                     type="button"
                     role="menuitem"
@@ -953,34 +991,6 @@ export function Travail({
             )}
           </span>
         )}
-      </div>
-      {/*
-        Où l'on est, et ce qu'on y fait, en une phrase.
-
-        La page s'ouvrait sur la tâche du moment - « À FAIRE · Vérifier les informations
-        du dossier » - avec ses boutons, avant les documents. Ce n'est pas ce qu'on vient
-        y chercher : on vient relire des actes. La tâche a rejoint la liste, où elle
-        garde son geste comme les autres, et la ligne dit simplement où l'on est.
-      */}
-      <div className={styles.situation}>
-        <p className={styles.situationPhrase}>
-          Espace avocat : vous relisez ici les documents du dossier avant leur dépôt au
-          greffe.
-        </p>
-
-        <span className={styles.situationVolets}>
-          {restantes.length > 0 && (
-            <button
-              type="button"
-              className={styles.situationEtapes}
-              onClick={() => setEtapesOuvertes(true)}
-            >
-              {restantes.length === 1
-                ? "1 étape à faire"
-                : restantes.length + " étapes à faire"}
-            </button>
-          )}
-          {volets}
         </span>
       </div>
 

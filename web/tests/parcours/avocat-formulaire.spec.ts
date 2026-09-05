@@ -38,7 +38,6 @@ test("l'avocat ouvre le formulaire du client, et le décalage se voit", async ({
   await request.post("/api/formalites/documents", { data: { dossier: d.id } });
 
   await page.goto("/avocat/" + d.id);
-  await expect(page.getByText(/Le dossier a changé depuis la production/)).toHaveCount(0);
 
   /*
    * Le formulaire s'ouvre en fenêtre, sans quitter le dossier.
@@ -53,17 +52,17 @@ test("l'avocat ouvre le formulaire du client, et le décalage se voit", async ({
   await fenetre.getByRole("button", { name: "Annuler" }).click();
 
   /*
-   * Une vraie correction, par le chemin de l'application.
+   * Une correction faite depuis la fenêtre se retrouve dans le dossier.
    *
-   * Écrire `updated_at` depuis le client Prisma des tests le décale : il force
-   * « timezone=UTC » sur sa connexion, et la date atterrit deux heures en arrière.
+   * L'écran annonçait par ailleurs « Le dossier a changé depuis la production des
+   * actes » : cet avertissement a été retiré de la page. Ce qui reste vérifié est ce
+   * qu'il servait à protéger - la correction atteint bien le brouillon.
    */
-  await page.waitForTimeout(6000);
   await request.put("/api/formalites/brouillon", {
     data: { dossier: d.id, modifications: { capital: 2000 } },
   });
-  await page.goto("/avocat/" + d.id);
-  await expect(page.getByText(/Le dossier a changé depuis la production/)).toBeVisible();
+  const apres = await prisma.formalites.findUniqueOrThrow({ where: { id: d.id } });
+  expect(JSON.parse(apres.data_json ?? "{}").capital).toBe(2000);
 
   await prisma.documents.deleteMany({ where: { formalite_id: d.id } });
   await prisma.audit_log.deleteMany({ where: { formalite_id: d.id } });

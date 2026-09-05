@@ -1098,26 +1098,36 @@
   border: 1px solid #e5e5e5;
   overflow: hidden;
 }
+/*
+ * Le récapitulatif tenait deux écrans.
+ *
+ * Quatre lignes de client et huit d'informations, chacune haute de trente-six pixels
+ * entre deux filets, sur une colonne qu'on lit du coin de l'œil en relisant un acte.
+ * On y cherchait le capital en faisant défiler.
+ */
 .recapSection {
-  padding: 22px 24px;
+  padding: 14px 16px;
   border-bottom: 1px solid #f0f0f0;
 }
 .recapSection:last-child {
   border-bottom: none;
 }
 .recapSection .recapRow {
-  padding: 12px 0;
-  border-bottom: 1px solid #f5f5f7;
-  margin-bottom: 0;
   align-items: baseline;
+  margin-bottom: 0;
+  padding: 6px 0;
+  border-bottom: none;
 }
 .recapSection .recapRow:last-child {
   border-bottom: none;
 }
 .recapTitle {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 14px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #8a8a92;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1125,8 +1135,8 @@
 .recapRow {
   display: flex;
   gap: 12px;
-  margin-bottom: 8px;
-  font-size: 14px;
+  margin-bottom: 0;
+  font-size: 13px;
   align-items: flex-start;
 }
 .recapRowLong .recapValue {
@@ -1315,77 +1325,88 @@
   white-space: nowrap;
 }
 
-/* DOCUMENTS */
+/*
+ * Un acte tient sur une ligne.
+ *
+ * La carte empilait quatre étages - l'icône seule, puis le nom, puis l'état et la date,
+ * puis les boutons - et mesurait cent cinquante pixels. À cinq actes, la liste qu'on
+ * vient lire tenait sur deux écrans et demi ; il fallait défiler pour savoir combien il
+ * y en avait. C'est la même liste que le client voit chez lui, où elle tient sur une
+ * ligne par acte : icône, nom, état, gestes.
+ *
+ * Le nom cède le premier quand la place manque - il s'abrège en gardant son titre
+ * complet à la souris - parce que l'état et les gestes ne se devinent pas, alors qu'un
+ * acte se reconnaît à ses premiers mots.
+ */
 .docCard {
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e5e5e5;
-  padding: 16px 20px;
-  margin-bottom: 12px;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+  /* Une ligne, sans repli : c'est le nom qui cède quand la place manque, pas la rangée. */
+  flex-wrap: nowrap;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background: #fff;
 }
+
 .docIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: #f5f5f5;
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #f5f5f5;
 }
+
 .docIcon svg {
-  width: 20px;
-  height: 20px;
-  color: #666;
+  width: 18px;
+  height: 18px;
+  color: #71717a;
 }
-/*
- * Le nom de l'acte prend sa ligne, les gestes prennent la leur.
- *
- * La carte posait tout côte à côte : l'icône, le nom, l'état, la date et quatre
- * boutons. Sur la largeur de la page cela tenait ; dans la colonne du dossier -
- * sept cents pixels au lieu de mille quatre cents - « Déclaration de non-condamnation
- * et de filiation » se coupait sur trois lignes contre sa pastille.
- *
- * La mesure est celle de la carte, non de l'écran : la page reste large pendant que
- * la colonne, elle, s'est resserrée.
- */
+
+/* Le nom et son état sur la même ligne : c'est ce couple qu'on lit d'un coup d'œil. */
 .docInfo {
-  flex: 1;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 }
 
-/*
- * La mesure est celle de la colonne, non de l'écran.
- *
- * Le conteneur se déclare sur le parent : un élément ne peut pas s'interroger
- * lui-même, et la règle posée sur la carte ne s'appliquait à rien.
- */
-@container (max-width: 800px) {
-  .docCard {
-    align-items: flex-start;
-    row-gap: 12px;
-  }
-  .docInfo {
-    flex: 1 1 100%;
-  }
-}
 .docName {
-  display: block;
+  min-width: 0;
+  overflow: hidden;
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
 .docMeta {
-  font-size: 12px;
-  color: #999;
   display: flex;
-  gap: 8px;
+  flex: none;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: #a1a1aa;
+  white-space: nowrap;
+}
+
+/*
+ * La date passe à la ligne avant le reste.
+ *
+ * Sous huit cents pixels - la mesure de la colonne, non de l'écran - le nom, l'état, la
+ * date et quatre gestes ne tiennent plus côte à côte. C'est la date qui cède : elle
+ * situe l'acte, elle ne dit pas quoi en faire.
+ */
+@container (max-width: 820px) {
+  .docQuand {
+    display: none;
+  }
 }
 /*
  * La carte d'une pièce : icône, ce qu'elle est, ce qu'on en fait.
@@ -1397,11 +1418,21 @@
  */
 .docActions {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Dans la carte, les gestes se resserrent : ils y sont quatre sur une seule ligne. */
+.docActions .decisionPrincipale,
+.docActions .decisionSecondaire,
+.docActions .decisionRefuser {
+  height: 30px;
+  padding: 0 11px;
+  font-size: 12.5px;
 }
 
 .decisions {
@@ -2645,28 +2676,34 @@
 }
 
 /*
- * Où l'on est, et ce qu'on y fait.
+ * La ligne des sections rangées, en tête du travail.
  *
- * La page s'ouvrait sur la tâche du moment, avec ses boutons, avant les documents. Ce
- * n'est pas ce qu'on vient y chercher : on vient relire des actes. La ligne dit
- * simplement où l'on est, et la tâche a rejoint la liste où elle garde son geste.
+ * La page s'ouvrait sur la tâche du moment, avec ses boutons, avant les documents ; puis
+ * sur une phrase qui disait où l'on est. Ni l'une ni l'autre n'est ce qu'on vient
+ * chercher : on vient relire des actes. Il ne reste qu'une rangée de boutons - ce qui
+ * est rangé ailleurs, et le menu des gestes sur le dossier au bout.
  */
 .situation {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px 20px;
-  margin: 0 0 24px;
-  padding-bottom: 20px;
+  /*
+   * La barre suit le bandeau du dossier, non un blanc de quarante pixels.
+   *
+   * Elle héritait de deux écarts qui s'additionnaient : celui de la colonne, entre le
+   * bandeau et le bloc de travail, et celui du bloc lui-même. La marge négative les
+   * annule ; ce qui sépare, c'est le filet sous la barre.
+   */
+  margin: -22px 0 18px;
+  padding-bottom: 14px;
   border-bottom: 1px solid #e4e4e7;
 }
 
-.situationPhrase {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #52525b;
+.situationVolets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
 /*
@@ -3911,6 +3948,33 @@ button.ligneCorps:disabled {
   color: #111;
 }
 
+/*
+ * Un menu qui héberge des boutons entiers, non des entrées de texte.
+ *
+ * Les gestes d'un acte portent leur propre fenêtre : les refaire en entrées de menu
+ * doublerait leur logique. Ils gardent leur bouton, empilé et étiré sur la largeur.
+ */
+.menuGestesListe .decisionPrincipale,
+.menuGestesListe .decisionSecondaire,
+.menuGestesListe .decisionRefuser,
+.menuGestesListe label {
+  justify-content: flex-start;
+  width: 100%;
+  height: 34px;
+  border-color: transparent;
+  background: none;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: #3f3f46;
+}
+
+.menuGestesListe .decisionPrincipale:hover,
+.menuGestesListe .decisionSecondaire:hover,
+.menuGestesListe label:hover {
+  background: #f4f4f5;
+  color: #111;
+}
+
 /* Refuser sort du dossier pour de bon : un filet l'écarte des deux autres. */
 .menuGestesRupture {
   margin-top: 6px !important;
@@ -3923,41 +3987,6 @@ button.ligneCorps:disabled {
 .menuGestesRupture:hover {
   background: #fef2f2 !important;
   color: #991b1b !important;
-}
-
-.travailRenvoi {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  margin: 0;
-  padding: 0 14px;
-  border: 1px solid #e5e5e7;
-  border-radius: 10px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: #3f3f46;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.travailRenvoi svg {
-  width: 15px;
-  height: 15px;
-  color: #a1a1aa;
-}
-
-.travailRenvoi:hover:not(:disabled) {
-  border-color: #d4d4d8;
-  background: #fafafa;
-  color: #111;
-}
-
-.travailRenvoi:disabled {
-  opacity: 0.55;
-  cursor: default;
 }
 
 /* ---------- La conversation avec le client ---------- */
@@ -4146,13 +4175,20 @@ button.ligneCorps:disabled {
  * La zone de texte gardait sa bordure, celle de la feuille globale : on lisait deux
  * cadres l'un dans l'autre, et la barre faisait deux fois sa hauteur utile.
  */
+/*
+ * Trois hauteurs différentes dans une même barre.
+ *
+ * Le champ mesurait trente pixels, le trombone trente, le bouton d'envoi trente-huit :
+ * la pastille se calait sur le plus grand et laissait les deux autres flotter au milieu,
+ * avec un rembourrage inégal en haut et en bas. Tout se cale sur trente-quatre.
+ */
 .filEcrire {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
   margin-top: 14px;
-  padding: 3px 4px 3px 16px;
+  padding: 5px 5px 5px 18px;
   border: 1px solid #e5e5e7;
   /* La barre épouse le bouton qu'elle contient : deux rayons différents faisaient
      lire une pastille posée dans un rectangle arrondi. */
@@ -4170,9 +4206,9 @@ button.ligneCorps:disabled {
   flex: 1;
   min-width: 160px;
   max-width: none;
-  min-height: 20px;
-  height: 30px;
-  padding: 4px 0;
+  min-height: 34px;
+  height: 34px;
+  padding: 6px 0;
   border: none;
   border-radius: 0;
   background: none;
@@ -4187,8 +4223,17 @@ button.ligneCorps:disabled {
 
 .filGestes {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+}
+
+/* Le bouton d'envoi tient la hauteur de la barre, comme le champ et le trombone. */
+.filGestes .travailPrincipal {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 13px;
 }
 
 .filRefus {
@@ -4204,8 +4249,8 @@ button.ligneCorps:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   color: #71717a;
   cursor: pointer;

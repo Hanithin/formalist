@@ -27,6 +27,7 @@ export function RelireLActe({
 }) {
   const champ = useRef<HTMLInputElement>(null);
   const [refus, setRefus] = useState<string | null>(null);
+  const [menu, setMenu] = useState(false);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -72,6 +73,14 @@ export function RelireLActe({
     });
   }
 
+  /*
+   * Valider reste sur la ligne, les deux issues passent dans un menu.
+   *
+   * Les trois gestes tenaient côte à côte : quatre cents pixels sur les sept cents de la
+   * colonne, dont deux dont on se sert rarement - corriger le Word quand l'acte cloche,
+   * déposer sa propre version quand on l'a repris à la main. Valider est ce qu'on fait de
+   * chaque acte, et il ne se cherche pas dans un menu.
+   */
   return (
     <>
       <button
@@ -83,23 +92,61 @@ export function RelireLActe({
         {enCours ? "…" : "Valider"}
       </button>
 
-      {source && (
-        <a
-          className={styles.decisionSecondaire}
-          href={"/api/fichier?nom=" + encodeURIComponent(source) + "&telecharger=1"}
+      <span className={styles.menuGestes}>
+        <button
+          type="button"
+          className={styles.menuGestesBouton}
+          onClick={() => setMenu((ouvert) => !ouvert)}
+          disabled={enCours}
+          aria-expanded={menu}
+          aria-haspopup="menu"
+          aria-label="Autres gestes sur cet acte"
         >
-          Corriger le Word
-        </a>
-      )}
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="19" cy="12" r="1.8" />
+          </svg>
+        </button>
 
-      <button
-        type="button"
-        className={styles.decisionSecondaire}
-        onClick={() => champ.current?.click()}
-        disabled={enCours}
-      >
-        {enCours ? "Envoi" : "Déposer ma version"}
-      </button>
+        {menu && (
+          <>
+            {/* Sans teinte : il ferme le menu au clic dehors, il n'assombrit pas la page. */}
+            <div
+              className={styles.menuVoile}
+              onClick={() => setMenu(false)}
+              aria-hidden="true"
+            />
+
+            <div className={styles.menuGestesListe} role="menu">
+              {/*
+                Le Word plutôt que le PDF : c'est le PDF qu'on remet, non ce qu'on corrige.
+              */}
+              {source && (
+                <a
+                  className={styles.decisionSecondaire}
+                  href={"/api/fichier?nom=" + encodeURIComponent(source) + "&telecharger=1"}
+                  onClick={() => setMenu(false)}
+                >
+                  Corriger le Word
+                </a>
+              )}
+
+              <button
+                type="button"
+                className={styles.decisionSecondaire}
+                onClick={() => {
+                  setMenu(false);
+                  champ.current?.click();
+                }}
+                disabled={enCours}
+              >
+                {enCours ? "Envoi" : "Déposer ma version"}
+              </button>
+            </div>
+          </>
+        )}
+      </span>
 
       <input
         ref={champ}

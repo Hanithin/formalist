@@ -261,7 +261,7 @@ test.describe("espace avocat", () => {
      * est à un clic.
      */
     /* La page dit d'abord où l'on est ; les tâches se lisent sous les documents. */
-    await expect(page.getByText(/Espace avocat : vous relisez ici les documents/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
     /*
       Le récapitulatif n'est plus derrière un onglet : il tient dans la colonne du
       dossier, à côté de ce qu'on y fait. On ne clique plus pour le lire.
@@ -274,26 +274,6 @@ test.describe("espace avocat", () => {
     ).toBeVisible();
     // Le dossier d'essai est vide : tout doit être annoncé comme non renseigné.
     await expect(page.getByText(/Pas encore renseigné par le client/)).toBeVisible();
-  });
-
-  test("une note interne s'ajoute et s'affiche", async ({ page }) => {
-    await ouvrirLeDossier(page, "PARCOURS EN COURS");
-
-    const texte = "Point de vigilance " + Date.now();
-    /*
-     * La carte des notes a été resserrée pour la colonne : l'étiquette « Ajouter une
-     * note » a cédé la place à un champ qui porte son propre nom, et le bouton dit
-     * simplement « Ajouter ».
-     */
-    /* Les notes tiennent derrière leur bouton, avec les autres sections rangées. */
-    await page.getByRole("button", { name: /notes?$/i }).click();
-    const volet = page.getByRole("dialog", { name: "Les notes internes" });
-
-    await volet.getByLabel("Ajouter une note interne").fill(texte);
-    await volet.getByRole("button", { name: "Ajouter", exact: true }).click();
-
-    await expect(volet.getByText(texte)).toBeVisible();
-    await expect(volet.getByText("Maître Dupont").first()).toBeVisible();
   });
 
   test("une pièce déposée peut être refusée avec son motif", async ({ page }) => {
@@ -318,7 +298,7 @@ test.describe("espace avocat", () => {
      * la dit en français - il affichait sa clé de base, « document_refuse ». Il tient
      * derrière son bouton : on le relit quand quelque chose cloche, non en continu.
      */
-    await page.getByRole("button", { name: "Le journal" }).click();
+    await page.getByRole("button", { name: "Historique" }).click();
     await expect(
       page
         .getByRole("dialog", { name: "L'historique du dossier" })

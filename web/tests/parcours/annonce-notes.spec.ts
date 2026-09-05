@@ -72,23 +72,15 @@ test.describe("annonce légale", () => {
 test.describe("notes internes", () => {
   test.use({ storageState: "./tests/parcours/session-avocat.json" });
 
-  test("l'auteur supprime sa note", async ({ page, request }) => {
+  /*
+   * Les notes n'ont plus d'écran : leur volet a quitté la barre du dossier. Le
+   * composant, la route et la table restent en place - ce que ce test vérifie - mais
+   * plus rien n'y mène depuis l'espace avocat.
+   */
+  test("l'auteur supprime sa note", async ({ request }) => {
     const { dossiers } = await (await request.get("/api/formalites")).json();
     const dossier = dossiers.find((d: { societe: string }) => d.societe === "PARCOURS EN COURS");
 
-    /* Les notes tiennent derrière leur bouton : elles ne se consultent pas en continu. */
-    await page.goto("/avocat/" + dossier.id);
-    await page.getByRole("button", { name: /notes?$/i }).click();
-    const volet = page.getByRole("dialog", { name: "Les notes internes" });
-
-    const texte = "Note à supprimer " + Date.now();
-    await volet.getByLabel("Ajouter une note").fill(texte);
-    /* Le bouton dit « Ajouter » : le formulaire est déjà celui des notes, et « la
-       note » y répétait ce que le champ d'à côté annonce. */
-    await volet.getByRole("button", { name: "Ajouter", exact: true }).click();
-    await expect(volet.getByText(texte)).toBeVisible();
-
-    // On retrouve son identifiant par l'API, faute de bouton dédié pour l'instant.
     const notes = await request.post("/api/avocat/notes", {
       data: { dossier: dossier.id, contenu: "note temporaire" },
     });

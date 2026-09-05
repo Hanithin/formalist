@@ -106,7 +106,7 @@ test("le dossier s'ouvre sur ce qu'il reste à faire", async ({ page }) => {
    * a rejoint la liste, où elle garde son geste comme les autres, et le haut de la page
    * ne porte plus qu'une phrase.
    */
-  await expect(page.getByText(/Espace avocat : vous relisez ici les documents/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
 
   /*
    * Les étapes tiennent dans une fenêtre. Sept cartes s'empilaient sous les documents,
@@ -138,10 +138,17 @@ test("les documents ouvrent la page, la colonne dit ce qui manque", async ({ pag
   const documents = page.locator("#documents");
   const colonne = page.getByRole("complementary", { name: /coup d/ });
 
-  /* Les documents ouvrent le travail ; les étapes sont derrière un bouton. */
+  /* Les documents ouvrent le travail ; le reste tient dans une rangée de boutons. */
   await expect(documents).toBeVisible();
   await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Historique" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Ce qu'il reste à faire" })).toHaveCount(0);
+
+  /*
+   * Les notes internes ne sont plus rendues : leur volet a quitté la barre. Le
+   * composant, son API et la table restent en place, mais plus rien n'y mène.
+   */
+  await expect(page.getByRole("button", { name: /notes?$/i })).toHaveCount(0);
 
   /* Un seul titre pour la liste : la section en portait deux, l'un redisant l'autre. */
   await expect(
@@ -169,9 +176,6 @@ test("les documents ouvrent la page, la colonne dit ce qui manque", async ({ pag
    * consulte en continu, et tous les trois s'interposaient entre l'avocat et les actes.
    * Il reste sur la page ce sur quoi on travaille - les documents, et la conversation.
    */
-  await expect(colonne.getByText("Notes internes")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /notes?$/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Le journal" })).toBeVisible();
   await expect(page.locator("#communication")).toBeVisible();
 });
 
@@ -216,7 +220,7 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
    * Ce qui distingue vraiment le vocabulaire d'une modification reste vérifié : ni
    * dépôt de capital, ni immatriculation - la société existe déjà.
    */
-  await expect(page.getByText(/Espace avocat : vous relisez ici les documents/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
 
   await page.getByRole("button", { name: /étapes? à faire/ }).click();
   const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
@@ -257,7 +261,7 @@ test("les deux avis sont rédigés, et ils diffèrent", async ({ page }) => {
   await page.goto("/avocat/" + dossier);
 
   /* L'avis tient derrière son bouton : le compte est dans le titre de la fenêtre. */
-  await page.getByRole("button", { name: "L'avis à publier" }).click();
+  await page.getByRole("button", { name: "Annonce légale" }).click();
   const avis = page.getByRole("dialog", { name: /2 avis à publier/ });
   await expect(avis).toBeVisible();
 
@@ -280,7 +284,7 @@ test("la publication se déclare, et le suivi du client avance", async ({ page }
   const dossier = await dossierDeModification("5c");
   await page.goto("/avocat/" + dossier);
 
-  await page.getByRole("button", { name: "L'avis à publier" }).click();
+  await page.getByRole("button", { name: "Annonce légale" }).click();
   await page
     .getByRole("dialog", { name: /avis à publier/ })
     .getByRole("button", { name: "Marquer comme publiés" })
@@ -397,7 +401,7 @@ test("un dossier de création ne montre pas de statuts à retoucher", async ({ p
   await expect(page.locator("#statuts")).toHaveCount(0);
 
   /* L'annonce, elle, concerne bien une création : la constitution s'annonce. */
-  await expect(page.getByRole("button", { name: "L'avis à publier" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Annonce légale" })).toBeVisible();
 });
 
 test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {
@@ -575,8 +579,16 @@ test("l'historique dit qui a fait quoi, et on revient dessus", async ({ page, re
     { timeout: 30_000 }
   );
 
-  // Le suivi s'atteint avant d'avoir rien fait : sinon on ne le découvre jamais.
-  await expect(page.getByRole("button", { name: "Historique" })).toBeVisible();
+  /*
+   * Le suivi s'atteint avant d'avoir rien fait : sinon on ne le découvre jamais.
+   *
+   * Celui de l'éditeur, non celui de la barre du dossier : les deux s'appellent
+   * « Historique » depuis que le volet du journal a pris ce nom, et ils ne montrent pas
+   * la même chose - l'un les retouches des statuts, l'autre les gestes sur le dossier.
+   */
+  await expect(
+    page.locator("#statuts").getByRole("button", { name: "Historique" })
+  ).toBeVisible();
 
   // Premier geste : on écrit dans le cadre repéré, pour avoir un état où revenir.
   const cadre = page.locator("div[class*='repere']").first();
@@ -609,7 +621,7 @@ test("l'historique dit qui a fait quoi, et on revient dessus", async ({ page, re
   expect(ecartee.pagesRetirees).toEqual([2]);
 
   // L'historique nomme le geste, son heure et son auteur.
-  await page.getByRole("button", { name: "Historique" }).click();
+  await page.locator("#statuts").getByRole("button", { name: "Historique" }).click();
   await expect(page.getByText("Page 2 écartée")).toBeVisible();
   await expect(page.getByText("Texte réécrit page 1")).toBeVisible();
   // L'état de départ est là, lui aussi : on peut revenir à la proposition d'origine.
@@ -797,7 +809,7 @@ test("le suivi compte les changements, non les cadres", async ({ page, request }
   expect(enregistre.verifiees).toEqual(["denomination"]);
 
   // Et la confirmation figure à l'historique, avec son auteur.
-  await page.getByRole("button", { name: "Historique" }).click();
+  await page.locator("#statuts").getByRole("button", { name: "Historique" }).click();
   await expect(page.getByText("Dénomination : confirmé")).toBeVisible();
 });
 

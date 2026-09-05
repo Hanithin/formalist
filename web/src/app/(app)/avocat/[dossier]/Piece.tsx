@@ -109,7 +109,7 @@ export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: numbe
           {/* L'état porte sa teinte : ce qui attend une décision se voit sans lire. */}
           <span className={`${styles.docEtat} ${styles[etat.ton]}`}>{etat.libelle}</span>
           {piece.creeLe && (
-            <span>
+            <span className={styles.docQuand}>
               {/*
                 Un acte repris au registre porte la date de son dépôt d'origine, sans
                 heure : « à 02:00 » n'est qu'un artefact de fuseau sur une date sans
@@ -149,22 +149,27 @@ export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: numbe
         )}
 
         {/*
-          Un projet d'acte se relit sur le Word qui l'a produit : le PDF est ce qu'on
-          remet, non ce qu'on corrige.
+          Corriger le Word et déposer sa version tiennent dans un menu.
+
+          Quatre gestes côte à côte prenaient quatre cents pixels sur les sept cents de
+          la colonne : le nom de l'acte n'avait plus la place de s'écrire, et la rangée
+          se repliait sous lui. Les deux qui restent visibles sont ceux qu'on fait à
+          chaque acte - l'ouvrir, puis le valider ; les deux autres sont les issues quand
+          il cloche.
         */}
         {piece.depose === "system" &&
           piece.statut === A_RELIRE &&
           piece.nom !== TITRE_STATUTS_A_JOUR &&
           piece.nom !== TITRE_STATUTS_EN_VIGUEUR && (
             <RelireLActe
-              document={piece.id}
-              dossier={dossier}
-              /*
-               * Sans LibreOffice, l'acte est gardé en Word plutôt que perdu : c'est
-               * alors le fichier remis lui-même qu'on corrige.
-               */
-              source={piece.source ?? (piece.fichier?.endsWith(".docx") ? piece.fichier : null)}
-            />
+                document={piece.id}
+                dossier={dossier}
+                /*
+                 * Sans LibreOffice, l'acte est gardé en Word plutôt que perdu : c'est
+                 * alors le fichier remis lui-même qu'on corrige.
+                 */
+                source={piece.source ?? (piece.fichier?.endsWith(".docx") ? piece.fichier : null)}
+              />
           )}
 
         {/*

@@ -13,7 +13,6 @@ import { libelleDuType } from "@/domain/formalite/liste";
 import { rangDeLActe } from "@/domain/formalite/documents";
 import { libelleJournal } from "@/domain/formalite/journal";
 import { SOUS_PHASES_ORDONNEES, estSousPhase } from "@/domain/formalite/avocat";
-import { Notes } from "./Notes";
 import { Travail } from "./Travail";
 import { Statuts } from "./Statuts";
 import { Annonce } from "./Annonce";
@@ -62,7 +61,6 @@ const CHAMPS: { cle: string; libelle: string }[] = [
   { cle: "capitalLibere", libelle: "Capital libéré" },
 ];
 
-
 /** La teinte du picto d'une entrée de journal, selon ce qu'elle raconte. */
 function teinteJournal(action: string): string {
   if (action.includes("valide")) return "green";
@@ -96,7 +94,13 @@ export default async function DossierAvocat({
   const vue = await dossierPourAvocat(utilisateur, Number(identifiant)).catch(() => null);
   if (!vue) notFound();
 
-  const { dossier, client, documents, notes, historique, donnees, nonLus, payeCentimes, dossiersAPrendre } = vue;
+  /*
+   * Les notes internes ne sont plus rendues.
+   *
+   * Leur volet a été retiré de la barre : le composant, son API et la table restent en
+   * place, mais plus rien n'y mène depuis cet écran.
+   */
+  const { dossier, client, documents, historique, donnees, nonLus, payeCentimes, dossiersAPrendre } = vue;
 
   /*
    * Une modification ne se range pas comme une création.
@@ -113,34 +117,7 @@ export default async function DossierAvocat({
    * Activité, Capital social - sous « Le client n'a encore rien renseigné ». La société
    * est immatriculée depuis des années ; c'est son exercice qu'on approuve.
    */
-  /*
-   * Les actes datent-ils d'avant la dernière correction ?
-   *
-   * L'avocat peut reprendre le dossier dans le formulaire du client, qui enregistre au
-   * fil de la frappe. Un capital corrigé là-bas laisse les actes tels quels : les
-   * statuts déposés diraient une chose, le dossier une autre, et rien ne le dirait.
-   *
-   * La production pose sa date en dernier ; toute écriture postérieure porte donc une
-   * date plus récente. Une seconde de marge absorbe l'écart entre les deux écritures
-   * d'une même production.
-   */
-  const produitsLe = documents
-    .filter((d) => d.uploaded_by === "system" && d.created_at)
-    .reduce<number>((tard, d) => Math.max(tard, d.created_at!.getTime()), 0);
-
-  /*
-   * Les deux dates viennent de la même source.
-   *
-   * Une marque posée par l'application et comparée à une colonne écrite par la base ne
-   * se comparent pas : deux minutes d'écart suffisent à mentir dans un sens comme dans
-   * l'autre. La date des actes est celle de leur ligne, celle du dossier est la sienne,
-   * et les deux passent par le même chemin.
-   *
-   * Cinq secondes de marge : produire les actes touche le dossier au passage, et les
-   * deux écritures d'une même production ne sont pas un décalage.
-   */
-  const actesPerimes = produitsLe > 0 && dossier.updated_at.getTime() > produitsLe + 5_000;
-
+  
   const sections = estUneModification(donnees)
     ? recapitulatifDeModification(donnees)
     : dossier.type === "comptes"
@@ -595,7 +572,7 @@ export default async function DossierAvocat({
                 <>
                   {avisAPublier > 0 && (
                     <Volet
-                      libelle="L'avis à publier"
+                      libelle="Annonce légale"
                       titre={
                         avisAPublier === 1
                           ? "L'avis à publier"
@@ -607,30 +584,8 @@ export default async function DossierAvocat({
                     </Volet>
                   )}
 
-                  <Volet libelle="Le journal" titre="L'historique du dossier" large>
+                  <Volet libelle="Historique" titre="L'historique du dossier" large>
                     <Historique entrees={entreesDuJournal} />
-                  </Volet>
-
-                  <Volet
-                    libelle={notes.length > 0 ? notes.length + " notes" : "Les notes"}
-                    titre="Les notes internes"
-                  >
-                    {/*
-                      L'avertissement tenait dans un encadré violet de trois lignes : il
-                      pesait plus que les notes qu'il annonce. Une ligne grise suffit.
-                    */}
-                    <p className={styles.notesMention}>
-                      Votre équipe seulement. Le client ne les voit jamais.
-                    </p>
-                    <Notes
-                      dossierId={dossier.id}
-                      notes={notes.map((n) => ({
-                        id: n.id,
-                        contenu: n.content,
-                        auteur: n.users?.name ?? "Inconnu",
-                        date: n.created_at?.toISOString() ?? null,
-                      }))}
-                    />
                   </Volet>
                 </>
               }
@@ -689,21 +644,7 @@ export default async function DossierAvocat({
                 </span>
               </div>
 
-              {/*
-                Ce qui est dit ne correspond plus à ce qui est écrit.
-                
-                Le dossier a changé après la production : les actes portent encore les
-                valeurs d'avant. Le dire ici, au-dessus d'eux, plutôt que de laisser
-                déposer au greffe des statuts qui contredisent le dossier dont ils
-                sortent.
-              */}
-              {actesPerimes && (
-                <p className={styles.actesPerimes} role="alert">
-                  Le dossier a changé depuis la production des actes. Reproduisez-les
-                  avant de les valider, sinon ils diront autre chose que le dossier.
-                </p>
-              )}
-              {pieces.length === 0 ? (
+                            {pieces.length === 0 ? (
                 <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />
               ) : (
                 pieces.map((piece) => (
