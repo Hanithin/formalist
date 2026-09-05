@@ -1742,6 +1742,24 @@
 }
 
 /*
+ * Une valeur longue passe sous son libellé, alignée à gauche.
+ *
+ * L'objet social tient cinq lignes : aligné à droite face à un libellé d'un mot, il se
+ * lisait en escalier, avec un bord gauche déchiqueté. Ce qui tient sur une ligne reste
+ * en regard du libellé, où l'œil le compare aux voisines.
+ */
+.colonneDossier .recapRowLong {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.colonneDossier .recapRowLong .recapValue {
+  flex-basis: 100%;
+  text-align: left;
+  font-weight: 400;
+}
+
+/*
  * Sous mille cent pixels, la colonne se range après le travail.
  *
  * Elle ne se supprime pas : c'est là que se lisent la forme, le capital et le siège,

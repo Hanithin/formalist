@@ -954,12 +954,28 @@ export default async function DossierAvocat({
                           en div, invisible à la navigation par titres. */}
                       <h2 className={styles.recapTitle}>Informations du dossier</h2>
 
-                      {renseignes.map((c) => (
-                        <div key={c.cle} className={styles.recapRow}>
-                          <span className={styles.recapLabel}>{c.libelle}</span>
-                          <span className={styles.recapValue}>{String(donnees[c.cle])}</span>
-                        </div>
-                      ))}
+                      {/*
+                        Une valeur longue passe sous son libellé.
+
+                        L'objet social tient cinq lignes : aligné à droite dans une
+                        colonne de trois cents pixels, face à un libellé d'un mot, il se
+                        lisait en escalier avec un bord gauche déchiqueté. Ce qui tient
+                        sur une ligne reste en regard du libellé, où l'œil le compare.
+                      */}
+                      {renseignes.map((c) => {
+                        const valeur = String(donnees[c.cle]);
+                        return (
+                          <div
+                            key={c.cle}
+                            className={`${styles.recapRow} ${
+                              valeur.length > 60 ? styles.recapRowLong : ""
+                            }`}
+                          >
+                            <span className={styles.recapLabel}>{c.libelle}</span>
+                            <span className={styles.recapValue}>{valeur}</span>
+                          </div>
+                        );
+                      })}
 
                       {renseignes.length === 0 && (
                         <Vide ton="encart" texte="Le client n'a encore rien renseigné." />

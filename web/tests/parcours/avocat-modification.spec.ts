@@ -261,6 +261,8 @@ test("les deux avis sont rédigés, et ils diffèrent", async ({ page }) => {
   const avis = page.getByRole("dialog", { name: /2 avis à publier/ });
   await expect(avis).toBeVisible();
 
+  /* Lire les textes dès l'ouverture du cadre les prend avant qu'ils y soient. */
+  await expect(avis.locator("pre").first()).toBeVisible();
   const textes = await avis.locator("pre").allTextContents();
   expect(textes).toHaveLength(2);
   expect(textes[0]).toContain("radiée du registre du commerce et des sociétés de Paris");
