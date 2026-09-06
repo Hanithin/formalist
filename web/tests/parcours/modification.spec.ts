@@ -1,6 +1,22 @@
 import { choisir, choisirDans } from "./liste";
 import { test, expect } from "@playwright/test";
 import { prisma } from "../../src/infrastructure/db/client";
+import { retirerDossiers } from "./nettoyage";
+
+/*
+ * Ce que la série ouvre, elle le retire.
+ *
+ * Chaque essai créait un dossier et le laissait derrière lui : une passe complète en
+ * ajoutait des dizaines à la base de développement, tous « Sans nom » et fraîchement
+ * modifiés, si bien qu'ils s'installaient en tête de la liste du cabinet et cachaient
+ * les dossiers réels qui attendaient un avocat. `preparer.ts` efface le compte d'essai
+ * au démarrage de la série, non à sa fin : ils survivaient jusqu'à la passe suivante.
+ */
+const semes: number[] = [];
+
+test.afterAll(async () => {
+  await retirerDossiers(semes);
+});
 
 /**
  * Le parcours de modification.
@@ -16,7 +32,10 @@ test.describe.configure({ mode: "serial" });
 async function ouvrirUnDossier(request: import("@playwright/test").APIRequestContext) {
   const reponse = await request.post("/api/formalites/modification");
   expect(reponse.status()).toBe(201);
-  return (await reponse.json()).dossier as number;
+
+  const dossier = (await reponse.json()).dossier as number;
+  semes.push(dossier);
+  return dossier;
 }
 
 const SOCIETE = {

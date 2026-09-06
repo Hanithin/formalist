@@ -9,6 +9,8 @@ export default defineConfig({
   testDir: "./tests/parcours",
   // Crée le compte d'essai avant la série
   globalSetup: "./tests/parcours/preparer.ts",
+  /* Et le rangement à la fin : le compte d'essai ne survit pas à la série. */
+  globalTeardown: "./tests/parcours/ranger.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

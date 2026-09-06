@@ -62,6 +62,16 @@ export async function retirerDossiers(ids: number[]) {
       if (chemin) await rm(path.join(DEPOT, path.basename(chemin)), { force: true });
     }
 
+    /*
+     * Tout ce qui pointe la ligne, non les seules pièces.
+     *
+     * Un paiement, un dépôt au guichet ou une invitation d'avocat retiennent le dossier
+     * par leur clé étrangère : la suppression échouait sur ces trois tables, et le
+     * nettoyage rendait la main sans avoir rien retiré.
+     */
+    await client.avocats_invites.deleteMany({ where: { formalite_id: { in: ids } } });
+    await client.depots_guichet.deleteMany({ where: { formalite_id: { in: ids } } });
+    await client.payments.deleteMany({ where: { formalite_id: { in: ids } } });
     await client.signature_requests.deleteMany({ where: { formalite_id: { in: ids } } });
     // Les avis rattachés au dossier : depuis qu'ils sont émis à chaque étape, ils
     // retiennent la ligne par leur clé étrangère et faisaient échouer le nettoyage.

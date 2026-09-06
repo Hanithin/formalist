@@ -2,6 +2,29 @@ import { choisirDans } from "./liste";
 import { test, expect } from "@playwright/test";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../src/infrastructure/db/generated/client";
+import { retirerDossiers } from "./nettoyage";
+
+/*
+ * Ce que la série ouvre, elle le retire.
+ *
+ * Chaque essai créait un dossier et le laissait derrière lui : une passe complète en
+ * ajoutait des dizaines à la base de développement, tous « Sans nom » et fraîchement
+ * modifiés, si bien qu'ils s'installaient en tête de la liste du cabinet et cachaient
+ * les dossiers réels qui attendaient un avocat. `preparer.ts` efface le compte d'essai
+ * au démarrage de la série, non à sa fin : ils survivaient jusqu'à la passe suivante.
+ */
+const semes: number[] = [];
+
+test.afterAll(async () => {
+  await retirerDossiers(semes);
+});
+
+/** Ouvre un dossier d'essai, et le retient pour le nettoyage. */
+async function ouvrirUnDossier(request: import("@playwright/test").APIRequestContext) {
+  const { dossier } = await (await request.post("/api/auto-entrepreneur")).json();
+  semes.push(Number(dossier));
+  return dossier as number;
+}
 
 /**
  * Auto-entreprise et recherche d'entreprise.
@@ -124,7 +147,7 @@ test.describe("auto-entreprise", () => {
   });
 
   test("on ne saute pas par-dessus une étape incomplète", async ({ page, request }) => {
-    const { dossier } = await (await request.post("/api/auto-entrepreneur")).json();
+    const dossier = await ouvrirUnDossier(request);
 
     await page.goto("/auto-entrepreneur?dossier=" + dossier + "&etape=6");
     await expect(page.getByRole("heading", { level: 2 })).toContainText("Identité");
@@ -158,7 +181,7 @@ test("le formulaire demande tout ce que le guichet réclame", async ({ page }) =
 });
 
 test("les pièces sont énumérées, et la qualification suit l'activité", async ({ page, request }) => {
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   const complete = {
@@ -211,7 +234,7 @@ test("l'option EIRL n'est pas reprise : le statut n'existe plus", async ({ page,
    * La loi du 14 février 2022 a supprimé l'EIRL, et sa création est impossible depuis
    * le 15 février 2022. La proposer laisserait choisir ce qui n'existe pas.
    */
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
@@ -347,7 +370,7 @@ test("la réglementation se reconnaît dans une liste, et le doute est une répo
    * droit qu'on ne connaît pas : cochée à tort elle réclame un diplôme inutile,
    * oubliée elle fait refuser le dossier au guichet.
    */
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
@@ -435,7 +458,7 @@ test("le récapitulatif montre tout ce qui sera déposé", async ({ page, reques
    * Il affichait quatre lignes sur une déclaration qui en compte trente : on ne
    * pouvait pas relire ce qu'on s'apprêtait à déposer.
    */
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
@@ -464,7 +487,7 @@ test("l'offre dit ce qu'elle vend, son prix et ce qu'elle ne cache pas", async (
   page,
   request,
 }) => {
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
@@ -488,7 +511,7 @@ test("l'offre dit ce qu'elle vend, son prix et ce qu'elle ne cache pas", async (
 
 test("une déclaration incomplète ne s'ouvre pas au paiement", async ({ page, request }) => {
   // L'avocat recevrait un dossier qu'il ne peut pas déposer, et il faudrait rembourser.
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   const reponse = await request.post("/api/auto-entrepreneur/paiement", { data: { dossier } });
@@ -513,7 +536,7 @@ test("un paiement abandonné le dit, et ne laisse pas croire à un débit", asyn
    * Revenir sur l'offre sans un mot laisse craindre d'avoir été débité quand même :
    * c'est le doute le plus coûteux d'un parcours de paiement.
    */
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
@@ -548,7 +571,7 @@ test("une déclaration réglée ne se reprend plus", async ({ page, request }) =
     }),
   });
 
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
@@ -611,7 +634,7 @@ test("les pièces se déposent depuis le parcours", async ({ page, request }) =>
    */
   const PDF = Buffer.from("%PDF-1.4\nfaux document d'essai\n%%EOF\n");
 
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await page.goto("/auto-entrepreneur?dossier=" + dossier);
 
   await request.put("/api/auto-entrepreneur", {
@@ -658,7 +681,7 @@ test("la colonne de droite dit ce qui est déclaré, et suit la frappe", async (
    * découlent de la nature d'activité, et n'étaient écrits nulle part une fois son
    * étape passée.
    */
-  const dossier = Number((await (await request.post("/api/auto-entrepreneur")).json()).dossier);
+  const dossier = await ouvrirUnDossier(request);
   await request.put("/api/auto-entrepreneur", {
     data: {
       dossier,

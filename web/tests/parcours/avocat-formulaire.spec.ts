@@ -1,6 +1,22 @@
 import { test, expect } from "@playwright/test";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../src/infrastructure/db/generated/client";
+import { retirerDossiers } from "./nettoyage";
+
+/*
+ * Ce que la série ouvre, elle le retire.
+ *
+ * Chaque essai créait un dossier et le laissait derrière lui : une passe complète en
+ * ajoutait des dizaines à la base de développement, tous fraîchement modifiés, si bien
+ * qu'ils s'installaient en tête de la liste du cabinet et cachaient les dossiers réels
+ * qui attendaient un avocat. `preparer.ts` efface le compte d'essai au démarrage de la
+ * série, non à sa fin : ils survivaient jusqu'à la passe suivante.
+ */
+const semes: number[] = [];
+
+test.afterAll(async () => {
+  await retirerDossiers(semes);
+});
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" }) });
 test.use({ storageState: "./tests/parcours/session-avocat.json" });
 
@@ -35,6 +51,7 @@ test("l'avocat ouvre le formulaire du client, et le décalage se voit", async ({
       }),
     },
   });
+  semes.push(d.id);
   await request.post("/api/formalites/documents", { data: { dossier: d.id } });
 
   await page.goto("/avocat/" + d.id);
@@ -98,6 +115,7 @@ test("la fenêtre porte le formulaire du client, étape par étape", async ({ pa
       }),
     },
   });
+  semes.push(d.id);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/avocat/" + d.id);

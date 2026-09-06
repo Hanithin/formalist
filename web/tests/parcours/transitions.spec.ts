@@ -1,4 +1,20 @@
 import { test, expect } from "@playwright/test";
+import { retirerDossiers } from "./nettoyage";
+
+/*
+ * Ce que la série ouvre, elle le retire.
+ *
+ * Chaque essai créait un dossier et le laissait derrière lui : une passe complète en
+ * ajoutait des dizaines à la base de développement, tous « Sans nom » et fraîchement
+ * modifiés, si bien qu'ils s'installaient en tête de la liste du cabinet et cachaient
+ * les dossiers réels qui attendaient un avocat. `preparer.ts` efface le compte d'essai
+ * au démarrage de la série, non à sa fin : ils survivaient jusqu'à la passe suivante.
+ */
+const semes: number[] = [];
+
+test.afterAll(async () => {
+  await retirerDossiers(semes);
+});
 
 /**
  * Transitions de dossier, montée en offre et conversion PDF.
@@ -7,6 +23,7 @@ import { test, expect } from "@playwright/test";
 /** Crée un dossier appartenant au compte d'essai et rend son identifiant. */
 async function nouveauDossier(request: import("@playwright/test").APIRequestContext) {
   const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+  semes.push(dossier as number);
   return dossier as number;
 }
 

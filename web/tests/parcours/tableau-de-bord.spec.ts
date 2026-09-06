@@ -206,6 +206,17 @@ test.describe("tableau de bord du client", () => {
  */
 async function ouvrirLeDossier(page: import("@playwright/test").Page, societe: string) {
   await page.goto("/avocat");
+
+  /*
+   * Par la recherche, non par la première page.
+   *
+   * Le dossier se cliquait dans la liste telle qu'elle s'ouvre : le test dépendait donc
+   * du classement et du nombre de dossiers du cabinet. Depuis que ce qui attend le
+   * cabinet passe devant ce que le client remplit, un brouillon d'essai n'est plus sur
+   * la première page - et il n'a pas à y être. La recherche l'atteint quel que soit son
+   * rang, et l'on clique toujours la ligne de la liste.
+   */
+  await page.getByLabel("Rechercher un dossier").fill(societe);
   await page.getByRole("link", { name: societe, exact: true }).click();
   await page.waitForURL(/\/avocat\/\d+/);
 }
@@ -216,8 +227,15 @@ test.describe("espace avocat", () => {
   test("liste les dossiers du cabinet", async ({ page }) => {
     await page.goto("/avocat");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Espace avocat");
-    // Le nom de la société est un lien : il mène à la page du dossier.
-    await expect(page.getByRole("link", { name: "PARCOURS EN COURS", exact: true })).toBeVisible();
+    /*
+     * Le nom de la société est un lien : il mène à la page du dossier.
+     *
+     * Sur « PARCOURS CONFIE », non sur « PARCOURS EN COURS » : ce dernier est un
+     * brouillon que le client remplit encore - `preparer.ts` le sème en « en_cours » -
+     * et la liste range désormais ces dossiers-là après ceux qui attendent le cabinet.
+     * Il n'est donc plus sur la première page, et il n'a jamais rien eu à y faire.
+     */
+    await expect(page.getByRole("link", { name: "PARCOURS CONFIE", exact: true })).toBeVisible();
   });
 
   test("un filtre laisse exactement le nombre de dossiers qu'il annonce", async ({ page }) => {

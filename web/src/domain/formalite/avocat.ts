@@ -370,6 +370,27 @@ export function estTri(valeur: string | undefined): Tri {
 }
 
 /**
+ * Un dossier que le client remplit encore n'est pas le travail du cabinet.
+ *
+ * L'avocat trie par date de modification, et chaque frappe du client remonte son
+ * brouillon en tête : la liste s'ouvrait sur quatre lignes « Sans nom », « Côté
+ * client », sur lesquelles il n'y a rien à faire, et le dossier réglé qui attendait
+ * d'être pris se trouvait en dessous. Ce qui appelle un geste du cabinet passe donc
+ * devant, et l'ordre demandé s'applique à l'intérieur de chaque groupe.
+ */
+function attendLeCabinet(dossier: DossierCabinet): boolean {
+  /*
+   * Le statut le dit, non la phase.
+   *
+   * « en_cours » est exactement l'état où le client remplit encore - c'est la règle que
+   * `statutProposable` pose déjà : tant qu'il remplit, rien n'est à réviser. La phase,
+   * elle, ne suffit pas : un dossier transmis et pris par un avocat peut en être à la
+   * troisième, et se serait retrouvé rangé du côté du client, sous les brouillons.
+   */
+  return dossier.status !== "en_cours";
+}
+
+/**
  * « Sans mouvement depuis longtemps » n'est pas une curiosité.
  *
  * C'est la question qu'un cabinet se pose : quel dossier ai-je laissé dormir ? Un tri
@@ -378,14 +399,31 @@ export function estTri(valeur: string | undefined): Tri {
 export function trier<T extends DossierCherchable>(dossiers: T[], tri: Tri): T[] {
   const copie = [...dossiers];
 
-  if (tri === "ancien") return copie.sort((a, b) => a.majLe.getTime() - b.majLe.getTime());
-  if (tri === "creation") return copie.sort((a, b) => b.creeLe.getTime() - a.creeLe.getTime());
+  /*
+   * L'ordre alphabétique reste alphabétique.
+   *
+   * « Par société (A-Z) » sert à retrouver une société qu'on a en tête ; le couper en
+   * deux blocs obligerait à chercher deux fois. Les tris par date, eux, répondent à
+   * « qu'est-ce qui bouge » - et ce qui bouge chez le client ne bouge pas ici.
+   */
   if (tri === "societe") {
     return copie.sort((a, b) =>
       aplati(a.societe ?? "").localeCompare(aplati(b.societe ?? ""), "fr")
     );
   }
-  return copie.sort((a, b) => b.majLe.getTime() - a.majLe.getTime());
+
+  const parDate =
+    tri === "ancien"
+      ? (a: T, b: T) => a.majLe.getTime() - b.majLe.getTime()
+      : tri === "creation"
+        ? (a: T, b: T) => b.creeLe.getTime() - a.creeLe.getTime()
+        : (a: T, b: T) => b.majLe.getTime() - a.majLe.getTime();
+
+  return copie.sort((a, b) => {
+    const rangA = attendLeCabinet(a) ? 0 : 1;
+    const rangB = attendLeCabinet(b) ? 0 : 1;
+    return rangA !== rangB ? rangA - rangB : parDate(a, b);
+  });
 }
 
 export interface Periode {

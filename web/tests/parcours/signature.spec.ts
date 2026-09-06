@@ -1,6 +1,29 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
+import { retirerDossiers } from "./nettoyage";
+
+/*
+ * Ce que la série ouvre, elle le retire.
+ *
+ * Chaque essai créait un dossier et le laissait derrière lui : une passe complète en
+ * ajoutait des dizaines à la base de développement, tous « Sans nom » et fraîchement
+ * modifiés, si bien qu'ils s'installaient en tête de la liste du cabinet et cachaient
+ * les dossiers réels qui attendaient un avocat. `preparer.ts` efface le compte d'essai
+ * au démarrage de la série, non à sa fin : ils survivaient jusqu'à la passe suivante.
+ */
+const semes: number[] = [];
+
+test.afterAll(async () => {
+  await retirerDossiers(semes);
+});
+
+/** Ouvre un dossier d'essai, et le retient pour le nettoyage. */
+async function ouvrirUnDossier(request: import("@playwright/test").APIRequestContext) {
+  const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+  semes.push(Number(dossier));
+  return dossier as number;
+}
 
 /**
  * Le circuit de signature.
@@ -16,9 +39,7 @@ import { test, expect } from "@playwright/test";
  * partageraient le même dossier s'annuleraient l'un l'autre.
  */
 async function ouvrirCircuit(request: import("@playwright/test").APIRequestContext) {
-  const { dossier: nouveau } = await (
-    await request.post("/api/formalites/brouillon")
-  ).json();
+  const nouveau = await ouvrirUnDossier(request);
   const dossier = { id: nouveau as number };
 
   const reponse = await request.post("/api/signature", {
@@ -35,7 +56,7 @@ async function ouvrirCircuit(request: import("@playwright/test").APIRequestConte
 }
 
 test("les jetons ne sortent jamais dans la réponse", async ({ request }) => {
-  const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+  const dossier = await ouvrirUnDossier(request);
 
   const reponse = await request.post("/api/signature", {
     data: { dossier, signataires: [{ nom: "Test", email: "t@exemple.test" }] },
@@ -149,7 +170,7 @@ test.describe("accès au circuit", () => {
   });
 
   test("une liste de signataires vide est refusée", async ({ request }) => {
-    const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
+    const dossier = await ouvrirUnDossier(request);
 
     const reponse = await request.post("/api/signature", {
       data: { dossier, signataires: [] },

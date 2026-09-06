@@ -89,6 +89,80 @@ describe("le tri", () => {
     expect(trier([b, a], "societe").map((d) => d.societe)).toEqual(["ÉCLAIR", "EDEN"]);
   });
 
+  /*
+   * Le client tape, son brouillon remonte, et la liste de l'avocat s'ouvre dessus.
+   *
+   * Elle montrait quatre lignes « Sans nom » sur lesquelles il n'y a rien à faire, et
+   * le dossier réglé qui attendait d'être pris se trouvait en dessous.
+   */
+  const cotéClient = (majLe: string, societe: string) =>
+    dossier({ societe, majLe: new Date(majLe), status: "en_cours", phase: 1, sousPhase: null });
+
+  it("un dossier pris par un avocat reste du côté du cabinet, quelle que soit sa phase", () => {
+    /*
+     * La phase ne suffit pas : un dossier transmis et accepté peut en être à la
+     * troisième, et se retrouvait alors rangé sous les brouillons du client.
+     */
+    const pris = dossier({
+      societe: "PRIS EN CHARGE",
+      majLe: new Date("2026-08-10T10:00:00"),
+      status: "en_attente_validation",
+      phase: 3,
+      sousPhase: null,
+      libre: false,
+    });
+    const brouillon = cotéClient("2026-08-20T10:00:00", "SANS NOM");
+
+    expect(trier([brouillon, pris], "recent").map((d) => d.societe)).toEqual([
+      "PRIS EN CHARGE",
+      "SANS NOM",
+    ]);
+  });
+
+  it("ce qui attend le cabinet passe devant ce que le client remplit", () => {
+    const brouillon = cotéClient("2026-08-20T10:00:00", "SANS NOM");
+    const aPrendre = dossier({
+      societe: "BLUE SHARK",
+      majLe: new Date("2026-08-14T10:00:00"),
+      libre: true,
+    });
+
+    expect(trier([brouillon, aPrendre], "recent").map((d) => d.societe)).toEqual([
+      "BLUE SHARK",
+      "SANS NOM",
+    ]);
+  });
+
+  it("l'ordre demandé s'applique à l'intérieur de chaque groupe", () => {
+    const vieuxBrouillon = cotéClient("2026-02-01T10:00:00", "BROUILLON ANCIEN");
+    const nouveauBrouillon = cotéClient("2026-08-20T10:00:00", "BROUILLON RÉCENT");
+
+    expect(trier([vieuxBrouillon, nouveauBrouillon, vieux, recent], "recent").map((d) => d.societe))
+      .toEqual(["ZEBRE", "ALPHA", "BROUILLON RÉCENT", "BROUILLON ANCIEN"]);
+  });
+
+  it("« sans mouvement depuis longtemps » garde aussi le cabinet devant", () => {
+    /* Un brouillon oublié du client n'est pas un dossier que le cabinet a laissé dormir. */
+    const brouillon = cotéClient("2026-01-01T10:00:00", "BROUILLON OUBLIÉ");
+    expect(trier([brouillon, vieux, recent], "ancien").map((d) => d.societe)).toEqual([
+      "ALPHA",
+      "ZEBRE",
+      "BROUILLON OUBLIÉ",
+    ]);
+  });
+
+  it("l'ordre alphabétique reste alphabétique", () => {
+    /*
+     * « Par société (A-Z) » sert à retrouver une société qu'on a en tête : le couper en
+     * deux blocs obligerait à chercher deux fois.
+     */
+    const brouillon = cotéClient("2026-08-20T10:00:00", "ALPHA BROUILLON");
+    expect(trier([recent, brouillon], "societe").map((d) => d.societe)).toEqual([
+      "ALPHA BROUILLON",
+      "ZEBRE",
+    ]);
+  });
+
   it("un tri inconnu retombe sur le plus récent", () => {
     expect(estTri("n-importe-quoi")).toBe("recent");
     expect(estTri(undefined)).toBe("recent");
