@@ -3921,12 +3921,20 @@ button.ligneCorps:disabled {
   margin: 8px 0 0 46px;
 }
 
-/* Sur la rangée, à côté de l'état : un bouton nu, qui ne pèse que son horloge. */
+/*
+ * Sur la rangée, à côté de l'état : un bouton nu, qui ne pèse que son horloge.
+ *
+ * La marge haute est remise à zéro. `globals.css` en pose dix-huit sur tout `button`
+ * pour les espacer d'un formulaire : posé au milieu d'une ligne, l'historique se
+ * retrouvait dix-huit pixels plus bas que la pastille qu'il côtoie, et la rangée
+ * gagnait autant de hauteur.
+ */
 .actesVersionsTete {
   display: inline-flex;
   align-items: center;
   flex: none;
   gap: 5px;
+  margin: 0;
   padding: 0;
   border: none;
   background: none;
