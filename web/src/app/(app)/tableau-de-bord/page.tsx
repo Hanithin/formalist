@@ -298,23 +298,38 @@ export default async function TableauDeBord() {
       */}
       <div className={styles.content}>
         <div className={styles.deuxColonnes}>
-          {enTete ? (
-            <DossierEnTete
-              nature={libelleDuType(enTete.type) ?? "Formalité"}
-              societe={nomComplet(enTete)}
-              prochaineEtape={enTete.prochaineEtape}
-              etat={tonDuDossier(enTete)}
-              etapes={friseDuDossier(enTete, detailEnTete?.suivi ?? [])}
-              actions={enTete.actions}
-              geste={gesteDuDossier(enTete)}
-              lien={lienDu(enTete.id)}
-              avocat={detailEnTete?.avocat ?? null}
-              nonLus={enTete.nonLus}
-            />
-          ) : (
-            /* Tout est clos : on montre ce qui vient après plutôt qu'un cadre vide. */
-            <FeuilleDeRoute />
-          )}
+          <div className={styles.colonneDeTete}>
+            {enTete ? (
+              <DossierEnTete
+                nature={libelleDuType(enTete.type) ?? "Formalité"}
+                societe={nomComplet(enTete)}
+                prochaineEtape={enTete.prochaineEtape}
+                etat={tonDuDossier(enTete)}
+                etapes={friseDuDossier(enTete, detailEnTete?.suivi ?? [])}
+                actions={enTete.actions}
+                geste={gesteDuDossier(enTete)}
+                lien={lienDu(enTete.id)}
+                avocat={detailEnTete?.avocat ?? null}
+                nonLus={enTete.nonLus}
+              />
+            ) : (
+              /* Tout est clos : on montre ce qui vient après plutôt qu'un cadre vide. */
+              <FeuilleDeRoute />
+            )}
+
+            {/*
+              Les documents du dossier en tête, sous lui.
+
+              L'encadré s'étirait pour occuper la colonne : un dossier à une attente y
+              laissait quatre cents pixels de blanc entre son chemin et son bouton, ce
+              qui n'est pas occuper l'espace mais l'écarter. Ce qui vient après
+              « reprendre », c'est de relire ce que le dossier porte - et c'est déjà
+              chargé, puisque l'encadré demande son avocat au même endroit.
+            */}
+            {(detailEnTete?.documents.length ?? 0) > 0 && (
+              <DocumentsDuDossier documents={detailEnTete?.documents ?? []} />
+            )}
+          </div>
 
           <AutresFormalites
             formalites={autres}

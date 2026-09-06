@@ -2267,7 +2267,35 @@
   }
 }
 
+/*
+ * La colonne de gauche : l'encadré, puis ce que le dossier porte.
+ *
+ * L'encadré s'étirait seul pour remplir la hauteur, et un dossier à une attente y
+ * laissait quatre cents pixels de blanc entre son chemin et son bouton. Il garde sa
+ * taille ; les documents du dossier prennent ce qui reste, et défilent dedans.
+ */
+.colonneDeTete {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  min-height: 0;
+  /* Comme la colonne de droite : chaque carte garde sa taille, c'est la colonne qui glisse. */
+  overflow-y: auto;
+}
+
 /* ---------- L'encadré de tête ---------- */
+
+/*
+ * Resserré, pour laisser voir ce qui suit.
+ *
+ * Six cent cinquante pixels de haut dans une colonne qui en fait sept cents : les
+ * documents du dossier commençaient sous le pli, et rien n'indiquait qu'il y avait
+ * quelque chose dessous. L'encadré rend quatre-vingt-dix pixels - marges intérieures,
+ * écart entre les jalons, séparations - sans rien perdre de ce qu'il dit. L'explication
+ * de l'étape tient la largeur de la carte : trois lignes deviennent deux, et le blanc
+ * à droite disparaît.
+ */
 
 /*
  * Blanc et encre, non le bandeau ambre d'avant.
@@ -2279,8 +2307,8 @@
 .teteCarte {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  padding: 30px 32px 26px;
+  flex-shrink: 0;
+  padding: 24px 28px 22px;
   border: 1px solid #eee;
   border-radius: 18px;
   background: #fff;
@@ -2290,7 +2318,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 11px;
 }
 
 .teteNature {
@@ -2310,7 +2338,7 @@
    * À vingt-six pixels dans une carte de sept cents de haut, il avait la taille d'un
    * titre de section : la carte paraissait une petite carte agrandie.
    */
-  font-size: 32px;
+  font-size: 29px;
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1.15;
@@ -2343,7 +2371,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin: 30px 0 0;
+  margin: 22px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -2364,7 +2392,7 @@
   /* La règle globale centre les `li` : le point tomberait au milieu de l'explication. */
   align-items: flex-start;
   gap: 16px;
-  padding: 0 0 18px 0;
+  padding: 0 0 13px 0;
 }
 
 /* Le trait relie un jalon au suivant ; le dernier n'en porte pas. */
@@ -2439,23 +2467,23 @@
 /* Seule l'étape en cours s'explique : tout expliquer ferait un mode d'emploi. */
 .teteJalonExplication {
   display: block;
-  max-width: 46ch;
-  margin-top: 5px;
+  max-width: 68ch;
+  margin-top: 4px;
   font-size: 13.5px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: #71717a;
 }
 
 /* ---------- Ce qui bloque ---------- */
 
 .teteAFaire {
-  margin-top: 30px;
-  padding-top: 18px;
+  margin-top: 20px;
+  padding-top: 16px;
   border-top: 1px solid #f2f2f4;
 }
 
 .teteAFaireTitre {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0;
@@ -2531,9 +2559,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 18px;
-  /* Le geste se pose au bas de la carte, quelle que soit sa hauteur. */
-  margin-top: auto;
-  padding-top: 20px;
+  margin-top: 20px;
+  padding-top: 16px;
   border-top: 1px solid #f2f2f4;
 }
 
@@ -2541,7 +2568,7 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 12px 22px;
+  padding: 11px 20px;
   border-radius: 10px;
   background: #111;
   color: #fff;
@@ -2838,4 +2865,9 @@
   font-size: 10.5px;
   letter-spacing: 0;
   color: #c4c4c8;
+}
+
+/* Les documents gardent leur taille : c'est la colonne qui défile, non la liste. */
+.colonneDeTete > .dashCard {
+  flex-shrink: 0;
 }
