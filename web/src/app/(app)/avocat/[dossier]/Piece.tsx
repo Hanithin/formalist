@@ -177,11 +177,9 @@ export function Piece({
         {(piece.nom === TITRE_STATUTS_A_JOUR ||
           (retouchable && piece.nom === TITRE_STATUTS_EN_VIGUEUR)) && (
           <a href={"/avocat/" + dossier + "/statuts"} className={styles.decisionPrincipale}>
-            {piece.nom === TITRE_STATUTS_A_JOUR
-              ? "Mettre à jour les statuts"
-              : repris
-                ? "Reprendre les modifications"
-                : "Modifier les statuts"}
+            {piece.nom === TITRE_STATUTS_A_JOUR || repris
+              ? "Reprendre les modifications"
+              : "Modifier les statuts"}
           </a>
         )}
 
@@ -230,6 +228,34 @@ export function Piece({
         et le nom, seul à céder, tombait à « Statu… ». Elle se lit sous lui, à son
         aplomb, comme les versions antérieures.
       */}
+      {/*
+        Les statuts à jour disent quand ils ont été produits.
+
+        La ligne n'affichait que « Projet à relire » - ce qu'il reste à faire, jamais ce
+        qui vient d'être fait. L'avocat qui sortait de l'éditeur y cherchait la trace de
+        son travail et ne trouvait qu'une consigne. La date, elle, ne se lit nulle part
+        ailleurs sur cette ligne : « .docQuand » disparaît sous huit cent vingt pixels de
+        colonne, et celle du cabinet est plus étroite.
+      */}
+      {retouchable && piece.nom === TITRE_STATUTS_A_JOUR && (
+        <p className={styles.docMention}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          {piece.creeLe
+            ? "Produits le " + quand(piece.creeLe) + ", depuis les statuts en vigueur"
+            : "Produits depuis les statuts en vigueur"}
+        </p>
+      )}
+
       {retouchable && piece.nom === TITRE_STATUTS_EN_VIGUEUR && repris && (
         <p className={styles.docMention}>
           <svg
