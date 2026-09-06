@@ -27,8 +27,18 @@ function texteDu(docx: Buffer): string {
   return xml.replace(/<[^>]+>/g, "").replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 }
 
+/*
+ * Deux associés, parce qu'un agrément se donne à quelqu'un.
+ *
+ * La série n'en portait qu'un, et le procès-verbal collégial lui échoyait tout de même
+ * - le gabarit se choisissait sur la forme déclarée. Depuis qu'il se choisit sur le
+ * nombre d'associés, une société qui n'en a qu'un reçoit une décision d'associé unique,
+ * où il n'y a personne pour agréer. Ces essais portent sur le texte de l'assemblée :
+ * ils lui donnent l'assemblée qu'il décrit.
+ */
 const ASSOCIES = [
   { nature: "physique" as const, civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 1000 },
+  { nature: "physique" as const, civilite: "Madame", prenom: "Claire", nom: "MARTIN", parts: 500 },
 ];
 
 const CESSION: Cession = {
@@ -184,7 +194,10 @@ describe("le procès-verbal d'une associée unique", () => {
   });
 
   it("reste au masculin pour un associé unique homme", () => {
-    const texte = produire("SASU", "modif-pv-transfert-siege-sasu.docx");
+    /* Seul : la série en compte deux depuis qu'un agrément se donne à quelqu'un. */
+    const texte = produire("SASU", "modif-pv-transfert-siege-sasu.docx", {
+      associes: [ASSOCIES[0]],
+    });
 
     expect(texte).toContain("Le soussigné, Monsieur Jean DUPONT, associé unique");
   });

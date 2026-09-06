@@ -3,7 +3,7 @@ import { toutesDesFemmes } from "@/domain/formalite/etat-civil";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { agrementDeDroit, cessionsRedigees, nomDeLAssocie, type Cession } from "./cession";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
-import { sirenEspace } from "./pv-age";
+import { identificationDeLAssocie, sirenEspace } from "./pv-age";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
 import { definitions, type Valeurs } from "./types";
 import { changeDeRessort } from "./formalites";
@@ -391,10 +391,19 @@ export function designationDeLAssocie(associe: AssociePresent): string {
 }
 
 function nomComplet(associe: AssociePresent): string {
-  if (associe.nature === "morale") return societeDesignee(associe);
-
-  const morceaux = [associe.civilite, associe.prenom, associe.nom].filter((m) => m?.trim());
-  return morceaux.length ? morceaux.join(" ") : TIRET;
+  /*
+   * Une seule façon de nommer un associé.
+   *
+   * Le modèle universel et les modèles classiques désignaient chacun le leur : « la
+   * société X, société par actions simplifiée au capital de …, dont le siège social est
+   * situé …, sous le numéro 552 100 554 » d'un côté, « La société X, Société par
+   * actions simplifiée …, dont le siège est …, sous le numéro 552100554 » de l'autre.
+   * Le second est moins bon - une majuscule au milieu d'une phrase, un numéro qui ne se
+   * lit pas par trois - et il servait peu tant que la décision d'associé unique
+   * n'échéait qu'aux SASU et EURL déclarées comme telles.
+   */
+  const nomme = identificationDeLAssocie(associe);
+  return nomme.trim() ? nomme : TIRET;
 }
 
 /**
@@ -638,7 +647,16 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
 
     /* ------------------------------------------------- Ce qui est décidé */
     TYPE_MODIFICATION: codes.join(","),
-    LABEL_MODIFICATION: choisies.map((d) => d.libelle).join(", "),
+    /*
+     * Le libellé s'enchâsse dans une phrase, il ne l'ouvre pas.
+     *
+     * L'acte écrit « a pris les décisions suivantes : {LABEL_MODIFICATION}. » et le
+     * menu, lui, présente ses intitulés en tête de ligne : on lisait « les décisions
+     * suivantes : Transfert de siège social. », une majuscule au milieu d'une phrase.
+     */
+    LABEL_MODIFICATION: choisies
+      .map((d) => d.libelle.charAt(0).toLowerCase() + d.libelle.slice(1))
+      .join(", "),
     /*
      * L'ordre du jour, point par point.
      *
@@ -1049,26 +1067,43 @@ export function gabaritProcesVerbal(
   nombreDAssocies?: number
 ): string {
   const f = (forme ?? "").trim().toUpperCase();
-  const unipersonnelle = natureDeLaForme(f).unipersonnelle;
-  const plusieurs = nombreDAssocies !== undefined && nombreDAssocies > 1;
+  const nature = natureDeLaForme(f);
 
   /*
    * Une assemblée délibère, un associé unique décide.
    *
    * Le modèle universel du cabinet écrit « l'Assemblée », « les associés », une feuille
-   * de présence et un président de séance : il ne convient qu'aux décisions collectives.
-   * Une SASU ou une EURL qui n'a qu'un associé garde donc son procès-verbal de décision,
-   * où rien de tout cela n'a lieu d'être.
+   * de présence et un président de séance : il ne convient qu'aux décisions
+   * collectives. Un procès-verbal de décision, où rien de tout cela n'a lieu d'être,
+   * convient au reste.
+   *
+   * C'est le nombre d'associés qui tranche, non la forme déclarée. La règle ne portait
+   * que sur celle-ci - « SASU », « EURL » - et une SAS dont un seul actionnaire est
+   * inscrit recevait donc l'acte collectif : « les actionnaires de la société se sont
+   * réunis en assemblée générale extraordinaire », « soit un actionnaires détenant
+   * ensemble », une feuille de présence certifiée par un bureau et un président de
+   * séance, pour une personne seule. Une société par actions simplifiée à actionnaire
+   * unique est une SASU, et son actionnaire exerce les pouvoirs de l'assemblée.
+   *
+   * Le modèle de la décision unique couvre les neuf changements que le parcours
+   * propose ; les blocs que seul le modèle universel porte - date de clôture, poursuite
+   * d'activité, transformation, dissolution, cadres libres - ne sont activés par aucun
+   * d'eux.
    */
-  if (!unipersonnelle || plusieurs) return MODELE_UNIVERSEL;
+  const seul =
+    nombreDAssocies === undefined ? nature.unipersonnelle : nombreDAssocies === 1;
+  if (!seul) return MODELE_UNIVERSEL;
 
   /*
-   * L'EURL est une SARL : ses titres sont des parts sociales, non des actions.
-   * Elle recevait le procès-verbal de SASU, qui parle d'actions d'un bout à l'autre.
+   * Le modèle suit les titres, non le libellé de la forme.
+   *
+   * Le choix se faisait sur « EURL », et toute autre forme recevait le procès-verbal de
+   * SASU - qui parle d'actions d'un bout à l'autre. Une SARL, une SCI ou une SELARL à
+   * associé unique détient des parts sociales.
    */
-  return f === "EURL"
-    ? "modif-pv-transfert-siege-eurl.docx"
-    : "modif-pv-transfert-siege-sasu.docx";
+  return nature.titres === "actions"
+    ? "modif-pv-transfert-siege-sasu.docx"
+    : "modif-pv-transfert-siege-eurl.docx";
 }
 
 /**

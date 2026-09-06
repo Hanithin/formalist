@@ -173,6 +173,85 @@ describe("le procès-verbal de modification", () => {
     expect(texte).not.toContain("feuille de présence");
   });
 
+  /*
+   * Une personne seule ne se réunit pas.
+   *
+   * Le choix se faisait sur la forme déclarée : une SAS dont un seul actionnaire est
+   * inscrit recevait l'acte collectif, qui écrit « les actionnaires de la société se
+   * sont réunis en assemblée générale extraordinaire », « soit un actionnaires détenant
+   * ensemble », une feuille de présence certifiée par un bureau et un président de
+   * séance. Une société par actions simplifiée à actionnaire unique est une SASU.
+   */
+  it("le nombre d'associés décide de l'acte, non la forme déclarée", () => {
+    const SEUL = "modif-pv-transfert-siege-sasu.docx";
+    const SEUL_PARTS = "modif-pv-transfert-siege-eurl.docx";
+
+    expect(gabaritProcesVerbal("SAS", 1)).toBe(SEUL);
+    expect(gabaritProcesVerbal("SARL", 1)).toBe(SEUL_PARTS);
+    /* Les titres décident du modèle : une SCI et une SELARL détiennent des parts. */
+    expect(gabaritProcesVerbal("SCI", 1)).toBe(SEUL_PARTS);
+    expect(gabaritProcesVerbal("SELAS", 1)).toBe(SEUL);
+
+    /* Et une unipersonnelle qui accueille un second associé délibère. */
+    expect(gabaritProcesVerbal("SASU", 2)).toBe(MODELE_UNIVERSEL);
+    expect(gabaritProcesVerbal("SAS", 3)).toBe(MODELE_UNIVERSEL);
+
+    /* Sans compte connu, la forme tranche, comme avant. */
+    expect(gabaritProcesVerbal("SAS")).toBe(MODELE_UNIVERSEL);
+    expect(gabaritProcesVerbal("SASU")).toBe(SEUL);
+  });
+
+  it("une SAS à actionnaire unique écrit une décision, non une assemblée", () => {
+    const donnees = donneesDuGabarit({
+      societe: { ...SOCIETE, forme: "SAS" },
+      assemblee: ASSEMBLEE,
+      codes: ["transfert_siege"],
+      valeurs: {
+        nouvelleAdresse: "12 Rue de Saint-Pétersbourg",
+        nouveauCodePostal: "75008",
+        nouvelleVille: "Paris",
+        dateEffetTransfert: "2026-09-15",
+      },
+    });
+    const texte = texteDu(genererDocument(gabaritProcesVerbal("SAS", 1), donnees));
+
+    expect(texte).toContain("DÉCISION DE L'ASSOCIÉ UNIQUE");
+    expect(texte).toContain("associé unique");
+    /* Les fautes que l'acte collectif écrivait pour une personne seule. */
+    expect(texte).not.toContain("un actionnaires");
+    expect(texte).not.toContain("se sont réunis");
+    expect(texte).not.toContain("feuille de présence");
+    expect(texte).not.toContain("Président de séance");
+  });
+
+  /* Un numéro d'immatriculation se lit par trois, dans cet acte comme dans les autres. */
+  it("groupe le SIREN par trois", () => {
+    const donnees = donneesDuGabarit({
+      societe: { ...SOCIETE, forme: "SAS", siren: "100442326" },
+      assemblee: ASSEMBLEE,
+      codes: ["transfert_siege"],
+      valeurs: { nouvelleAdresse: "12 rue Bleue", nouveauCodePostal: "75009", nouvelleVille: "Paris" },
+    });
+    const texte = texteDu(genererDocument(gabaritProcesVerbal("SAS", 1), donnees));
+
+    expect(texte).toContain("100 442 326");
+    expect(texte).not.toContain("100442326");
+  });
+
+  /* Le libellé s'enchâsse dans une phrase : « les décisions suivantes : transfert… ». */
+  it("n'ouvre pas une majuscule au milieu d'une phrase", () => {
+    const donnees = donneesDuGabarit({
+      societe: { ...SOCIETE, forme: "SAS" },
+      assemblee: ASSEMBLEE,
+      codes: ["transfert_siege"],
+      valeurs: { nouvelleAdresse: "12 rue Bleue", nouveauCodePostal: "75009", nouvelleVille: "Paris" },
+    });
+    const texte = texteDu(genererDocument(gabaritProcesVerbal("SAS", 1), donnees));
+
+    /* La passe typographique pose une espace fine avant les deux-points. */
+    expect(texte).toMatch(/décisions suivantes\s?: transfert/);
+  });
+
   it("l'EURL a des parts sociales, non des actions", () => {
     /*
      * Elle recevait le procès-verbal de SASU, qui parle d'actions d'un bout à l'autre :
