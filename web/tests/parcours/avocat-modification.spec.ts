@@ -1958,3 +1958,35 @@ test("l'avocat corrige l'adresse du nouveau siège depuis le dossier", async ({ 
   await ville.fill("Lyon");
   await expect(ville).toHaveValue("Lyon");
 });
+
+/**
+ * La fenêtre ne défile pas : c'est le contenu qui défile, dans sa colonne.
+ *
+ * La coquille de l'application tient la hauteur de l'écran et découpe ce qui dépasse ;
+ * seule la colonne de droite défile. Mais `overflow: hidden` ne retient pas un
+ * descendant en `position: absolute` sans ancêtre positionné : il se cale sur le bloc
+ * conteneur initial, hors de portée de la découpe. L'entrée de fichier masquée du fil
+ * de discussion - un carré d'un pixel, posé bas dans une page longue - allongeait ainsi
+ * le document de deux cent cinquante pixels : la molette passée sur la colonne de
+ * gauche faisait glisser la page entière, et découvrait dessous une bande blanche que
+ * rien ne peignait.
+ */
+test("la page tient dans l'écran, seul son contenu défile", async ({ page }) => {
+  const dossier = await dossierDeModification();
+  await page.goto("/avocat/" + dossier);
+
+  /* Le fil de discussion est en bas de page : c'est lui qui portait le coupable. */
+  await expect(page.getByRole("heading", { name: /échanges avec le client/i })).toBeVisible();
+
+  const mesures = await page.evaluate(() => {
+    window.scrollTo(0, 99_999);
+    return {
+      defilement: Math.round(window.scrollY),
+      document: document.documentElement.scrollHeight,
+      ecran: document.documentElement.clientHeight,
+    };
+  });
+
+  expect(mesures.defilement).toBe(0);
+  expect(mesures.document).toBe(mesures.ecran);
+});

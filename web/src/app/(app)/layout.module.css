@@ -20,6 +20,20 @@
  */
 .page {
   display: flex;
+  /*
+   * La coquille se déclare bloc conteneur.
+   *
+   * Sans cela, `overflow: hidden` ne retient pas tout : un descendant en
+   * `position: absolute` sans ancêtre positionné se cale sur le bloc conteneur initial,
+   * hors de portée de la découpe, et allonge le document de ce qu'il dépasse. C'est ce
+   * que faisait l'entrée de fichier masquée du fil de discussion - un carré d'un pixel,
+   * posé bas dans une page longue : la fenêtre gagnait deux cent cinquante pixels de
+   * défilement, et l'on découvrait sous la colonne et sous le contenu une bande blanche
+   * que rien ne peignait.
+   *
+   * La corriger ici la corrige pour toutes les pages, et pour celles à venir.
+   */
+  position: relative;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
