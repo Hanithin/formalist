@@ -34,12 +34,25 @@ export function Communication({
   /** Ce que le client a écrit et qu'on n'avait pas encore ouvert. */
   nonLus: number;
 }) {
+  const fil = useRef<HTMLOListElement>(null);
   const [texte, setTexte] = useState("");
   const [refus, setRefus] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const champ = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const marque = useRef(false);
+
+  /*
+   * On ouvre un fil sur son dernier message.
+   *
+   * La liste tient dans un cadre de hauteur fixe : sans ce geste, elle s'ouvre sur le
+   * premier message échangé, et il faut faire défiler pour trouver celui auquel on vient
+   * répondre.
+   */
+  useEffect(() => {
+    const liste = fil.current;
+    if (liste) liste.scrollTop = liste.scrollHeight;
+  }, [messages.length]);
 
   /*
    * Ouvrir le fil, c'est le lire.
@@ -99,11 +112,26 @@ export function Communication({
           dans la messagerie du client, et dans la vôtre.
         </p>
       ) : (
-        <ol className={styles.filMessages}>
+        /*
+         * Un journal, non une simple liste.
+         *
+         * Le fil reçoit les réponses du client sans que la page change : « log » est le
+         * rôle d'une zone qui s'allonge par le bas, et il fait annoncer les arrivées sans
+         * relire ce qui précède. La messagerie le porte déjà ; ce fil est le même.
+         */
+        <ol className={styles.filMessages} role="log" ref={fil}>
           {messages.map((message, rang) => {
             const deNous = message.expediteurId === moi;
             /* Le nom ne se répète pas d'une bulle à l'autre du même auteur. */
             const nouvelAuteur = messages[rang - 1]?.expediteurId !== message.expediteurId;
+            /*
+             * L'heure clôt une suite, elle ne suit pas chaque bulle.
+             *
+             * Chaque message coûtait trois lignes - le nom, la bulle, l'heure - et deux
+             * d'entre elles disaient la même chose que la précédente. Sur cinq messages
+             * d'affilée, l'heure paraissait cinq fois pour une seule minute.
+             */
+            const finDeSuite = messages[rang + 1]?.expediteurId !== message.expediteurId;
 
             return (
               <li
@@ -148,7 +176,7 @@ export function Communication({
                   )}
                 </div>
 
-                <span className={styles.filQuand}>{message.quand}</span>
+                {finDeSuite && <span className={styles.filQuand}>{message.quand}</span>}
               </li>
             );
           })}

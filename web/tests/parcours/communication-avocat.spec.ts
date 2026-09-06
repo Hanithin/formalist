@@ -58,6 +58,58 @@ test.describe("le fil du dossier", () => {
   test.describe("écrit par l'avocat", () => {
     test.use({ storageState: "./tests/parcours/session-avocat.json" });
 
+    /**
+     * Le fil tient dans un cadre, il ne pousse pas la page.
+     *
+     * Il grandissait avec la conversation : trente messages faisaient trois écrans, et
+     * les documents qu'on vient relire se retrouvaient loin au-dessus. La barre
+     * d'écriture descendait avec le dernier message - pour répondre, il fallait défiler
+     * jusqu'au bas de la page.
+     *
+     * Le premier essai posait la liste en bas par `justify-content: flex-end`. Dans une
+     * boîte qui défile, il pousse le début du contenu au-delà du bord haut, où aucun
+     * défilement ne va le chercher : le fil s'ouvrait sur un message coupé en deux, et
+     * remonter ne le montrait jamais.
+     */
+    test("le fil garde sa hauteur, et défile dedans", async ({ page, request }) => {
+      const dossier = await dossierSuivi("FIL LONG " + Date.now());
+
+      for (let i = 0; i < 12; i += 1) {
+        await request.post("/api/messages", {
+          data: { dossier: dossier.id, contenu: "Message numéro " + (i + 1) + " du fil." },
+        });
+      }
+
+      await page.goto("/avocat/" + dossier.id);
+      const liste = page.getByRole("log");
+      await expect(liste).toBeVisible();
+
+      const mesures = await liste.evaluate((l) => ({
+        visible: l.clientHeight,
+        contenu: l.scrollHeight,
+        enBas: l.scrollTop + l.clientHeight >= l.scrollHeight - 4,
+      }));
+
+      /* La liste déborde de son cadre, et c'est elle qui défile. */
+      expect(mesures.contenu).toBeGreaterThan(mesures.visible);
+      /* Elle s'ouvre sur le dernier message : c'est celui auquel on vient répondre. */
+      expect(mesures.enBas).toBe(true);
+
+      /* Le premier message se rejoint en remontant : rien ne déborde par le haut. */
+      const premierVisible = await liste.evaluate((l) => {
+        l.scrollTop = 0;
+        const premier = l.firstElementChild!.getBoundingClientRect();
+        return premier.top >= l.getBoundingClientRect().top - 1;
+      });
+      expect(premierVisible).toBe(true);
+
+      /* La barre d'écriture reste dans le cadre, sous la liste. */
+      const champ = page.getByLabel("Écrire au client");
+      const bas = (await champ.boundingBox())!;
+      const cadre = (await liste.boundingBox())!;
+      expect(bas.y).toBeGreaterThan(cadre.y + cadre.height - 1);
+    });
+
     test("un message écrit au client le prévient", async ({ request }) => {
       const dossier = await dossierSuivi("MESSAGE ESSAI " + Date.now());
       const { client } = await comptes();

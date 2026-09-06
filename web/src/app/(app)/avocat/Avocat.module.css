@@ -4088,20 +4088,47 @@ button.ligneCorps:disabled {
  * on écrivait de mémoire, sans ce qu'on voulait commenter sous les yeux.
  */
 
+/*
+ * Le fil tient dans un cadre, il ne pousse pas la page.
+ *
+ * Il grandissait avec la conversation : trente messages faisaient trois écrans, et les
+ * documents qu'on vient relire se retrouvaient loin au-dessus. La barre d'écriture, elle,
+ * descendait avec le dernier message - pour répondre, il fallait défiler jusqu'en bas de
+ * la page.
+ *
+ * Le cadre garde sa hauteur, la liste défile dedans, et la barre reste posée en bas.
+ */
 .fil {
   display: flex;
   flex-direction: column;
-  min-height: 460px;
-  padding: 18px 20px;
+  height: min(52dvh, 460px);
+  min-height: 320px;
+  padding: 14px 16px;
   border: 1px solid #ececee;
   border-radius: 16px;
   background: #fff;
 }
 
-/* Le fil pousse la barre d'écriture au bas du panneau. */
+/*
+ * La liste prend la place qui reste et défile seule.
+ *
+ * Une conversation courte se pose en bas, contre la barre d'écriture. Non par
+ * `justify-content: flex-end` : dans une boîte qui défile, il pousse le début du contenu
+ * au-delà du bord haut, où aucun défilement ne va le chercher. Le premier message ouvrait
+ * le fil coupé en deux, et remonter ne le montrait jamais.
+ *
+ * Une marge automatique sur le premier message fait la même chose sans rien casser : elle
+ * s'annule d'elle-même dès que la liste dépasse.
+ */
 .fil > .filMessages {
   flex: 1;
-  justify-content: flex-end;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.fil > .filMessages > :first-child {
+  margin-top: auto;
 }
 
 @media (max-width: 1100px) {
@@ -4134,9 +4161,10 @@ button.ligneCorps:disabled {
 .filMessages {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  /* Deux bulles du même auteur se touchent presque ; une suite s'écarte de la suivante. */
+  gap: 2px;
   margin: 0;
-  padding: 4px 2px;
+  padding: 2px 2px 6px;
   list-style: none;
 }
 
@@ -4166,14 +4194,20 @@ button.ligneCorps:disabled {
 
 /* Le nom ne se répète pas d'une bulle à l'autre du même auteur. */
 .filAuteur {
-  margin: 10px 0 3px 12px;
+  margin: 14px 0 4px 4px;
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0;
   color: #a1a1aa;
 }
 
+/* Le premier auteur du fil n'a rien au-dessus de lui. */
+.filLigne:first-child .filAuteur {
+  margin-top: 0;
+}
+
 .filDeNous .filAuteur {
-  margin: 10px 12px 3px 0;
+  margin: 14px 4px 4px 0;
 }
 
 /*
@@ -4184,16 +4218,22 @@ button.ligneCorps:disabled {
  * on ne savait plus laquelle était la sienne. Ce qu'on a écrit est noir, ce que le
  * client a écrit est blanc cerné. Le nom, au-dessus, tranche les cas douteux.
  */
+/*
+ * Une bulle, non une carte.
+ *
+ * Chacune portait un contour d'un pixel sur fond blanc, dans un panneau déjà blanc : le
+ * trait dessinait la boîte sans que rien ne distingue le message de ce qui l'entoure.
+ * Le fond suffit à séparer, et le coin coupé dit de quel côté l'on parle.
+ */
 .filBulle {
-  padding: 9px 13px;
-  border: 1px solid #e4e4e7;
-  border-radius: 14px 14px 14px 5px;
-  background: #fff;
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 14px 14px 14px 4px;
+  background: #f4f4f5;
 }
 
 .filDeNous .filBulle {
-  border-color: #18181b;
-  border-radius: 14px 14px 5px 14px;
+  border-radius: 14px 14px 4px 14px;
   background: #18181b;
 }
 
@@ -4211,10 +4251,11 @@ button.ligneCorps:disabled {
 }
 
 /* L'heure sous la bulle, à peine visible : on la cherche, on ne la lit pas. */
+/* L'heure clôt une suite : elle se pose sous la dernière bulle, du même côté qu'elle. */
 .filQuand {
-  margin: 3px 12px 8px;
+  margin: 4px 4px 0;
   font-size: 11px;
-  color: #b4b4bb;
+  color: #c4c4cb;
 }
 
 .filPiece {
