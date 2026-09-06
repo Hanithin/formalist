@@ -43,9 +43,25 @@ export interface DossierDeModification {
   paye?: boolean;
 }
 
+/**
+ * Une date se relit en français, non au format du champ de saisie.
+ *
+ * Les champs datés arrivent en ISO - « 2026-09-02 », l'ordre du navigateur, l'année
+ * d'abord. La colonne de l'avocat les recopiait tels quels, au milieu de valeurs
+ * écrites en toutes lettres : le jour se lisait pour un mois. Le récapitulatif du
+ * dépôt des comptes fait déjà ce geste.
+ */
 function ecrit(valeur: unknown): string {
   if (valeur === null || valeur === undefined) return "";
-  return String(valeur).trim();
+  const brut = String(valeur).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(brut)) return brut;
+
+  const [annee, mois, jour] = brut.split("-").map(Number);
+  return new Date(annee, mois - 1, jour).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 /** Reconnaît un dossier de modification à sa forme, sans dépendre du type déclaré. */

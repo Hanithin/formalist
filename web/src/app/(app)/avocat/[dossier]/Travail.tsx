@@ -9,19 +9,6 @@ import { deposerUnLivrable } from "./Avancement";
 import styles from "../Avocat.module.css";
 
 /** Les quatre gestes qui s'écrivent dans la fenêtre. */
-type Geste = "corrections" | "refus" | "dessaisissement" | "invitation";
-
-interface Formulaire {
-  titre: string;
-  detail: string;
-  label: string;
-  exemple: string;
-  bouton: string;
-  /** Le champ est-il obligatoire ? Un motif de dessaisissement ne l'est pas. */
-  exige: boolean;
-  envoyer: (texte: string) => Promise<Response>;
-  succes: string;
-}
 
 /*
  * Ce qu'une tâche montre quand on lui demande ses pièces.
@@ -72,7 +59,6 @@ const ANCRES: Record<string, string> = {
 export function Travail({
   apresLaTacheDuMoment,
   bandeau,
-  volets,
   dossiersAPrendre,
   etapePrecedente,
   termineLe,
@@ -96,14 +82,6 @@ export function Travail({
    * sépare, pour six mots chacune.
    */
   bandeau?: React.ReactNode;
-  /**
-   * Les sections du dossier rangées derrière leur bouton.
-   *
-   * Elles viennent de la page, qui seule sait lesquelles ont lieu d'être - un dossier
-   * sans annonce à publier n'a pas de bouton pour elle - et se posent sur la ligne qui
-   * dit où l'on est, avec le compte des étapes.
-   */
-  volets?: React.ReactNode;
   dossier: number;
   taches: Tache[];
   /** Les pièces du dossier : les tâches montrent celles dont elles parlent. */
@@ -189,8 +167,6 @@ export function Travail({
    * d'un geste à l'autre tient dans une table : le titre, ce qu'on annonce, le champ à
    * remplir et ce qu'on en fait.
    */
-  const [fenetre, setFenetreBrute] = useState<Geste | null>(null);
-  const [motif, setMotif] = useState("");
 
   const [retour, setRetour] = useState<string | null>(null);
   /*
@@ -210,7 +186,6 @@ export function Travail({
    * geste courant - demander des corrections. Trois traits pèsent plus qu'un bouton, et
    * on ne refuse un dossier qu'une fois. Le menu les range sans les cacher.
    */
-  const [menuOuvert, setMenuOuvert] = useState(false);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -364,102 +339,7 @@ export function Travail({
    * demandes de reprise. Se retirer d'un dossier n'existait pas non plus : la prise
    * était sans envers.
    */
-  const GESTES: Record<Geste, Formulaire> = {
-    corrections: {
-      titre: "Demander des corrections au client",
-      detail:
-        "Le dossier repasse de son côté et il en est prévenu par courriel. Ce que vous écrivez ici est ce qu'il lira : dites ce qui cloche et ce que vous attendez de lui.",
-      label: "Ce que le client doit reprendre",
-      exemple:
-        "Le justificatif de jouissance est au nom d'un tiers : il nous faut un bail ou une attestation au nom de la société.",
-      bouton: "Envoyer la demande",
-      exige: true,
-      envoyer: (texte) =>
-        fetch("/api/avocat/dossier", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dossier, etat: "corrections_demandees", commentaire: texte }),
-        }),
-      succes: "Le client est prévenu de ce qu'il doit reprendre.",
-    },
-    refus: {
-      titre: "Refuser le dossier",
-      detail:
-        "Le dossier est refusé et le client en est prévenu, avec votre motif. Il reste modifiable : s'il reprend ce qui bloque, il repartira en vérification.",
-      label: "Le motif du refus",
-      exemple:
-        "L'objet social déclaré suppose un agrément que la société n'a pas : le greffe refusera l'immatriculation en l'état.",
-      bouton: "Refuser le dossier",
-      exige: true,
-      envoyer: (texte) =>
-        fetch("/api/avocat/dossier", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dossier, etat: "rejete", commentaire: texte }),
-        }),
-      succes: "Le dossier est refusé : le client a reçu votre motif.",
-    },
-    dessaisissement: {
-      titre: "Me retirer du dossier",
-      detail:
-        "Le dossier repart dans la file : le premier avocat disponible le reprend. Votre client est prévenu qu'il change de mains. Ce que vous écrivez ici n'est lu que par nous.",
-      label: "Pourquoi vous vous retirez",
-      exemple: "Conflit d'intérêts : le siège est celui d'un autre de mes clients.",
-      bouton: "Me retirer",
-      exige: false,
-      envoyer: (texte) =>
-        fetch("/api/avocat/dessaisissement", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dossier, motif: texte || undefined }),
-        }),
-      succes: "Vous n'êtes plus sur ce dossier : il repart dans la file.",
-    },
-    invitation: {
-      titre: "Inviter un avocat sur le dossier",
-      detail:
-        "Il pourra le lire et y travailler avec vous, et il en est prévenu par courriel. Vous en restez l'avocat responsable.",
-      label: "L'adresse de l'avocat",
-      exemple: "prenom.nom@exemple.fr",
-      bouton: "Inviter",
-      exige: true,
-      envoyer: (texte) =>
-        fetch("/api/avocat/invitations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dossier, courriel: texte }),
-        }),
-      succes: "L'avocat est invité : il voit le dossier dans sa liste.",
-    },
-  };
 
-  /* Ouvrir ou fermer une fenêtre efface ce que la précédente avait à dire. */
-  function setFenetre(geste: Geste | null) {
-    setFenetreBrute(geste);
-    setRefus(null);
-    setMotif("");
-  }
-
-  function envoyerLeGeste() {
-    if (!fenetre) return;
-    const forme = GESTES[fenetre];
-    const texte = motif.trim();
-    if (forme.exige && !texte) return;
-
-    setRefus(null);
-    demarrer(async () => {
-      const reponse = await forme.envoyer(texte);
-      const corps = await reponse.json().catch(() => ({}));
-
-      if (!reponse.ok) {
-        setRefus(corps.error ?? "Le geste n'a pas abouti.");
-        return;
-      }
-      setFenetre(null);
-      setRetour(forme.succes);
-      router.refresh();
-    });
-  }
 
   /*
    * Une chose à faire maintenant, le reste en dessous.
@@ -948,123 +828,15 @@ export function Travail({
         </section>
       )}
 
-      <div className={styles.situation}>
-        <span className={styles.situationVolets}>
-          {volets}
+      {/*
+        La barre des sections a disparu.
 
-        {/*
-          Ce qu'un avocat peut faire du dossier lui-même, et non de son travail.
-
-          Aucun de ces trois gestes n'existait : un dossier impossible ne pouvait que
-          boucler en demandes de reprise, la prise en charge était sans envers, et l'avis
-          d'un autre avocat se payait de lui rendre le dossier en entier.
-
-          Ils se rangent dans un menu : ce sont des gestes rares, et trois liens soulignés
-          en tête d'écran pesaient plus que le seul qui sert tous les jours.
-        */}
-        {!correctionsEnCours && (
-          <span className={styles.menuGestes}>
-            {/*
-              Le bouton dit ce qu'il ouvre.
-              
-              Trois points gris au bout de la ligne ne disent rien : on ne devine pas
-              qu'ils portent le renvoi au client, l'invitation d'un confrère et le refus.
-              Il porte son nom, comme les trois autres, et un chevron dit qu'il ouvre.
-            */}
-            <button
-              type="button"
-              className={styles.situationGerer}
-              onClick={() => setMenuOuvert((ouvert) => !ouvert)}
-              disabled={enCours}
-              aria-expanded={menuOuvert}
-              aria-haspopup="menu"
-            >
-              Gérer le dossier
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-
-            {menuOuvert && (
-              <>
-                {/*
-                  Un voile sans teinte : il ferme le menu au clic dehors, ce qu'un menu
-                  doit faire, sans assombrir la page derrière pour trois lignes.
-                */}
-                <div
-                  className={styles.menuVoile}
-                  onClick={() => setMenuOuvert(false)}
-                  aria-hidden="true"
-                />
-
-                <div className={styles.menuGestesListe} role="menu">
-                  {/*
-                    Demander des corrections n'est pas écrire au client.
-
-                    Le fil, en bas de page, envoie un message et le dossier reste dans la
-                    file du cabinet. Ce geste-ci le rend au client : il repasse de son
-                    côté, il en est prévenu par courriel, et son espace lui dit ce qu'il
-                    doit reprendre. Il quitte la barre - il n'y a qu'un dossier sur cent
-                    qu'on renvoie - mais il ne se remplace pas par une phrase écrite.
-                  */}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOuvert(false);
-                      setFenetre("corrections");
-                    }}
-                  >
-                    Demander des corrections au client
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOuvert(false);
-                      setFenetre("invitation");
-                    }}
-                  >
-                    Inviter un avocat
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOuvert(false);
-                      setFenetre("dessaisissement");
-                    }}
-                  >
-                    Me retirer du dossier
-                  </button>
-
-                  {/* Refuser sort du dossier pour de bon : il se sépare et se teinte. */}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className={styles.menuGestesRupture}
-                    onClick={() => {
-                      setMenuOuvert(false);
-                      setFenetre("refus");
-                    }}
-                  >
-                    Refuser le dossier
-                  </button>
-                </div>
-              </>
-            )}
-          </span>
-        )}
-        </span>
-      </div>
+        Elle portait deux lectures - l'avis à publier, le journal - et le menu des gestes
+        du dossier. L'avis se lit désormais sur la ligne où l'on dépose sa preuve de
+        parution, le journal a rejoint le menu, et le menu est monté en tête d'écran, à
+        côté du retour à la liste : c'est là qu'on décide de ce qu'on fait du dossier,
+        plutôt que de ce qu'on y fait.
+      */}
 
       {/*
         Le dossier est fini, et cela se voit.
@@ -1225,83 +997,6 @@ export function Travail({
         </>
       )}
 
-      {fenetre && (
-        <>
-          {/* Le voile ne masque pas la liste : on écrit en regardant ce qui cloche. */}
-          <div className={styles.voile} onClick={() => setFenetre(null)} aria-hidden="true" />
-
-          <div
-            className={styles.fenetreCorrections}
-            role="dialog"
-            aria-modal="true"
-            aria-label={GESTES[fenetre].titre}
-          >
-            <h3 className={styles.fenetreCorrectionsTitre}>{GESTES[fenetre].titre}</h3>
-            <p className={styles.fenetreCorrectionsDetail}>{GESTES[fenetre].detail}</p>
-
-            <label className={styles.fenetreCorrectionsLabel} htmlFor="motif-du-geste">
-              {GESTES[fenetre].label}
-            </label>
-            {/*
-              Une adresse tient sur une ligne ; un motif, non. Le champ suit ce qu'on
-              lui demande d'écrire.
-            */}
-            {fenetre === "invitation" ? (
-              <input
-                id="motif-du-geste"
-                type="email"
-                className={styles.fenetreCorrectionsChamp}
-                value={motif}
-                onChange={(e) => setMotif(e.target.value)}
-                autoFocus
-                placeholder={GESTES[fenetre].exemple}
-              />
-            ) : (
-              <textarea
-                id="motif-du-geste"
-                className={styles.fenetreCorrectionsChamp}
-                value={motif}
-                onChange={(e) => setMotif(e.target.value)}
-                rows={4}
-                maxLength={1000}
-                autoFocus
-                placeholder={GESTES[fenetre].exemple}
-              />
-            )}
-
-            {/*
-              Le refus se lit dans la fenêtre qui l'a provoqué.
-              
-              Il s'affichait au bas de la page, sous les tâches : la fenêtre le
-              masquait, et l'on recliquait sur un bouton qui semblait ne rien faire.
-            */}
-            {refus && (
-              <p className={styles.fenetreCorrectionsRefus} role="alert">
-                {refus}
-              </p>
-            )}
-
-            <div className={styles.fenetreCorrectionsActions}>
-              <button
-                type="button"
-                className={styles.travailSecondaire}
-                onClick={() => setFenetre(null)}
-                disabled={enCours}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                className={styles.travailPrincipal}
-                onClick={envoyerLeGeste}
-                disabled={enCours || (GESTES[fenetre].exige && !motif.trim())}
-              >
-                {enCours ? "Envoi" : GESTES[fenetre].bouton}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
 
       {retour && (
         <p className={styles.travailRetour} role="status">

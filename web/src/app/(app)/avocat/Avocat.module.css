@@ -4403,6 +4403,8 @@ button.ligneCorps:disabled {
   background: none;
   font-family: inherit;
   font-size: 13.5px;
+  /* Une entrée de menu est du texte, non un bouton : le 600 global la mettait en gras. */
+  font-weight: 400;
   letter-spacing: 0;
   text-align: left;
   color: #3f3f46;

@@ -145,7 +145,15 @@ test("les documents ouvrent la page, la colonne dit ce qui manque", async ({ pag
   /* Les documents ouvrent le travail ; le reste tient dans une rangée de boutons. */
   await expect(documents).toBeVisible();
   await expect(page.getByRole("button", { name: /Voir l'étape|suivantes/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Historique" })).toBeVisible();
+  /*
+   * L'historique a quitté la barre pour le menu « Gérer le dossier », en tête de page :
+   * on ne le consulte qu'une fois par dossier, et il occupait un bouton permanent.
+   */
+  const gerer = page.getByRole("button", { name: "Gérer le dossier" });
+  await gerer.click();
+  await expect(page.getByRole("menuitem", { name: "Voir l'historique" })).toBeVisible();
+  /* On referme par le voile, comme à la souris : il couvre le bouton tant qu'il est là. */
+  await page.mouse.click(20, 400);
   await expect(page.getByRole("heading", { name: "Ce qu'il reste à faire" })).toHaveCount(0);
 
   /*
@@ -633,8 +641,9 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
    * Et le texte à publier s'ouvre depuis cette même ligne.
    *
    * On ne dépose pas une attestation sans avoir publié : le bouton était dans la barre
-   * du dossier, tout en haut, et il fallait savoir l'y chercher. Les deux gestes de
-   * l'annonce - lire ce qu'on publie, remettre la preuve - tiennent sur la même ligne.
+   * du dossier, tout en haut, et il fallait savoir l'y chercher. Cette barre a disparu ;
+   * les deux gestes de l'annonce - lire ce qu'on publie, remettre la preuve - tiennent
+   * désormais seuls sur la même ligne.
    *
    * Le bouton est frère de la zone de dépôt, non son enfant : posé dans le label, il
    * aurait ouvert le sélecteur de fichiers du système au lieu du volet.
@@ -673,7 +682,7 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
   await page.goto("/avocat/" + dossier);
   await expect(page.getByText("Déposer l'attestation de parution")).toHaveCount(0);
   await expect(page.getByText("Attestation de parution déposée")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Annonce légale" })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Annonce légale" })).toHaveCount(1);
 });
 
 test("la barre nomme la prochaine étape, et garde les suivantes à un clic", async ({ page }) => {

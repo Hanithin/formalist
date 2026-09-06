@@ -34,7 +34,8 @@ import { Parcours } from "@/app/(app)/creation/Parcours";
 import { ETAPES as ETAPES_DE_CREATION } from "@/domain/formalite/parcours";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Corriger } from "./Corriger";
-import { Historique, type EntreeDuJournal } from "./Historique";
+import { type EntreeDuJournal } from "./Historique";
+import { GererLeDossier } from "./GererLeDossier";
 import { Communication, type MessageDuFil } from "./Communication";
 import { Volet } from "./Volet";
 import { PriseEnCharge } from "./PriseEnCharge";
@@ -510,6 +511,19 @@ export default async function DossierAvocat({
             la pastille dit déjà, dans d'autres mots.
           */}
         </div>
+        {/*
+          Ce qu'on fait du dossier se décide en tête d'écran.
+
+          Le menu vivait dans une barre sous la carte, entre deux boutons qui ouvraient
+          des lectures - l'avis à publier, le journal. Ils n'ont rien à voir : les uns
+          changent la main qui tient le dossier, les autres se consultent. Il rejoint le
+          retour à la liste, où l'on décide de ce qu'on fait du dossier plutôt que de ce
+          qu'on y fait, et emmène le journal avec lui.
+        */}
+        {monDossier && !libre && dossier.status !== "corrections_demandees" && (
+          <GererLeDossier dossier={dossier.id} entreesDuJournal={entreesDuJournal} />
+        )}
+
         <Link href="/avocat" className={styles.topbarBack}>
           <span className={styles.topbarBackFleche} aria-hidden="true">
             ←
@@ -610,27 +624,6 @@ export default async function DossierAvocat({
                * toutes lettres. Aucune ne se consulte en continu - on publie l'avis une
                * fois, on relit le journal quand quelque chose cloche.
                */
-              volets={
-                <>
-                  {avisAPublier > 0 && (
-                    <Volet
-                      libelle="Annonce légale"
-                      titre={
-                        avisAPublier === 1
-                          ? "L'avis à publier"
-                          : "Les " + avisAPublier + " avis à publier"
-                      }
-                      large
-                    >
-                      <Annonce dossier={dossier.id} route={routeDeLAnnonce} />
-                    </Volet>
-                  )}
-
-                  <Volet libelle="Historique" titre="L'historique du dossier" large>
-                    <Historique entrees={entreesDuJournal} />
-                  </Volet>
-                </>
-              }
               /*
                 La clé sur une section qui n'est pourtant pas dans une liste.
                 
