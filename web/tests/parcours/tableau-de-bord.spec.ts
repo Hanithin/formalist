@@ -297,6 +297,15 @@ test.describe("espace avocat", () => {
   test("une pièce déposée peut être refusée avec son motif", async ({ page }) => {
     await ouvrirLeDossier(page, "PARCOURS EN COURS");
 
+    /*
+     * Le geste vit derrière les trois points : « Valider » reste sur la rangée, ce qui
+     * demande une autre pièce est le repli. La colonne des gestes se fige ainsi à la
+     * même largeur d'une rangée à l'autre, sans rogner le nom des documents.
+     */
+    const menus = page.getByRole("button", { name: "Autres gestes sur ce document" });
+    if ((await menus.count()) === 0) test.skip();
+    await menus.first().click();
+
     const boutons = page.getByRole("button", { name: "Demander une autre pièce" });
     if ((await boutons.count()) === 0) test.skip();
 

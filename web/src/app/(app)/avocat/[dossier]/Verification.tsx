@@ -20,6 +20,7 @@ export function Verification({
   documentId,
   dossier,
   decidee,
+  partie = "principale",
 }: {
   documentId: number;
   /** Le dossier, pour joindre une pièce d'exemple au fil de la demande. */
@@ -32,6 +33,8 @@ export function Verification({
    * plus aucun geste.
    */
   decidee?: boolean;
+  /** « principale » rend le geste qui avance, « repli » celui qui revient en arrière. */
+  partie?: "principale" | "repli";
 }) {
   const [refus, setRefus] = useState(false);
   const [motif, setMotif] = useState("");
@@ -90,15 +93,14 @@ export function Verification({
 
   return (
     <>
-      <span className={styles.decisions}>
-        <button
-          type="button"
-          className={styles.decisionPrincipale}
-          onClick={() => statuer("valider")}
-          disabled={enCours}
-        >
-          {enCours ? "…" : "Valider"}
-        </button>
+      {/*
+        Valider reste sur la rangée, demander une autre pièce passe dans le menu.
+
+        C'est ce qu'on fait de chaque pièce déposée ; en demander une autre arrive quand
+        celle-là ne convient pas, et la place que son libellé prenait sur la ligne
+        empêchait la colonne des gestes de s'aligner d'une rangée à l'autre.
+      */}
+      {partie === "repli" ? (
         <button
           type="button"
           className={styles.decisionSecondaire}
@@ -107,7 +109,16 @@ export function Verification({
         >
           Demander une autre pièce
         </button>
-      </span>
+      ) : (
+        <button
+          type="button"
+          className={styles.decisionPrincipale}
+          onClick={() => statuer("valider")}
+          disabled={enCours}
+        >
+          {enCours ? "…" : "Valider"}
+        </button>
+      )}
 
       {/*
         La demande se fait dans une fenêtre, non sur la ligne de la pièce.

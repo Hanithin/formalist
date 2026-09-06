@@ -8,6 +8,7 @@ import { TITRE_STATUTS_A_JOUR, TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modific
 import { Verification } from "./Verification";
 import { OuvrirLaPiece } from "./OuvrirLaPiece";
 import { RelireLActe, ReprendreLActe } from "./RelireLActe";
+import { MenuGestes } from "./MenuGestes";
 import styles from "../Avocat.module.css";
 
 /**
@@ -95,6 +96,12 @@ export function Piece({
    * document n'apprendrait rien, et il y en a rarement.
    */
   const versions = piece.versions ?? [];
+
+  /* Ce que la rangée range derrière les trois points, s'il y a quelque chose à ranger. */
+  const gestesDeRepli =
+    (estUnActeProduit(piece) && piece.statut === "generated") ||
+    piece.statut === "uploaded" ||
+    piece.statut === "verified";
   const [versionsOuvertes, setVersionsOuvertes] = useState(false);
 
   const brut = etatDocument({
@@ -252,9 +259,15 @@ export function Piece({
         {(piece.nom === TITRE_STATUTS_A_JOUR ||
           (retouchable && piece.nom === TITRE_STATUTS_EN_VIGUEUR)) && (
           <a href={"/avocat/" + dossier + "/statuts"} className={styles.decisionPrincipale}>
-            {piece.nom === TITRE_STATUTS_A_JOUR || repris
-              ? "Reprendre les modifications"
-              : "Modifier les statuts"}
+            {/*
+              « Modifier », sur une ligne qui dit déjà « Statuts ».
+              
+              « Reprendre les modifications » prenait deux cents pixels sur les trois
+              cents de la colonne des gestes : la colonne ne pouvait pas se figer sans
+              rogner les noms. Le mot suffit ici, et le document que l'on modifie est
+              nommé juste à gauche.
+            */}
+            {piece.nom === TITRE_STATUTS_A_JOUR || repris ? "Modifier" : "Modifier les statuts"}
           </a>
         )}
 
@@ -289,17 +302,39 @@ export function Piece({
               />
           )}
 
-        {/*
-          Un acte remis se reprend : la coquille se voit parfois après coup, et il
-          quitte alors l'espace du client pour redevenir un projet.
-        */}
-        {estUnActeProduit(piece) && piece.statut === "generated" && (
-          <ReprendreLActe document={piece.id} dossier={dossier} />
-        )}
-
         {piece.statut === "uploaded" && <Verification documentId={piece.id} dossier={dossier} />}
-        {/* Une validation se reprend : on se trompe de bouton, ou de pièce. */}
-        {piece.statut === "verified" && <Verification documentId={piece.id} dossier={dossier} decidee />}
+
+        {/*
+          Ce qui revient en arrière tient dans un menu.
+
+          La rangée portait tous ses gestes côte à côte : quatre lignes, quatre groupes
+          de largeurs différentes, et « Ouvrir » à quatre abscisses. Aligner cette
+          colonne demandait de lui réserver la largeur du groupe le plus large - trois
+          cent trente-huit pixels - et il ne restait plus assez pour les noms, qui se
+          faisaient tronquer. Chaque rangée garde donc « Ouvrir » et le geste qui fait
+          avancer le dossier ; reprendre un acte remis, revenir sur une validation,
+          demander une autre pièce passent derrière les trois points.
+        */}
+        {gestesDeRepli && (
+          <MenuGestes>
+            {/*
+              Un acte remis se reprend : la coquille se voit parfois après coup, et il
+              quitte alors l'espace du client pour redevenir un projet.
+            */}
+            {estUnActeProduit(piece) && piece.statut === "generated" && (
+              <ReprendreLActe document={piece.id} dossier={dossier} />
+            )}
+
+            {piece.statut === "uploaded" && (
+              <Verification documentId={piece.id} dossier={dossier} partie="repli" />
+            )}
+
+            {/* Une validation se reprend : on se trompe de bouton, ou de pièce. */}
+            {piece.statut === "verified" && (
+              <Verification documentId={piece.id} dossier={dossier} decidee />
+            )}
+          </MenuGestes>
+        )}
       </div>
       </div>
 

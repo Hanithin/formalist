@@ -1583,13 +1583,22 @@
  * deux blocs sans rapport. Tout tient sur une ligne, aligné à droite, et repasse à la
  * ligne d'un bloc quand la place manque.
  */
+/*
+ * Une colonne de gestes, non un groupe qui flotte.
+ *
+ * Les gestes étaient collés au bord droit : quatre rangées, quatre groupes de largeurs
+ * différentes, et « Ouvrir » à quatre abscisses. La colonne se réserve la largeur du
+ * groupe le plus large et commence toujours au même endroit ; ce qui manque à une
+ * rangée pour la remplir reste vide, plutôt que de décaler son premier bouton.
+ */
 .docActions {
   display: flex;
   flex: none;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex-wrap: nowrap;
   gap: 6px;
+  width: 216px;
   margin-left: auto;
 }
 

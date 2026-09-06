@@ -764,7 +764,9 @@ test("la ligne des statuts dit qu'ils ont déjà été repris", async ({ page, r
   await page.reload();
 
   /* Les boutons ne proposent plus d'ouvrir un travail déjà ouvert. */
-  await expect(page.getByRole("link", { name: "Reprendre les modifications" })).toHaveCount(2);
+  /* « Modifier » sur une ligne qui dit déjà « Statuts » : le mot suffit, et la colonne
+     des gestes se fige à la même largeur d'une rangée à l'autre. */
+  await expect(page.getByRole("link", { name: "Modifier", exact: true })).toHaveCount(2);
 
 });
 
