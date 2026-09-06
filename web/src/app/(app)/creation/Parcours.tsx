@@ -477,6 +477,8 @@ export function Parcours({
    * que personne ne pouvait encore avoir.
    */
   const actesEnRelecture = actesProduits.filter((a) => a.statut === A_RELIRE).length;
+  /* Ce qui est rendu au client, donc ce que l'archive peut porter. */
+  const actesRemis = actesProduits.filter((a) => !!a.fichier).length;
   const actesRendus = actesProduits.length > 0 && actesEnRelecture === 0;
 
   /* La formule retenue, pour la barre de règlement posée en tête de l'étape. */
@@ -655,6 +657,37 @@ export function Parcours({
               <Cadenas />
               {mentionCourte(actesEnRelecture)}
             </p>
+          )}
+
+          {/*
+            Tout prendre d'un coup, une fois les actes rendus.
+
+            Cinq actes, cinq clics, cinq fichiers à retrouver dans le dossier de
+            téléchargements : c'est pourtant le geste du jour où l'on porte le dossier à
+            sa banque, ou qu'on l'envoie à son comptable. Le bouton n'apparaît que
+            lorsqu'il y a quelque chose à prendre - un acte en relecture n'est pas remis.
+          */}
+          {etape.identifiant === "actes" && dossier !== null && actesRemis > 0 && (
+            <a
+              className={styles.toutTelecharger}
+              href={"/api/formalites/archive?dossier=" + dossier}
+              download
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Tout télécharger
+            </a>
           )}
 
           {etape.identifiant === "offres" && formuleRetenue && (

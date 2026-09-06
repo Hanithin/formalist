@@ -2847,6 +2847,44 @@
 }
 
 /*
+ * Prendre tous les actes d'un coup.
+ *
+ * En contour, non en plein : la liste sous lui aligne déjà cinq boutons noirs, et un
+ * sixième en tête ferait six appels au clic là où il n'y a qu'un geste principal par
+ * ligne. Il se pose à hauteur du titre, où l'on cherche ce qui agit sur la liste
+ * entière plutôt que sur une de ses lignes.
+ */
+.toutTelecharger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 9px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 9px;
+  background: #fff;
+  color: #111;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.toutTelecharger:hover {
+  border-color: #111;
+  background: #f5f5f5;
+}
+
+.toutTelecharger svg {
+  width: 14px;
+  height: 14px;
+}
+
+/*
  * Le bouton se pose sur la ligne du prix, non au milieu des deux.
  *
  * L'étiquette tient sur deux lignes - la mention en capitales, puis la formule et son
