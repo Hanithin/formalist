@@ -83,9 +83,10 @@ export function Piece({
   /**
    * Des statuts à jour ont-ils déjà été produits depuis ceux-ci ?
    *
-   * Rien ne le disait sur cette ligne : elle affichait « Version actuellement au
-   * greffe » et un bouton « Modifier les statuts », comme au premier jour. On ne savait
-   * pas, en la lisant, si le travail restait à faire.
+   * Le bouton disait « Modifier les statuts » comme au premier jour, sur des statuts
+   * déjà repris : il propose de reprendre. La ligne portait aussi la mention « Reprise
+   * dans les statuts à jour » - retirée : les statuts à jour figurent au-dessus dans la
+   * même liste, avec la date de leur production, et le bouton dit le reste.
    */
   repris?: boolean;
 }) {
@@ -137,41 +138,39 @@ export function Piece({
       </div>
 
       {/*
-        Le nom seul à gauche, l'état contre les gestes.
+        L'état contre le nom.
 
-        La pastille suivait le nom : elle partait donc à quatre abscisses différentes sur
-        quatre lignes, au gré de la longueur des intitulés, et la colonne se lisait comme
-        une suite de blocs décalés. Les noms commencent tous au même endroit et courent
-        librement ; l'état rejoint le bord droit, où il forme un ensemble avec les
-        boutons auxquels il se rapporte.
+        Il avait rejoint le bord droit, pour que les noms commencent tous au même
+        endroit : les pastilles s'y retrouvaient loin de ce qu'elles qualifient, et
+        toujours pas alignées entre elles - les groupes de boutons n'ont pas la même
+        largeur. La pastille qualifie le document : elle se lit contre son nom.
       */}
       <div className={styles.docInfo}>
         <div className={styles.docName}>{piece.nom}</div>
-        {etat.motif && <div className={styles.docRejectionInfo}>Motif : {etat.motif}</div>}
-      </div>
-
-
-      <div className={styles.docMeta}>
-        {/* L'état porte sa teinte : ce qui attend une décision se voit sans lire. */}
-        {/* Le ton « neutre » n'a pas de classe : sans cette garde, la pastille sortait
-            avec un « undefined » dans son attribut de classe. */}
-        <span
-          className={etat.ton in styles ? `${styles.docEtat} ${styles[etat.ton]}` : styles.docEtat}
-        >
-          {etat.libelle}
-        </span>
-        {piece.creeLe && (
-          <span className={styles.docQuand}>
-            {/*
-              Un acte repris au registre porte la date de son dépôt d'origine, sans
-              heure : « à 02:00 » n'est qu'un artefact de fuseau sur une date sans heure,
-              et laisse croire à un dépôt de cette nuit.
-            */}
-            {estStatutsRepris(piece.nom)
-              ? "déposés par la société le " + jour(piece.creeLe)
-              : quand(piece.creeLe)}
+        <div className={styles.docMeta}>
+          {/* L'état porte sa teinte : ce qui attend une décision se voit sans lire. */}
+          {/* Le ton « neutre » n'a pas de classe : sans cette garde, la pastille sortait
+              avec un « undefined » dans son attribut de classe. */}
+          <span
+            className={
+              etat.ton in styles ? `${styles.docEtat} ${styles[etat.ton]}` : styles.docEtat
+            }
+          >
+            {etat.libelle}
           </span>
-        )}
+          {piece.creeLe && (
+            <span className={styles.docQuand}>
+              {/*
+                Un acte repris au registre porte la date de son dépôt d'origine, sans
+                heure : « à 02:00 » n'est qu'un artefact de fuseau sur une date sans
+                heure, et laisse croire à un dépôt de cette nuit.
+              */}
+              {estStatutsRepris(piece.nom)
+                ? "déposés par la société le " + jour(piece.creeLe)
+                : quand(piece.creeLe)}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className={styles.docActions}>
@@ -240,57 +239,7 @@ export function Piece({
       </div>
       </div>
 
-      {/*
-        Ce qui a été fait de ce document, sous la rangée.
 
-        La mention tenait sur la ligne, à côté de la pastille : elle y prenait sa place
-        et le nom, seul à céder, tombait à « Statu… ». Elle se lit sous lui, à son
-        aplomb, comme les versions antérieures.
-      */}
-      {/*
-        Les statuts à jour disent quand ils ont été produits.
-
-        La ligne n'affichait que « Projet à relire » - ce qu'il reste à faire, jamais ce
-        qui vient d'être fait. L'avocat qui sortait de l'éditeur y cherchait la trace de
-        son travail et ne trouvait qu'une consigne. La date, elle, ne se lit nulle part
-        ailleurs sur cette ligne : « .docQuand » disparaît sous huit cent vingt pixels de
-        colonne, et celle du cabinet est plus étroite.
-      */}
-      {retouchable && piece.nom === TITRE_STATUTS_A_JOUR && (
-        <p className={styles.docMention}>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {piece.creeLe
-            ? "Produits le " + quand(piece.creeLe) + ", depuis les statuts en vigueur"
-            : "Produits depuis les statuts en vigueur"}
-        </p>
-      )}
-
-      {retouchable && piece.nom === TITRE_STATUTS_EN_VIGUEUR && repris && (
-        <p className={styles.docMention}>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          Reprise dans les statuts à jour
-        </p>
-      )}
 
       {/*
         Elles ne se déplient que si l'acte en a : une mention « 0 version » sur chaque
@@ -396,7 +345,10 @@ function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: 
 
   return (
     <details className={styles.actesVersions}>
-      <summary className={styles.actesVersionsTete}>
+      <summary
+        className={styles.actesVersionsTete}
+        title={versions.length + " version" + (versions.length > 1 ? "s" : "") + " antérieure" + (versions.length > 1 ? "s" : "")}
+      >
         {/* L'horloge dit de quoi il s'agit avant qu'on ait lu : c'est du passé. */}
         <svg
           viewBox="0 0 24 24"
@@ -411,8 +363,15 @@ function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: 
           <polyline points="3 3 3 8 8 8" />
           <polyline points="12 7 12 12 15 14" />
         </svg>
-        {versions.length} version{versions.length > 1 ? "s" : ""} antérieure
-        {versions.length > 1 ? "s" : ""}
+        {/*
+          Le compte, non la phrase.
+
+          « 4 versions antérieures » écrit en toutes lettres sous chaque acte reproduit
+          pesait autant que ce qu'il commente, sur une ligne qu'on ne lit qu'en se
+          demandant ce qui a changé. L'horloge dit de quoi il s'agit, le nombre dit
+          combien, et l'intitulé complet reste au survol et pour les lecteurs d'écran.
+        */}
+        <span className={styles.actesVersionsCompte}>{versions.length}</span>
 
         {/* Le chevron dit que la mention s'ouvre : sans lui, on la prend pour une étiquette. */}
         <svg

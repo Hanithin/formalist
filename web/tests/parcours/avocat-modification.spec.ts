@@ -750,7 +750,6 @@ test("la ligne des statuts dit qu'ils ont déjà été repris", async ({ page, r
 
   /* Tant que rien n'est produit, le bouton ouvre le travail. */
   await expect(page.getByRole("link", { name: "Modifier les statuts" })).toBeVisible();
-  await expect(page.getByText("Reprise dans les statuts à jour")).toHaveCount(0);
 
   await prisma.documents.create({
     data: {
@@ -764,19 +763,9 @@ test("la ligne des statuts dit qu'ils ont déjà été repris", async ({ page, r
 
   await page.reload();
 
-  await expect(page.getByText("Reprise dans les statuts à jour")).toBeVisible();
-  /* Et les boutons ne proposent plus d'ouvrir un travail déjà ouvert. */
+  /* Les boutons ne proposent plus d'ouvrir un travail déjà ouvert. */
   await expect(page.getByRole("link", { name: "Reprendre les modifications" })).toHaveCount(2);
 
-  /*
-   * La ligne des statuts à jour dit ce qui a été fait, non ce qu'il reste à faire.
-   *
-   * Elle n'affichait que « Projet à relire » : l'avocat qui sortait de l'éditeur y
-   * cherchait la trace de son travail et ne trouvait qu'une consigne. La date ne se lit
-   * nulle part ailleurs sur cette ligne - « .docQuand » disparaît sous la largeur de la
-   * colonne du cabinet.
-   */
-  await expect(page.getByText(/Produits le .*, depuis les statuts en vigueur/)).toBeVisible();
 });
 
 test("produire les statuts ramène au dossier", async ({ page, request }) => {
