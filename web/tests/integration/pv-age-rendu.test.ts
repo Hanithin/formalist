@@ -66,6 +66,7 @@ describe("une SAS qui décide plusieurs choses le même jour", () => {
     },
     assemblee: {
       date: "2026-09-30",
+      totalParts: 5000,
       associes: [
         {
           nature: "physique",
@@ -218,6 +219,7 @@ describe("le cas limite : un seul bloc, plus les pouvoirs", () => {
     },
     assemblee: {
       date: "2026-09-15",
+      totalParts: 1000,
       associes: [
         { nature: "physique", civilite: "Monsieur", prenom: "Paul", nom: "DURAND", parts: 600 },
         { nature: "physique", civilite: "Madame", prenom: "Anne", nom: "DURAND", parts: 400 },

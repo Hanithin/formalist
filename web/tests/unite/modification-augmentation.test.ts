@@ -1,11 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { champsASaisir } from "@/domain/modification/types";
 import { piecesAFournir, obligationsParticulieres } from "@/domain/modification/formalites";
-import {
-  verifierChamps,
-  verifierCoherence,
-  verifierLesParts,
-} from "@/domain/modification/verification";
+import { verifierChamps, verifierCoherence } from "@/domain/modification/verification";
+import { verifierLaRepartition, anomaliesDuPvAge } from "@/domain/modification/pv-age";
 
 /**
  * L'augmentation de capital, selon son mode.
@@ -178,33 +175,106 @@ describe("un siège chez une société de domiciliation", () => {
 });
 
 describe("les parts de l'assemblée", () => {
+  const HAI = { nature: "physique" as const, civilite: "M.", prenom: "Hai", nom: "LAFOFA" };
+  const AMEL = { nature: "physique" as const, civilite: "Mme", prenom: "Amel", nom: "BELOUAFI" };
+
   /*
    * Le procès-verbal doit représenter tout le capital : un associé oublié ne se voit
    * pas à la lecture de l'acte, il se découvre au greffe une fois tout signé.
    */
   it("laisse passer quand le compte est juste", () => {
     expect(
-      verifierLesParts({ totalParts: 1000, associes: [{ parts: 700 }, { parts: 300 }] })
+      verifierLaRepartition(
+        { totalParts: 1000, associes: [{ ...HAI, parts: 700 }, { ...AMEL, parts: 300 }] },
+        "SARL"
+      )
     ).toEqual([]);
   });
 
   it("refuse quand il manque des parts, et dit combien", () => {
-    const [anomalie] = verifierLesParts({ totalParts: 1000, associes: [{ parts: 700 }] });
+    const [anomalie] = verifierLaRepartition(
+      { totalParts: 1000, associes: [{ ...HAI, parts: 700 }] },
+      "SARL"
+    );
     expect(anomalie.message).toContain("300");
   });
 
   it("refuse aussi quand les associés en détiennent plus que le capital", () => {
-    const [anomalie] = verifierLesParts({
-      totalParts: 100,
-      associes: [{ parts: 80 }, { parts: 40 }],
-    });
+    const [anomalie] = verifierLaRepartition(
+      { totalParts: 100, associes: [{ ...HAI, parts: 80 }, { ...AMEL, parts: 40 }] },
+      "SARL"
+    );
     expect(anomalie.message).toContain("120");
   });
 
-  /* Sans total déclaré, il n'y a rien à comparer : on ne bloque pas sur une absence. */
-  it("ne vérifie rien tant que le total n'est pas donné", () => {
-    expect(verifierLesParts({ associes: [{ parts: 700 }] })).toEqual([]);
-    expect(verifierLesParts({ totalParts: null, associes: [{ parts: 700 }] })).toEqual([]);
+  /*
+   * Le total manquant désarmait le contrôle au lieu de le déclencher : l'acte partait
+   * au greffe en affirmant que des associés détenant zéro part représentaient la
+   * totalité du capital. C'est la règle que la création pose depuis toujours.
+   */
+  it("exige le total, absent comme nul", () => {
+    for (const assemblee of [
+      { associes: [{ ...HAI, parts: 700 }] },
+      { totalParts: null, associes: [{ ...HAI, parts: 700 }] },
+      { totalParts: 0, associes: [{ ...HAI, parts: 700 }] },
+    ]) {
+      const [anomalie] = verifierLaRepartition(assemblee, "SARL");
+      expect(anomalie?.champ).toBe("assemblee-total-parts");
+      expect(anomalie?.message).toContain("nombre total de parts sociales");
+    }
+  });
+
+  it("nomme les titres de la forme : une SAS compte des actions", () => {
+    const [anomalie] = verifierLaRepartition({ associes: [] }, "SAS");
+    expect(anomalie.message).toContain("nombre total d'actions");
+  });
+
+  /* Sans elles, l'associé figure à la feuille de présence pour zéro titre. */
+  it("exige les parts de chaque associé nommé", () => {
+    const anomalies = verifierLaRepartition(
+      { totalParts: 1000, associes: [{ ...HAI, parts: 1000 }, AMEL] },
+      "SARL"
+    );
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0].champ).toBe("assemblee-associe-parts-1");
+    expect(anomalies[0].message).toContain("Amel BELOUAFI");
+  });
+
+  /* Une ligne encore sans nom est un brouillon en cours, non un associé sans parts. */
+  it("laisse tranquille une ligne pas encore nommée", () => {
+    expect(
+      verifierLaRepartition({ totalParts: 700, associes: [{ ...HAI, parts: 700 }, {}] }, "SARL")
+    ).toEqual([]);
+  });
+
+  /*
+   * Sur une répartition vide, l'écart en parts répéterait en une phrase ce que chaque
+   * ligne dit déjà : on ne le rend qu'une fois les parts saisies.
+   */
+  it("ne redit pas l'écart tant qu'une part manque", () => {
+    const anomalies = verifierLaRepartition({ totalParts: 1000, associes: [HAI, AMEL] }, "SARL");
+    expect(anomalies.map((a) => a.champ)).toEqual([
+      "assemblee-associe-parts-0",
+      "assemblee-associe-parts-1",
+    ]);
+  });
+
+  /*
+   * Le contrôle remonte au règlement et à l'avocat, non plus au seul écran de
+   * l'assemblée : un dossier enregistré sans parts produisait l'acte en silence.
+   */
+  it("bloque le procès-verbal, et pas seulement l'étape", () => {
+    const champs = anomaliesDuPvAge({
+      societe: { denomination: "BLUE SHARK", forme: "SARL", capital: 100 },
+      assemblee: { date: "2026-09-04", associes: [HAI, AMEL] },
+      codes: ["transfert-siege"],
+      valeurs: {},
+      cessions: [],
+    } as never).map((a) => a.champ);
+
+    expect(champs).toContain("assemblee-total-parts");
+    expect(champs).toContain("assemblee-associe-parts-0");
+    expect(champs).toContain("assemblee-associe-parts-1");
   });
 });
 

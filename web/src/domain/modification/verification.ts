@@ -330,39 +330,3 @@ export function avancement(codes: string[], valeurs: Valeurs, societe: Societe):
   return Math.round((faits / 3) * 100);
 }
 
-/**
- * Tout le capital est-il représenté à l'assemblée ?
- *
- * Le total des parts de la société est déclaré, les parts de chaque associé s'y
- * ajoutent. Un écart ne se voit pas dans un procès-verbal : il se découvre au greffe,
- * une fois l'acte signé et l'annonce publiée. Tant que le total n'est pas donné, on
- * ne vérifie rien - on ne peut pas comparer à ce qui n'est pas dit.
- */
-export function verifierLesParts(assemblee: {
-  totalParts?: number | null;
-  associes?: { parts?: number | null }[];
-}): Anomalie[] {
-  const total = assemblee.totalParts;
-  if (typeof total !== "number" || total <= 0) return [];
-
-  const reparties = (assemblee.associes ?? []).reduce((somme, a) => somme + (a.parts ?? 0), 0);
-  if (reparties === total) return [];
-
-  return [
-    {
-      champ: "assemblee-total-parts",
-      message:
-        reparties < total
-          ? "Il manque " +
-            (total - reparties) +
-            " part" +
-            (total - reparties > 1 ? "s" : "") +
-            " : ajoutez les associés qui les détiennent, ou corrigez le total."
-          : "Les associés se partagent " +
-            reparties +
-            " parts pour un capital qui n'en compte que " +
-            total +
-            ".",
-    },
-  ];
-}

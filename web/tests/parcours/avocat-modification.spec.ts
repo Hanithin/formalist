@@ -46,7 +46,7 @@ const DONNEES = {
     nouveauDirigeantNomPere: "Michel BERNARD",
     nouveauDirigeantNomMere: "Anne LEROY",
   },
-  assemblee: { date: "2026-09-01", associes: [{ civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 1000 }] },
+  assemblee: { date: "2026-09-01", totalParts: 1000, associes: [{ civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 1000 }] },
   paye: true,
 };
 

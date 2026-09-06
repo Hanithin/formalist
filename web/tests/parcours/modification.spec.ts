@@ -75,6 +75,7 @@ test("les actes portent la société et les résolutions décidées", async ({ r
       },
       assemblee: {
         date: "2026-09-01",
+        totalParts: 1000,
         associes: [{ civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 1000 }],
       },
     },
@@ -605,6 +606,8 @@ test("un associé peut être une société, et l'acte la désigne comme telle", 
   await page.getByLabel("En qualité de").click();
   await page.getByRole("option", { name: /Président/ }).first().click();
   await page.getByLabel("Parts détenues").fill("1000");
+  /* L'assemblée ne se franchit qu'une fois tout le capital réparti. */
+  await page.getByLabel(/^Nombre total d/).fill("1000");
 
   await page.getByRole("button", { name: "Continuer" }).click();
   await page.waitForURL(/etape=|dossier=/);
@@ -831,6 +834,89 @@ test("une étape 3 remplie mène à l'assemblée, même sans associé inscrit", 
   await page.getByRole("button", { name: "Continuer" }).click();
   await expect(page.getByText("Aucun associé n'est inscrit")).toBeVisible();
   await expect(page.getByRole("heading", { name: "L'assemblée" })).toBeVisible();
+});
+
+test("le nombre total de parts survit à l'enregistrement", async ({ request }) => {
+  /*
+   * Il ne survivait pas. Le schéma de la route ne le déclarait pas, et zod retire les
+   * clés qu'il ne connaît pas : le champ se saisissait, l'écran comptait les parts
+   * avec, puis l'enregistrement le laissait tomber. On rouvrait son dossier, la case
+   * était vide - et les actes retombaient sur la somme des présents, si bien que le
+   * procès-verbal écrivait qu'ils représentaient tout le capital quoi qu'il arrive.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {},
+      assemblee: {
+        date: "2026-09-01",
+        totalParts: 2500,
+        associes: [{ civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 2500 }],
+      },
+    },
+  });
+
+  /*
+   * Un second enregistrement qui ne parle pas de l'assemblée : il relit le dossier en
+   * base pour le compléter, et rend donc ce qui y avait été rangé.
+   */
+  const relecture = await request.put("/api/formalites/modification", {
+    data: { dossier, valeurs: { nouvelleAdresse: "3 rue de la Forge" } },
+  });
+  expect(relecture.status()).toBe(200);
+
+  const { modification } = await relecture.json();
+  expect(modification.assemblee.totalParts).toBe(2500);
+});
+
+test("l'assemblée ne se franchit pas sans le nombre de parts", async ({ page, request }) => {
+  /*
+   * Le procès-verbal atteste que les présents représentent la totalité du capital, et
+   * c'est ce qui rend l'assemblée valable sans qu'on justifie des formalités de
+   * convocation. Le total était facultatif : le laisser vide désarmait le contrôle au
+   * lieu de le déclencher, et l'acte partait au greffe en écrivant que deux associés
+   * détenant ensemble zéro part représentaient tout le capital. La création pose cette
+   * règle depuis toujours ; la modification était le seul parcours à ne pas la poser.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {
+        nouvelleAdresse: "3 rue de la Forge",
+        nouveauCodePostal: "69003",
+        nouvelleVille: "Lyon",
+        dateEffetTransfert: "2026-09-15",
+      },
+      assemblee: {
+        date: "2026-09-01",
+        associes: [{ civilite: "Monsieur", prenom: "Jean", nom: "DUPONT" }],
+      },
+    },
+  });
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=4");
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  /* Le mot suit la forme : cette société est une SAS, elle compte des actions. */
+  await expect(page.getByText("Indiquez le nombre total d'actions de la société")).toBeVisible();
+  await expect(page.getByText("actions détenues par Monsieur Jean DUPONT")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "L'assemblée" })).toBeVisible();
+
+  /* Le total seul ne suffit pas : chaque présent porte les siennes. */
+  await page.getByLabel(/^Nombre total d/).fill("1000");
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page.getByText("actions détenues par Monsieur Jean DUPONT")).toBeVisible();
+
+  /* Une fois le compte juste, l'étape s'ouvre. */
+  await page.getByLabel("Parts", { exact: true }).fill("1000");
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page.getByRole("heading", { name: "L'assemblée" })).toBeHidden();
 });
 
 test("« Corriger » mène à l'étape où le manque se répare", async ({ page, request }) => {

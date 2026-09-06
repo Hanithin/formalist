@@ -42,7 +42,7 @@ const ASSOCIES = [
 function contexte(partiel: Partial<ContexteGabarit> = {}): ContexteGabarit {
   return {
     societe: SOCIETE,
-    assemblee: { date: "2026-09-15", associes: ASSOCIES },
+    assemblee: { date: "2026-09-15", totalParts: 1000, associes: ASSOCIES },
     codes: ["transfert_siege"],
     valeurs: {
       nouvelleAdresse: "5 avenue Victor Hugo",
@@ -349,7 +349,7 @@ describe("plusieurs cessions dans une même assemblée", () => {
     societe: SOCIETE,
     codes: ["cession_parts"],
     valeurs: {},
-    assemblee: { date: "2026-09-10", associes: ASSOCIES },
+    assemblee: { date: "2026-09-10", totalParts: 1000, associes: ASSOCIES },
     cessions: [
       { cedant: 0, parts: 300, prix: 15000, date: "2026-09-15", vers: "tiers", nom: "Marc BERTIN" },
       { cedant: 1, parts: 200, prix: 10000, date: "2026-09-15", vers: "tiers", nom: "HOLDING SUD" },
@@ -413,7 +413,7 @@ describe("les résolutions que l'audit a trouvées muettes ou fausses", () => {
       societe: SOCIETE,
       codes,
       valeurs,
-      assemblee: { date: "2026-09-10", associes: ASSOCIES },
+      assemblee: { date: "2026-09-10", totalParts: 1000, associes: ASSOCIES },
     }) as unknown as ContexteGabarit;
 
   /*

@@ -44,7 +44,7 @@ export interface Modification {
   codes: string[];
   societe: SocieteModifiee;
   valeurs: Valeurs;
-  assemblee: { date?: string | null; associes?: AssociePresent[] };
+  assemblee: { date?: string | null; totalParts?: number | null; associes?: AssociePresent[] };
   /**
    * Les cessions de parts décidées.
    *

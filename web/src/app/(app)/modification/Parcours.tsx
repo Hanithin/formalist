@@ -1,7 +1,8 @@
 "use client";
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
-import { NATURES_PROPOSEES, fonctionsDuDirigeant } from "@/domain/formalite/formes";
+import { NATURES_PROPOSEES, fonctionsDuDirigeant, natureDeLaForme } from "@/domain/formalite/formes";
+import { elider } from "@/domain/formalite/lettres";
 import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
 import {
@@ -33,7 +34,6 @@ import {
   verifierSociete,
   verifierChamps,
   verifierCoherence,
-  verifierLesParts,
   type Societe,
 } from "@/domain/modification/verification";
 import {
@@ -357,10 +357,7 @@ export function Parcours({
      */
     if (etape === 4) {
       /* Les manques du procès-verbal s'ajoutent ici, où ils se réparent. */
-      return [
-        ...anomalies.filter((a) => estDeLAssemblee(a.champ)),
-        ...verifierLesParts(etat.assemblee),
-      ];
+      return anomalies.filter((a) => estDeLAssemblee(a.champ));
     }
     return [];
   }
@@ -2179,6 +2176,9 @@ function EtapeAssemblee({
   /** Ce qui est effectivement attribué : c'est lui qu'on compare au total déclaré. */
   const reparties = montres.reduce((somme, a) => somme + (a.parts ?? 0), 0);
 
+  /* Une société par actions compte des actions : l'étape le dit comme l'acte l'écrira. */
+  const titres = natureDeLaForme(etat.societe.forme).titres;
+
   function modifierAssocie(rang: number, changement: Partial<Associe>) {
     const suite = montres.map((a, i) => (i === rang ? { ...a, ...changement } : a));
     changer({ assemblee: { ...etat.assemblee, associes: suite } });
@@ -2187,7 +2187,8 @@ function EtapeAssemblee({
   return (
     <>
       <p className={styles.description}>
-        Le procès-verbal nomme qui décide et combien de parts chacun détient. Ce sont ces noms qui
+        Le procès-verbal nomme qui décide et combien de {titres} chacun détient, et les compare au
+        total de la société : c&apos;est ce qui atteste que tous les associés sont là. Ces noms
         figureront au bas de l&apos;acte, sous les signatures.
       </p>
 
@@ -2208,7 +2209,7 @@ function EtapeAssemblee({
           s'en aperçoit - ou le greffe.
         */}
         <div className={styles.champ}>
-          <label htmlFor="assemblee-total-parts">Nombre total de parts de la société</label>
+          <label htmlFor="assemblee-total-parts">Nombre total {elider(titres)} de la société</label>
           <ChampNombre
             id="assemblee-total-parts"
             valeur={etat.assemblee.totalParts ?? ""}
@@ -2478,16 +2479,17 @@ function EtapeAssemblee({
       {typeof etat.assemblee.totalParts === "number" && etat.assemblee.totalParts > 0 && (
         <p className={reparties === etat.assemblee.totalParts ? styles.compteJuste : styles.compte}>
           {reparties === etat.assemblee.totalParts ? (
-            <>Les {etat.assemblee.totalParts} parts de la société sont réparties.</>
+            <>
+              Les {etat.assemblee.totalParts} {titres} de la société sont réparties.
+            </>
           ) : reparties < etat.assemblee.totalParts ? (
             <>
-              {reparties} part{reparties > 1 ? "s" : ""} réparties sur{" "}
-              {etat.assemblee.totalParts} : il en manque{" "}
+              {reparties} {titres} réparties sur {etat.assemblee.totalParts} : il en manque{" "}
               {etat.assemblee.totalParts - reparties}.
             </>
           ) : (
             <>
-              {reparties} parts réparties pour un capital qui n&apos;en compte que{" "}
+              {reparties} {titres} réparties pour un capital qui n&apos;en compte que{" "}
               {etat.assemblee.totalParts}.
             </>
           )}

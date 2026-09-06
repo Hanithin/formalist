@@ -24,6 +24,7 @@ const SOCIETE = {
 
 const ASSEMBLEE = {
   date: "2026-09-15",
+  totalParts: 1000,
   associes: [
     { nature: "physique" as const, civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 500 },
     { nature: "physique" as const, civilite: "Madame", prenom: "Claire", nom: "MARTIN", parts: 500 },

@@ -81,6 +81,17 @@ const ENREGISTREMENT = z.object({
   assemblee: z
     .object({
       date: z.string().trim().max(40).nullable().optional(),
+      /*
+       * Le capital de la société, en titres.
+       *
+       * Il manquait au schéma : le formulaire le saisissait, l'écran comptait les parts
+       * avec lui, et zod le retirait du corps avant l'enregistrement. On revenait sur
+       * son dossier et la case était vide - d'où l'air d'une question posée pour rien.
+       * Les actes retombaient alors sur la somme des présents, si bien que le
+       * procès-verbal écrivait qu'ils détenaient la totalité du capital quoi qu'il
+       * arrive.
+       */
+      totalParts: z.number().int().min(0).max(1_000_000_000).nullable().optional(),
       // Au-delà de vingt associés présents, l'assemblée passe par un avocat : la
       // liste sert à nommer les signataires du procès-verbal, pas à tenir un registre.
       associes: z.array(ASSOCIE).max(20).optional(),

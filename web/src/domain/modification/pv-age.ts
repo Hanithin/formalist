@@ -1,5 +1,5 @@
 import { natureDeLaForme } from "@/domain/formalite/formes";
-import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
+import { dateEnFrancais, elider, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { agrementDeDroit, cessionsRedigees, type Cession } from "./cession";
 import { auFilDeLaPhrase } from "./traite-apport";
@@ -555,7 +555,100 @@ export function verifierLePvAge(contexte: ContexteGabarit): AlerteDuPv[] {
     });
   }
 
+  alertes.push(
+    ...verifierLaRepartition(contexte.assemblee, societe.forme).map((anomalie) => ({
+      bloc: "assemblee" as const,
+      gravite: "bloquant" as const,
+      ...anomalie,
+    }))
+  );
+
   return alertes;
+}
+
+/**
+ * Le capital est-il tout entier autour de la table ?
+ *
+ * Le procès-verbal ne relate pas une réunion, il la rend valable : il écrit que les
+ * présents détiennent « X titres sur les Y composant le capital social », puis que
+ * l'assemblée réunit de ce fait la totalité des associés et peut délibérer sans qu'il
+ * soit justifié des formalités de convocation. Ni convocation ni feuille de présence
+ * signée ne sont jointes au dossier : ce rapprochement est la seule chose qui établisse
+ * la phrase.
+ *
+ * Le total était facultatif, et le laisser vide désarmait le contrôle au lieu de le
+ * déclencher : l'acte partait au greffe en affirmant que deux associés détenant
+ * ensemble zéro part représentaient la totalité du capital. La création pose la même
+ * règle depuis toujours - `verifierLEtape` refuse une répartition sans total ; la
+ * modification était le seul parcours à ne pas la poser.
+ *
+ * Le total ne se déduit d'aucune source : le registre national rend le capital en
+ * euros, jamais le nombre de titres, et cent euros font cent parts à un euro comme dix
+ * parts à dix. Il se déclare donc, et les parts de chacun s'y ajoutent.
+ */
+export function verifierLaRepartition(
+  assemblee: { totalParts?: number | null; associes?: AssociePresent[] },
+  forme: string | null | undefined
+): { champ: string; message: string }[] {
+  const anomalies: { champ: string; message: string }[] = [];
+  const titres = motsDeLaForme(forme).titres;
+  const total = assemblee.totalParts;
+  const associes = assemblee.associes ?? [];
+
+  if (typeof total !== "number" || total <= 0) {
+    anomalies.push({
+      champ: "assemblee-total-parts",
+      message: "Indiquez le nombre total " + elider(titres) + " de la société",
+    });
+  }
+
+  /*
+   * Une ligne encore sans nom est un brouillon en cours, non un associé sans parts :
+   * elle se répare en la nommant, et l'acte de cession applique déjà cette réserve.
+   */
+  let unePartManque = false;
+  for (const [rang, associe] of associes.entries()) {
+    if (!estNomme(associe)) continue;
+    if ((associe.parts ?? 0) > 0) continue;
+
+    unePartManque = true;
+    anomalies.push({
+      champ: "assemblee-associe-parts-" + rang,
+      message: "Indiquez les " + titres + " détenues par " + nomDeLAssocie(associe),
+    });
+  }
+
+  /*
+   * L'écart entre la somme et le total ne se dit qu'une fois chaque part saisie : sur
+   * une répartition vide, il répéterait en euros ce que les lignes disent déjà.
+   */
+  if (typeof total === "number" && total > 0 && !unePartManque) {
+    const reparties = associes.reduce((somme, a) => somme + (a.parts ?? 0), 0);
+    if (reparties !== total) {
+      anomalies.push({
+        champ: "assemblee-total-parts",
+        message:
+          reparties < total
+            ? "Il manque " +
+              (total - reparties) +
+              " part" +
+              (total - reparties > 1 ? "s" : "") +
+              " : ajoutez les associés qui les détiennent, ou corrigez le total."
+            : "Les associés se partagent " +
+              reparties +
+              " parts pour un capital qui n'en compte que " +
+              total +
+              ".",
+      });
+    }
+  }
+
+  return anomalies;
+}
+
+/** Une ligne d'associé porte-t-elle déjà un nom, ou n'est-elle qu'amorcée ? */
+function estNomme(associe: AssociePresent): boolean {
+  return Boolean(nomDeLAssocie(associe).trim());
 }
 
 /* ------------------------------------------------------ Le jeu de balises */

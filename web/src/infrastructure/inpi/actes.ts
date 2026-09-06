@@ -59,10 +59,18 @@ export interface Acte {
  * mis à jour », « Statuts à jour », parfois « Statuts » seul. On cherche donc le mot,
  * en écartant ce qui n'en est visiblement pas - un projet de statuts n'est pas un
  * acte déposé.
+ *
+ * Et parfois ce n'est pas un libellé du tout : le registre reprend le nom du fichier
+ * déposé, tel que le déposant l'a enregistré sur sa machine. Une société avait ainsi
+ * ses statuts diffusés sous « 1Status_Blue_Shark_Advisory_2026-01-27T18-42-40 », entre
+ * un « 5Capital_ » et un « 11Nomination_ » - l'écran répondait « nous avons cherché vos
+ * statuts au registre national, sans les y trouver » alors qu'ils y étaient, et le
+ * client déposait à la main ce que nous avions déjà.
  */
 export function estDesStatuts(nature: string): boolean {
   const n = nature.toLowerCase();
-  if (!n.includes("statut")) return false;
+  /* « status » est la faute de frappe courante, et l'orthographe anglaise du mot. */
+  if (!n.includes("statut") && !n.includes("status")) return false;
   return !n.includes("projet");
 }
 
