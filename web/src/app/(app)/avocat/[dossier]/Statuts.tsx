@@ -231,6 +231,16 @@ export function Statuts({ dossier }: { dossier: number }) {
       }
       setRetour("Statuts à jour produits et joints au dossier.");
       setConfirmation(false);
+
+      /*
+       * Le travail fini, on revient au dossier.
+       *
+       * L'éditeur restait ouvert sur un document qu'on venait de produire, avec plus
+       * rien à y faire : le seul chemin était de remonter chercher « Revenir au
+       * dossier », en haut de l'écran. Les statuts à jour, eux, viennent d'être joints
+       * au dossier - c'est là qu'on les relit, et c'est là que la tâche suivante attend.
+       */
+      router.push("/avocat/" + dossier);
       router.refresh();
     });
   }

@@ -606,6 +606,51 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
 });
 
+test("produire les statuts ramène au dossier", async ({ page, request }) => {
+  /*
+   * L'éditeur restait ouvert sur un document qu'on venait de produire, avec plus rien à
+   * y faire : le seul chemin était de remonter chercher « Revenir au dossier », en haut
+   * de l'écran. Les statuts à jour viennent d'être joints au dossier - c'est là qu'on
+   * les relit, et c'est là que la tâche suivante attend.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/avocat/" + dossier + "/statuts");
+
+  await expect(page.locator("[class*='suiviCarte']").first()).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Produire les statuts à jour" }).click();
+
+  /* La coche n'est pas mise : la question se pose, et l'on passe outre. */
+  await page.getByRole("button", { name: /Produire quand même/ }).click();
+
+  await page.waitForURL(/\/avocat\/\d+$/, { timeout: 30_000 });
+
+  /* Et les statuts produits sont là, à relire. */
+  await expect(page.getByText("Statuts mis à jour")).toBeVisible({ timeout: 30_000 });
+});
+
 test("la confirmation nomme la coche qui manque, non un état", async ({ page, request }) => {
   /*
    * « Siège social n'est pas confirmé » décrivait un état sans dire lequel : l'avocat
