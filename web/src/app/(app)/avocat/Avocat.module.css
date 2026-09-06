@@ -2954,6 +2954,90 @@
  * chercher : on vient relire des actes. Il ne reste qu'une rangée de boutons - ce qui
  * est rangé ailleurs, et le menu des gestes sur le dossier au bout.
  */
+/*
+ * La prochaine étape, nommée, avec les suivantes à un clic.
+ *
+ * La barre ne portait qu'un compte - « 5 étapes à faire » - et il fallait ouvrir la
+ * fenêtre pour savoir laquelle venait. C'est pourtant la seule question qu'on se pose
+ * en ouvrant un dossier.
+ */
+.prochaine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 12px 14px 12px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.prochaineTexte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.prochaineLibelle {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  letter-spacing: 0;
+}
+
+.prochaineTitre {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+/* Ce qui la retient, quand quelque chose la retient. */
+.prochaineBlocage {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: #fffbeb;
+  font-size: 12px;
+  color: #b45309;
+  letter-spacing: 0;
+}
+
+.prochaineSuite {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 4px;
+  margin: 0;
+  padding: 7px 10px 7px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #18181b;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.prochaineSuite:hover {
+  border-color: #18181b;
+  background: #fafafa;
+}
+
+.prochaineSuite svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
 .situation {
   display: flex;
   align-items: center;

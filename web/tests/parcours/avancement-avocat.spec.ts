@@ -85,7 +85,7 @@ test.describe("avancement du cabinet", () => {
 
     /* Les étapes tiennent dans une fenêtre : sept cartes doublaient la hauteur de la
        page pour ce qui ne se fait pas maintenant. */
-    await page.getByRole("button", { name: /étapes? à faire/ }).click();
+    await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
     const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
 
     /* La ligne entière est le geste : son nom porte le titre de la tâche puis le sien. */
@@ -217,7 +217,7 @@ test.describe("avancement du cabinet", () => {
     await page.goto("/avocat/" + dossier.id);
     /* Les étapes tiennent dans une fenêtre : sept cartes doublaient la hauteur de la
        page pour ce qui ne se fait pas maintenant. */
-    await page.getByRole("button", { name: /étapes? à faire/ }).click();
+    await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
     const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
 
     /*
@@ -685,7 +685,7 @@ test.describe("la correction d'un dossier de création", () => {
     await page.goto("/avocat/" + dossier.id);
     /* Les étapes tiennent dans une fenêtre : sept cartes doublaient la hauteur de la
        page pour ce qui ne se fait pas maintenant. */
-    await page.getByRole("button", { name: /étapes? à faire/ }).click();
+    await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
     const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
 
     await etapes.getByRole("button", { name: "Produire les actes" }).click();
@@ -768,7 +768,7 @@ test.describe("l'avis de constitution", () => {
     await page.goto("/avocat/" + dossier.id);
     /* Les étapes tiennent dans une fenêtre : sept cartes doublaient la hauteur de la
        page pour ce qui ne se fait pas maintenant. */
-    await page.getByRole("button", { name: /étapes? à faire/ }).click();
+    await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
     const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
 
     await expect(etapes.getByText("Publier l'avis de constitution")).toBeVisible();

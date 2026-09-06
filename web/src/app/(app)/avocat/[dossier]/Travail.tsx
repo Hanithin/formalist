@@ -474,6 +474,8 @@ export function Travail({
    */
   const maintenant = taches.find((t) => t.etat !== "faite" && !t.bloquee);
   const restantes = taches.filter((t) => t.etat !== "faite");
+  /* Celle par laquelle on commence : la liste est déjà dans l'ordre du travail. */
+  const prochaine = restantes[0];
 
   /**
    * Le geste d'une tâche, quelle que soit sa forme.
@@ -888,19 +890,50 @@ export function Travail({
         leur dépôt au greffe ». On le sait en y étant : le menu de gauche marque l'espace
         avocat, le titre porte le dossier, et les documents ouvrent la page.
       */}
+      {/*
+        La prochaine étape se nomme, au lieu de se compter.
+
+        La barre disait « 5 étapes à faire » et rien d'autre : pour savoir laquelle
+        venait, il fallait ouvrir la fenêtre, lire la première ligne et la refermer. Le
+        compte ne dit pas par où commencer - c'est pourtant la seule question qu'on se
+        pose en ouvrant un dossier.
+      */}
+      {prochaine && (
+        <div className={styles.prochaine}>
+          <span className={styles.prochaineTexte}>
+            <span className={styles.prochaineLibelle}>Prochaine étape</span>
+            <span className={styles.prochaineTitre}>{prochaine.titre}</span>
+            {prochaine.bloquee && (
+              <span className={styles.prochaineBlocage}>{prochaine.bloquee}</span>
+            )}
+          </span>
+
+          {/* Les autres restent à un clic, sans occuper la ligne. */}
+          <button
+            type="button"
+            className={styles.prochaineSuite}
+            onClick={() => setEtapesOuvertes(true)}
+          >
+            {restantes.length === 1
+              ? "Voir l'étape"
+              : "Les " + (restantes.length - 1) + " suivantes"}
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <div className={styles.situation}>
         <span className={styles.situationVolets}>
-          {restantes.length > 0 && (
-            <button
-              type="button"
-              className={styles.situationEtapes}
-              onClick={() => setEtapesOuvertes(true)}
-            >
-              {restantes.length === 1
-                ? "1 étape à faire"
-                : restantes.length + " étapes à faire"}
-            </button>
-          )}
           {volets}
 
         {/*

@@ -110,14 +110,14 @@ test("le dossier s'ouvre sur ce qu'il reste à faire", async ({ page }) => {
    * a rejoint la liste, où elle garde son geste comme les autres, et le haut de la page
    * ne porte plus qu'une phrase.
    */
-  await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Voir l'étape|suivantes/ })).toBeVisible();
 
   /*
    * Les étapes tiennent dans une fenêtre. Sept cartes s'empilaient sous les documents,
    * dont cinq disaient seulement pourquoi elles attendent : elles doublaient la hauteur
    * de la page pour ce qui ne se fait pas maintenant. Le bouton les compte.
    */
-  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
   const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
   await expect(etapes.getByText("Vérifier les informations du dossier")).toBeVisible();
   await expect(page.getByText("Mettre les statuts à jour")).toBeVisible();
@@ -144,7 +144,7 @@ test("les documents ouvrent la page, la colonne dit ce qui manque", async ({ pag
 
   /* Les documents ouvrent le travail ; le reste tient dans une rangée de boutons. */
   await expect(documents).toBeVisible();
-  await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Voir l'étape|suivantes/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Historique" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Ce qu'il reste à faire" })).toHaveCount(0);
 
@@ -224,9 +224,9 @@ test("le vocabulaire est celui d'une modification, pas d'une création", async (
    * Ce qui distingue vraiment le vocabulaire d'une modification reste vérifié : ni
    * dépôt de capital, ni immatriculation - la société existe déjà.
    */
-  await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Voir l'étape|suivantes/ })).toBeVisible();
 
-  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
   const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
   await expect(etapes.getByText(/Kbis à jour/i).first()).toBeVisible();
   /*
@@ -250,7 +250,7 @@ test("une tâche qui attend autre chose dit quoi", async ({ page }) => {
   await page.goto("/avocat/" + dossier);
 
   /* Toutes les étapes tiennent dans la fenêtre : un blocage se lit sans rien déplier. */
-  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
   const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
   await expect(etapes.getByText(/Vérifiez d'abord le dossier/)).toBeVisible();
   await expect(etapes.getByText(/Les statuts en vigueur ne sont pas au dossier/)).toBeVisible();
@@ -305,7 +305,7 @@ test("l'avocat produit les actes depuis le fil de travail", async ({ page }) => 
   const dossier = await dossierDeModification();
   await page.goto("/avocat/" + dossier);
 
-  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
   await page
     .getByRole("dialog", { name: "Ce qu'il reste à faire" })
     .getByRole("button", { name: "Produire les actes" })
@@ -348,7 +348,7 @@ test("un dossier incomplet refuse la production, en disant ce qui manque", async
   semes.push(troue.id);
 
   await page.goto("/avocat/" + troue.id);
-  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
   await page
     .getByRole("dialog", { name: "Ce qu'il reste à faire" })
     .getByRole("button", { name: "Produire les actes" })
@@ -674,6 +674,30 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
   await expect(page.getByText("Déposer l'attestation de parution")).toHaveCount(0);
   await expect(page.getByText("Attestation de parution déposée")).toBeVisible();
   await expect(page.getByRole("button", { name: "Annonce légale" })).toHaveCount(2);
+});
+
+test("la barre nomme la prochaine étape, et garde les suivantes à un clic", async ({ page }) => {
+  /*
+   * Elle ne portait qu'un compte - « 5 étapes à faire » - et il fallait ouvrir la
+   * fenêtre, lire la première ligne et la refermer pour savoir par où commencer. C'est
+   * pourtant la seule question qu'on se pose en ouvrant un dossier.
+   */
+  const dossier = await dossierDeModification();
+  await page.goto("/avocat/" + dossier);
+
+  await expect(page.getByText("Prochaine étape")).toBeVisible();
+  await expect(page.getByText("Vérifier les informations du dossier").first()).toBeVisible();
+
+  /* Les autres restent à un clic, sans occuper la ligne. */
+  const suite = page.getByRole("button", { name: /suivantes/ });
+  await expect(suite).toBeVisible();
+  await suite.click();
+
+  const etapes = page.getByRole("dialog", { name: "Ce qu'il reste à faire" });
+  await expect(etapes).toBeVisible();
+  /* Elle porte la prochaine et celles d'après : c'est la liste entière du travail. */
+  await expect(etapes.getByText("Vérifier les informations du dossier")).toBeVisible();
+  await expect(etapes.getByText("Déposer au guichet unique")).toBeVisible();
 });
 
 test("les statuts à jour se valident, et partent chez le client", async ({ page, request }) => {
@@ -1315,7 +1339,7 @@ test("les actes attendent la relecture avant d'atteindre le client", async ({ pa
    */
   const dossier = await dossierDeModification();
   await page.goto("/avocat/" + dossier);
-  await page.getByRole("button", { name: /étapes? à faire/ }).click();
+  await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
   await page
     .getByRole("dialog", { name: "Ce qu'il reste à faire" })
     .getByRole("button", { name: "Produire les actes" })

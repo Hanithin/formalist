@@ -278,8 +278,14 @@ test.describe("espace avocat", () => {
      * le prendre veut savoir par où commencer, non relire une fiche. Le récapitulatif
      * est à un clic.
      */
-    /* La page dit d'abord où l'on est ; les tâches se lisent sous les documents. */
-    await expect(page.getByRole("button", { name: /étapes? à faire/ })).toBeVisible();
+    /*
+     * La barre nomme la prochaine étape, et garde les suivantes à un clic.
+     *
+     * Elle ne portait qu'un compte - « 5 étapes à faire » - et il fallait ouvrir la
+     * fenêtre pour savoir par où commencer.
+     */
+    await expect(page.getByText("Prochaine étape")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Voir l'étape|suivantes/ })).toBeVisible();
     /*
       Le récapitulatif n'est plus derrière un onglet : il tient dans la colonne du
       dossier, à côté de ce qu'on y fait. On ne clique plus pour le lire.
