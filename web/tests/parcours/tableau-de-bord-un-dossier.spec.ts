@@ -142,12 +142,20 @@ test("le dossier se présente une fois, et une seule", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Reprendre" })).toHaveCount(0);
 });
 
-test("l'anneau porte l'avancement, et le bouton mène au parcours", async ({ page }) => {
-  const heros = page.getByRole("region", { name: /STUDIO KERN/ });
+test("l'encadré nomme la prochaine étape, et son geste mène au parcours", async ({ page }) => {
+  /*
+   * L'anneau d'avancement a disparu, et c'est voulu : il portait un pourcentage calculé
+   * sur un compteur d'étapes que seules les créations ont, et qui affichait « 100 % »
+   * sur un dossier qu'on venait de reprendre parce qu'il n'était pas fini. Ce qui le
+   * remplace dit où l'on est en toutes lettres.
+   */
+  const encadre = page.getByRole("region", { name: /STUDIO KERN/ });
 
-  await expect(heros.getByText(/^\d+ %$/)).toBeVisible();
-  await expect(heros.getByText("Avancement")).toBeVisible();
-  await expect(heros.getByRole("link").first()).toHaveAttribute("href", /\/creation\?dossier=\d+/);
+  await expect(encadre.getByText(/^\d+ %$/)).toHaveCount(0);
+  await expect(encadre.getByRole("link").first()).toHaveAttribute(
+    "href",
+    /\/creation\?dossier=\d+/
+  );
 });
 
 test("aucun cadre ne s'affiche pour dire qu'il est vide", async ({ page }) => {
@@ -160,13 +168,20 @@ test("aucun cadre ne s'affiche pour dire qu'il est vide", async ({ page }) => {
   await expect(page.getByText("Aucune activité récente")).toHaveCount(0);
 });
 
-test("ce qui aide à avancer reste : la frise et l'interlocuteur", async ({ page }) => {
-  await expect(page.getByRole("heading", { name: "Votre parcours" })).toBeVisible();
-  await expect(page.getByText("Un avocat vous sera assigné")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Prendre une consultation" })).toBeVisible();
+test("ce qui aide à avancer reste : le chemin et qui le tient", async ({ page }) => {
+  /*
+   * La frise et l'interlocuteur vivaient dans deux cartes sous le bandeau ; ils sont
+   * dans l'encadré, avec le dossier qu'ils concernent. Un dossier qui n'est pas encore
+   * confié n'a pas de chemin à montrer - il se remplit - et l'encadré dit alors la
+   * prochaine étape.
+   */
+  const encadre = page.getByRole("region", { name: /STUDIO KERN/ });
+  await expect(encadre.getByText("En attente d'un avocat")).toBeVisible();
 });
 
-test("dès un second dossier, la disposition comparative revient", async ({ page }) => {
+test("dès un second dossier, la colonne de droite liste au lieu de détailler", async ({
+  page,
+}) => {
   const compte = await prisma.users.findUniqueOrThrow({ where: { email: EMAIL } });
   const second = await prisma.formalites.create({
     data: {
@@ -183,8 +198,9 @@ test("dès un second dossier, la disposition comparative revient", async ({ page
 
   try {
     await page.goto("/tableau-de-bord");
-    await expect(page.getByRole("heading", { name: "Formalités en cours" })).toBeVisible();
-    await expect(page.locator("dl[class*='indicateurs']")).toBeVisible();
+    /* À plusieurs, la colonne de droite cesse de détailler le dossier : elle liste. */
+    await expect(page.getByRole("heading", { name: "Vos autres formalités" })).toBeVisible();
+    await expect(page.getByText("ATELIER MERIDIEN")).toBeVisible();
   } finally {
     await prisma.formalites.delete({ where: { id: second.id } });
   }

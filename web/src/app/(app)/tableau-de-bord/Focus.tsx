@@ -4,15 +4,16 @@ import { Vide } from "@/components/liste/Vide";
 import styles from "./TableauDeBord.module.css";
 
 /**
- * Les blocs de l'accueil quand un seul dossier est ouvert.
+ * Ce que porte le dossier, à droite de l'encadré de tête.
  *
- * Portage de renderJourney, renderSideBySide et renderHelp de
- * public/dashboard.html : la frise des phases, les documents et l'activité côte à
- * côte, puis l'interlocuteur. La version Next s'était arrêtée au bandeau de tête -
- * l'écran d'un client à un seul dossier n'avait plus rien en dessous.
+ * Ce fichier tenait la disposition d'un compte à un seul dossier : un bandeau, une
+ * frise, l'interlocuteur, les autres dossiers. La refonte de l'accueil met le dossier
+ * en tête dans son propre encadré, avec sa frise et son avocat ; il n'en reste que ce
+ * qui n'a pas d'autre endroit - les documents du dossier, et la feuille de route d'une
+ * société qu'on vient d'immatriculer.
  *
- * Les todos passent par le même bloc que l'état à plusieurs dossiers : c'était
- * déjà la même carte dans la page d'origine.
+ * Le reste a été retiré plutôt que laissé en réserve : du code mort qui a l'air vivant
+ * se remet en service par inadvertance.
  */
 
 function Coche({ epaisseur = "3" }: { epaisseur?: string }) {
@@ -31,128 +32,6 @@ function Coche({ epaisseur = "3" }: { epaisseur?: string }) {
   );
 }
 
-/* ---------- Le dossier unique, en tête ---------- */
-
-/** Rayon et circonférence de l'anneau, comme dans la page d'origine. */
-const RAYON = 56;
-const CIRCONFERENCE = 2 * Math.PI * RAYON;
-
-/**
- * Le dossier, quand c'est le seul.
- *
- * À un dossier, la page le disait trois fois : la ligne de chiffres (« 1 action
- * requise · 1 formalité en cours »), le bandeau de reprise, puis la table des
- * formalités en cours et son unique ligne. Trois présentations du même objet, dont
- * deux faites pour en comparer plusieurs.
- *
- * Il n'y a plus qu'un objet, repris de `renderSingleState()` de la page d'origine :
- * l'anneau d'avancement, ce que c'est, à qui c'est, et ce qui vient ensuite. Un
- * anneau plutôt qu'une barre parce qu'il porte son chiffre au centre - la barre
- * demandait un pourcentage posé à côté d'elle, et un bouton posé encore à côté.
- */
-export function DossierUnique({
-  type,
-  societe,
-  pourcentage,
-  prochaineEtape,
-  bouton,
-  lien,
-}: {
-  type: string;
-  societe: string;
-  pourcentage: number;
-  prochaineEtape: string;
-  bouton: string;
-  lien: string;
-}) {
-  const termine = pourcentage >= 100;
-
-  return (
-    <section className={styles.heros} aria-labelledby="dossier-unique">
-      <div className={styles.herosAnneau}>
-        <svg viewBox="0 0 132 132" aria-hidden="true">
-          <circle className={styles.anneauFond} cx="66" cy="66" r={RAYON} />
-          <circle
-            className={styles.anneauTrait}
-            cx="66"
-            cy="66"
-            r={RAYON}
-            strokeDasharray={CIRCONFERENCE}
-            strokeDashoffset={CIRCONFERENCE - (pourcentage / 100) * CIRCONFERENCE}
-          />
-        </svg>
-        <div className={styles.anneauCentre}>
-          <span className={styles.anneauValeur}>
-            {termine ? <Coche epaisseur="2.4" /> : pourcentage + " %"}
-          </span>
-          <span className={styles.anneauLegende}>{termine ? "Terminé" : "Avancement"}</span>
-        </div>
-      </div>
-
-      <div className={styles.herosCorps}>
-        <span className={styles.herosEtiquette}>{type}</span>
-        <h2 id="dossier-unique" className={styles.herosTitre}>
-          {societe}
-        </h2>
-        <p className={styles.herosSuite}>{prochaineEtape}</p>
-        <Link href={lien} className={styles.herosBouton}>
-          {bouton}
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-/* ---------- La frise des phases ---------- */
-
-interface FriseProps {
-  etapes: string[];
-  etape: number;
-  nomEtape: string;
-}
-
-export function Frise({ etapes, etape, nomEtape }: FriseProps) {
-  return (
-    <section className={styles.dashCard} aria-labelledby="votre-parcours">
-      <div className={styles.dashCardHead}>
-        <div>
-          <h2 id="votre-parcours" className={styles.dashCardTitle}>
-            Votre parcours
-          </h2>
-          <div className={styles.dashCardSub}>
-            Étape {etape} sur {etapes.length} · {nomEtape}
-          </div>
-        </div>
-      </div>
-
-      <ol className={styles.journey}>
-        {etapes.map((nom, i) => {
-          const rang = i + 1;
-          // « À venir » est l'état par défaut de la frise : il n'a pas de classe.
-          const ton = rang < etape ? styles.jnDone : rang === etape ? styles.jnCurrent : "";
-
-          return (
-            <li key={nom} className={`${styles.jnStep} ${ton}`}>
-              <span className={styles.jnMark}>{rang < etape ? <Coche /> : rang}</span>
-              <span className={styles.jnLabel}>{nom}</span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
-  );
-}
 
 /* ---------- Les documents du dossier ---------- */
 
@@ -241,65 +120,6 @@ export function DocumentsDuDossier({ documents }: { documents: DocumentDuDossier
   );
 }
 
-/* ---------- L'interlocuteur ---------- */
-
-/** « Me Claire Fontaine » donne CF : le titre ne fait pas partie des initiales. */
-function initialesAvocat(nom: string): string {
-  return nom
-    .replace(/^(Me\.?|Maître)\s*/i, "")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((mot) => mot[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
-export function Interlocuteur({ avocat }: { avocat: string | null }) {
-  return (
-    <section className={`${styles.dashCard} ${styles.helpCard}`}>
-      <div className={styles.helpWho}>
-        {avocat ? (
-          <>
-            <span className={styles.helpAvatar} aria-hidden="true">
-              {initialesAvocat(avocat)}
-            </span>
-            <div>
-              <div className={styles.helpName}>{avocat}</div>
-              <div className={styles.helpRole}>Avocat en charge de votre dossier</div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Les initiales de la maison, tant qu'aucun avocat n'est nommé. */}
-            <span className={`${styles.helpAvatar} ${styles.helpPending}`} aria-hidden="true">
-              FL
-            </span>
-            <div>
-              <div className={styles.helpName}>Un avocat vous sera assigné</div>
-              <div className={styles.helpRole}>Dès que votre dossier entre en révision</div>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className={styles.helpActions}>
-        <Link
-          href={avocat ? "/messagerie" : "/support"}
-          className={`${styles.helpBtn} ${styles.helpPrimary}`}
-        >
-          {avocat ? "Écrire à votre avocat" : "Poser une question"}
-        </Link>
-        <Link href="/consultations" className={styles.helpBtn}>
-          Prendre une consultation
-        </Link>
-        <Link href="/aide" className={styles.helpBtn}>
-          Questions fréquentes
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 /* ---------- La feuille de route, une fois la société immatriculée ---------- */
 
 interface Etape {
@@ -371,48 +191,6 @@ export function FeuilleDeRoute() {
             </Link>
           );
         })}
-      </div>
-    </section>
-  );
-}
-
-/* ---------- Les autres dossiers ---------- */
-
-export interface AutreDossier {
-  id: number;
-  nom: string;
-  precision: string;
-  lien: string;
-  termine: boolean;
-}
-
-export function AutresDossiers({ dossiers }: { dossiers: AutreDossier[] }) {
-  return (
-    <section className={styles.roadmap} aria-labelledby="autres-dossiers">
-      <h2 id="autres-dossiers" className={styles.roadmapTitle}>
-        Vos autres dossiers
-      </h2>
-      <div className={styles.roadmapSubtitle}>
-        {dossiers.length} élément{dossiers.length > 1 ? "s" : ""} en plus de votre société
-      </div>
-
-      <div className={styles.roadmapSteps}>
-        {dossiers.slice(0, 5).map((d) => (
-          <Link
-            key={d.id}
-            href={d.lien}
-            className={d.termine ? `${styles.roadmapStep} ${styles.done}` : styles.roadmapStep}
-          >
-            <span className={styles.roadmapStepCheck} aria-hidden="true">
-              <Coche />
-            </span>
-            <span className={styles.roadmapStepBody}>
-              <span className={styles.roadmapStepTitle}>{d.nom}</span>
-              <span className={styles.roadmapStepDesc}>{d.precision}</span>
-            </span>
-            <span className={styles.roadmapStepCta}>Ouvrir</span>
-          </Link>
-        ))}
       </div>
     </section>
   );

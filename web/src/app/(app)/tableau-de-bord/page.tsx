@@ -8,34 +8,73 @@ import {
   echeancesDesDossiers,
   echeancesProches,
   gesteDuDossier,
-  indicateurs,
   tonDuDossier,
   type DossierDAccueil,
 } from "@/domain/formalite/accueil";
-import { avancement, nomEtape, nombreDEtapes, nomsDEtapes } from "@/domain/formalite/etapes";
+import { nomsDEtapes } from "@/domain/formalite/etapes";
 import { adresseDuDossier, libelleDuType, nomAffichable } from "@/domain/formalite/liste";
 import { dateEnTete } from "@/lib/dates";
 import { Accueil } from "./Accueil";
-import {
-  DocumentsDuDossier,
-  DossierUnique,
-  FeuilleDeRoute,
-  Frise,
-  Interlocuteur,
-} from "./Focus";
-import {
-  ActiviteRecente,
-  Attention,
-  DocumentsRecents,
-  Echeances,
-  FileDeTravail,
-  Indicateurs,
-  LIGNES_MONTREES,
-  Reprendre,
-  type LigneDeTravail,
-  CeQueNousFaisons,
-} from "./Sections";
 import styles from "./TableauDeBord.module.css";
+import { DocumentsDuDossier, FeuilleDeRoute } from "./Focus";
+import { DossierEnTete, type EtapeDuChemin } from "./DossierEnTete";
+import {
+  AutresFormalites,
+  EcheancesProches,
+  type AutreFormalite,
+} from "./AutresFormalites";
+
+/**
+ * Combien de formalités la colonne de droite montre.
+ *
+ * Six lignes, puis le lien. Au-delà, on ne cherche plus une formalité dans une liste -
+ * « Toutes mes formalités » mène à l'écran qui sait les filtrer et les chercher, et la
+ * colonne garde de la place pour ce qui vient dessous.
+ */
+const FORMALITES_MONTREES = 6;
+
+/**
+ * Le chemin à montrer, selon le moment du dossier.
+ *
+ * Confié, c'est celui du suivi - transmis, relu, publié, déposé, immatriculé - que le
+ * client lit déjà dans son dossier, et qui existe pour chaque nature de formalité. En
+ * cours de saisie, ce sont les étapes du formulaire, que seule la création numérote :
+ * pour les autres, il n'y a rien d'honnête à dessiner, et la prochaine étape en toutes
+ * lettres dit davantage.
+ */
+function friseDuDossier(
+  dossier: DossierDAccueil,
+  suivi: { titre: string; explication: string; etat: string }[]
+): EtapeDuChemin[] | undefined {
+  if (suivi.length > 0) {
+    return suivi.map((etape) => ({
+      titre: etape.titre,
+      explication: etape.explication,
+      etat:
+        etape.etat === "faite" ? "faite" : etape.etat === "en_cours" ? "en_cours" : "a_venir",
+    }));
+  }
+
+  /*
+   * Le dossier se remplit encore : ce sont les étapes du formulaire.
+   *
+   * Elles n'ont pas d'explication - ce sont des écrans à parcourir, non des choses qui
+   * se passent - et seule la création les numérote. Pour les autres, il n'y a rien
+   * d'honnête à dessiner, et la prochaine étape en toutes lettres dit davantage.
+   */
+  if (dossier.type && dossier.type !== "creation") return undefined;
+
+  const noms = nomsDEtapes(dossier.offre);
+  return noms.map((titre, rang) => ({
+    titre,
+    etat:
+      rang + 1 < dossier.etapeAffichee
+        ? "faite"
+        : rang + 1 === dossier.etapeAffichee
+          ? "en_cours"
+          : "a_venir",
+  }));
+}
 
 export const metadata: Metadata = {
   title: "Tableau de bord - Formalist",
@@ -78,7 +117,7 @@ function nomComplet(dossier: {
  */
 export default async function TableauDeBord() {
   const utilisateur = await exigerUtilisateur();
-  const { societes, activite, documents, nombreDeDocuments } = await tableauDeBord(utilisateur);
+  const { societes } = await tableauDeBord(utilisateur);
 
   const prenom = utilisateur.nom.split(" ")[0];
 
@@ -105,7 +144,6 @@ export default async function TableauDeBord() {
   }
 
   const dossiers = societes as DossierDAccueil[];
-  const chiffres = indicateurs(dossiers);
   const aReprendre = dossierAReprendre(dossiers);
   const actions = attentionRequise(dossiers, aReprendre?.id ?? null);
 
@@ -130,38 +168,6 @@ export default async function TableauDeBord() {
   const lienDu = (id: number) => adresseDuDossier({ id, type: parIdentifiant.get(id) ?? null });
 
   const enCours = dossiers.filter((d) => d.status !== "terminee" && d.status !== "archive");
-
-  const lignes: LigneDeTravail[] = enCours.slice(0, LIGNES_MONTREES).map((dossier) => {
-    const etat = tonDuDossier(dossier);
-    const nature = libelleDuType(dossier.type) ?? "Formalité";
-
-    return {
-      id: dossier.id,
-      // « Création SASU » : l'opération d'abord, la forme ensuite.
-      type: dossier.forme ? nature + " " + dossier.forme.toUpperCase() : nature,
-      /*
-       * L'étape ne se chiffre que pour une création.
-       *
-       * Seul ce parcours numérote de un à cinq ; les autres ont leur propre découpage.
-       * Pour eux, la prochaine étape en toutes lettres dit davantage qu'un compteur faux.
-       */
-      precision:
-        dossier.type === "creation" || !dossier.type
-          ? "Étape " +
-            dossier.etapeAffichee +
-            " sur " +
-            nombreDEtapes(dossier.offre) +
-            " · " +
-            nomEtape(dossier.etapeAffichee, dossier.offre)
-          : dossier.prochaineEtape,
-      societe: nomComplet(dossier),
-      pourcentage: avancement(dossier.etapeAffichee, dossier.offre),
-      etat: etat.libelle,
-      ton: etat.ton,
-      geste: gesteDuDossier(dossier),
-      lien: lienDu(dossier.id),
-    };
-  });
 
   /*
    * Le dossier unique garde ses détails.
@@ -202,46 +208,67 @@ export default async function TableauDeBord() {
           <span className={styles.enteteDate}>{dateEnTete()}</span>
         </header>
 
+        {/*
+          La même disposition qu'à plusieurs, et ce qu'on met à droite change.
+
+          À plusieurs, la colonne de droite dit ce qu'il y a d'autre ; à un seul, il n'y
+          a rien d'autre, et elle dit ce que le dossier porte - ses documents, ce qui
+          l'attend. Deux dispositions différentes pour le même écran donnaient
+          l'impression de changer de produit en ouvrant un second dossier.
+        */}
         <div className={styles.content}>
-          <div className={styles.colonneUnique}>
-            <DossierUnique
-              type={libelleDuType(seul.type) ?? "Formalité"}
+          <div className={styles.deuxColonnes}>
+            <DossierEnTete
+              nature={libelleDuType(seul.type) ?? "Formalité"}
               societe={nomComplet(seul)}
-              pourcentage={avancement(seul.etapeAffichee, seul.offre)}
               prochaineEtape={seul.prochaineEtape}
-              bouton={gesteDuDossier(seul)}
+              etat={tonDuDossier(seul)}
+              etapes={friseDuDossier(seul, detail?.suivi ?? [])}
+              actions={seul.actions}
+              geste={gesteDuDossier(seul)}
               lien={lienDu(seul.id)}
+              avocat={detail?.avocat ?? null}
+              nonLus={seul.nonLus}
             />
 
-            {/* Terminé, on montre ce qui vient après ; en cours, où l'on en est. */}
-            {toutTermine ? (
-              <FeuilleDeRoute />
-            ) : (
-              <Frise
-                etapes={nomsDEtapes(seul.offre)}
-                etape={seul.etapeAffichee}
-                nomEtape={nomEtape(seul.etapeAffichee, seul.offre)}
-              />
-            )}
+            <aside className={styles.coteColonne} aria-label="Votre dossier">
+              {/* Terminé, on montre ce qui vient après plutôt qu'un cadre vide. */}
+              {toutTermine && <FeuilleDeRoute />}
 
-            {/* Ce qu'on attend de lui garde sa carte même vide : c'est la seule qui
-                rassure - « nous traitons votre dossier ». Les autres se taisent. */}
-            <Attention actions={attentionRequise(dossiers, null)} />
+              {(detail?.documents.length ?? 0) > 0 && (
+                <DocumentsDuDossier documents={detail?.documents ?? []} />
+              )}
 
-            {(detail?.documents.length ?? 0) > 0 && (
-              <DocumentsDuDossier documents={detail?.documents ?? []} />
-            )}
-            {echeances.length > 0 && <Echeances echeances={echeances} />}
-            {activite.length > 0 && (
-              <ActiviteRecente activite={activite} lienDossier={lienDu} />
-            )}
-
-            <Interlocuteur avocat={detail?.avocat ?? null} />
+              <EcheancesProches echeances={echeancesProches(echeances)} />
+            </aside>
           </div>
         </div>
       </main>
     );
   }
+
+  /*
+   * Le dossier en tête, celui qu'on reprend.
+   *
+   * `dossierAReprendre` rend le premier qui attend son propriétaire ; à défaut - tout
+   * est chez l'avocat - c'est le premier dossier ouvert. La page a toujours quelque
+   * chose à montrer en grand, sans quoi la colonne de gauche resterait vide sur un
+   * compte dont rien n'est bloqué.
+   */
+  const enTete = aReprendre ?? enCours[0] ?? null;
+  const detailEnTete = enTete ? await focusDuDossier(utilisateur, enTete.id) : null;
+
+  const autres: AutreFormalite[] = enCours
+    .filter((dossier) => dossier.id !== enTete?.id)
+    .slice(0, FORMALITES_MONTREES)
+    .map((dossier) => ({
+      id: dossier.id,
+      societe: nomComplet(dossier),
+      nature: libelleDuType(dossier.type) ?? "Formalité",
+      etat: tonDuDossier(dossier),
+      attentes: dossier.actions.length,
+      lien: lienDu(dossier.id),
+    }));
 
   return (
     <main className={styles.page}>
@@ -252,67 +279,50 @@ export default async function TableauDeBord() {
         */}
         <h1 className={styles.enteteTitre}>{phraseDAccueil(prenom, societes.length)}</h1>
 
-        {/* La date à droite, avant le bouton : elle situe, elle n'annonce pas. */}
+        {/* La date à droite : elle situe, elle n'annonce pas. */}
         <span className={styles.enteteDate}>{dateEnTete()}</span>
       </header>
 
+      {/*
+        Deux colonnes, et rien d'empilé dessous.
+
+        L'accueil portait sept sections : trois chiffres, un bandeau de reprise, des
+        documents récents, une liste d'attentes, une file de travail, des échéances,
+        une activité récente et un catalogue. Le dossier sur lequel on travaille y
+        paraissait quatre fois, sous quatre formes.
+
+        À gauche ce qu'on reprend, à droite ce qu'il y a d'autre. Ce qui a été retiré
+        n'est perdu nulle part : les documents ont leur page, le catalogue s'ouvre par
+        « Nouvelle formalité », et les attentes des autres dossiers se comptent sur
+        leur ligne.
+      */}
       <div className={styles.content}>
-        <Indicateurs
-          chiffres={[
-            {
-              valeur: chiffres.actionsRequises,
-              libelle: chiffres.actionsRequises > 1 ? "actions requises" : "action requise",
-            },
-            {
-              valeur: chiffres.enCours,
-              libelle: chiffres.enCours > 1 ? "formalités en cours" : "formalité en cours",
-            },
-            {
-              valeur: echeancesProches(echeances).length,
-              libelle: "sous trente jours",
-            },
-            { valeur: nombreDeDocuments, libelle: "documents" },
-          ]}
-        />
+        <div className={styles.deuxColonnes}>
+          {enTete ? (
+            <DossierEnTete
+              nature={libelleDuType(enTete.type) ?? "Formalité"}
+              societe={nomComplet(enTete)}
+              prochaineEtape={enTete.prochaineEtape}
+              etat={tonDuDossier(enTete)}
+              etapes={friseDuDossier(enTete, detailEnTete?.suivi ?? [])}
+              actions={enTete.actions}
+              geste={gesteDuDossier(enTete)}
+              lien={lienDu(enTete.id)}
+              avocat={detailEnTete?.avocat ?? null}
+              nonLus={enTete.nonLus}
+            />
+          ) : (
+            /* Tout est clos : on montre ce qui vient après plutôt qu'un cadre vide. */
+            <FeuilleDeRoute />
+          )}
 
-        {aReprendre && (
-          <Reprendre
-            type={libelleDuType(aReprendre.type) ?? "Formalité"}
-            societe={nomComplet(aReprendre)}
-            pourcentage={avancement(aReprendre.etapeAffichee, aReprendre.offre)}
-            prochaineEtape={aReprendre.prochaineEtape}
-            bouton={gesteDuDossier(aReprendre)}
-            lien={lienDu(aReprendre.id)}
+          <AutresFormalites
+            formalites={autres}
+            total={enCours.length}
+            actions={actions}
+            echeances={echeancesProches(echeances)}
           />
-        )}
-
-        <DocumentsRecents documents={documents} />
-
-        <div className={styles.corps}>
-          <div className={styles.colonnePrincipale}>
-            <Attention actions={actions} />
-            <FileDeTravail lignes={lignes} total={enCours.length} />
-
-            {/* Tout est fini : on montre ce qui vient après plutôt qu'une page vide. */}
-            {toutTermine && <FeuilleDeRoute />}
-          </div>
-
-          <aside className={styles.colonneLaterale}>
-            <Echeances echeances={echeances} />
-            <ActiviteRecente activite={activite} lienDossier={lienDu} />
-          </aside>
         </div>
-
-        {/*
-          Ce que nous savons faire, en pied de page.
-
-          Le catalogue s'affiche en entier à qui n'a encore aucune société, et
-          disparaît au premier dossier : de là, il ne vit plus que derrière le bouton
-          de la colonne. Le client qui a une SAS depuis mars est justement celui qui
-          voudra transférer son siège en juin et déposer ses comptes en septembre - et
-          il n'avait plus nulle part où l'apprendre.
-        */}
-        <CeQueNousFaisons />
       </div>
     </main>
   );

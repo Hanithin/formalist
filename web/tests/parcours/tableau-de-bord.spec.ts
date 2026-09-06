@@ -19,19 +19,21 @@ import { retirerDossiers } from "./nettoyage";
 test.describe.configure({ mode: "serial" });
 
 test.describe("tableau de bord du client", () => {
-  test("annonce en chiffres ce qu'il y a à savoir, et tait les zéros", async ({ page }) => {
+  test("ouvre sur le dossier qu'on reprend, non sur une ligne de chiffres", async ({ page }) => {
     /*
-     * Une ligne discrète sous la salutation, non un bloc de cases : ces chiffres ne
-     * demandent rien, ils situent. Et un zéro ne s'écrit pas - « 0 échéance » occupe la
-     * place d'un chiffre pour annoncer une absence, et l'on relit pour vérifier qu'on
-     * n'a rien manqué.
+     * « 63 actions requises · 62 formalités en cours · 150 documents » situait sans rien
+     * proposer : on ne clique pas un compteur, et « 63 » est un chiffre qui décourage
+     * plus qu'il n'informe. La page ouvre sur ce qu'on reprend, avec son geste.
      */
     await page.goto("/tableau-de-bord");
 
-    const indicateurs = page.locator("dl[class*='indicateurs']");
-    await expect(indicateurs).toBeVisible();
-    await expect(indicateurs.getByText(/formalités? en cours/)).toBeVisible();
-    await expect(indicateurs.getByText("0", { exact: true })).toHaveCount(0);
+    await expect(page.locator("dl[class*='indicateurs']")).toHaveCount(0);
+
+    /* L'encadré de tête porte le nom d'une société, sa nature et son geste. */
+    const encadre = page.locator("section[aria-labelledby='dossier-en-tete']");
+    await expect(encadre).toBeVisible();
+    await expect(encadre.getByRole("heading", { level: 2 })).not.toBeEmpty();
+    await expect(encadre.getByRole("link").first()).toHaveAttribute("href", /\/(creation|modification|fermeture|depot-des-comptes|auto-entrepreneur|cessation)/);
   });
 
   test("la salutation reprend la phrase du moment, et la date passe à droite", async ({
@@ -64,24 +66,39 @@ test.describe("tableau de bord du client", () => {
     expect(boiteDate!.x).toBeGreaterThan(boiteTitre!.x + boiteTitre!.width);
   });
 
-  test("dit ce qui requiert l'attention, avec la société concernée", async ({ page }) => {
+  test("dit ce que le dossier en tête attend, sous le dossier qu'il retient", async ({ page }) => {
+    /*
+     * Les attentes de tous les dossiers vivaient dans une carte commune, « Ce qui
+     * requiert votre attention » : soixante-trois lignes où l'on cherchait celle du
+     * dossier qu'on avait en tête. Celles du dossier repris se lisent sous lui ; les
+     * autres se comptent sur la ligne de leur dossier, à droite.
+     */
     await page.goto("/tableau-de-bord");
 
-    await expect(
-      page.getByRole("heading", { name: "Ce qui requiert votre attention" })
-    ).toBeVisible();
-    // Le document refusé du jeu de données doit remonter en premier.
-    await expect(page.getByText("Un document à remplacer").first()).toBeVisible();
-    await expect(page.getByText(/PARCOURS EN COURS/).first()).toBeVisible();
+    const encadre = page.locator("section[aria-labelledby='dossier-en-tete']");
+    await expect(encadre.getByText("À faire")).toBeVisible();
+    await expect(encadre.getByRole("listitem").first()).toBeVisible();
+
+    const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
+    await expect(colonne.getByText(/gestes? attendus?/).first()).toBeVisible();
   });
 
-  test("chaque action mène directement là où il faut agir", async ({ page }) => {
+  test("le geste de l'encadré mène directement là où il faut agir", async ({ page }) => {
+    /*
+     * Chaque attente portait son bouton dans une liste commune. L'encadré n'en porte
+     * qu'un - celui du dossier qu'il montre - et c'est le verbe de sa première attente :
+     * « Remplacer », « Choisir », « Reprendre », non « Continuer » qui ne dit rien.
+     */
     await page.goto("/tableau-de-bord");
-    const lien = page.getByRole("link", { name: "Remplacer" }).first();
-    await expect(lien).toHaveAttribute("href", /\/creation\?dossier=\d+/);
+
+    const encadre = page.locator("section[aria-labelledby='dossier-en-tete']");
+    const geste = encadre.getByRole("link").first();
+
+    await expect(geste).toHaveAttribute("href", /dossier=\d+/);
+    await expect(geste).not.toBeEmpty();
   });
 
-  test("le dossier mis en avant ne se répète pas plus bas", async ({ page }) => {
+  test("le dossier en tête ne se répète pas dans la colonne", async ({ page }) => {
     /*
      * C'était le défaut le plus visible : un même dossier figurait dans le bandeau de
      * reprise, dans les vignettes et dans la liste des attentes. Sur vingt dossiers,
@@ -89,33 +106,23 @@ test.describe("tableau de bord du client", () => {
      */
     await page.goto("/tableau-de-bord");
 
-    const reprise = page.getByRole("region", { name: "Reprendre" });
-    await expect(reprise).toBeVisible();
+    const encadre = page.locator("section[aria-labelledby='dossier-en-tete']");
+    const lien = await encadre.getByRole("link").first().getAttribute("href");
+    const enTete = lien?.match(/dossier=(\d+)/)?.[1];
+    expect(enTete, "l'encadré doit mener à un dossier").toBeTruthy();
 
-    /*
-     * La comparaison porte sur le dossier, non sur le nom de la société.
-     *
-     * Deux dossiers d'une même société sont deux choses distinctes - une modification
-     * en cours et un dépôt de comptes qui attend une pièce - et l'un peut légitimement
-     * figurer dans les deux sections. Le test comparait les noms : il échouait dès
-     * qu'une autre série créait un second dossier pour la même société, ce qui arrive
-     * à chaque exécution parallèle.
-     */
-    const lienReprise = await reprise.getByRole("link").first().getAttribute("href");
-    const dossierRepris = lienReprise?.match(/dossier=(\d+)/)?.[1];
-    expect(dossierRepris, "le bandeau doit mener à un dossier").toBeTruthy();
+    const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
+    const liens = await colonne
+      .getByRole("link")
+      .evaluateAll((a) => a.map((e) => (e as HTMLAnchorElement).getAttribute("href") ?? ""));
 
-    const attention = page.getByRole("region", { name: "Ce qui requiert votre attention" });
-    const liens = await attention.getByRole("link").evaluateAll((a) =>
-      a.map((e) => (e as HTMLAnchorElement).getAttribute("href") ?? "")
-    );
     expect(
-      liens.filter((h) => h.includes("dossier=" + dossierRepris)),
-      "le dossier repris ne se répète pas dans les attentes"
+      liens.filter((h) => h.includes("dossier=" + enTete)),
+      "le dossier en tête ne se répète pas dans la colonne"
     ).toEqual([]);
   });
 
-  test("les formalités en cours sont des formalités, non des sociétés", async ({ page }) => {
+  test("la colonne liste des formalités, non des sociétés", async ({ page }) => {
     /*
      * La section s'appelait « Vos sociétés » et montrait des barres d'avancement avec
      * un bouton « Continuer » : ce sont des dossiers. Une société est permanente, une
@@ -123,56 +130,44 @@ test.describe("tableau de bord du client", () => {
      */
     await page.goto("/tableau-de-bord");
 
-    await expect(page.getByRole("heading", { name: "Formalités en cours" })).toBeVisible();
+    const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
+    await expect(colonne.getByRole("heading", { name: "Vos autres formalités" })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Vos sociétés/ })).toHaveCount(0);
 
     /*
-     * La file est courte : au-delà, elle se lit sur sa propre page. Le test figeait ce
-     * nombre à trois quand l'écran en montre cinq - `LIGNES_MONTREES` dans Sections.tsx.
-     * Ce qui vaut d'être gardé n'est pas le chiffre mais la promesse : la section est un
-     * extrait, et elle offre la sortie vers la file entière dès qu'elle en cache.
+     * La liste est un extrait, et elle offre la sortie vers la file entière : soixante
+     * formalités ne se cherchent pas dans une colonne, elles se filtrent sur leur page.
      */
-    const section = page.getByRole("region", { name: "Formalités en cours" });
-    const vignettes = section.locator("li");
-    const montrees = await vignettes.count();
+    const montrees = await colonne.locator("li").count();
+    expect(montrees, "la colonne est un extrait").toBeGreaterThan(0);
+    await expect(colonne.getByRole("link", { name: "Toutes mes formalités" })).toBeVisible();
 
-    const total = Number(
-      (await page.getByText(/formalités? en cours/).first().innerText()).match(/\d+/)?.[0] ?? montrees
-    );
-    expect(montrees, "la file du tableau de bord est un extrait").toBeLessThanOrEqual(total);
-    if (montrees < total) {
-      await expect(section.getByRole("link", { name: /Voir toute la file/ })).toBeVisible();
-    }
-
-    // Chaque vignette distingue le type de formalité du nom de la société.
-    await expect(section.getByText(/Création|Modification|Dépôt des comptes|Fermeture/).first()).toBeVisible();
+    /* Chaque ligne distingue la nature de la formalité du nom de la société. */
+    await expect(
+      colonne.getByText(/^(Création|Modification|Dépôt des comptes|Fermeture)$/).first()
+    ).toBeVisible();
   });
 
-  test("une section d'échéances existe, même sans échéance connue", async ({ page }) => {
+  test("les échéances lointaines ne se donnent pas pour proches", async ({ page }) => {
     /*
-     * Nous n'avons pas de calendrier des obligations : la section reste vide plutôt
-     * que d'afficher un exemple qui ne bougerait jamais. Elle doit exister quand même,
-     * sans quoi personne ne saura qu'elle se remplira.
+     * La carte listait « 10 mars 2029 » sous un titre « à venir », à côté d'un dépôt de
+     * comptes qui se joue la semaine prochaine. Elle ne montre plus que ce qui tombe
+     * sous trente jours, et le titre le dit ; sans rien de proche, elle ne paraît pas.
      */
     await page.goto("/tableau-de-bord");
-    await expect(page.getByRole("heading", { name: "Échéances à venir" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Échéances à venir" })).toHaveCount(0);
   });
 
-  test("« Voir tout » mène à la liste des formalités", async ({ page, request }) => {
+  test("« Toutes mes formalités » mène à la liste", async ({ page }) => {
     /*
-     * Le lien n'apparaît que s'il reste des formalités à voir : trois vignettes au
-     * plus. Le jeu de données en compte parfois exactement trois - le seuil se mesure
-     * donc sur les dossiers ouverts, non sur le total, qui inclut les terminés.
+     * La colonne est un extrait : six lignes, puis la sortie. Elle porte le lien même
+     * quand elle montre tout - « Toutes mes formalités » n'est pas un « voir plus »,
+     * c'est l'écran qui sait les filtrer et les chercher.
      */
-    const { dossiers } = (await (await request.get("/api/formalites")).json()) as {
-      dossiers: { status: string | null }[];
-    };
-    const ouverts = dossiers.filter((d) => d.status !== "terminee" && d.status !== "archive");
-    test.skip(ouverts.length <= 3, "il faut plus de trois dossiers ouverts");
-
     await page.goto("/tableau-de-bord");
-    const section = page.getByRole("region", { name: "Formalités en cours" });
-    await expect(section.getByRole("link", { name: "Voir tout" })).toHaveAttribute(
+
+    const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
+    await expect(colonne.getByRole("link", { name: "Toutes mes formalités" })).toHaveAttribute(
       "href",
       "/formalites"
     );
@@ -492,11 +487,16 @@ test.describe("ce qui requiert votre attention", () => {
     if (semes.length > 0) await retirerDossiers(semes);
   });
 
-  test("cinq actions au plus, le reste dans une fenêtre", async ({ page, request }) => {
+  test("toutes les attentes tiennent dans une fenêtre, depuis la colonne", async ({
+    page,
+    request,
+  }) => {
     /*
-     * Le jeu de données ne compte que quatre dossiers, donc moins de cinq actions.
-     * En semer quelques-uns rend le seuil observable sans dépendre de ce que les
-     * autres séries ont créé.
+     * La carte « Ce qui requiert votre attention » montrait cinq lignes sur soixante et
+     * mêlait les attentes de tous les dossiers : on y cherchait celle du dossier qu'on
+     * avait en tête. L'accueil refondu les répartit - celles du dossier repris sous lui,
+     * les autres comptées sur la ligne de leur dossier - et la fenêtre les reprend
+     * toutes, à un clic de la colonne.
      */
     for (let i = 1; i <= 6; i++) {
       const { dossier } = await (await request.post("/api/formalites/brouillon")).json();
@@ -508,37 +508,41 @@ test.describe("ce qui requiert votre attention", () => {
 
     await page.goto("/tableau-de-bord");
 
-    const carte = page.getByRole("region", { name: "Ce qui requiert votre attention" });
-    const lignes = carte.locator("a[href*='/creation'], a[href*='/signer'], a[href*='/documents']");
+    /* La carte n'existe plus sur la page : elle est derrière le lien de la colonne. */
+    await expect(
+      page.getByRole("region", { name: "Ce qui requiert votre attention" })
+    ).toHaveCount(0);
 
-    /*
-     * La carte montrait tout : sur une trentaine de dossiers elle devenait une liste
-     * à faire défiler, et l'activité récente disparaissait sous elle.
-     */
-    expect(await lignes.count()).toBe(5);
+    const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
+    await colonne.getByRole("button", { name: /Voir tout/ }).click();
 
-    const voirTout = carte.getByRole("button", { name: /Voir tout/ });
-    await expect(voirTout).toBeVisible();
-
-    await voirTout.click();
     const fenetre = page.getByRole("dialog", { name: "Ce qui requiert votre attention" });
     await expect(fenetre).toBeVisible();
 
-    // Elle en montre plus que la carte.
-    const toutes = fenetre.locator("a[href*='/creation'], a[href*='/signer'], a[href*='/documents']");
+    const toutes = fenetre.locator(
+      "a[href*='/creation'], a[href*='/signer'], a[href*='/documents']"
+    );
     expect(await toutes.count()).toBeGreaterThan(5);
 
     await page.keyboard.press("Escape");
     await expect(fenetre).not.toBeVisible();
   });
 
-  test("une action bloquante n'est jamais cachée derrière la fenêtre", async ({ page }) => {
+  test("une action bloquante se lit sans ouvrir la fenêtre", async ({ page }) => {
+    /*
+     * Le jeu de données comprend un document refusé, qui arrête son dossier. Il se lit
+     * sous le dossier qu'il retient, ou se compte sur sa ligne dans la colonne - jamais
+     * au fond d'une liste de soixante.
+     */
     await page.goto("/tableau-de-bord");
 
-    // Le jeu de données comprend un document refusé, qui arrête son dossier : il doit
-    // figurer parmi les cinq, pas au fond de la liste.
-    const carte = page.getByRole("region", { name: "Ce qui requiert votre attention" });
-    await expect(carte.getByText("Un document à remplacer")).toBeVisible();
+    const encadre = page.locator("section[aria-labelledby='dossier-en-tete']");
+    const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
+
+    const dansLEncadre = await encadre.getByText("Un document à remplacer").count();
+    const compte = await colonne.getByText(/gestes? attendus?/).count();
+
+    expect(dansLEncadre + compte, "ce qui bloque doit se voir").toBeGreaterThan(0);
   });
 });
 

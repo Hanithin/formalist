@@ -13,6 +13,10 @@ import { PARCOURS } from "../../src/domain/navigation/parcours";
  *
  * Le compte partagé des parcours porte des dossiers : c'est donc l'état « avec
  * sociétés » que cet essai regarde, celui que l'autre fichier ne peut pas voir.
+ *
+ * La bande a quitté le pied de page pour la colonne de droite, sous les autres
+ * formalités : l'accueil refondu n'empile plus de sections, et le catalogue s'y lit
+ * comme un sommaire plutôt que comme une devanture.
  */
 
 test("le tableau de bord nomme les huit parcours, dossiers ou pas", async ({ page }) => {

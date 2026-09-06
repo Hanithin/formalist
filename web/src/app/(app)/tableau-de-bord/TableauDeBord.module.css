@@ -569,7 +569,18 @@
    tableau de bord n'est pas une page de lecture, il n'a pas de largeur de
    confort. */
 
+/*
+ * La page occupe la hauteur de la coquille, sans la dépasser.
+ *
+ * L'accueil s'arrêtait à la hauteur de son contenu : le dossier en tête tenait sur
+ * quatre cents pixels, et il restait sous les deux colonnes la moitié d'un écran de
+ * gris. En colonne flexible, la zone des colonnes prend ce qui reste sous le titre, et
+ * la liste des formalités défile dedans plutôt que d'allonger la page.
+ */
 .page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
   padding: 0;
   max-width: none;
   width: 100%;
@@ -606,7 +617,7 @@
     }
 .topbarDate { font-size: 14.5px; color: #888; white-space: nowrap; }
 /* Dix-huit pixels sous l'en-tête : le contenu venait toucher le bouton. */
-.content { padding: 18px 48px 48px; flex: 1; }
+.content { padding: 18px 48px 32px; flex: 1; min-height: 0; }
 @media (max-width: 768px) {
       .topbar { flex-direction: column; padding: 24px 20px 16px; }
       .topbarActions { padding-top: 0; }
@@ -2215,4 +2226,616 @@
 .teal {
   background: #f0fdfa;
   color: #0d9488;
+}
+
+/* ================================================================
+   L'accueil refondu : le dossier en tête, et ce qu'il y a d'autre
+   ================================================================ */
+
+/*
+ * Deux colonnes, et rien d'empilé dessous.
+ *
+ * L'accueil portait sept sections. Le dossier sur lequel on travaille y paraissait
+ * quatre fois - la ligne de chiffres, le bandeau de reprise, la liste d'attentes, la
+ * file de travail - et la question qu'on se pose en ouvrant la page se lisait au
+ * quatrième cadre.
+ *
+ * La colonne de gauche porte un objet, la droite ce qui reste. Le rapport est de deux
+ * tiers pour un tiers : l'encadré tient une frise nommée et deux attentes en toutes
+ * lettres, la liste tient un nom et un état.
+ */
+.deuxColonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(320px, 1fr);
+  gap: 24px;
+  /*
+   * Les deux colonnes occupent la hauteur, elles ne flottent pas en haut.
+   *
+   * Posées en `start`, elles laissaient sous elles la moitié d'un écran de gris - le
+   * dossier en tête tenait sur quatre cents pixels dans une page qui en fait huit
+   * cents. Elles s'étirent : le pied de l'encadré descend au bas de sa carte, la liste
+   * des formalités montre ce qu'elle peut et défile pour le reste.
+   */
+  align-items: stretch;
+  height: 100%;
+}
+
+@media (max-width: 1080px) {
+  .deuxColonnes {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+}
+
+/* ---------- L'encadré de tête ---------- */
+
+/*
+ * Blanc et encre, non le bandeau ambre d'avant.
+ *
+ * Le fond jaune se lit comme un avertissement, alors qu'il n'annonçait rien d'anormal :
+ * un dossier en cours est l'état ordinaire d'un compte. L'ambre reste à la pastille
+ * d'état, où elle dit quelque chose.
+ */
+.teteCarte {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 30px 32px 26px;
+  border: 1px solid #eee;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.teteBandeau {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.teteNature {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.teteSociete {
+  margin: 0;
+  font-family: var(--police-titre), sans-serif;
+  /*
+   * Le nom au corps que mérite le seul objet de la page.
+   *
+   * À vingt-six pixels dans une carte de sept cents de haut, il avait la taille d'un
+   * titre de section : la carte paraissait une petite carte agrandie.
+   */
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.15;
+  color: #111;
+}
+
+.teteEtape {
+  margin: 6px 0 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+/*
+ * La frise dit où l'on est, non combien il reste.
+ *
+ * « 100 % » sur un dossier qu'on vient de reprendre parce qu'il n'est pas fini : le
+ * pourcentage se calculait sur un compteur d'étapes que seules les créations ont. Les
+ * étapes portent leur nom, et le trait qui les relie se remplit jusqu'à la sienne.
+ */
+/*
+ * Le chemin descend, il ne s'aligne pas.
+ *
+ * Cinq jalons côte à côte tenaient sur une ligne et laissaient trois cents pixels de
+ * blanc sous eux : la carte était haute, son contenu plat. À la verticale, le chemin
+ * occupe la carte pour ce qu'il est - le seul objet de la page - et chaque étape a la
+ * place de dire ce qu'elle fait.
+ */
+.teteChemin {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teteChemin > li {
+  display: block;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.teteChemin > li.teteEtapeLigne {
+  position: relative;
+  display: flex;
+  /* La règle globale centre les `li` : le point tomberait au milieu de l'explication. */
+  align-items: flex-start;
+  gap: 16px;
+  padding: 0 0 18px 0;
+}
+
+/* Le trait relie un jalon au suivant ; le dernier n'en porte pas. */
+.teteEtapeLigne::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: -2px;
+  left: 5px;
+  width: 2px;
+  background: #ececef;
+}
+
+.teteEtapeLigne:last-child {
+  padding-bottom: 0;
+}
+
+.teteEtapeLigne:last-child::before {
+  display: none;
+}
+
+.teteJalonPoint {
+  /* Au-dessus du trait : il le traversait, et l'anneau paraissait cassé. */
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  border: 2px solid #d4d4d8;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.teteEtapeFaite::before {
+  background: #18181b;
+}
+
+.teteEtapeFaite .teteJalonPoint {
+  border-color: #18181b;
+  background: #18181b;
+}
+
+.teteEtapeCourante .teteJalonPoint {
+  border-color: #18181b;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.1);
+}
+
+.teteJalonCorps {
+  min-width: 0;
+  padding-bottom: 2px;
+}
+
+.teteJalonNom {
+  display: block;
+  font-size: 14.5px;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: #a1a1aa;
+}
+
+.teteEtapeFaite .teteJalonNom {
+  color: #52525b;
+}
+
+.teteEtapeCourante .teteJalonNom {
+  font-weight: 600;
+  color: #111;
+}
+
+/* Seule l'étape en cours s'explique : tout expliquer ferait un mode d'emploi. */
+.teteJalonExplication {
+  display: block;
+  max-width: 46ch;
+  margin-top: 5px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+/* ---------- Ce qui bloque ---------- */
+
+.teteAFaire {
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px solid #f2f2f4;
+}
+
+.teteAFaireTitre {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.teteAttentes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teteAttente {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+/*
+ * La pastille dit ce qui bloque, sans border-left ni fond coloré.
+ *
+ * Six pixels d'ambre suffisent à distinguer ce qui retient le dossier de ce qui
+ * l'avance simplement.
+ */
+.teteAttentePoint,
+.teteAttentePointCalme {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-top: 7px;
+  border-radius: 50%;
+}
+
+.teteAttentePoint {
+  background: #d97706;
+}
+
+.teteAttentePointCalme {
+  background: #d4d4d8;
+}
+
+.teteAttenteTitre {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.teteAttentePrecision {
+  display: block;
+  margin-top: 3px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #71717a;
+}
+
+.teteReste {
+  margin: 12px 0 0 17px;
+  font-size: 12.5px;
+  color: #a1a1aa;
+}
+
+/* ---------- Le pied de l'encadré ---------- */
+
+.tetePied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  /* Le geste se pose au bas de la carte, quelle que soit sa hauteur. */
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #f2f2f4;
+}
+
+.teteGeste {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 22px;
+  border-radius: 10px;
+  background: #111;
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.teteGeste:hover {
+  background: #000;
+}
+
+.teteGeste svg {
+  width: 15px;
+  height: 15px;
+}
+
+.teteMeta {
+  margin: 0;
+  font-size: 13.5px;
+  color: #8a8a92;
+}
+
+.teteMetaLien {
+  color: #52525b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ---------- La colonne de droite ---------- */
+
+/*
+ * La colonne défile d'un bloc, elle ne comprime pas ses cartes.
+ *
+ * Étirer la liste des formalités pour remplir la hauteur la réduisait à deux lignes dès
+ * que le catalogue s'ajoutait dessous : trois cartes se disputaient sept cents pixels.
+ * Chacune garde sa taille, et c'est la colonne qui glisse - le catalogue est fait pour
+ * être découvert en la parcourant, non pour tenir dans le premier écran.
+ */
+.coteColonne {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/*
+ * La liste prend la hauteur qui reste, et défile dedans.
+ *
+ * Soixante-deux formalités ne tiennent pas dans une colonne : elle en montre ce que
+ * l'écran permet, et le reste se parcourt sans que la page entière bouge. Les
+ * échéances, elles, gardent leur taille - elles sont trois au plus.
+ */
+.coteCarte {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+
+.coteTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 12px;
+}
+
+.coteTitre {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #52525b;
+}
+
+.coteCompte {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.coteListe {
+  /* La même règle globale : une liste en flex, avec un écart. Ici, des lignes jointes. */
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * La règle globale fait de tout `li` d'une section une carte.
+ *
+ * `main section > ul > li` pose un fond, un trait, un coin arrondi et quatorze pixels
+ * de marge : six lignes de liste devenaient six cartes de cent quatre pixels dans une
+ * colonne qui en fait trois cents de large. Ici, c'est le lien qui est la ligne.
+ */
+.coteListe > li,
+.teteFrise > li {
+  display: block;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.coteListe li + li .coteLigne {
+  border-top: 1px solid #f4f4f5;
+}
+
+/*
+ * Une ligne, non une carte.
+ *
+ * La file de travail posait cinq cartes avec leur bordure, leur pourcentage et leur
+ * bouton : cinq objets pour dire cinq noms. Ici la ligne entière est le lien - on ne
+ * vise pas un bouton de dix pixels au bout d'une rangée.
+ */
+.coteLigne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 18px;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.coteLigne:hover {
+  background: #fafafa;
+}
+
+.coteLigneCorps {
+  min-width: 0;
+}
+
+.coteSociete {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coteNature {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #8a8a92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coteEtat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Un compte de gestes, non une barre : un pourcentage ne se convertit pas en action. */
+.coteAttentes {
+  font-size: 11.5px;
+  letter-spacing: 0;
+  color: #a1a1aa;
+  white-space: nowrap;
+}
+
+.coteDate {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: #52525b;
+  white-space: nowrap;
+}
+
+.cotePied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 12px 18px 14px;
+  border-top: 1px solid #f4f4f5;
+}
+
+.coteLien {
+  font-size: 12.5px;
+  color: #52525b;
+  text-decoration: none;
+}
+
+.coteLien:hover {
+  color: #111;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ---------- Ce que nous savons faire, en pied de colonne ---------- */
+
+/*
+ * Quatre familles qui se suivent, non côte à côte.
+ *
+ * En bande de pied de page, elles tenaient sur une ligne de mille deux cents pixels.
+ * Dans une colonne de trois cents, elles se suivent - deux parcours chacune, l'intitulé
+ * de la famille au-dessus - et l'ensemble se parcourt comme un sommaire.
+ */
+.coteServices {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 18px 16px;
+}
+
+.coteFamilleTitre {
+  margin: 0 0 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.coteServicesListe {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coteService,
+.coteServiceBientot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /*
+   * La même hauteur de ligne que les formalités au-dessus.
+   *
+   * Le catalogue était composé deux crans en dessous du reste de la colonne : huit
+   * lignes serrées sous une liste aérée, dans la même carte blanche - on lisait deux
+   * écrans mis bout à bout.
+   */
+  padding: 6px 0;
+  font-size: 13.5px;
+  letter-spacing: 0;
+  color: #3f3f46;
+  text-decoration: none;
+}
+
+.coteService:hover {
+  color: #111;
+}
+
+.coteServiceBientot {
+  color: #a1a1aa;
+}
+
+.coteServiceIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.coteServiceIcone svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/* Un parcours à venir se nomme sans se promettre. */
+.coteServiceMention {
+  margin-left: auto;
+  font-size: 10.5px;
+  letter-spacing: 0;
+  color: #c4c4c8;
 }

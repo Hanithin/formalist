@@ -6,6 +6,8 @@ import { contextesDesDossiers } from "./contexte-dossier";
 import type { EntreeJournal } from "@/domain/formalite/journal";
 import { dateLimiteApprobation, dateLimiteDepot } from "@/domain/comptes/regles";
 import { termeDuMandat } from "@/domain/fermeture/delais";
+import { etapesDuSuivi } from "@/domain/formalite/suivi";
+import { etatDuDossier } from "./suivi";
 import type { UtilisateurConnecte } from "../sessions";
 
 /**
@@ -247,6 +249,21 @@ export async function focusDuDossier(utilisateur: UtilisateurConnecte, dossierId
       : Promise.resolve(null),
   ]);
 
+  /*
+   * Les étapes du dossier, celles que le client suit déjà dans son parcours.
+   *
+   * L'accueil montrait une frise à cinq crans - informations, capital, documents,
+   * signature, immatriculation - qui n'existe que pour une création : une modification
+   * ou un dépôt de comptes y lisait « étape 3 sur 5 » d'un parcours qui n'est pas le
+   * sien, et un pourcentage calculé dessus. Le suivi, lui, connaît le chemin de chaque
+   * nature de formalité, et c'est le même que le client lit dans son dossier.
+   *
+   * Il ne vaut qu'une fois le dossier confié : avant, le client remplit son formulaire,
+   * et ce sont les étapes de celui-ci qui le situent.
+   */
+  const confie = dossier.status !== "en_cours";
+  const suivi = confie ? etapesDuSuivi(await etatDuDossier(dossier)) : [];
+
   return {
     documents: documents.map((d) => ({
       id: d.id,
@@ -256,5 +273,6 @@ export async function focusDuDossier(utilisateur: UtilisateurConnecte, dossierId
       fichier: d.file_path,
     })),
     avocat: avocat?.name ?? null,
+    suivi,
   };
 }
