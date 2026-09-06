@@ -216,10 +216,28 @@ export function Corriger({
                     valeur={saisie[champ.identifiant]}
                     refus={manques.find((m) => m.champ === champ.identifiant)?.message}
                     surChangement={poser}
+                    /*
+                      L'adresse s'écrit dans le champ du dossier, non dans un champ deviné.
+                      
+                      Le nouveau siège passe sa frappe par ici et non par `surChangement` :
+                      c'est le seul champ rendu en deux morceaux, la voie d'un côté, le code
+                      postal et la ville de l'autre. Cette fenêtre écrivait dans « adresse »,
+                      « codePostal » et « ville », qui n'existent pas dans une modification -
+                      elle en a trois autres, « nouvelleAdresse », « nouveauCodePostal » et
+                      « nouvelleVille ». Le champ étant piloté par ce qu'on lui rend, la
+                      frappe se perdait sans trace : la valeur restait figée, et l'on croyait
+                      le formulaire inerte.
+                    */
                     surAdresse={(adresse, complements) => {
-                      poser("adresse", adresse);
-                      if (complements?.codePostal) poser("codePostal", complements.codePostal);
-                      if (complements?.ville) poser("ville", complements.ville);
+                      /* Une complétion ne porte que le code postal et la ville : la voie
+                         vient du rappel précédent, dans le même cycle. */
+                      if (adresse) poser(champ.identifiant, adresse);
+                      if (champ.identifiant === "nouvelleAdresse" && complements) {
+                        if (complements.codePostal) {
+                          poser("nouveauCodePostal", complements.codePostal);
+                        }
+                        if (complements.ville) poser("nouvelleVille", complements.ville);
+                      }
                     }}
                     /*
                      * La recherche au registre ne sert pas ici : l'avocat corrige une

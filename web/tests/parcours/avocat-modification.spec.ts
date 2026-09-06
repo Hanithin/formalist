@@ -1926,3 +1926,35 @@ test("un cadre se cale sur la ligne du texte voisin", async ({ page, request }) 
   expect(pose.y + pose.ligneDeBase).toBeGreaterThan(LIGNE - 0.8);
   expect(pose.y + pose.ligneDeBase).toBeLessThan(LIGNE + 0.8);
 });
+
+/**
+ * Le formulaire du dossier se laisse corriger depuis l'espace avocat.
+ *
+ * L'adresse du nouveau siège est le seul champ rendu en deux morceaux - la voie d'un
+ * côté, le code postal et la ville de l'autre, parce que l'annonce légale et le greffe
+ * les lisent séparément. Elle passe donc sa frappe par un autre rappel que les autres
+ * champs, et la fenêtre de correction écrivait ce rappel dans « adresse », « codePostal »
+ * et « ville » : trois noms qu'une modification n'a pas. Le champ étant piloté par ce
+ * qu'on lui rend, la frappe se perdait sans trace - la valeur restait figée, et l'avocat
+ * voyait un formulaire inerte.
+ */
+test("l'avocat corrige l'adresse du nouveau siège depuis le dossier", async ({ page }) => {
+  const dossier = await dossierDeModification();
+  await page.goto("/avocat/" + dossier);
+
+  await page.getByRole("button", { name: "Ouvrir le formulaire" }).click();
+  const fenetre = page.getByRole("dialog", { name: "Corriger le dossier" });
+  await expect(fenetre).toBeVisible();
+
+  const adresse = fenetre.getByLabel("Nouvelle adresse");
+  const avant = await adresse.inputValue();
+  await adresse.click();
+  await adresse.pressSequentially(" bis");
+
+  await expect(adresse).toHaveValue(avant + " bis");
+
+  /* Les autres champs de la fenêtre répondent aussi : ils passent par le rappel commun. */
+  const ville = fenetre.getByLabel("Ville", { exact: true });
+  await ville.fill("Lyon");
+  await expect(ville).toHaveValue("Lyon");
+});

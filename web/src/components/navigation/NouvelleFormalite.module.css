@@ -45,7 +45,14 @@
   color: #18181b;
   font-family: inherit;
   font-size: 15.5px;
-  font-weight: 600;
+  /*
+   * La graisse de l'entrée active, non un cran de plus.
+   *
+   * Le bouton coiffe une colonne composée en 450, dont l'entrée active est en 550 : à
+   * 600, au même corps qu'elles, il ne se lisait plus comme le geste de tête mais comme
+   * du gras. Son fond plein le distingue déjà ; la graisse n'a pas à le refaire.
+   */
+  font-weight: 550;
   line-height: 1.2;
   text-align: left;
   text-decoration: none;
