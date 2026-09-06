@@ -12,12 +12,21 @@
 .chemin {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  /*
+   * Serré, mais pas tassé.
+   *
+   * Huit cartes de cent vingt-deux pixels dans une fenêtre de sept cents laissaient
+   * l'œil courir d'un titre au suivant sans rien tenir : le blanc y disait « ces deux
+   * lignes n'ont pas de rapport », alors qu'elles décrivent la même chose. Le pied
+   * remonte contre le titre, l'icône descend d'un cran, et la carte tient en une
+   * centaine.
+   */
+  gap: 8px;
   height: 100%;
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: #fff;
   border: 1px solid #eee;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #111;
   text-decoration: none;
   cursor: pointer;
@@ -37,7 +46,7 @@
 .tete {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   min-width: 0;
 }
 
@@ -46,16 +55,16 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background: #f4f4f5;
   color: #18181b;
 }
 
 .icone svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   display: block;
 }
 
@@ -99,7 +108,7 @@
 .corps {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -135,7 +144,7 @@
   align-items: center;
   gap: 12px;
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid #f4f4f5;
 }
 
@@ -166,8 +175,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #f4f4f5;
   color: #18181b;
@@ -178,8 +187,8 @@
 }
 
 .fleche svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   display: block;
 }
 

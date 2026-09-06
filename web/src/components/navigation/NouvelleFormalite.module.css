@@ -171,7 +171,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px 24px 18px;
+  padding: 18px 22px 15px;
   border-bottom: 1px solid #f0f0f2;
 }
 
@@ -234,8 +234,15 @@
 .familles {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 22px 20px;
-  padding: 18px;
+  /*
+   * Les familles se suivent, elles ne se fuient pas.
+   *
+   * Vingt-deux pixels entre deux familles et vingt entre deux colonnes ouvraient dans
+   * la fenêtre des couloirs plus larges que ce qui sépare une carte de son titre : le
+   * catalogue s'y lisait comme huit choses éparses au lieu de quatre paires.
+   */
+  gap: 18px 16px;
+  padding: 16px 18px 18px;
 }
 
 .famille {
@@ -243,7 +250,7 @@
 }
 
 .familleTitre {
-  margin: 0 0 8px;
+  margin: 0 0 7px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -251,11 +258,11 @@
   color: #a1a1aa;
 }
 
-/* Les deux parcours d'une famille se suivent, l'un sous l'autre. */
+/* Les deux parcours d'une famille se suivent, l'un sous l'autre - et de près. */
 .grille {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
 /*
