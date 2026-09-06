@@ -410,6 +410,57 @@ test("le prix et le règlement se voient sans descendre", async ({ page, request
   await expect(bouton).toBeInViewport();
 });
 
+test("le client sait quand l'avocat a validé sa pièce", async ({ page, request }) => {
+  /*
+   * Une pièce déposée restait « Déposé par vous » quoi qu'il advienne : le client
+   * remettait son justificatif, l'avocat le relisait et le validait - « Vérifié » de son
+   * côté - et rien n'en revenait au client. Il ne savait pas si sa pièce avait été
+   * acceptée, ni s'il devait s'attendre à en redéposer une.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {},
+      assemblee: {
+        date: "2026-09-01",
+        totalParts: 1000,
+        associes: [{ civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 1000 }],
+      },
+    },
+  });
+
+  const enregistre = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } });
+  await prisma.formalites.update({
+    where: { id: dossier },
+    data: {
+      data_json: JSON.stringify({ ...JSON.parse(enregistre.data_json ?? "{}"), paye: true }),
+    },
+  });
+
+  const piece = await prisma.documents.create({
+    data: {
+      formalite_id: dossier,
+      name: "Justificatif de jouissance du nouveau local",
+      uploaded_by: "user",
+      status: "uploaded",
+      file_path: "essai.pdf",
+    },
+  });
+
+  await page.goto("/modification?dossier=" + dossier);
+  await expect(page.getByText("Déposé par vous")).toBeVisible();
+
+  /* L'avocat valide : la mention du client suit. */
+  await prisma.documents.update({ where: { id: piece.id }, data: { status: "verified" } });
+
+  await page.reload();
+  await expect(page.getByText("Validé par l'avocat")).toBeVisible();
+  await expect(page.getByText("Déposé par vous")).toHaveCount(0);
+});
+
 test("un dossier réglé montre ses documents, comme une création", async ({ page, request }) => {
   /*
    * Trois onglets rangeaient la même page en trois écrans : l'avancement occupait le

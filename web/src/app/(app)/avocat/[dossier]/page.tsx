@@ -416,10 +416,13 @@ export default async function DossierAvocat({
    * il n'existe aucune ligne où l'accrocher, et celle-ci reste le seul chemin vers
    * l'éditeur.
    */
+  /* Des statuts à jour ont déjà été produits : la ligne d'origine le dit, et son bouton. */
+  const statutsRepris = documents.some((d) => d.name === TITRE_STATUTS_A_JOUR);
+
   const statutsAProduire =
     type === "modification" &&
     statutsAMettreAJour(codes) &&
-    !documents.some((d) => d.name === TITRE_STATUTS_A_JOUR) &&
+    !statutsRepris &&
     !documents.some((d) => d.name === TITRE_STATUTS_EN_VIGUEUR);
   const faites = taches.filter((t) => t.etat === "faite").length;
   /*
@@ -665,6 +668,7 @@ export default async function DossierAvocat({
                     piece={piece}
                     dossier={dossier.id}
                     retouchable={retoucheDesStatuts}
+                    repris={statutsRepris}
                   />
                 ))
               )}

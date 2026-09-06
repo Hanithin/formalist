@@ -146,7 +146,20 @@ export default async function Modification({
         nom: d.name,
         fichier: d.file_path,
         creeLe: d.created_at ? d.created_at.toISOString() : null,
-        etat: (d.uploaded_by === "system" ? "valide" : "depose") as EtatDuDocument,
+        /*
+         * Une pièce que l'avocat a vérifiée le dit.
+         *
+         * Elle restait « Déposé par vous » quoi qu'il advienne : le client remettait son
+         * justificatif, l'avocat le relisait et le validait - « Vérifié » de son côté -
+         * et rien n'en revenait au client. Il ne savait pas si sa pièce avait été
+         * acceptée, ni s'il devait s'attendre à en redéposer une.
+         *
+         * Ce que nous produisons n'apparaît ici qu'une fois relu : `visibleParLeClient`
+         * retient les actes tant qu'ils sont à relire.
+         */
+        etat: (d.uploaded_by === "system" || d.status === "verified"
+          ? "valide"
+          : "depose") as EtatDuDocument,
       })),
       ...actes
         .filter((a) => a.enRelecture)

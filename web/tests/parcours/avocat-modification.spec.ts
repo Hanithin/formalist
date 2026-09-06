@@ -606,6 +606,58 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
 });
 
+test("la ligne des statuts dit qu'ils ont déjà été repris", async ({ page, request }) => {
+  /*
+   * Elle affichait « Version actuellement au greffe » et un bouton « Modifier les
+   * statuts », comme au premier jour : rien ne disait, en la lisant, si le travail
+   * restait à faire ou s'il était fait.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.goto("/avocat/" + dossier);
+
+  /* Tant que rien n'est produit, le bouton ouvre le travail. */
+  await expect(page.getByRole("link", { name: "Modifier les statuts" })).toBeVisible();
+  await expect(page.getByText("Reprise dans les statuts à jour")).toHaveCount(0);
+
+  await prisma.documents.create({
+    data: {
+      formalite_id: dossier,
+      name: "Statuts mis à jour",
+      uploaded_by: "system",
+      status: "a_relire",
+      file_path: null,
+    },
+  });
+
+  await page.reload();
+
+  await expect(page.getByText("Reprise dans les statuts à jour")).toBeVisible();
+  /* Et le bouton ne propose plus d'ouvrir un travail déjà ouvert. */
+  await expect(page.getByRole("link", { name: "Reprendre les modifications" })).toBeVisible();
+});
+
 test("produire les statuts ramène au dossier", async ({ page, request }) => {
   /*
    * L'éditeur restait ouvert sur un document qu'on venait de produire, avec plus rien à

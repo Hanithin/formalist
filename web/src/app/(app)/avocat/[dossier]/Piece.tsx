@@ -68,6 +68,7 @@ export function Piece({
   piece,
   dossier,
   retouchable,
+  repris,
 }: {
   piece: PieceAffichee;
   dossier: number;
@@ -79,6 +80,14 @@ export function Piece({
    * l'explication qui suivait la pastille : on lisait une ligne anonyme et un bouton.
    */
   retouchable?: boolean;
+  /**
+   * Des statuts à jour ont-ils déjà été produits depuis ceux-ci ?
+   *
+   * Rien ne le disait sur cette ligne : elle affichait « Version actuellement au
+   * greffe » et un bouton « Modifier les statuts », comme au premier jour. On ne savait
+   * pas, en la lisant, si le travail restait à faire.
+   */
+  repris?: boolean;
 }) {
   const brut = etatDocument({
     name: piece.nom,
@@ -131,7 +140,11 @@ export function Piece({
         <div className={styles.docName}>{piece.nom}</div>
         <div className={styles.docMeta}>
           {/* L'état porte sa teinte : ce qui attend une décision se voit sans lire. */}
-          <span className={`${styles.docEtat} ${styles[etat.ton]}`}>{etat.libelle}</span>
+          {/* Le ton « neutre » n'a pas de classe : sans cette garde, la pastille sortait
+              avec un « undefined » dans son attribut de classe. */}
+          <span className={etat.ton in styles ? `${styles.docEtat} ${styles[etat.ton]}` : styles.docEtat}>
+            {etat.libelle}
+          </span>
           {piece.creeLe && (
             <span className={styles.docQuand}>
               {/*
@@ -166,7 +179,9 @@ export function Piece({
           <a href={"/avocat/" + dossier + "/statuts"} className={styles.decisionPrincipale}>
             {piece.nom === TITRE_STATUTS_A_JOUR
               ? "Mettre à jour les statuts"
-              : "Modifier les statuts"}
+              : repris
+                ? "Reprendre les modifications"
+                : "Modifier les statuts"}
           </a>
         )}
 
@@ -207,6 +222,30 @@ export function Piece({
         {piece.statut === "verified" && <Verification documentId={piece.id} dossier={dossier} decidee />}
       </div>
       </div>
+
+      {/*
+        Ce qui a été fait de ce document, sous la rangée.
+
+        La mention tenait sur la ligne, à côté de la pastille : elle y prenait sa place
+        et le nom, seul à céder, tombait à « Statu… ». Elle se lit sous lui, à son
+        aplomb, comme les versions antérieures.
+      */}
+      {retouchable && piece.nom === TITRE_STATUTS_EN_VIGUEUR && repris && (
+        <p className={styles.docMention}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Reprise dans les statuts à jour
+        </p>
+      )}
 
       {/*
         Elles ne se déplient que si l'acte en a : une mention « 0 version » sur chaque
