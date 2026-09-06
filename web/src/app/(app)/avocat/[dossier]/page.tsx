@@ -24,7 +24,10 @@ import {
   TITRE_STATUTS_A_JOUR,
   TITRE_STATUTS_EN_VIGUEUR,
 } from "@/domain/modification/formalites";
-import { publicationsAPrevoir } from "@/domain/modification/formalites";
+import {
+  attestationDeParution,
+  publicationsAPrevoir,
+} from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { aRelire } from "@/domain/document/publication";
 import { Piece, type PieceAffichee } from "./Piece";
@@ -425,7 +428,40 @@ export default async function DossierAvocat({
    * parution offrirait une place à remplir qui ne se remplira jamais.
    */
   const sAnnonce = type === "creation" || type === "modification" || type === "fermeture";
-  const parutionDeposee = documents.some((d) => d.name === "Attestation de parution");
+  /*
+   * Quelles attestations sont déjà au dossier, avis par avis.
+   *
+   * Un booléen ne suffit plus : un transfert qui change de département fait paraître
+   * deux avis, donc rapporte deux attestations. Le premier rang garde le nom d'avant,
+   * les suivants portent le leur - c'est le domaine qui les nomme, ici comme à la route
+   * qui les reçoit.
+   */
+  const ressortsDesAvis =
+    type === "modification"
+      ? publicationsAPrevoir({
+          codes,
+          codePostalActuel: societeDuDossier.codePostal,
+          codePostalNouveau:
+            typeof valeursDuDossier.nouveauCodePostal === "string"
+              ? valeursDuDossier.nouveauCodePostal
+              : "",
+          ressortActuel: villeDuRcs(societeDuDossier.codePostal, societeDuDossier.ville),
+          ressortNouveau: villeDuRcs(
+            typeof valeursDuDossier.nouveauCodePostal === "string"
+              ? valeursDuDossier.nouveauCodePostal
+              : "",
+            typeof valeursDuDossier.nouvelleVille === "string"
+              ? valeursDuDossier.nouvelleVille
+              : ""
+          ),
+        }).map((p) => p.ressort)
+      : [];
+
+  const parutionsDeposees = Array.from({ length: Math.max(1, avisAPublier) }, (_, rang) =>
+    documents.some((d) => d.name === attestationDeParution(rang, ressortsDesAvis).titre)
+      ? rang
+      : -1
+  ).filter((rang) => rang >= 0);
 
   const statutsAProduire =
     type === "modification" &&
@@ -713,7 +749,9 @@ export default async function DossierAvocat({
           {sAnnonce && (
             <DepotParution
               dossier={dossier.id}
-              deposee={parutionDeposee}
+              attendues={Math.max(1, avisAPublier)}
+              deposees={parutionsDeposees}
+              ressorts={ressortsDesAvis}
               avis={
                 avisAPublier > 0 ? (
                   <Volet
@@ -725,7 +763,11 @@ export default async function DossierAvocat({
                     }
                     large
                   >
-                    <Annonce dossier={dossier.id} route={routeDeLAnnonce} />
+                    <Annonce
+                      dossier={dossier.id}
+                      route={routeDeLAnnonce}
+                      deposees={parutionsDeposees}
+                    />
                   </Volet>
                 ) : null
               }

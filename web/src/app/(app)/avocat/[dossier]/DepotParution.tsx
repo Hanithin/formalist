@@ -15,19 +15,32 @@ import styles from "../Avocat.module.css";
  */
 export function DepotParution({
   dossier,
-  deposee,
+  attendues,
+  deposees,
+  ressorts,
   avis,
 }: {
   dossier: number;
   /**
-   * L'attestation est-elle déjà au dossier ?
+   * Combien d'attestations ce dossier appelle-t-il ?
+   *
+   * Une par parution. Un transfert qui change de département en fait paraître deux -
+   * un avis dans celui de départ, un dans celui d'arrivée - et le journal délivre une
+   * attestation pour chacune. La ligne disait « l'attestation » au singulier, et rien
+   * n'avertissait qu'il en faudrait une seconde avant d'ouvrir le volet.
+   */
+  attendues: number;
+  /**
+   * Les rangs déjà déposés.
    *
    * La ligne disparaissait une fois déposée - et emportait le volet de l'avis avec
    * elle, refermant d'un coup la fenêtre d'où l'on venait justement de déposer. Elle
    * reste, et dit ce qu'elle porte : le texte publié se relit après coup, et c'est ici
    * qu'on l'a lu la première fois.
    */
-  deposee?: boolean;
+  deposees: number[];
+  /** Les villes où l'on publie, pour dire laquelle manque encore. */
+  ressorts: string[];
   /**
    * Le volet de l'avis, posé à droite de la place à remplir.
    *
@@ -42,6 +55,12 @@ export function DepotParution({
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
+  /* La zone de la ligne remplit le premier rang qui manque ; le volet, celui qu'on vise. */
+  const manquant = Array.from({ length: attendues }, (_, rang) => rang).find(
+    (rang) => !deposees.includes(rang)
+  );
+  const deposee = manquant === undefined;
+
   function deposer(fichier: File) {
     setRefus(null);
 
@@ -49,6 +68,7 @@ export function DepotParution({
       const corps = new FormData();
       corps.append("dossier", String(dossier));
       corps.append("type", "parution");
+      corps.append("rang", String(manquant ?? 0));
       corps.append("fichier", fichier);
 
       const reponse = await fetch("/api/avocat/livrables", { method: "POST", body: corps });
@@ -84,9 +104,13 @@ export function DepotParution({
             </svg>
           </span>
           <span className={styles.depotPointilleTexte}>
-            Attestation de parution déposée
+            {attendues > 1
+              ? "Les " + attendues + " attestations de parution sont déposées"
+              : "Attestation de parution déposée"}
             <span className={styles.depotPointilleNote}>
-              Elle part au guichet et figure dans les documents du client.
+              {attendues > 1
+                ? "Elles partent au guichet et figurent dans les documents du client."
+                : "Elle part au guichet et figure dans les documents du client."}
             </span>
           </span>
         </p>
@@ -108,10 +132,9 @@ export function DepotParution({
         </span>
 
         <span className={styles.depotPointilleTexte}>
-          {enCours ? "Envoi…" : "Déposer l'attestation de parution"}
+          {enCours ? "Envoi…" : invite(attendues, deposees.length, ressorts, manquant)}
           <span className={styles.depotPointilleNote}>
-            Le justificatif du journal - il part au guichet et rejoint les documents du
-            client.
+            {precision(attendues, ressorts)}
           </span>
         </span>
 
@@ -138,5 +161,50 @@ export function DepotParution({
         </p>
       )}
     </>
+  );
+}
+
+/**
+ * Ce que la ligne demande, selon ce qui manque.
+ *
+ * « Déposer l'attestation de parution » sur un dossier qui en appelle deux laissait
+ * croire le travail fini une fois la première remise.
+ */
+function invite(
+  attendues: number,
+  faites: number,
+  ressorts: string[],
+  manquant: number | undefined
+): string {
+  if (attendues <= 1) return "Déposer l'attestation de parution";
+  if (faites === 0) return "Déposer les " + attendues + " attestations de parution";
+
+  const ressort = manquant === undefined ? "" : ressorts[manquant];
+  return (
+    faites +
+    " attestation" +
+    (faites > 1 ? "s" : "") +
+    " sur " +
+    attendues +
+    (ressort ? " - reste celle de " + ressort : "")
+  );
+}
+
+/**
+ * Et pourquoi il y en a deux.
+ *
+ * Le nombre seul laisse chercher : c'est le changement de département qui l'impose, et
+ * l'avocat qui vient de corriger l'adresse ne le sait pas encore.
+ */
+function precision(attendues: number, ressorts: string[]): string {
+  if (attendues <= 1) {
+    return "Le justificatif du journal - il part au guichet et rejoint les documents du client.";
+  }
+
+  const villes = ressorts.filter(Boolean);
+  return (
+    "Le siège change de département" +
+    (villes.length > 1 ? " : un avis paraît dans celui de " + villes.join(", puis dans celui de ") : "") +
+    ". Le journal délivre une attestation par parution."
   );
 }

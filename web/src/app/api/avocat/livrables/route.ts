@@ -8,7 +8,11 @@ import {
   documentFinalDuDossier,
   annoncerLeDocumentFinal,
 } from "@/infrastructure/db/depots/avocat";
-import { TYPE_KBIS } from "@/infrastructure/db/depots/suivi";
+import { TYPE_KBIS, TYPE_PARUTION } from "@/infrastructure/db/depots/suivi";
+import { ouvrirModification } from "@/infrastructure/db/depots/modifications";
+import { avisAPublier } from "@/domain/modification/annonce";
+import { attestationDeParution } from "@/domain/modification/formalites";
+import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { DepotRefuse } from "@/lib/fichiers";
 import { route } from "@/lib/reponses";
 
@@ -54,14 +58,39 @@ export const POST = route(async (requete: Request) => {
    * récépissé de dépôt » - et une société qu'on ferme recevait un Kbis au lieu de son
    * attestation de radiation. Le domaine nomme déjà le document de chaque type.
    */
-  const titre =
-    type === TYPE_KBIS ? await documentFinalDuDossier(dossierId) : livrable.titre;
+  let identifiant: string = type;
+  let titre: string = livrable.titre;
+
+  if (type === TYPE_KBIS) {
+    titre = await documentFinalDuDossier(dossierId);
+  } else if (type === TYPE_PARUTION) {
+    /*
+     * Une attestation par parution, nommée par son ressort.
+     *
+     * Un transfert qui change de département fait paraître deux avis : les deux
+     * attestations se déposaient sous le même identifiant, et une pièce redéposée en
+     * remplace une autre - celle de Lyon effaçait celle de Paris, sans un mot.
+     *
+     * Le rang vient du navigateur, le nom non : les avis se recomposent ici, depuis le
+     * dossier, comme le volet qui les affiche. Un rang hors de leur compte est refusé.
+     */
+    const rang = Number(formulaire.get("rang") ?? 0);
+    const ressorts = await ressortsDesAvis(utilisateur, dossierId);
+
+    if (!Number.isInteger(rang) || rang < 0 || rang >= Math.max(1, ressorts.length)) {
+      return NextResponse.json({ error: "Cet avis n'existe pas" }, { status: 400 });
+    }
+
+    const attestation = attestationDeParution(rang, ressorts);
+    identifiant = attestation.identifiant;
+    titre = attestation.titre;
+  }
 
   try {
     const depose = await deposerPiece(
       utilisateur,
       dossierId,
-      { identifiant: type, titre },
+      { identifiant, titre },
       fichier,
       [...livrable.formats]
     );
@@ -84,3 +113,37 @@ export const POST = route(async (requete: Request) => {
     throw e;
   }
 });
+
+/**
+ * Les ressorts où ce dossier fait paraître, dans l'ordre du volet.
+ *
+ * Une création ou une fermeture n'en publie qu'un, et n'a pas de modification à ouvrir :
+ * la liste est alors vide, et l'attestation garde son nom d'origine.
+ */
+async function ressortsDesAvis(
+  utilisateur: Parameters<typeof ouvrirModification>[0],
+  dossierId: number
+): Promise<string[]> {
+  try {
+    const { modification } = await ouvrirModification(utilisateur, dossierId);
+    const avis = avisAPublier({
+      societe: modification.societe,
+      codes: modification.codes,
+      valeurs: modification.valeurs,
+      dateAssemblee: modification.assemblee?.date ?? null,
+      ressortActuel: villeDuRcs(modification.societe.codePostal, modification.societe.ville),
+      ressortNouveau: villeDuRcs(
+        typeof modification.valeurs.nouveauCodePostal === "string"
+          ? modification.valeurs.nouveauCodePostal
+          : "",
+        typeof modification.valeurs.nouvelleVille === "string"
+          ? modification.valeurs.nouvelleVille
+          : ""
+      ),
+    });
+    return avis.map((un) => un.ressort);
+  } catch {
+    /* Ce n'est pas une modification : un avis, sans ressort à nommer. */
+    return [];
+  }
+}

@@ -537,3 +537,32 @@ export function obligationsParticulieres(
 
   return dits;
 }
+
+/**
+ * L'attestation d'une parution : son identifiant et son intitulé.
+ *
+ * Un transfert qui change de département fait paraître deux avis, donc rapporte deux
+ * attestations. Elles se déposaient sous le même identifiant, et une pièce redéposée
+ * en remplace une autre : déposer celle de Lyon effaçait celle de Paris, sans un mot.
+ *
+ * Le premier rang garde le nom d'avant - les dossiers déjà clos le portent, et leurs
+ * documents ne doivent pas changer de nom sous les yeux du client. Les suivants
+ * prennent le leur, et l'intitulé nomme le ressort dès qu'il y en a plusieurs : « - » à
+ * la place d'un numéro, parce que « Attestation de parution 2 » ne dit pas laquelle des
+ * deux villes on tient.
+ */
+export function attestationDeParution(
+  rang: number,
+  ressorts: string[]
+): { identifiant: string; titre: string } {
+  const identifiant = rang === 0 ? "parution" : "parution-" + (rang + 1);
+  const ressort = ressorts[rang];
+
+  return {
+    identifiant,
+    titre:
+      ressorts.length > 1 && ressort
+        ? "Attestation de parution - " + ressort
+        : "Attestation de parution",
+  };
+}

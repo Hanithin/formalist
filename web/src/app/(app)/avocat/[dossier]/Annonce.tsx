@@ -36,13 +36,28 @@ export function Annonce({
    * texte unique.
    */
   route,
+  /**
+   * Les rangs dont l'attestation est déjà au dossier.
+   *
+   * La page les connaît - elle lit les documents - et le volet s'ouvre donc déjà juste,
+   * sans attendre une lecture à lui.
+   */
+  deposees,
 }: {
   dossier: number;
   route: string;
+  deposees?: number[];
 }) {
   const [avis, setAvis] = useState<Avis[] | null>(null);
-  /* L'attestation déjà au dossier : on ne propose pas de déposer deux fois. */
-  const [parution, setParution] = useState(false);
+  /*
+   * Les attestations déjà au dossier, par rang d'avis.
+   *
+   * Un booléen ne suffit plus : un transfert qui change de département fait paraître
+   * deux avis, donc rapporte deux attestations, et l'une ne dit rien de l'autre.
+   */
+  const [parutions, setParutions] = useState<Record<number, boolean>>(
+    () => Object.fromEntries((deposees ?? []).map((rang) => [rang, true]))
+  );
   const [publies, setPublies] = useState(false);
   const [copie, setCopie] = useState<number | null>(null);
   const [refus, setRefus] = useState<string | null>(null);
@@ -85,12 +100,14 @@ export function Annonce({
    * à une liste, et le coffre personnel, qui range chez le déposant. Elle passe par la
    * route des livrables, celle du Kbis et du registre des bénéficiaires.
    */
-  function deposer(fichier: File) {
+  function deposer(fichier: File, rang: number) {
     setRefus(null);
     demarrer(async () => {
       const corps = new FormData();
       corps.append("dossier", String(dossier));
       corps.append("type", "parution");
+      /* Le rang, non le nom : c'est le serveur qui nomme la pièce, depuis le dossier. */
+      corps.append("rang", String(rang));
       corps.append("fichier", fichier);
 
       const reponse = await fetch("/api/avocat/livrables", { method: "POST", body: corps });
@@ -99,7 +116,7 @@ export function Annonce({
         setRefus(retour.error ?? "L'attestation n'a pas pu être déposée");
         return;
       }
-      setParution(true);
+      setParutions((avant) => ({ ...avant, [rang]: true }));
       router.refresh();
     });
   }
@@ -197,6 +214,14 @@ export function Annonce({
         </p>
       )}
 
+      {/*
+        Chaque avis porte sa preuve.
+        
+        Une seule zone servait les deux parutions, et une pièce redéposée sous le même
+        identifiant en remplace une autre : déposer l'attestation de Lyon effaçait celle
+        de Paris, sans un mot. Elle descend donc sous le texte qu'elle prouve - on copie
+        Paris, on publie, on revient déposer Paris au même endroit.
+      */}
       {avis.map((un, rang) => (
         <section key={rang} className={styles.avis}>
           <div className={styles.avisTete}>
@@ -213,34 +238,41 @@ export function Annonce({
             </button>
           </div>
           <pre className={styles.avisTexte}>{un.texte}</pre>
+
+          <div className={styles.avisParution}>
+            <div>
+              <p className={styles.avisParutionTitre}>
+                {avis.length > 1
+                  ? "L'attestation de parution - " + un.ressort
+                  : "L'attestation de parution"}
+              </p>
+              <p className={styles.tacheExplication}>
+                Le justificatif que le journal délivre. Il part au guichet avec le
+                dossier, et rejoint les documents du client.
+              </p>
+            </div>
+
+            {parutions[rang] ? (
+              <p className={styles.travailRetour} role="status">
+                Attestation de parution déposée.
+              </p>
+            ) : (
+              <DepotFichier
+                id={"attestation-parution-" + rang}
+                accepte=".pdf,.jpg,.jpeg,.png,.heic,.heif"
+                invite={
+                  avis.length > 1
+                    ? "Déposez l'attestation - " + un.ressort
+                    : "Déposez l'attestation de parution"
+                }
+                precision="PDF ou image"
+                desactive={enCours}
+                surFichier={(fichier) => deposer(fichier, rang)}
+              />
+            )}
+          </div>
         </section>
       ))}
-
-      {/* On la dépose là où l'on vient de copier le texte publié. */}
-      <section className={styles.avisParution}>
-        <div>
-          <p className={styles.avisParutionTitre}>L&apos;attestation de parution</p>
-          <p className={styles.tacheExplication}>
-            Le justificatif que le journal délivre. Il part au guichet avec le dossier, et
-            rejoint les documents du client.
-          </p>
-        </div>
-
-        {parution ? (
-          <p className={styles.travailRetour} role="status">
-            Attestation de parution déposée.
-          </p>
-        ) : (
-          <DepotFichier
-            id="attestation-parution"
-            accepte=".pdf,.jpg,.jpeg,.png,.heic,.heif"
-            invite="Déposez l'attestation de parution"
-            precision="PDF ou image"
-            desactive={enCours}
-            surFichier={deposer}
-          />
-        )}
-      </section>
 
       {refus && (
         <p className={styles.travailRefus} role="alert">

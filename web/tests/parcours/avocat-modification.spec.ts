@@ -628,6 +628,24 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
    * à une liste, et le coffre personnel, qui range chez le déposant.
    */
   const dossier = await dossierDeModification();
+
+  /*
+   * Un transfert dans le même département, donc un seul avis.
+   *
+   * Le dossier d'essai va de Paris à Lyon : deux départements, deux parutions, deux
+   * attestations - ce que l'essai voisin vérifie. Celui-ci tient le cas simple, où la
+   * pièce garde son nom d'origine.
+   */
+  const donnees = JSON.parse(
+    (await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } })).data_json as string
+  );
+  donnees.valeurs.nouvelleVille = "Paris";
+  donnees.valeurs.nouveauCodePostal = "75008";
+  await prisma.formalites.update({
+    where: { id: dossier },
+    data: { data_json: JSON.stringify(donnees) },
+  });
+
   await page.goto("/avocat/" + dossier);
 
   /*
@@ -651,8 +669,7 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
   await page.getByRole("button", { name: "Annonce légale" }).last().click();
 
   const volet = page.getByRole("dialog");
-  /* Un transfert hors ressort fait paraître deux avis : on vise le premier. */
-  await expect(volet.getByRole("button", { name: "Copier le texte" }).first()).toBeVisible({
+  await expect(volet.getByRole("button", { name: "Copier le texte" })).toHaveCount(1, {
     timeout: 30_000,
   });
 
@@ -2001,4 +2018,63 @@ test("la page tient dans l'écran, seul son contenu défile", async ({ page }) =
 
   expect(mesures.defilement).toBe(0);
   expect(mesures.document).toBe(mesures.ecran);
+});
+
+/**
+ * Deux parutions, deux attestations.
+ *
+ * Un transfert qui change de département fait paraître deux avis - un dans celui de
+ * départ, un dans celui d'arrivée - et le journal en délivre une attestation chacun.
+ * Il n'y avait qu'une zone de dépôt, et c'était pire qu'un manque : une pièce redéposée
+ * sous le même identifiant en remplace une autre, si bien que déposer celle de Lyon
+ * effaçait celle de Paris, sans un mot. La ligne, elle, annonçait « l'attestation » au
+ * singulier : rien n'avertissait qu'il en faudrait deux avant d'ouvrir le volet.
+ */
+test("deux avis appellent deux attestations, et la seconde n'efface pas la première", async ({
+  page,
+}) => {
+  const dossier = await dossierDeModification();
+  await page.goto("/avocat/" + dossier);
+
+  /* La ligne le dit sans qu'on ouvre le volet, et dit pourquoi. */
+  await expect(page.getByText("Déposer les 2 attestations de parution")).toBeVisible();
+  await expect(page.getByText(/Le siège change de département/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Annonce légale" }).last().click();
+  const volet = page.getByRole("dialog");
+
+  const pdf = {
+    name: "parution.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>"),
+  };
+
+  /* Chaque avis porte sa zone, sous le texte qu'elle prouve. */
+  for (const ressort of ["Paris", "Lyon"]) {
+    const bloc = volet.locator("section").filter({ hasText: "L'attestation de parution - " + ressort });
+    await expect(bloc.getByText("Déposez l'attestation - " + ressort)).toBeVisible({
+      timeout: 30_000,
+    });
+    await bloc.locator('input[type="file"]').setInputFiles(pdf);
+    await expect(bloc.getByText("Attestation de parution déposée")).toBeVisible({
+      timeout: 30_000,
+    });
+  }
+
+  /* Les deux sont au dossier, chacune sous le nom de son ressort. */
+  const noms = (
+    await prisma.documents.findMany({
+      where: { formalite_id: dossier, name: { startsWith: "Attestation de parution" } },
+      select: { name: true },
+    })
+  ).map((d) => d.name).sort();
+
+  expect(noms).toEqual([
+    "Attestation de parution - Lyon",
+    "Attestation de parution - Paris",
+  ]);
+
+  /* Et la ligne du dossier passe au vert, une fois les deux remises. */
+  await page.goto("/avocat/" + dossier);
+  await expect(page.getByText("Les 2 attestations de parution sont déposées")).toBeVisible();
 });
