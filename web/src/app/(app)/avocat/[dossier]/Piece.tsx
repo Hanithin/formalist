@@ -329,6 +329,20 @@ function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: 
         </svg>
         {versions.length} version{versions.length > 1 ? "s" : ""} antérieure
         {versions.length > 1 ? "s" : ""}
+
+        {/* Le chevron dit que la mention s'ouvre : sans lui, on la prend pour une étiquette. */}
+        <svg
+          className={styles.actesVersionsChevron}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="9 6 15 12 9 18" />
+        </svg>
       </summary>
 
       {refus && (

@@ -485,13 +485,18 @@ export function Statuts({ dossier }: { dossier: number }) {
           <div className={styles.confirmationBloc} role="alertdialog">
           <p>
             {/*
-              Nommer ce qui n'est pas confirmé, non en donner le nombre.
-              « 2 remplacements ne sont pas posés » n'apprend rien : c'est lequel qui
-              compte, et sur quels emplacements l'ancienne valeur resterait.
+              Nommer ce qui manque, et le geste qui le comble.
+
+              « n'est pas confirmé » décrivait un état sans dire lequel : l'avocat lisait
+              « Siège social n'est pas confirmé » devant un panneau qui affichait
+              « COUVERT » et « 3 sur 3 emplacements couverts », et cherchait ce qui
+              n'allait pas dans son travail. Ce n'est pas le cadre qui manque, c'est la
+              coche - « Marquer comme fait », la case par laquelle il atteste avoir relu
+              le passage. Le message porte donc son intitulé, mot pour mot.
             */}
             {restants.length === 1
-              ? "« " + restants[0].titre + " » n'est pas confirmé."
-              : restants.map((c) => c.titre).join(", ") + " ne sont pas confirmés."}{" "}
+              ? "« " + restants[0].titre + " » n'est pas marqué comme fait."
+              : restants.map((c) => c.titre).join(", ") + " ne sont pas marqués comme faits."}{" "}
             {restants.some((c) => c.couverts < c.emplacements.length) &&
               "Des emplacements repérés restent découverts : les statuts produits y garderont l'ancienne valeur. "}
             Continuer ?

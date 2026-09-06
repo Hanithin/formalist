@@ -606,6 +606,53 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
 });
 
+test("la confirmation nomme la coche qui manque, non un état", async ({ page, request }) => {
+  /*
+   * « Siège social n'est pas confirmé » décrivait un état sans dire lequel : l'avocat
+   * le lisait devant un panneau affichant « COUVERT » et « 3 sur 3 emplacements
+   * couverts », et cherchait ce qui n'allait pas dans son travail. Ce n'est pas le
+   * cadre qui manque, c'est la case « Marquer comme fait », par laquelle il atteste
+   * avoir relu le passage.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/avocat/" + dossier + "/statuts");
+
+  await expect(page.locator("[class*='suiviCarte']").first()).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Produire les statuts à jour" }).click();
+
+  const question = page.getByRole("alertdialog");
+  await expect(question).toBeVisible();
+  /* Le message porte l'intitulé exact de la case, pour qu'on sache où cliquer. */
+  await expect(question).toContainText(/n'est pas marqué comme fait/);
+  await expect(page.getByRole("checkbox").first()).toBeVisible();
+
+  /* Et l'on peut passer outre : c'est un avertissement, non un verrou. */
+  await expect(question.getByRole("button", { name: /Produire quand même/ })).toBeVisible();
+});
+
 test("le cadre s'élargit à son texte au lieu de le couper", async ({ page, request }) => {
   /*
    * La largeur d'un cadre vient de l'emplacement repéré dans le document : la boîte de
