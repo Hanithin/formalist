@@ -54,9 +54,22 @@ export interface DossierDeModification {
 function ecrit(valeur: unknown): string {
   if (valeur === null || valeur === undefined) return "";
   const brut = String(valeur).trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(brut)) return brut;
 
-  const [annee, mois, jour] = brut.split("-").map(Number);
+  /*
+   * Les deux formes d'une date ISO : le jour seul et l'instant complet.
+   *
+   * Les champs du formulaire rendent « 2026-09-02 » ; les dates venues du registre
+   * national passent par la base et en ressortent horodatées, « 2026-01-27T00:00:00.000Z ».
+   * La première était traduite, la seconde s'affichait telle quelle sous « Dépôt au
+   * registre » - une ligne de machine au milieu d'une colonne écrite en français.
+   *
+   * On ne lit que la partie datée : la convertir en instant la déplacerait d'un jour
+   * selon le fuseau, et un dépôt au greffe n'a pas d'heure.
+   */
+  const jourISO = /^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/.exec(brut);
+  if (!jourISO) return brut;
+
+  const [, annee, mois, jour] = jourISO.map(Number);
   return new Date(annee, mois - 1, jour).toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",

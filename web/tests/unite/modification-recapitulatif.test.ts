@@ -90,6 +90,32 @@ describe("le récapitulatif de l'avocat", () => {
     expect(statuts.faits.map((f) => f.valeur)).toContain("Statuts à jour produits et joints");
   });
 
+  /**
+   * Les dates se lisent en français, quelle que soit la forme où elles arrivent.
+   *
+   * Les champs du formulaire rendent « 2026-09-02 » ; les dates venues du registre
+   * national passent par la base et en ressortent horodatées. La colonne de l'avocat
+   * recopiait la seconde telle quelle - une ligne de machine au milieu de valeurs
+   * écrites en toutes lettres.
+   */
+  it("écrit les dates en français, jour d'abord, horodatées ou non", () => {
+    const avec = recapitulatifDeModification({
+      ...DOSSIER,
+      statuts: { source: "inpi", nature: "Statuts", deposeLe: "2026-01-27T00:00:00.000Z" },
+    });
+    const statuts = avec.find((s) => s.titre === "Les statuts")!;
+    expect(statuts.faits.map((f) => f.valeur)).toContain("27 janvier 2026");
+
+    /* Et la forme courte, celle des champs, tombe sur le même jour. */
+    const court = recapitulatifDeModification({
+      ...DOSSIER,
+      statuts: { source: "inpi", nature: "Statuts", deposeLe: "2026-01-27" },
+    });
+    expect(
+      court.find((s) => s.titre === "Les statuts")!.faits.map((f) => f.valeur)
+    ).toContain("27 janvier 2026");
+  });
+
   it("une section vide n'apparaît pas", () => {
     // Mieux vaut un récapitulatif court qu'une suite de titres sans contenu.
     const nu = recapitulatifDeModification({ codes: [], societe: {}, valeurs: {} });
