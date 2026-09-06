@@ -7159,13 +7159,21 @@
   grid-column: 1 / -1;
 }
 
+/*
+ * La colonne du parcours, resserrée.
+ *
+ * Elle tenait huit cents pixels pour six valeurs : vingt-quatre de rembourrage, dix-huit
+ * entre chaque section, douze entre chaque ligne, et un total écrit du même corps que le
+ * reste. On la lit du coin de l'œil en remplissant le formulaire ; elle doit se prendre
+ * d'un regard, sans que le total se cherche.
+ */
 .colonne {
   position: sticky;
   top: 24px;
-  background: #fff;
+  padding: 16px 18px 18px;
   border: 1px solid #e5e5e5;
   border-radius: 16px;
-  padding: 22px 24px 24px;
+  background: #fff;
 }
 
 .colonneForme {
@@ -7215,29 +7223,44 @@
 .colonneLignes {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  margin: 18px 0 0;
-  padding: 18px 0 0;
+  gap: 2px;
+  margin: 14px 0 0;
+  padding: 12px 0 0;
   border-top: 1px solid #ededf0;
 }
 
+/*
+ * Le libellé à gauche, la valeur au bord opposé.
+ *
+ * La colonne réservait quatre-vingt-quatre pixels au libellé et posait la valeur juste
+ * après : sur « SIREN 552 100 554 » puis « Capital 15 000 € », les deux valeurs
+ * commençaient au même endroit mais se terminaient n'importe où. Alignées à droite, elles
+ * se comparent d'un coup d'œil.
+ */
 .colonneLigne {
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  gap: 12px;
+  display: flex;
   align-items: baseline;
-}
-
-.colonneLigne dt {
-  font-size: 13px;
-  color: #71717a;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 5px 0;
 }
 
 .colonneLigne dd {
+  text-align: right;
+}
+
+.colonneLigne dt {
+  flex: none;
+  font-size: 12.5px;
+  color: #8a8a92;
+}
+
+.colonneLigne dd {
+  min-width: 0;
   margin: 0;
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1.5;
-  color: #27272a;
+  color: #18181b;
   /* L'exercice tient sur deux lignes : l'ouverture, puis la clôture. */
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -7259,25 +7282,39 @@
  * Ni l'une ni l'autre ne sont des attributs de la société : la première est un délai
  * légal, le second un prix. Ils se rangent sous un filet, où l'on regarde en dernier.
  */
+/*
+ * Le total, et ce qui l'entoure.
+ *
+ * Il s'écrivait du même corps que les six valeurs au-dessus : sur une colonne qu'on
+ * parcourt du regard, le seul chiffre qui engage se cherchait comme les autres.
+ */
 .colonnePied {
   display: grid;
-  gap: 8px;
-  margin: 18px 0 0;
-  padding: 14px 0 0;
+  gap: 6px;
+  margin: 14px -18px -18px;
+  padding: 14px 18px;
   border-top: 1px solid #ededf0;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  background: #fafafa;
 }
 
 .colonnePiedLigne {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13.5px;
-  color: #27272a;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #18181b;
 }
 
 .colonnePiedLigne > span:first-child {
-  font-size: 13px;
-  color: #71717a;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #8a8a92;
 }
 
 /*
@@ -7323,8 +7360,8 @@
  * remplit leurs détails et qu'on ne sait plus lesquels on avait pris.
  */
 .colonneGroupe {
-  margin: 18px 0 0;
-  padding: 18px 0 0;
+  margin: 14px 0 0;
+  padding: 12px 0 0;
   border-top: 1px solid #ededf0;
 }
 
@@ -7337,15 +7374,38 @@
   color: #a1a1aa;
 }
 
+/*
+ * Ce qu'on change se compte du regard.
+ *
+ * La liste s'écrivait sans marque : trois changements y ressemblaient à un paragraphe de
+ * trois lignes, et l'on ne savait pas s'il y en avait trois ou quatre. Une pastille par
+ * ligne les dénombre sans les numéroter - leur ordre ne veut rien dire.
+ */
 .colonneGroupeListe {
   display: grid;
-  gap: 7px;
+  gap: 6px;
   margin: 10px 0 0;
   padding: 0;
   list-style: none;
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1.4;
-  color: #27272a;
+  color: #18181b;
+}
+
+.colonneGroupeListe li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.colonneGroupeListe li::before {
+  content: "";
+  flex: none;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #a1a1aa;
+  transform: translateY(-2px);
 }
 
 /* Rien de coché : la liste dit ce qu'il reste à faire, du même gris que les manques. */
