@@ -2394,6 +2394,64 @@
   color: #18181b;
 }
 
+/*
+ * Les actes du registre, à désigner.
+ *
+ * Ils ne paraissent que lorsque la société en publie sans qu'aucun se nomme
+ * « statuts » : une liste de choix, non un catalogue - on en désigne un, on l'ouvre,
+ * on confirme. Chaque ligne est un bouton pleine largeur : la cible est la ligne
+ * entière, et l'intitulé du registre y tient sur plusieurs mots sans se couper.
+ */
+.actesRegistre {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.acteRegistre {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.acteRegistre:hover:not(:disabled) {
+  border-color: #18181b;
+  background: #fafafa;
+}
+
+.acteRegistre:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.acteRegistreNom {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+  overflow-wrap: anywhere;
+}
+
+.acteRegistreQuand {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #71717a;
+}
+
 .statutsPhrase {
   margin: 0;
   font-size: 15px;

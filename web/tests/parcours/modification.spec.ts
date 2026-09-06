@@ -391,6 +391,110 @@ test("le prix et le règlement se voient sans descendre", async ({ page, request
   await expect(bouton).toBeInViewport();
 });
 
+test("des actes publiés mais aucun reconnu : le client désigne ses statuts", async ({
+  page,
+  request,
+}) => {
+  /*
+   * Aucune règle ne reconnaîtra tous les intitulés.
+   *
+   * Le registre publie parfois le nom du fichier tel qu'il était sur la machine du
+   * déposant : une société diffusait ses statuts sous « 1Status_Blue_Shark_Advisory_… »,
+   * et rien n'empêche qu'un autre les dépose sous « BLUE_SHARK_2026.pdf », où le mot
+   * n'est pas. L'étape répondait « nous avons cherché vos statuts au registre national,
+   * sans les y trouver », et le client redéposait à la main un document que nous
+   * avions déjà. Elle montre maintenant ce que le registre publie, et il désigne.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {
+        nouvelleAdresse: "5 avenue Victor Hugo",
+        nouvelleVille: "Lyon",
+        nouveauCodePostal: "69003",
+        dateEffetTransfert: "2026-09-15",
+      },
+    },
+  });
+
+  await page.route("**/api/formalites/modification/statuts?*", (route) =>
+    route.fulfill({
+      json: {
+        statuts: null,
+        actes: [
+          { id: "a1", nature: "BLUE_SHARK_2026.pdf", deposeLe: "2024-06-01" },
+          { id: "a2", nature: "document_final_v2.pdf", deposeLe: "2019-03-12" },
+        ],
+      },
+    })
+  );
+
+  await page.goto("/modification?dossier=" + dossier + "&etape=5");
+
+  await expect(page.getByText(/sans dire lesquels sont vos statuts/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /BLUE_SHARK_2026/ })).toBeVisible();
+  await expect(page.getByText(/déposé le 1er juin 2024/)).toBeVisible();
+
+  /* Le dépôt manuel reste la sortie de qui n'y reconnaît rien. */
+  await expect(page.getByText("Déposez vos statuts à jour")).toBeVisible();
+
+  /* Désigner un acte le fait entrer dans le chemin de confirmation habituel. */
+  await page.getByRole("button", { name: /BLUE_SHARK_2026/ }).click();
+  await expect(page.getByText(/Voici les statuts que vous avez déposés le 1er juin 2024/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ouvrir et vérifier" })).toBeVisible();
+});
+
+test("la pièce qui retient le règlement se trouve sans la chercher", async ({ page, request }) => {
+  /*
+   * La carte de règlement nommait ce qui manquait, en haut à droite, et grisait son
+   * bouton. Le dépôt attendait tout en bas de la colonne d'en face, après cinq blocs de
+   * récapitulatif : on lisait « il reste une pièce à déposer » sans comprendre qu'il
+   * fallait descendre la chercher.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {
+        nouvelleAdresse: "5 avenue Victor Hugo",
+        nouvelleVille: "Lyon",
+        nouveauCodePostal: "69003",
+        dateEffetTransfert: "2026-09-15",
+      },
+      assemblee: {
+        date: "2026-09-01",
+        totalParts: 1000,
+        associes: [{ civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 1000 }],
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/modification?dossier=" + dossier + "&etape=6");
+
+  await expect(page.getByText(/Il reste une pièce à déposer/)).toBeVisible();
+
+  /* Ce qui reste à faire passe devant ce qui est déjà fait. */
+  const justificatifs = page.locator("#vos-justificatifs");
+  await expect(justificatifs).toBeInViewport();
+
+  /*
+   * Et le bouton mène à la pièce au lieu de se griser : c'est le geste que la branche
+   * des informations manquantes fait déjà avec « Corriger ».
+   */
+  const deposer = page.getByRole("button", { name: "Déposer la pièce" });
+  await expect(deposer).toBeEnabled();
+  await deposer.click();
+
+  /* La zone visée prend le focus : sur trois pièces, elle dit laquelle est réclamée. */
+  await expect(page.locator('[id^="zone-piece-"]').first()).toBeFocused();
+});
+
 test("une étape incomplète ne laisse pas passer à la suivante", async ({ page, request }) => {
   /*
    * Chaque étape retient ce qui lui manque, plutôt que de tout reprocher au

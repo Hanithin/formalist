@@ -31,6 +31,9 @@ import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
 /* Le titre vit dans le domaine : la liste des actes s'en sert pour l'écarter. */
 export const TITRE_STATUTS = TITRE_STATUTS_EN_VIGUEUR;
 
+/** Combien d'actes on propose au choix quand aucun n'est reconnu. */
+const ACTES_MONTRES = 30;
+
 export const GET = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
 
@@ -51,10 +54,21 @@ export const GET = route(async (requete: Request) => {
     const statuts = dernierDepotDeStatuts(actes);
 
     return NextResponse.json({
-      // Le nombre d'actes dit au client pourquoi la liste est vide : « aucun acte
-      // public » et « aucun acte de statuts » ne se corrigent pas de la même façon.
-      actes: actes.length,
       statuts,
+      /*
+       * Les actes, non leur nombre.
+       *
+       * Aucune règle ne reconnaîtra tous les intitulés : le registre publie parfois le
+       * nom du fichier tel qu'il était sur la machine du déposant, et rien n'empêche
+       * qu'il soit « BLUE_SHARK_2026.pdf ». On rendait alors « nous avons cherché vos
+       * statuts au registre national, sans les y trouver », et le client redéposait à
+       * la main un document que nous avions déjà. Quand rien n'est reconnu mais que le
+       * registre a des actes, l'écran les montre et le client désigne les siens.
+       *
+       * Borné : au-delà, la liste ne se lit plus, et le cas ne se rencontre pas - une
+       * société qui a cent vingt actes en a forcément un de statuts.
+       */
+      actes: actes.slice(0, ACTES_MONTRES),
     });
   } catch (e) {
     if (e instanceof RegistreIndisponible) {

@@ -68,10 +68,38 @@ export interface Acte {
  * client déposait à la main ce que nous avions déjà.
  */
 export function estDesStatuts(nature: string): boolean {
-  const n = nature.toLowerCase();
+  const n = normaliser(nature);
   /* « status » est la faute de frappe courante, et l'orthographe anglaise du mot. */
   if (!n.includes("statut") && !n.includes("status")) return false;
   return !n.includes("projet");
+}
+
+/**
+ * Ce qu'on compare, une fois la mise en forme du déposant retirée.
+ *
+ * Accents, majuscules, tirets bas, numéros de rang collés au mot : le registre rend ce
+ * qu'on lui a donné. « 1Status_Blue_Shark_Advisory » devient « status blue shark
+ * advisory », « STATUTS-À-JOUR_V3.pdf » devient « statuts a jour v3 pdf ». La
+ * comparaison porte alors sur des mots, non sur une graphie.
+ */
+function normaliser(nature: string): string {
+  return nature
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]+/g, " ")
+    .trim();
+}
+
+/**
+ * La version en vigueur passe devant celle d'origine.
+ *
+ * Une création dépose le même jour les statuts constitutifs et, plus tard, les statuts
+ * mis à jour. À date égale - ou quand le registre les rend dans le désordre - c'est la
+ * version à jour qu'on retouche, jamais celle du premier jour.
+ */
+function estAJour(nature: string): boolean {
+  return /\ba jour\b/.test(normaliser(nature));
 }
 
 function texteDe(valeur: unknown): string {
@@ -173,9 +201,19 @@ export async function actesDe(sirenBrut: string): Promise<Acte[]> {
   });
 }
 
-/** Le dernier dépôt de statuts, s'il en existe un de public. */
+/**
+ * Le dernier dépôt de statuts, s'il en existe un de public.
+ *
+ * Les actes arrivent du plus récent au plus ancien. À date égale, la version mise à
+ * jour prime la version constitutive.
+ */
 export function dernierDepotDeStatuts(actes: Acte[]): Acte | null {
-  return actes.find((a) => a.statuts) ?? null;
+  const candidats = actes.filter((a) => a.statuts);
+  if (candidats.length === 0) return null;
+
+  const premier = candidats[0];
+  const memeJour = candidats.filter((a) => a.deposeLe === premier.deposeLe);
+  return memeJour.find((a) => estAJour(a.nature)) ?? premier;
 }
 
 /**

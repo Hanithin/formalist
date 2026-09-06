@@ -2,7 +2,7 @@
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { NATURES_PROPOSEES, fonctionsDuDirigeant, natureDeLaForme } from "@/domain/formalite/formes";
-import { elider } from "@/domain/formalite/lettres";
+import { dateEnFrancais, elider } from "@/domain/formalite/lettres";
 import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
 import {
@@ -183,11 +183,33 @@ interface Props {
 
 /* ------------------------------------------------------------------ Outils */
 
+/**
+ * La date d'un écran, écrite comme celle d'un acte.
+ *
+ * `toLocaleDateString` rendait « 1 juin 2024 » là où le procès-verbal, l'annonce et
+ * l'attestation écrivent « 1er juin 2024 » - `dateEnFrancais` porte cette règle depuis
+ * toujours, et le commentaire qui l'accompagne dit pourquoi. Le même jour se lisait
+ * donc de deux façons selon qu'on le voyait à l'écran ou dans le document produit.
+ *
+ * Une date absente reste vide ici : le tiret de `dateEnFrancais` est la convention des
+ * champs vides d'un acte, non celle d'une phrase d'écran.
+ */
 function jourFrancais(iso: string | null | undefined): string {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+  /* Le fuseau : `new Date("2024-06-01")` est minuit UTC, la veille au soir en Polynésie. */
+  const [annee, mois, jour] = iso.includes("-")
+    ? iso.slice(0, 10).split("-")
+    : [
+        String(date.getFullYear()),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0"),
+      ];
+
+  const rendu = dateEnFrancais(annee + "-" + mois + "-" + jour);
+  return rendu === "-" ? "" : rendu;
 }
 
 const TRAITS = {
@@ -494,8 +516,20 @@ export function Parcours({
 
   const definitionsChoisies = definitions(etat.codes);
 
+  /*
+   * Le règlement se passe de la colonne.
+   *
+   * Elle rappelle la société, l'assemblée, les changements et le total sur les six
+   * autres étapes, où le formulaire ne parle que d'une chose à la fois. Le règlement,
+   * lui, est le récapitulatif : il redit tout cela en plus complet - la société avec son
+   * siège, chaque changement avec ses valeurs, les statuts, la publication - et affiche
+   * le même total en gros dans sa carte. La colonne n'y répétait donc qu'elle-même, et
+   * prenait trois cent vingt pixels à l'écran qui en a le plus besoin.
+   */
+  const avecColonne = etape !== 6;
+
   return (
-    <div className={`${styles.parcours} ${styles.parcoursColonne}`}>
+    <div className={avecColonne ? `${styles.parcours} ${styles.parcoursColonne}` : styles.parcours}>
       {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} dossier={dossier} />}
 
       {/* La dernière étape ne s'ouvre qu'une fois la formalité réglée. */}
@@ -671,7 +705,7 @@ export function Parcours({
         </div>
       </div>
 
-      <Recapitulatif etat={etat} />
+      {avecColonne && <Recapitulatif etat={etat} />}
     </div>
   );
 }
@@ -2584,8 +2618,19 @@ function EtapeStatuts({
   // part chargé, plutôt qu'un effet ne le corrige au rendu suivant.
   const [charge, setCharge] = useState(!!etat.statuts);
   const [acte, setActe] = useState<ActeDuRegistre | null>(null);
+  /*
+   * Ce que le registre publie, reconnu ou non.
+   *
+   * Aucune règle ne nommera tous les intitulés : le registre rend parfois le nom du
+   * fichier tel qu'il était sur la machine du déposant. Quand rien n'est reconnu mais
+   * que la société a des actes, on les montre plutôt que de conclure qu'elle n'en a pas.
+   */
+  const [actes, setActes] = useState<ActeDuRegistre[]>([]);
   const [refus, setRefus] = useState<string | null>(null);
   const [depotDemande, setDepotDemande] = useState(false);
+
+  /* Des actes publiés, mais aucun reconnu : c'est au client de désigner les siens. */
+  const aChoisir = actes.length > 0;
   /*
    * L'aperçu, avant d'engager la suite.
    *
@@ -2607,7 +2652,10 @@ function EtapeStatuts({
         if (!vivant) return;
 
         if (!reponse.ok) setRefus(corps.error ?? "Le registre n'a pas répondu");
-        else setActe(corps.statuts ?? null);
+        else {
+          setActe(corps.statuts ?? null);
+          setActes(Array.isArray(corps.actes) ? corps.actes : []);
+        }
       } catch {
         if (vivant) setRefus("Le registre n'a pas répondu");
       } finally {
@@ -2723,7 +2771,9 @@ function EtapeStatuts({
       <p className={styles.description}>
         {acte
           ? "Nous avons trouvé vos statuts au registre national. Ouvrez-les et vérifiez qu'il s'agit bien de votre dernière version : c'est ce document que nous retoucherons, article par article."
-          : "Nous avons cherché vos statuts au registre national, sans les y trouver."}
+          : aChoisir
+            ? "Le registre national publie ces actes pour votre société, sans dire lesquels sont vos statuts. Désignez-les : vous les ouvrirez avant de confirmer."
+            : "Nous avons cherché vos statuts au registre national, sans les y trouver."}
       </p>
 
       {acte ? (
@@ -2804,6 +2854,34 @@ function EtapeStatuts({
             </button>
           </div>
         </div>
+      ) : aChoisir ? (
+        /*
+          Le registre a des actes, aucun ne se nomme « statuts ».
+
+          C'est le cas qui envoyait le client redéposer à la main un document que nous
+          avions déjà : il lisait « sans les y trouver » devant une société qui publiait
+          bien ses statuts, sous un nom que rien ne permettait de reconnaître. La liste
+          n'ajoute pas une règle de plus, elle rend la reconnaissance facultative.
+        */
+        <ul className={styles.actesRegistre}>
+          {actes.map((candidat) => (
+            <li key={candidat.id}>
+              <button
+                type="button"
+                className={styles.acteRegistre}
+                onClick={() => setActe(candidat)}
+                disabled={enCours}
+              >
+                <span className={styles.acteRegistreNom}>{candidat.nature}</span>
+                {candidat.deposeLe && (
+                  <span className={styles.acteRegistreQuand}>
+                    déposé le {jourFrancais(candidat.deposeLe)}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : (
         <p className={styles.description}>
           {refus ??
@@ -2811,8 +2889,11 @@ function EtapeStatuts({
         </p>
       )}
 
-      {/* Le dépôt vient après la question, non collé à elle : ce sont deux réponses
-          possibles, pas la suite l'une de l'autre. */}
+      {/*
+        Le dépôt vient après la question, non collé à elle : ce sont deux réponses
+        possibles, pas la suite l'une de l'autre. Sous une liste d'actes à désigner, il
+        reste la sortie de qui n'y reconnaît rien, et se présente comme telle.
+      */}
       {(depotDemande || !acte) && (
         <div className={styles.depotSepare}>
           {/*
@@ -3263,9 +3344,40 @@ function EtapeReglement({
     );
   }
 
+  /*
+   * Les justificatifs passent devant quand il en manque un.
+   *
+   * Le dépôt fermait le récapitulatif, sous « Ce que vous changez », « La société », un
+   * bloc par changement, « Les statuts » et « Publication » : six blocs à faire défiler.
+   * La carte de règlement disait pourtant « il reste une pièce à déposer » tout en haut
+   * de l'écran d'en face, sans que rien ne dise où. Ce qui reste à faire passe donc
+   * devant ce qui est déjà fait, et retrouve sa place une fois la pièce déposée.
+   */
+  const manque = manquantes.length > 0;
+  const justificatifs = pieces.length > 0 && (
+    <Bloc id={ANCRE_JUSTIFICATIFS} titre="Vos justificatifs">
+      <p className={styles.blocTexte}>
+        Ces pièces partent avec votre dossier au guichet unique. Nous produisons le reste - le
+        procès-verbal, les statuts à jour, l&apos;annonce légale.
+      </p>
+      <Pieces
+        dossierId={dossier}
+        pieces={pieces.map((p) => ({
+          identifiant: p.identifiant,
+          titre: p.titre,
+          description: p.explication,
+          formats: p.formats,
+        }))}
+        deposees={piecesDeposees}
+      />
+    </Bloc>
+  );
+
   return (
     <div className={styles.reglement}>
       <div className={styles.recapColonne}>
+        {manque && justificatifs}
+
         <Bloc titre="Ce que vous changez">
           <ul className={styles.puces}>
             {definitions(etat.codes).map((d) => (
@@ -3344,30 +3456,8 @@ function EtapeReglement({
           )}
         </Bloc>
 
-        {/*
-          Les justificatifs se déposent ici, avant de payer.
-          Ils n'étaient qu'énumérés : le client lisait ce qu'il devait fournir, réglait,
-          et l'avocat découvrait un dossier vide qu'il fallait relancer - après quoi la
-          formalité attend.
-        */}
-        {pieces.length > 0 && (
-          <Bloc titre="Vos justificatifs">
-            <p className={styles.blocTexte}>
-              Ces pièces partent avec votre dossier au guichet unique. Nous produisons le
-              reste - le procès-verbal, les statuts à jour, l&apos;annonce légale.
-            </p>
-            <Pieces
-              dossierId={dossier}
-              pieces={pieces.map((p) => ({
-                identifiant: p.identifiant,
-                titre: p.titre,
-                description: p.explication,
-                formats: p.formats,
-              }))}
-              deposees={piecesDeposees}
-            />
-          </Bloc>
-        )}
+        {/* Tout est fourni : les justificatifs closent le récapitulatif. */}
+        {!manque && justificatifs}
       </div>
 
       {/*
@@ -3420,8 +3510,21 @@ function EtapeReglement({
                   : "Il reste " + manquantes.length + " pièces à déposer : "}
                 {manquantes.map((p) => p.titre.toLowerCase()).join(", ")}.
               </p>
-              <button type="button" className={styles.paiementBouton} disabled>
-                Régler et confier à un avocat
+              {/*
+                Le bouton mène à la pièce, il ne se contente pas de se griser.
+
+                Le message nommait ce qui manquait depuis la carte de règlement, en haut
+                à droite ; le dépôt attendait tout en bas de la colonne d'en face, après
+                cinq blocs de récapitulatif. On lisait « il reste une pièce à déposer »
+                sans comprendre qu'il fallait descendre la chercher. C'est le geste que
+                la branche voisine fait déjà pour une information manquante.
+              */}
+              <button
+                type="button"
+                className={styles.paiementBouton}
+                onClick={() => allerAuJustificatif(manquantes[0].identifiant)}
+              >
+                {manquantes.length === 1 ? "Déposer la pièce" : "Déposer les pièces"}
               </button>
             </>
           ) : (
@@ -3476,9 +3579,27 @@ function EtapeReglement({
 }
 
 /** Un bloc du récapitulatif : un titre, et ce qu'il contient. */
-function Bloc({ titre, children }: { titre: string; children: ReactNode }) {
+/** Le bloc des justificatifs, visé depuis la carte de règlement. */
+const ANCRE_JUSTIFICATIFS = "vos-justificatifs";
+
+/**
+ * Mène au dépôt d'une pièce, et met le champ sous la main.
+ *
+ * Faire défiler jusqu'au bloc ne suffit pas : sur un écran qui en montre trois, le
+ * client cherche encore laquelle des trois pièces lui est réclamée. Le champ visé prend
+ * le focus, ce qui le cerne et l'annonce aux lecteurs d'écran.
+ */
+function allerAuJustificatif(identifiant: string) {
+  document.getElementById(ANCRE_JUSTIFICATIFS)?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  /* Le focus après le défilement : le donner d'abord ramènerait la page d'un coup. */
+  const zone = document.getElementById("zone-piece-" + identifiant);
+  if (zone) window.setTimeout(() => zone.focus({ preventScroll: true }), 300);
+}
+
+function Bloc({ id, titre, children }: { id?: string; titre: string; children: ReactNode }) {
   return (
-    <section className={styles.bloc}>
+    <section className={styles.bloc} id={id}>
       <h3 className={styles.blocTitre}>{titre}</h3>
       {children}
     </section>

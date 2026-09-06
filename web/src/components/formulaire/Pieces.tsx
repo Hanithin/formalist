@@ -135,7 +135,19 @@ export function Pieces({ dossierId, pieces, deposees }: Props) {
 
                 {/* Le label porte le clic : le champ de fichier lui-même est
                     masqué, comme dans l'original. */}
-                <label className={styles.docZone} htmlFor={"piece-" + piece.identifiant}>
+                {/*
+                  La zone porte l'identifiant, non le champ.
+
+                  Le champ de fichier est masqué : le viser depuis un autre écran - « il
+                  reste une pièce à déposer », dans la carte de règlement - n'amenait le
+                  focus sur rien. C'est la zone qu'on voit, c'est elle qu'on désigne.
+                */}
+                <label
+                  id={"zone-piece-" + piece.identifiant}
+                  tabIndex={-1}
+                  className={styles.docZone}
+                  htmlFor={"piece-" + piece.identifiant}
+                >
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"

@@ -134,6 +134,18 @@
   font-weight: 500;
 }
 
+/*
+ * La zone désignée depuis ailleurs se voit.
+ *
+ * « Déposer la pièce », dans la carte de règlement, amène ici : sans ce liseré, on
+ * arrivait devant trois zones grises identiques sans savoir laquelle nous était
+ * réclamée.
+ */
+.docZone:focus {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
 /* Le champ de fichier est masqué : c'est la zone entière qui le déclenche. */
 .docZone input[type="file"] {
   display: none;
