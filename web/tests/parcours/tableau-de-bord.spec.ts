@@ -288,8 +288,23 @@ test.describe("espace avocat", () => {
      * l'avocat demande une pièce, il ne prononce pas un refus.
      */
     await boutons.first().click();
-    await page.getByLabel("Que doit redéposer le client ?").fill("Document périmé");
-    await page.getByRole("button", { name: "Demander", exact: true }).click();
+
+    /*
+     * La demande se fait dans une fenêtre, non sur la ligne de la pièce.
+     *
+     * Le formulaire s'ouvrait dans la rangée : le champ, deux boutons et une phrase
+     * d'explication s'ajoutaient aux gestes déjà là, et le nom du document se réduisait
+     * à « J… ». On écrivait ce que le client doit refaire sans plus voir de quelle pièce
+     * il s'agit.
+     */
+    const demande = page.getByRole("dialog", { name: "Demander une autre pièce" });
+    await expect(demande).toBeVisible();
+
+    /* Un exemple vaut mieux qu'une description : il évite un troisième aller-retour. */
+    await expect(demande.getByText(/Joindre un exemple/)).toBeVisible();
+
+    await demande.getByLabel("Que doit redéposer le client ?").fill("Document périmé");
+    await demande.getByRole("button", { name: "Demander", exact: true }).click();
 
     await expect(page.getByText("Document périmé").first()).toBeVisible();
 

@@ -617,6 +617,37 @@
   color: #b91c1c;
 }
 
+/*
+ * Joindre un exemple à la demande.
+ *
+ * Une pièce refusée l'est souvent parce que le client s'est trompé de document : lui
+ * montrer celui qu'on attend évite un troisième aller-retour. Le champ de fichier est
+ * caché, c'est l'étiquette qui se clique.
+ */
+.demandePiece {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px dashed #d9d9dd;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.demandePiece:hover {
+  border-color: #a1a1aa;
+  color: #111;
+}
+
+.demandePiece svg {
+  width: 15px;
+  height: 15px;
+}
+
 .fenetreCorrectionsActions {
   display: flex;
   justify-content: flex-end;
@@ -1344,7 +1375,13 @@
   /* Une ligne, sans repli : c'est le nom qui cède quand la place manque, pas la rangée. */
   flex-wrap: nowrap;
   gap: 12px;
-  margin-bottom: 8px;
+  /*
+   * L'écart entre deux actes se comptait deux fois.
+   *
+   * La carte portait une marge de huit pixels et la section qui les empile un intervalle
+   * de quatorze : vingt-deux au total, plus du tiers de la hauteur d'une ligne. Seul
+   * l'intervalle de la section gouverne, et la liste se resserre.
+   */
   padding: 12px 14px;
   border: 1px solid #e5e5e5;
   border-radius: 12px;
@@ -1871,7 +1908,7 @@
 .sectionDuDossier {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   scroll-margin-top: 16px;
 }
 
@@ -4071,7 +4108,7 @@ button.ligneCorps:disabled {
 }
 
 .filFicheNote {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   padding: 0 4px;
   font-size: 12px;
   line-height: 1.5;
@@ -4228,23 +4265,24 @@ button.ligneCorps:disabled {
  * cadres l'un dans l'autre, et la barre faisait deux fois sa hauteur utile.
  */
 /*
- * Trois hauteurs différentes dans une même barre.
+ * La barre d'écriture, sur une seule hauteur.
  *
- * Le champ mesurait trente pixels, le trombone trente, le bouton d'envoi trente-huit :
- * la pastille se calait sur le plus grand et laissait les deux autres flotter au milieu,
- * avec un rembourrage inégal en haut et en bas. Tout se cale sur trente-quatre.
+ * Trois tailles s'y côtoyaient - le champ à trente pixels, le trombone à trente, le
+ * bouton d'envoi à trente-huit - et la barre se calait sur la plus grande en laissant
+ * les deux autres flotter. Elle mesurait soixante-cinq pixels pour une ligne de texte
+ * de quatorze, avec une pastille sombre posée dans une pastille claire.
+ *
+ * Tout tient sur trente-deux, dans un cadre au même rayon que les cartes d'acte : c'est
+ * une zone de saisie, non une pilule.
  */
 .filEcrire {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-  padding: 5px 5px 5px 18px;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 4px 4px 4px 14px;
   border: 1px solid #e5e5e7;
-  /* La barre épouse le bouton qu'elle contient : deux rayons différents faisaient
-     lire une pastille posée dans un rectangle arrondi. */
-  border-radius: 100px;
+  border-radius: 12px;
   background: #fff;
 }
 
@@ -4256,19 +4294,19 @@ button.ligneCorps:disabled {
 .filEcrire textarea:hover,
 .filEcrire textarea:focus {
   flex: 1;
-  min-width: 160px;
+  min-width: 120px;
   max-width: none;
-  min-height: 34px;
-  height: 34px;
-  padding: 6px 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 5px 0;
   border: none;
   border-radius: 0;
   background: none;
   box-shadow: none;
   outline: none;
   font-family: inherit;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.6;
   color: #111;
   resize: none;
 }
@@ -4277,14 +4315,45 @@ button.ligneCorps:disabled {
   display: flex;
   flex: none;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  /* Le champ de fichier caché reste dans le flux : la hauteur se pose, elle ne se déduit pas. */
+  height: 32px;
 }
 
-/* Le bouton d'envoi tient la hauteur de la barre, comme le champ et le trombone. */
+/* Le trombone est un geste discret : il n'a ni fond ni contour au repos. */
+.filJoindre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.filJoindre:hover {
+  background: #f4f4f5;
+  color: #111;
+}
+
+/*
+ * Sans `display: block`, le dessin reste une image en ligne : la boîte du flex centre la
+ * ligne de texte qui le porte, creux des descendantes compris, et le trombone se pose
+ * deux pixels plus bas que le bouton d'à côté.
+ */
+.filJoindre svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* Le bouton d'envoi tient la hauteur de la barre, et son rayon. */
 .filGestes .travailPrincipal {
-  height: 34px;
-  padding: 0 16px;
-  border-radius: 999px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
   font-size: 13px;
 }
 
@@ -4293,46 +4362,6 @@ button.ligneCorps:disabled {
   margin: 0 0 4px 2px;
   font-size: 12.5px;
   color: #dc2626;
-}
-
-/* Joindre une pièce : un geste, non un lien perdu à côté du bouton d'envoi. */
-/* Le trombone suffit : le mot doublait le dessin. */
-.filJoindre {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  color: #71717a;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-/*
- * Le trombone se cale sur le bouton d'envoi.
- *
- * Sans `display: block`, le dessin reste une image en ligne : la boîte du flex centre
- * la ligne de texte qui le porte, creux des descendantes compris, et le trombone se
- * pose deux pixels plus bas que le bouton d'à côté.
- */
-.filJoindre svg {
-  display: block;
-  width: 17px;
-  height: 17px;
-}
-
-.filJoindre:hover {
-  background: #f4f4f5;
-  color: #111;
-}
-
-/* Le bouton d'envoi tient dans la barre : il n'a pas à en sortir. */
-.filEcrire .travailPrincipal {
-  height: 30px;
-  padding: 0 16px;
-  border-radius: 100px;
-  font-size: 13px;
 }
 
 /* Rouvrir un dossier clos est un rattrapage, non une suite : le geste reste discret. */

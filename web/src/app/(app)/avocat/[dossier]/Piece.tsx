@@ -180,9 +180,9 @@ export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: numbe
           <ReprendreLActe document={piece.id} dossier={dossier} />
         )}
 
-        {piece.statut === "uploaded" && <Verification documentId={piece.id} />}
+        {piece.statut === "uploaded" && <Verification documentId={piece.id} dossier={dossier} />}
         {/* Une validation se reprend : on se trompe de bouton, ou de pièce. */}
-        {piece.statut === "verified" && <Verification documentId={piece.id} decidee />}
+        {piece.statut === "verified" && <Verification documentId={piece.id} dossier={dossier} decidee />}
       </div>
     </div>
   );
