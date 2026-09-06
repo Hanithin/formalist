@@ -136,31 +136,43 @@ export function Piece({
         </svg>
       </div>
 
+      {/*
+        Le nom seul à gauche, l'état contre les gestes.
+
+        La pastille suivait le nom : elle partait donc à quatre abscisses différentes sur
+        quatre lignes, au gré de la longueur des intitulés, et la colonne se lisait comme
+        une suite de blocs décalés. Les noms commencent tous au même endroit et courent
+        librement ; l'état rejoint le bord droit, où il forme un ensemble avec les
+        boutons auxquels il se rapporte.
+      */}
       <div className={styles.docInfo}>
         <div className={styles.docName}>{piece.nom}</div>
-        <div className={styles.docMeta}>
-          {/* L'état porte sa teinte : ce qui attend une décision se voit sans lire. */}
-          {/* Le ton « neutre » n'a pas de classe : sans cette garde, la pastille sortait
-              avec un « undefined » dans son attribut de classe. */}
-          <span className={etat.ton in styles ? `${styles.docEtat} ${styles[etat.ton]}` : styles.docEtat}>
-            {etat.libelle}
-          </span>
-          {piece.creeLe && (
-            <span className={styles.docQuand}>
-              {/*
-                Un acte repris au registre porte la date de son dépôt d'origine, sans
-                heure : « à 02:00 » n'est qu'un artefact de fuseau sur une date sans
-                heure, et laisse croire à un dépôt de cette nuit.
-              */}
-              {estStatutsRepris(piece.nom)
-                ? "déposés par la société le " + jour(piece.creeLe)
-                : quand(piece.creeLe)}
-            </span>
-          )}
-        </div>
         {etat.motif && <div className={styles.docRejectionInfo}>Motif : {etat.motif}</div>}
       </div>
 
+
+      <div className={styles.docMeta}>
+        {/* L'état porte sa teinte : ce qui attend une décision se voit sans lire. */}
+        {/* Le ton « neutre » n'a pas de classe : sans cette garde, la pastille sortait
+            avec un « undefined » dans son attribut de classe. */}
+        <span
+          className={etat.ton in styles ? `${styles.docEtat} ${styles[etat.ton]}` : styles.docEtat}
+        >
+          {etat.libelle}
+        </span>
+        {piece.creeLe && (
+          <span className={styles.docQuand}>
+            {/*
+              Un acte repris au registre porte la date de son dépôt d'origine, sans
+              heure : « à 02:00 » n'est qu'un artefact de fuseau sur une date sans heure,
+              et laisse croire à un dépôt de cette nuit.
+            */}
+            {estStatutsRepris(piece.nom)
+              ? "déposés par la société le " + jour(piece.creeLe)
+              : quand(piece.creeLe)}
+          </span>
+        )}
+      </div>
 
       <div className={styles.docActions}>
         {piece.fichier && <OuvrirLaPiece nom={piece.nom} fichier={piece.fichier} />}

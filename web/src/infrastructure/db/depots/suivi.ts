@@ -16,6 +16,15 @@ export const TYPE_ATTESTATION_CAPITAL = PIECE_DEPOT_CAPITAL;
 export const TYPE_ANNONCE_PUBLIEE = "annonce-parution";
 export const TYPE_KBIS = "kbis";
 export const TYPE_RBE = "rbe";
+/*
+ * L'attestation de parution, remise par le journal.
+ *
+ * Le cabinet publie l'avis et reçoit la preuve : le greffe l'exige au dépôt, et le
+ * client la garde dans ses documents. Elle n'avait aucun chemin pour arriver au
+ * dossier - les deux routes de dépôt sont les pièces attendues du client, restreintes à
+ * une liste, et le coffre personnel, qui range chez le déposant.
+ */
+export const TYPE_PARUTION = "parution";
 
 /**
  * Les pièces déposées sur un dossier, par type.

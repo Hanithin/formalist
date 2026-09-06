@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../../src/infrastructure/db/client";
+import { retirerDossiers } from "./nettoyage";
 import { COMPTE } from "./preparer";
 import { choisir } from "./liste";
 
@@ -84,12 +85,15 @@ async function dossierDeModification(sousPhase = "5a") {
 
 test.afterAll(async () => {
   if (semes.length > 0) {
-    await prisma.audit_log.deleteMany({ where: { formalite_id: { in: semes } } });
-    await prisma.documents.deleteMany({ where: { formalite_id: { in: semes } } });
-    // La mise à disposition prévient le client : l'avis pointe le dossier.
-    await prisma.notifications.deleteMany({ where: { formalite_id: { in: semes } } });
-    await prisma.messages.deleteMany({ where: { formalite_id: { in: semes } } });
-    await prisma.formalites.deleteMany({ where: { id: { in: semes } } });
+    /*
+     * Le nettoyage commun, non une liste tenue à la main.
+     *
+     * Celle-ci connaissait quatre tables : le premier dépôt de fichier fait par un essai
+     * - l'attestation de parution - a laissé une ligne dans « uploaded_files », et la
+     * suppression du dossier a buté sur sa clé étrangère. `retirerDossiers` tient la
+     * liste complète, et retire aussi les fichiers du disque.
+     */
+    await retirerDossiers(semes);
   }
 });
 
@@ -604,6 +608,43 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
 
   const textes = await page.locator("div[class*='repere']").allTextContents();
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
+});
+
+test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ page }) => {
+  /*
+   * Le cabinet publie l'avis et reçoit la preuve : le greffe l'exige au dépôt, et le
+   * client la garde dans ses documents. Elle n'avait aucun chemin pour arriver au
+   * dossier - les deux routes de dépôt sont les pièces attendues du client, restreintes
+   * à une liste, et le coffre personnel, qui range chez le déposant.
+   */
+  const dossier = await dossierDeModification();
+  await page.goto("/avocat/" + dossier);
+
+  await page.getByRole("button", { name: "Annonce légale" }).click();
+
+  const volet = page.getByRole("dialog");
+  /* Un transfert hors ressort fait paraître deux avis : on vise le premier. */
+  await expect(volet.getByRole("button", { name: "Copier le texte" }).first()).toBeVisible({
+    timeout: 30_000,
+  });
+
+  await volet
+    .locator('input[type="file"]')
+    .setInputFiles({
+      name: "parution.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>"),
+    });
+
+  await expect(volet.getByText("Attestation de parution déposée")).toBeVisible({
+    timeout: 30_000,
+  });
+
+  /* Elle rejoint les documents du dossier, sous le nom que le greffe attend. */
+  const depose = await prisma.documents.count({
+    where: { formalite_id: dossier, name: "Attestation de parution" },
+  });
+  expect(depose).toBe(1);
 });
 
 test("les statuts à jour se valident, et partent chez le client", async ({ page, request }) => {

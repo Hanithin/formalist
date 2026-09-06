@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { DepotFichier } from "@/components/formulaire/DepotFichier";
 import styles from "../Avocat.module.css";
 
 /**
@@ -40,6 +41,8 @@ export function Annonce({
   route: string;
 }) {
   const [avis, setAvis] = useState<Avis[] | null>(null);
+  /* L'attestation déjà au dossier : on ne propose pas de déposer deux fois. */
+  const [parution, setParution] = useState(false);
   const [publies, setPublies] = useState(false);
   const [copie, setCopie] = useState<number | null>(null);
   const [refus, setRefus] = useState<string | null>(null);
@@ -72,6 +75,34 @@ export function Annonce({
       vivant = false;
     };
   }, [dossier, route]);
+
+  /*
+   * L'attestation de parution, remise par le journal.
+   *
+   * Le cabinet publie l'avis et reçoit la preuve : le greffe l'exige au dépôt, et le
+   * client la garde dans ses documents. Elle n'avait aucun chemin pour arriver au
+   * dossier - les deux routes de dépôt sont les pièces attendues du client, restreintes
+   * à une liste, et le coffre personnel, qui range chez le déposant. Elle passe par la
+   * route des livrables, celle du Kbis et du registre des bénéficiaires.
+   */
+  function deposer(fichier: File) {
+    setRefus(null);
+    demarrer(async () => {
+      const corps = new FormData();
+      corps.append("dossier", String(dossier));
+      corps.append("type", "parution");
+      corps.append("fichier", fichier);
+
+      const reponse = await fetch("/api/avocat/livrables", { method: "POST", body: corps });
+      if (!reponse.ok) {
+        const retour = await reponse.json().catch(() => ({}));
+        setRefus(retour.error ?? "L'attestation n'a pas pu être déposée");
+        return;
+      }
+      setParution(true);
+      router.refresh();
+    });
+  }
 
   async function copier(texte: string, rang: number) {
     try {
@@ -184,6 +215,32 @@ export function Annonce({
           <pre className={styles.avisTexte}>{un.texte}</pre>
         </section>
       ))}
+
+      {/* On la dépose là où l'on vient de copier le texte publié. */}
+      <section className={styles.avisParution}>
+        <div>
+          <p className={styles.avisParutionTitre}>L&apos;attestation de parution</p>
+          <p className={styles.tacheExplication}>
+            Le justificatif que le journal délivre. Il part au guichet avec le dossier, et
+            rejoint les documents du client.
+          </p>
+        </div>
+
+        {parution ? (
+          <p className={styles.travailRetour} role="status">
+            Attestation de parution déposée.
+          </p>
+        ) : (
+          <DepotFichier
+            id="attestation-parution"
+            accepte=".pdf,.jpg,.jpeg,.png,.heic,.heif"
+            invite="Déposez l'attestation de parution"
+            precision="PDF ou image"
+            desactive={enCours}
+            surFichier={deposer}
+          />
+        )}
+      </section>
 
       {refus && (
         <p className={styles.travailRefus} role="alert">

@@ -52,6 +52,7 @@ import { LONGUEUR_COMMENTAIRE } from "@/domain/formalite/avocat";
 import {
   TYPE_RBE,
   TYPE_KBIS,
+  TYPE_PARUTION,
   TYPE_ATTESTATION_CAPITAL,
   typesDeposes,
   etatDuDossier,
@@ -897,6 +898,10 @@ export const LIVRABLES = {
   [TYPE_KBIS]: { titre: "Kbis", formats: [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"] },
   [TYPE_RBE]: {
     titre: "Registre des bénéficiaires effectifs",
+    formats: [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"],
+  },
+  [TYPE_PARUTION]: {
+    titre: "Attestation de parution",
     formats: [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"],
   },
 } as const;
