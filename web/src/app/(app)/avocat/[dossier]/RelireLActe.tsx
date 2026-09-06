@@ -19,11 +19,22 @@ export function RelireLActe({
   document,
   dossier,
   source,
+  validationSeule,
 }: {
   document: number;
   dossier: number;
   /** Le nom de stockage du Word d'origine, quand la conversion a réussi. */
   source: string | null;
+  /**
+   * Un acte qui ne vient pas d'un gabarit Word.
+   *
+   * Les statuts à jour sortent de l'éditeur de retouches, qui reprend le PDF du greffe
+   * passage par passage : il n'existe pas de Word à corriger, et la version qu'on
+   * voudrait déposer se refait dans l'éditeur, à un bouton de là sur la même ligne. Il
+   * reste la validation - sans elle, ils demeuraient « Projet à relire » pour toujours
+   * et n'atteignaient jamais l'espace du client.
+   */
+  validationSeule?: boolean;
 }) {
   const champ = useRef<HTMLInputElement>(null);
   const [refus, setRefus] = useState<string | null>(null);
@@ -92,6 +103,7 @@ export function RelireLActe({
         {enCours ? "…" : "Valider"}
       </button>
 
+      {!validationSeule && (
       <span className={styles.menuGestes}>
         <button
           type="button"
@@ -147,6 +159,7 @@ export function RelireLActe({
           </>
         )}
       </span>
+      )}
 
       <input
         ref={champ}

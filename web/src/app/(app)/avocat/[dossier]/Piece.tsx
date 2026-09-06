@@ -194,11 +194,18 @@ export function Piece({
         */}
         {piece.depose === "system" &&
           piece.statut === A_RELIRE &&
-          piece.nom !== TITRE_STATUTS_A_JOUR &&
           piece.nom !== TITRE_STATUTS_EN_VIGUEUR && (
             <RelireLActe
                 document={piece.id}
                 dossier={dossier}
+                /*
+                 * Les statuts à jour se valident, ils ne se corrigent pas au traitement
+                 * de texte : ils sortent de l'éditeur de retouches, à un bouton de là
+                 * sur la même ligne. Ils étaient écartés de la relecture entière - et
+                 * restaient donc « Projet à relire » pour toujours, sans jamais
+                 * atteindre l'espace du client.
+                 */
+                validationSeule={piece.nom === TITRE_STATUTS_A_JOUR}
                 /*
                  * Sans LibreOffice, l'acte est gardé en Word plutôt que perdu : c'est
                  * alors le fichier remis lui-même qu'on corrige.

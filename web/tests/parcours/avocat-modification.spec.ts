@@ -606,6 +606,47 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
 });
 
+test("les statuts à jour se valident, et partent chez le client", async ({ page, request }) => {
+  /*
+   * Ils étaient écartés de la relecture : la ligne n'offrait aucun « Valider », et ils
+   * restaient « Projet à relire » pour toujours. Or `visibleParLeClient` retient un acte
+   * tant qu'il est à relire - le client voyait donc « En relecture par l'avocat » sans
+   * pouvoir les ouvrir, et rien ne pouvait jamais les lui remettre.
+   *
+   * L'exclusion valait pour les gestes du traitement de texte : les statuts à jour
+   * sortent de l'éditeur de retouches et n'ont pas de Word à corriger. Elle a emporté la
+   * validation avec elle.
+   */
+  const dossier = await dossierDeModification();
+  const acte = await prisma.documents.create({
+    data: {
+      formalite_id: dossier,
+      name: "Statuts mis à jour",
+      uploaded_by: "system",
+      status: "a_relire",
+      file_path: "statuts-a-jour.pdf",
+    },
+  });
+
+  await page.goto("/avocat/" + dossier);
+
+  const ligne = page.locator("[class*='docCard']").filter({ hasText: "Statuts mis à jour" });
+  await expect(ligne).toContainText("Projet à relire");
+  await ligne.getByRole("button", { name: "Valider" }).click();
+
+  await expect(ligne).toContainText("Remis au client", { timeout: 30_000 });
+
+  /* Le geste a bien porté sur ce document, non sur le jeu entier. */
+  const relu = await prisma.documents.findUniqueOrThrow({ where: { id: acte.id } });
+  expect(relu.status).toBe("generated");
+
+  /*
+   * Et les gestes du traitement de texte ne sont pas proposés : il n'y a pas de Word,
+   * et la version qu'on voudrait déposer se refait dans l'éditeur.
+   */
+  await expect(ligne.getByRole("button", { name: "Corriger le Word" })).toHaveCount(0);
+});
+
 test("la ligne des statuts dit qu'ils ont déjà été repris", async ({ page, request }) => {
   /*
    * Elle affichait « Version actuellement au greffe » et un bouton « Modifier les

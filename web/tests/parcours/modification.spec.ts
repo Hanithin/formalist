@@ -459,6 +459,33 @@ test("le client sait quand l'avocat a validé sa pièce", async ({ page, request
   await page.reload();
   await expect(page.getByText("Validé par l'avocat")).toBeVisible();
   await expect(page.getByText("Déposé par vous")).toHaveCount(0);
+
+  /*
+   * Et les statuts à jour n'arrivent qu'une fois relus.
+   *
+   * `visibleParLeClient` retient ce que nous produisons tant que c'est à relire : le
+   * client voit la ligne, sans pouvoir l'ouvrir, jusqu'à ce que l'avocat la valide.
+   */
+  const statuts = await prisma.documents.create({
+    data: {
+      formalite_id: dossier,
+      name: "Statuts mis à jour",
+      uploaded_by: "system",
+      status: "a_relire",
+      file_path: "statuts-a-jour.pdf",
+    },
+  });
+
+  await page.reload();
+  const ligneStatuts = page.locator("li").filter({ hasText: "Statuts mis à jour" });
+  await expect(ligneStatuts).toContainText("En relecture par l'avocat");
+  await expect(ligneStatuts.getByRole("button", { name: "Aperçu" })).toHaveCount(0);
+
+  await prisma.documents.update({ where: { id: statuts.id }, data: { status: "generated" } });
+
+  await page.reload();
+  await expect(ligneStatuts).toContainText("Validé par l'avocat");
+  await expect(ligneStatuts.getByRole("button", { name: "Aperçu" })).toBeVisible();
 });
 
 test("un dossier réglé montre ses documents, comme une création", async ({ page, request }) => {
