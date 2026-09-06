@@ -103,6 +103,15 @@ export function Piece({
     <div
       className={piece.motifRejet ? `${styles.docCard} ${styles.docRejected}` : styles.docCard}
     >
+      {/*
+        La rangée, puis les versions dessous.
+
+        Elles étaient posées dans la rangée elle-même, qui ne se replie pas : « 1 version
+        antérieure » prenait sa place sur la ligne et le nom de l'acte, seul à céder,
+        tombait à « Pro… ». Reproduire un acte rendait donc son propre document illisible
+        dans la liste.
+      */}
+      <div className={styles.docLigne}>
       <div className={styles.docIcon}>
         <svg
           viewBox="0 0 24 24"
@@ -139,15 +148,6 @@ export function Piece({
         {etat.motif && <div className={styles.docRejectionInfo}>Motif : {etat.motif}</div>}
       </div>
 
-      {/*
-        Les versions, sous la ligne.
-        
-        Elles ne se déplient que si l'acte en a : une mention « 0 version » sur chaque
-        document n'apprendrait rien, et il y en a rarement.
-      */}
-      {piece.versions && piece.versions.length > 0 && (
-        <Versions versions={piece.versions} dossier={dossier} />
-      )}
 
       <div className={styles.docActions}>
         {piece.fichier && <OuvrirLaPiece nom={piece.nom} fichier={piece.fichier} />}
@@ -206,6 +206,15 @@ export function Piece({
         {/* Une validation se reprend : on se trompe de bouton, ou de pièce. */}
         {piece.statut === "verified" && <Verification documentId={piece.id} dossier={dossier} decidee />}
       </div>
+      </div>
+
+      {/*
+        Elles ne se déplient que si l'acte en a : une mention « 0 version » sur chaque
+        document n'apprendrait rien, et il y en a rarement.
+      */}
+      {piece.versions && piece.versions.length > 0 && (
+        <Versions versions={piece.versions} dossier={dossier} />
+      )}
     </div>
   );
 }

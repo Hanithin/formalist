@@ -152,6 +152,15 @@ function improveLayout(docXml) {
 
   function isEmpty(p) { return getText(p).length === 0; }
 
+  /** Le texte du paragraphe non vide qui précède, pour lire ce qu'il annonce. */
+  function texteDuPrecedent(tokens, i) {
+    for (let j = i - 1; j >= 0; j--) {
+      if (tokens[j].type !== 'p' || isEmpty(tokens[j].xml)) continue;
+      return getText(tokens[j].xml);
+    }
+    return '';
+  }
+
   function isTitle(p) {
     const t = getText(p);
     if (!t) return false;
@@ -235,14 +244,21 @@ function improveLayout(docXml) {
             break;
           }
         }
-        // Deux poids de titre, selon qu'il ouvre l'acte ou une de ses parties.
-        //
-        // Le premier titre sépare l'en-tête du corps : il prend vingt-quatre points.
-        // Ceux qui suivent découpent le corps sans le rompre, et dix-huit suffisent -
-        // au-delà, chaque partie flotte dans sa page. Le critère est le rang, non
-        // l'alignement : « ORDRE DU JOUR » est centré lui aussi, et prenait le blanc
-        // du titre principal au milieu d'une page.
-        const before = isSectionTitle ? (titreVu ? 360 : 480) : 360;
+        /*
+         * Ce qu'un deux-points annonce n'est pas un titre.
+         *
+         * « L'associé unique décide de transférer le siège social à l'adresse
+         * suivante : » puis, en gras et centrée, la nouvelle adresse. Elle est courte
+         * et grasse : la règle la prenait pour un intertitre et lui donnait l'écart
+         * d'une coupure - dix-huit points au-dessus contre six au-dessous. La valeur
+         * mise en avant flottait loin de la phrase qui l'introduit, et collait à celle
+         * qui la suit.
+         *
+         * Le deux-points lie déjà les deux paragraphes quelques lignes plus haut, par
+         * « keepNext » : il dit aussi leur écart.
+         */
+        const annoncee = /:\s*$/.test(texteDuPrecedent(tokens, i));
+        const before = annoncee ? 120 : isSectionTitle ? (titreVu ? 360 : 480) : 360;
         if (isSectionTitle) titreVu = true;
 
         // Un titre se tient plus près de son texte que de celui qu'il quitte.

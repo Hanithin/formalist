@@ -1370,12 +1370,17 @@
  * complet à la souris - parce que l'état et les gestes ne se devinent pas, alors qu'un
  * acte se reconnaît à ses premiers mots.
  */
+/*
+ * La carte empile sa rangée et, s'il y en a, ses versions antérieures.
+ *
+ * Elle était elle-même la rangée : « 1 version antérieure » s'y posait à côté du reste
+ * et le nom de l'acte, seul à céder, tombait à « Pro… ». Reproduire un acte rendait donc
+ * son propre document illisible dans la liste.
+ */
 .docCard {
   display: flex;
-  align-items: center;
-  /* Une ligne, sans repli : c'est le nom qui cède quand la place manque, pas la rangée. */
-  flex-wrap: nowrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   /*
    * L'écart entre deux actes se comptait deux fois.
    *
@@ -1407,6 +1412,15 @@
 }
 
 /* Le nom et son état sur la même ligne : c'est ce couple qu'on lit d'un coup d'œil. */
+/* La rangée : icône, nom, état, gestes. C'est le nom qui cède quand la place manque. */
+.docLigne {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+  min-width: 0;
+}
+
 .docInfo {
   display: flex;
   flex: 1 1 auto;
