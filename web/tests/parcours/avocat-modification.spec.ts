@@ -606,6 +606,81 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   expect(textes.join(" ")).toContain("5 avenue Victor Hugo, 69003 Lyon");
 });
 
+test("le cadre s'élargit à son texte au lieu de le couper", async ({ page, request }) => {
+  /*
+   * La largeur d'un cadre vient de l'emplacement repéré dans le document : la boîte de
+   * l'ancienne valeur. Une adresse plus longue que celle qu'elle remplace - le cas
+   * courant, un code postal et une ville s'ajoutant à une rue - s'y voyait coupée :
+   * « 12 Rue de Saint-Pétersbou ». Rien ne disait alors si l'acte produit serait
+   * tronqué de même. Il ne l'est pas, mais l'écran mentait sur ce qu'on allait remettre
+   * au greffe.
+   */
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const dossier = await dossierDeModification();
+
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 700,
+    size: 11,
+    font: police,
+  });
+
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/avocat/" + dossier + "/statuts");
+
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const cadre = page.locator("div[class*='repere']").first();
+  await expect(cadre).toBeVisible({ timeout: 30_000 });
+  await cadre.scrollIntoViewIfNeeded();
+
+  const boite = (await cadre.boundingBox())!;
+  await page.mouse.move(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.mouse.down();
+  await page.mouse.up();
+
+  const saisie = page.getByRole("textbox", { name: "Texte du cadre" });
+  await saisie.fill("12 Rue de Saint-Pétersbourg, 75008 Paris Cedex 12");
+  await page.mouse.click(200, 950);
+
+  /*
+   * Rien n'est coupé : le cadre s'est élargi à ce qu'il porte.
+   *
+   * On mesure le texte, non le cadre : celui-ci porte ses poignées de
+   * redimensionnement, posées en absolu et débordant volontairement de quelques
+   * pixels, qui fausseraient un `scrollWidth` pris sur lui. C'est bien la ligne de
+   * texte qui était rognée - « 12 Rue de Saint-Pétersbou » - et c'est elle qui doit
+   * tenir dans ce qu'on lui offre.
+   */
+  const ferme = page.locator("div[class*='repere']").first();
+  await expect(ferme).toContainText("Saint-Pétersbourg");
+
+  const mesure = await ferme.evaluate((element) => {
+    const texte = element.firstElementChild as HTMLElement;
+    return { demande: texte.scrollWidth, offert: texte.clientWidth };
+  });
+  expect(mesure.demande).toBeLessThanOrEqual(mesure.offert + 1);
+});
+
 test("l'historique dit qui a fait quoi, et on revient dessus", async ({ page, request }) => {
   /*
    * Une page écartée par mégarde, un cadre posé au mauvais endroit : sans trace, la

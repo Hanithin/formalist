@@ -448,20 +448,6 @@ export async function appliquerLesRetouches(
       const tourner = (point: { x: number; y: number }) =>
         angle === 0 ? point : pointTourne(point, centre, angle);
 
-      const coinDuBlanc = tourner({
-        x: retouche.x - marge,
-        y: height - retouche.y - retouche.hauteur - marge,
-      });
-
-      page.drawRectangle({
-        x: coinDuBlanc.x,
-        y: coinDuBlanc.y,
-        width: retouche.largeur + marge * 2,
-        height: retouche.hauteur + marge * 2,
-        color: rgb(1, 1, 1),
-        ...(angle === 0 ? {} : { rotate: degrees(-angle) }),
-      });
-
       /*
        * Le texte se dessine morceau par morceau.
        *
@@ -490,6 +476,32 @@ export async function appliquerLesRetouches(
 
       if (morceaux.length === 0) continue;
 
+      /*
+       * Le blanc couvre au moins ce qu'on écrit.
+       *
+       * Il prenait la largeur de l'emplacement repéré - la boîte de l'ancienne valeur.
+       * Une nouvelle valeur plus longue se dessinait donc en partie hors du blanc, par
+       * dessus ce que le blanc n'avait pas effacé : « 75008 Paris » venait se
+       * superposer à la fin de l'ancienne adresse. Le texte n'étant jamais rogné par
+       * `drawText`, c'était le cache qu'il fallait mesurer sur lui.
+       */
+      const largeurDuTexte = morceaux.reduce((total, m) => total + m.largeur, 0);
+      const largeurCouverte = Math.max(retouche.largeur, largeurDuTexte);
+
+      const coinDuBlanc = tourner({
+        x: retouche.x - marge,
+        y: height - retouche.y - retouche.hauteur - marge,
+      });
+
+      page.drawRectangle({
+        x: coinDuBlanc.x,
+        y: coinDuBlanc.y,
+        width: largeurCouverte + marge * 2,
+        height: retouche.hauteur + marge * 2,
+        color: rgb(1, 1, 1),
+        ...(angle === 0 ? {} : { rotate: degrees(-angle) }),
+      });
+
       // La ligne de base se pose au bas du rectangle, remontée du jambage.
       const ligneDeBase = height - retouche.y - retouche.hauteur + retouche.taille * 0.2;
 
@@ -500,8 +512,7 @@ export async function appliquerLesRetouches(
        * demande donc de mesurer le texte dans sa police et sa taille, puis de poser
        * l'origine en conséquence.
        */
-      const largeurDuTexte = morceaux.reduce((total, m) => total + m.largeur, 0);
-      const reste = Math.max(0, retouche.largeur - largeurDuTexte);
+      const reste = Math.max(0, largeurCouverte - largeurDuTexte);
       const decalage =
         retouche.alignement === "centre"
           ? reste / 2

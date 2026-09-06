@@ -1255,10 +1255,26 @@ export function Editeur({
 
           {surCettePage.map(({ retouche, index }) => {
             const ouvert = index === choisie;
+            /*
+             * Le cadre ne rétrécit pas son texte : il s'élargit.
+             *
+             * Sa largeur vient de l'emplacement repéré dans le document - la boîte de
+             * l'ancienne valeur. Une nouvelle valeur plus longue y était coupée à
+             * l'écran : « 12 Rue de Saint-Pétersbou », et rien ne disait si l'acte
+             * produit serait tronqué de même. Il ne l'est pas - le texte s'y dessine
+             * sans être rogné - mais l'écran mentait sur ce qu'on allait remettre au
+             * greffe.
+             *
+             * La largeur repérée devient donc un minimum, et le cadre suit son contenu,
+             * sans jamais déborder de la page.
+             */
+            const gauche = (retouche.x / dimensions.largeur) * 100;
             const style = {
-              left: (retouche.x / dimensions.largeur) * 100 + "%",
+              left: gauche + "%",
               top: (retouche.y / dimensions.hauteur) * 100 + "%",
-              width: (retouche.largeur / dimensions.largeur) * 100 + "%",
+              minWidth: (retouche.largeur / dimensions.largeur) * 100 + "%",
+              width: "max-content",
+              maxWidth: 100 - gauche + "%",
               height: (retouche.hauteur / dimensions.hauteur) * 100 + "%",
               fontSize: retouche.taille * echelle + "px",
               fontFamily: FAMILLES[retouche.police ?? "serif"],

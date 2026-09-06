@@ -2767,7 +2767,14 @@
    */
   line-height: 1.15;
   line-height: 1.1;
-  overflow: hidden;
+  /*
+   * Rien ne se coupe ici.
+   *
+   * Le cadre suit son contenu - sa largeur repérée n'est plus qu'un minimum - et
+   * rogner ce qui dépasse encore, sur une page où le texte n'a plus la place, cacherait
+   * précisément ce que le document produit montrera.
+   */
+  overflow: visible;
   text-align: left;
   font: inherit;
   transition: background 0.12s, box-shadow 0.12s;
@@ -2786,7 +2793,6 @@
   display: block;
   line-height: 1.15;
   white-space: nowrap;
-  overflow: hidden;
 }
 
 /* Ouvert : le fond passe au blanc, comme il le sera dans le document. */
@@ -2811,9 +2817,10 @@
  * - c'est ce qui permet de n'en mettre qu'un mot.
  */
 .repereSaisie {
-  flex: 1;
-  min-width: 0;
-  width: 100%;
+  /* Il grandit avec ce qu'on tape : le cadre le suit, et non l'inverse. */
+  flex: 0 0 auto;
+  min-width: 100%;
+  width: max-content;
   max-width: none;
   margin: 0;
   padding: 0 2px;
@@ -2823,7 +2830,6 @@
   font: inherit;
   line-height: 1.15;
   white-space: pre;
-  overflow: hidden;
 }
 
 .repereSaisie:focus {
