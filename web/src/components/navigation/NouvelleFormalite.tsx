@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import { FAMILLES } from "@/domain/navigation/parcours";
 import { CarteDeParcours } from "./CarteDeParcours";
 import styles from "./NouvelleFormalite.module.css";
@@ -35,9 +36,27 @@ export function NouvelleFormalite({
   libelle?: string;
   apparence?: "colonne" | "page";
 } = {}) {
-  const [ouverte, setOuverte] = useState(false);
   const bouton = useRef<HTMLButtonElement>(null);
   const fenetre = useRef<HTMLDivElement>(null);
+  const chemin = usePathname();
+
+  /*
+   * La fenêtre appartient à la page où on l'a ouverte.
+   *
+   * La colonne de gauche survit aux changements de page : la fenêtre restait posée
+   * par-dessus le parcours qu'on venait de demander, identique à elle-même. On cliquait
+   * « Créer une société », l'adresse changeait, et l'écran ne bougeait pas - on
+   * recliquait, croyant avoir manqué la carte.
+   *
+   * L'état retient donc la page plutôt qu'un oui-non : changer de page la referme, quel
+   * que soit le chemin emprunté - une carte, un lien au clavier, le bouton « précédent ».
+   */
+  const [ouvertePour, setOuvertePour] = useState<string | null>(null);
+  const ouverte = ouvertePour === chemin;
+  const setOuverte = useCallback(
+    (montrer: boolean) => setOuvertePour(montrer ? chemin : null),
+    [chemin]
+  );
 
   // Échap ferme, et le focus revient au bouton : sans cela, on se retrouve à
   // naviguer au clavier dans une page dont on ne voit plus le point de départ.
@@ -54,7 +73,7 @@ export function NouvelleFormalite({
     document.addEventListener("keydown", auClavier);
     fenetre.current?.focus();
     return () => document.removeEventListener("keydown", auClavier);
-  }, [ouverte]);
+  }, [ouverte, setOuverte]);
 
   return (
     <>
@@ -164,7 +183,20 @@ export function NouvelleFormalite({
                 </button>
               </div>
 
-              <div className={styles.familles}>
+              {/*
+                Choisir un parcours referme la fenêtre, même s'il mène à la page courante.
+
+                Le changement de page s'en charge partout ailleurs ; ce geste-ci couvre le
+                cas où l'on demande le parcours sur lequel on est déjà. Le clic se cueille
+                sur la grille plutôt que sur chaque carte : les cartes sont des liens, et
+                leur donner un geste en plus les ferait deux choses.
+              */}
+              <div
+                className={styles.familles}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest("a")) setOuverte(false);
+                }}
+              >
                 {FAMILLES.map((famille) => (
                   <section key={famille.titre} className={styles.famille}>
                     <h3 className={styles.familleTitre}>{famille.titre}</h3>

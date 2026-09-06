@@ -135,3 +135,25 @@ test("le survol n'emprunte pas la marque du parcours mis en avant", async ({ pag
   const misEnAvant = fenetre.getByRole("link", { name: /Créer une société/ });
   expect(await fondDeLaFleche(misEnAvant)).toBe(encre);
 });
+
+/**
+ * Choisir un parcours dans la fenêtre y mène vraiment.
+ *
+ * La colonne de gauche survit aux changements de page, et rien ne refermait la fenêtre :
+ * on cliquait « Créer une société », l'adresse changeait, et l'écran ne bougeait pas -
+ * la même fenêtre restait posée par-dessus le parcours qu'on venait de demander. On
+ * recliquait, croyant avoir manqué la carte.
+ */
+test("la fenêtre se referme sur le parcours choisi", async ({ page }) => {
+  await page.goto("/formalites");
+
+  await page.getByRole("button", { name: /Nouvelle formalité/ }).first().click();
+  const fenetre = page.getByRole("dialog", { name: "Nouvelle formalité" });
+  await expect(fenetre).toBeVisible();
+
+  await fenetre.getByRole("link", { name: /Créer une société/ }).first().click();
+
+  await page.waitForURL(/\/creation/);
+  await expect(fenetre).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /Nouvelle société/ })).toBeVisible();
+});
