@@ -905,19 +905,32 @@ export function Travail({
         */}
         {!correctionsEnCours && (
           <span className={styles.menuGestes}>
+            {/*
+              Le bouton dit ce qu'il ouvre.
+              
+              Trois points gris au bout de la ligne ne disent rien : on ne devine pas
+              qu'ils portent le renvoi au client, l'invitation d'un confrère et le refus.
+              Il porte son nom, comme les trois autres, et un chevron dit qu'il ouvre.
+            */}
             <button
               type="button"
-              className={styles.menuGestesBouton}
+              className={styles.situationGerer}
               onClick={() => setMenuOuvert((ouvert) => !ouvert)}
               disabled={enCours}
               aria-expanded={menuOuvert}
               aria-haspopup="menu"
-              aria-label="Ce qu'on peut faire de ce dossier"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <circle cx="5" cy="12" r="1.8" />
-                <circle cx="12" cy="12" r="1.8" />
-                <circle cx="19" cy="12" r="1.8" />
+              Gérer le dossier
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
 

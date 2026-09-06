@@ -468,6 +468,10 @@ test.describe("le dossier lui-même", () => {
    * courant - demander des corrections. Trois traits pèsent plus qu'un bouton, et l'on
    * ne refuse un dossier qu'une fois : ils tiennent dans un menu.
    *
+   * Le bouton porte son nom. Trois points gris au bout de la ligne ne disaient rien : on
+   * ne devine pas qu'ils portent le renvoi au client, l'invitation d'un confrère et le
+   * refus du dossier.
+   *
    * Aucun test ne les couvrait, si bien que la refonte est passée sans rien casser -
    * et sans rien prouver non plus.
    */
@@ -475,7 +479,7 @@ test.describe("le dossier lui-même", () => {
     const dossier = await dossierPris("MENU DOSSIER " + Date.now());
     await page.goto("/avocat/" + dossier.id);
 
-    const menu = page.getByRole("button", { name: "Ce qu'on peut faire de ce dossier" });
+    const menu = page.getByRole("button", { name: "Gérer le dossier" });
     await expect(menu).toBeVisible();
 
     /* Rien n'est visible tant qu'on n'a pas ouvert : c'est ce que le menu apporte. */

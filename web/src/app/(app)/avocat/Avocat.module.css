@@ -2714,9 +2714,22 @@
  * eu lieu ». Elles doublaient la hauteur de la page pour ce qui ne se fait pas
  * maintenant. Le nombre suffit à savoir où l'on en est ; la fenêtre porte le détail.
  */
-.situationEtapes {
+.situationEtapes,
+.situationGerer {
+  /*
+   * Une seule hauteur pour toute la rangée.
+   *
+   * Les trois boutons de section se mesuraient à leur rembourrage - trente-huit pixels -
+   * et le geste du bout à une taille fixe de trente-quatre : il flottait au-dessus de la
+   * ligne, décalé de deux pixels.
+   */
+  display: inline-flex;
   flex: none;
-  padding: 8px 14px;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  margin: 0;
+  padding: 0 14px;
   border: 1px solid #d9d9dd;
   border-radius: 10px;
   background: #fff;
@@ -2728,8 +2741,42 @@
   cursor: pointer;
 }
 
-.situationEtapes:hover {
+.situationEtapes:hover:not(:disabled),
+.situationGerer:hover:not(:disabled) {
   border-color: #a1a1aa;
+}
+
+/*
+ * Ce qu'on fait du dossier, non de son travail.
+ *
+ * Le bouton se pousse au bord opposé et se tient en retrait : renvoyer un dossier au
+ * client, inviter un confrère ou le refuser ne sont pas des lectures, et l'on n'en fait
+ * qu'un sur cent.
+ */
+.situationGerer {
+  margin-left: auto;
+  border-color: transparent;
+  background: none;
+  font-weight: 400;
+  color: #71717a;
+}
+
+.situationGerer:hover:not(:disabled),
+.situationGerer[aria-expanded="true"] {
+  border-color: #d9d9dd;
+  background: #fff;
+  color: #111;
+}
+
+.situationGerer svg {
+  width: 14px;
+  height: 14px;
+  color: #a1a1aa;
+}
+
+.situationGerer:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 /* La fenêtre des étapes : la liste, et rien autour. */
@@ -3872,6 +3919,11 @@ button.ligneCorps:disabled {
 .menuGestes {
   position: relative;
   display: inline-flex;
+  /* Sur la ligne des sections, c'est le bouton qui se pousse au bord : voir situationGerer. */
+  margin-left: auto;
+}
+
+.situationVolets .menuGestes {
   margin-left: auto;
 }
 
