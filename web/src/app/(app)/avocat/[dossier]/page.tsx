@@ -235,6 +235,12 @@ export default async function DossierAvocat({
       : type === "modification"
         ? publicationsAPrevoir({
             codes,
+            /* Le département décide du nombre d'avis, le ressort de ce qu'ils disent. */
+            codePostalActuel: societeDuDossier.codePostal,
+            codePostalNouveau:
+              typeof valeursDuDossier.nouveauCodePostal === "string"
+                ? valeursDuDossier.nouveauCodePostal
+                : "",
             ressortActuel: villeDuRcs(societeDuDossier.codePostal, societeDuDossier.ville),
             ressortNouveau: villeDuRcs(
               typeof valeursDuDossier.nouveauCodePostal === "string"

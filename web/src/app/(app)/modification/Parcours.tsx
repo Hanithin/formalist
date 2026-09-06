@@ -1407,6 +1407,10 @@ function EtapeChangements({
     ressortActuel: etat.societe.ville ?? "",
     ressortNouveau:
       typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "",
+    /* Le département décide du nombre d'avis : c'est le code postal qui le porte. */
+    codePostalActuel: etat.societe.codePostal ?? "",
+    codePostalNouveau:
+      typeof etat.valeurs.nouveauCodePostal === "string" ? etat.valeurs.nouveauCodePostal : "",
     depotDesStatuts: statutsAMettreAJour(etat.codes),
   });
 
@@ -3322,14 +3326,27 @@ function EtapeReglement({
   const ressortNouveau =
     typeof etat.valeurs.nouvelleVille === "string" ? etat.valeurs.nouvelleVille : "";
 
+  /* Le département décide du nombre d'avis : c'est le code postal qui le porte. */
+  const codePostalActuel = etat.societe.codePostal ?? "";
+  const codePostalNouveau =
+    typeof etat.valeurs.nouveauCodePostal === "string" ? etat.valeurs.nouveauCodePostal : "";
+
   const chiffrage = devis({
     codes: etat.codes,
     ressortActuel,
     ressortNouveau,
+    codePostalActuel,
+    codePostalNouveau,
     depotDesStatuts: statutsAMettreAJour(etat.codes),
   });
 
-  const publications = publicationsAPrevoir({ codes: etat.codes, ressortActuel, ressortNouveau });
+  const publications = publicationsAPrevoir({
+    codes: etat.codes,
+    ressortActuel,
+    ressortNouveau,
+    codePostalActuel,
+    codePostalNouveau,
+  });
 
   if (etat.paye) {
     return (

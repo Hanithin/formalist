@@ -49,19 +49,57 @@ describe("les honoraires d'une modification", () => {
     expect(deux.fraisTTC).toBe(un.fraisTTC);
   });
 
-  it("le transfert hors ressort paie deux annonces, non une", () => {
-    const dansLeRessort = devis({
+  /*
+   * Le département compte les avis, le ressort décide de ce que le greffe facture.
+   *
+   * Un support d'annonces légales est habilité par département : celui de départ
+   * n'atteint pas les tiers de celui d'arrivée. Le tarif majoré du BODACC, lui, paie la
+   * radiation d'un registre et l'immatriculation à un autre - ce que seul un changement
+   * de ressort déclenche.
+   */
+  it("le changement de département paie deux annonces, non une", () => {
+    const memeDepartement = devis({
       codes: ["transfert_siege"],
       ressortActuel: "Paris",
       ressortNouveau: "Paris",
+      codePostalActuel: "75017",
+      codePostalNouveau: "75008",
     });
-    const horsRessort = devis({
+    const autreDepartement = devis({
       codes: ["transfert_siege"],
       ressortActuel: "Paris",
       ressortNouveau: "Lyon",
+      codePostalActuel: "75017",
+      codePostalNouveau: "69003",
     });
 
-    expect(horsRessort.frais.filter((l) => l.libelle.startsWith("Annonce légale"))).toHaveLength(2);
-    expect(horsRessort.fraisTTC).toBeGreaterThan(dansLeRessort.fraisTTC);
+    expect(
+      memeDepartement.frais.filter((l) => l.libelle.startsWith("Annonce légale"))
+    ).toHaveLength(1);
+    expect(
+      autreDepartement.frais.filter((l) => l.libelle.startsWith("Annonce légale"))
+    ).toHaveLength(2);
+    expect(autreDepartement.fraisTTC).toBeGreaterThan(memeDepartement.fraisTTC);
+  });
+
+  it("changer de tribunal sans changer de département n'ajoute qu'un tarif, pas un avis", () => {
+    /* Lille vers Douai : deux tribunaux, un seul département - le Nord. */
+    const memeDepartement = devis({
+      codes: ["transfert_siege"],
+      ressortActuel: "Lille",
+      ressortNouveau: "Douai",
+      codePostalActuel: "59000",
+      codePostalNouveau: "59500",
+    });
+
+    expect(
+      memeDepartement.frais.filter((l) => l.libelle.startsWith("Annonce légale"))
+    ).toHaveLength(1);
+    /* Mais le greffe change : le BODACC passe au tarif du transfert hors ressort. */
+    expect(
+      memeDepartement.frais.some(
+        (l) => l.libelle === "Publication au BODACC" && l.precision?.includes("hors ressort")
+      )
+    ).toBe(true);
   });
 });

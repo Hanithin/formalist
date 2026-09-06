@@ -1,6 +1,6 @@
 import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais } from "@/domain/formalite/lettres";
-import { changeDeRessort } from "./formalites";
+import { changeDeDepartement, changeDeRessort } from "./formalites";
 import type { Valeurs } from "./types";
 import type { SocieteModifiee } from "./gabarit";
 
@@ -340,9 +340,25 @@ export function avisAPublier(contexte: ContexteAvis): Avis[] {
 
   const actuel = texte(contexte.ressortActuel) || texte(contexte.societe.ville) || "";
   const nouveau = texte(contexte.ressortNouveau);
+  /*
+   * Deux critères, deux effets.
+   *
+   * Le département décide du nombre d'avis : un support d'annonces légales est habilité
+   * par département, et celui de départ n'atteint pas les tiers de celui d'arrivée. Le
+   * ressort décide de ce qu'ils disent : en changer radie la société d'un registre pour
+   * l'immatriculer à un autre, et l'article R. 210-11 veut que l'avis le dise.
+   *
+   * Les deux ne vont pas toujours ensemble. Lille vers Douai reste dans le Nord et
+   * change de tribunal : un seul avis, qui annonce la radiation et la nouvelle
+   * immatriculation. Un déménagement d'un département à l'autre sans changer de greffe
+   * en demande deux, qui n'annoncent aucune radiation.
+   */
+  const transfert = contexte.codes.includes("transfert_siege");
+  const deuxDepartements =
+    transfert &&
+    changeDeDepartement(texte(contexte.societe.codePostal), texte(contexte.valeurs.nouveauCodePostal));
   const horsRessort =
-    contexte.codes.includes("transfert_siege") &&
-    changeDeRessort(contexte.ressortActuel, contexte.ressortNouveau);
+    transfert && changeDeRessort(contexte.ressortActuel, contexte.ressortNouveau);
 
   const fin = signature(contexte.societe.forme);
   const mentionDepot =
@@ -350,11 +366,41 @@ export function avisAPublier(contexte: ContexteAvis): Avis[] {
     (horsRessort ? nouveau : actuel) +
     ".";
 
+  /* Un seul département : un seul avis, qui dit la radiation s'il y a lieu. */
+  if (!deuxDepartements) {
+    return [
+      {
+        ressort: horsRessort ? nouveau : actuel,
+        objet: "Avis de modification",
+        texte: [
+          tete,
+          chapeau,
+          horsRessort
+            ? "La société sera radiée du registre du commerce et des sociétés de " +
+              actuel +
+              " et immatriculée à celui de " +
+              nouveau +
+              ", où les statuts à jour seront déposés."
+            : mentionDepot,
+          fin,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+      },
+    ];
+  }
+
+  /* Deux départements, même greffe : deux parutions, aucune radiation à annoncer. */
   if (!horsRessort) {
     return [
       {
         ressort: actuel,
-        objet: "Avis de modification",
+        objet: "Avis de modification - département de départ",
+        texte: [tete, chapeau, mentionDepot, fin].filter(Boolean).join("\n\n"),
+      },
+      {
+        ressort: nouveau || actuel,
+        objet: "Avis de modification - département d'arrivée",
         texte: [tete, chapeau, mentionDepot, fin].filter(Boolean).join("\n\n"),
       },
     ];

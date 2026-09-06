@@ -62,12 +62,47 @@ const AVIS_REQUIS: TypeModification[] = [
 ];
 
 /**
+ * Le département d'un code postal.
+ *
+ * Deux chiffres, sauf outre-mer où il en faut trois - 971 la Guadeloupe, 976 Mayotte -
+ * et la Corse, dont les deux départements partagent le « 20 » : la Corse-du-Sud va
+ * jusqu'à 20199, la Haute-Corse commence à 20200.
+ */
+export function departementDuCodePostal(code: string | null | undefined): string {
+  const propre = (code ?? "").replace(/\s/g, "");
+  if (!/^\d{5}$/.test(propre)) return "";
+  if (propre.startsWith("97") || propre.startsWith("98")) return propre.slice(0, 3);
+  if (propre.startsWith("20")) return Number(propre) < 20200 ? "2A" : "2B";
+  return propre.slice(0, 2);
+}
+
+/**
+ * Le siège change-t-il de département ?
+ *
+ * C'est ce qui décide du nombre d'avis. Un support d'annonces légales est habilité
+ * par département : celui qui paraît dans le département de départ n'atteint pas les
+ * tiers du département d'arrivée, et réciproquement. L'article R. 210-3 du code de
+ * commerce veut l'avis dans le département du siège, et l'article R. 210-11 en veut un
+ * dans celui du nouveau siège lorsque la société change de ressort.
+ */
+export function changeDeDepartement(
+  codePostalActuel: string | null | undefined,
+  codePostalNouveau: string | null | undefined
+): boolean {
+  const a = departementDuCodePostal(codePostalActuel);
+  const b = departementDuCodePostal(codePostalNouveau);
+  if (!a || !b) return false;
+  return a !== b;
+}
+
+/**
  * Le siège change-t-il de ressort ?
  *
  * On compare les villes de RCS, non les départements : le tribunal compétent n'est
- * pas toujours celui du département, et c'est le greffe destinataire qui décide du
- * nombre d'avis. Les deux ressorts sont calculés par l'appelant, qui seul a la
- * table des codes postaux.
+ * pas toujours celui du département. Ce n'est plus le nombre d'avis que cela décide,
+ * mais leur contenu - un changement de ressort radie la société d'un registre pour
+ * l'immatriculer à un autre, et l'article R. 210-11 veut que l'avis le dise. Les deux
+ * ressorts sont calculés par l'appelant, qui seul a la table des codes postaux.
  */
 export function changeDeRessort(
   ressortActuel: string | null | undefined,
@@ -83,16 +118,28 @@ export interface ContextePublication {
   codes: string[];
   ressortActuel?: string | null;
   ressortNouveau?: string | null;
+  /** Les codes postaux : c'est le département qui décide du nombre d'avis. */
+  codePostalActuel?: string | null;
+  codePostalNouveau?: string | null;
 }
 
 /**
  * Les avis à publier.
  *
- * Un seul avis porte tous les changements d'une même assemblée : c'est l'usage, et
- * le support facture à l'avis. Le transfert hors ressort fait exception - l'article
- * R. 210-19 du code de commerce impose une parution dans le département de départ
- * et une dans celui d'arrivée, faute de quoi les tiers de l'ancien ressort
- * n'apprendraient jamais le déménagement.
+ * Un seul avis porte tous les changements d'une même assemblée : c'est l'usage, et le
+ * support facture à l'avis. Le transfert qui change de département fait exception.
+ *
+ * Un support d'annonces légales est habilité par département : celui qui paraît dans
+ * le département de départ n'atteint pas les tiers du département d'arrivée. L'article
+ * R. 210-3 du code de commerce veut l'avis dans le département du siège - celui d'où
+ * l'on part, seul siège au jour de la décision - et l'article R. 210-11 en veut un dans
+ * le département du nouveau siège dès lors que la société change de ressort. Deux
+ * départements, donc deux parutions.
+ *
+ * Le ressort, lui, ne décide plus du nombre : un déménagement d'un tribunal à l'autre
+ * dans le même département - Lille vers Douai, tous deux dans le Nord - se publie une
+ * fois, dans ce département, mais l'avis porte alors les mentions de la radiation et de
+ * la nouvelle immatriculation.
  */
 export function publicationsAPrevoir(contexte: ContextePublication): Publication[] {
   const concernes = definitions(contexte.codes).filter((d) => AVIS_REQUIS.includes(d.code));
@@ -102,16 +149,16 @@ export function publicationsAPrevoir(contexte: ContextePublication): Publication
   const actuel = contexte.ressortActuel?.trim() || "Ressort du siège";
 
   const transfert = contexte.codes.includes("transfert_siege");
-  const horsRessort =
-    transfert && changeDeRessort(contexte.ressortActuel, contexte.ressortNouveau);
+  const deuxDepartements =
+    transfert && changeDeDepartement(contexte.codePostalActuel, contexte.codePostalNouveau);
 
-  if (!horsRessort) return [{ ressort: actuel, motif }];
+  if (!deuxDepartements) return [{ ressort: actuel, motif }];
 
   return [
-    { ressort: actuel, motif: motif + " - avis dans le ressort de départ" },
+    { ressort: actuel, motif: motif + " - avis dans le département de départ" },
     {
-      ressort: contexte.ressortNouveau!.trim(),
-      motif: motif + " - avis dans le ressort d'arrivée",
+      ressort: contexte.ressortNouveau?.trim() || "Département d'arrivée",
+      motif: motif + " - avis dans le département d'arrivée",
     },
   ];
 }

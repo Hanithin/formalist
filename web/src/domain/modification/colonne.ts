@@ -115,6 +115,9 @@ export function colonneDeModification(donnees: DonneesDeLaColonne): ColonneDeMod
     codes,
     ressortActuel: texte(societe.ville),
     ressortNouveau: texte(valeurs.nouvelleVille),
+    /* Le département décide du nombre d'avis : c'est le code postal qui le porte. */
+    codePostalActuel: texte(societe.codePostal),
+    codePostalNouveau: texte(valeurs.nouveauCodePostal),
     depotDesStatuts: statutsAMettreAJour(codes),
   });
 

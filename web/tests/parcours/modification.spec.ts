@@ -198,11 +198,16 @@ test("le parcours s'affiche avec son fil d'étapes", async ({ page, request }) =
   await expect(page.getByLabel("Dénomination sociale")).toHaveValue("ESSAI MODIFICATION");
 });
 
-test("le devis compte deux annonces quand le siège change de ressort", async ({ page, request }) => {
+test("le devis compte deux annonces quand le siège change de département", async ({
+  page,
+  request,
+}) => {
   /*
-   * L'article R. 210-19 du code de commerce impose une parution dans le département
-   * de départ et une dans celui d'arrivée. Une seule ligne d'annonce ferait un devis
-   * faux de plus de cent euros.
+   * Un support d'annonces légales est habilité par département : celui de départ
+   * n'atteint pas les tiers de celui d'arrivée. L'article R. 210-3 du code de commerce
+   * veut l'avis dans le département du siège, l'article R. 210-11 en veut un dans celui
+   * du nouveau siège dès lors que la société change de ressort. Une seule ligne
+   * d'annonce ferait un devis faux de plus de cent euros.
    */
   const dossier = await ouvrirUnDossier(request);
   await request.put("/api/formalites/modification", {
@@ -223,7 +228,8 @@ test("le devis compte deux annonces quand le siège change de ressort", async ({
 
   const annonces = page.getByText(/Annonce légale/);
   await expect(annonces).toHaveCount(2);
-  await expect(page.getByText(/R\. 210-19/)).toBeVisible();
+  /* Paris 75017 vers Lyon 69003 : deux départements, donc deux parutions. */
+  await expect(page.getByText(/R\. 210-3 et R\. 210-11/)).toBeVisible();
 });
 
 test("une modification seule n'affiche qu'une annonce", async ({ page, request }) => {

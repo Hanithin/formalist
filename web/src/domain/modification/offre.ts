@@ -1,5 +1,9 @@
 import { definitions, type TypeModification } from "./types";
-import { publicationsAPrevoir, type ContextePublication } from "./formalites";
+import {
+  changeDeRessort,
+  publicationsAPrevoir,
+  type ContextePublication,
+} from "./formalites";
 
 /**
  * Ce que coûte une modification.
@@ -130,13 +134,16 @@ export function devis(contexte: ContexteDevis): Devis {
   });
 
   const publications = publicationsAPrevoir(contexte);
-  const horsRessort = publications.length > 1;
+  /* Le département compte les avis ; le ressort décide de ce que le greffe facture. */
+  const horsRessort =
+    contexte.codes.includes("transfert_siege") &&
+    changeDeRessort(contexte.ressortActuel, contexte.ressortNouveau);
 
   const frais: Ligne[] = publications.map((publication, rang) => ({
     libelle: "Annonce légale - " + publication.ressort,
     precision:
       rang === 1
-        ? "Un transfert hors ressort impose une parution dans chaque département (article R. 210-19 du code de commerce)"
+        ? "Un support d'annonces légales est habilité par département : le transfert se publie dans celui de départ et dans celui d'arrivée (articles R. 210-3 et R. 210-11 du code de commerce)"
         : undefined,
     centimes: ANNONCE_LEGALE_HT_CENTIMES,
     horsTaxes: true,
@@ -156,6 +163,14 @@ export function devis(contexte: ContexteDevis): Devis {
         horsTaxes: false,
       },
       {
+        /*
+         * Le BODACC suit le ressort, non le département.
+         *
+         * C'est le greffe qui le facture, et son tarif majoré paie la radiation d'un
+         * registre et l'immatriculation à un autre : un déménagement d'un département à
+         * l'autre sans changer de tribunal n'en relève pas, quand bien même il demande
+         * deux annonces légales.
+         */
         libelle: "Publication au BODACC",
         precision: horsRessort ? "Tarif du transfert hors ressort" : undefined,
         centimes: horsRessort ? BODACC_HORS_RESSORT_TTC_CENTIMES : BODACC_TTC_CENTIMES,
