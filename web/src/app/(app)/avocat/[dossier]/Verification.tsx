@@ -21,6 +21,7 @@ export function Verification({
   dossier,
   decidee,
   partie = "principale",
+  surFin,
 }: {
   documentId: number;
   /** Le dossier, pour joindre une pièce d'exemple au fil de la demande. */
@@ -35,6 +36,8 @@ export function Verification({
   decidee?: boolean;
   /** « principale » rend le geste qui avance, « repli » celui qui revient en arrière. */
   partie?: "principale" | "repli";
+  /** Le geste a fini : le menu qui le porte peut se refermer, son voile avec. */
+  surFin?: () => void;
 }) {
   const [refus, setRefus] = useState(false);
   const [motif, setMotif] = useState("");
@@ -76,6 +79,8 @@ export function Verification({
     setRefus(false);
     setMotif("");
     setPiece(null);
+    /* Et le menu qui portait le geste se referme avec, son voile compris. */
+    surFin?.();
   }
 
   if (decidee) {
@@ -83,7 +88,10 @@ export function Verification({
       <button
         type="button"
         className={styles.decisionSecondaire}
-        onClick={() => statuer("reprendre")}
+        onClick={() => {
+          surFin?.();
+          statuer("reprendre");
+        }}
         disabled={enCours}
       >
         {enCours ? "…" : "Revenir sur la validation"}

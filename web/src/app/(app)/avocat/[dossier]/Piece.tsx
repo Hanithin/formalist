@@ -103,6 +103,7 @@ export function Piece({
     piece.statut === "uploaded" ||
     piece.statut === "verified";
   const [versionsOuvertes, setVersionsOuvertes] = useState(false);
+  const [menuOuvert, setMenuOuvert] = useState(false);
 
   const brut = etatDocument({
     name: piece.nom,
@@ -316,7 +317,7 @@ export function Piece({
           demander une autre pièce passent derrière les trois points.
         */}
         {gestesDeRepli && (
-          <MenuGestes>
+          <MenuGestes ouvert={menuOuvert} surChangement={setMenuOuvert}>
             {/*
               Un acte remis se reprend : la coquille se voit parfois après coup, et il
               quitte alors l'espace du client pour redevenir un projet.
@@ -326,12 +327,22 @@ export function Piece({
             )}
 
             {piece.statut === "uploaded" && (
-              <Verification documentId={piece.id} dossier={dossier} partie="repli" />
+              <Verification
+                documentId={piece.id}
+                dossier={dossier}
+                partie="repli"
+                surFin={() => setMenuOuvert(false)}
+              />
             )}
 
             {/* Une validation se reprend : on se trompe de bouton, ou de pièce. */}
             {piece.statut === "verified" && (
-              <Verification documentId={piece.id} dossier={dossier} decidee />
+              <Verification
+                documentId={piece.id}
+                dossier={dossier}
+                decidee
+                surFin={() => setMenuOuvert(false)}
+              />
             )}
           </MenuGestes>
         )}

@@ -614,8 +614,18 @@ export default async function DossierAvocat({
                   </Volet>
                 </>
               }
+              /*
+                La clé sur une section qui n'est pourtant pas dans une liste.
+                
+                React la réclamait : « Each child in a list should have a unique key
+                prop. Check the render method of Travail. It was passed a child from
+                DossierAvocat. » Il valide les clés des éléments qu'il reçoit par cette
+                voie, et la console du cabinet portait l'avertissement à chaque ouverture
+                de dossier. La clé est stable et sans effet sur le rendu ; elle rend la
+                console au reste.
+              */
               apresLaTacheDuMoment={
-          <section id="documents" className={styles.sectionDuDossier}>
+          <section key="documents" id="documents" className={styles.sectionDuDossier}>
               {/*
                 Un seul titre pour une seule liste.
 

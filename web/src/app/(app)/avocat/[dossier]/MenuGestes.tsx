@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import styles from "../Avocat.module.css";
 
 /**
@@ -17,15 +16,29 @@ import styles from "../Avocat.module.css";
  * une autre pièce - passe ici. On ne cache jamais le geste courant, seulement celui
  * qu'on fait une fois sur vingt.
  */
-export function MenuGestes({ children }: { children: React.ReactNode }) {
-  const [ouvert, setOuvert] = useState(false);
-
+export function MenuGestes({
+  ouvert,
+  surChangement,
+  children,
+}: {
+  /**
+   * L'état vit chez l'appelant.
+   *
+   * Certains gestes ouvrent une fenêtre - « Demander une autre pièce » - et cette
+   * fenêtre est rendue par le geste, donc à l'intérieur du menu : le refermer au clic la
+   * démontait aussitôt, et ne pas le refermer laissait son voile par-dessus la page une
+   * fois la fenêtre close. C'est le geste qui sait quand il a fini, et il le dit.
+   */
+  ouvert: boolean;
+  surChangement: (ouvert: boolean) => void;
+  children: React.ReactNode;
+}) {
   return (
     <span className={styles.menuGestes}>
       <button
         type="button"
         className={styles.menuGestesBouton}
-        onClick={() => setOuvert((montre) => !montre)}
+        onClick={() => surChangement(!ouvert)}
         aria-expanded={ouvert}
         aria-haspopup="menu"
         aria-label="Autres gestes sur ce document"
@@ -40,7 +53,11 @@ export function MenuGestes({ children }: { children: React.ReactNode }) {
       {ouvert && (
         <>
           {/* Sans teinte : il ferme le menu au clic dehors, il n'assombrit pas la page. */}
-          <div className={styles.menuVoile} onClick={() => setOuvert(false)} aria-hidden="true" />
+          <div
+            className={styles.menuVoile}
+            onClick={() => surChangement(false)}
+            aria-hidden="true"
+          />
 
           {/*
             Le menu ne se referme pas au clic sur un de ses gestes.
