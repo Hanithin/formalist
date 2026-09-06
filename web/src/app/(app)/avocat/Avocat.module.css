@@ -1439,6 +1439,70 @@
   white-space: nowrap;
 }
 
+/*
+ * Une place à remplir, non une action de plus.
+ *
+ * Le pointillé dit qu'il manque quelque chose à cet endroit : c'est la forme que
+ * l'espace du client emploie pour ajouter une pièce, et elle se lit sans qu'on
+ * l'explique.
+ */
+.depotPointille {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed #d4d4d8;
+  border-radius: 12px;
+  background: none;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.depotPointille:hover {
+  border-color: #a1a1aa;
+  background: #fafafa;
+}
+
+.depotPointille:focus-within {
+  border-color: #18181b;
+}
+
+.depotPointilleSigne {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #f5f5f5;
+  color: #52525b;
+}
+
+.depotPointilleSigne svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+.depotPointilleTexte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.depotPointilleNote {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #a1a1aa;
+}
+
 /* L'attestation de parution, sous les avis qu'on vient de copier. */
 .avisParution {
   display: flex;

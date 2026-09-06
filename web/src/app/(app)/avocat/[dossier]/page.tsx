@@ -29,6 +29,7 @@ import { publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { aRelire } from "@/domain/document/publication";
 import { Piece, type PieceAffichee } from "./Piece";
+import { DepotParution } from "./DepotParution";
 import { Parcours } from "@/app/(app)/creation/Parcours";
 import { ETAPES as ETAPES_DE_CREATION } from "@/domain/formalite/parcours";
 import type { Brouillon } from "@/domain/formalite/parcours";
@@ -419,6 +420,15 @@ export default async function DossierAvocat({
   /* Des statuts à jour ont déjà été produits : la ligne d'origine le dit, et son bouton. */
   const statutsRepris = documents.some((d) => d.name === TITRE_STATUTS_A_JOUR);
 
+  /*
+   * L'avis paraît-il pour ce dossier, et sa preuve est-elle déjà là ?
+   *
+   * Un dépôt de comptes ne s'annonce pas : lui proposer de déposer une attestation de
+   * parution offrirait une place à remplir qui ne se remplira jamais.
+   */
+  const sAnnonce = type === "creation" || type === "modification" || type === "fermeture";
+  const parutionDeposee = documents.some((d) => d.name === "Attestation de parution");
+
   const statutsAProduire =
     type === "modification" &&
     statutsAMettreAJour(codes) &&
@@ -678,6 +688,16 @@ export default async function DossierAvocat({
             pièces ne les montrait donc pas, et rien n'y disait qu'un document manquait
             encore au dossier ni où on le fabrique. La ligne dit l'un et mène à l'autre.
           */}
+          {/*
+            L'attestation de parution se dépose parmi les documents.
+
+            Elle n'a de place nulle part ailleurs : les deux routes de dépôt sont les
+            pièces attendues du client et le coffre personnel. Le volet de l'annonce la
+            reçoit aussi, là où l'on vient de copier le texte publié - mais c'est ici
+            qu'on la cherche, avec le reste du dossier.
+          */}
+          {sAnnonce && !parutionDeposee && <DepotParution dossier={dossier.id} />}
+
           {statutsAProduire && (
             <div className={styles.docCard}>
               <div className={styles.docIcon}>

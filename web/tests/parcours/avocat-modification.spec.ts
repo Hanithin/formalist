@@ -620,6 +620,13 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
   const dossier = await dossierDeModification();
   await page.goto("/avocat/" + dossier);
 
+  /*
+   * Elle se dépose aussi depuis la liste des documents, en pointillé : c'est là qu'on
+   * la cherche, avec le reste du dossier, et une place à remplir s'y lit sans qu'on
+   * l'explique.
+   */
+  await expect(page.getByText("Déposer l'attestation de parution")).toBeVisible();
+
   await page.getByRole("button", { name: "Annonce légale" }).click();
 
   const volet = page.getByRole("dialog");
@@ -645,6 +652,10 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
     where: { formalite_id: dossier, name: "Attestation de parution" },
   });
   expect(depose).toBe(1);
+
+  /* Déposée, la place à remplir disparaît : il n'y en a qu'une à fournir. */
+  await page.goto("/avocat/" + dossier);
+  await expect(page.getByText("Déposer l'attestation de parution")).toHaveCount(0);
 });
 
 test("les statuts à jour se valident, et partent chez le client", async ({ page, request }) => {
