@@ -265,7 +265,8 @@ test("les deux avis sont rédigés, et ils diffèrent", async ({ page }) => {
   await page.goto("/avocat/" + dossier);
 
   /* L'avis tient derrière son bouton : le compte est dans le titre de la fenêtre. */
-  await page.getByRole("button", { name: "Annonce légale" }).click();
+  /* Deux boutons l'ouvrent : celui de la barre, et celui de la ligne de parution. */
+  await page.getByRole("button", { name: "Annonce légale" }).first().click();
   const avis = page.getByRole("dialog", { name: /2 avis à publier/ });
   await expect(avis).toBeVisible();
 
@@ -288,7 +289,8 @@ test("la publication se déclare, et le suivi du client avance", async ({ page }
   const dossier = await dossierDeModification("5c");
   await page.goto("/avocat/" + dossier);
 
-  await page.getByRole("button", { name: "Annonce légale" }).click();
+  /* Deux boutons l'ouvrent : celui de la barre, et celui de la ligne de parution. */
+  await page.getByRole("button", { name: "Annonce légale" }).first().click();
   await page
     .getByRole("dialog", { name: /avis à publier/ })
     .getByRole("button", { name: "Marquer comme publiés" })
@@ -479,7 +481,7 @@ test("un dossier de création ne montre pas de statuts à retoucher", async ({ p
   await expect(page.locator("#statuts")).toHaveCount(0);
 
   /* L'annonce, elle, concerne bien une création : la constitution s'annonce. */
-  await expect(page.getByRole("button", { name: "Annonce légale" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Annonce légale" }).first()).toBeVisible();
 });
 
 test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {
@@ -627,7 +629,17 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
    */
   await expect(page.getByText("Déposer l'attestation de parution")).toBeVisible();
 
-  await page.getByRole("button", { name: "Annonce légale" }).click();
+  /*
+   * Et le texte à publier s'ouvre depuis cette même ligne.
+   *
+   * On ne dépose pas une attestation sans avoir publié : le bouton était dans la barre
+   * du dossier, tout en haut, et il fallait savoir l'y chercher. Les deux gestes de
+   * l'annonce - lire ce qu'on publie, remettre la preuve - tiennent sur la même ligne.
+   *
+   * Le bouton est frère de la zone de dépôt, non son enfant : posé dans le label, il
+   * aurait ouvert le sélecteur de fichiers du système au lieu du volet.
+   */
+  await page.getByRole("button", { name: "Annonce légale" }).last().click();
 
   const volet = page.getByRole("dialog");
   /* Un transfert hors ressort fait paraître deux avis : on vise le premier. */
@@ -653,9 +665,15 @@ test("l'attestation de parution se dépose là où l'on copie l'avis", async ({ 
   });
   expect(depose).toBe(1);
 
-  /* Déposée, la place à remplir disparaît : il n'y en a qu'une à fournir. */
+  /*
+   * Déposée, la ligne reste et change d'état : elle emportait sinon le volet de l'avis
+   * avec elle, refermant d'un coup la fenêtre d'où l'on venait de déposer - et le texte
+   * publié, qu'on relit après coup, n'aurait plus eu de chemin depuis cet endroit.
+   */
   await page.goto("/avocat/" + dossier);
   await expect(page.getByText("Déposer l'attestation de parution")).toHaveCount(0);
+  await expect(page.getByText("Attestation de parution déposée")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Annonce légale" })).toHaveCount(2);
 });
 
 test("les statuts à jour se valident, et partent chez le client", async ({ page, request }) => {

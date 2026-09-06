@@ -696,7 +696,27 @@ export default async function DossierAvocat({
             reçoit aussi, là où l'on vient de copier le texte publié - mais c'est ici
             qu'on la cherche, avec le reste du dossier.
           */}
-          {sAnnonce && !parutionDeposee && <DepotParution dossier={dossier.id} />}
+          {sAnnonce && (
+            <DepotParution
+              dossier={dossier.id}
+              deposee={parutionDeposee}
+              avis={
+                avisAPublier > 0 ? (
+                  <Volet
+                    libelle="Annonce légale"
+                    titre={
+                      avisAPublier === 1
+                        ? "L'avis à publier"
+                        : "Les " + avisAPublier + " avis à publier"
+                    }
+                    large
+                  >
+                    <Annonce dossier={dossier.id} route={routeDeLAnnonce} />
+                  </Volet>
+                ) : null
+              }
+            />
+          )}
 
           {statutsAProduire && (
             <div className={styles.docCard}>

@@ -781,7 +781,8 @@ test.describe("l'avis de constitution", () => {
      * L'avis tient derrière son bouton : on le publie une fois, et son texte en toutes
      * lettres s'interposait en permanence entre l'avocat et les actes qu'il vient lire.
      */
-    await page.getByRole("button", { name: "Annonce légale" }).click();
+    /* Deux boutons l'ouvrent : celui de la barre, et celui de la ligne de parution. */
+  await page.getByRole("button", { name: "Annonce légale" }).first().click();
     const avis = page.getByRole("dialog", { name: /avis à publier/ });
     /* Le texte est composé depuis le dossier : il n'y a qu'à le copier. */
     await expect(avis.getByRole("button", { name: "Copier le texte" })).toBeVisible();
@@ -805,7 +806,8 @@ test.describe("l'avis de constitution", () => {
     });
 
     await page.goto("/avocat/" + dossier.id);
-    await page.getByRole("button", { name: "Annonce légale" }).click();
+    /* Deux boutons l'ouvrent : celui de la barre, et celui de la ligne de parution. */
+  await page.getByRole("button", { name: "Annonce légale" }).first().click();
     await expect(
       page
         .getByRole("dialog", { name: /avis à publier/ })

@@ -1451,7 +1451,7 @@
   align-items: center;
   gap: 14px;
   margin: 0;
-  padding: 14px 16px;
+  padding: 10px 12px 10px 16px;
   border: 1px dashed #d4d4d8;
   border-radius: 12px;
   background: none;
@@ -1466,6 +1466,39 @@
 
 .depotPointille:focus-within {
   border-color: #18181b;
+}
+
+/* Déposée, la place n'est plus à remplir : le pointillé cède à un trait plein. */
+.depotFait {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.depotFait .depotPointilleZone {
+  cursor: default;
+}
+
+.depotFait .depotPointilleSigne {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+/* La zone prend toute la place que le volet ne prend pas : c'est elle qu'on vise. */
+.depotPointilleZone {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 0;
+  cursor: pointer;
 }
 
 .depotPointilleSigne {

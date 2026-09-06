@@ -13,7 +13,31 @@ import styles from "../Avocat.module.css";
  * cherche, avec les autres pièces du dossier, et une place en pointillé se lit comme
  * une place à remplir plutôt que comme une action de plus.
  */
-export function DepotParution({ dossier }: { dossier: number }) {
+export function DepotParution({
+  dossier,
+  deposee,
+  avis,
+}: {
+  dossier: number;
+  /**
+   * L'attestation est-elle déjà au dossier ?
+   *
+   * La ligne disparaissait une fois déposée - et emportait le volet de l'avis avec
+   * elle, refermant d'un coup la fenêtre d'où l'on venait justement de déposer. Elle
+   * reste, et dit ce qu'elle porte : le texte publié se relit après coup, et c'est ici
+   * qu'on l'a lu la première fois.
+   */
+  deposee?: boolean;
+  /**
+   * Le volet de l'avis, posé à droite de la place à remplir.
+   *
+   * On ne dépose pas une attestation de parution sans avoir d'abord publié : le texte à
+   * porter au journal se lisait derrière un bouton de la barre du dossier, tout en haut,
+   * et il fallait savoir l'y chercher. Les deux gestes de l'annonce - lire ce qu'on
+   * publie, remettre la preuve - tiennent sur la même ligne.
+   */
+  avis?: React.ReactNode;
+}) {
   const [refus, setRefus] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
@@ -39,7 +63,35 @@ export function DepotParution({ dossier }: { dossier: number }) {
 
   return (
     <>
-      <label className={styles.depotPointille}>
+      {/*
+        Le volet est frère de la zone, non son enfant : un bouton posé dans un label en
+        déclenche le champ de fichier, et cliquer « Annonce légale » aurait ouvert le
+        sélecteur du système.
+      */}
+      <div className={deposee ? styles.depotFait : styles.depotPointille}>
+      {deposee ? (
+        <p className={styles.depotPointilleZone}>
+          <span className={styles.depotPointilleSigne} aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          <span className={styles.depotPointilleTexte}>
+            Attestation de parution déposée
+            <span className={styles.depotPointilleNote}>
+              Elle part au guichet et figure dans les documents du client.
+            </span>
+          </span>
+        </p>
+      ) : (
+      <label className={styles.depotPointilleZone}>
         <span className={styles.depotPointilleSigne} aria-hidden="true">
           <svg
             viewBox="0 0 24 24"
@@ -75,6 +127,10 @@ export function DepotParution({ dossier }: { dossier: number }) {
           }}
         />
       </label>
+      )}
+
+        {avis}
+      </div>
 
       {refus && (
         <p className={styles.decisionRefus} role="alert">
