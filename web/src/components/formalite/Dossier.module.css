@@ -448,11 +448,19 @@
 
 /* ---------- La conversation ---------- */
 
+/*
+ * La carte des échanges, à la mesure de ce qu'elle porte.
+ *
+ * Elle réservait trois cent quatre-vingts pixels de haut pour une phrase centrée
+ * disant qu'il ne s'était rien passé : sur un dossier qu'on vient de confier - le cas
+ * de tous les dossiers, au début - l'écran s'ouvrait sur un grand vide. Elle montre le
+ * dernier mot et mène à la conversation ; sa hauteur suit.
+ */
 .fil {
   display: flex;
   flex-direction: column;
-  min-height: 380px;
-  padding: 16px 18px 14px;
+  gap: 12px;
+  padding: 18px 20px;
   border: 1px solid #e8e8ea;
   border-radius: 16px;
   background: #fff;
@@ -577,11 +585,73 @@
 }
 
 .filVide {
-  margin: auto 0;
-  padding: 20px 12px;
-  text-align: center;
+  margin: 0;
   font-size: 13.5px;
   line-height: 1.6;
+  color: #a1a1aa;
+  letter-spacing: 0;
+}
+
+/*
+ * Le dernier message, cité.
+ *
+ * Un bloc de citation, non une bulle : il n'y a plus de conversation ici pour qu'une
+ * bulle ait un sens - un côté, un vis-à-vis, une suite. C'est un mot rapporté, avec
+ * qui l'a écrit et quand.
+ */
+.filDernier {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.filDernierQui {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.filDernierQui time {
+  font-weight: 400;
+  color: #a1a1aa;
+}
+
+.filDernierTexte {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #3f3f46;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+}
+
+/* La conversation entière vit dans la messagerie : on n'en garde qu'un chemin. */
+.filConversation {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  align-self: flex-start;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #18181b;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+.filConversation:hover {
+  text-decoration: underline;
+}
+
+.filConversationCompte {
+  font-weight: 400;
   color: #a1a1aa;
 }
 

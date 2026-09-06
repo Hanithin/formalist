@@ -67,52 +67,58 @@ export function FilDuDossier({
     });
   }
 
+  /* Le dernier message reçu ou envoyé : c'est lui qu'on vient voir. */
+  const dernier = messages[messages.length - 1];
+
   return (
     <section className={styles.fil} aria-label="Conversation avec le cabinet">
-      {messages.length === 0 ? (
-        <p className={styles.filVide}>
-          Rien n&apos;a encore été échangé sur ce dossier. Ce que vous écrivez ici arrive
-          chez l&apos;avocat qui s&apos;en occupe, et dans votre messagerie.
-        </p>
+      {/*
+        Le dernier mot, non la conversation entière.
+        
+        Le fil s'ouvrait sur trois cent quatre-vingts pixels de haut, vides le plus
+        souvent, pour une phrase centrée disant qu'il ne s'était rien passé. Un dossier
+        confié à un avocat ne se relit pas ici : on y vient pour voir s'il a écrit, et
+        pour répondre. La messagerie garde l'échange en entier, et le lien y mène.
+        
+        C'est la forme que la création emploie depuis toujours, sur le même écran.
+      */}
+      {dernier ? (
+        <blockquote className={styles.filDernier}>
+          <span className={styles.filDernierQui}>
+            {dernier.expediteurId === moi ? "Vous" : dernier.expediteur}
+            <time>{dernier.quand}</time>
+          </span>
+          <span className={styles.filDernierTexte}>
+            {dernier.contenu ||
+              (dernier.fichier ? "Une pièce jointe vous attend." : "")}
+          </span>
+
+          {dernier.fichier && (
+            <a
+              className={styles.filPiece}
+              href={"/api/fichier?nom=" + encodeURIComponent(dernier.fichier)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Trombone />
+              La pièce jointe
+            </a>
+          )}
+        </blockquote>
       ) : (
-        <ol className={styles.filMessages}>
-          {messages.map((message, rang) => {
-            const deNous = message.expediteurId === moi;
-            /* Le nom ne se répète pas d'une bulle à l'autre du même auteur. */
-            const nouvelAuteur = messages[rang - 1]?.expediteurId !== message.expediteurId;
+        <p className={styles.filVide}>
+          Une question, une précision sur votre dossier ? Écrivez à l&apos;avocat qui
+          s&apos;en occupe : vous pouvez joindre un document, et tout reste au dossier.
+        </p>
+      )}
 
-            return (
-              <li
-                key={message.id}
-                className={deNous ? `${styles.filLigne} ${styles.filDeNous}` : styles.filLigne}
-              >
-                {nouvelAuteur && (
-                  <span className={styles.filAuteur}>
-                    {deNous ? "Vous" : message.expediteur}
-                  </span>
-                )}
-
-                <div className={styles.filBulle}>
-                  <p className={styles.filTexte}>{message.contenu}</p>
-
-                  {message.fichier && (
-                    <a
-                      className={styles.filPiece}
-                      href={"/api/fichier?nom=" + encodeURIComponent(message.fichier)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <Trombone />
-                      La pièce jointe
-                    </a>
-                  )}
-                </div>
-
-                <span className={styles.filQuand}>{message.quand}</span>
-              </li>
-            );
-          })}
-        </ol>
+      {messages.length > 1 && (
+        <a className={styles.filConversation} href={"/messagerie?dossier=" + dossier}>
+          Voir la conversation
+          <span className={styles.filConversationCompte}>
+            {messages.length} message{messages.length > 1 ? "s" : ""}
+          </span>
+        </a>
       )}
 
       <div className={styles.filEcrire}>
