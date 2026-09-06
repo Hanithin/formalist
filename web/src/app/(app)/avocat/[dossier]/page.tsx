@@ -5,7 +5,6 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { dossierPourAvocat, versionsDuDossier } from "@/infrastructure/db/depots/avocat";
 import { formulaireDuDossier } from "@/infrastructure/db/depots/correction";
 import { messagesDuDossier } from "@/infrastructure/db/depots/messages";
-import { etatCabinet } from "@/domain/formalite/avocat";
 import { estPropose } from "@/domain/acces/regles";
 import { etatDesPieces } from "@/domain/formalite/pieces";
 import { piecesAttenduesDuDossier } from "@/infrastructure/documents/pieces-attendues";
@@ -151,14 +150,6 @@ export default async function DossierAvocat({
   });
 
   const monDossier = dossier.assigned_avocat_id === utilisateur.id;
-
-  const etat = etatCabinet({
-    status: dossier.status,
-    phase: dossier.phase ?? 1,
-    sousPhase: dossier.business_sub_phase,
-    creePar: dossier.created_by_avocat ? "avocat" : "client",
-    libre,
-  });
 
   /*
    * Ce que le client a déposé, non ce que le cabinet dépose.
@@ -493,15 +484,18 @@ export default async function DossierAvocat({
               dépôt de comptes, une modification ou une fermeture avant d'avoir lu les
               tâches.
             */}
-            <span className={styles.detailBadge}>{libelleDuType(dossier.type)}</span>
-            {/* Le vert du dossier fini : l'ambre dit « en cours » partout ailleurs. */}
-            <span
-              className={`${styles.detailBadge} ${styles.phase} ${
-                etat.teinte === "green" ? styles.phaseVerte : ""
-              }`}
-            >
-              {etat.libelle}
+            <span className={`${styles.detailBadge} ${styles.badgeFormalite}`}>
+              {libelleDuType(dossier.type)}
             </span>
+            {/*
+              Où l'on se trouve, non où en est le dossier.
+
+              L'état du travail - « Révision », « Terminé » - se lisait ici et se relit
+              trois lignes plus bas, dans la barre qui compte les tâches et nomme la
+              prochaine. Ce que le titre ne disait pas, c'est de quel côté du dossier on
+              l'ouvre : le client a le même écran, sous un autre toit.
+            */}
+            <span className={`${styles.detailBadge} ${styles.badgeEspace}`}>Espace avocat</span>
           </div>
           {/*
             La forme et l'état du dossier ont quitté la barre.

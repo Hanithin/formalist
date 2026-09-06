@@ -1109,11 +1109,23 @@ test("la barre du dossier est alignée, et le retour n'est pas souligné", async
   const souligne = await retour.evaluate((n) => getComputedStyle(n).textDecorationLine);
   expect(souligne).toBe("none");
 
-  // Les trois badges ont la même hauteur : c'est la couleur qui les distingue, non la forme.
+  // Les badges ont la même hauteur : c'est la couleur qui les distingue, non la forme.
   const hauteurs = await page
     .locator("[class*='detailBadges'] > span")
     .evaluateAll((noeuds) => noeuds.map((n) => Math.round(n.getBoundingClientRect().height)));
   expect(new Set(hauteurs).size).toBe(1);
+
+  /*
+   * Ils disent la formalité et le côté d'où on l'ouvre, non l'état du travail.
+   *
+   * « Révision » se relisait trois lignes plus bas, dans la barre qui compte les tâches
+   * et nomme la prochaine ; ce que le titre ne disait pas, c'est que le client a le même
+   * écran sous un autre toit.
+   */
+  await expect(page.locator("[class*='detailBadges'] > span")).toHaveText([
+    "Modification",
+    "Espace avocat",
+  ]);
 });
 
 /** Des statuts qui nomment la société sur deux pages, comme tout acte réel. */

@@ -1095,6 +1095,26 @@
  * meme couleur qu'un dossier qui attend, et l'ambre veut dire « en cours » partout
  * ailleurs dans l'application.
  */
+/*
+ * La formalité en jaune, l'espace en violet.
+ *
+ * Les deux pastilles du titre ne disent pas la même sorte de chose : l'une nomme la
+ * formalité qu'on tient - modification, dépôt, fermeture - l'autre le côté d'où on
+ * l'ouvre. Deux blancs identiques les faisaient lire comme une seule information
+ * coupée en deux.
+ */
+.detailBadge.badgeFormalite {
+  border-color: #fde68a;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.detailBadge.badgeEspace {
+  border-color: #ddd6fe;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
 .detailBadge.phaseVerte {
   border-color: #bbf7d0;
   background: #dcfce7;
@@ -2242,6 +2262,7 @@
 }
 
 /* Un état en cours : le point le dit avant qu'on ait lu le mot. */
+.topbarTitre .detailBadge.badgeEspace::before,
 .topbarTitre .detailBadge.phase::before {
   content: "";
   width: 6px;
