@@ -90,6 +90,13 @@ export function Piece({
    */
   repris?: boolean;
 }) {
+  /*
+   * Elles ne se déplient que si l'acte en a : une mention « 0 version » sur chaque
+   * document n'apprendrait rien, et il y en a rarement.
+   */
+  const versions = piece.versions ?? [];
+  const [versionsOuvertes, setVersionsOuvertes] = useState(false);
+
   const brut = etatDocument({
     name: piece.nom,
     status: piece.statut,
@@ -170,6 +177,63 @@ export function Piece({
                 : quand(piece.creeLe)}
             </span>
           )}
+
+          {/*
+            L'historique tient sur la rangée, il ne lui ajoute plus une ligne.
+
+            « 4 versions antérieures » en toutes lettres y prenait la place du nom, d'où
+            son renvoi dessous ; réduit à une horloge et à un nombre, il rentre là où il
+            appartient - à côté de l'état, qui dit aussi ce qu'est devenu le document.
+          */}
+          {versions.length > 0 && (
+            <button
+              type="button"
+              className={styles.actesVersionsTete}
+              onClick={() => setVersionsOuvertes((ouvert) => !ouvert)}
+              aria-expanded={versionsOuvertes}
+              title={
+                versions.length +
+                " version" +
+                (versions.length > 1 ? "s" : "") +
+                " antérieure" +
+                (versions.length > 1 ? "s" : "")
+              }
+            >
+              {/* L'horloge dit de quoi il s'agit avant qu'on ait lu : c'est du passé. */}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                <polyline points="3 3 3 8 8 8" />
+                <polyline points="12 7 12 12 15 14" />
+              </svg>
+
+              <span className={styles.actesVersionsCompte}>{versions.length}</span>
+
+              <svg
+                className={
+                  versionsOuvertes
+                    ? `${styles.actesVersionsChevron} ${styles.actesVersionsChevronOuvert}`
+                    : styles.actesVersionsChevron
+                }
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="9 6 15 12 9 18" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -241,12 +305,8 @@ export function Piece({
 
 
 
-      {/*
-        Elles ne se déplient que si l'acte en a : une mention « 0 version » sur chaque
-        document n'apprendrait rien, et il y en a rarement.
-      */}
-      {piece.versions && piece.versions.length > 0 && (
-        <Versions versions={piece.versions} dossier={dossier} />
+      {versionsOuvertes && versions.length > 0 && (
+        <ListeDesVersions versions={versions} dossier={dossier} />
       )}
     </div>
   );
@@ -321,7 +381,13 @@ export function FenetreDesPieces({
  * On ne les regarde que lorsqu'on se demande ce qui a changé, ou qu'on veut revenir
  * dessus : elles n'ont pas à occuper la ligne le reste du temps.
  */
-function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: number }) {
+function ListeDesVersions({
+  versions,
+  dossier,
+}: {
+  versions: VersionDeLActe[];
+  dossier: number;
+}) {
   const [refus, setRefus] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
@@ -344,50 +410,7 @@ function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: 
   }
 
   return (
-    <details className={styles.actesVersions}>
-      <summary
-        className={styles.actesVersionsTete}
-        title={versions.length + " version" + (versions.length > 1 ? "s" : "") + " antérieure" + (versions.length > 1 ? "s" : "")}
-      >
-        {/* L'horloge dit de quoi il s'agit avant qu'on ait lu : c'est du passé. */}
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-          <polyline points="3 3 3 8 8 8" />
-          <polyline points="12 7 12 12 15 14" />
-        </svg>
-        {/*
-          Le compte, non la phrase.
-
-          « 4 versions antérieures » écrit en toutes lettres sous chaque acte reproduit
-          pesait autant que ce qu'il commente, sur une ligne qu'on ne lit qu'en se
-          demandant ce qui a changé. L'horloge dit de quoi il s'agit, le nombre dit
-          combien, et l'intitulé complet reste au survol et pour les lecteurs d'écran.
-        */}
-        <span className={styles.actesVersionsCompte}>{versions.length}</span>
-
-        {/* Le chevron dit que la mention s'ouvre : sans lui, on la prend pour une étiquette. */}
-        <svg
-          className={styles.actesVersionsChevron}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="9 6 15 12 9 18" />
-        </svg>
-      </summary>
-
+    <div className={styles.actesVersions}>
       {refus && (
         <p className={styles.decisionRefus} role="alert">
           {refus}
@@ -417,6 +440,6 @@ function Versions({ versions, dossier }: { versions: VersionDeLActe[]; dossier: 
           </li>
         ))}
       </ul>
-    </details>
+    </div>
   );
 }

@@ -220,7 +220,16 @@ export function ReprendreLActe({ document, dossier }: { document: number; dossie
         onClick={reprendre}
         disabled={enCours}
       >
-        {enCours ? "…" : "Reprendre pour corriger"}
+        {/*
+          « Reprendre », non « Reprendre pour corriger ».
+          
+          Le libellé long tenait sur une ligne qui porte déjà le nom de l'acte, son état
+          et, sur les actes reproduits, le compte de leurs versions : c'est le nom qui
+          cédait, et « Statuts mis à jour » tombait à « Statuts mis… ». À côté de
+          « Remis au client », « Reprendre » dit ce qu'on fait - on le retire de chez le
+          client pour y revenir.
+        */}
+        {enCours ? "…" : "Reprendre"}
       </button>
 
       {refus && (

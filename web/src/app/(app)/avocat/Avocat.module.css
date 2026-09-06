@@ -3907,19 +3907,23 @@ button.ligneCorps:disabled {
  * on ne la regarde qu'en se demandant ce qui a changé. C'est une mention, non une
  * étiquette, et elle s'aligne sur le nom qu'elle commente.
  */
+/* Le tiroir, sous la rangée : à l'aplomb du nom, trente-quatre pixels d'icône et douze d'écart. */
 .actesVersions {
-  /* Trente-quatre pixels d'icône et les douze de la rangée : l'aplomb du nom. */
-  margin-left: 46px;
+  margin: 8px 0 0 46px;
 }
 
+/* Sur la rangée, à côté de l'état : un bouton nu, qui ne pèse que son horloge. */
 .actesVersionsTete {
   display: inline-flex;
   align-items: center;
+  flex: none;
   gap: 5px;
+  padding: 0;
+  border: none;
+  background: none;
   font-size: 12px;
   color: #c4c4cc;
   cursor: pointer;
-  list-style: none;
   transition: color 0.12s;
 }
 
@@ -3944,7 +3948,7 @@ button.ligneCorps:disabled {
   transition: transform 0.15s;
 }
 
-.actesVersions[open] .actesVersionsChevron {
+.actesVersionsChevronOuvert {
   transform: rotate(90deg);
 }
 
