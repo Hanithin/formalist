@@ -1,5 +1,6 @@
 import { journal } from "@/lib/journal";
 import { invite, nettoyerProposition } from "@/domain/formalite/objet-social";
+import { texteDeLaReponse } from "./reponse";
 
 /**
  * Rédaction assistée.
@@ -8,7 +9,19 @@ import { invite, nettoyerProposition } from "@/domain/formalite/objet-social";
  * répondre. Ce module traduit ses aléas en une erreur claire, et ne laisse jamais
  * remonter sa réponse brute - elle vient d'ailleurs.
  */
-const MODELE = "gemini-2.0-flash";
+/*
+ * L'alias, non une version figée.
+ *
+ * « gemini-2.0-flash » a été retiré par Google, et le service a répondu 404 : la
+ * rédaction assistée annonçait « momentanément indisponible » à chaque essai, sur une
+ * panne qui ne passerait jamais. Une version épinglée se périme sans prévenir, et rien
+ * ici ne le verrait avant qu'un client ne bute dessus.
+ *
+ * L'alias suit le modèle courant de la famille. Il peut changer de comportement d'un
+ * jour à l'autre - c'est le prix - mais l'objet social est relu et corrigé par l'avocat
+ * avant de figurer dans un acte, et la proposition est annoncée comme telle à l'écran.
+ */
+const MODELE = "gemini-flash-latest";
 const DELAI_MS = 20_000;
 
 export class RedactionIndisponible extends Error {
@@ -59,11 +72,9 @@ export async function redigerObjetSocial(description: string): Promise<string> {
     throw new RedactionIndisponible(undefined, e);
   }
 
-  const texte = (
-    donnees as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-  )?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const texte = texteDeLaReponse(donnees);
 
-  if (typeof texte !== "string" || !texte.trim()) {
+  if (!texte.trim()) {
     throw new RedactionIndisponible("Aucune proposition n'a pu être rédigée");
   }
 

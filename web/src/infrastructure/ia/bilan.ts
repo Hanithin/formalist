@@ -1,6 +1,7 @@
 import { journal } from "@/lib/journal";
 import { CHAMPS_DU_BILAN, type ChampDuBilan } from "@/domain/comptes/types";
 import { posteslus, type PosteTrouve } from "@/domain/comptes/extraction";
+import { texteDeLaReponse } from "./reponse";
 
 /**
  * Les chiffres d'une liasse, lus par repères puis complétés par le modèle.
@@ -19,7 +20,14 @@ import { posteslus, type PosteTrouve } from "@/domain/comptes/extraction";
  * dans le document » - c'est plus dangereux qu'un champ vide.
  */
 
-const MODELE = "gemini-2.0-flash";
+/*
+ * L'alias, non une version figée.
+ *
+ * « gemini-2.0-flash » a été retiré par Google, et le service répondait 404 : la lecture
+ * du bilan tombait à chaque essai, sur une panne qui ne passerait jamais. Une version
+ * épinglée se périme sans prévenir. Voir la même note dans `redaction.ts`.
+ */
+const MODELE = "gemini-flash-latest";
 const DELAI_MS = 25_000;
 /** Une liasse dépasse ce que le modèle lit d'un coup : on lui donne le début, qui porte le bilan. */
 const CARACTERES_MAXIMUM = 60_000;
@@ -104,10 +112,7 @@ async function demanderAuModele(
   }
 
   try {
-    const corps = (await reponse.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    };
-    const brut = corps.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const brut = texteDeLaReponse(await reponse.json());
     const lu = JSON.parse(brut) as Record<string, unknown>;
 
     /*
