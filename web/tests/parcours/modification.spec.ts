@@ -227,8 +227,9 @@ test("les modifications suivantes coûtent moins cher que la première", async (
   await page.goto("/modification?dossier=" + dossier + "&etape=2");
 
   await expect(page.getByText("Décidée dans la même assemblée")).toBeVisible();
-  await expect(page.getByText("129,00 € HT")).toBeVisible();
-  await expect(page.getByText("49,00 € HT")).toBeVisible();
+  /* Les centimes nuls ne s'écrivent pas : deux zéros que personne ne lit. */
+  await expect(page.getByText("129 € HT")).toBeVisible();
+  await expect(page.getByText("49 € HT", { exact: false }).first()).toBeVisible();
 });
 
 test("le fil d'étapes se lit en ligne, jamais en colonne", async ({ page, request }) => {

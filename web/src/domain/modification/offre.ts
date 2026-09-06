@@ -187,11 +187,20 @@ export function devis(contexte: ContexteDevis): Devis {
 }
 
 /** « 129,00 € » - le format d'un devis, où les centimes se lisent. */
+/**
+ * Un montant, sans les centimes quand il n'y en a pas.
+ *
+ * « 129,00 € HT » : deux zéros que personne ne lit, et qui donnent au prix l'air d'un
+ * devis de garagiste. Les autres écrans les omettaient déjà - l'auto-entrepreneur, la
+ * colonne d'une modification, le dépôt des comptes - et celui-ci était le seul à les
+ * poser. Un montant qui en a les garde : les frais de greffe font 302,21 €.
+ */
 export function montantLisible(centimes: number): string {
   return (centimes / 100).toLocaleString("fr-FR", {
     style: "currency",
     currency: "EUR",
-    minimumFractionDigits: 2,
+    minimumFractionDigits: centimes % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
   });
 }
 

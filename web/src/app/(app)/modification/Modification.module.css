@@ -822,13 +822,24 @@
   border-top: 1px solid var(--trait);
 }
 
-/* Elle occupe la gauche, que le bouton laissait vide. */
+/*
+ * Elle occupe la gauche, que le bouton laissait vide.
+ *
+ * Elle est la seule à pousser : deux marges automatiques dans la même rangée se
+ * partagent l'espace libre à parts égales, et « Retour » se retrouvait au milieu, à
+ * cent quatre-vingts pixels du compteur comme de « Continuer ». Les deux boutons de
+ * navigation vont ensemble, à droite.
+ */
 .actionsEtape {
   align-self: center;
   margin-right: auto;
   font-size: 12.5px;
   color: #a1a1aa;
   white-space: nowrap;
+}
+
+.actions > .principal {
+  margin-left: 0;
 }
 
 .actions button {
@@ -5215,6 +5226,29 @@
   line-height: 1.55;
   color: #71717a;
   text-wrap: pretty;
+}
+
+/*
+ * Le prix et ce qui le compose, dans une colonne.
+ *
+ * Les deux classes n'existaient pas dans cette feuille : le bloc du prix retombait donc
+ * en `div` pleine largeur, ce qui poussait les boutons à la ligne suivante et les posait
+ * sous le montant, à gauche, au lieu du bord opposé. Le montant et sa mention, tous deux
+ * en ligne, se collaient l'un à l'autre - « 129,00 € HTPuis 49,00 € HT par changement ».
+ */
+.entreePrix {
+  display: flex;
+  flex: 1 1 340px;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.entreeMontant {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
 }
 
 .entreeMention {

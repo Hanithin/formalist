@@ -142,14 +142,15 @@ test("l'entrée dit que la formalité est gratuite, et renvoie le tarif au réca
 
   await expect(page.getByText(/ni annonce légale, ni frais de greffe/)).toBeVisible();
   await expect(page.getByText(/tarif s'affiche au récapitulatif/)).toBeVisible();
-  await expect(page.getByText("79,00 €", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("79 €", { exact: false })).toHaveCount(0);
 });
 
 test("le récapitulatif porte le montant, avant tout règlement", async ({ page, request }) => {
   const { dossier } = await dossierRempli(request);
   await page.goto("/cessation?dossier=" + dossier + "&etape=3");
 
-  await expect(page.getByText("79,00 €", { exact: false }).first()).toBeVisible();
+  /* Un montant sans centimes ne les affiche pas : « 79 € », non « 79,00 € ». */
+  await expect(page.getByText("79 €", { exact: false }).first()).toBeVisible();
   await expect(page.getByText(/ni annonce légale, ni frais de greffe/)).toBeVisible();
 });
 

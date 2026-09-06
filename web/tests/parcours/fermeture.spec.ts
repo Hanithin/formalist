@@ -315,7 +315,8 @@ test("le devis distingue nos honoraires des frais réglementés", async ({ page,
   await page.goto("/fermeture?dossier=" + dossier + "&etape=4");
 
   await expect(page.getByText("Dissolution et liquidation amiable")).toBeVisible();
-  await expect(page.getByText("500,00 €", { exact: false }).first()).toBeVisible();
+  /* Un montant sans centimes ne les affiche pas : « 500 € », non « 500,00 € ». */
+  await expect(page.getByText("500 €", { exact: false }).first()).toBeVisible();
   await expect(page.getByText("Annonce légale de dissolution")).toBeVisible();
   await expect(page.getByText("Greffe - inscription de la dissolution")).toBeVisible();
   // La clôture est comprise : le client ne doit pas croire qu'il repaiera.
@@ -331,9 +332,9 @@ test("le solde de la liquidation se calcule et s'explique", async ({ page, reque
 
   // 60 000 - 30 000 - 2 000 = 28 000 d'actif net, dont 10 000 de capital : 18 000 de boni.
   await expect(page.getByText("Boni de liquidation")).toBeVisible();
-  await expect(page.getByText("18 000,00 €", { exact: false }).first()).toBeVisible();
+  await expect(page.getByText("18 000 €", { exact: false }).first()).toBeVisible();
   // 2,5 % de l'actif net partagé, non du seul boni.
-  await expect(page.getByText("700,00 €", { exact: false }).first()).toBeVisible();
+  await expect(page.getByText("700 €", { exact: false }).first()).toBeVisible();
   await expect(page.getByText("revenu distribué", { exact: false })).toBeVisible();
 });
 
