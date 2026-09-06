@@ -1,4 +1,9 @@
 import { describe, it, expect } from "vitest";
+import { execFile } from "node:child_process";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { appliquerLesRetouches } from "@/infrastructure/documents/statuts";
 
@@ -58,5 +63,80 @@ describe("le cadre suit son texte", () => {
 
     const relu = await PDFDocument.load(produit);
     expect(relu.getPageCount()).toBe(1);
+  });
+});
+
+/**
+ * Le texte tombe là où l'avocat l'a posé.
+ *
+ * L'éditeur pose le texte en haut du cadre - un cadre est un bloc, un bloc se remplit
+ * par le haut. Le document, lui, calait la ligne de base sur le bas du cadre, remontée
+ * d'un jambage forfaitaire. Les deux ne coïncidaient que sur un cadre juste à la taille
+ * du texte, or un cadre est repéré sur les bornes de l'ancienne valeur, toujours plus
+ * haute que la nouvelle. Sur l'adresse d'un siège - cadre de 15,7 points, texte de 9,9 -
+ * l'écart faisait 4,7 points, soit une demi-ligne : on plaçait sur la ligne, on
+ * retrouvait dessous.
+ *
+ * On mesure ici le texte réellement écrit dans le PDF produit, contre la règle du
+ * navigateur : la ligne fait 1,15 fois la taille, la hauteur des glyphes se centre
+ * dedans, et la ligne de base tombe sous cette moitié d'interligne augmentée de la
+ * hampe. Une page retouchée est rendue en image, sa couche texte ne porte donc que ce
+ * qu'on vient d'y écrire.
+ */
+describe("le texte se pose comme à l'écran", () => {
+  const executer = promisify(execFile);
+
+  /* Times New Roman, dont Liberation Serif reprend les tables : ce que rend l'écran. */
+  const HAMPE = 0.891113;
+  const JAMBAGE = 0.216309;
+
+  /** Les bornes verticales du mot cherché, telles que pdftotext les rend. */
+  async function bornesDuMot(pdf: Buffer, mot: string) {
+    const dossier = await mkdtemp(join(tmpdir(), "statuts-"));
+    try {
+      const fichier = join(dossier, "produit.pdf");
+      await writeFile(fichier, pdf);
+      const { stdout } = await executer("pdftotext", ["-bbox", fichier, "-"]);
+      const ligne = stdout.split("\n").find((l) => l.includes(">" + mot + "<"));
+      if (!ligne) return null;
+      const haut = /yMin="([\d.]+)"/.exec(ligne);
+      const bas = /yMax="([\d.]+)"/.exec(ligne);
+      return haut && bas ? { haut: Number(haut[1]), bas: Number(bas[1]) } : null;
+    } finally {
+      await rm(dossier, { recursive: true, force: true });
+    }
+  }
+
+  it("ne descend pas le texte quand le cadre est plus haut que lui", async () => {
+    const haut = 135;
+    const taille = 9.9;
+    const produit = await appliquerLesRetouches(await statutsAvecUneAdresse(), [
+      {
+        ...SUR_L_ANCIENNE_ADRESSE,
+        y: haut,
+        /* Le cadre repéré sur l'ancienne valeur : plus haut que la nouvelle. */
+        hauteur: 15.71,
+        taille,
+        texte: "12 Rue de Saint-Petersbourg, 75008 Paris",
+      },
+    ]);
+
+    /* « 75008 » n'a ni hampe ni jambage : ses bornes sont celles de la ligne. */
+    const bornes = await bornesDuMot(produit, "75008");
+    expect(bornes).not.toBeNull();
+
+    /*
+     * C'est la borne basse qu'on mesure : pdftotext la pose sur le jambage de la
+     * police, donc à une distance connue de la ligne de base, tandis que la borne
+     * haute suit l'encre du mot - la hauteur d'un chiffre, non celle de la hampe.
+     */
+    const demiInterligne = (taille * 1.15 - (HAMPE + JAMBAGE) * taille) / 2;
+    expect(bornes!.bas).toBeCloseTo(haut + demiInterligne + (HAMPE + JAMBAGE) * taille, 1);
+
+    /*
+     * Et surtout : pas au bas du cadre, où l'ancienne règle le posait - 4,7 points
+     * plus bas, ce qui est ce que l'on voyait.
+     */
+    expect(bornes!.bas).toBeLessThan(haut + 15.71);
   });
 });

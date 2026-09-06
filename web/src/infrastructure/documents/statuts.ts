@@ -311,6 +311,37 @@ export async function pageEnImage(pdf: Buffer, numero: number): Promise<Buffer> 
  * Les coordonnées arrivent avec l'origine en haut à gauche, comme les rend
  * pdftotext ; le PDF compte depuis le bas. La conversion est ici, en un seul endroit.
  */
+
+/**
+ * La hauteur d'une ligne, en multiples de la taille du texte.
+ *
+ * Elle vaut ce que vaut le `line-height` des cadres de l'éditeur - voir `.repere` et
+ * `.repereSaisie` dans `Modification.module.css`. Les deux nombres doivent bouger
+ * ensemble : c'est ce qui fait que le document rend le texte là où l'avocat l'a posé.
+ */
+const HAUTEUR_DE_LIGNE = 1.15;
+
+/**
+ * La hampe et le jambage du navigateur, pour les trois familles non embarquées.
+ *
+ * Le navigateur cale une ligne sur les métriques `hhea` de la police ; pdf-lib, pour
+ * les quatorze polices garanties du PDF, ne connaît que l'`Ascender` de l'AFM, qui est
+ * l'ascendante typographique et non celle de la ligne - 0,683 contre 0,891 pour un
+ * Times. Écrire à partir de la seconde posait le texte un dixième de ligne trop haut.
+ *
+ * Les valeurs sont relevées sur les polices que le navigateur emploie réellement :
+ * Times New Roman, Arial et Courier New, dont les substituts libres - Liberation
+ * Serif, Sans et Mono - reprennent les mêmes tables, par construction.
+ *
+ * Les quatre autres familles voyagent dans le document : le navigateur charge le même
+ * fichier `.ttf` que pdf-lib embarque, et leurs métriques concordent d'elles-mêmes.
+ */
+const METRIQUES_DU_NAVIGATEUR: Record<string, { hampe: number; jambage: number }> = {
+  serif: { hampe: 0.891113, jambage: 0.216309 },
+  sans: { hampe: 0.905273, jambage: 0.211914 },
+  mono: { hampe: 0.83252, jambage: 0.300293 },
+};
+
 export async function appliquerLesRetouches(
   pdf: Buffer,
   retouches: Retouche[],
@@ -488,22 +519,57 @@ export async function appliquerLesRetouches(
       const largeurDuTexte = morceaux.reduce((total, m) => total + m.largeur, 0);
       const largeurCouverte = Math.max(retouche.largeur, largeurDuTexte);
 
+      /*
+       * Le texte se pose en haut du cadre, comme à l'écran.
+       *
+       * La ligne de base était calée sur le bas du cadre, remontée d'un jambage
+       * forfaitaire. L'éditeur, lui, pose le texte en haut : le cadre y est un bloc, et
+       * un bloc se remplit par le haut. Les deux ne coïncidaient que sur un cadre juste
+       * à la taille du texte - et un cadre est repéré sur les bornes de l'ancienne
+       * valeur, toujours un peu plus haute que la nouvelle. Sur l'adresse d'un siège,
+       * cadre de 15,7 points pour un texte de 9,9, l'écart faisait 4,7 points : le
+       * texte placé sur la ligne se retrouvait une demi-ligne plus bas dans le document.
+       *
+       * On reproduit donc la règle du navigateur, qui est la seule que l'avocat voit :
+       * la ligne fait 1,15 fois la taille du texte, la hauteur des glyphes se centre
+       * dedans, et la ligne de base tombe sous cette moitié d'interligne augmentée de
+       * la hampe. Le « strut » se mesure sur la police du cadre et non sur celle d'un
+       * fragment : un mot passé en gras ne déplace pas la ligne à l'écran.
+       */
+      const mesures = METRIQUES_DU_NAVIGATEUR[retouche.police ?? "serif"];
+      const strut = mesures ? null : await policeDe(retouche);
+      const hampe = mesures
+        ? mesures.hampe * retouche.taille
+        : strut!.heightAtSize(retouche.taille, { descender: false });
+      const jambage = mesures
+        ? mesures.jambage * retouche.taille
+        : strut!.heightAtSize(retouche.taille) - hampe;
+      const hauteurLigne = retouche.taille * HAUTEUR_DE_LIGNE;
+      const demiInterligne = (hauteurLigne - (hampe + jambage)) / 2;
+
+      /*
+       * Le blanc part du haut, lui aussi, et couvre au moins la ligne écrite.
+       *
+       * Ancré au bas d'un cadre rétréci sous la taille du texte, il laissait les
+       * jambages dépasser sur ce qu'il n'avait pas effacé.
+       */
+      const hauteurCouverte = Math.max(retouche.hauteur, hauteurLigne);
+
       const coinDuBlanc = tourner({
         x: retouche.x - marge,
-        y: height - retouche.y - retouche.hauteur - marge,
+        y: height - retouche.y - hauteurCouverte - marge,
       });
 
       page.drawRectangle({
         x: coinDuBlanc.x,
         y: coinDuBlanc.y,
         width: largeurCouverte + marge * 2,
-        height: retouche.hauteur + marge * 2,
+        height: hauteurCouverte + marge * 2,
         color: rgb(1, 1, 1),
         ...(angle === 0 ? {} : { rotate: degrees(-angle) }),
       });
 
-      // La ligne de base se pose au bas du rectangle, remontée du jambage.
-      const ligneDeBase = height - retouche.y - retouche.hauteur + retouche.taille * 0.2;
+      const ligneDeBase = height - retouche.y - demiInterligne - hampe;
 
       /*
        * L'alignement se calcule, il ne se déclare pas.

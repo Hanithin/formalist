@@ -344,9 +344,11 @@ test.describe("espace avocat", () => {
     /*
      * L'intervention est tracée : c'est ce qui permet d'instruire un litige. Le journal
      * la dit en français - il affichait sa clé de base, « document_refuse ». Il tient
-     * derrière son bouton : on le relit quand quelque chose cloche, non en continu.
+     * dans « Gérer le dossier », en tête de page : on le relit quand quelque chose
+     * cloche, non en continu, et il occupait un bouton permanent pour cela.
      */
-    await page.getByRole("button", { name: "Historique" }).click();
+    await page.getByRole("button", { name: "Gérer le dossier" }).click();
+    await page.getByRole("menuitem", { name: "Voir l'historique" }).click();
     await expect(
       page
         .getByRole("dialog", { name: "L'historique du dossier" })

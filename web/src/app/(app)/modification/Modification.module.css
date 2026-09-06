@@ -2748,8 +2748,17 @@
   position: absolute;
   box-sizing: border-box;
   margin: 0;
-  padding: 0 2px;
-  border: 3px solid #16a34a;
+  padding: 0;
+  /*
+   * Le trait se pose dehors, non dedans.
+   *
+   * En bordure, avec `box-sizing: border-box`, il mangeait trois pixels en haut et
+   * deux de chaque côté : le texte de l'aperçu commençait donc plus bas et plus à
+   * droite que le cadre lui-même, alors que le document, lui, écrit au coin. On
+   * plaçait à l'écran, on retrouvait décalé. `outline` marque aussi bien et ne
+   * déplace rien.
+   */
+  outline: 3px solid #16a34a;
   border-radius: 3px;
   background: rgba(22, 163, 74, 0.08);
   color: #111;
@@ -2764,9 +2773,11 @@
    * à 0 pour supprimer l'espace sous l'image. Le texte du cadre fermé était donc
    * rendu sur zéro pixel : présent dans le document, invisible à l'écran. On croyait
    * avoir perdu ce qu'on venait de taper.
+   *
+   * Sa valeur est celle que le document emploie : voir HAUTEUR_DE_LIGNE dans
+   * `infrastructure/documents/statuts.ts`. Les deux nombres bougent ensemble.
    */
   line-height: 1.15;
-  line-height: 1.1;
   /*
    * Rien ne se coupe ici.
    *
@@ -2802,7 +2813,8 @@
   line-height: 1.15;
   display: flex;
   align-items: stretch;
-  border: 3px solid #16a34a;
+  /* Dehors, comme sur le cadre fermé : en bordure, il poussait la saisie vers le bas. */
+  outline: 3px solid #16a34a;
   border-radius: 3px;
   background: #fff;
   box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
@@ -2823,7 +2835,8 @@
   width: max-content;
   max-width: none;
   margin: 0;
-  padding: 0 2px;
+  /* Aucune marge intérieure : elle décalerait ce qu'on tape par rapport au document. */
+  padding: 0;
   border: none;
   background: none;
   color: #111;
