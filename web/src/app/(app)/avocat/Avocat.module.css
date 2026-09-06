@@ -629,7 +629,8 @@
   align-items: center;
   gap: 8px;
   align-self: flex-start;
-  margin-top: 12px;
+  /* Toute la marge, non le seul haut : la feuille globale en pose une sous chaque étiquette. */
+  margin: 12px 0 0;
   padding: 8px 12px;
   border: 1px dashed #d9d9dd;
   border-radius: 10px;
@@ -4320,13 +4321,21 @@ button.ligneCorps:disabled {
   height: 32px;
 }
 
-/* Le trombone est un geste discret : il n'a ni fond ni contour au repos. */
+/*
+ * Le trombone est un geste discret : il n'a ni fond ni contour au repos.
+ *
+ * La marge vient remise à zéro. La feuille globale donne aux étiquettes de formulaire
+ * quatorze pixels au-dessus et cinq en dessous - elles annoncent un champ, et ce blanc
+ * les en sépare. Celle-ci n'annonce rien : elle est un bouton, et ces marges la posaient
+ * quatre pixels sous le bouton d'envoi, débordant de la barre par le bas.
+ */
 .filJoindre {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
+  margin: 0;
   border-radius: 8px;
   color: #a1a1aa;
   cursor: pointer;
