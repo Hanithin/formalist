@@ -31,6 +31,60 @@ export default async function preparer() {
 
   const ancien = await prisma.users.findUnique({ where: { email: COMPTE.email } });
   if (ancien) {
+    /*
+     * Les fichiers avant leurs lignes.
+     *
+     * Une ligne supprimée sans son fichier laisse un octet que plus rien ne référence.
+     * La règle était posée pour les actes, et pour eux seuls : les versions de statuts,
+     * les pièces déposées et les fichiers joints aux messages partaient de la base et
+     * restaient sur le disque. Le dépôt local portait vingt-trois mille six cents
+     * fichiers pour neuf cent quarante lignes - trois gigaoctets qu'aucun écran ne
+     * montre, sur un poste dont le disque a fini par se remplir.
+     *
+     * Toutes les tables qui portent un chemin sont donc lues ici, et dans l'ordre : les
+     * fichiers d'abord, les lignes ensuite.
+     */
+    const dossiers = { formalites: { user_id: ancien.id } };
+    const aRetirer: (string | null)[] = [];
+
+    for (const d of await prisma.documents.findMany({
+      where: dossiers,
+      select: { file_path: true, source_path: true },
+    })) {
+      aRetirer.push(d.file_path, d.source_path);
+    }
+    for (const v of await prisma.document_versions.findMany({
+      where: dossiers,
+      select: { file_path: true, source_path: true },
+    })) {
+      aRetirer.push(v.file_path, v.source_path);
+    }
+    for (const f of await prisma.uploaded_files.findMany({
+      where: { OR: [{ user_id: ancien.id }, dossiers] },
+      select: { filename: true },
+    })) {
+      aRetirer.push(f.filename);
+    }
+    for (const m of await prisma.messages.findMany({ where: dossiers, select: { file_path: true } })) {
+      aRetirer.push(m.file_path);
+    }
+    for (const m of await prisma.support_messages.findMany({
+      where: { user_id: ancien.id },
+      select: { file_path: true },
+    })) {
+      aRetirer.push(m.file_path);
+    }
+    for (const u of await prisma.user_documents.findMany({
+      where: { user_id: ancien.id },
+      select: { file_path: true },
+    })) {
+      aRetirer.push(u.file_path);
+    }
+
+    for (const chemin of aRetirer) {
+      if (chemin) await rm(path.join(DEPOT, path.basename(chemin)), { force: true });
+    }
+
     // Les essais de création laissent des dossiers, des pièces déposées et leur
     // inscription au registre : on retire dans l'ordre des dépendances.
     await prisma.team_invitations.deleteMany({ where: { email: { contains: "exemple.test" } } });
@@ -45,19 +99,6 @@ export default async function preparer() {
     await prisma.team_notes.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.audit_log.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     await prisma.messages.deleteMany({ where: { formalites: { user_id: ancien.id } } });
-
-    // Les fichiers avant leurs lignes : une ligne supprimée sans son fichier laisse
-    // un octet que rien ne référence plus, et la série en produisait à chaque
-    // passage - de quoi remplir le disque de dépôt sans que personne le voie.
-    const anciensActes = await prisma.documents.findMany({
-      where: { formalites: { user_id: ancien.id } },
-      select: { file_path: true, source_path: true },
-    });
-    for (const acte of anciensActes) {
-      for (const chemin of [acte.file_path, acte.source_path]) {
-        if (chemin) await rm(path.join(DEPOT, path.basename(chemin)), { force: true });
-      }
-    }
 
     await prisma.documents.deleteMany({ where: { formalites: { user_id: ancien.id } } });
     // Les fichiers déposés retiennent aussi le dossier par leur clé étrangère.
