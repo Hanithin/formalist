@@ -569,7 +569,25 @@ export async function appliquerLesRetouches(
         ...(angle === 0 ? {} : { rotate: degrees(-angle) }),
       });
 
-      const ligneDeBase = height - retouche.y - demiInterligne - hampe;
+      /*
+       * La mesure de l'éditeur l'emporte sur le calcul.
+       *
+       * Le navigateur cale sa ligne sur les métriques que le système lui donne de la
+       * police, et elles ne sont ni celles de la table du fichier ni les mêmes d'un
+       * système à l'autre : sur un Times de 9,9 points, Chrome sous macOS annonce une
+       * hampe de 0,879 em là où le fichier dit 0,891. Trois dixièmes de point d'écart,
+       * un pixel à l'écran - assez pour qu'une adresse posée sur sa ligne s'en écarte
+       * dans l'acte. L'éditeur mesure donc ce qu'il a dessiné et l'envoie avec le cadre.
+       *
+       * Le calcul reste, pour les cadres posés avant, et parce qu'un acte doit se
+       * produire même sans cette mesure.
+       */
+      const depuisLeHaut =
+        typeof retouche.ligneDeBase === "number" && retouche.ligneDeBase > 0
+          ? retouche.ligneDeBase
+          : demiInterligne + hampe;
+
+      const ligneDeBase = height - retouche.y - depuisLeHaut;
 
       /*
        * L'alignement se calcule, il ne se déclare pas.

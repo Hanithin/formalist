@@ -140,3 +140,67 @@ describe("le texte se pose comme à l'écran", () => {
     expect(bornes!.bas).toBeLessThan(haut + 15.71);
   });
 });
+
+/**
+ * La mesure de l'éditeur l'emporte sur le calcul.
+ *
+ * Aucun calcul serveur ne retrouve où le navigateur pose sa ligne de base : il cale sa
+ * ligne sur les métriques que le système lui donne de la police, arrondies au pixel, et
+ * Chrome sous macOS n'annonce pas les mêmes qu'un Chrome sous Windows ni que la table du
+ * fichier. Sur un Times de 9,9 points l'écart faisait trois dixièmes de point - un pixel
+ * à l'écran, visible dès qu'on relit l'acte à côté de la ligne visée. L'éditeur mesure
+ * donc ce qu'il a dessiné et l'envoie avec le cadre.
+ */
+describe("la ligne de base mesurée par l'éditeur", () => {
+  const executer = promisify(execFile);
+
+  async function basDuMot(pdf: Buffer, mot: string): Promise<number | null> {
+    const dossier = await mkdtemp(join(tmpdir(), "statuts-"));
+    try {
+      const fichier = join(dossier, "produit.pdf");
+      await writeFile(fichier, pdf);
+      const { stdout } = await executer("pdftotext", ["-bbox", fichier, "-"]);
+      const ligne = stdout.split("\n").find((l) => l.includes(">" + mot + "<"));
+      const bas = ligne && /yMax="([\d.]+)"/.exec(ligne);
+      return bas ? Number(bas[1]) : null;
+    } finally {
+      await rm(dossier, { recursive: true, force: true });
+    }
+  }
+
+  it("place le texte où l'éditeur l'a dessiné, non où le calcul le mettrait", async () => {
+    const haut = 135;
+    const taille = 9.9;
+    /* Ce que Chrome rend ici : 0,879 em, contre 0,912 pour le calcul du serveur. */
+    const MESUREE = 8.70345744680851;
+
+    const produit = await appliquerLesRetouches(await statutsAvecUneAdresse(), [
+      {
+        ...SUR_L_ANCIENNE_ADRESSE,
+        y: haut,
+        hauteur: 15.71,
+        taille,
+        ligneDeBase: MESUREE,
+        texte: "12 Rue de Saint-Petersbourg, 75008 Paris",
+      },
+    ]);
+
+    /* Times-Roman : pdftotext pose la borne basse sur le jambage de l'AFM, 0,217 em. */
+    const bas = await basDuMot(produit, "75008");
+    expect(bas).not.toBeNull();
+    expect(bas!).toBeCloseTo(haut + MESUREE + 0.217 * taille, 1);
+  });
+
+  /* Un cadre posé avant que l'éditeur ne mesure garde la règle calculée. */
+  it("retombe sur le calcul quand le cadre n'apporte pas sa mesure", async () => {
+    const haut = 135;
+    const taille = 9.9;
+    const produit = await appliquerLesRetouches(await statutsAvecUneAdresse(), [
+      { ...SUR_L_ANCIENNE_ADRESSE, y: haut, hauteur: 15.71, taille, texte: "75008" },
+    ]);
+
+    const demiInterligne = (taille * 1.15 - (0.891113 + 0.216309) * taille) / 2;
+    const bas = await basDuMot(produit, "75008");
+    expect(bas!).toBeCloseTo(haut + demiInterligne + (0.891113 + 0.216309) * taille, 1);
+  });
+});

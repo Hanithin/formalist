@@ -152,6 +152,8 @@ const RETOUCHE = z.object({
   alignement: z.enum(["gauche", "centre", "droite"]).optional(),
   /* L'inclinaison du cadre, pour suivre une page numérisée de travers. */
   angle: z.number().min(-ANGLE_MAXIMUM).max(ANGLE_MAXIMUM).optional(),
+  /* La ligne de base, telle que l'éditeur l'a dessinée : c'est lui qui la mesure. */
+  ligneDeBase: z.number().min(0).max(200).optional(),
   // Le texte découpé, quand il porte plusieurs mises en forme.
   fragments: z
     .array(

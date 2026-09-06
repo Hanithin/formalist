@@ -1827,3 +1827,102 @@ test("la taille se règle aussi à la flèche", async ({ page, request }) => {
   await expect(corbeille).toBeVisible();
   await expect(page.locator("[data-mise-en-forme]").getByRole("button", { name: "Supprimer ce cadre" })).toHaveCount(0);
 });
+
+/**
+ * Caler le cadre sur la ligne d'à côté.
+ *
+ * Le cadre naît sur l'ancienne valeur, donc sur la ligne de l'ancienne valeur - et des
+ * statuts composés en deux corps sur la même ligne la posent un demi-point sous
+ * l'étiquette qui la précède. Remonter le cadre à la souris se joue alors au pixel, ce
+ * qu'on ne vise pas. La commande lit l'image de la page, trouve le pied du texte voisin
+ * et y pose la ligne de base du cadre.
+ *
+ * On vérifie au passage que la barre de mise en forme reste dans la page : posée au bord
+ * gauche du cadre, elle en sortait par la droite dès que le cadre était dans la moitié
+ * droite, et ses dernières commandes - dont celle-ci - devenaient inatteignables.
+ */
+test("un cadre se cale sur la ligne du texte voisin", async ({ page, request }) => {
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+  const dossier = await dossierDeModification();
+
+  /* La ligne de base de l'acte : 842 moins 700, soit 142 points depuis le haut. */
+  const LIGNE = 142;
+  const acte = await PDFDocument.create();
+  const police = await acte.embedFont(StandardFonts.TimesRoman);
+  acte.addPage([595, 842]).drawText("Le siege social est fixe au 34 rue Laugier, 75017 Paris.", {
+    x: 60,
+    y: 842 - LIGNE,
+    size: 11,
+    font: police,
+  });
+  await request.post("/api/formalites/modification/statuts/depot", {
+    multipart: {
+      dossier: String(dossier),
+      fichier: {
+        name: "statuts.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(await acte.save()),
+      },
+    },
+  });
+
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/avocat/" + dossier + "/statuts");
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
+      return !!image && image.naturalWidth > 0 && image.getBoundingClientRect().height > 100;
+    },
+    { timeout: 30_000 }
+  );
+
+  const cadreVise = page.locator("div[class*='repere']").first();
+  await cadreVise.scrollIntoViewIfNeeded();
+  const boite = (await cadreVise.boundingBox())!;
+  await page.mouse.click(boite.x + boite.width / 2, boite.y + boite.height / 2);
+  await page.getByRole("button", { name: "Mise en forme" }).click();
+
+  /* La barre tient dans la page : sans quoi la commande serait hors de l'écran. */
+  const barre = page.locator("[data-mise-en-forme]");
+  await expect(barre).toBeVisible();
+  const debordement = await page.evaluate(() => {
+    const bande = document.querySelector("[data-mise-en-forme]")!.getBoundingClientRect();
+    const feuille = document.querySelector("[data-page-statuts]")!.getBoundingClientRect();
+    return Math.round(Math.max(bande.right - feuille.right, feuille.left - bande.left));
+  });
+  expect(debordement).toBeLessThanOrEqual(0);
+
+  await page.getByRole("button", { name: "Aligner sur la ligne d'à côté" }).click();
+
+  /*
+   * La ligne de base du cadre tombe sur celle de l'acte.
+   *
+   * Le cadre porte désormais sa propre mesure - où le navigateur a vraiment posé la
+   * ligne - parce qu'aucun calcul serveur ne la retrouve d'un système à l'autre.
+   */
+  /* L'enregistrement suit la frappe : on attend qu'il ait porté, sans le supposer. */
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(async (id) => {
+          const reponse = await fetch("/api/formalites/modification/retouches?dossier=" + id);
+          const corps = await reponse.json();
+          const retouche = (corps.retouches ?? [])[0];
+          return retouche?.ligneDeBase ? retouche.y + retouche.ligneDeBase : null;
+        }, dossier),
+      { timeout: 20_000 }
+    )
+    .not.toBeNull();
+
+  const pose = await page.evaluate(async (id) => {
+    const reponse = await fetch("/api/formalites/modification/retouches?dossier=" + id);
+    const corps = await reponse.json();
+    const retouche = (corps.retouches ?? [])[0];
+    return { y: retouche.y, ligneDeBase: retouche.ligneDeBase as number };
+  }, dossier);
+
+  expect(pose.ligneDeBase).toBeGreaterThan(0);
+  expect(pose.y + pose.ligneDeBase).toBeGreaterThan(LIGNE - 0.8);
+  expect(pose.y + pose.ligneDeBase).toBeLessThan(LIGNE + 0.8);
+});

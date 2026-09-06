@@ -1,7 +1,14 @@
 "use client";
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
-import { forwardRef, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   ALIGNEMENTS,
   POLICES,
@@ -351,12 +358,18 @@ function MiseEnForme({
   styleDuCurseur,
   surStyle,
   surChangement,
+  surAlignementSurLaLigne,
+  sansLigneVoisine,
 }: {
   retouche: Retouche;
   /** Ce que porte le texte sélectionné, non le cadre. */
   styleDuCurseur: { gras: boolean; italique: boolean; souligne: boolean };
   surStyle: (commande: "bold" | "italic" | "underline") => void;
   surChangement: (changement: Partial<Retouche>) => void;
+  /** Caler le cadre sur la ligne du texte voisin. */
+  surAlignementSurLaLigne: () => void;
+  /** Le dernier essai n'a trouvé aucune ligne à côté du cadre. */
+  sansLigneVoisine: boolean;
 }) {
   /*
    * Les boutons gardent le curseur dans le texte, les champs le prennent.
@@ -368,8 +381,39 @@ function MiseEnForme({
    */
   const garderLeFocus = (e: React.MouseEvent) => e.preventDefault();
 
+  /*
+   * La barre reste dans la page.
+   *
+   * Posée au bord gauche du cadre, elle en sortait par la droite dès que le cadre était
+   * dans la moitié droite d'une page : ses dernières commandes - l'alignement,
+   * l'inclinaison - tombaient hors de la carte et se retrouvaient rognées, donc
+   * inatteignables. Aucune règle de style ne sait cela : il faut mesurer.
+   */
+  const barre = useRef<HTMLDivElement>(null);
+  const [decalage, setDecalage] = useState(0);
+
+  useLayoutEffect(() => {
+    const element = barre.current;
+    const page = element?.closest("[data-page-statuts]");
+    if (!element || !page) return;
+
+    const sienne = element.getBoundingClientRect();
+    const cadrePage = page.getBoundingClientRect();
+    /* La mesure se prend hors décalage, sinon elle se corrigerait elle-même sans fin. */
+    const droite = sienne.right - decalage;
+    const gauche = sienne.left - decalage;
+    const trop = Math.max(0, Math.min(droite - cadrePage.right + 6, gauche - cadrePage.left));
+
+    if (Math.abs(trop + decalage) > 0.5) setDecalage(-trop);
+  }, [decalage, retouche.x, retouche.taille, retouche.police, retouche.angle]);
+
   return (
-    <div className={styles.forme} data-mise-en-forme>
+    <div
+      ref={barre}
+      className={styles.forme}
+      style={decalage ? { marginLeft: decalage } : undefined}
+      data-mise-en-forme
+    >
       <ChampChoix
         id="editeur-police"
         compact
@@ -456,6 +500,38 @@ function MiseEnForme({
       <span className={styles.formeSeparateur} aria-hidden="true" />
 
       {/*
+        Caler le cadre sur la ligne d'à côté.
+
+        Le cadre se pose sur l'ancienne valeur, donc sur la ligne de l'ancienne valeur -
+        et des statuts mal composés la posent un demi-point sous l'étiquette qui la
+        précède. Remonter le cadre à la souris se joue alors à un pixel, ce qu'on ne
+        vise pas. Ce bouton lit l'image de la page, trouve le pied du texte voisin et y
+        pose la ligne de base du cadre.
+      */}
+      <button
+        type="button"
+        className={styles.formeBouton}
+        onMouseDown={garderLeFocus}
+        onClick={surAlignementSurLaLigne}
+        title="Aligner sur la ligne d'à côté"
+        aria-label="Aligner sur la ligne d'à côté"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.formeIcone}>
+          <rect x="4" y="7" width="7" height="9" rx="1" />
+          <rect x="13" y="10" width="7" height="6" rx="1" />
+          <rect x="3" y="18" width="18" height="1.6" rx="0.8" />
+        </svg>
+      </button>
+
+      {sansLigneVoisine && (
+        <span className={styles.formeSansLigne} role="status">
+          Aucune ligne à côté
+        </span>
+      )}
+
+      <span className={styles.formeSeparateur} aria-hidden="true" />
+
+      {/*
         L'inclinaison du cadre.
         
         Les statuts déposés sont des numérisations, et une page passée de travers dans
@@ -505,6 +581,211 @@ function MiseEnForme({
   );
 }
 
+/**
+ * Où le navigateur pose la ligne de base, mesuré et non calculé.
+ *
+ * On aimerait le déduire : hauteur de ligne moins hauteur des glyphes, divisé par
+ * deux, plus la hampe. Le calcul tombe à trois dixièmes de point près, parce que la
+ * hampe que le navigateur emploie n'est pas celle qu'annonce le fichier de la police -
+ * Chrome sous macOS dit 0,879 em pour un Times New Roman dont la table `hhea` dit
+ * 0,891 - et qu'elle change d'un système à l'autre. Trois dixièmes de point font un
+ * pixel à l'écran, et l'écart se voit dès qu'on relit l'acte à côté de la ligne visée.
+ *
+ * On mesure donc pour de bon : un bloc composé comme le cadre, et dedans une boîte de
+ * hauteur nulle, dont le bas se pose exactement sur la ligne de base. La mesure est
+ * prise à mille pixels, où les arrondis de rendu ne pèsent plus, et rapportée à la
+ * taille demandée.
+ */
+const MESURES = new Map<string, number>();
+
+function mesureDeLaLigneDeBase(
+  police: Police,
+  gras: boolean | undefined,
+  italique: boolean | undefined,
+  taillePx: number
+): number {
+  const cle = [police, gras ? "g" : "", italique ? "i" : "", taillePx.toFixed(2)].join(":");
+  const deja = MESURES.get(cle);
+  if (deja !== undefined) return deja;
+
+  const bloc = document.createElement("div");
+  bloc.style.cssText = [
+    "position:absolute",
+    "visibility:hidden",
+    "left:-9999px",
+    "top:0",
+    "white-space:nowrap",
+    "line-height:" + HAUTEUR_DE_LIGNE,
+    "font-size:" + taillePx + "px",
+    "font-family:" + FAMILLES[police],
+    "font-weight:" + (gras ? 700 : 400),
+    "font-style:" + (italique ? "italic" : "normal"),
+  ].join(";");
+
+  const sonde = document.createElement("span");
+  sonde.style.cssText = "display:inline-block;width:0;height:0";
+  bloc.append(sonde, document.createTextNode("Hxg"));
+  document.body.append(bloc);
+
+  const mesure = sonde.getBoundingClientRect().bottom - bloc.getBoundingClientRect().top;
+  bloc.remove();
+
+  /*
+   * On ne retient pas une mesure prise avant que les polices soient là.
+   *
+   * Quatre familles voyagent en `@font-face` ; mesurées pendant leur chargement, c'est
+   * la police de secours qu'on aurait mesurée, et le cadre garderait ce chiffre.
+   */
+  if (document.fonts?.status === "loaded") MESURES.set(cle, mesure);
+  return mesure;
+}
+
+/**
+ * La ligne de base d'un cadre, en points, depuis son haut.
+ *
+ * La mesure se prend à la taille en pixels que le cadre porte vraiment, non à une
+ * taille de référence qu'on rapporterait ensuite. Le navigateur arrondit la hampe au
+ * pixel : à mille pixels il rend 0,912 em pour un Times, à douze il en rend 0,879, et
+ * c'est la seconde qu'on voit à l'écran.
+ */
+function ligneDeBaseDuCadre(retouche: Retouche, echelle: number): number {
+  const taillePx = retouche.taille * (echelle > 0 ? echelle : 1);
+  const mesure = mesureDeLaLigneDeBase(
+    retouche.police ?? "serif",
+    retouche.gras,
+    retouche.italique,
+    taillePx
+  );
+  return mesure / (echelle > 0 ? echelle : 1);
+}
+
+/**
+ * La ligne de base du texte voisin, lue dans l'image de la page.
+ *
+ * Les statuts qu'on reçoit ne sont pas toujours bien composés : celui d'où vient ce
+ * geste portait « Siège social » en douze points sur une ligne, et l'adresse qui suit
+ * en neuf points, un demi-point plus bas. Le cadre se pose sur l'ancienne valeur, donc
+ * sur la ligne fautive ; le remonter à la souris se joue à un pixel près, et l'on n'y
+ * arrive pas.
+ *
+ * On lit donc l'image, plutôt que la couche texte : elle existe toujours, y compris
+ * sur des statuts numérisés, où il n'y a rien d'autre à lire. On regarde le pied de
+ * chaque colonne d'encre à gauche du cadre - à droite s'il n'y a rien - et l'on retient
+ * le pied que le plus de colonnes partagent. C'est la ligne de base : les jambages sont
+ * minoritaires, les accents ne touchent pas le bas.
+ */
+function ligneDeBaseVoisine(
+  image: HTMLImageElement,
+  retouche: Retouche,
+  dimensions: { largeur: number; hauteur: number }
+): number | null {
+  if (!image.complete || !image.naturalWidth) return null;
+
+  const toile = document.createElement("canvas");
+  toile.width = image.naturalWidth;
+  toile.height = image.naturalHeight;
+  const contexte = toile.getContext("2d", { willReadFrequently: true });
+  if (!contexte) return null;
+  contexte.drawImage(image, 0, 0);
+
+  const parPointX = image.naturalWidth / dimensions.largeur;
+  const parPointY = image.naturalHeight / dimensions.hauteur;
+
+  /*
+   * La bande : la ligne du cadre, à peine débordée.
+   *
+   * Large, elle attrapait la ligne du dessus - toujours plus longue qu'une étiquette
+   * de deux mots, donc toujours gagnante au décompte des colonnes, et le cadre montait
+   * d'une ligne. Un quart de corps suffit à rattraper un cadre posé de travers.
+   */
+  const marge = retouche.taille * 0.25;
+  const haut = Math.max(0, Math.round((retouche.y - marge) * parPointY));
+  const bas = Math.min(
+    toile.height,
+    Math.round((retouche.y + retouche.hauteur + marge) * parPointY)
+  );
+  if (bas - haut < 4) return null;
+
+  /*
+   * On regarde d'abord tout près, à gauche, puis on s'écarte.
+   *
+   * C'est le mot qui précède qui donne la ligne - « Siège social : » avant l'adresse.
+   * Chercher large d'emblée ferait voter une colonne voisine, ou le pied de page.
+   */
+  const fenetres: [number, number][] = [
+    [-70, -2],
+    [-180, -2],
+    [retouche.largeur + 2, retouche.largeur + 180],
+  ].map(([de, a]) => [
+    Math.max(0, Math.round((retouche.x + de) * parPointX)),
+    Math.min(toile.width, Math.round((retouche.x + a) * parPointX)),
+  ]);
+
+  for (const [x0, x1] of fenetres) {
+    if (x1 - x0 < 8) continue;
+    const pied = piedPartage(contexte.getImageData(x0, haut, x1 - x0, bas - haut));
+    if (pied !== null) return (haut + pied) / parPointY;
+  }
+  return null;
+}
+
+/**
+ * Le pied d'encre que le plus de colonnes partagent, au sous-pixel.
+ *
+ * Une page est rendue à deux cents points par pouce : un pixel vaut plus d'un tiers de
+ * point, et s'arrêter à la rangée entière rendrait l'alignement plus grossier que
+ * l'écart qu'on corrige. Le lissé du rendu donne la fraction : la dernière rangée
+ * encrée l'est d'autant que le glyphe la couvre.
+ */
+function piedPartage(bande: ImageData): number | null {
+  const { width, height, data } = bande;
+  const pieds: number[] = [];
+
+  for (let x = 0; x < width; x++) {
+    let dernier = -1;
+    let couverture = 0;
+    for (let y = 0; y < height; y++) {
+      const i = (y * width + x) * 4;
+      if (data[i + 3] < 32) continue;
+      /* Du texte noir sur du papier blanc : la moyenne des trois canaux suffit. */
+      const noirceur = 1 - (data[i] + data[i + 1] + data[i + 2]) / 765;
+      if (noirceur > 0.15) {
+        dernier = y;
+        couverture = Math.min(1, noirceur);
+      }
+    }
+    if (dernier >= 0) pieds.push(dernier + couverture);
+  }
+
+  /* Moins de huit colonnes encrées : il n'y a pas de ligne à côté, seulement du bruit. */
+  if (pieds.length < 8) return null;
+
+  /*
+   * Le pied le plus partagé, à un demi-pixel près.
+   *
+   * La moyenne suivrait les jambages, la médiane hésiterait entre deux lignes si la
+   * bande en attrape deux. On prend le groupe le plus nombreux, et sa moyenne.
+   */
+  pieds.sort((a, b) => a - b);
+  const TOLERANCE = 0.8;
+  let debut = 0;
+  let meilleurDebut = 0;
+  let meilleureFin = 0;
+
+  for (let fin = 0; fin < pieds.length; fin++) {
+    while (pieds[fin] - pieds[debut] > TOLERANCE) debut += 1;
+    if (fin - debut > meilleureFin - meilleurDebut) {
+      meilleurDebut = debut;
+      meilleureFin = fin;
+    }
+  }
+
+  const groupe = pieds.slice(meilleurDebut, meilleureFin + 1);
+  if (groupe.length < Math.max(3, pieds.length * 0.2)) return null;
+
+  return groupe.reduce((total, v) => total + v, 0) / groupe.length;
+}
+
 /** « 12:14, aujourd'hui » : une heure suffit quand le geste est du jour. */
 function quandLisible(iso: string): string {
   const quand = new Date(iso);
@@ -516,6 +797,15 @@ function quandLisible(iso: string): string {
 
   return quand.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " à " + heure;
 }
+
+/**
+ * La hauteur d'une ligne, en multiples de la taille du texte.
+ *
+ * Elle vaut ce que valent les `line-height` des cadres - voir `.repere` et
+ * `.repereSaisie` dans `Modification.module.css` - et ce que vaut `HAUTEUR_DE_LIGNE`
+ * dans `infrastructure/documents/statuts.ts`. Les trois bougent ensemble.
+ */
+const HAUTEUR_DE_LIGNE = 1.15;
 
 /** Les familles, telles que le navigateur les rend, au plus près du PDF produit. */
 const FAMILLES: Record<Police, string> = {
@@ -608,6 +898,8 @@ export function Editeur({
   const [curseurs, setCurseurs] = useState<Record<string, number>>({});
   /** Le numéro en cours de frappe, tant qu'il n'est pas validé. */
   const [numeroSaisi, setNumeroSaisi] = useState<string | null>(null);
+  /** Le cadre dont le dernier alignement n'a trouvé aucune ligne à côté. */
+  const [sansLigne, setSansLigne] = useState<number | null>(null);
   /** Échap vient de renoncer : la sortie du champ ne doit pas naviguer. */
   const abandon = useRef(false);
   const cadre = useRef<HTMLDivElement>(null);
@@ -780,13 +1072,52 @@ export function Editeur({
     return () => document.removeEventListener("pointerdown", auClic, true);
   }, [choisie]);
 
+  /*
+   * Toute modification d'un cadre emporte sa ligne de base.
+   *
+   * C'est le seul endroit par où passent le déplacement, la saisie, la taille, la
+   * police et le style : la mesure s'y prend une fois, sur le cadre tel qu'il sera, et
+   * le document n'a plus qu'à la reprendre. La faire ailleurs - au chargement, par
+   * exemple - inscrirait une étape dans l'historique du dossier sans que personne ait
+   * rien touché.
+   */
   function modifier(index: number, changement: Partial<Retouche>) {
-    surChangement(retouches.map((r, i) => (i === index ? { ...r, ...changement } : r)));
+    surChangement(
+      retouches.map((r, i) => {
+        if (i !== index) return r;
+        const suite = { ...r, ...changement };
+        return { ...suite, ligneDeBase: ligneDeBaseDuCadre(suite, echelle) };
+      })
+    );
   }
 
   function retirer(index: number) {
     surChangement(retouches.filter((_, i) => i !== index));
     ouvrir(null);
+  }
+
+  /**
+   * Caler le cadre sur la ligne du texte qui l'entoure.
+   *
+   * Le cadre naît sur l'ancienne valeur : sur sa ligne à elle, qui n'est pas toujours
+   * celle de l'étiquette qui la précède - des statuts composés en deux corps sur la
+   * même ligne, cela se voit. On lit l'image de la page pour trouver le pied du texte
+   * voisin, et l'on descend le cadre de ce qu'il faut pour que sa ligne de base tombe
+   * dessus.
+   */
+  function alignerSurLaLigne(index: number) {
+    const retouche = retouches[index];
+    const image = cadre.current?.querySelector("img");
+    if (!retouche || !image || !dimensions) return;
+
+    const pied = ligneDeBaseVoisine(image, retouche, dimensions);
+    if (pied === null) {
+      setSansLigne(index);
+      return;
+    }
+
+    setSansLigne(null);
+    modifier(index, { y: Math.max(0, pied - ligneDeBaseDuCadre(retouche, echelle)) });
   }
 
   /** Le point cliqué, ramené en points PDF. */
@@ -1224,6 +1555,7 @@ export function Editeur({
         <div
           ref={cadre}
           className={styles.editeurPage}
+          data-page-statuts
           onPointerMove={suivre}
           onPointerUp={relacher}
           onPointerCancel={relacher}
@@ -1532,6 +1864,8 @@ export function Editeur({
                     styleDuCurseur={styleDuCurseur}
                     surStyle={(commande) => appliquerAuTexte(commande, index)}
                     surChangement={(changement) => modifier(index, changement)}
+                    surAlignementSurLaLigne={() => alignerSurLaLigne(index)}
+                    sansLigneVoisine={sansLigne === index}
                   />
                 )}
 

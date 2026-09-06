@@ -563,6 +563,22 @@ export interface Retouche {
    * dossiers ouverts avant gardent.
    */
   fragments?: Fragment[];
+  /**
+   * La distance, en points, du haut du cadre à la ligne de base du texte.
+   *
+   * C'est l'éditeur qui la mesure, dans le navigateur, sur le cadre qu'il vient de
+   * dessiner - et non le serveur qui la recalcule. La raison est qu'aucun calcul ne
+   * peut la retrouver : le navigateur cale sa ligne sur les métriques que le système
+   * lui donne de la police, et Chrome sous macOS n'annonce pas les mêmes qu'un Chrome
+   * sous Windows ou que la table du fichier. Sur un Times de 9,9 points l'écart faisait
+   * trois dixièmes de point - un pixel à l'écran, visible dès qu'on relit l'acte à côté
+   * de la ligne qu'on visait.
+   *
+   * L'avocat place ce qu'il voit : ce qu'il voit fait donc foi. Absente - un cadre posé
+   * avant, ou par un autre chemin - le rendu retombe sur sa règle, qui reste juste à un
+   * dixième de ligne près.
+   */
+  ligneDeBase?: number;
 }
 
 /**
