@@ -721,6 +721,33 @@
  * pas répéter ce qu'ils disaient. Une ligne suffit : à qui le dossier est, où il en
  * est, et par quoi continuer.
  */
+/*
+ * Une seule carte pour le dossier : à qui il est, où il en est, et par quoi commencer.
+ *
+ * C'étaient deux cartes empilées - deux cadres, deux fonds blancs, deux fois l'écart
+ * qui les sépare, pour six mots chacune. Elles disent la même chose du même dossier :
+ * elles tiennent ensemble, séparées d'un filet.
+ */
+.barreDuDossier {
+  margin-bottom: 20px;
+  border: 1px solid #e8e8ea;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.barreDuDossierTete {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 10px 16px;
+}
+
+/* Le filet ne paraît que si la tête le précède : seule, la prochaine étape n'en a pas. */
+.barreDuDossierTete + .prochaine {
+  border-top: 1px solid #f2f2f4;
+}
+
 .bandeauAssigne {
   display: flex;
   align-items: center;
@@ -2966,11 +2993,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 12px;
   padding: 12px 14px 12px 16px;
-  border: 1px solid #e5e5e7;
-  border-radius: 12px;
-  background: #fff;
 }
 
 .prochaineTexte {

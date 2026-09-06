@@ -71,6 +71,7 @@ const ANCRES: Record<string, string> = {
 
 export function Travail({
   apresLaTacheDuMoment,
+  bandeau,
   volets,
   dossiersAPrendre,
   etapePrecedente,
@@ -86,6 +87,15 @@ export function Travail({
 }: {
   /** Ce qui s'intercale entre la tâche du moment et la liste de ce qui suit. */
   apresLaTacheDuMoment?: React.ReactNode;
+  /**
+   * À qui est le dossier, et où il en est.
+   *
+   * Le contenu vient de la page - elle seule connaît le client et le compte des tâches
+   * faites - mais il se pose ici, dans la même carte que la prochaine étape. C'étaient
+   * deux cartes empilées : deux cadres, deux fonds blancs, deux fois l'écart qui les
+   * sépare, pour six mots chacune.
+   */
+  bandeau?: React.ReactNode;
   /**
    * Les sections du dossier rangées derrière leur bouton.
    *
@@ -898,7 +908,11 @@ export function Travail({
         compte ne dit pas par où commencer - c'est pourtant la seule question qu'on se
         pose en ouvrant un dossier.
       */}
-      {prochaine && (
+      {(bandeau || prochaine) && (
+        <section className={styles.barreDuDossier} aria-label="Votre dossier">
+          {bandeau && <div className={styles.barreDuDossierTete}>{bandeau}</div>}
+
+          {prochaine && (
         <div className={styles.prochaine}>
           <span className={styles.prochaineTexte}>
             <span className={styles.prochaineLibelle}>Prochaine étape</span>
@@ -930,6 +944,8 @@ export function Travail({
             </svg>
           </button>
         </div>
+          )}
+        </section>
       )}
 
       <div className={styles.situation}>

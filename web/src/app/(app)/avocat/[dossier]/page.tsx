@@ -534,8 +534,29 @@ export default async function DossierAvocat({
           pas les répéter. Ramené à une ligne, il n'a plus de raison de se cacher : il
           est le seul endroit qui porte l'avancement d'ensemble.
         */}
-        {monDossier && !libre && (
-          <section className={styles.bandeauAssigne} aria-label="Votre dossier">
+
+            {/*
+              L'avancement au-dessus des tâches, sur une ligne.
+
+              Il tenait une carte de cinq étages au bas de la page, sous les tâches
+              qu'il résume - cinq intitulés, cinq explications, deux boutons. Le seul
+              geste qu'il porte est le passage d'un cran : le reste se lit en une ligne.
+              Le bloc garde son ancre, où mène la tâche « Déposer au guichet unique ».
+            */}
+
+            <Travail
+              /*
+                La barre du dossier et la prochaine étape n'en font qu'une.
+
+                C'étaient deux cartes empilées, l'une disant à qui est le dossier et où
+                il en est, l'autre par quoi commencer : deux cadres, deux fonds blancs,
+                deux fois l'écart qui les sépare, pour six mots chacune. Le contenu vient
+                d'ici - la page seule connaît le client et le compte - et Travail les
+                réunit, parce que lui seul tient la fenêtre des étapes.
+              */
+              bandeau={
+                monDossier && !libre ? (
+                  <>
             <span className={styles.bandeauAssigneIcone} aria-hidden="true">
               <svg
                 viewBox="0 0 24 24"
@@ -578,19 +599,9 @@ export default async function DossierAvocat({
               dossier » - au-dessus de la liste qui la porte désormais en première ligne,
               avec son geste. Deux fois la même phrase, dont l'une ne fait rien.
             */}
-          </section>
-        )}
-
-            {/*
-              L'avancement au-dessus des tâches, sur une ligne.
-
-              Il tenait une carte de cinq étages au bas de la page, sous les tâches
-              qu'il résume - cinq intitulés, cinq explications, deux boutons. Le seul
-              geste qu'il porte est le passage d'un cran : le reste se lit en une ligne.
-              Le bloc garde son ancre, où mène la tâche « Déposer au guichet unique ».
-            */}
-
-            <Travail
+                  </>
+                ) : null
+              }
               /*
                * L'avis, le journal et les notes tiennent chacun dans un bouton.
                *
