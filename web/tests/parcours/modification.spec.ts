@@ -391,6 +391,74 @@ test("le prix et le règlement se voient sans descendre", async ({ page, request
   await expect(bouton).toBeInViewport();
 });
 
+test("un dossier réglé montre ses documents, comme une création", async ({ page, request }) => {
+  /*
+   * Trois onglets rangeaient la même page en trois écrans : l'avancement occupait le
+   * centre en grand - alors qu'on n'y fait rien - et ce que l'avocat relit se trouvait
+   * derrière un onglet, atteint par un lien posé dans la colonne. Deux clics pour voir
+   * ses actes, sur un dossier où c'est la seule chose qu'on vient regarder. La création
+   * montre tout d'un écran depuis toujours.
+   */
+  const dossier = await ouvrirUnDossier(request);
+  await request.put("/api/formalites/modification", {
+    data: {
+      dossier,
+      societe: SOCIETE,
+      codes: ["transfert_siege"],
+      valeurs: {
+        nouvelleAdresse: "5 avenue Victor Hugo",
+        nouvelleVille: "Lyon",
+        nouveauCodePostal: "69003",
+        dateEffetTransfert: "2026-09-15",
+      },
+      assemblee: {
+        date: "2026-09-01",
+        totalParts: 1000,
+        associes: [{ civilite: "Monsieur", prenom: "Jean", nom: "DUPONT", parts: 1000 }],
+      },
+    },
+  });
+
+  /*
+   * Le règlement s'écrit en base, non par la route : `paye` n'appartient pas au corps
+   * d'enregistrement - c'est l'encaissement qui le pose, et il n'a pas lieu ici.
+   */
+  const enregistre = await prisma.formalites.findUniqueOrThrow({ where: { id: dossier } });
+  await prisma.formalites.update({
+    where: { id: dossier },
+    data: {
+      data_json: JSON.stringify({ ...JSON.parse(enregistre.data_json ?? "{}"), paye: true }),
+    },
+  });
+
+  await prisma.documents.create({
+    data: {
+      formalite_id: dossier,
+      name: "Procès-verbal - Transfert de siège social",
+      /* Un acte que nous produisons, encore chez l'avocat : sans fichier à ouvrir. */
+      uploaded_by: "system",
+      status: "a_relire",
+      file_path: null,
+    },
+  });
+
+  await page.goto("/modification?dossier=" + dossier);
+
+  /* Les documents au centre, sans onglet à traverser. */
+  await expect(page.getByRole("heading", { name: "Mes documents" })).toBeVisible();
+  await expect(page.getByText("Procès-verbal - Transfert de siège social")).toBeVisible();
+  await expect(page.getByText("En relecture par l'avocat")).toBeVisible();
+
+  /* Les échanges dessous, sur le même écran. */
+  await expect(page.getByRole("heading", { name: "Échanges avec le cabinet" })).toBeVisible();
+
+  /* L'avancement passe en colonne, et les onglets ont disparu. */
+  await expect(page.getByRole("heading", { name: "Où en est votre dossier" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Voir les documents/ })).toHaveCount(0);
+  /* Plus d'onglet où aller : rien ne pointe vers une face séparée du dossier. */
+  await expect(page.locator('a[href*="onglet="]')).toHaveCount(0);
+});
+
 test("des actes publiés mais aucun reconnu : le client désigne ses statuts", async ({
   page,
   request,

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { ouIntrouvable } from "../introuvable";
 import { ouvrirModification, confirmerAuRetour } from "@/infrastructure/db/depots/modifications";
@@ -15,7 +14,6 @@ import {
   depotsDuDossier,
 } from "@/infrastructure/db/depots/documents";
 import { messagesDuDossier } from "@/infrastructure/db/depots/messages";
-import { Onglets, ongletDemande } from "@/components/formalite/Onglets";
 import {
   DocumentsDuDossier,
   type DocumentDuDossier,
@@ -45,22 +43,6 @@ function quandDuMessage(date: Date | null): string {
 }
 
 /** Le chevron d'un chemin : il dit qu'on va ailleurs, non qu'on déclenche une action. */
-function Chevron() {
-  return (
-    <svg
-      className={styles.confieChevron}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
 
 export default async function Modification({
   searchParams,
@@ -70,11 +52,10 @@ export default async function Modification({
     etape?: string;
     session?: string;
     paiement?: string;
-    onglet?: string;
   }>;
 }) {
   const utilisateur = await exigerUtilisateur();
-  const { dossier, etape, session, paiement, onglet } = await searchParams;
+  const { dossier, etape, session, paiement } = await searchParams;
 
   if (!dossier) {
     return (
@@ -143,7 +124,6 @@ export default async function Modification({
    */
   if (modification.paye && issue !== "annule") {
     const etat = await etatDuDossier(ligne);
-    const actif = ongletDemande(onglet);
     const base = "/modification?dossier=" + dossierId;
 
     /*
@@ -224,39 +204,52 @@ export default async function Modification({
           )}
 
           {/*
-            L'avancement à gauche, le dossier à droite.
-            Le mot du cabinet et ses deux liens s'étalaient sur toute la largeur, sous
-            un avancement qui en faisait autant : la page était une pile de bandes, et
-            l'on descendait pour trouver un bouton. En colonne, ce qui avance se lit
-            d'un côté, ce qu'on peut faire de l'autre.
-          */}
-          <Onglets
-            base={base}
-            actif={actif}
-            comptes={{ documents: documents.length, communication: fil.length }}
-          />
+            Les documents au centre, l'avancement à côté : le gabarit de la création.
 
+            Trois onglets rangeaient la même page en trois écrans. L'avancement occupait
+            le centre en grand - alors qu'il ne se lit qu'une fois, et qu'on n'y fait
+            rien - et ce que l'avocat relit se trouvait derrière un onglet, atteint par
+            un lien « Voir les documents » posé dans la colonne. Deux clics pour voir ses
+            actes, sur un dossier où c'est la seule chose qu'on vient regarder.
+
+            La création montre tout d'un écran depuis toujours : ses actes au centre, les
+            échanges dessous, l'avancement en compact dans la colonne. C'est le même
+            dossier réglé, il se lit de la même façon.
+          */}
           <div className={styles.suiviColonnes}>
             <div className={styles.suiviPrincipal}>
-              {actif === "suivi" && (
-                <Suivi
-                  etat={etat}
-                  demande={await derniereDemandeDeCorrections(dossierId)}
-                  lienAction={base}
-                  lienMessagerie={base + "&onglet=communication"}
-                />
-              )}
-
-              {actif === "documents" && (
+              <section className={styles.suiviSection}>
+                <h2 className={styles.suiviSectionTitre}>Mes documents</h2>
+                <p className={styles.suiviSectionTexte}>
+                  Les actes produits pour votre modification, et les pièces que vous avez
+                  déposées.
+                </p>
                 <DocumentsDuDossier dossier={dossierId} documents={documents} />
-              )}
+              </section>
 
-              {actif === "communication" && (
+              <section className={styles.suiviSection}>
+                <h2 className={styles.suiviSectionTitre}>Échanges avec le cabinet</h2>
                 <FilDuDossier dossier={dossierId} moi={utilisateur.id} messages={fil} />
-              )}
+              </section>
             </div>
 
             <aside className={styles.suiviColonne}>
+              {/*
+                L'avancement en compact, en tête de colonne.
+
+                Il occupait le centre avec l'explication de chaque étape sous son
+                intitulé - six paragraphes pour dire qu'il n'y a rien à faire. En
+                colonne, il garde le pourcentage, la carte de ce qui attend le client et
+                la suite des étapes, et laisse le centre à ce qu'on vient voir.
+              */}
+              <Suivi
+                compact
+                etat={etat}
+                demande={await derniereDemandeDeCorrections(dossierId)}
+                lienAction={base}
+                lienMessagerie={base}
+              />
+
               <div className={styles.confie}>
                 <h2 className={styles.confieTitre}>Votre dossier</h2>
 
@@ -288,60 +281,6 @@ export default async function Modification({
                   modification, et vous serez prévenu si quelque chose doit être repris.
                 </p>
 
-                {/*
-                  Deux destinations, non deux boutons.
-
-                  Côte à côte et de même poids, ils se disputaient l'œil sans que rien
-                  ne dise lequel choisir - et l'un des deux portait le liseré noir du
-                  bouton principal, qu'aucun des deux n'est. Ce sont des chemins : une
-                  icône, un intitulé, un chevron, comme partout ailleurs dans l'app.
-                */}
-                <div className={styles.confieLiens}>
-                  <Link className={styles.confieLien} href={base + "&onglet=communication"}>
-                    <span className={styles.confieIcone} aria-hidden="true">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
-                      </svg>
-                    </span>
-                    <span className={styles.confieLienTexte}>
-                      Écrire à l&apos;avocat
-                      <span className={styles.confieLienPrecision}>
-                        Une question sur votre dossier
-                      </span>
-                    </span>
-                    <Chevron />
-                  </Link>
-
-                  <Link className={styles.confieLien} href={base + "&onglet=documents"}>
-                    <span className={styles.confieIcone} aria-hidden="true">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                    </span>
-                    <span className={styles.confieLienTexte}>
-                      Voir les documents
-                      <span className={styles.confieLienPrecision}>
-                        Les actes de ce dossier
-                      </span>
-                    </span>
-                    <Chevron />
-                  </Link>
-                </div>
               </div>
             </aside>
           </div>

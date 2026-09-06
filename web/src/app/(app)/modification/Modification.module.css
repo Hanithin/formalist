@@ -4772,9 +4772,42 @@
 
 .suiviPrincipal {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
+/*
+ * Les deux sections du centre : les documents, puis les échanges.
+ *
+ * Elles remplacent trois onglets. Chacune se nomme, parce qu'elles se suivent
+ * désormais sur le même écran : sans titre, la liste des actes et le fil de discussion
+ * se lisaient comme une seule coulée.
+ */
+.suiviSection {
+  min-width: 0;
+}
+
+.suiviSectionTitre {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.suiviSectionTexte {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: #71717a;
+  letter-spacing: 0;
+}
+
+/* L'avancement, puis le dossier : deux cartes qui se suivent, non collées. */
 .suiviColonne {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   position: sticky;
   top: 20px;
   min-width: 0;
