@@ -64,7 +64,6 @@ function piecesDeLaTache(pieces: PieceAffichee[], tache: string): PieceAffichee[
 const ANCRES: Record<string, string> = {
   pieces: "#documents",
   documents: "#documents",
-  statuts: "#statuts",
   annonce: "#annonce",
   communication: "#communication",
   historique: "#historique",
@@ -562,6 +561,17 @@ export function Travail({
      * « ?onglet=pieces » n'y était plus lu par personne. Le lien rechargeait la page à
      * l'endroit d'où l'on venait, ce qui apprend à ne plus cliquer.
      */
+    /*
+     * Les statuts ont quitté la page : leur tâche mène à la leur.
+     *
+     * Une ancre y menait, vers le bas du dossier, sous les documents et sous le fil des
+     * échanges. On cliquait, la page défilait deux écrans plus bas, et rien ne
+     * paraissait avoir bougé.
+     */
+    if (tache.onglet === "statuts") {
+      return { libelle: "Y aller", href: "/avocat/" + dossier + "/statuts" };
+    }
+
     if (tache.onglet) {
       const ancre = ANCRES[tache.onglet];
       return ancre ? { libelle: "Y aller", href: ancre } : null;

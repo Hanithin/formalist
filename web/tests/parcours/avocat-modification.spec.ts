@@ -352,12 +352,86 @@ test("un dossier incomplet refuse la production, en disant ce qui manque", async
   expect(await prisma.documents.count({ where: { formalite_id: troue.id } })).toBe(0);
 });
 
-test("sans statuts au dossier, l'onglet le dit au lieu de planter", async ({ page }) => {
+test("les statuts se modifient depuis leur ligne, sur leur page", async ({ page }) => {
+  /*
+   * L'éditeur vivait au bas du dossier, sous les documents et sous le fil des échanges.
+   * Le bouton qui y menait n'était qu'une ancre : on cliquait, la page défilait deux
+   * écrans plus bas, et rien ne paraissait avoir bougé. Il était par ailleurs posé sur
+   * une ligne à part dont le nom - « Statuts mis à jour » - se faisait chasser du cadre
+   * par l'explication qui suivait sa pastille : on lisait une ligne anonyme.
+   */
   const dossier = await dossierDeModification();
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await prisma.documents.create({
+    data: {
+      formalite_id: dossier,
+      name: "Statuts en vigueur",
+      uploaded_by: "system",
+      status: "generated",
+      file_path: null,
+    },
+  });
+
+  await page.goto("/avocat/" + dossier);
+
+  /* Le geste est sur la ligne des statuts, à côté d'« Ouvrir ». */
+  const ligne = page.locator("text=Statuts en vigueur").first();
+  await expect(ligne).toBeVisible();
+  await page.getByRole("link", { name: "Modifier les statuts" }).click();
+
+  await page.waitForURL(/\/avocat\/\d+\/statuts$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("AVOCAT ESSAI MODIF");
+
+  /*
+   * La sortie reste en vue : la page ne défile pas - l'éditeur remplit l'écran et fait
+   * défiler son document à l'intérieur - et un bouton posé en pied y serait
+   * inatteignable.
+   */
+  const retour = page.getByRole("link", { name: "Revenir au dossier" });
+  await expect(retour).toBeVisible();
+  await retour.click();
+  await page.waitForURL(/\/avocat\/\d+$/);
+});
+
+test("un dossier de création n'a pas de page de statuts", async ({ page }) => {
+  /* La retouche ne concerne que les modifications qui touchent aux statuts. */
+  const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
+  const avocat = await prisma.users.findFirstOrThrow({
+    where: { email: { startsWith: "avocat-parcours" } },
+  });
+  const creation = await prisma.formalites.create({
+    data: {
+      user_id: client.id,
+      assigned_avocat_id: avocat.id,
+      type: "creation",
+      forme: "SASU",
+      societe: "AVOCAT ESSAI SANS STATUTS",
+      status: "en_attente_validation",
+      phase: 5,
+      business_sub_phase: "5a",
+      data_json: JSON.stringify({ denomination: "AVOCAT ESSAI SANS STATUTS", forme: "SASU" }),
+    },
+  });
+  semes.push(creation.id);
+
+  const reponse = await page.goto("/avocat/" + creation.id + "/statuts");
+  expect(reponse?.status()).toBe(404);
+});
+
+test("sans statuts au dossier, la page le dit au lieu de planter", async ({ page }) => {
+  /*
+   * Le refus vivait dans la section du bas du dossier ; il tient maintenant la page de
+   * l'éditeur, où l'on arrive par la ligne qui annonce les statuts à produire.
+   */
+  const dossier = await dossierDeModification();
+
+  await page.goto("/avocat/" + dossier);
+  await page.getByRole("link", { name: "Mettre à jour les statuts" }).click();
+  await page.waitForURL(/\/avocat\/\d+\/statuts$/);
 
   // Le signaleur de navigation de Next porte aussi role="alert", vide : on vise le refus.
   await expect(page.getByRole("alert").filter({ hasText: /statuts/i })).toBeVisible();
+  /* Et la sortie reste offerte : un écran sans issue n'est pas un écran. */
+  await expect(page.getByRole("link", { name: "Revenir au dossier" })).toBeVisible();
 });
 
 test("un dossier de création ne montre pas de statuts à retoucher", async ({ page }) => {
@@ -414,7 +488,7 @@ test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {
   const { PDFDocument, StandardFonts } = await import("pdf-lib");
   const dossier = await dossierDeModification();
 
-  await page.goto("/avocat/" + dossier);
+  await page.goto("/avocat/" + dossier + "/statuts");
   await expect(page.getByRole("alert").filter({ hasText: /statuts/i }).first()).toBeVisible();
 
   const document = await PDFDocument.create();
@@ -479,7 +553,7 @@ test("le placement des cadres survit à un rechargement", async ({ page, request
   });
 
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
 
   /*
    * On attend que l'image de la page soit rendue avant de viser.
@@ -569,7 +643,7 @@ test("l'historique dit qui a fait quoi, et on revient dessus", async ({ page, re
   });
 
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
 
   await page.waitForFunction(
     () => {
@@ -748,7 +822,7 @@ test("le suivi compte les changements, non les cadres", async ({ page, request }
   });
 
   await page.setViewportSize({ width: 1600, height: 1100 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
 
   await page.waitForFunction(
     () => {
@@ -832,24 +906,20 @@ test("poser un cadre libre s'atteint sans faire défiler", async ({ page, reques
   });
 
   await page.setViewportSize({ width: 1600, height: 700 });
-  await page.goto("/avocat/" + dossier);
+  await page.goto("/avocat/" + dossier + "/statuts");
 
   const poser = page.getByRole("button", { name: /Ajouter un cadre libre/ });
   await expect(poser).toBeVisible();
 
   /*
-   * Sans défiler dans l'éditeur, non dans la page.
+   * Sans défiler.
    *
-   * La commande se mesurait au haut de la fenêtre, quand l'éditeur occupait l'écran
-   * seul, derrière son onglet. Le dossier tient maintenant sur une page et l'éditeur
-   * vient après le reste : ce qu'on vérifie est qu'une fois arrivé dessus, la commande
-   * est là - non qu'elle soit au sommet du dossier.
+   * L'éditeur a retrouvé sa page : la commande se mesure de nouveau au haut de la
+   * fenêtre, comme du temps de son onglet. Entre les deux, il vivait au bas du dossier
+   * et l'on ne pouvait vérifier que sa position relative au haut de l'éditeur.
    */
-  const editeur = page.locator("#statuts");
-  await editeur.scrollIntoViewIfNeeded();
-  const hautDeLEditeur = (await editeur.boundingBox())!.y;
   const boite = (await poser.boundingBox())!;
-  expect(boite.y - hautDeLEditeur).toBeLessThan(700);
+  expect(boite.y).toBeLessThan(700);
 
   /*
    * On juge le résultat au panneau, non au nombre de cadres sur la page : un cadre
@@ -879,7 +949,7 @@ test("le numéro de page s'écrit, au lieu de cliquer vingt fois", async ({ page
   });
 
   await page.setViewportSize({ width: 1600, height: 900 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
 
   const numero = page.getByRole("textbox", { name: "Numéro de page" });
   await expect(numero).toHaveValue("1");
@@ -1027,7 +1097,7 @@ test("le texte écrit dans un cadre s'affiche vraiment une fois refermé", async
   });
 
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
 
   // Les cadres se posent sur l'image en pourcentages : tant qu'elle n'a pas sa
   // hauteur, ils sont ailleurs et le clic tombe à côté.
@@ -1104,7 +1174,7 @@ test("la barre de mise en forme se règle vraiment", async ({ page, request }) =
   });
 
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
   await page.waitForFunction(
     () => {
       const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
@@ -1204,7 +1274,7 @@ test("un clic dehors referme le cadre et sa barre", async ({ page, request }) =>
   });
 
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
   await page.waitForFunction(
     () => {
       const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
@@ -1275,7 +1345,7 @@ test("les poignées montrent ce qui se saisit", async ({ page, request }) => {
   });
 
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
   await page.waitForFunction(
     () => {
       const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;
@@ -1359,7 +1429,7 @@ test("la taille se règle aussi à la flèche", async ({ page, request }) => {
   });
 
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/avocat/" + dossier + "?onglet=statuts");
+  await page.goto("/avocat/" + dossier + "/statuts");
   await page.waitForFunction(
     () => {
       const image = document.querySelector("[class*='editeurPage'] img") as HTMLImageElement | null;

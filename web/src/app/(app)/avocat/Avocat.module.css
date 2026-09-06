@@ -1762,6 +1762,74 @@
  * partagent : leur tableau se retrouvait rangé dans la colonne de droite, large de
  * trois cent quarante pixels, et leurs filtres dans celle de gauche.
  */
+/*
+ * L'éditeur des statuts, sur sa page.
+ *
+ * Il vivait au bas du dossier, sous les documents et le fil des échanges, et y perdait
+ * la moitié de sa largeur au profit de la colonne : les poignées des cadres tombaient
+ * à sept pixels de côté, et l'on ne saisit pas un cadre à cette taille. Ici il a
+ * l'écran, et le retour au dossier se pose en tête et en pied - la retouche se termine
+ * en bas, sur « Produire les statuts à jour », et remonter chercher la sortie ferait
+ * parcourir le document entier.
+ */
+.statutsPleinePageTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+  /* En vue quoi qu'il arrive : la sortie ne se cherche pas. */
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding-top: 4px;
+  background: #f7f7f8;
+}
+
+.statutsPleinePageTitre {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.statutsPleinePageMention {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #71717a;
+  letter-spacing: 0;
+}
+
+
+.statutsRetour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+  letter-spacing: 0;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.statutsRetour:hover {
+  border-color: #18181b;
+  background: #fafafa;
+}
+
+.statutsRetour svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .contentDossier {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;

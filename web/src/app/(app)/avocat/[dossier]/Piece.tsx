@@ -64,7 +64,22 @@ export function estUnActeProduit(piece: PieceAffichee): boolean {
   return piece.depose === "system" && !estStatutsRepris(piece.nom);
 }
 
-export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: number }) {
+export function Piece({
+  piece,
+  dossier,
+  retouchable,
+}: {
+  piece: PieceAffichee;
+  dossier: number;
+  /**
+   * Le dossier touche-t-il aux statuts ?
+   *
+   * La ligne des statuts en vigueur porte alors le geste qui les reprend. Il vivait sur
+   * une ligne à part, sous celle-ci, dont le nom se faisait chasser du cadre par
+   * l'explication qui suivait la pastille : on lisait une ligne anonyme et un bouton.
+   */
+  retouchable?: boolean;
+}) {
   const brut = etatDocument({
     name: piece.nom,
     status: piece.statut,
@@ -138,13 +153,20 @@ export function Piece({ piece, dossier }: { piece: PieceAffichee; dossier: numbe
         {piece.fichier && <OuvrirLaPiece nom={piece.nom} fichier={piece.fichier} />}
 
         {/*
-          Les statuts à jour ne se corrigent pas dans un traitement de texte : ils
-          sortent de l'éditeur de retouches, qui reprend le document du greffe passage
-          par passage.
+          Les statuts ne se corrigent pas dans un traitement de texte : ils sortent de
+          l'éditeur de retouches, qui reprend le document du greffe passage par passage.
+
+          Le bouton menait à une ancre - « #statuts » - vers le bas de la page du
+          dossier, sous les documents et sous le fil des échanges : on cliquait sans
+          rien voir arriver, la page ayant défilé deux écrans plus bas. L'éditeur a sa
+          page, et le bouton y mène.
         */}
-        {piece.nom === TITRE_STATUTS_A_JOUR && (
-          <a href="#statuts" className={styles.decisionPrincipale}>
-            Mettre à jour les statuts
+        {(piece.nom === TITRE_STATUTS_A_JOUR ||
+          (retouchable && piece.nom === TITRE_STATUTS_EN_VIGUEUR)) && (
+          <a href={"/avocat/" + dossier + "/statuts"} className={styles.decisionPrincipale}>
+            {piece.nom === TITRE_STATUTS_A_JOUR
+              ? "Mettre à jour les statuts"
+              : "Modifier les statuts"}
           </a>
         )}
 

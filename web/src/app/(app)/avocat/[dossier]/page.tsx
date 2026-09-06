@@ -14,14 +14,17 @@ import { rangDeLActe } from "@/domain/formalite/documents";
 import { libelleJournal } from "@/domain/formalite/journal";
 import { SOUS_PHASES_ORDONNEES, estSousPhase } from "@/domain/formalite/avocat";
 import { Travail } from "./Travail";
-import { Statuts } from "./Statuts";
 import { Annonce } from "./Annonce";
 import {
   travailDuCabinet,
   typeDeDossier,
   type TypeDeDossier,
 } from "@/domain/formalite/cabinet";
-import { statutsAMettreAJour, TITRE_STATUTS_A_JOUR } from "@/domain/modification/formalites";
+import {
+  statutsAMettreAJour,
+  TITRE_STATUTS_A_JOUR,
+  TITRE_STATUTS_EN_VIGUEUR,
+} from "@/domain/modification/formalites";
 import { publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { aRelire } from "@/domain/document/publication";
@@ -405,10 +408,19 @@ export default async function DossierAvocat({
    * pas, aucune ligne ne les annonce dans les pièces - et l'avocat ne voit pas qu'il
    * manque au dossier un document que le greffe attend.
    */
+  /*
+   * Une ligne à part, seulement s'il n'y en a pas d'autre où poser le geste.
+   *
+   * Le geste vit désormais sur la ligne des statuts en vigueur, à côté d'« Ouvrir ».
+   * Tant qu'ils ne sont pas au dossier - le client n'a pas encore franchi l'étape 5 -
+   * il n'existe aucune ligne où l'accrocher, et celle-ci reste le seul chemin vers
+   * l'éditeur.
+   */
   const statutsAProduire =
     type === "modification" &&
     statutsAMettreAJour(codes) &&
-    !documents.some((d) => d.name === TITRE_STATUTS_A_JOUR);
+    !documents.some((d) => d.name === TITRE_STATUTS_A_JOUR) &&
+    !documents.some((d) => d.name === TITRE_STATUTS_EN_VIGUEUR);
   const faites = taches.filter((t) => t.etat === "faite").length;
   /*
    * Quand le dossier s'est achevé.
@@ -648,7 +660,12 @@ export default async function DossierAvocat({
                 <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />
               ) : (
                 pieces.map((piece) => (
-                  <Piece key={piece.id} piece={piece} dossier={dossier.id} />
+                  <Piece
+                    key={piece.id}
+                    piece={piece}
+                    dossier={dossier.id}
+                    retouchable={retoucheDesStatuts}
+                  />
                 ))
               )}
           {/*
@@ -675,16 +692,25 @@ export default async function DossierAvocat({
               </div>
               <div className={styles.docInfo}>
                 <div className={styles.docName}>Statuts mis à jour</div>
+                {/*
+                  La mention tient en trois mots.
+
+                  « Chaque passage que les décisions changent est repris dans les statuts
+                  en vigueur » chassait le nom hors du cadre depuis que les lignes de
+                  document tiennent sur une seule : on lisait une ligne anonyme portant
+                  une pastille et un bouton. La phrase entière accueille l'éditeur, sur
+                  sa page, où elle a la place de se lire.
+                */}
                 <div className={styles.docMeta}>
                   <span className={`${styles.docEtat} ${styles.attente}`}>En cours de révision</span>
-                  <span>
-                    chaque passage que les décisions changent est repris dans les statuts en
-                    vigueur
-                  </span>
+                  <span className={styles.docQuand}>à produire depuis les statuts en vigueur</span>
                 </div>
               </div>
               <div className={styles.docActions}>
-                <Link href="#statuts" className={styles.decisionPrincipale}>
+                <Link
+                  href={"/avocat/" + dossier.id + "/statuts"}
+                  className={styles.decisionPrincipale}
+                >
                   Mettre à jour les statuts
                 </Link>
               </div>
@@ -939,23 +965,6 @@ export default async function DossierAvocat({
           </div>
 
         </aside>
-
-        {/*
-          L'éditeur des statuts prend la page entière.
-          
-          Rangé dans la colonne du travail, il perdait la moitié de sa largeur : la page
-          du PDF s'affichait plus petite, et avec elle les poignées des cadres - sept
-          pixels de côté au lieu de dix. On ne saisit pas un cadre à cette taille. Un
-          éditeur n'est pas un panneau de lecture : il traverse les deux colonnes.
-        */}
-        <div className={styles.pleineLargeur}>
-{retoucheDesStatuts && (
-          <section id="statuts" className={styles.sectionDuDossier}>
-            <h2 className={styles.sectionDuDossierTitre}>Les statuts</h2>
-            <Statuts dossier={dossier.id} />
-          </section>
-        )}
-        </div>
 
       </div>
     </main>
