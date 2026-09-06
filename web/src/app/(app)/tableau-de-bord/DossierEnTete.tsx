@@ -22,6 +22,8 @@ export interface EtapeDuChemin {
   /** Ce qui se passe, dit au client. Vide sur les étapes d'un formulaire. */
   explication?: string;
   etat: "faite" | "en_cours" | "a_venir";
+  /** Qui tient l'étape : le client, ou le cabinet. */
+  main?: "vous" | "avocat";
 }
 
 export interface DossierEnTeteProps {
@@ -66,13 +68,36 @@ export function DossierEnTete({
   nonLus,
 }: DossierEnTeteProps) {
   /*
-   * Deux attentes, pas davantage.
+   * La liste ne paraît que si elle apprend quelque chose.
    *
-   * Un dossier qui en porte six a un problème que l'accueil ne résoudra pas : on
-   * l'ouvre. Ce qui tient ici, c'est de quoi décider s'il faut l'ouvrir maintenant.
+   * Une attente unique et sans blocage disait trois fois le même fait : l'étape en
+   * cours, « À faire · Modification à finaliser · Reprenez la saisie », et le bouton
+   * « Reprendre ». Elle se réduit alors à sa phrase, en sous-titre, et le bouton porte
+   * le geste.
+   *
+   * Deux attentes, pas davantage : un dossier qui en porte six a un problème que
+   * l'accueil ne résoudra pas, on l'ouvre. Ce qui tient ici, c'est de quoi décider s'il
+   * faut l'ouvrir maintenant.
    */
-  const retenues = actions.slice(0, 2);
-  const reste = actions.length - retenues.length;
+  /*
+   * Rien à reprendre quand le dossier est chez l'avocat.
+   *
+   * Le chemin disait « Vérification par un avocat » et, deux lignes plus haut,
+   * « Reprenez la saisie là où vous l'avez laissée » : deux affirmations contraires sur
+   * le même écran. Le suivi sait qui tient l'étape en cours ; c'est lui qui tranche, et
+   * l'attente du client se tait tant que ce n'est pas son tour.
+   */
+  const enCoursChezNous = etapes?.some((e) => e.etat === "en_cours" && e.main === "avocat");
+
+  const detaillees =
+    !enCoursChezNous && (actions.length > 1 || actions[0]?.urgent === true);
+  const retenues = detaillees ? actions.slice(0, 2) : [];
+  const reste = detaillees ? actions.length - retenues.length : 0;
+  const sousTitre = enCoursChezNous
+    ? null
+    : detaillees
+      ? null
+      : (actions[0]?.precision ?? prochaineEtape);
 
   return (
     <section className={styles.teteCarte} aria-labelledby="dossier-en-tete">
@@ -86,15 +111,13 @@ export function DossierEnTete({
       </h2>
 
       {/*
-        La prochaine étape, quand rien de plus précis ne la dit.
+        Ce qu'on attend, en une phrase, quand la liste ne s'impose pas.
 
         Les deux se rendaient l'une sous l'autre : « Modification à finaliser :
         reprenez la saisie là où vous l'avez laissée », puis « À faire · Modification à
-        finaliser · Reprenez la saisie là où vous l'avez laissée ». La liste des
-        attentes en dit davantage - elle nomme chacune et marque celles qui bloquent -
-        et c'est elle qui reste quand elle existe.
+        finaliser · Reprenez la saisie là où vous l'avez laissée ».
       */}
-      {retenues.length === 0 && <p className={styles.teteEtape}>{prochaineEtape}</p>}
+      {sousTitre && <p className={styles.teteEtape}>{sousTitre}</p>}
 
       {/*
         Le chemin en descente, avec ce qui s'y passe.
@@ -166,7 +189,8 @@ export function DossierEnTete({
 
       <div className={styles.tetePied}>
         <Link href={lien} className={styles.teteGeste}>
-          {geste}
+          {/* On ne « reprend » pas un dossier qu'on n'a pas la main pour avancer. */}
+          {enCoursChezNous ? "Voir le dossier" : geste}
           <svg
             viewBox="0 0 24 24"
             fill="none"

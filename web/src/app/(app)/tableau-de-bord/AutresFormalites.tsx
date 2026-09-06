@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FAMILLES } from "@/domain/navigation/parcours";
-import { StatutBadge, dateLisible } from "./Sections";
+import { dateLisible } from "./Sections";
 import { ToutesLesAttentes } from "./ToutesLesAttentes";
 import type { ActionDeDossier } from "@/domain/formalite/actions";
 import type { Echeance, Ton } from "@/domain/formalite/accueil";
@@ -23,8 +23,20 @@ export interface AutreFormalite {
   societe: string;
   nature: string;
   etat: { ton: Ton; libelle: string };
-  /** Combien de gestes ce dossier attend de son propriétaire. */
-  attentes: number;
+  /**
+   * Ce que le dossier attend, en toutes lettres - « Choisir votre banque ».
+   *
+   * Chaque ligne portait deux marqueurs qui disaient la même chose : la pastille
+   * « Action requise » et, dessous, « 1 geste attendu ». Six lignes de suite avec la
+   * même valeur : quand tout est marqué urgent, plus rien ne l'est, et l'on ne
+   * distinguait aucune ligne des autres. Ce qui les distingue n'est pas qu'elles
+   * attendent, c'est ce qu'elles attendent.
+   *
+   * Nul quand la balle n'est pas dans le camp du client.
+   */
+  attente: string | null;
+  /** Ce qui bloque le dossier, par opposition à ce qui l'avance. */
+  bloque: boolean;
   lien: string;
 }
 
@@ -44,6 +56,8 @@ export function AutresFormalites({
 }) {
   return (
     <aside className={styles.coteColonne} aria-label="Vos autres formalités">
+      {/* Le voile qui s'allume au défilement : voir `.voileDuHaut`. */}
+      <span className={styles.voileDuHaut} aria-hidden="true" />
       <section className={styles.coteCarte}>
         <div className={styles.coteTete}>
           <h2 className={styles.coteTitre}>Vos autres formalités</h2>
@@ -56,19 +70,31 @@ export function AutresFormalites({
               <Link href={formalite.lien} className={styles.coteLigne}>
                 <span className={styles.coteLigneCorps}>
                   <span className={styles.coteSociete}>{formalite.societe}</span>
-                  <span className={styles.coteNature}>{formalite.nature}</span>
+                  <span className={styles.coteNature}>
+                    {formalite.nature}
+                    {formalite.attente && (
+                      <>
+                        {" · "}
+                        <span
+                          className={formalite.bloque ? styles.coteAttenteBloquante : undefined}
+                        >
+                          {formalite.attente}
+                        </span>
+                      </>
+                    )}
+                  </span>
                 </span>
 
-                <span className={styles.coteEtat}>
-                  <StatutBadge ton={formalite.etat.ton} libelle={formalite.etat.libelle} />
-                  {formalite.attentes > 0 && (
-                    <span className={styles.coteAttentes}>
-                      {formalite.attentes > 1
-                        ? formalite.attentes + " gestes attendus"
-                        : "1 geste attendu"}
-                    </span>
-                  )}
-                </span>
+                {/*
+                  Un seul élément à droite, et seulement quand il apprend quelque chose.
+                  
+                  La pastille en haut et le compte en bas dessinaient un zigzag sur six
+                  lignes. Un dossier qui attend le client le dit à gauche, en nommant le
+                  geste ; les autres disent qui le tient, ce que la gauche ne dit pas.
+                */}
+                {!formalite.attente && (
+                  <span className={styles.coteMain}>{formalite.etat.libelle}</span>
+                )}
               </Link>
             </li>
           ))}

@@ -44,7 +44,7 @@ const FORMALITES_MONTREES = 6;
  */
 function friseDuDossier(
   dossier: DossierDAccueil,
-  suivi: { titre: string; explication: string; etat: string }[]
+  suivi: { titre: string; explication: string; etat: string; main: string }[]
 ): EtapeDuChemin[] | undefined {
   if (suivi.length > 0) {
     return suivi.map((etape) => ({
@@ -52,6 +52,8 @@ function friseDuDossier(
       explication: etape.explication,
       etat:
         etape.etat === "faite" ? "faite" : etape.etat === "en_cours" ? "en_cours" : "a_venir",
+      /* Qui tient l'étape : l'encadré s'en sert pour ne rien réclamer hors de son tour. */
+      main: etape.main === "vous" ? "vous" : "avocat",
     }));
   }
 
@@ -266,7 +268,14 @@ export default async function TableauDeBord() {
       societe: nomComplet(dossier),
       nature: libelleDuType(dossier.type) ?? "Formalité",
       etat: tonDuDossier(dossier),
-      attentes: dossier.actions.length,
+      /*
+       * Le premier geste attendu, nommé.
+       *
+       * Les attentes sont déjà ordonnées - ce qui bloque d'abord - et c'est la
+       * première qui dit le mieux ce que la ligne demande.
+       */
+      attente: dossier.attendLeClient ? (dossier.actions[0]?.titre ?? null) : null,
+      bloque: dossier.actions[0]?.urgent === true,
       lien: lienDu(dossier.id),
     }));
 
@@ -299,6 +308,8 @@ export default async function TableauDeBord() {
       <div className={styles.content}>
         <div className={styles.deuxColonnes}>
           <div className={styles.colonneDeTete}>
+            {/* Le voile qui s'allume au défilement : voir `.voileDuHaut`. */}
+            <span className={styles.voileDuHaut} aria-hidden="true" />
             {enTete ? (
               <DossierEnTete
                 nature={libelleDuType(enTete.type) ?? "Formalité"}

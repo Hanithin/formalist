@@ -66,21 +66,24 @@ test.describe("tableau de bord du client", () => {
     expect(boiteDate!.x).toBeGreaterThan(boiteTitre!.x + boiteTitre!.width);
   });
 
-  test("dit ce que le dossier en tête attend, sous le dossier qu'il retient", async ({ page }) => {
+  test("chaque ligne dit ce que son dossier attend, en toutes lettres", async ({ page }) => {
     /*
-     * Les attentes de tous les dossiers vivaient dans une carte commune, « Ce qui
-     * requiert votre attention » : soixante-trois lignes où l'on cherchait celle du
-     * dossier qu'on avait en tête. Celles du dossier repris se lisent sous lui ; les
-     * autres se comptent sur la ligne de leur dossier, à droite.
+     * Les attentes vivaient dans une carte commune, « Ce qui requiert votre attention » :
+     * soixante-trois lignes où l'on cherchait celle du dossier qu'on avait en tête. Puis
+     * chaque ligne de la colonne portait deux marqueurs qui disaient la même chose - la
+     * pastille « Action requise » et « 1 geste attendu » - six fois de suite avec la même
+     * valeur. Ce qui distingue ces dossiers n'est pas qu'ils attendent, c'est ce qu'ils
+     * attendent : « Choisir votre banque », « Compléter les informations ».
      */
     await page.goto("/tableau-de-bord");
 
-    const encadre = page.locator("section[aria-labelledby='dossier-en-tete']");
-    await expect(encadre.getByText("À faire")).toBeVisible();
-    await expect(encadre.getByRole("listitem").first()).toBeVisible();
-
     const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
-    await expect(colonne.getByText(/gestes? attendus?/).first()).toBeVisible();
+    const premiere = colonne.locator("li").first();
+
+    /* Ni pastille répétée, ni compte : le geste, nommé. */
+    await expect(premiere.getByText("Action requise")).toHaveCount(0);
+    await expect(premiere.getByText(/gestes? attendus?/)).toHaveCount(0);
+    await expect(premiere.getByText(/·/)).toBeVisible();
   });
 
   test("le geste de l'encadré mène directement là où il faut agir", async ({ page }) => {
@@ -142,9 +145,12 @@ test.describe("tableau de bord du client", () => {
     expect(montrees, "la colonne est un extrait").toBeGreaterThan(0);
     await expect(colonne.getByRole("link", { name: "Toutes mes formalités" })).toBeVisible();
 
-    /* Chaque ligne distingue la nature de la formalité du nom de la société. */
+    /*
+     * Chaque ligne distingue la nature de la formalité du nom de la société, et dit ce
+     * que le dossier attend : « Création · Choisir votre banque ».
+     */
     await expect(
-      colonne.getByText(/^(Création|Modification|Dépôt des comptes|Fermeture)$/).first()
+      colonne.getByText(/^(Création|Modification|Dépôt des comptes|Fermeture)( · .+)?$/).first()
     ).toBeVisible();
   });
 
@@ -514,7 +520,7 @@ test.describe("ce qui requiert votre attention", () => {
     ).toHaveCount(0);
 
     const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
-    await colonne.getByRole("button", { name: /Voir tout/ }).click();
+    await colonne.getByRole("button", { name: /Ce qui vous attend/ }).click();
 
     const fenetre = page.getByRole("dialog", { name: "Ce qui requiert votre attention" });
     await expect(fenetre).toBeVisible();
@@ -540,9 +546,10 @@ test.describe("ce qui requiert votre attention", () => {
     const colonne = page.getByRole("complementary", { name: "Vos autres formalités" });
 
     const dansLEncadre = await encadre.getByText("Un document à remplacer").count();
-    const compte = await colonne.getByText(/gestes? attendus?/).count();
+    /* Chaque ligne de la colonne nomme le geste qu'elle attend, après sa nature. */
+    const nommees = await colonne.getByText(/ · /).count();
 
-    expect(dansLEncadre + compte, "ce qui bloque doit se voir").toBeGreaterThan(0);
+    expect(dansLEncadre + nommees, "ce qui bloque doit se voir").toBeGreaterThan(0);
   });
 });
 

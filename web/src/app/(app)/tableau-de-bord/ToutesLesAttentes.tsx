@@ -46,8 +46,14 @@ export function ToutesLesAttentes({
 
   return (
     <>
+      {/*
+        Le libellé dit ce qu'on ouvre.
+
+        « Voir tout », à côté de « Toutes mes formalités », promettait la même chose et
+        menait ailleurs : l'un est la liste des dossiers, l'autre ce qu'ils attendent.
+      */}
       <button type="button" className={styles.socSeeAll} onClick={() => setOuverte(true)}>
-        Voir tout
+        Ce qui vous attend
         <span className={styles.socSeeAllCount}>{actions.length}</span>
         <svg
           viewBox="0 0 24 24"

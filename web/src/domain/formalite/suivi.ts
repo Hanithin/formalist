@@ -298,7 +298,7 @@ const MODIFICATION: Definition[] = [
     identifiant: "verification",
     titre: "Vérification par un avocat",
     explication:
-      "Votre avocat contrôle le procès-verbal, les statuts à jour et vos justificatifs : rien ne part au greffe sans son accord. Il vous écrit si un point doit être repris.",
+      "Votre avocat contrôle le procès-verbal, les statuts à jour et vos justificatifs. Rien ne part au greffe tant qu'il ne les a pas validés ; il vous écrit si un point doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
     action: "Voir ce qui est demandé",
     ou: "messagerie",
@@ -371,7 +371,7 @@ const COMPTES: Definition[] = [
     identifiant: "verification",
     titre: "Vérification par un avocat",
     explication:
-      "Votre avocat contrôle le procès-verbal d'approbation, la déclaration de confidentialité s'il y en a une, et la cohérence de vos comptes : rien ne part au greffe sans son accord. Il vous écrit si un point doit être repris.",
+      "Votre avocat contrôle le procès-verbal d'approbation, la déclaration de confidentialité s'il y en a une, et la cohérence de vos comptes. Rien ne part au greffe tant qu'il ne les a pas validés ; il vous écrit si un point doit être repris.",
     main: (e) => (e.status === "corrections_demandees" ? "vous" : "avocat"),
     action: "Voir ce qui est demandé",
     ou: "messagerie",
