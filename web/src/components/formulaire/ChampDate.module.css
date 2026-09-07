@@ -61,6 +61,18 @@
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 
+/*
+  Vers le haut quand le bas manque.
+
+  Le champ est parfois en pied d'une fenêtre qui défile : le calendrier ouvert vers le
+  bas passait sous le bord et devenait invisible. On le retourne alors, ancré au-dessus
+  du champ - la colonne des jours ne bouge pas, seul le sens change.
+*/
+.calendrierHaut {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
 .tete {
   display: flex;
   align-items: center;

@@ -5055,3 +5055,251 @@ button.ligneCorps:disabled {
     font-size: 16px;
   }
 }
+
+/*
+  Le dépôt au guichet unique.
+
+  La fenêtre reprend la mise en forme de la correction - même voile, même carte, mêmes
+  boutons - et n'ajoute que ce qu'elle a de particulier : des blocs de saisie séparés
+  par un filet, et la fiche du dépôt une fois qu'il est parti.
+*/
+.guichetChamps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-right: 6px;
+  letter-spacing: 0;
+}
+
+.guichetBloc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 22px;
+  border-top: 1px solid #ececec;
+}
+
+.guichetBloc:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+/*
+  Un titre par bloc, et la phrase sous le titre.
+
+  Les blocs se suivaient sans nom : trois listes déroulantes, deux champs de texte et
+  une date, séparés par un filet, sans que rien ne dise où l'un finissait et où l'autre
+  commençait. Le titre porte ce qu'on demande, la légende dit pourquoi - et l'espace
+  entre les deux vaut mieux qu'un second filet.
+*/
+.guichetTitre {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.guichetLegende {
+  margin: -4px 0 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #666;
+  letter-spacing: 0;
+}
+
+.guichetLabel {
+  display: flex;
+  flex-direction: column;
+  /*
+    La feuille globale donne à tout `label` quatorze pixels de marge haute et cinq de
+    marge basse. Dans une colonne qui gère déjà ses écarts, les deux s'ajoutaient à
+    l'espacement du bloc : les champs flottaient loin de leur légende et loin de leur
+    intitulé.
+  */
+  margin: 0;
+  gap: 7px;
+  /*
+    La largeur des champs est celle de toute l'application.
+
+    `globals.css` plafonne les champs de saisie à 460 px - une ligne plus longue se lit
+    mal, et c'est la mesure de tous les formulaires du produit. Les listes maison sont
+    des boutons, que ce plafond ne touche pas : elles prenaient donc les sept cents
+    pixels de la fenêtre pendant que les champs s'arrêtaient au milieu, et la colonne
+    partait de guingois. On les ramène au même rang.
+  */
+  max-width: 460px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  letter-spacing: 0;
+}
+
+/*
+  Le champ de date ouvre son calendrier au-dessus du reste.
+
+  Il est en position absolue dans son cadre : sans contexte d'empilement propre, il
+  passait derrière le bloc suivant. La fenêtre défile, donc il suit son champ plutôt
+  que de flotter.
+*/
+.guichetLabel > div {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+  La hauteur des champs, celle des listes maison.
+
+  `--hauteur-controle` n'est déclarée que sur la barre d'outils : ici elle ne valait
+  rien, et `height` restait sans effet. Les champs tombaient alors à la hauteur de leur
+  texte - dix-neuf pixels - et le rayon de dix les changeait en pastilles. On aligne sur
+  les quarante-quatre pixels de `ChampChoix`, pour que la liste et le champ qui la suit
+  aient le même bord.
+*/
+.guichetLabel input {
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.guichetLabel input:focus {
+  outline: none;
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+
+.guichetResultat {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  letter-spacing: 0;
+}
+
+/*
+  L'état, en tête et en toutes lettres.
+
+  C'est la phrase du guichet qui compte - « la formalité attend la validation d'au moins
+  un partenaire valideur » - non son code : l'avocat sait alors s'il lui reste un geste.
+*/
+.guichetStatut {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.guichetFiche {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 20px;
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.guichetFiche dt {
+  color: #888;
+}
+
+.guichetFiche dd {
+  margin: 0;
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+  La commune de naissance : un champ, puis ce qu'il a trouvé.
+
+  La liste tient sous le champ plutôt qu'en surimpression : la fenêtre défile déjà, et
+  un menu flottant s'y serait fait rogner comme le calendrier avant lui.
+*/
+.guichetCommune {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guichetCommunes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 460px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  list-style: none;
+}
+
+.guichetCommunes button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: #111;
+  text-align: left;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.guichetCommunes button:hover,
+.guichetCommunes button:focus-visible {
+  background: #f4f4f5;
+  outline: none;
+}
+
+/* Le code se lit chiffre à chiffre : il se compare, il ne se prononce pas. */
+.guichetCode {
+  color: #888;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.guichetRetenu {
+  margin: 0;
+  font-size: 13px;
+  color: #111;
+  letter-spacing: 0;
+}
+
+/*
+  Le dépôt fait, à la place du geste.
+
+  Ce n'est plus une commande : c'est un fait, et il se lit comme le reste de l'en-tête -
+  sans cadre, sans pastille, à la hauteur des boutons qu'il remplace.
+*/
+.guichetDepose {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: 0;
+}
+
+.guichetDeposeQuand {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* Le lien porte le costume d'un bouton : c'est un geste, même s'il mène dehors. */
+.guichetDepose a {
+  text-decoration: none;
+}

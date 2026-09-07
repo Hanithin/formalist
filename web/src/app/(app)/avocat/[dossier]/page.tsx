@@ -36,6 +36,9 @@ import { Parcours } from "@/app/(app)/creation/Parcours";
 import { ETAPES as ETAPES_DE_CREATION } from "@/domain/formalite/parcours";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Corriger } from "./Corriger";
+import { DeposerAuGuichet } from "./DeposerAuGuichet";
+import { depotConnu } from "@/infrastructure/db/depots/guichet";
+import { lienVersLaFormalite } from "@/infrastructure/guichet/formalites";
 import { type EntreeDuJournal } from "./Historique";
 import { GererLeDossier } from "./GererLeDossier";
 import { Communication, type MessageDuFil } from "./Communication";
@@ -173,6 +176,15 @@ export default async function DossierAvocat({
    * obligatoire jamais fournie ne comptait nulle part, et l'écran comme la liste des
    * tâches donnaient un dossier incomplet pour complet.
    */
+  /*
+   * Le dépôt au guichet, s'il a eu lieu.
+   *
+   * Notre copie locale, non le guichet : l'écran d'un dossier ne doit pas dépendre de
+   * la disponibilité de l'INPI, et ce qu'on affiche ici - que c'est parti, et quand -
+   * ne change plus une fois posé.
+   */
+  const depotGuichet = await depotConnu(dossier.id);
+
   const pieces_ = etatDesPieces(
     piecesAttenduesDuDossier({
       type: dossier.type,
@@ -694,6 +706,29 @@ export default async function DossierAvocat({
                   ses listes de personnes - ce que le client avait sous les yeux.
                 */}
                 <span className={styles.documentsGestes}>
+                  {/*
+                    Le dépôt, au même endroit que le formulaire.
+
+                    L'avocat rouvrait le site de l'INPI, retapait le dossier et revenait
+                    cocher « Dépôt » ici. Le geste appartient à cet écran : c'est là qu'il
+                    vérifie les pièces, et c'est de là qu'il doit pouvoir envoyer.
+                  */}
+                  <DeposerAuGuichet
+                    dossier={dossier.id}
+                    type={type}
+                    depose={
+                      depotGuichet
+                        ? {
+                            formaliteId: depotGuichet.formaliteId,
+                            numNat: depotGuichet.numNat,
+                            deposeLe: depotGuichet.deposeLe.toISOString(),
+                            lien: depotGuichet.formaliteId
+                              ? lienVersLaFormalite(depotGuichet.formaliteId)
+                              : null,
+                          }
+                        : null
+                    }
+                  />
                   <Corriger
                     dossier={dossier.id}
                     champs={formulaire.champs}

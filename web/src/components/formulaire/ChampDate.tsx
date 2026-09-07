@@ -19,6 +19,9 @@ import styles from "./ChampDate.module.css";
  * attendent, et une conversion au bord évite de la refaire partout.
  */
 
+/* Six semaines, l'en-tête et le pied : le calendrier ne descend jamais plus bas. */
+const HAUTEUR_CALENDRIER = 340;
+
 const JOURS = ["L", "M", "M", "J", "V", "S", "D"];
 const MOIS = [
   "janvier",
@@ -107,6 +110,15 @@ export function ChampDate({ id, valeur, surChangement, ...reste }: Props) {
   const setSaisi = (texte: string) => setFrappe({ pour: valeur, texte });
 
   const [ouvert, setOuvert] = useState(false);
+  /*
+   * Le calendrier s'ouvre vers le haut quand il n'y a pas la place en dessous.
+   *
+   * Il s'ouvrait toujours vers le bas. Dans une fenêtre qui défile - le dépôt au guichet,
+   * où la date est le dernier champ - il tombait sous le bord du cadre et n'était nulle
+   * part : le bouton répondait, et rien n'apparaissait. La place se mesure à l'ouverture,
+   * pas à chaque rendu : ce qui compte est où le champ se trouve au moment du clic.
+   */
+  const [versLeHaut, setVersLeHaut] = useState(false);
   const cadre = useRef<HTMLDivElement>(null);
 
   /* Un clic dehors referme : un calendrier ouvert masque la suite du formulaire. */
@@ -195,6 +207,8 @@ export function ChampDate({ id, valeur, surChangement, ...reste }: Props) {
         onClick={() => {
           // On repart du mois de la date retenue : le feuilletage précédent est oublié.
           setFeuillete(null);
+          const place = cadre.current?.getBoundingClientRect();
+          if (place) setVersLeHaut(window.innerHeight - place.bottom < HAUTEUR_CALENDRIER);
           setOuvert((o) => !o);
         }}
       >
@@ -205,7 +219,13 @@ export function ChampDate({ id, valeur, surChangement, ...reste }: Props) {
       </button>
 
       {ouvert && (
-        <div className={styles.calendrier} role="dialog" aria-label="Choisir une date">
+        <div
+          className={
+            versLeHaut ? `${styles.calendrier} ${styles.calendrierHaut}` : styles.calendrier
+          }
+          role="dialog"
+          aria-label="Choisir une date"
+        >
           <div className={styles.tete}>
             <button
               type="button"

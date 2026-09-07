@@ -81,7 +81,11 @@ const insertDoc = db.prepare(
 );
 [
   ["Statuts constitutifs - " + SOCIETE + ".docx", "statuts", "system", "generated", "-6 days"],
-  ["Attestation de dépôt de capital.pdf", "capital", "user", "verified", "-4 days"],
+  // Le type est l'identifiant de la pièce attendue, « depot-capital » : c'est par lui
+  // que l'état du dossier la retrouve. Le peuplement écrivait « capital », un nom que le
+  // code a abandonné - le dossier de démonstration affichait donc l'attestation comme
+  // jamais déposée alors qu'elle était là, vérifiée, sous les yeux.
+  ["Attestation de dépôt de capital.pdf", "depot-capital", "user", "verified", "-4 days"],
   ["Pièce d'identité - Hani Madfai.pdf", "identite", "user", "verified", "-4 days"],
 ].forEach(d => insertDoc.run(id, d[0], d[1], d[2], d[3], d[4]));
 
