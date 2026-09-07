@@ -10,8 +10,12 @@
  * vocabulaire à part, et les tenir ensemble empêche qu'elles divergent - c'est ce qui
  * arrive dès qu'on ajoute un pays à une liste et qu'on oublie l'autre.
  *
- * Le code est celui de la norme ISO 3166-1 alpha-3, que le guichet unique exige pour le
- * pays de naissance. Il ne s'affiche nulle part : il ne sert qu'au dépôt.
+ * Le code est celui de la norme ISO 3166-1 alpha-3. Il ne s'affiche nulle part et ne
+ * sert qu'à identifier le pays sans dépendre de son nom.
+ *
+ * Il ne suffit pas au guichet unique : son champ `paysNaissance` veut le nom en clair et
+ * en capitales - « FRANCE », non « FRA », qu'il refuse sur « Ce pays de naissance est
+ * invalide ». Voir `nomAuGuichet` plus bas.
  *
  * La nationalité s'écrit au féminin, toujours : elle s'accorde avec le mot
  * « nationalité » et non avec la personne. « Monsieur Bertin, de nationalité
@@ -267,4 +271,68 @@ export function paysNomme(nom: string | undefined): Pays | undefined {
  */
 export function codeDuPays(nom: string | undefined): string | undefined {
   return paysNomme(nom)?.code;
+}
+
+/**
+ * Les noms que le guichet unique n'écrit pas comme nous.
+ *
+ * Son champ `paysNaissance` attend le nom en capitales, et sa table diffère de la nôtre
+ * sur trente-quatre entrées : il inverse les qualificatifs - « CENTRAFRICAINE,
+ * RÉPUBLIQUE » - garde des noms que le CLDR a retirés - « SWAZILAND », « BIRMANIE »
+ * devenue « MYANMAR » - et allonge les autres - « IRAN, RÉPUBLIQUE ISLAMIQUE D' ».
+ *
+ * Nos noms restent ceux des actes : c'est un client qui les lit. Ce tableau ne sert
+ * qu'au dépôt, et il ne couvre que les écarts - partout ailleurs les capitales
+ * suffisent. Vérifié le 8 septembre 2026 contre l'énumération `codePays` du
+ * dictionnaire de l'INPI : nos cent quatre-vingt-seize codes y figurent tous.
+ */
+const NOMS_DU_GUICHET: Record<string, string> = {
+  "Birmanie": "MYANMAR",
+  "Biélorussie": "BÉLARUS",
+  "Brunei": "BRUNÉI DARUSSALAM",
+  "Corée du Nord": "CORÉE, RÉPUBLIQUE POPULAIRE DÉMOCRATIQUE DE",
+  "Corée du Sud": "CORÉE, RÉPUBLIQUE DE",
+  "Eswatini": "SWAZILAND",
+  "Irak": "IRAQ",
+  "Iran": "IRAN, RÉPUBLIQUE ISLAMIQUE D'",
+  "Laos": "LAO, RÉPUBLIQUE DÉMOCRATIQUE POPULAIRE",
+  "Liberia": "LIBÉRIA",
+  "Libye": "LIBYENNE, JAMAHIRIYA ARABE",
+  "Macédoine du Nord": "MACÉDOINE, L'EX-RÉPUBLIQUE YOUGOSLAVE DE",
+  "Micronésie": "MICRONÉSIE, ÉTATS FÉDÉRÉS DE",
+  "Moldavie": "MOLDOVA, RÉPUBLIQUE DE",
+  "Nigeria": "NIGÉRIA",
+  "Palestine": "PALESTINIEN OCCUPÉ, TERRITOIRE",
+  "Russie": "RUSSIE, FÉDÉRATION DE",
+  "République centrafricaine": "CENTRAFRICAINE, RÉPUBLIQUE",
+  "République dominicaine": "DOMINICAINE, RÉPUBLIQUE",
+  "République du Congo": "CONGO",
+  "République démocratique du Congo": "CONGO, LA RÉPUBLIQUE DÉMOCRATIQUE DU",
+  "République tchèque": "TCHÈQUE, RÉPUBLIQUE",
+  "Saint-Christophe-et-Niévès": "SAINT-KITTS-ET-NEVIS",
+  "Saint-Vincent-et-les-Grenadines": "SAINT-VINCENT-ET-LES GRENADINES",
+  "Salvador": "EL SALVADOR",
+  "Soudan du Sud": "RÉPUBLIQUE DU SOUDAN DU SUD",
+  "Syrie": "SYRIENNE, RÉPUBLIQUE ARABE",
+  "Tanzanie": "TANZANIE, RÉPUBLIQUE-UNIE DE",
+  "Taïwan": "TAÏWAN, PROVINCE DE CHINE",
+  "Timor oriental": "TIMOR-LESTE",
+  "Vatican": "SAINT-SIÈGE (ÉTAT DE LA CITÉ DU VATICAN)",
+  "Viêt Nam": "VIET NAM",
+  "Îles Marshall": "MARSHALL, ÎLES",
+  "Îles Salomon": "SALOMON, ÎLES",
+};
+
+/**
+ * Le nom d'un pays tel que le guichet unique l'écrit.
+ *
+ * Un nom qui ne lui est pas connu fait refuser le dépôt entier sur un seul associé. Les
+ * capitales suffisent pour la plupart des pays ; les autres passent par la table
+ * ci-dessus. Un pays que nous ne connaissons pas rend `undefined` : c'est à l'appelant
+ * de le signaler plutôt qu'à nous d'en inventer un.
+ */
+export function nomAuGuichet(nom: string | undefined): string | undefined {
+  const pays = paysNomme(nom);
+  if (!pays) return undefined;
+  return NOMS_DU_GUICHET[pays.nom] ?? pays.nom.toUpperCase();
 }

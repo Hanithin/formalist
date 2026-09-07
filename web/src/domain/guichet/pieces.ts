@@ -116,6 +116,17 @@ export const PIECES_TELEVERSEES: Record<string, PieceDuGuichet> = {
  */
 export const CHEMIN_DES_PIECES = "piecesJointes";
 
-/** Ce que le guichet accepte : du PDF, et pas plus de dix mégaoctets. */
-export const EXTENSION_ATTENDUE = ".pdf";
+/**
+ * Ce que le guichet accepte : du PDF, et pas plus de dix mégaoctets.
+ *
+ * L'extension se déclare sans point. Le dictionnaire n'admet que les huit graphies de
+ * « pdf » - `pdf`, `PDF`, `Pdf`… - et « .pdf » n'en fait pas partie : la pièce était
+ * refusée sur « Cette valeur doit être l'un des choix proposés », après que la
+ * formalité, elle, avait bien été créée.
+ *
+ * La langue est un code ISO 639-1 en minuscules, non le code pays à trois lettres :
+ * `fr`, et non `FRA`.
+ */
+export const EXTENSION_ATTENDUE = "pdf";
+export const LANGUE_ATTENDUE = "fr";
 export const TAILLE_MAXIMALE = 10 * 1024 * 1024;

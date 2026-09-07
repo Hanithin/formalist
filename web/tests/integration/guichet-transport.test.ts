@@ -28,11 +28,19 @@ function jetonAvec(exp: number | null): string {
   return "entete." + charge + ".signature";
 }
 
-/** Une réponse HTTP simulée, comme `fetch` la rendrait. */
-function reponse(statut: number, corps: unknown): Response {
+/**
+ * Une réponse HTTP simulée, comme `fetch` la rendrait.
+ *
+ * Les en-têtes en font partie : le guichet rend le jeton dans un cookie `BEARER` pour
+ * un compte ordinaire, et le transport les lit à chaque appel. Une fausse réponse sans
+ * en-têtes faisait donc échouer le transport sur un `TypeError` plutôt que sur ce que
+ * le test observait - `cookies` porte ce qu'un `Set-Cookie` aurait apporté.
+ */
+function reponse(statut: number, corps: unknown, cookies: string[] = []): Response {
   return {
     status: statut,
     text: async () => (typeof corps === "string" ? corps : JSON.stringify(corps)),
+    headers: { getSetCookie: () => cookies } as unknown as Headers,
   } as Response;
 }
 
@@ -86,6 +94,61 @@ describe("l'échéance d'un jeton", () => {
 });
 
 describe("la session", () => {
+  /*
+   * Le jeton arrive de deux façons, et une seule était lue.
+   *
+   * Le contrat le dit : « le token JWT sera retourné par défaut dans un cookie BEARER
+   * et non dans le champ token de la réponse ; si l'utilisateur est considéré comme API
+   * only, le token sera retourné dans le champ token ». Un compte ordinaire relève du
+   * premier cas - et la connexion échouait donc sur un 200, en annonçant un refus que
+   * le guichet n'avait pas prononcé.
+   */
+  it("prend le jeton dans le cookie quand le corps n'en porte pas", async () => {
+    const attendu = jetonAvec(Date.now() / 1000 + 3600);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        reponse(200, { name: "MADFAI", roles: ["ROLE_AGENT"] }, [
+          "REFRESH_TOKEN=autre; path=/; httponly",
+          "BEARER=" + attendu + "; Max-Age=7200; path=/; secure; httponly",
+        ])
+      )
+    );
+
+    expect(await ouvrirUneSession(true)).toBe(attendu);
+  });
+
+  /* La valeur voyage encodée dans l'en-tête : un jeton laissé tel quel serait refusé. */
+  it("décode le jeton que le cookie a encodé", async () => {
+    const attendu = jetonAvec(Date.now() / 1000 + 3600);
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(reponse(200, {}, ["BEARER=" + encodeURIComponent(attendu) + "; path=/"]))
+    );
+
+    expect(await ouvrirUneSession(true)).toBe(attendu);
+  });
+
+  /* Le corps l'emporte : il est explicite là où le cookie est un effet de bord. */
+  it("préfère le jeton du corps quand les deux sont là", async () => {
+    const duCorps = jetonAvec(Date.now() / 1000 + 3600);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(reponse(200, { token: duCorps }, ["BEARER=celui-du-cookie"]))
+    );
+
+    expect(await ouvrirUneSession(true)).toBe(duCorps);
+  });
+
+  /* Ni corps ni cookie : là, c'est bien un refus. */
+  it("échoue quand aucune des deux voies ne porte de jeton", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reponse(200, { name: "MADFAI" }, [])));
+
+    await expect(ouvrirUneSession(true)).rejects.toBeInstanceOf(GuichetRefuse);
+  });
+
   it("garde son jeton d'un appel à l'autre", async () => {
     const fetchSimule = vi
       .fn()

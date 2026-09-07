@@ -38,6 +38,13 @@ services:
         sync: false
       - key: GUICHET_PASSWORD
         sync: false
+      # La clé qui chiffre les identifiants e-procedures des avocats, gardés en base.
+      # Trente-deux octets, en hexadécimal ou en base64. Elle vit ici et non dans la
+      # base : l'une sans l'autre ne vaut rien, et une sauvegarde égarée ne livre aucun
+      # mot de passe. La changer rend les comptes enregistrés illisibles - les avocats
+      # se reconnectent, rien d'autre n'est perdu.
+      - key: GUICHET_CLE
+        sync: false
       # Base Postgres (Neon) : l'application n'utilise plus SQLite.
       - key: DATABASE_URL
         sync: false

@@ -1,4 +1,4 @@
-import { demander } from "./transport";
+import { demander, hoteDuGuichet, type Identifiants } from "./transport";
 
 /**
  * Ce que le guichet unique tient des dépôts du cabinet.
@@ -13,6 +13,21 @@ import { demander } from "./transport";
  */
 export const CHAMP_REFERENCE = "referenceMandataire";
 export const FILTRE_REFERENCE = "referenceClientMandataire";
+
+/**
+ * L'adresse d'une formalité sur le guichet, pour aller la voir.
+ *
+ * Le contrat ne rend aucun lien : il donne un identifiant et s'arrête là. Le chemin
+ * vient de l'application du guichet elle-même, dont le routeur déclare
+ * `path: ${"/formality"}/:id` - relevé le 8 septembre 2026 dans son bundle, non deviné
+ * d'après la forme des autres URL.
+ *
+ * L'hôte suit l'environnement : un identifiant de démonstration ouvert en production
+ * mènerait à la formalité d'un autre.
+ */
+export function lienVersLaFormalite(formaliteId: number): string {
+  return "https://" + hoteDuGuichet() + "/formality/" + formaliteId;
+}
 
 /** Notre numéro de dossier, sous la forme que le guichet nous rendra. */
 export function referenceDuDossier(dossierId: number): string {
@@ -105,20 +120,30 @@ function requete(filtres: FiltresDesDepots): string {
  * rien déposé. L'appelant doit pouvoir dire « rien » sans dire « en panne ».
  */
 export async function listerLesDepots(
-  filtres: FiltresDesDepots = {}
+  filtres: FiltresDesDepots = {},
+  compte?: Identifiants
 ): Promise<DepotAuGuichet[]> {
-  return depotsDeLaReponse(await demander("/api/formalities?" + requete(filtres)));
+  return depotsDeLaReponse(await demander("/api/formalities?" + requete(filtres), {}, compte));
 }
 
 /** Le dépôt d'un de nos dossiers, s'il en existe un. */
-export async function depotDuDossier(dossierId: number): Promise<DepotAuGuichet | null> {
-  const trouves = await listerLesDepots({ reference: referenceDuDossier(dossierId), parPage: 1 });
+export async function depotDuDossier(
+  dossierId: number,
+  compte?: Identifiants
+): Promise<DepotAuGuichet | null> {
+  const trouves = await listerLesDepots(
+    { reference: referenceDuDossier(dossierId), parPage: 1 },
+    compte
+  );
   return trouves[0] ?? null;
 }
 
 /** Le détail d'un dépôt, tel que le guichet le tient. */
-export async function detailDuDepot(id: number): Promise<DepotAuGuichet | null> {
-  return unDepot(await demander("/api/formalities/" + id));
+export async function detailDuDepot(
+  id: number,
+  compte?: Identifiants
+): Promise<DepotAuGuichet | null> {
+  return unDepot(await demander("/api/formalities/" + id, {}, compte));
 }
 
 /**

@@ -32,6 +32,14 @@ export interface DepotConnu {
   statutLe: Date | null;
   numNat: string | null;
   vuLe: Date | null;
+  /**
+   * Quand le dépôt a été fait.
+   *
+   * `vu_le` dit quand nous avons regardé, `statut_le` quand le guichet a bougé : ni
+   * l'un ni l'autre ne répond à « quand est-ce parti ». C'est la création de la ligne,
+   * posée au moment où la formalité a été acceptée chez eux.
+   */
+  deposeLe: Date;
 }
 
 function versDepotConnu(ligne: {
@@ -42,6 +50,7 @@ function versDepotConnu(ligne: {
   statut_le: Date | null;
   num_nat: string | null;
   vu_le: Date | null;
+  created_at: Date;
 }): DepotConnu {
   return {
     dossierId: ligne.dossier_id,
@@ -51,6 +60,7 @@ function versDepotConnu(ligne: {
     statutLe: ligne.statut_le,
     numNat: ligne.num_nat,
     vuLe: ligne.vu_le,
+    deposeLe: ligne.created_at,
   };
 }
 

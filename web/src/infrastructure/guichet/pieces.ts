@@ -1,8 +1,9 @@
-import { demander } from "./transport";
+import { demander, type Identifiants } from "./transport";
 import { convertirEnPdf } from "@/infrastructure/documents/conversion";
 import {
   CHEMIN_DES_PIECES,
   EXTENSION_ATTENDUE,
+  LANGUE_ATTENDUE,
   TAILLE_MAXIMALE,
   type PieceDuGuichet,
 } from "@/domain/guichet/pieces";
@@ -63,22 +64,24 @@ export function corpsDeLaPiece(piece: PieceAJoindre): Record<string, unknown> {
   return {
     nomDocument: piece.nom,
     typeDocument: piece.type.code,
-    langueDocument: "FRA",
+    langueDocument: LANGUE_ATTENDUE,
     documentBase64: piece.pdf.toString("base64"),
     documentExtension: EXTENSION_ATTENDUE,
     path: CHEMIN_DES_PIECES,
   };
 }
 
-/** Joint une pièce à une formalité déjà déposée. */
+/** Joint une pièce à une formalité déjà déposée, sous le compte qui l'a créée. */
 export async function joindreLaPiece(
   formaliteId: number,
-  piece: PieceAJoindre
+  piece: PieceAJoindre,
+  compte?: Identifiants
 ): Promise<unknown> {
-  return demander("/api/formalities/" + formaliteId + "/attachments", {
-    method: "POST",
-    body: JSON.stringify(corpsDeLaPiece(piece)),
-  });
+  return demander(
+    "/api/formalities/" + formaliteId + "/attachments",
+    { method: "POST", body: JSON.stringify(corpsDeLaPiece(piece)) },
+    compte
+  );
 }
 
 /**

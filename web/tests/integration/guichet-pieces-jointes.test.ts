@@ -18,8 +18,8 @@ describe("le corps d'une pièce jointe", () => {
     expect(corps).toMatchObject({
       nomDocument: "Statuts constitutifs",
       typeDocument: "PJ_01",
-      langueDocument: "FRA",
-      documentExtension: ".pdf",
+      langueDocument: "fr",
+      documentExtension: "pdf",
       path: "piecesJointes",
     });
     expect(Buffer.from(corps.documentBase64 as string, "base64").toString()).toBe(

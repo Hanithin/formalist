@@ -563,3 +563,35 @@ export async function lireDocumentProduit(dossierId: number, titre: string): Pro
     return null;
   }
 }
+
+/**
+ * Le contenu d'une pièce déposée par le client, et son nom de fichier.
+ *
+ * Symétrique de `lireDocumentProduit`, qui cherche un acte par son titre : une pièce du
+ * client se retrouve par son type - « depot-capital », « identite » - car son nom est
+ * celui du fichier qu'il a choisi, et personne ne le connaît d'avance.
+ *
+ * Une pièce refusée ne se rend pas : elle attend son remplacement, et la joindre à un
+ * dépôt serait envoyer au greffe ce que le cabinet a déjà écarté.
+ */
+export async function lirePieceDeposee(
+  dossierId: number,
+  type: string
+): Promise<{ contenu: Buffer; nom: string } | null> {
+  const document = await prisma.documents.findFirst({
+    where: { formalite_id: dossierId, type, rejection_reason: null },
+    orderBy: { created_at: "desc" },
+  });
+  if (!document?.file_path) return null;
+
+  const { readFile } = await import("node:fs/promises");
+  try {
+    return {
+      contenu: await readFile(path.join(DEPOT, document.file_path)),
+      nom: document.name ?? document.file_path,
+    };
+  } catch (e) {
+    journal.error({ err: e, document: document.id }, "Pièce introuvable sur le disque");
+    return null;
+  }
+}

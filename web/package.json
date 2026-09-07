@@ -11,7 +11,8 @@
     "types": "tsc --noEmit",
     "test": "vitest run",
     "test:parcours": "playwright test",
-    "guichet:ping": "vitest run --config vitest.manuel.config.ts",
+    "guichet:ping": "vitest run --config vitest.manuel.config.ts tests/manuel/guichet-ping.test.ts",
+    "guichet:depot": "vitest run --config vitest.manuel.config.ts tests/manuel/guichet-depot.test.ts",
     "format": "prettier --write src tests",
     "verifier": "npm run types && npm run lint && npm run test"
   },
