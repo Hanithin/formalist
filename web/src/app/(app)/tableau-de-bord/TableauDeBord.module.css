@@ -2485,7 +2485,16 @@
   background: #ececef;
 }
 
-.teteEtapeLigne:last-child {
+/*
+ * Le dernier jalon ne grandit pas.
+ *
+ * En donnant sa part de hauteur à chacun, le dernier en prenait une aussi - et comme
+ * son texte tient en haut de sa boîte, la part se voyait comme un blanc entre « Kbis à
+ * jour » et le trait du pied. L'espace revient aux quatre premiers, où il se lit comme
+ * de l'air entre les étapes, et la frise finit sur son dernier mot.
+ */
+.teteChemin > li.teteEtapeLigne:last-child {
+  flex: 0 0 auto;
   padding-bottom: 0;
 }
 
