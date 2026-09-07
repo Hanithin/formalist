@@ -115,8 +115,26 @@
   color: #333;
 }
 
-/* Ce qui n'a pas encore été lu se distingue par le poids, non par une couleur :
-   une pastille par ligne ferait clignoter tout le panneau. */
+/*
+ * Une ligne non lue se marque au fond, non à la graisse seule.
+ *
+ * Six avis en gras se lisent comme six avis criés ; un fond gris très clair distingue
+ * ce qui est nouveau sans hausser le ton, et la marque tient jusqu'à la prochaine
+ * ouverture du panneau - la repeindre sous les yeux de celui qui vient d'ouvrir efface
+ * justement ce qu'il cherchait.
+ *
+ * Le fond se pose sur le lien, non sur la ligne : c'est lui qui porte la marge
+ * intérieure, et son propre fond couvrait celui de la ligne.
+ */
+.frais .lien,
+.frais .inerte {
+  background: #f4f4f5;
+}
+
+.frais .lien:hover {
+  background: #ececef;
+}
+
 .frais .contenu {
   font-weight: 600;
   color: #111;

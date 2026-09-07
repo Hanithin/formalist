@@ -96,11 +96,17 @@ export function Cloche() {
       setAncre({ gauche: cadre.left - 8, bas: window.innerHeight - cadre.top + 10 });
     }
 
-    // Ouvrir vaut lecture : laisser le compteur allumé sur des lignes qu'on vient de
-    // parcourir ne dit plus rien.
+    /*
+     * Ouvrir vaut lecture, mais la marque reste le temps de la lecture.
+     *
+     * Le compteur s'éteint - le laisser allumé sur des lignes qu'on parcourt ne dit
+     * plus rien - et le serveur les enregistre lues. Les lignes, elles, gardent leur
+     * fond gris jusqu'à la prochaine ouverture : les repeindre sous les yeux de celui
+     * qui vient d'ouvrir efface justement ce qu'il cherchait, et l'on ne sait plus
+     * lesquelles étaient nouvelles.
+     */
     if (suite && nonLus > 0) {
       setNonLus(0);
-      setAvis((actuels) => actuels.map((a) => ({ ...a, lu: true })));
       fetch("/api/avis", { method: "PUT" }).catch(() => undefined);
     }
   }

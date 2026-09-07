@@ -131,45 +131,31 @@ export function DossierEnTete({
   return (
     <section className={styles.teteCarte} aria-labelledby="dossier-en-tete">
       {/*
-        La nature et l'état sur une seule ligne, sans pastille.
+        Chaque pastille au bord qu'elle sert.
 
-        La pastille ambre « Action requise » criait à côté d'un intitulé gris, et elle
-        mentait : elle se calculait sur ce que le dossier attend du client, quand le
-        chemin juste dessous annonçait « Vérification par un avocat ». C'est le suivi
-        qui dit qui tient l'étape en cours, ici comme pour le sous-titre et le bouton.
-
-        L'ambre ne reste que lorsque c'est au client de jouer - une couleur qui paraît
-        sur tous les dossiers ne distingue plus rien.
+        Elles se suivaient au-dessus du titre, et l'on lisait deux mots avant de savoir
+        de quelle société il s'agit. La nature de la formalité coiffe la carte, en face
+        du nom ; l'état descend au pied, en face du geste - c'est là qu'on se demande
+        s'il y a quelque chose à faire.
       */}
-      <p className={styles.teteBandeau}>
+      <div className={styles.teteEntete}>
+        <div className={styles.teteIdentite}>
+          <h2 id="dossier-en-tete" className={styles.teteSociete}>
+            {societe}
+          </h2>
+
+          {/*
+            Ce qu'on attend, en une phrase, quand la liste ne s'impose pas.
+
+            Les deux se rendaient l'une sous l'autre : « Modification à finaliser :
+            reprenez la saisie là où vous l'avez laissée », puis « À faire · Modification
+            à finaliser · Reprenez la saisie là où vous l'avez laissée ».
+          */}
+          {sousTitre && <p className={styles.teteEtape}>{sousTitre}</p>}
+        </div>
+
         <span className={styles.teteBadgeFormalite}>{nature}</span>
-        {etatLisible && (
-          <span
-            className={[
-              styles.teteBadgeEtat,
-              aVousDeJouer ? styles.teteBadgeAVous : "",
-              etat.ton === "termine" ? styles.teteBadgeFini : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            {etatLisible}
-          </span>
-        )}
-      </p>
-
-      <h2 id="dossier-en-tete" className={styles.teteSociete}>
-        {societe}
-      </h2>
-
-      {/*
-        Ce qu'on attend, en une phrase, quand la liste ne s'impose pas.
-
-        Les deux se rendaient l'une sous l'autre : « Modification à finaliser :
-        reprenez la saisie là où vous l'avez laissée », puis « À faire · Modification à
-        finaliser · Reprenez la saisie là où vous l'avez laissée ».
-      */}
-      {sousTitre && <p className={styles.teteEtape}>{sousTitre}</p>}
+      </div>
 
       {/*
         Le chemin en descente, avec ce qui s'y passe.
@@ -274,6 +260,21 @@ export function DossierEnTete({
             </>
           )}
         </p>
+
+        {/* L'état en face du geste : c'est là qu'on se demande s'il y a à faire. */}
+        {etatLisible && (
+          <span
+            className={[
+              styles.teteBadgeEtat,
+              aVousDeJouer ? styles.teteBadgeAVous : "",
+              etat.ton === "termine" ? styles.teteBadgeFini : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {etatLisible}
+          </span>
+        )}
       </div>
     </section>
   );
