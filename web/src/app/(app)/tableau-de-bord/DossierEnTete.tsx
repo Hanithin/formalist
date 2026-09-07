@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { StatutBadge } from "./Sections";
 import type { ActionAttendue } from "@/domain/formalite/actions";
 import type { Ton } from "@/domain/formalite/accueil";
 import styles from "./TableauDeBord.module.css";
@@ -24,6 +23,8 @@ export interface EtapeDuChemin {
   etat: "faite" | "en_cours" | "a_venir";
   /** Qui tient l'étape : le client, ou le cabinet. */
   main?: "vous" | "avocat";
+  /** L'identifiant du domaine - « verification », « greffe » - pour nommer l'état. */
+  identifiant?: string;
 }
 
 export interface DossierEnTeteProps {
@@ -89,6 +90,34 @@ export function DossierEnTete({
    */
   const enCoursChezNous = etapes?.some((e) => e.etat === "en_cours" && e.main === "avocat");
 
+  /*
+   * L'état, dit d'après le chemin plutôt que d'après ce qu'on attend du client.
+   *
+   * « Action requise » se lisait sur un dossier dont l'étape en cours est tenue par le
+   * cabinet : le badge et le chemin se contredisaient à trois lignes d'écart. Le suivi
+   * tranche, et les mots disent qui a la main plutôt que de sonner l'alarme.
+   */
+  const courante = etapes?.find((e) => e.etat === "en_cours");
+  const aVousDeJouer = !enCoursChezNous && etat.ton === "action";
+
+  /*
+   * L'état en toutes lettres, pris sur l'étape en cours.
+   *
+   * « Action requise » se lisait sur un dossier dont l'étape est tenue par le cabinet.
+   * L'étape, elle, sait ce qui s'y passe : « En cours de vérification » quand l'avocat
+   * relit, le nom de l'étape partout ailleurs - déposer au greffe et publier une
+   * annonce ne sont pas la même attente.
+   */
+  const etatLisible = enCoursChezNous
+    ? courante?.identifiant === "verification"
+      ? "En cours de vérification"
+      : (courante?.titre ?? "Chez l'avocat")
+    : etat.ton === "action"
+      ? "En attente de vous"
+      : etat.ton === "termine"
+        ? "Terminé"
+        : (courante?.titre ?? etat.libelle);
+
   const detaillees =
     !enCoursChezNous && (actions.length > 1 || actions[0]?.urgent === true);
   const retenues = detaillees ? actions.slice(0, 2) : [];
@@ -101,10 +130,33 @@ export function DossierEnTete({
 
   return (
     <section className={styles.teteCarte} aria-labelledby="dossier-en-tete">
-      <div className={styles.teteBandeau}>
-        <span className={styles.teteNature}>{nature}</span>
-        <StatutBadge ton={etat.ton} libelle={etat.libelle} />
-      </div>
+      {/*
+        La nature et l'état sur une seule ligne, sans pastille.
+
+        La pastille ambre « Action requise » criait à côté d'un intitulé gris, et elle
+        mentait : elle se calculait sur ce que le dossier attend du client, quand le
+        chemin juste dessous annonçait « Vérification par un avocat ». C'est le suivi
+        qui dit qui tient l'étape en cours, ici comme pour le sous-titre et le bouton.
+
+        L'ambre ne reste que lorsque c'est au client de jouer - une couleur qui paraît
+        sur tous les dossiers ne distingue plus rien.
+      */}
+      <p className={styles.teteBandeau}>
+        <span className={styles.teteBadgeFormalite}>{nature}</span>
+        {etatLisible && (
+          <span
+            className={[
+              styles.teteBadgeEtat,
+              aVousDeJouer ? styles.teteBadgeAVous : "",
+              etat.ton === "termine" ? styles.teteBadgeFini : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {etatLisible}
+          </span>
+        )}
+      </p>
 
       <h2 id="dossier-en-tete" className={styles.teteSociete}>
         {societe}

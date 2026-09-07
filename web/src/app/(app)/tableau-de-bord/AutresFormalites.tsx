@@ -110,6 +110,8 @@ export function AutresFormalites({
 
       <EcheancesProches echeances={echeances} />
       <CeQueNousFaisons />
+      {/* Le voile qui s'éteint au fond : voir `.voileDuBas`. */}
+      <span className={styles.voileDuBas} aria-hidden="true" />
     </aside>
   );
 }

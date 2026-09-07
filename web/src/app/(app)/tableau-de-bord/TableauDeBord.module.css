@@ -1514,27 +1514,7 @@
  * Les échéances et l'activité sont deux listes courtes : côte à côte, elles tiennent
  * dans le pli ; empilées, elles allongent la page pour rien.
  */
-/*
- * Un voile en pied de colonne, pour dire qu'il y a une suite.
- *
- * Les deux colonnes défilent chacune pour elle-même : au bas de l'écran, une carte se
- * coupait net sur le bord, ce qui se lit comme une fin plutôt que comme un pli. Le
- * dégradé la laisse s'éteindre - et il ne prend pas le clic, sans quoi il mangerait la
- * dernière ligne de chaque liste.
- */
-.deuxColonnes::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 56px;
-  background: linear-gradient(to bottom, rgba(245, 245, 245, 0), #f5f5f5 78%);
-  pointer-events: none;
-}
-
 .deuxColonnes {
-  position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 12px 32px;
@@ -2361,16 +2341,60 @@
 .teteBandeau {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 11px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 13px;
 }
 
-.teteNature {
-  font-size: 12px;
-  font-weight: 600;
+/*
+ * Deux pastilles : ce qu'on fait, et où ça en est.
+ *
+ * Une seule les portait toutes deux - « MODIFICATION · CHEZ L'AVOCAT » en petites
+ * capitales grises - et l'on ne distinguait pas la nature de l'opération de son état.
+ * Elles se lisent mieux séparées : le jaune nomme la formalité, le violet dit l'étape.
+ *
+ * Le violet est celui de l'espace avocat, où le même couple sert en tête de dossier :
+ * un client et son avocat regardent la même chose, elle doit se ressembler.
+ */
+.teteBadgeFormalite,
+.teteBadgeEtat {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  font-size: 12.5px;
+  /* Deux pastilles en gras côte à côte pèsent plus que le nom de la société. */
+  font-weight: 500;
   letter-spacing: 0;
-  text-transform: uppercase;
-  color: #a1a1aa;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.teteBadgeFormalite {
+  border-color: #fde68a;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.teteBadgeEtat {
+  border-color: #ddd6fe;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* C'est au client de jouer : l'état prend l'ambre, qui appelle. */
+.teteBadgeAVous {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #b45309;
+}
+
+/* Le vert du dossier fini : le violet dit « en cours » partout ailleurs. */
+.teteBadgeFini {
+  border-color: #bbf7d0;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .teteSociete {
@@ -2963,5 +2987,47 @@
 @keyframes voileParaitre {
   to {
     opacity: 1;
+  }
+}
+
+/*
+ * Le voile du bas, qui s'éteint quand on touche le fond.
+ *
+ * Il disait « il y a une suite » : arrivé au bout, il n'y en a plus, et le dégradé
+ * restait posé sur la dernière ligne comme si elle était coupée. Il s'efface sur les
+ * derniers pixels de course - et sur une colonne qui ne défile pas, il ne paraît
+ * jamais, la course étant nulle.
+ */
+.voileDuBas {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  height: 0;
+  /* La colonne espace ses cartes de seize pixels : celle-ci n'en est pas une. */
+  margin-top: -16px;
+}
+
+.voileDuBas::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  height: 52px;
+  background: linear-gradient(to top, #f5f5f5 12%, rgba(245, 245, 245, 0));
+  pointer-events: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  .voileDuBas::before {
+    animation: voileSEteint linear both;
+    animation-timeline: scroll(nearest);
+    animation-range: calc(100% - 52px) 100%;
+  }
+}
+
+@keyframes voileSEteint {
+  to {
+    opacity: 0;
   }
 }

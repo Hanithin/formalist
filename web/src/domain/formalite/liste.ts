@@ -64,6 +64,29 @@ const TYPES: Record<string, string> = {
 };
 
 /**
+ * Le nom complet d'une formalité, pour les endroits où il est seul.
+ *
+ * « Modification » suffit dans une liste, où la colonne d'à côté dit de quoi il s'agit ;
+ * en tête d'un dossier, c'est le seul mot qui nomme l'opération, et il doit la nommer
+ * en entier - on ne modifie pas « une modification », on modifie une société.
+ */
+const TYPES_COMPLETS: Record<string, string> = {
+  creation: "Création de société",
+  modification: "Modification de société",
+  fermeture: "Fermeture de société",
+  comptes: "Dépôt des comptes annuels",
+  depot: "Dépôt des comptes annuels",
+  cessation: "Cessation d'auto-entreprise",
+  "auto-entrepreneur": "Création d'auto-entreprise",
+};
+
+export function libelleCompletDuType(type: string | null | undefined): string | null {
+  const brut = type?.trim();
+  if (!brut) return null;
+  return TYPES_COMPLETS[brut] ?? libelleDuType(brut);
+}
+
+/**
  * Un type inconnu se rend tel quel plutôt que vide : un dossier mal typé se voit,
  * au lieu de passer pour un dossier sans nature.
  */

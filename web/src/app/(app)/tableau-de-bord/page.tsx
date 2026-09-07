@@ -12,7 +12,12 @@ import {
   type DossierDAccueil,
 } from "@/domain/formalite/accueil";
 import { nomsDEtapes } from "@/domain/formalite/etapes";
-import { adresseDuDossier, libelleDuType, nomAffichable } from "@/domain/formalite/liste";
+import {
+  adresseDuDossier,
+  libelleCompletDuType,
+  libelleDuType,
+  nomAffichable,
+} from "@/domain/formalite/liste";
 import { dateEnTete } from "@/lib/dates";
 import { Accueil } from "./Accueil";
 import styles from "./TableauDeBord.module.css";
@@ -44,7 +49,13 @@ const FORMALITES_MONTREES = 6;
  */
 function friseDuDossier(
   dossier: DossierDAccueil,
-  suivi: { titre: string; explication: string; etat: string; main: string }[]
+  suivi: {
+    identifiant: string;
+    titre: string;
+    explication: string;
+    etat: string;
+    main: string;
+  }[]
 ): EtapeDuChemin[] | undefined {
   if (suivi.length > 0) {
     return suivi.map((etape) => ({
@@ -54,6 +65,7 @@ function friseDuDossier(
         etape.etat === "faite" ? "faite" : etape.etat === "en_cours" ? "en_cours" : "a_venir",
       /* Qui tient l'étape : l'encadré s'en sert pour ne rien réclamer hors de son tour. */
       main: etape.main === "vous" ? "vous" : "avocat",
+      identifiant: etape.identifiant,
     }));
   }
 
@@ -221,7 +233,7 @@ export default async function TableauDeBord() {
         <div className={styles.content}>
           <div className={styles.deuxColonnes}>
             <DossierEnTete
-              nature={libelleDuType(seul.type) ?? "Formalité"}
+              nature={libelleCompletDuType(seul.type) ?? "Formalité"}
               societe={nomComplet(seul)}
               prochaineEtape={seul.prochaineEtape}
               etat={tonDuDossier(seul)}
@@ -312,7 +324,7 @@ export default async function TableauDeBord() {
             <span className={styles.voileDuHaut} aria-hidden="true" />
             {enTete ? (
               <DossierEnTete
-                nature={libelleDuType(enTete.type) ?? "Formalité"}
+                nature={libelleCompletDuType(enTete.type) ?? "Formalité"}
                 societe={nomComplet(enTete)}
                 prochaineEtape={enTete.prochaineEtape}
                 etat={tonDuDossier(enTete)}
@@ -340,6 +352,8 @@ export default async function TableauDeBord() {
             {(detailEnTete?.documents.length ?? 0) > 0 && (
               <DocumentsDuDossier documents={detailEnTete?.documents ?? []} />
             )}
+            {/* Le voile qui s'éteint au fond : voir `.voileDuBas`. */}
+            <span className={styles.voileDuBas} aria-hidden="true" />
           </div>
 
           <AutresFormalites
