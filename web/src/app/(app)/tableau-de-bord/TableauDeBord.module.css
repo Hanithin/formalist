@@ -2973,9 +2973,33 @@
   color: #c4c4c8;
 }
 
-/* Les documents gardent leur taille : c'est la colonne qui défile, non la liste. */
+/*
+ * Les documents gardent leur taille : c'est la colonne qui défile, non la liste.
+ *
+ * Et pas de marge basse : la carte la portait de son ancienne vie en pile, où elle
+ * séparait les blocs empilés. Dans une colonne qui espace ses cartes elle-même, elle
+ * laissait vingt pixels sous la dernière - de quoi manquer le bas de vingt pixels.
+ */
 .colonneDeTete > .dashCard {
   flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+/*
+ * La dernière carte de chaque colonne descend jusqu'au bas.
+ *
+ * Les deux colonnes font la même hauteur, mais leur contenu n'en fait pas la même : à
+ * gauche l'encadré et les documents, à droite la liste et le catalogue. Elles
+ * s'arrêtaient chacune où finissait son dernier bloc, à vingt-cinq pixels l'une de
+ * l'autre - deux traits parallèles qui ne se terminent pas ensemble se remarquent plus
+ * qu'un blanc.
+ *
+ * La dernière prend ce qui reste, et les deux colonnes ferment sur la même ligne. Quand
+ * le contenu déborde, il n'y a rien à prendre et rien ne change.
+ */
+.colonneDeTete > section:last-of-type,
+.coteColonne > section:last-of-type {
+  flex: 1 0 auto;
 }
 
 /*
