@@ -271,3 +271,119 @@ describe("l'accord en genre des autres actes", () => {
     expect(statuts).toContain("les présents statuts");
   });
 });
+
+/**
+ * L'état des actes accomplis, et la banque qui les a accomplis.
+ *
+ * L'annexe des statuts liste ce qui a été fait pour le compte de la société avant son
+ * immatriculation : le greffe y lit ce que la société reprend de plein droit. Chez
+ * Qonto, Shine et Revolut le capital n'est pas déposé à la banque mais chez un notaire,
+ * et le compte ouvert est un compte de paiement - trois actes, pas un. L'article 6 le
+ * disait déjà ; l'annexe des SAS et des SASU n'écrivait que « ouverture d'un compte
+ * bancaire », quelle que soit la banque choisie, et le nom de la banque n'y figurait
+ * pas davantage quand elle était saisie à la main.
+ */
+describe("l'état des actes annexé aux statuts", () => {
+  const dossier = (forme: string, banque: string) => ({
+    forme,
+    denomination: "ROSEBERRY CAPITAL",
+    activite: "Le conseil",
+    adresse: "34 Rue Laugier",
+    codePostal: "75017",
+    ville: "Paris",
+    banque,
+    banqueAutre:
+      banque === "Autre"
+        ? { nom: "Crédit Mutuel", adresse: "5 rue de Verdun", codePostal: "75009", ville: "Paris" }
+        : undefined,
+    capital: 1000,
+    partsTotales: 100,
+    associes: [
+      {
+        type: "physique",
+        parts: 100,
+        versement: 1000,
+        personne: {
+          civilite: "Monsieur",
+          prenom: "Karim",
+          nom: "Nadir",
+          dateDeNaissance: "1996-01-27",
+          villeDeNaissance: "Argenteuil",
+          nationalite: "Française",
+          adresse: "34 Rue Laugier",
+          codePostal: "75017",
+          ville: "Paris",
+        },
+      },
+    ],
+    dirigeants: [{ associe: 0 }],
+  });
+
+  /* Ce que porte l'annexe, elle seule : le corps des statuts parle du dépôt de son côté. */
+  const annexe = (gabarit: string, forme: string, banque: string) => {
+    const rendu = new PizZip(
+      genererDocument(gabarit, donneesDeGabarit(dossier(forme, banque) as never))
+    )
+      .file("word/document.xml")!
+      .asText()
+      .replace(/<[^>]+>/g, "");
+    const coupe = rendu.lastIndexOf("ÉTAT DES ACTES ACCOMPLIS");
+    expect(coupe).toBeGreaterThan(0);
+    return rendu.slice(coupe);
+  };
+
+  const gabarits: [string, string][] = [
+    ["sasu-statuts.docx", "SASU"],
+    ["sas-statuts.docx", "SAS"],
+    ["sarl-statuts.docx", "SARL"],
+  ];
+
+  for (const [gabarit, forme] of gabarits) {
+    it("nomme les actes de Qonto pour une " + forme, () => {
+      const texte = annexe(gabarit, forme, "Qonto");
+      expect(texte).toContain("Dépôt du capital social auprès d’une étude notariale");
+      expect(texte).toContain("compte de transit");
+      expect(texte).toContain("OLINDA SAS (Qonto)");
+      /* Une seule banque parle : les blocs des autres sont retirés. */
+      expect(texte).not.toContain("Shine");
+      expect(texte).not.toContain("Maître Quentin Fourez");
+    });
+
+    it("nomme les actes de Shine pour une " + forme, () => {
+      const texte = annexe(gabarit, forme, "Shine");
+      expect(texte).toContain("Dépôt du capital social auprès d’un office notarial");
+      expect(texte).toContain("(ACPR) sous le numéro 71758");
+      expect(texte).not.toContain("Qonto");
+    });
+
+    it("nomme les actes de Revolut pour une " + forme, () => {
+      const texte = annexe(gabarit, forme, "Revolut Business");
+      expect(texte).toContain("Dépôt du capital social auprès d’une étude notariale");
+      expect(texte).toContain("attestation du dépositaire des fonds");
+      expect(texte).toContain("Maître Quentin Fourez");
+      expect(texte).not.toContain("Qonto");
+    });
+
+    it("nomme la banque saisie à la main pour une " + forme, () => {
+      const texte = annexe(gabarit, forme, "Autre");
+      expect(texte).toContain("Dépôt du capital social auprès de la Banque Crédit Mutuel");
+      expect(texte).toContain("5 rue de Verdun, 75009 Paris");
+      expect(texte).not.toContain("notarial");
+    });
+
+    it("ne laisse aucune balise dans l’annexe d’une " + forme, () => {
+      for (const banque of ["Qonto", "Shine", "Revolut Business", "Autre"]) {
+        expect(annexe(gabarit, forme, banque)).not.toMatch(/\{\{|\}\}/);
+      }
+    });
+  }
+
+  /*
+   * Le compte de transit s'ouvre au nom de ceux qui déposent : « à leurs noms » quand
+   * ils sont plusieurs, « à son nom » pour l'associé unique d'une SASU.
+   */
+  it("accorde le compte de transit au nombre d’associés", () => {
+    expect(annexe("sasu-statuts.docx", "SASU", "Qonto")).toContain("à son nom");
+    expect(annexe("sas-statuts.docx", "SAS", "Qonto")).toContain("à leurs noms");
+  });
+});
