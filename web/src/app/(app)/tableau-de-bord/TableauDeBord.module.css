@@ -2439,8 +2439,6 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  /* Les jalons se répartissent sur la hauteur qu'on leur laisse. */
-  justify-content: space-between;
   gap: 0;
   margin: 22px 0 0;
   padding: 0;
@@ -2462,6 +2460,16 @@
   display: flex;
   /* La règle globale centre les `li` : le point tomberait au milieu de l'explication. */
   align-items: flex-start;
+  /*
+   * Chaque jalon prend sa part de la hauteur disponible.
+   *
+   * `space-between` répartissait l'espace entre les jalons et n'en laissait aucun après
+   * le dernier : la frise s'arrêtait haut, et un blanc restait au-dessus du bouton. En
+   * les faisant grandir d'autant, le trait descend jusqu'au bas de la carte - et
+   * `auto` en base, non zéro, pour que l'étape qui porte son explication garde sa
+   * hauteur de texte.
+   */
+  flex: 1 0 auto;
   gap: 16px;
   padding: 0 0 13px 0;
 }
@@ -2471,7 +2479,7 @@
   content: "";
   position: absolute;
   top: 14px;
-  bottom: -2px;
+  bottom: 0;
   left: 5px;
   width: 2px;
   background: #ececef;
