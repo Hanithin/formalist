@@ -3074,18 +3074,35 @@
   height: 52px;
   background: linear-gradient(to top, #f5f5f5 12%, rgba(245, 245, 245, 0));
   pointer-events: none;
+  /*
+   * Éteint au repos, allumé par le défilement.
+   *
+   * Une colonne qui ne défile pas n'a pas de course : la chronologie est alors inactive
+   * et l'élément garde son état de base. En partant de « visible », le voile restait
+   * posé sur la dernière ligne d'une colonne qui n'avait rien à cacher - et sur celle
+   * qu'on venait de dérouler jusqu'au bout, ce qui est le même mensonge.
+   */
+  opacity: 0;
 }
 
 @supports (animation-timeline: scroll()) {
   .voileDuBas::before {
     animation: voileSEteint linear both;
     animation-timeline: scroll(nearest);
-    animation-range: calc(100% - 52px) 100%;
   }
 }
 
+/* Il tient tant qu'il reste quelque chose dessous, et s'efface sur la fin de course. */
 @keyframes voileSEteint {
-  to {
+  0% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
     opacity: 0;
   }
 }
