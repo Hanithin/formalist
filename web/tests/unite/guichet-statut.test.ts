@@ -68,3 +68,46 @@ describe("la lecture d'un statut", () => {
     expect(estTermine("")).toBe(false);
   });
 });
+
+/**
+ * Les états que le contrat ne publie pas.
+ *
+ * Le service en rend d'autres que ses treize : un dépôt de démonstration est revenu en
+ * `ERROR_DECLARATION_INSEE`. Le repli disait « en cours » pour tous, et un dossier en
+ * échec passait pour un dossier qui avance.
+ */
+describe("un état que le contrat ne publie pas", () => {
+  it("appelle un regard quand son nom annonce un échec", () => {
+    expect(lireLeStatut("ERROR_DECLARATION_INSEE").attente).toBe("a-nous");
+    expect(lireLeStatut("REJECTED_BY_PARTNER").attente).toBe("a-nous");
+    expect(appelleUnGeste("ERROR_DECLARATION_INSEE")).toBe(true);
+  });
+
+  /*
+   * Et jamais pour terminé.
+   *
+   * Ce même `ERROR_DECLARATION_INSEE` est passé de lui-même à `VALIDATION_PENDING`
+   * quelques heures plus tard, numéro national à l'appui. Le tenir pour manqué aurait
+   * figé le dossier sur un échec révolu et arrêté toute synchronisation ultérieure.
+   */
+  it("ne se tient jamais pour terminé", () => {
+    expect(estTermine("ERROR_DECLARATION_INSEE")).toBe(false);
+    expect(estTermine("SOMETHING_NEW")).toBe(false);
+  });
+
+  /* Prudence dans l'autre sens : ce qui ne s'annonce pas comme un échec n'en est pas un. */
+  it("reste « en cours » quand rien ne dit le contraire", () => {
+    expect(lireLeStatut("SOMETHING_NEW").attente).toBe("en-cours");
+  });
+
+  /*
+   * Le nom de leur machine n'est pas celui d'un écran d'avocat : il vit dans
+   * l'explication, où il reste citable au support de l'INPI.
+   */
+  it("se dit en français, et garde le nom brut dans l'explication", () => {
+    const inconnu = lireLeStatut("ERROR_DECLARATION_INSEE");
+    expect(inconnu.libelle).toBe("À vérifier");
+    expect(inconnu.explication).toContain("ERROR_DECLARATION_INSEE");
+    expect(lireLeStatut("VALIDATION_PENDING").libelle).toBe("En validation");
+  });
+});

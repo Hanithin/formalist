@@ -41,6 +41,14 @@ export type Attente =
 
 export interface LectureDuStatut {
   attente: Attente;
+  /**
+   * Deux mots, pour une ligne d'écran.
+   *
+   * L'explication dit tout, et c'est trop long pour un en-tête de dossier : le libellé
+   * tient à côté d'une date, l'explication se lit au survol ou dans le détail. Aucun ne
+   * remplace l'autre - « À régler » ne dit pas que les pièces ont passé le contrôle.
+   */
+  libelle: string;
   /** Une phrase pour l'avocat, à la première personne du guichet. */
   explication: string;
 }
@@ -48,51 +56,61 @@ export interface LectureDuStatut {
 const LECTURES: Record<Statut, LectureDuStatut> = {
   RECEIVED: {
     attente: "en-cours",
+    libelle: "Reçue",
     explication:
       "Le guichet a reçu la formalité et ses contrôles de cohérence et de complétude sont passés.",
   },
   ERROR: {
     attente: "manque",
+    libelle: "Refusée",
     explication:
       "Le guichet a refusé la formalité : un contrôle de cohérence ou de complétude a échoué, une pièce jointe porte un virus, ou le délai de paiement est dépassé.",
   },
   SIGNATURE_PENDING: {
     attente: "a-nous",
+    libelle: "À signer",
     explication: "Le récapitulatif de dépôt attend votre signature.",
   },
-  SIGNED: { attente: "en-cours", explication: "La formalité est signée." },
+  SIGNED: { attente: "en-cours", libelle: "Signée", explication: "La formalité est signée." },
   PAYMENT_PENDING: {
     attente: "a-nous",
+    libelle: "À régler",
     explication: "Les pièces jointes sont contrôlées : la formalité attend son règlement.",
   },
   PAYMENT_VALIDATION_PENDING: {
     attente: "en-cours",
+    libelle: "Règlement en cours",
     explication: "Le règlement est en cours de validation.",
   },
   PAID: {
     attente: "en-cours",
+    libelle: "Réglée",
     explication: "La formalité est réglée et porte un numéro national.",
   },
   VALIDATION_PENDING: {
     attente: "en-cours",
+    libelle: "En validation",
     explication: "La formalité attend la validation d'au moins un partenaire valideur.",
   },
   AMENDMENT_PENDING: {
     attente: "a-nous",
+    libelle: "À régulariser",
     explication:
       "Un valideur demande un complément ou une correction : la formalité attend votre régularisation.",
   },
   AMENDED: {
     attente: "en-cours",
+    libelle: "Régularisée",
     explication: "La régularisation est transmise et attend la validation du partenaire.",
   },
   EXPIRED: {
     attente: "manque",
+    libelle: "Expirée",
     explication:
       "Le délai est expiré - celui de votre régularisation, ou celui du traitement par le valideur.",
   },
-  VALIDATED: { attente: "acquis", explication: "La formalité est validée." },
-  REJECTED: { attente: "manque", explication: "La formalité est rejetée." },
+  VALIDATED: { attente: "acquis", libelle: "Validée", explication: "La formalité est validée." },
+  REJECTED: { attente: "manque", libelle: "Rejetée", explication: "La formalité est rejetée." },
 };
 
 export function estUnStatutConnu(valeur: string): valeur is Statut {
@@ -100,19 +118,49 @@ export function estUnStatutConnu(valeur: string): valeur is Statut {
 }
 
 /**
+ * Un état inconnu qui s'annonce lui-même comme une panne.
+ *
+ * Le contrat publie treize statuts ; le service en rend d'autres. Un dépôt de
+ * démonstration est revenu en `ERROR_DECLARATION_INSEE`, que rien ne prévoyait, et le
+ * repli « en cours » le peignait en gris tranquille - un dossier qui appelait un regard
+ * passait pour un dossier qui avance.
+ *
+ * Le nom porte le sens : l'INPI préfixe ses échecs. C'est une présomption, non une
+ * lecture du contrat, et elle ne va que dans le sens prudent - alerter à tort fait
+ * regarder un dossier qui allait bien, se taire à tort le laisse mourir.
+ */
+function annonceUnEchec(statut: string): boolean {
+  return /ERROR|REJECT|REFUS|EXPIR|CANCEL|ANNUL/.test(statut);
+}
+
+/**
  * Ce qu'un statut veut dire, y compris quand on ne le connaît pas.
  *
- * L'INPI peut en ajouter un sans nous prévenir. Le traiter comme une panne masquerait
- * un dépôt qui avance ; le traiter comme acquis ferait croire à une immatriculation qui
- * n'existe pas. « En cours » est le seul repli qui ne mente dans aucun des deux sens -
- * et le nom brut est rendu, pour qu'il se lise dans le journal.
+ * Un état inconnu n'est jamais tenu pour terminé, quoi qu'annonce son nom. Le même
+ * `ERROR_DECLARATION_INSEE` était passé de lui-même à `VALIDATION_PENDING` quelques
+ * heures plus tard, numéro national à l'appui : le déclarer manqué aurait figé le
+ * dossier sur un échec révolu et arrêté toute synchronisation ultérieure. Il appelle un
+ * regard - `a-nous` - non un constat de décès.
+ *
+ * Le libellé reste en français : « ERROR_DECLARATION_INSEE » est le vocabulaire de leur
+ * machine, pas celui d'un écran d'avocat. Le nom brut ne disparaît pas pour autant - il
+ * est dans l'explication, qui se lit au survol, parce que c'est lui qu'on cite au
+ * support de l'INPI.
  */
 export function lireLeStatut(valeur: string): LectureDuStatut {
   const propre = valeur.trim().toUpperCase();
   if (estUnStatutConnu(propre)) return LECTURES[propre];
+
+  const echec = annonceUnEchec(propre);
   return {
-    attente: "en-cours",
-    explication: "Le guichet rapporte un état que nous ne connaissons pas encore : " + propre + ".",
+    attente: echec ? "a-nous" : "en-cours",
+    libelle: echec ? "À vérifier" : "État inconnu",
+    explication:
+      "Le guichet rapporte un état que nous ne connaissons pas encore : " +
+      (propre || "aucun") +
+      (echec
+        ? ". Son nom annonce un échec - ouvrez la formalité sur le guichet pour en lire le motif. Il arrive qu'il se résolve seul."
+        : "."),
   };
 }
 

@@ -36,7 +36,7 @@ import { Parcours } from "@/app/(app)/creation/Parcours";
 import { ETAPES as ETAPES_DE_CREATION } from "@/domain/formalite/parcours";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Corriger } from "./Corriger";
-import { DeposerAuGuichet } from "./DeposerAuGuichet";
+import { DeposerAuGuichet, DepotAuGuichet } from "./DeposerAuGuichet";
 import { depotConnu } from "@/infrastructure/db/depots/guichet";
 import { lienVersLaFormalite } from "@/infrastructure/guichet/formalites";
 import { type EntreeDuJournal } from "./Historique";
@@ -725,6 +725,7 @@ export default async function DossierAvocat({
                             lien: depotGuichet.formaliteId
                               ? lienVersLaFormalite(depotGuichet.formaliteId)
                               : null,
+                            statut: depotGuichet.statut,
                           }
                         : null
                     }
@@ -753,6 +754,28 @@ export default async function DossierAvocat({
                   />
                 </span>
               </div>
+
+              {/*
+                Ce que le guichet en sait, sous le titre.
+
+                La rangée des boutons ne peut pas porter une date, une pastille d'état et
+                deux gestes de plus : le bouton du formulaire passait dessous. Le dépôt
+                est un fait, non une commande - il a sa ligne.
+              */}
+              {depotGuichet && (
+                <DepotAuGuichet
+                  dossier={dossier.id}
+                  depose={{
+                    formaliteId: depotGuichet.formaliteId,
+                    numNat: depotGuichet.numNat,
+                    deposeLe: depotGuichet.deposeLe.toISOString(),
+                    lien: depotGuichet.formaliteId
+                      ? lienVersLaFormalite(depotGuichet.formaliteId)
+                      : null,
+                    statut: depotGuichet.statut,
+                  }}
+                />
+              )}
 
                             {pieces.length === 0 ? (
                 <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />

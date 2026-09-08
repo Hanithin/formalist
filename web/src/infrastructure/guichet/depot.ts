@@ -1,6 +1,11 @@
 import { journal } from "@/lib/journal";
 import { demander, type Identifiants } from "./transport";
-import { depotDuDossier, lienVersLaFormalite, referenceDuDossier } from "./formalites";
+import {
+  depotDuDossier,
+  detailDuDepot,
+  lienVersLaFormalite,
+  referenceDuDossier,
+} from "./formalites";
 import { joindreLaPiece, pieceDepuisUnActe, type PieceAJoindre } from "./pieces";
 import { noterLeDepot } from "@/infrastructure/db/depots/guichet";
 import { lireDocumentProduit, lirePieceDeposee } from "@/infrastructure/documents/depot";
@@ -223,13 +228,16 @@ export async function deposerLaCreation(
   journal.info({ dossierId, formaliteId }, "Guichet unique : formalité signée");
 
   /*
-   * L'état, relu chez eux.
+   * L'état, relu chez eux, par identifiant.
    *
    * Il ne bascule pas dans la seconde - le guichet traite le panier en tâche de fond -
    * et lire aussitôt rendrait « en attente de signature » sur une formalité signée. On
    * rend ce qu'on voit, et la synchronisation suivante dira la suite.
+   *
+   * Par identifiant et non par référence : la liste du guichet est une projection
+   * allégée qui retarde, et qui omet le numéro national qu'on vient chercher.
    */
-  const relu = await depotDuDossier(dossierId, compte);
+  const relu = await detailDuDepot(formaliteId, compte);
   if (relu) await noterLeDepot(dossierId, relu);
 
   return {

@@ -4526,6 +4526,36 @@ button.ligneCorps:disabled {
   scrollbar-width: thin;
 }
 
+/*
+ * Le fondu des bords, quand il reste à lire de ce côté-là.
+ *
+ * Un masque plutôt qu'un voile posé par-dessus : le voile suppose un fond, et il faudrait
+ * le peindre de la même couleur que la carte - qui change avec le thème et avec ce
+ * qu'elle contient. Le masque efface le contenu lui-même ; ce qu'on voit dessous est le
+ * fond réel, quel qu'il soit.
+ *
+ * Les deux classes se cumulent : un fil au milieu de sa course s'estompe des deux côtés,
+ * un fil en bas seulement en haut. C'est le composant qui mesure - le CSS ne sait pas ce
+ * qui dépasse.
+ */
+.fil > .filFonduHaut {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
+}
+
+.fil > .filFonduBas {
+  mask-image: linear-gradient(to top, transparent 0, #000 18px);
+}
+
+.fil > .filFonduHaut.filFonduBas {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18px,
+    #000 calc(100% - 18px),
+    transparent 100%
+  );
+}
+
 .fil > .filMessages > :first-child {
   margin-top: auto;
 }
@@ -5286,11 +5316,40 @@ button.ligneCorps:disabled {
   Ce n'est plus une commande : c'est un fait, et il se lit comme le reste de l'en-tête -
   sans cadre, sans pastille, à la hauteur des boutons qu'il remplace.
 */
+/*
+  La ligne du dépôt, sous le titre de la section.
+
+  Elle se replie proprement si l'écran est étroit : quatre éléments d'inégale longueur -
+  une date, un état parfois brut, deux gestes - ne tiennent pas toujours de front, et
+  mieux vaut qu'ils passent à la ligne entre eux qu'en emportant le bouton voisin.
+*/
 .guichetDepose {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  /*
+    Sur la ligne de base, non sur le centre.
+
+    La pastille d'état est une capsule rembourrée, les deux gestes sont du texte nu :
+    centrer les boîtes laissait leurs lignes de base à trois hauteurs différentes, et
+    la rangée paraissait décousue.
+  */
+  align-items: baseline;
+  gap: 6px 14px;
+  margin: -4px 0 16px;
   letter-spacing: 0;
+}
+
+/* Le lien vers le guichet se lit comme « Actualiser » : deux gestes de même rang. */
+.guichetLien {
+  font-size: 12.5px;
+  color: #666;
+  letter-spacing: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.guichetLien:hover {
+  color: #111;
 }
 
 .guichetDeposeQuand {
@@ -5299,7 +5358,89 @@ button.ligneCorps:disabled {
   white-space: nowrap;
 }
 
-/* Le lien porte le costume d'un bouton : c'est un geste, même s'il mène dehors. */
-.guichetDepose a {
-  text-decoration: none;
+/*
+  L'état du dépôt, à côté de sa date.
+
+  Quatre lectures possibles - l'INPI travaille, il attend un geste du cabinet, c'est
+  acquis, c'est manqué - et la couleur les distingue sans les porter seule : le libellé
+  dit la même chose en toutes lettres. Un rond coloré ne se déchiffre qu'après l'avoir
+  appris, et un dossier se lit parfois par quelqu'un qui ne l'a pas appris.
+*/
+.guichetEtat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* La référence se compare chiffre à chiffre : chasse fixe, et un ton en retrait. */
+.guichetReference {
+  font-size: 12.5px;
+  color: #8a8a90;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.guichetPastille {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* L'INPI travaille : rien à faire, et rien qui presse. */
+.guichetEtatEnCours {
+  background: #f1f1f3;
+  color: #55555c;
+}
+
+/* Le dépôt attend un geste du cabinet : c'est le seul qui appelle l'œil. */
+.guichetEtatANous {
+  background: #fdf3e2;
+  color: #96601a;
+}
+
+.guichetEtatAcquis {
+  background: #eaf6ee;
+  color: #2b6b41;
+}
+
+.guichetEtatManque {
+  background: #fdeceb;
+  color: #9a2d24;
+}
+
+/*
+  Aller chercher l'état chez eux.
+
+  Un lien de texte plutôt qu'un bouton : c'est un geste secondaire, à côté d'un fait
+  déjà écrit, et lui donner un cadre l'aurait mis au même rang que « Voir sur le
+  guichet ».
+*/
+.guichetActualiser {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: #666;
+  letter-spacing: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.guichetActualiser:hover:not(:disabled) {
+  color: #111;
+}
+
+.guichetActualiser:disabled {
+  cursor: default;
+  opacity: 0.5;
 }

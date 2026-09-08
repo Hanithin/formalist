@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { dateHeureLongue } from "@/lib/dates";
+import { formaterDate, heureCourte } from "@/lib/dates";
+import { lireLeStatut, type Attente } from "@/domain/guichet/statut";
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "../Avocat.module.css";
@@ -72,10 +73,19 @@ interface Resultat {
  */
 const NIVEAUX = ["Domaine", "Catégorie", "Sous-catégorie", "Précision"];
 
-/** La première lettre en bas de casse : la date entre dans une phrase. */
-function enPhrase(texte: string): string {
-  return texte.charAt(0).toLowerCase() + texte.slice(1);
-}
+/**
+ * La classe de chaque attente.
+ *
+ * Une table plutôt qu'un nom composé à la volée : `styles["guichetEtat" + attente]`
+ * marchait, mais donnait des classes qu'aucune recherche dans la feuille ne retrouve -
+ * « guichetEtaten-cours » n'existe nulle part en toutes lettres.
+ */
+const CLASSE_ETAT: Record<Attente, string> = {
+  "en-cours": styles.guichetEtatEnCours,
+  "a-nous": styles.guichetEtatANous,
+  acquis: styles.guichetEtatAcquis,
+  manque: styles.guichetEtatManque,
+};
 
 function Croix() {
   return (
@@ -198,6 +208,108 @@ export interface DepotFait {
   deposeLe: string;
   /** Où la voir chez eux, ou rien si le guichet n'a pas rendu d'identifiant. */
   lien: string | null;
+  /** Le dernier état connu, tel que notre copie locale le porte. */
+  statut: string | null;
+}
+
+/**
+ * Le dépôt déjà fait : quand, dans quel état, et où le voir.
+ *
+ * Il vivait dans la rangée des boutons, à la place de celui qui déposait. Une date, une
+ * pastille, deux gestes et le bouton du formulaire ne tiennent pas sur une ligne : le
+ * dernier passait dessous, et l'en-tête se cassait. Un fait n'est pas une commande - il
+ * se range sous le titre, sur sa propre ligne, où il a la place de tout dire.
+ */
+export function DepotAuGuichet({ dossier, depose }: { dossier: number; depose: DepotFait }) {
+  const router = useRouter();
+  const [enCours, demarrer] = useTransition();
+
+  /**
+   * Aller demander au guichet où en est le dépôt.
+   *
+   * La route interroge l'INPI et enregistre au passage ce qu'elle apprend : le
+   * rafraîchissement de la page relit alors notre copie, à jour. C'est le seul appel au
+   * service, et il est déclenché - jamais subi.
+   */
+  function actualiser() {
+    demarrer(async () => {
+      const reponse = await fetch("/api/guichet/etat?dossier=" + dossier);
+      if (!reponse.ok) return;
+      router.refresh();
+    });
+  }
+
+  /*
+   * L'état vient de notre copie, non du guichet.
+   *
+   * Interroger l'INPI à chaque ouverture de dossier ferait dépendre l'écran de sa
+   * disponibilité, et attendre une seconde pour une ligne de texte. Ce qu'on montre est
+   * daté ; « Actualiser » va chercher la vérité quand on la veut.
+   */
+  const lecture = depose.statut ? lireLeStatut(depose.statut) : null;
+  const quand = new Date(depose.deposeLe);
+
+  return (
+    <p className={styles.guichetDepose}>
+      {/*
+        La date sans le jour de la semaine.
+
+        « Déposé le mardi 8 septembre 2026 à 01h12 » : le jour n'apprend rien - on ne
+        prend pas rendez-vous avec un dépôt - et il poussait la ligne entière vers la
+        droite. `dateHeureLongue` le porte parce qu'elle est écrite pour un rendez-vous ;
+        ici, la date et l'heure suffisent.
+      */}
+      <span className={styles.guichetDeposeQuand}>
+        Déposé le {formaterDate(quand)} à {heureCourte(quand)}
+      </span>
+
+      {/*
+        Le numéro national, en référence et non dans la phrase.
+
+        C'est un identifiant : on le compare, on le recopie, on ne le lit pas. Collé à la
+        suite de l'heure il allongeait une phrase déjà longue et se confondait avec elle.
+      */}
+      {depose.numNat && <span className={styles.guichetReference}>{depose.numNat}</span>}
+
+      {/*
+        L'état, en pastille.
+
+        La couleur ne porte pas seule : le libellé dit la même chose, et l'explication du
+        guichet se lit au survol. Un rond coloré sans mot ne se déchiffre qu'après
+        l'avoir appris.
+      */}
+      {lecture && (
+        <span
+          className={`${styles.guichetEtat} ${CLASSE_ETAT[lecture.attente]}`}
+          title={lecture.explication}
+        >
+          <span className={styles.guichetPastille} aria-hidden="true" />
+          {lecture.libelle}
+        </span>
+      )}
+
+      <button
+        type="button"
+        className={styles.guichetActualiser}
+        onClick={actualiser}
+        disabled={enCours}
+      >
+        {enCours ? "Lecture…" : "Actualiser"}
+      </button>
+
+      {depose.lien && (
+        /*
+          Le dossier chez eux, en un clic.
+
+          Un nouvel onglet : l'avocat travaille sur ce dossier-ci, et le lui faire
+          quitter pour aller vérifier un statut lui ferait perdre sa place.
+        */
+        <a className={styles.guichetLien} href={depose.lien} target="_blank" rel="noreferrer">
+          Voir sur le guichet
+        </a>
+      )}
+    </p>
+  );
 }
 
 export function DeposerAuGuichet({
@@ -238,37 +350,15 @@ export function DeposerAuGuichet({
    * ferait immatriculer la société deux fois. À sa place, ce qui compte alors - que
    * c'est parti, et quand.
    */
-  if (depose) {
-    return (
-      <span className={styles.guichetDepose}>
-        <span className={styles.guichetDeposeQuand}>
-          {/*
-            `dateHeureLongue` met une capitale au jour de la semaine : elle est écrite
-            pour un titre - « Mardi 8 septembre 2026 ». Au milieu d'une phrase, la
-            capitale se voit ; le reste de la date ne change pas.
-          */}
-          Déposé le {enPhrase(dateHeureLongue(new Date(depose.deposeLe)))}
-          {depose.numNat ? " - " + depose.numNat : ""}
-        </span>
-        {depose.lien && (
-          /*
-            Le dossier chez eux, en un clic.
-
-            Un nouvel onglet : l'avocat travaille sur ce dossier-ci, et le lui faire
-            quitter pour aller vérifier un statut lui ferait perdre sa place.
-          */
-          <a
-            className={styles.decisionSecondaire}
-            href={depose.lien}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Voir sur le guichet
-          </a>
-        )}
-      </span>
-    );
-  }
+  /*
+   * Le geste s'efface une fois fait.
+   *
+   * Le bouton restait après l'envoi : il invitait à recommencer, et un second dépôt
+   * immatriculerait la société deux fois. Ce qui prend sa place - la date, l'état, le
+   * lien - n'est plus une commande mais un fait, et se lit sous le titre plutôt que
+   * dans la rangée des boutons : `DepotAuGuichet` s'en charge.
+   */
+  if (depose) return null;
 
   const aBesoinDeLaCategorie = (preparation?.manques ?? []).some((m) =>
     m.chemin.includes("categorisationActivite")
