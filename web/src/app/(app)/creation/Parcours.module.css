@@ -2777,13 +2777,25 @@
  * La mention de tête dit qu'il y a des actes en relecture ; celle-ci dit ce que cela
  * empêche, à l'endroit où l'on s'apprêtait à cliquer.
  */
+/*
+  Une attente, en jaune de bout en bout.
+
+  globals.css habille tout [role="status"] du trio « abouti » - trait, fond et encre en
+  vert. Cette classe reprenait le fond et l'encre en jaune mais laissait le trait :
+  un cadre vert autour d'un pavé crème, pour un message qui dit précisément que rien
+  n'est encore fait. Le trait se reprend donc avec les deux autres.
+
+  La couleur reste celle des variables d'attente, pour que ce message se lise comme les
+  autres attentes du produit et non comme un cas de plus.
+*/
 .actesRelecture {
   margin: 0 0 12px;
   padding: 11px 16px;
+  border: 1px solid var(--attente-trait);
   border-radius: 12px;
-  background: #fef6e7;
+  background: var(--attente-fond);
   font-size: 13.5px;
-  color: #8a5a00;
+  color: var(--attente-encre);
 }
 
 /* La pastille d'un acte que l'avocat n'a pas encore relu. */
