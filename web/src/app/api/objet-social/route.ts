@@ -51,7 +51,26 @@ export const POST = route(async (requete: Request) => {
     });
   } catch (e) {
     if (e instanceof RedactionIndisponible) {
-      return NextResponse.json({ error: e.message }, { status: e.statut });
+      /*
+       * De quoi diagnostiquer sans lire les journaux du serveur.
+       *
+       * Le message affiché ne change pas ; la réponse dit en plus lequel des deux
+       * services a été appelé et ce qu'il a rendu. Une panne se réduisait sinon à
+       * « momentanément indisponible », et distinguer un quota épuisé d'une clé absente
+       * demandait un accès aux logs de production.
+       *
+       * Ni la clé ni le corps de l'erreur n'y figurent : un nom de fournisseur et un
+       * code HTTP ne révèlent rien qu'un attaquant ne puisse déduire du temps de
+       * réponse.
+       */
+      return NextResponse.json(
+        {
+          error: e.message,
+          ...(e.fournisseur ? { fournisseur: e.fournisseur } : {}),
+          ...(e.statutFournisseur ? { statutFournisseur: e.statutFournisseur } : {}),
+        },
+        { status: e.statut }
+      );
     }
     throw e;
   }

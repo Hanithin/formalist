@@ -55,7 +55,7 @@ export async function redigerAvecClaude(
 ): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
     journal.warn("Clé de rédaction assistée absente");
-    throw new RedactionIndisponible("La rédaction assistée n'est pas configurée");
+    throw new RedactionIndisponible("La rédaction assistée n'est pas configurée", undefined, { fournisseur: "claude" });
   }
 
   /*
@@ -94,9 +94,12 @@ export async function redigerAvecClaude(
   } catch (e) {
     if (e instanceof Anthropic.APIError) {
       /* Le corps peut porter la clé en écho : on n'en garde que le statut. */
-      throw new RedactionIndisponible(undefined, new Error("statut " + e.status));
+      throw new RedactionIndisponible(undefined, new Error("statut " + e.status), {
+        fournisseur: "claude",
+        statutFournisseur: e.status,
+      });
     }
-    throw new RedactionIndisponible(undefined, e);
+    throw new RedactionIndisponible(undefined, e, { fournisseur: "claude" });
   }
 
   /*
@@ -106,12 +109,12 @@ export async function redigerAvecClaude(
    * chaîne vide et ferait chercher la panne du mauvais côté.
    */
   if (message.stop_reason === "refusal") {
-    throw new RedactionIndisponible("Aucune proposition n'a pu être rédigée");
+    throw new RedactionIndisponible("Aucune proposition n'a pu être rédigée", undefined, { fournisseur: "claude" });
   }
 
   const texte = texteDesBlocs(message);
   if (!texte.trim()) {
-    throw new RedactionIndisponible("Aucune proposition n'a pu être rédigée");
+    throw new RedactionIndisponible("Aucune proposition n'a pu être rédigée", undefined, { fournisseur: "claude" });
   }
 
   return nettoyerProposition(texte);

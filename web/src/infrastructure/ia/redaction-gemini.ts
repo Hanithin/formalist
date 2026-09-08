@@ -94,7 +94,7 @@ export async function redigerAvecGemini(
   const cle = process.env.GEMINI_API_KEY;
   if (!cle) {
     journal.warn("Clé de rédaction assistée absente");
-    throw new RedactionIndisponible("La rédaction assistée n'est pas configurée");
+    throw new RedactionIndisponible("La rédaction assistée n'est pas configurée", undefined, { fournisseur: "gemini" });
   }
 
   const appel = () => {
@@ -135,25 +135,28 @@ export async function redigerAvecGemini(
       reponse = await appel();
     }
   } catch (e) {
-    throw new RedactionIndisponible(undefined, e);
+    throw new RedactionIndisponible(undefined, e, { fournisseur: "gemini" });
   }
 
   if (!reponse.ok) {
     // Le corps peut contenir la clé en écho : on n'en garde que le statut.
-    throw new RedactionIndisponible(undefined, new Error("statut " + reponse.status));
+    throw new RedactionIndisponible(undefined, new Error("statut " + reponse.status), {
+      fournisseur: "gemini",
+      statutFournisseur: reponse.status,
+    });
   }
 
   let donnees: unknown;
   try {
     donnees = await reponse.json();
   } catch (e) {
-    throw new RedactionIndisponible(undefined, e);
+    throw new RedactionIndisponible(undefined, e, { fournisseur: "gemini" });
   }
 
   const texte = texteDeLaReponse(donnees);
 
   if (!texte.trim()) {
-    throw new RedactionIndisponible("Aucune proposition n'a pu être rédigée");
+    throw new RedactionIndisponible("Aucune proposition n'a pu être rédigée", undefined, { fournisseur: "gemini" });
   }
 
   return nettoyerProposition(texte);
