@@ -3,7 +3,17 @@ data
 uploads
 tmp
 .git
-.env
+# Tous les fichiers d'environnement, non le seul « .env ».
+#
+# Le Dockerfile fait « COPY web/ ./ » : ce qui n'est pas exclu ici entre dans l'image.
+# « .env » l'était, « .env.local » ne l'était pas - et c'est justement celui qui porte
+# les secrets de développement : la clé du guichet unique, celle qui chiffre les
+# identifiants des avocats, les clés des modèles. Une image construite en local les
+# aurait embarquées.
+#
+# Le déploiement Render n'était pas touché : il construit depuis le dépôt, où aucun
+# « .env* » n'existe. C'est une construction à la main qui aurait fui.
+.env*
 *.log
 npm-debug.log*
 .DS_Store
