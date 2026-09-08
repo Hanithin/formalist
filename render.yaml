@@ -24,6 +24,20 @@ services:
       # Renseigner ces secrets dans le dashboard Render (Environment) :
       - key: GEMINI_API_KEY
         sync: false
+      # Rédaction assistée de l'objet social : « gemini » (défaut) ou « claude ».
+      # Le repli n'est pas un hasard - c'est ce qui tourne aujourd'hui, et cela le reste
+      # tant que personne n'a tranché.
+      - key: IA_FOURNISSEUR
+        sync: false
+      # La clé Claude, et le modèle si l'on veut en essayer un autre que le défaut.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Nécessaire seulement si la clé n'est pas rattachée à un espace de travail :
+      # l'API refuse alors la requête en 400 tant que l'en-tête manque.
+      - key: ANTHROPIC_WORKSPACE_ID
+        sync: false
+      - key: CLAUDE_MODELE
+        sync: false
       # INPI RNE — requis pour capital, statuts, OCR et extraction du représentant
       - key: INPI_USERNAME
         sync: false
