@@ -900,6 +900,14 @@
  * au milieu d'une carte à moitié vide, et l'encadré gris s'arrêtait avant le bord
  * pendant que les champs sous lui allaient jusqu'au bout.
  */
+/* L'avancement d'une lecture, sous le bouton qui l'a lancée. */
+.blocMention {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
 .blocTexte {
   margin: 0;
   color: #71717a;
@@ -2871,8 +2879,19 @@
   background: #15803d;
 }
 
+/*
+  Un seul intervalle entre les blocs de la colonne.
+
+  Le panneau empilait des blocs qui portaient chacun leur propre marge - quatorze
+  pixels sous le repli, seize sous l'entête, rien sous les cartes : les intervalles ne
+  se ressemblaient pas et la colonne paraissait bancale. La marge se pose ici, une
+  fois, et les blocs n'en portent plus.
+*/
 .editeurPanneau {
   position: sticky;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   top: 16px;
   max-height: calc(100vh - 32px);
   max-height: calc(100dvh - 32px);
@@ -2995,15 +3014,15 @@
   justify-content: center;
   gap: 6px;
   width: 100%;
-  margin: 0 0 14px;
+  margin: 0;
   padding: 9px 12px;
-  border: 1px dashed #b8b8bf;
-  border-radius: 8px;
+  border: 1px dashed #d4d4d8;
+  border-radius: 10px;
   background: #fff;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
-  color: #3f3f46;
+  color: #71717a;
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -4522,38 +4541,26 @@
   color: #111;
 }
 
+/*
+  Confirmée, la coche reste à sa place.
+
+  Elle devenait une pastille : un objet flottant en bas à gauche, sans rien à sa
+  droite, qui répétait la forme de « FAIT » posé en tête. Deux pastilles pour un état
+  et son geste, et une carte dont la dernière ligne changeait de gabarit à chaque clic.
+
+  La rangée ne bouge plus - même largeur, même trait de séparation, même position dans
+  les deux états. Seuls la coche et la couleur du mot disent où l'on en est ; la
+  pastille de tête, elle, dit l'état de la carte.
+*/
 .suiviCoche:has(input:checked) {
-  /* En ligne, sinon un élément de bloc occupe toute la largeur malgré `auto`. */
-  display: inline-flex;
-  width: fit-content;
-  gap: 7px;
-  padding: 5px 13px 5px 6px;
-  border-top: none;
-  border-radius: 999px;
-  background: #ecfdf5;
-  font-size: 12px;
+  color: #15803d;
   font-weight: 600;
-  color: #15803d;
-}
-.suiviCoche:has(input:checked):hover {
-  background: #dcfce7;
-  color: #15803d;
 }
 
-/*
- * Un rond, comme les tâches du dossier.
- *
- * Le carré à coins arrondis jurait avec les tâches de l'onglet « À faire », qui se
- * cochent en rond : deux formes pour un même geste dans un même écran. La case native
- * est habillée plutôt que masquée - une case cachée et redessinée à côté n'est plus
- * cliquable ni atteignable au clavier là où on la voit.
- */
-/*
- * Le rond doit sa taille à lui-même, non aux champs de saisie.
- *
- * La règle générale des champs applique onze pixels de remplissage vertical et
- * quatorze horizontaux : appliqués à une case dessinée, ils l'étiraient en ellipse.
- */
+.suiviCoche:has(input:checked):hover {
+  color: #166534;
+}
+
 .suiviCoche input {
   appearance: none;
   -webkit-appearance: none;
@@ -4627,8 +4634,8 @@
  * coche qui vaut « fait », et elle seule mérite la couleur pleine.
  */
 .suiviJauge {
-  height: 3px;
-  margin-top: 11px;
+  height: 2px;
+  margin-top: 6px;
   border-radius: 999px;
   background: #f0f0f2;
   overflow: hidden;
@@ -4653,33 +4660,66 @@
 }
 
 .suiviCompte {
-  margin: 7px 0 0;
+  margin: 12px 0 0;
   font-size: 11.5px;
   color: #888;
 }
 
 /* Le parcours des emplacements : c'est ce qui évite d'en oublier un. */
+/*
+  Un seul contrôle, non trois boîtes.
+
+  Les deux flèches et le libellé portaient chacun leur bordure et leur rayon, séparés
+  de quatre pixels : trois objets pour un seul geste, et une rangée qui accrochait le
+  regard plus que la carte qui la porte. Le cadre est commun, les traits intérieurs
+  séparent les segments.
+*/
 .suiviNav {
   display: flex;
   align-items: stretch;
-  gap: 4px;
-  margin-top: 10px;
+  margin-top: 12px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+  transition: border-color 0.12s;
+}
+
+.suiviNav:hover {
+  border-color: #d4d4d8;
 }
 .suiviNavFleche {
-  width: 30px;
-  border: 1px solid #e5e5e7;
-  border-radius: 8px;
+  width: 32px;
+  /*
+    globals.css habille tout bouton : dix-huit pixels de marge haute et onze de
+    rembourrage vertical. Dans un contrôle segmenté, la marge poussait la rangée à
+    cinquante-huit pixels de haut pour un libellé de onze - et le rembourrage la
+    gonflait encore. Les segments ne portent que leur largeur.
+  */
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
   background: #fff;
   font-size: 16px;
   line-height: 1;
-  color: #555;
+  color: #71717a;
   cursor: pointer;
   transition:
-    border-color 0.12s,
+    background 0.12s,
     color 0.12s;
 }
+
+.suiviNav .suiviNavFleche:first-child {
+  border-right: 1px solid #f0f0f2;
+}
+
+.suiviNav .suiviNavFleche:last-child {
+  border-left: 1px solid #f0f0f2;
+}
+
 .suiviNavFleche:hover:not(:disabled) {
-  border-color: #111;
+  background: #fafafa;
   color: #111;
 }
 .suiviNavFleche:disabled {
@@ -4692,22 +4732,21 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 7px 10px;
-  border: 1px solid #e5e5e7;
-  border-radius: 8px;
-  background: #fafafa;
+  margin: 0;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 0;
+  background: #fff;
   font-family: inherit;
   font-size: 11.5px;
   font-weight: 500;
-  color: #444;
+  color: #3f3f46;
   cursor: pointer;
-  transition:
-    border-color 0.12s,
-    background 0.12s;
+  transition: background 0.12s;
 }
+
 .suiviNavCentre:hover {
-  border-color: #111;
-  background: #fff;
+  background: #fafafa;
 }
 .suiviNavAlerte {
   padding: 2px 7px;

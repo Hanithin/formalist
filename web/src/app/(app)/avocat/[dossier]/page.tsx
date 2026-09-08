@@ -853,8 +853,8 @@ export default async function DossierAvocat({
                 {/*
                   La mention tient en trois mots.
 
-                  « Chaque passage que les décisions changent est repris dans les statuts
-                  en vigueur » chassait le nom hors du cadre depuis que les lignes de
+                  « Seuls les passages que les décisions changent sont remplacés »
+                  chassait le nom hors du cadre depuis que les lignes de
                   document tiennent sur une seule : on lisait une ligne anonyme portant
                   une pastille et un bouton. La phrase entière accueille l'éditeur, sur
                   sa page, où elle a la place de se lire.

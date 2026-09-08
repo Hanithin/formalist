@@ -702,3 +702,26 @@ export function pointTourne(
     y: centre.y + dx * Math.sin(radians) + dy * Math.cos(radians),
   };
 }
+
+/**
+ * Ce que le document produit ne reprendra pas.
+ *
+ * « 1 page écartée du document produit » comptait sans rien nommer : sur des statuts
+ * de vingt pages, savoir qu'il en manquera une n'aide pas - savoir que c'est la
+ * quatrième, si. La phrase est au futur parce qu'elle décrit un document qui n'existe
+ * pas encore.
+ */
+export function phraseDesPagesEcartees(pages: number[]): string {
+  const ordonnees = [...pages].sort((a, b) => a - b);
+  if (ordonnees.length === 0) return "";
+  if (ordonnees.length === 1) return "La page " + ordonnees[0] + " ne sera pas reprise.";
+
+  const derniere = ordonnees[ordonnees.length - 1];
+  return (
+    "Les pages " +
+    ordonnees.slice(0, -1).join(", ") +
+    " et " +
+    derniere +
+    " ne seront pas reprises."
+  );
+}

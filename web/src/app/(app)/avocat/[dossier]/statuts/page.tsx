@@ -58,9 +58,17 @@ export default async function StatutsDuDossier({
             <h1 className={styles.statutsPleinePageTitre}>
               {dossier.societe || "Les statuts"}
             </h1>
+            {/*
+              Ce que l'écran garantit, plutôt que sa mécanique.
+
+              « Chaque passage que les décisions changent est repris dans les statuts en
+              vigueur » se lisait à l'envers : la phrase semblait dire qu'on écrit dans
+              les statuts en vigueur, alors que ceux-ci ne bougent pas - c'est une copie
+              qui est produite. Et « repris » ne dit pas ce qu'on fait au passage.
+            */}
             <p className={styles.statutsPleinePageMention}>
-              Chaque passage que les décisions changent est repris dans les statuts en
-              vigueur.
+              Seuls les passages que les décisions changent sont remplacés. Le reste des
+              statuts ne bouge pas.
             </p>
           </div>
 
@@ -91,7 +99,7 @@ export default async function StatutsDuDossier({
 
         {/* L'identifiant suit l'éditeur : la tâche du dossier et les essais le visent. */}
         <section id="statuts">
-          <Statuts dossier={dossier.id} />
+          <Statuts dossier={dossier.id} denomination={dossier.societe} />
         </section>
 
       </div>

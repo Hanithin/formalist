@@ -870,7 +870,7 @@ test("la confirmation nomme la coche qui manque, non un état", async ({ page, r
    * « Siège social n'est pas confirmé » décrivait un état sans dire lequel : l'avocat
    * le lisait devant un panneau affichant « COUVERT » et « 3 sur 3 emplacements
    * couverts », et cherchait ce qui n'allait pas dans son travail. Ce n'est pas le
-   * cadre qui manque, c'est la case « Marquer comme fait », par laquelle il atteste
+   * cadre qui manque, c'est la case « Marquer comme vérifié », par laquelle il atteste
    * avoir relu le passage.
    */
   const { PDFDocument, StandardFonts } = await import("pdf-lib");
@@ -905,7 +905,7 @@ test("la confirmation nomme la coche qui manque, non un état", async ({ page, r
   const question = page.getByRole("alertdialog");
   await expect(question).toBeVisible();
   /* Le message porte l'intitulé exact de la case, pour qu'on sache où cliquer. */
-  await expect(question).toContainText(/n'est pas marqué comme fait/);
+  await expect(question).toContainText(/n'est pas marqué comme vérifié/);
   await expect(page.getByRole("checkbox").first()).toBeVisible();
 
   /* Et l'on peut passer outre : c'est un avertissement, non un verrou. */

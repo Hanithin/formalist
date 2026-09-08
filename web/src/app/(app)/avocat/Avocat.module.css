@@ -698,12 +698,39 @@
   color: #111;
 }
 
+/*
+  L'avancement, entre le titre et l'explication.
+
+  C'est la seule ligne qui change pendant l'attente : elle porte donc le poids du texte
+  courant, et les chiffres sont tabulaires pour que le compte ne saute pas d'une
+  seconde à l'autre.
+*/
+.lectureAvancement {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3f3f46;
+  font-variant-numeric: tabular-nums;
+}
+
 .lectureDetail {
   margin: 0;
   max-width: 68ch;
   font-size: 13px;
   line-height: 1.55;
   color: #71717a;
+}
+
+/* Reprendre la lecture, ou changer de document : deux issues, une rangée. */
+.lectureReprise {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.lectureReprise button {
+  margin: 0;
 }
 
 /* ---------- Le dossier vous est assigné ---------- */
@@ -3477,10 +3504,16 @@ button.ligneCorps:disabled {
 .travailRetour,
 .travailRefus {
   margin: 0;
-  padding: 11px 14px;
+  padding: 10px 12px;
   border-radius: 10px;
-  font-size: 13.5px;
-  line-height: 1.45;
+  /*
+    Un accusé de réception, non un titre.
+
+    À treize pixels et demi sur trois lignes, la confirmation pesait plus lourd que le
+    changement qu'elle annonçait.
+  */
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
 .travailRetour {
@@ -3671,7 +3704,8 @@ button.ligneCorps:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 16px;
+  /* La marge sous le bloc est celle du panneau, commune à tous ses blocs. */
+  margin-bottom: 0;
   padding-bottom: 16px;
   border-bottom: 1px solid #f2f2f4;
 }
@@ -3683,6 +3717,18 @@ button.ligneCorps:disabled {
  * pour une phrase de quatre mots, et le chiffre se lisait seul avant qu'on sache de
  * quoi il parle.
  */
+/*
+  Le compte et ce qu'il compte, sur une même ligne de base.
+
+  Ils avaient été empilés parce que « Tout est vérifié le changement est confirmé »
+  courait sur toute la largeur et passait à la ligne n'importe où. Cette mention-là a
+  disparu - elle redisait son titre - et l'empilement a laissé un défaut à sa place :
+  un « 1 » posé au-dessus de « changement à vérifier » paraît décalé vers la droite,
+  parce que le chiffre porte ses approches et pas la lettre.
+
+  Sur une ligne, la question ne se pose plus, et « 1 changement à vérifier » se lit
+  comme une phrase plutôt que comme un tableau de bord.
+*/
 .statutsPhrase {
   display: flex;
   align-items: baseline;
@@ -3700,7 +3746,7 @@ button.ligneCorps:disabled {
 }
 
 .statutsMention {
-  font-size: 13px;
+  font-size: 12.5px;
   color: #71717a;
 }
 
@@ -3755,19 +3801,116 @@ button.ligneCorps:disabled {
 
 .version {
   display: flex;
-  flex-direction: column;
-  padding: 10px 12px;
+  align-items: stretch;
   border: 1px solid #e5e5e7;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #111;
-  text-decoration: none;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
   transition: border-color 0.12s;
 }
 
 .version:hover {
-  border-color: #111;
+  border-color: #d4d4d8;
+}
+
+/* Ouvrir le document : toute la partie gauche, icône comprise. */
+.versionLien {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  color: #111;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.versionLien:hover {
+  background: #fafafa;
+}
+
+.versionIcone {
+  flex: none;
+  color: #a1a1aa;
+}
+
+.versionTextes {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.versionNom {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+/*
+  Remplacer les statuts : un geste, non une destination.
+
+  Le texte souligné ne suffisait pas - sous le titre de la carte, il se lisait comme un
+  second titre et personne n'y voyait un bouton. La pastille l'a dit, mais posée sous la
+  carte elle formait un second objet : deux formes pour un document et son
+  remplacement. Le geste est maintenant dans la carte du document, à droite, séparé du
+  lien par un trait - le seul endroit où il ne peut parler d'autre chose.
+*/
+.versionRemplacer {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /*
+    globals.css donne dix-huit pixels de marge haute à tout bouton - c'est ce qui
+    espace les actions d'un formulaire. Dans une carte partagée, cette marge sortait le
+    bouton de l'axe : il tombait dix-huit pixels plus bas que le lien, le trait qui les
+    sépare ne montait pas jusqu'en haut, et « Remplacer » se lisait sous « l'original ».
+  */
+  margin: 0;
+  padding: 0 13px;
+  border: none;
+  border-left: 1px solid #f0f0f2;
+  border-radius: 0;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: #52525b;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.versionRemplacer svg {
+  flex: none;
+  color: #a1a1aa;
+  transition: color 0.12s;
+}
+
+.versionRemplacer:hover:not(:disabled) {
+  background: #fafafa;
+  color: #111;
+}
+
+.versionRemplacer:hover:not(:disabled) svg {
+  color: #111;
+}
+
+.versionRemplacer:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Ce que produira le bouton noir : une note, collée à lui. */
+.travailProduira {
+  margin: -6px 0 0;
+  font-size: 11.5px;
+  color: #a1a1aa;
 }
 
 .versionMention {
@@ -5443,4 +5586,191 @@ button.ligneCorps:disabled {
 .guichetActualiser:disabled {
   cursor: default;
   opacity: 0.5;
+}
+
+.actesDuRegistre button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #111;
+  text-align: left;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.actesDuRegistre button:hover:not(:disabled) {
+  border-color: #111;
+}
+
+.actesDuRegistre button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+
+/*
+  Remplacer les statuts en vigueur.
+
+  Le panneau empruntait le cadre des confirmations - fond crème, texte brun - écrit pour
+  une question de deux lignes. Il porte un formulaire : deux voies, une liste et une zone
+  de dépôt. Il a sa carte, blanche comme les autres fenêtres du produit.
+*/
+.statutsRemplacer {
+  /*
+    L'alignement, posé et non hérité.
+
+    « .remplacement » existait déjà dans cette feuille - les remplacements d'articles de
+    l'éditeur - et les deux règles s'appliquaient au même élément : le panneau héritait
+    d'un « align-items: center » qui rétrécissait chaque bloc à son contenu. Le nom est
+    désormais distinct, et l'alignement écrit plutôt que supposé.
+  */
+  align-items: stretch;
+  position: fixed;
+  z-index: 60;
+  /* Centrée par les marges : voir .fenetrePieces. */
+  inset: 0;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  /*
+    Un seul écart, celui des blocs.
+
+    Le conteneur en posait vingt-deux et chaque voie vingt de retrait au-dessus de son
+    filet : quarante-deux pixels entre deux sections, dans une fenêtre qui défilait déjà.
+  */
+  gap: 20px;
+  width: min(560px, calc(100vw - 40px));
+  max-height: min(86dvh, 900px);
+  padding: 24px 26px 26px;
+  overflow-y: auto;
+  border: 1px solid #e5e5e7;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  letter-spacing: 0;
+}
+
+.statutsRemplacerTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.statutsRemplacerTitre {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.statutsRemplacerDetail {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #666;
+  letter-spacing: 0;
+}
+
+/* Ce que l'on perd, dit une fois et sans dramatiser : un fond, pas un cadre rouge. */
+.statutsRemplacerAlerte {
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: #fdf3e2;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #96601a;
+  letter-spacing: 0;
+}
+
+.statutsRemplacerVoie {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid #f0f0f2;
+}
+
+.statutsRemplacerLegende {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8a8a90;
+  letter-spacing: 0;
+}
+
+.statutsRemplacerVide {
+  margin: 0;
+  font-size: 13px;
+  color: #8a8a90;
+  letter-spacing: 0;
+}
+
+/*
+  Les actes du registre : une liste de choix, non de lecture.
+
+  Chaque ligne est un bouton. La nature prime sur la date - c'est elle qui dit si ce sont
+  des statuts - et la date se lit en dessous, en retrait.
+*/
+.actesDuRegistre {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.actesDuRegistre button {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid #ececee;
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+.actesDuRegistre button:hover:not(:disabled) {
+  border-color: #111;
+  background: #fafafa;
+}
+
+.actesDuRegistre button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.acteNature {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.acteDate {
+  font-size: 12px;
+  color: #8a8a90;
+  letter-spacing: 0;
 }

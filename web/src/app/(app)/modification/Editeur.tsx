@@ -59,6 +59,14 @@ interface Page {
 }
 
 interface Props {
+  /**
+   * L'empreinte du document affiché.
+   *
+   * Elle ne sert qu'à l'adresse des pages : celles-ci sont servies avec cinq minutes de
+   * cache par une URL qui ne dépend que du dossier et du numéro. Remplacer les statuts
+   * laissait donc l'ancien document à l'écran, et le dépôt paraissait sans effet.
+   */
+  empreinte?: string | null;
   dossier: number;
   pages: Page[];
   zones: Zone[];
@@ -821,6 +829,7 @@ const FAMILLES: Record<Police, string> = {
 
 export function Editeur({
   dossier,
+  empreinte,
   pages,
   zones,
   retouches,
@@ -1562,7 +1571,15 @@ export function Editeur({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={"/api/formalites/modification/page?dossier=" + dossier + "&page=" + page}
+            src={
+              "/api/formalites/modification/page?dossier=" +
+              dossier +
+              "&page=" +
+              page +
+              /* L'empreinte change avec le fichier : l'adresse aussi, et le cache du
+                 navigateur ne s'applique plus à l'ancienne page. */
+              (empreinte ? "&v=" + empreinte : "")
+            }
             alt={"Page " + page + " des statuts"}
             draggable={false}
           />
@@ -1937,12 +1954,19 @@ export function Editeur({
           </div>
         ) : (
           <>
+        {entete}
+
         {/*
           Poser un cadre là où rien n'a été repéré.
-          La commande vivait tout en bas du panneau, sous les cartes de suivi et sous
-          la liste des cadres déjà libres : il fallait descendre pour la trouver, alors
-          qu'elle sert dès qu'un passage manque au repérage. Elle ouvre désormais la
-          colonne.
+
+          La commande vivait tout en bas du panneau, sous les cartes de suivi et sous la
+          liste des cadres déjà libres : il fallait descendre pour la trouver, alors
+          qu'elle sert dès qu'un passage manque au repérage.
+
+          La remonter tout en haut l'a rendue visible au prix de l'ordre de lecture : un
+          repli en pointillés ouvrait la colonne, avant même de dire où en est le
+          travail. Elle est maintenant en tête des changements, ce sur quoi elle agit -
+          juste sous le trait qui les sépare de l'entête, donc toujours sans descendre.
         */}
         <button
           type="button"
@@ -1952,8 +1976,6 @@ export function Editeur({
         >
           <span aria-hidden="true">+</span> Ajouter un cadre libre sur la page {page}
         </button>
-
-        {entete}
 
         {reconnus && (
           <p className={styles.reconnu}>
@@ -1992,18 +2014,37 @@ export function Editeur({
 
                 {changement.situe ? (
                   <>
-                    <div className={styles.suiviJauge}>
-                      <span
-                        className={styles.suiviJaugeRempli}
-                        style={{
-                          width: (changement.couverts / rangs.length) * 100 + "%",
-                        }}
-                      />
-                    </div>
+                    {/*
+                      Le compte d'abord, la jauge dessous.
+
+                      Le trait vert passait juste sous la nouvelle valeur, elle-même
+                      verte : il se lisait comme son soulignement, non comme un
+                      avancement. Sous la phrase qui le dit en mots, il ne peut plus
+                      appartenir qu'à elle.
+                    */}
                     <p className={styles.suiviCompte}>
                       {changement.couverts} sur {rangs.length}{" "}
                       {rangs.length === 1 ? "emplacement couvert" : "emplacements couverts"}
                     </p>
+                    {/*
+                      Une jauge pleine ne dit rien de plus que la phrase au-dessus.
+
+                      « 4 sur 4 emplacements couverts » suivi d'un trait vert d'un bout
+                      à l'autre, sous une pastille « FAIT » et au-dessus d'une coche
+                      « Fait » : quatre fois le même fait, dont trois en vert. Elle ne
+                      paraît que tant qu'il reste des emplacements à couvrir - c'est le
+                      seul moment où elle apprend quelque chose.
+                    */}
+                    {changement.couverts < rangs.length && (
+                      <div className={styles.suiviJauge}>
+                        <span
+                          className={styles.suiviJaugeRempli}
+                          style={{
+                            width: (changement.couverts / rangs.length) * 100 + "%",
+                          }}
+                        />
+                      </div>
+                    )}
 
                     {/*
                       On parcourt les emplacements d'un changement l'un après l'autre.
@@ -2092,7 +2133,7 @@ export function Editeur({
                       onChange={(e) => surVerifier(changement.cle, e.target.checked)}
                     />
                     <span className={styles.suiviCocheMot}>
-                      {changement.confirme ? "Fait" : "Marquer comme fait"}
+                      {changement.confirme ? "Vérifié" : "Marquer comme vérifié"}
                     </span>
                   </label>
                 )}

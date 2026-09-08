@@ -181,5 +181,13 @@ export const ETATS: Record<EtatDeChangement, { libelle: string; mention: string 
   a_placer: { libelle: "À placer", mention: "posez le cadre sur le passage" },
   partiel: { libelle: "En cours", mention: "il reste des emplacements à couvrir" },
   couvert: { libelle: "Couvert", mention: "relisez, puis cochez" },
-  confirme: { libelle: "Fait", mention: "vérifié par le cabinet" },
+  /*
+    « Vérifié », et non « Fait ».
+
+    L'entête comptait des changements « à vérifier », la pastille les disait « faits »
+    et la coche proposait de les « marquer comme faits » : trois mots pour un seul
+    geste, et rien qui dise qu'ils parlent de la même chose. Le cabinet vérifie, puis
+    produit - deux verbes, et c'est tout.
+  */
+  confirme: { libelle: "Vérifié", mention: "vérifié par le cabinet" },
 };
