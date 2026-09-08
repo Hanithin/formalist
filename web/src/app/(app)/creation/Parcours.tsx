@@ -1032,6 +1032,7 @@ export function Parcours({
                   valeur={brouillon.activite ?? ""}
                   surChangement={(v) => modifier("activite", v)}
                   description={brouillon.descriptionActivite ?? ""}
+                  forme={brouillon.forme}
                   surDescription={(v) => modifier("descriptionActivite", v)}
                   anomalie={anomalies.activite}
                 />

@@ -67,7 +67,7 @@ test.describe("rédaction de l'objet social", () => {
   test("une description trop courte est refusée avant tout appel", async ({ request }) => {
     const reponse = await request.post("/api/objet-social", { data: { description: "web" } });
     expect(reponse.status()).toBe(400);
-    expect((await reponse.json()).details.description[0]).toContain("dix caractères");
+    expect((await reponse.json()).details.description[0]).toContain("quelques mots");
   });
 
   test("le service absent est annoncé clairement, sans détail technique", async ({ request }) => {

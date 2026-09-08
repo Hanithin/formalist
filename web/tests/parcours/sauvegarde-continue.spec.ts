@@ -104,6 +104,6 @@ test("la rédaction assistée dit pourquoi elle refuse", async ({ page }) => {
   await page.locator("#descriptionActivite").fill("mobilier");
   await page.getByRole("button", { name: "Générer" }).click();
 
-  await expect(page.getByText(/au moins dix caractères/)).toBeVisible();
+  await expect(page.getByText(/Décrivez votre activité en quelques mots/)).toBeVisible();
   await expect(page.getByText("Entrée invalide")).toHaveCount(0);
 });

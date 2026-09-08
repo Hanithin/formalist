@@ -27,6 +27,8 @@ interface Props {
   surChangement: (texte: string) => void;
   /** La description courte, gardée pour pouvoir relancer une génération. */
   description: string;
+  /** La forme décide de la nature de l'objet : civil pour une SCI, commercial sinon. */
+  forme?: string;
   surDescription: (texte: string) => void;
   anomalie?: string;
 }
@@ -35,6 +37,7 @@ export function ObjetSocial({
   valeur,
   surChangement,
   description,
+  forme,
   surDescription,
   anomalie,
 }: Props) {
@@ -55,7 +58,7 @@ export function ObjetSocial({
         const reponse = await fetch("/api/objet-social", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ description: propre }),
+          body: JSON.stringify({ description: propre, forme }),
         });
         const donnees = (await reponse.json()) as {
           proposition?: string;
@@ -69,10 +72,9 @@ export function ObjetSocial({
            * Le motif, non son étiquette.
            *
            * Une description refusée répond « Entrée invalide » avec la raison dans
-           * `details` : « Décrivez votre activité en quelques mots, au moins dix
-           * caractères ». L'écran n'affichait que l'étiquette, qui ne dit pas quoi
-           * corriger - et l'on croyait la rédaction assistée en panne alors qu'elle
-           * attendait deux mots de plus.
+           * `details` : « Décrivez votre activité en quelques mots ». L'écran
+           * n'affichait que l'étiquette, qui ne dit pas quoi corriger - et l'on croyait
+           * la rédaction assistée en panne alors qu'elle attendait deux mots de plus.
            */
           const motif = Object.values(donnees.details ?? {})[0]?.[0];
           setErreur(motif ?? donnees.error ?? "La rédaction assistée n'a rien renvoyé");

@@ -13,6 +13,15 @@ import { route } from "@/lib/reponses";
 
 const SCHEMA = z.object({
   description: z.string().max(LONGUEUR_MAXIMALE_DESCRIPTION * 4),
+  /*
+   * La forme juridique change l'objet, pas seulement son style.
+   *
+   * Une société civile dont l'objet mentionne l'achat pour revendre devient commerciale
+   * en fait - autre imposition, autre responsabilité, et un greffe qui refuse. Elle est
+   * facultative : l'écran la connaît, mais un appel qui l'omet doit rendre un texte,
+   * non une erreur.
+   */
+  forme: z.string().trim().max(20).optional(),
 });
 
 /** Chaque appel a un coût : dix par heure et par compte suffisent largement. */
@@ -20,7 +29,7 @@ const QUOTA = { maximum: 10, fenetreMs: 60 * 60 * 1000 };
 
 export const POST = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
-  const { description } = await validerCorps(SCHEMA, requete);
+  const { description, forme } = await validerCorps(SCHEMA, requete);
 
   // Nettoyage avant tout : ce texte se retrouve dans une invite.
   const propre = nettoyerDescription(description);
@@ -34,7 +43,7 @@ export const POST = route(async (requete: Request) => {
   await enregistrerTentative("objet-social", String(utilisateur.id));
 
   try {
-    const proposition = await redigerObjetSocial(propre);
+    const proposition = await redigerObjetSocial(propre, forme);
     return NextResponse.json({
       proposition,
       // Le texte est une proposition, pas un acte : l'écran doit le dire.
