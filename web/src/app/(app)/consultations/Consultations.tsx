@@ -208,147 +208,164 @@ export function Consultations({
           </div>
         )}
 
-        <h2 className={styles.sectionTitre}>
-          Mes consultations
-          {consultations.length > 0 && (
-            <span className={styles.ct}>· {consultations.length} au total</span>
-          )}
-        </h2>
-
         {/*
-          Les mêmes filtres que « Mes formalités ».
-
-          Chaque onglet portait ici son propre cadre bordé : la rangée se lisait comme
-          quatre boutons indépendants, alors qu'en cliquer un décoche les autres. Le
-          sélecteur partagé les met dans un cadre unique, dont le fond blanc glisse de
-          l'un à l'autre. Ils n'ont pas de lien : le filtre ne vit pas dans l'adresse,
-          il reste dans la page.
-        */}
-        <BarreDOutils>
-          <Selecteur
-            intitule="Filtrer les consultations"
-            actif={onglet}
-            surChoix={(valeur) => setOnglet(valeur as Onglet)}
-            choix={ONGLETS.map((o) => ({
-              valeur: o.valeur,
-              libelle: o.libelle,
-              compte: comptes[o.valeur],
-            }))}
-          />
-        </BarreDOutils>
-
-        {/*
-          La grille ne commence qu'à la liste : la colonne de droite se pose ainsi au
-          niveau de la première carte, et non au-dessus du titre et des filtres.
+          La grille porte les deux colonnes : la réservation à gauche, et à droite le
+          titre, les filtres et la liste qu'ils décrivent.
         */}
         <div className={styles.content}>
+          {/*
+            Une seule boîte pour toute la colonne de droite.
 
-          {affichees.length === 0 && consultations.length === 0 && (
-            <div className={styles.vide}>
-              <div className={styles.videIc}>
-                <Calendrier trait="1.6" />
-              </div>
-              <span className={styles.videT}>Aucune consultation pour le moment</span>
-              <span className={styles.videS}>
-                {avocats.length > 0
-                  ? "Sur quoi avez-vous besoin d'un avocat ?"
-                  : "Les avocats n'ont pas encore publié leurs disponibilités. Écrivez-nous : nous vous proposerons un rendez-vous par un autre moyen."}
-              </span>
-              {/*
+            Le titre, les filtres et la liste y entraient un par un : la grille leur
+            donnait alors une rangée chacun, et comme le bloc de réservation occupe la
+            première sur toute sa hauteur, les filtres et les cartes tombaient tout en
+            bas de l'écran. Ils forment un bloc, et ce bloc tient une case.
+          */}
+          <div className={styles.colonneRendezVous}>
+            {/*
+            Le titre et les filtres appartiennent à la liste, non à la page.
+
+            Ils la coiffaient sur toute la largeur : depuis que la réservation occupe la
+            gauche, ils la surplombaient en annonçant « Mes consultations » au-dessus
+            d'un bloc qui n'en montre aucune. Ils sont entrés dans la colonne qu'ils
+            décrivent.
+          */}
+            <h2 className={styles.sectionTitre}>
+              Mes consultations
+              {consultations.length > 0 && (
+                <span className={styles.ct}>· {consultations.length} au total</span>
+              )}
+            </h2>
+
+            {/*
+            Les mêmes filtres que « Mes formalités ».
+
+            Chaque onglet portait ici son propre cadre bordé : la rangée se lisait comme
+            quatre boutons indépendants, alors qu'en cliquer un décoche les autres. Le
+            sélecteur partagé les met dans un cadre unique, dont le fond blanc glisse de
+            l'un à l'autre. Ils n'ont pas de lien : le filtre ne vit pas dans l'adresse,
+            il reste dans la page.
+          */}
+            <BarreDOutils>
+              <Selecteur
+                intitule="Filtrer les consultations"
+                actif={onglet}
+                surChoix={(valeur) => setOnglet(valeur as Onglet)}
+                choix={ONGLETS.map((o) => ({
+                  valeur: o.valeur,
+                  libelle: o.libelle,
+                  compte: comptes[o.valeur],
+                }))}
+              />
+            </BarreDOutils>
+
+            {affichees.length === 0 && consultations.length === 0 && (
+              <div className={styles.vide}>
+                <div className={styles.videIc}>
+                  <Calendrier trait="1.6" />
+                </div>
+                <span className={styles.videT}>Aucune consultation pour le moment</span>
+                <span className={styles.videS}>
+                  {avocats.length > 0
+                    ? "Sur quoi avez-vous besoin d'un avocat ?"
+                    : "Les avocats n'ont pas encore publié leurs disponibilités. Écrivez-nous : nous vous proposerons un rendez-vous par un autre moyen."}
+                </span>
+                {/*
                 Plutôt qu'un message seul : les matières les plus demandées, qui
                 ouvrent l'assistant avec le sujet déjà choisi.
               */}
-              <div className={styles.videMatieres} hidden={avocats.length === 0}>
-                {MATIERES_COURANTES.map((cle) => (
+                <div className={styles.videMatieres} hidden={avocats.length === 0}>
+                  {MATIERES_COURANTES.map((cle) => (
+                    <button
+                      type="button"
+                      key={cle}
+                      className={styles.videMatiere}
+                      onClick={() => setAssistant({ matiere: cle })}
+                    >
+                      {nomDeMatiere(cle)}
+                    </button>
+                  ))}
                   <button
                     type="button"
-                    key={cle}
-                    className={styles.videMatiere}
-                    onClick={() => setAssistant({ matiere: cle })}
+                    className={styles.videMatiere + " " + styles.videMatiereAutre}
+                    onClick={() => setAssistant({ matiere: null })}
                   >
-                    {nomDeMatiere(cle)}
+                    Autre sujet
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {affichees.length === 0 && consultations.length > 0 && (
+              <div className={styles.videCategorie}>Aucune consultation dans cette catégorie</div>
+            )}
+
+            {affichees.length > 0 && (
+              <div className={styles.liste}>
+                {affichees.map((c) => (
+                  <button
+                    type="button"
+                    key={c.id}
+                    className={
+                      styles.carte +
+                      (c.etat === "faite" ? " " + styles.carteFaite : "") +
+                      (c.etat === "annulee" ? " " + styles.carteAnnulee : "")
+                    }
+                    onClick={() => setOuverte(c.id)}
+                  >
+                    <span className={styles.ic}>
+                      <Horloge />
+                    </span>
+                    <span className={styles.corps}>
+                      <span className={styles.ligneTitre}>
+                        <span className={styles.titre}>{nomDeMatiere(c.matiere)}</span>
+                        <span className={styles.puce}>{c.dureeMinutes} min</span>
+                      </span>
+                      <span className={styles.sous}>
+                        <span className={styles.avecIcone}>
+                          <Personne />
+                          {nomDAvocat(c.avocat)}
+                        </span>
+                        <span className={styles.avecIcone}>
+                          <Calendrier trait="2" />
+                          {dateHeureLongue(new Date(c.debut))}
+                          {c.etat !== "faite" && c.etat !== "annulee"
+                            ? " · " + delaiAvant(new Date(c.debut))
+                            : ""}
+                        </span>
+                      </span>
+                    </span>
+                    <span className={styles.droite}>
+                      <span className={styles.badge + " " + BADGES[c.etatAffiche]}>
+                        {libelleEtat(c.etatAffiche)}
+                      </span>
+                      {c.etatAffiche === "confirmee" && c.lienVisio && (
+                        <a
+                          className={styles.boutonRejoindre}
+                          href={c.lienVisio}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Camera />
+                          Rejoindre
+                        </a>
+                      )}
+                      <span className={styles.chevron}>
+                        <Chevron />
+                      </span>
+                    </span>
                   </button>
                 ))}
-                <button
-                  type="button"
-                  className={styles.videMatiere + " " + styles.videMatiereAutre}
-                  onClick={() => setAssistant({ matiere: null })}
-                >
-                  Autre sujet
-                </button>
               </div>
-            </div>
-          )}
-
-          {affichees.length === 0 && consultations.length > 0 && (
-            <div className={styles.videCategorie}>Aucune consultation dans cette catégorie</div>
-          )}
-
-          {affichees.length > 0 && (
-            <div className={styles.liste}>
-              {affichees.map((c) => (
-                <button
-                  type="button"
-                  key={c.id}
-                  className={
-                    styles.carte +
-                    (c.etat === "faite" ? " " + styles.carteFaite : "") +
-                    (c.etat === "annulee" ? " " + styles.carteAnnulee : "")
-                  }
-                  onClick={() => setOuverte(c.id)}
-                >
-                  <span className={styles.ic}>
-                    <Horloge />
-                  </span>
-                  <span className={styles.corps}>
-                    <span className={styles.ligneTitre}>
-                      <span className={styles.titre}>{nomDeMatiere(c.matiere)}</span>
-                      <span className={styles.puce}>{c.dureeMinutes} min</span>
-                    </span>
-                    <span className={styles.sous}>
-                      <span className={styles.avecIcone}>
-                        <Personne />
-                        {nomDAvocat(c.avocat)}
-                      </span>
-                      <span className={styles.avecIcone}>
-                        <Calendrier trait="2" />
-                        {dateHeureLongue(new Date(c.debut))}
-                        {c.etat !== "faite" && c.etat !== "annulee"
-                          ? " · " + delaiAvant(new Date(c.debut))
-                          : ""}
-                      </span>
-                    </span>
-                  </span>
-                  <span className={styles.droite}>
-                    <span className={styles.badge + " " + BADGES[c.etatAffiche]}>
-                      {libelleEtat(c.etatAffiche)}
-                    </span>
-                    {c.etatAffiche === "confirmee" && c.lienVisio && (
-                      <a
-                        className={styles.boutonRejoindre}
-                        href={c.lienVisio}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Camera />
-                        Rejoindre
-                      </a>
-                    )}
-                    <span className={styles.chevron}>
-                      <Chevron />
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+            )}
+          </div>
 
           {/*
-            La colonne de droite : réserver, et ce qu'il faut savoir avant.
+            Le bloc de réservation : ce qu'on vient faire, et ce qu'il faut savoir avant.
 
-            Dernière du document, comme dans les quatre parcours - mais la grille la
-            remonte au-dessus de la liste sur un écran étroit : ici on vient pour
+            Dernier du document, comme les colonnes des quatre parcours - mais la grille
+            le remonte à gauche, et en tête sur un écran étroit : ici on vient pour
             réserver, non pour parcourir.
           */}
           <Reservation

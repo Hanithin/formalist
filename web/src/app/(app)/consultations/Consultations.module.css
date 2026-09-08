@@ -90,11 +90,12 @@
 }
 
 /*
- * La liste à gauche, la réservation à droite.
+ * La réservation à gauche, les rendez-vous à droite.
  *
  * La carte d'appel prenait la pleine largeur en tête d'écran, et le bandeau du prochain
  * rendez-vous la remplaçait : son bouton s'en allait avec elle, et l'on ne pouvait plus
- * prendre un second rendez-vous depuis cette page.
+ * prendre un second rendez-vous depuis cette page. Elle est devenue une colonne, puis le
+ * bloc principal - c'est le geste qu'on vient faire.
  *
  * La bascule se mesure sur cette largeur et non sur celle de la fenêtre : la barre
  * latérale prend trois cents pixels, et un seuil en `@media` se déclencherait trop tard.
@@ -113,46 +114,62 @@
 }
 
 /*
- * La grille ne prend que la liste et la colonne.
+ * La réservation à gauche, les rendez-vous à droite.
  *
- * Le titre et les filtres restent au-dessus, sur toute la largeur : la carte de
- * réservation se pose ainsi au niveau de la première consultation, et non au-dessus des
- * filtres.
+ * C'était l'inverse : une liste large, et le geste relégué dans une colonne de trois
+ * cent vingt pixels. Or on vient ici pour prendre rendez-vous - relire ceux qu'on a déjà
+ * pris vient après, et se fait d'un coup d'œil. Ce qu'on vient faire occupe donc la
+ * place, et ce qu'on vient vérifier se range à côté.
+ *
+ * Le titre et les filtres restent au-dessus, sur toute la largeur.
  */
 .content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 0 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  gap: 0 28px;
   align-items: start;
 }
 
-.content > * {
-  grid-column: 1;
+/*
+ * Deux enfants, deux colonnes.
+ *
+ * La grille n'en porte que deux : le bloc de réservation, et la boîte qui réunit le
+ * titre, les filtres et les rendez-vous. Chacun occupe une case - un enfant de plus se
+ * verrait donner une rangée à lui, sous un bloc de réservation qui tient toute la
+ * hauteur.
+ */
+.colonneRendezVous {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
 }
 
 /*
- * La colonne est dernière du document - comme dans les quatre parcours, où l'on remplit
- * d'abord et vérifie ensuite - mais la grille la remonte en tête de rangée.
+ * Le bloc de réservation est dernier du document, comme les colonnes des parcours : la
+ * grille le remonte en tête de rangée, et à gauche.
  */
 .content > aside {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
 }
 
 /*
- * Trop étroite, la grille se déplie - et la colonne passe au-dessus de la liste.
+ * Trop étroite, la grille se déplie - et la réservation reste en tête.
  *
- * C'est l'inverse des parcours, où elle se range en dessous : là-bas on remplit un
- * formulaire et la colonne le vérifie ; ici elle porte le geste qu'on vient faire.
+ * C'est l'inverse des parcours, où la colonne se range en dessous : là-bas on remplit un
+ * formulaire et elle le vérifie ; ici elle porte le geste qu'on vient faire.
  */
 @container (max-width: 974px) {
   .content {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .content > aside {
-    /* Sans quoi elle reste en deuxième colonne, et en crée une implicite. */
+  .colonneRendezVous {
     grid-column: 1;
+    grid-row: auto;
+  }
+
+  .content > aside {
     grid-row: auto;
     order: -1;
     margin: 0 0 24px;
@@ -536,14 +553,23 @@
   gap: 10px;
 }
 
+/*
+  La carte, empilée plutôt qu'en trois colonnes.
+
+  Elle rangeait l'icône, le texte et l'état sur une ligne : c'était lisible sur toute la
+  largeur de l'écran. Dans la colonne de droite, la date se coupait en deux et le bouton
+  « Rejoindre » écrasait le reste. Le titre et l'état tiennent maintenant la première
+  ligne, l'avocat et la date la seconde.
+*/
 .carte {
   background: #fff;
   border: 1px solid #ececef;
   border-radius: 14px;
-  padding: 16px 20px;
+  padding: 14px 16px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 10px 12px;
   transition: all 0.15s;
   cursor: pointer;
   width: 100%;
@@ -643,11 +669,26 @@
   gap: 5px;
 }
 
+/*
+  L'état et son geste, au bout de la première ligne.
+
+  `margin-left: auto` les pousse à droite du titre ; quand la place manque, ils passent
+  sous lui plutôt que de le comprimer.
+*/
+/*
+  L'état et son geste, sur leur propre ligne.
+
+  Ils tenaient au bout de la première, à droite du texte : dans une colonne de quatre
+  cents pixels, le nom de l'avocat et la date se coupaient en trois pour leur laisser la
+  place. Ils passent dessous, alignés à droite.
+*/
 .droite {
   display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .badge {
@@ -1760,4 +1801,192 @@
   .content {
     padding: 16px 20px 40px;
   }
+}
+
+
+/*
+  Le bloc de réservation.
+
+  Il empruntait sa carte à la feuille des parcours, où les colonnes du site sont écrites :
+  c'était juste tant qu'il était une colonne. Passé à gauche et à sa taille, il a ses
+  propres mesures - un titre de section, un prix qui se voit, et des faits qui respirent.
+*/
+.offre {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 30px 30px;
+  border: 1px solid #ececef;
+  border-radius: 18px;
+  background: #fff;
+  letter-spacing: 0;
+}
+
+.offreEyebrow {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #8a8a90;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.offreTitre {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.offreTexte {
+  max-width: 52ch;
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #55555c;
+  letter-spacing: 0;
+}
+
+/*
+  Le prix, sur sa ligne de base commune.
+
+  Le HT et le TTC s'alignent par le bas plutôt que par le centre : deux corps très
+  différents centrés donnent l'impression que le petit flotte.
+*/
+.offrePrix {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 26px 0 0;
+}
+
+.offrePrixHt {
+  font-size: 32px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+/*
+  Sans chiffres tabulaires.
+
+  Ils servent à aligner des colonnes de nombres ; sur une ligne isolée, ils donnent à la
+  virgule la largeur d'un chiffre et « 118,80 » se lit « 118 , 80 ».
+*/
+.offrePrixTtc {
+  font-size: 13.5px;
+  color: #8a8a90;
+  letter-spacing: 0;
+}
+
+.offreFaits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 2px 24px;
+  margin: 22px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid #f0f0f2;
+}
+
+.offreFait {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.offreFait dt {
+  font-size: 12px;
+  color: #8a8a90;
+  letter-spacing: 0;
+}
+
+.offreFait dd {
+  margin: 0;
+  font-size: 14.5px;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.offreMatieres {
+  margin: 24px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid #f0f0f2;
+}
+
+.offreMatieresTitre {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #8a8a90;
+  letter-spacing: 0;
+}
+
+/*
+  Les matières en jetons, non en liste à puces.
+
+  Elles répondent à une seule question - « mon sujet en fait-il partie » - qui se lit en
+  balayant, non en lisant ligne à ligne.
+*/
+.offreMatieresListe {
+  display: flex;
+  /*
+    En ligne, contre la feuille globale.
+
+    `main ul, main ol` y pose `flex-direction: column` pour les listes de texte : sans
+    la contredire, les jetons s'empilaient un par ligne, chacun sur toute la largeur.
+    Poser `flex-wrap` ne suffit pas - une colonne enveloppe en colonnes.
+  */
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offreMatieresListe li {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  font-size: 13px;
+  color: #3f3f46;
+  letter-spacing: 0;
+}
+
+.offreMatieresNote {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: #8a8a90;
+  letter-spacing: 0;
+}
+
+.offreBouton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  margin: 26px 0 0;
+  border: none;
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.offreBouton:hover {
+  background: #2a2a2e;
+}
+
+.offreNote {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8a8a90;
+  text-align: center;
+  letter-spacing: 0;
 }
