@@ -21,6 +21,7 @@ import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { DepotFichier } from "@/components/formulaire/DepotFichier";
 import { Cessions } from "./Cessions";
 import { verifierCessions, type Cession } from "@/domain/modification/cession";
+import { phraseDAttente, type Progression } from "@/domain/modification/lecture";
 import { Editeur } from "./Editeur";
 import {
   MODIFICATIONS,
@@ -3098,6 +3099,18 @@ function EtapeActes({
   const [enCours, demarrer] = useTransition();
 
   const [pages, setPages] = useState<{ numero: number; largeur: number; hauteur: number }[]>([]);
+
+  /*
+   * L'empreinte du document lu.
+   *
+   * Les pages sont servies avec cinq minutes de cache par une adresse qui ne dépend que
+   * du dossier et du numéro : sans elle, reprendre d'autres statuts laissait les pages
+   * du document précédent à l'écran.
+   */
+
+  const [empreinteDesStatuts, setEmpreinteDesStatuts] = useState<string | null>(null);
+  /* Ce que la lecture rend d'elle-même pendant qu'elle tourne, pour le dire au client. */
+  const [lectureEnCours, setLectureEnCours] = useState<Progression | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [retouches, setRetouches] = useState<Retouche[]>(etat.retouches ?? []);
   const [reconnus, setReconnus] = useState(false);
@@ -3121,17 +3134,35 @@ function EtapeActes({
     });
   }
 
+  /*
+   * L'éditeur s'ouvre quand la lecture est prête, non avant.
+   *
+   * La route répond 202 tant que la reconnaissance de caractères tourne - deux cents
+   * secondes sur un document numérisé et un petit conteneur. Sans ce cas, « reponse.ok »
+   * était vrai et l'éditeur s'ouvrait sur zéro page.
+   */
   function ouvrirLEditeur() {
     setRefus(null);
+    setLectureEnCours(null);
     demarrer(async () => {
       const reponse = await fetch("/api/formalites/modification/retouches?dossier=" + dossier);
       const corps = await reponse.json().catch(() => ({}));
+
+      if (reponse.status === 202) {
+        setLectureEnCours(corps.progression ?? null);
+        setTimeout(ouvrirLEditeur, 2000);
+        return;
+      }
 
       if (!reponse.ok) {
         setRefus(corps.error ?? "Les statuts n'ont pas pu être lus");
         return;
       }
+
+      setLectureEnCours(null);
       setPages(corps.pages ?? []);
+      /* L'empreinte périme l'image des pages quand le document change. */
+      setEmpreinteDesStatuts(corps.empreinte ?? null);
       setZones(corps.zones ?? []);
       setRetouches(corps.retouches ?? []);
       setReconnus(corps.reconnus === true);
@@ -3238,11 +3269,26 @@ function EtapeActes({
                   type="button"
                   className={etat.statutsAJour ? undefined : styles.blocPrincipal}
                   onClick={ouvrirLEditeur}
-                  disabled={enCours}
+                  disabled={enCours || lectureEnCours !== null}
                 >
-                  {enCours ? "Lecture des statuts" : "Retoucher les statuts"}
+                  {enCours || lectureEnCours
+                    ? "Lecture des statuts"
+                    : "Retoucher les statuts"}
                 </button>
               </div>
+
+              {/*
+                L'attente se chiffre.
+
+                Le bouton disait « Lecture des statuts » et rien d'autre pendant les
+                minutes que prend la reconnaissance de caractères d'un document
+                numérisé : on le croyait bloqué.
+              */}
+              {lectureEnCours && (
+                <p className={styles.blocMention} role="status">
+                  {phraseDAttente(lectureEnCours)}
+                </p>
+              )}
             </>
           ) : (
             /*
@@ -3267,6 +3313,7 @@ function EtapeActes({
             >
               <Editeur
                 dossier={dossier}
+                empreinte={empreinteDesStatuts}
                 pages={pages}
                 zones={zones}
                 retouches={retouches}

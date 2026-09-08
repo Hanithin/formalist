@@ -8,6 +8,7 @@ import {
 import { actesDe, dernierDepotDeStatuts, telechargerActe } from "@/infrastructure/inpi/actes";
 import { RegistreIndisponible } from "@/infrastructure/inpi/registre";
 import { deposerPdfProduit } from "@/infrastructure/documents/depot";
+import { demanderLaLecture } from "@/infrastructure/documents/lecture-en-cours";
 import { validerCorps, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 import { TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
@@ -123,6 +124,16 @@ export const POST = route(async (requete: Request) => {
     await deposerPdfProduit(dossierId, TITRE_STATUTS, pdf, {
       date: depose && !Number.isNaN(depose.getTime()) ? depose : null,
     });
+
+    /*
+     * La lecture commence avec la reprise, non avec l'ouverture de l'éditeur.
+     *
+     * Les actes du registre national sont presque toujours des numérisations : les
+     * lire demande une reconnaissance de caractères, longue de plusieurs minutes sur
+     * une petite machine. Elle se mène pendant que l'avocat finit son dossier plutôt
+     * qu'au moment où il veut travailler. On n'attend pas : la réponse n'en dépend pas.
+     */
+    demanderLaLecture(pdf).catch(() => {});
 
     await completerModification(utilisateur, dossierId, {
       statuts: {

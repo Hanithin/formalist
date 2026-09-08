@@ -7,10 +7,11 @@ import {
 } from "@/infrastructure/db/depots/modifications";
 import { lireDocumentProduit, deposerPdfProduit } from "@/infrastructure/documents/depot";
 import {
-  lireLesStatutsEnCache,
+  empreinteDuDocument,
   appliquerLesRetouches,
   StatutsIllisibles,
 } from "@/infrastructure/documents/statuts";
+import { demanderLaLecture } from "@/infrastructure/documents/lecture-en-cours";
 import {
   reperage,
   recherchesPour,
@@ -55,11 +56,43 @@ export const GET = route(async (requete: Request) => {
 
   const statuts = await lireDocumentProduit(dossierId, TITRE_STATUTS);
   if (!statuts) {
-    return NextResponse.json({ error: "Les statuts en vigueur ne sont pas au dossier" }, { status: 409 });
+    /*
+     * « Absents » se distingue de « pas encore lus ».
+     *
+     * L'écran ouvrait le champ de dépôt sur n'importe quelle erreur : une lecture trop
+     * longue proposait donc de redéposer des statuts déjà au dossier. Il lui faut un
+     * mot pour trancher, et non un code HTTP à interpréter.
+     */
+    return NextResponse.json(
+      { etat: "absents", error: "Les statuts en vigueur ne sont pas au dossier" },
+      { status: 409 }
+    );
   }
 
+  const empreinte = empreinteDuDocument(statuts);
+
   try {
-    const lecture = await lireLesStatutsEnCache(statuts);
+    /*
+     * La lecture ne bloque plus la requête.
+     *
+     * Elle répond tout de suite avec ce qu'elle a : la lecture gardée, ou l'avancement
+     * du chantier lancé à côté. Deux cent deux, parce que la demande est acceptée et le
+     * travail encore en cours.
+     */
+    const etat = await demanderLaLecture(statuts);
+
+    if (etat.etat === "echec") {
+      return NextResponse.json({ etat: "illisible", error: etat.message }, { status: 422 });
+    }
+
+    if (etat.etat === "lecture") {
+      return NextResponse.json(
+        { etat: "lecture", progression: etat.progression, empreinte },
+        { status: 202 }
+      );
+    }
+
+    const lecture = etat.lecture;
     const { zones, introuvables } = reperage(
       lecture.mots,
       recherchesPour(modification.codes, modification.valeurs, modification.societe)
@@ -106,6 +139,15 @@ export const GET = route(async (requete: Request) => {
     }
 
     return NextResponse.json({
+      /*
+       * L'empreinte du document, pour que l'écran sache quand l'image a changé.
+       *
+       * Les pages sont servies par une adresse qui ne dépend que du dossier et du
+       * numéro de page, avec cinq minutes de cache. Remplacer les statuts ne changeait
+       * donc rien à l'écran : le navigateur resservait les pages de l'ancien document,
+       * et l'avocat croyait son dépôt sans effet.
+       */
+      empreinte,
       pages: lecture.pages,
       pagesRetirees: modification.pagesRetirees ?? [],
       verifiees: modification.verifiees ?? [],
@@ -127,7 +169,7 @@ export const GET = route(async (requete: Request) => {
     });
   } catch (e) {
     if (e instanceof StatutsIllisibles) {
-      return NextResponse.json({ error: e.message }, { status: e.statut });
+      return NextResponse.json({ etat: "illisible", error: e.message }, { status: e.statut });
     }
     throw e;
   }

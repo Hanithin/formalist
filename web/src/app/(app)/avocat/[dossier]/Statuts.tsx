@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { formaterDate } from "@/lib/dates";
+import { DepotFichier } from "@/components/formulaire/DepotFichier";
+import { natureLisible } from "@/domain/modification/actes";
 import { Editeur } from "@/app/(app)/modification/Editeur";
 import type { Introuvable, Retouche, Zone } from "@/domain/modification/edition";
 import { nonConfirmes, suivreLesChangements } from "@/domain/modification/suivi";
+import { phraseDesPagesEcartees } from "@/domain/modification/edition";
+import { phraseDAttente, type Progression } from "@/domain/modification/lecture";
 import type { EtapeDHistorique } from "@/domain/modification/historique";
 import styles from "../Avocat.module.css";
 
@@ -32,16 +37,58 @@ interface Lecture {
   reconnus: boolean;
 }
 
-export function Statuts({ dossier }: { dossier: number }) {
+export function Statuts({
+  dossier,
+  denomination,
+}: {
+  dossier: number;
+  /**
+   * La dénomination de la société, pour lire les actes du registre.
+   *
+   * Le greffe publie le nom du fichier du déposant, où la dénomination figure presque
+   * toujours : la retirer de l'intitulé laisse ce qui distingue un acte d'un autre.
+   */
+  denomination?: string | null;
+}) {
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [retouches, setRetouches] = useState<Retouche[]>([]);
   const [pagesRetirees, setPagesRetirees] = useState<number[]>([]);
   const [verifiees, setVerifiees] = useState<string[]>([]);
   const [historique, setHistorique] = useState<EtapeDHistorique[]>([]);
   const [position, setPosition] = useState(-1);
+  /*
+   * L'empreinte du document affiché.
+   *
+   * Les pages sont servies par une adresse qui ne dépend que du dossier et du numéro de
+   * page, avec cinq minutes de cache : remplacer les statuts ne changeait rien à
+   * l'écran. L'empreinte suit le fichier, et l'adresse change avec elle.
+   */
+  const [empreinte, setEmpreinte] = useState<string | null>(null);
   const [refus, setRefus] = useState<string | null>(null);
   const [retour, setRetour] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState(false);
+  /* Remplacer les statuts en vigueur efface les retouches : on le demande avant. */
+  const [remplacement, setRemplacement] = useState(false);
+  /*
+   * Où en est la lecture, et si les statuts sont seulement là.
+   *
+   * L'écran n'avait qu'un refus pour trois situations : les statuts manquent, la
+   * lecture a échoué, la lecture n'est pas finie. Il ouvrait le champ de dépôt dans les
+   * trois - et proposait donc de redéposer un document déjà au dossier.
+   */
+  const [attente, setAttente] = useState<Progression | null>(null);
+  const [manquants, setManquants] = useState(false);
+  /* Relancer la lecture, c'est rejouer l'effet : ce compteur en est la clé. */
+  const [essai, setEssai] = useState(0);
+  /*
+   * Les actes que le registre national tient de cette société.
+   *
+   * La route existait, seul le parcours du client l'appelait : l'avocat n'avait pas de
+   * chemin vers elle, et devait redemander au client un document déjà public. La liste
+   * n'est chargée qu'à l'ouverture du panneau - c'est un appel à l'INPI.
+   */
+  const [actes, setActes] = useState<{ id: string; nature: string; deposeLe: string | null }[]>([]);
+  const [registre, setRegistre] = useState<"attente" | "prêt" | "indisponible">("attente");
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
@@ -61,6 +108,8 @@ export function Statuts({ dossier }: { dossier: number }) {
       setVerifiees(corps.verifiees ?? []);
       setHistorique(corps.historique ?? []);
       setPosition(corps.positionHistorique ?? -1);
+      /* L'empreinte change avec le document : c'est elle qui périme l'image des pages. */
+      setEmpreinte(corps.empreinte ?? null);
     });
   }
 
@@ -95,33 +144,112 @@ export function Statuts({ dossier }: { dossier: number }) {
     });
   }
 
+  /* Les actes du registre, cherchés à l'ouverture du panneau et pas avant. */
   useEffect(() => {
+    if (!remplacement) return;
+
     let vivant = true;
     (async () => {
+      setRegistre("attente");
       try {
-        const reponse = await fetch("/api/formalites/modification/retouches?dossier=" + dossier);
+        const reponse = await fetch("/api/formalites/modification/statuts?dossier=" + dossier);
         const corps = await reponse.json().catch(() => ({}));
         if (!vivant) return;
-
         if (!reponse.ok) {
-          setRefus(corps.error ?? "Les statuts n'ont pas pu être lus");
+          setRegistre("indisponible");
           return;
         }
-        setLecture(corps as Lecture);
-        setRetouches(corps.retouches ?? []);
-        setPagesRetirees(corps.pagesRetirees ?? []);
-        setVerifiees(corps.verifiees ?? []);
-        setHistorique(corps.historique ?? []);
-        setPosition(corps.positionHistorique ?? -1);
+        setActes(corps.actes ?? []);
+        setRegistre("prêt");
       } catch {
-        if (vivant) setRefus("Les statuts n'ont pas pu être lus");
+        if (vivant) setRegistre("indisponible");
       }
     })();
 
     return () => {
       vivant = false;
     };
-  }, [dossier]);
+  }, [remplacement, dossier]);
+
+  /**
+   * Reprendre les statuts au registre national.
+   *
+   * Le serveur revérifie l'identifiant auprès de l'INPI avant de télécharger : accepter
+   * celui du navigateur ferait de la route un relais vers n'importe quel acte.
+   */
+  function reprendreAuRegistre(acte: string) {
+    setRefus(null);
+    demarrer(async () => {
+      const reponse = await fetch("/api/formalites/modification/statuts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dossier, acte }),
+      });
+      const retour = await reponse.json().catch(() => ({}));
+
+      if (!reponse.ok) {
+        setRefus(retour.error ?? "La reprise au registre a été refusée");
+        return;
+      }
+      setRemplacement(false);
+      setRetour("Statuts repris au registre. Les passages à remplacer sont repérés ci-dessous.");
+      relire();
+      router.refresh();
+    });
+  }
+
+  /*
+   * La lecture se demande, puis se suit.
+   *
+   * La route répond 202 tant que la reconnaissance de caractères tourne : on redemande
+   * toutes les deux secondes, en affichant l'avancement qu'elle rend. Rien n'attend
+   * plus dans une requête, et une lecture de trois minutes ne ressemble plus à une
+   * panne.
+   */
+  useEffect(() => {
+    let vivant = true;
+    let minuteur: ReturnType<typeof setTimeout> | undefined;
+
+    async function demander() {
+      try {
+        const reponse = await fetch("/api/formalites/modification/retouches?dossier=" + dossier);
+        const corps = await reponse.json().catch(() => ({}));
+        if (!vivant) return;
+
+        if (reponse.status === 202) {
+          setAttente(corps.progression ?? null);
+          minuteur = setTimeout(demander, 2000);
+          return;
+        }
+
+        if (!reponse.ok) {
+          setManquants(corps.etat === "absents");
+          setRefus(corps.error ?? "Les statuts n'ont pas pu être lus");
+          return;
+        }
+
+        setAttente(null);
+        setRefus(null);
+        setLecture(corps as Lecture);
+        setRetouches(corps.retouches ?? []);
+        setPagesRetirees(corps.pagesRetirees ?? []);
+        setVerifiees(corps.verifiees ?? []);
+        setHistorique(corps.historique ?? []);
+        setPosition(corps.positionHistorique ?? -1);
+        /* L'empreinte change avec le document : c'est elle qui périme l'image des pages. */
+        setEmpreinte(corps.empreinte ?? null);
+      } catch {
+        if (vivant) setRefus("Les statuts n'ont pas pu être lus");
+      }
+    }
+
+    demander();
+
+    return () => {
+      vivant = false;
+      if (minuteur) clearTimeout(minuteur);
+    };
+  }, [dossier, essai]);
 
   /**
    * Pose un cadre pour ce que le repérage n'a pas trouvé.
@@ -245,6 +373,47 @@ export function Statuts({ dossier }: { dossier: number }) {
     });
   }
 
+  /*
+   * Une lecture qui échoue n'est pas un dossier sans statuts.
+   *
+   * Le champ de dépôt s'ouvrait dans les deux cas : sur une reconnaissance interrompue,
+   * l'écran demandait de redéposer un document qui était déjà là - et le redéposer
+   * n'aurait rien changé, puisque c'est sa lecture qui n'a pas abouti.
+   */
+  if (refus && !lecture && !manquants) {
+    return (
+      <div className={styles.travail}>
+        <p className={styles.travailRefus} role="alert">
+          {refus}
+        </p>
+        <p className={styles.tacheExplication}>
+          Les statuts sont bien au dossier : c&apos;est leur lecture qui n&apos;a pas
+          abouti. Sur un document numérisé, elle demande une reconnaissance de caractères
+          page par page, et peut être interrompue.
+        </p>
+        <div className={styles.lectureReprise}>
+          <button
+            type="button"
+            className={styles.travailPrincipal}
+            onClick={() => {
+              setRefus(null);
+              setEssai((n) => n + 1);
+            }}
+          >
+            Reprendre la lecture
+          </button>
+          <button
+            type="button"
+            className={styles.travailSecondaire}
+            onClick={() => setRemplacement(true)}
+          >
+            Remplacer les statuts
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (refus && !lecture) {
     return (
       <div className={styles.travail}>
@@ -302,9 +471,18 @@ export function Statuts({ dossier }: { dossier: number }) {
         <span className={styles.lecturePoint} aria-hidden="true" />
         <div>
           <p className={styles.lectureTitre}>Lecture des statuts en cours</p>
+          {/*
+            Combien de temps encore, plutôt qu'un point qui clignote.
+
+            « Lecture des statuts… » ne disait ni où en était le travail ni s'il fallait
+            attendre dix secondes ou trois minutes : on rechargeait la page, ce qui ne
+            l'accélérait pas. Le compte des pages vient du serveur, l'estimation du
+            rythme déjà tenu.
+          */}
+          {attente && <p className={styles.lectureAvancement}>{phraseDAttente(attente)}</p>}
           <p className={styles.lectureDetail}>
             Chaque page est analysée pour retrouver les passages à remplacer. Sur un
-            document numérisé, la reconnaissance de caractères peut prendre une minute.
+            document numérisé, la reconnaissance de caractères se fait page par page.
             Elle n&apos;a lieu qu&apos;une fois : les prochaines ouvertures seront
             immédiates.
           </p>
@@ -339,6 +517,7 @@ export function Statuts({ dossier }: { dossier: number }) {
       */}
       <Editeur
         dossier={dossier}
+        empreinte={empreinte}
         pages={lecture.pages}
         zones={lecture.zones}
         retouches={retouches}
@@ -380,21 +559,20 @@ export function Statuts({ dossier }: { dossier: number }) {
                   </span>
                 </>
               ) : confirmes === changements.length ? (
-                <>
-                  <span className={styles.statutsCompte}>Tout est vérifié</span>
-                  <span className={styles.statutsMention}>
-                    {changements.length === 1
-                      ? "le changement est confirmé"
-                      : "les " + changements.length + " changements sont confirmés"}
-                  </span>
-                </>
+                /*
+                  Rien sous « Tout est vérifié ».
+
+                  « le changement est confirmé » disait le même fait avec d'autres mots,
+                  et le bouton noir juste dessous dit déjà ce qui reste à faire.
+                */
+                <span className={styles.statutsCompte}>Tout est vérifié</span>
               ) : (
                 <>
                   <span className={styles.statutsCompte}>
                     {confirmes} sur {changements.length}
                   </span>
                   <span className={styles.statutsMention}>
-                    {changements.length === 1 ? "changement confirmé" : "changements confirmés"}
+                    {changements.length === 1 ? "changement vérifié" : "changements vérifiés"}
                   </span>
                 </>
               )}
@@ -439,28 +617,89 @@ export function Statuts({ dossier }: { dossier: number }) {
             </button>
 
             {/*
-              Les deux versions, toujours au dossier.
-              La retouche part des statuts en vigueur et produit un second document :
-              l'original ne bouge jamais, et l'on peut recommencer sans l'avoir perdu.
+              Ce que le bouton produira, sous le bouton.
+
+              La mention vivait sous « Remplacer les statuts », au bas des deux
+              documents : on la lisait comme un commentaire du remplacement, alors
+              qu'elle décrit le document à venir. Elle appartient au geste qui le crée.
+            */}
+            {pagesRetirees.length > 0 && (
+              <p className={styles.travailProduira}>
+                {phraseDesPagesEcartees(pagesRetirees)}
+              </p>
+            )}
+
+            {/*
+              Le document, et le geste qui le change - une seule carte.
+
+              Les deux vivaient l'un sous l'autre : une carte bordée, puis une pastille,
+              deux formes différentes pour un document et son remplacement, sans rien qui
+              dise qu'ils parlent de la même chose. La carte porte maintenant les deux -
+              on ouvre à gauche, on remplace à droite, séparés d'un trait.
             */}
             <div className={styles.versions}>
-              <a
-                className={styles.version}
-                href={"/api/formalites/modification/page?dossier=" + dossier + "&page=1"}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Statuts en vigueur
-                <span className={styles.versionMention}>l&apos;original, jamais modifié</span>
-              </a>
+              <div className={styles.version}>
+                <a
+                  className={styles.versionLien}
+                  href={"/api/formalites/modification/page?dossier=" + dossier + "&page=1"}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <svg
+                    className={styles.versionIcone}
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 3v5h5" />
+                  </svg>
+                  <span className={styles.versionTextes}>
+                    <span className={styles.versionNom}>Statuts en vigueur</span>
+                    <span className={styles.versionMention}>l&apos;original, jamais modifié</span>
+                  </span>
+                </a>
 
-              {pagesRetirees.length > 0 && (
-                <span className={styles.versionMention}>
-                  {pagesRetirees.length === 1
-                    ? "1 page écartée du document produit"
-                    : pagesRetirees.length + " pages écartées du document produit"}
-                </span>
-              )}
+                {/*
+                  Se tromper de statuts arrive, et rien ne permettait d'en changer.
+
+                  Le champ de dépôt n'apparaissait que lorsqu'ils manquaient : une fois
+                  de mauvais statuts au dossier, l'éditeur s'ouvrait dessus et aucun
+                  geste ne menait ailleurs. Le serveur, lui, savait déjà remplacer - il
+                  archive l'ancienne version au lieu de l'écraser.
+                */}
+                <button
+                  type="button"
+                  className={styles.versionRemplacer}
+                  onClick={() => setRemplacement(true)}
+                  disabled={enCours}
+                  title="Déposer d'autres statuts en vigueur à la place de celui-ci"
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                    <path d="M21 3v5h-5" />
+                    <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                    <path d="M3 21v-5h5" />
+                  </svg>
+                  Remplacer
+                </button>
+              </div>
             </div>
 
             {retour && (
@@ -476,6 +715,134 @@ export function Statuts({ dossier }: { dossier: number }) {
           </div>
         }
       />
+
+      {remplacement && (
+        <>
+          <div
+            className={styles.voile}
+            onClick={() => setRemplacement(false)}
+            aria-hidden="true"
+          />
+
+          {/*
+            Un panneau, non un avertissement.
+
+            Il empruntait le cadre des confirmations - fond crème, texte brun - qui est
+            écrit pour une question de deux lignes. Il portait un formulaire : une liste
+            d'actes, une zone de dépôt et deux issues, le tout en couleur d'alerte.
+          */}
+          <div className={styles.statutsRemplacer} role="dialog" aria-modal="true">
+            <div className={styles.statutsRemplacerTete}>
+              <div>
+                <h3 className={styles.statutsRemplacerTitre}>Remplacer les statuts en vigueur</h3>
+                <p className={styles.statutsRemplacerDetail}>
+                  La version actuelle sera conservée et restera atteignable dans
+                  l&apos;historique du document.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.panneauFermer}
+                onClick={() => setRemplacement(false)}
+                aria-label="Fermer"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/*
+              Ce que le remplacement coûte, dit avant et non après.
+
+              Les repérages partent du document : changer le document les rend caducs.
+              Mieux vaut l'apprendre devant la zone de dépôt qu'après avoir cliqué.
+            */}
+            {retouches.length > 0 && (
+              <p className={styles.statutsRemplacerAlerte} role="alert">
+                {retouches.length === 1
+                  ? "La retouche déjà faite sera perdue : l'éditeur repartira du nouveau document."
+                  : "Les " +
+                    retouches.length +
+                    " retouches déjà faites seront perdues : l'éditeur repartira du nouveau document."}
+              </p>
+            )}
+
+            {/*
+              Le registre d'abord, le fichier ensuite.
+
+              Les statuts déposés au greffe y sont publics : les reprendre évite de les
+              redemander au client, et garantit qu'on travaille sur la version que le
+              greffe détient - non sur celle qui traînait dans une boîte mail.
+            */}
+            <div className={styles.statutsRemplacerVoie}>
+              <p className={styles.statutsRemplacerLegende}>Reprendre un acte du registre national</p>
+
+              {registre === "attente" && (
+                <p className={styles.statutsRemplacerVide}>Lecture du registre…</p>
+              )}
+
+              {registre === "indisponible" && (
+                <p className={styles.statutsRemplacerVide}>
+                  Le registre n&apos;a rien rendu : déposez le fichier vous-même.
+                </p>
+              )}
+
+              {registre === "prêt" && actes.length === 0 && (
+                <p className={styles.statutsRemplacerVide}>
+                  Aucun acte au registre pour cette société.
+                </p>
+              )}
+
+              {registre === "prêt" && actes.length > 0 && (
+                <ul className={styles.actesDuRegistre}>
+                  {actes.map((acte) => (
+                    <li key={acte.id}>
+                      <button
+                        type="button"
+                        onClick={() => reprendreAuRegistre(acte.id)}
+                        disabled={enCours}
+                      >
+                        <span className={styles.acteNature}>
+                          {natureLisible(acte.nature, denomination)}
+                        </span>
+                        {acte.deposeLe && (
+                          <span className={styles.acteDate}>
+                            déposé le {formaterDate(new Date(acte.deposeLe))}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className={styles.statutsRemplacerVoie}>
+              <p className={styles.statutsRemplacerLegende}>Ou déposer le PDF vous-même</p>
+              <DepotFichier
+                id="statuts-remplacement"
+                accepte=".pdf"
+                invite="Glissez les statuts ici"
+                precision="PDF"
+                desactive={enCours}
+                surFichier={(fichier) => {
+                  setRemplacement(false);
+                  deposer(fichier);
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {confirmation && (
         <>
@@ -501,12 +868,13 @@ export function Statuts({ dossier }: { dossier: number }) {
               « Siège social n'est pas confirmé » devant un panneau qui affichait
               « COUVERT » et « 3 sur 3 emplacements couverts », et cherchait ce qui
               n'allait pas dans son travail. Ce n'est pas le cadre qui manque, c'est la
-              coche - « Marquer comme fait », la case par laquelle il atteste avoir relu
-              le passage. Le message porte donc son intitulé, mot pour mot.
+              coche - « Marquer comme vérifié », la case par laquelle il atteste avoir
+              relu le passage. Le message porte donc son intitulé, mot pour mot.
             */}
             {restants.length === 1
-              ? "« " + restants[0].titre + " » n'est pas marqué comme fait."
-              : restants.map((c) => c.titre).join(", ") + " ne sont pas marqués comme faits."}{" "}
+              ? "« " + restants[0].titre + " » n'est pas marqué comme vérifié."
+              : restants.map((c) => c.titre).join(", ") +
+                " ne sont pas marqués comme vérifiés."}{" "}
             {restants.some((c) => c.couverts < c.emplacements.length) &&
               "Des emplacements repérés restent découverts : les statuts produits y garderont l'ancienne valeur. "}
             Continuer ?

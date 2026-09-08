@@ -146,7 +146,8 @@ async function coucheTexte(dossier: string): Promise<{ pages: PageDeStatuts[]; m
  */
 async function reconnaissance(
   dossier: string,
-  pages: PageDeStatuts[]
+  pages: PageDeStatuts[],
+  surPage?: (faites: number) => void
 ): Promise<Mot[]> {
   const source = join(dossier, "statuts.pdf");
   await executer("pdftoppm", ["-r", String(PPP), "-png", source, join(dossier, "page")], {
@@ -156,6 +157,7 @@ async function reconnaissance(
   const images = (await readdir(dossier)).filter((f) => f.startsWith("page") && f.endsWith(".png")).sort();
   const mots: Mot[] = [];
   const echelle = 72 / PPP;
+  let faites = 0;
 
   for (const image of images) {
     const numero = nombre(/page-?(\d+)\.png$/.exec(image)?.[1]) || 1;
@@ -184,6 +186,15 @@ async function reconnaissance(
         hauteur: nombre(colonnes[9]) * echelle,
       });
     }
+
+    /*
+      Une page de plus, dite tout de suite.
+
+      C'est le seul point de la lecture où l'on sait avancer : l'écran s'en sert pour
+      annoncer ce qu'il reste, et sans lui l'attente n'a pas de fond. On compte les
+      images traitées et non leur numéro - une page manquante décalerait le compte.
+    */
+    surPage?.(++faites);
   }
 
   journal.info({ pages: pages.length, mots: mots.length }, "Statuts lus par reconnaissance");
@@ -210,31 +221,65 @@ async function reconnaissance(
  * lecture ne peut donc pas être servie à sa place. Un cache illisible ou périmé est
  * ignoré plutôt que fatal - au pire, on relit.
  */
-export async function lireLesStatutsEnCache(pdf: Buffer): Promise<LectureDesStatuts> {
-  const empreinte = createHash("sha1").update(pdf).digest("hex");
-  const fichier = join(CACHE, empreinte + ".json");
+/**
+ * L'empreinte d'un document, telle que le cache la nomme.
+ *
+ * Elle sert aussi d'ailleurs : c'est le seul jeton qui change quand le document change,
+ * et une image de page se sert du cache du navigateur tant que son adresse ne bouge pas.
+ */
+export function empreinteDuDocument(pdf: Buffer): string {
+  return createHash("sha1").update(pdf).digest("hex");
+}
 
+/** La lecture déjà faite, si elle l'a été. Rien de plus : elle ne lit pas. */
+export async function lectureGardee(empreinte: string): Promise<LectureDesStatuts | null> {
   try {
-    const garde = JSON.parse(await readFile(fichier, "utf8")) as LectureDesStatuts;
+    const garde = JSON.parse(
+      await readFile(join(CACHE, empreinte + ".json"), "utf8")
+    ) as LectureDesStatuts;
     if (Array.isArray(garde.pages) && Array.isArray(garde.mots)) return garde;
   } catch {
     // Rien en cache, ou cache abîmé : on lit.
   }
+  return null;
+}
 
-  const lecture = await lireLesStatuts(pdf);
-
+export async function garderLaLecture(
+  empreinte: string,
+  lecture: LectureDesStatuts
+): Promise<void> {
   try {
     await mkdir(CACHE, { recursive: true });
-    await writeFile(fichier, JSON.stringify(lecture));
+    await writeFile(join(CACHE, empreinte + ".json"), JSON.stringify(lecture));
   } catch (e) {
     // Un cache qui ne s'écrit pas ne doit pas faire échouer une lecture réussie.
     journal.warn({ err: e }, "Lecture des statuts non mise en cache");
   }
+}
 
+export async function lireLesStatutsEnCache(pdf: Buffer): Promise<LectureDesStatuts> {
+  const empreinte = empreinteDuDocument(pdf);
+
+  const garde = await lectureGardee(empreinte);
+  if (garde) return garde;
+
+  const lecture = await lireLesStatuts(pdf);
+  await garderLaLecture(empreinte, lecture);
   return lecture;
 }
 
-export async function lireLesStatuts(pdf: Buffer): Promise<LectureDesStatuts> {
+/** Ce que la lecture raconte d'elle-même pendant qu'elle travaille. */
+export interface RapportDeLecture {
+  /** Le nombre de pages, connu dès que la couche texte a été sondée. */
+  surPages?: (pages: number) => void;
+  /** Le nombre de pages reconnues jusqu'ici. */
+  surPage?: (faites: number) => void;
+}
+
+export async function lireLesStatuts(
+  pdf: Buffer,
+  rapport?: RapportDeLecture
+): Promise<LectureDesStatuts> {
   if (pdf.byteLength > OCTETS_MAXIMUM) {
     throw new StatutsIllisibles("Ce document dépasse 25 Mo");
   }
@@ -256,11 +301,17 @@ export async function lireLesStatuts(pdf: Buffer): Promise<LectureDesStatuts> {
       throw new StatutsIllisibles("Ce document dépasse " + PAGES_MAXIMUM + " pages");
     }
 
+    rapport?.surPages?.(pages.length);
+
     if (mots.length > 0) return { pages, mots, reconnus: false };
 
     // Aucune couche texte : le document est une numérisation.
     try {
-      return { pages, mots: await reconnaissance(dossier, pages), reconnus: true };
+      return {
+        pages,
+        mots: await reconnaissance(dossier, pages, rapport?.surPage),
+        reconnus: true,
+      };
     } catch (e) {
       journal.error({ err: e }, "Reconnaissance de caractères interrompue");
       throw new StatutsIllisibles("Ce document n'a pas pu être lu, même en reconnaissance");

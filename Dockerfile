@@ -37,6 +37,16 @@ WORKDIR /app
 # /app/persist. Elles passeront au stockage objet, ce qui rendra ce lien inutile.
 RUN rm -rf /app/uploads && ln -s /app/persist/uploads /app/uploads
 
+# Un seul fil pour tesseract.
+#
+# Il ouvre par défaut autant de fils que la machine hôte a de cœurs - non ce que le
+# conteneur peut en prendre. Sur l'instance Render (un demi-cœur, 512 Mo), cela donne
+# une dizaine de fils qui se disputent la moitié d'un processeur, et autant de mémoire
+# retenue : la reconnaissance ralentit au lieu d'accélérer, et frôle la limite.
+#
+# Un fil par page, les pages l'une après l'autre. C'est ce que la lecture fait déjà.
+ENV OMP_THREAD_LIMIT=1
+
 EXPOSE 3000
 
 # Les migrations passent avant que l'application serve.

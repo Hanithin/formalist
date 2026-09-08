@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { completerModification, ouvrirModification } from "@/infrastructure/db/depots/modifications";
 import { deposerPdfProduit } from "@/infrastructure/documents/depot";
+import { demanderLaLecture } from "@/infrastructure/documents/lecture-en-cours";
 import { verifierDepot, DepotRefuse } from "@/lib/fichiers";
 import { route } from "@/lib/reponses";
 import { TITRE_STATUTS } from "../route";
@@ -44,6 +45,16 @@ export const POST = route(async (requete: Request) => {
   }
 
   await deposerPdfProduit(dossierId, TITRE_STATUTS, contenu);
+
+  /*
+   * La lecture commence avec le dépôt, non avec l'ouverture de l'éditeur.
+   *
+   * Reconnaître les caractères de statuts numérisés prend des minutes sur une petite
+   * machine. Attendre que l'avocat ouvre l'éditeur pour commencer, c'est lui faire
+   * porter cette attente entière ; la lancer ici, c'est la mener pendant qu'il finit
+   * son dossier. On n'attend pas le résultat : la réponse ne dépend pas de lui.
+   */
+  demanderLaLecture(contenu).catch(() => {});
 
   await completerModification(utilisateur, dossierId, {
     statuts: {

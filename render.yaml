@@ -5,7 +5,17 @@ services:
     name: formalist-app
     runtime: docker
     region: frankfurt          # EU (RGPD) — proche France
-    plan: starter              # un disque persistant exige un plan payant (>= Starter)
+    # Le plan « starter » donnait un demi-cœur et 512 Mo.
+    #
+    # La reconnaissance de caractères des statuts numérisés y prenait des minutes là où
+    # elle prend douze secondes en développement : la requête était coupée en route et
+    # l'écran concluait que les statuts manquaient. La lecture se fait désormais hors
+    # requête, mais l'attente restait de plusieurs minutes pour l'avocat.
+    #
+    # « standard » donne un cœur entier et deux gigaoctets - de quoi diviser cette
+    # attente et écarter le dépassement mémoire de tesseract sur un document long.
+    # Un disque persistant exige de toute façon un plan payant.
+    plan: standard
     healthCheckPath: /connexion
     autoDeploy: true
     envVars:
