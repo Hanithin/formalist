@@ -49,6 +49,41 @@ export function Communication({
    * premier message échangé, et il faut faire défiler pour trouver celui auquel on vient
    * répondre.
    */
+  /*
+   * Les fondus des deux bords, posés seulement là où il reste à lire.
+   *
+   * Le fil coupait ses messages net contre les arêtes de la carte : une bulle tranchée
+   * en deux ressemble à un défaut d'affichage plutôt qu'à une conversation qui continue.
+   * Un fondu le dit - et il ne se pose que du côté où quelque chose est caché, sinon le
+   * premier message paraîtrait effacé alors qu'on est déjà en haut.
+   *
+   * La mesure se fait au défilement et au redimensionnement, jamais au rendu : c'est une
+   * propriété de la boîte, non de l'état de React.
+   */
+  const [fondus, setFondus] = useState({ haut: false, bas: false });
+
+  useEffect(() => {
+    const liste = fil.current;
+    if (!liste) return;
+
+    const mesurer = () => {
+      /* Un pixel de marge : les hauteurs fractionnaires ne retombent jamais juste. */
+      const reste = liste.scrollHeight - liste.clientHeight - liste.scrollTop;
+      setFondus({ haut: liste.scrollTop > 1, bas: reste > 1 });
+    };
+
+    mesurer();
+    liste.addEventListener("scroll", mesurer, { passive: true });
+
+    const observateur = new ResizeObserver(mesurer);
+    observateur.observe(liste);
+
+    return () => {
+      liste.removeEventListener("scroll", mesurer);
+      observateur.disconnect();
+    };
+  }, [messages]);
+
   useEffect(() => {
     const liste = fil.current;
     if (liste) liste.scrollTop = liste.scrollHeight;
@@ -119,7 +154,15 @@ export function Communication({
          * rôle d'une zone qui s'allonge par le bas, et il fait annoncer les arrivées sans
          * relire ce qui précède. La messagerie le porte déjà ; ce fil est le même.
          */
-        <ol className={styles.filMessages} role="log" ref={fil}>
+        <ol
+          className={
+            styles.filMessages +
+            (fondus.haut ? " " + styles.filFonduHaut : "") +
+            (fondus.bas ? " " + styles.filFonduBas : "")
+          }
+          role="log"
+          ref={fil}
+        >
           {messages.map((message, rang) => {
             const deNous = message.expediteurId === moi;
             /* Le nom ne se répète pas d'une bulle à l'autre du même auteur. */
