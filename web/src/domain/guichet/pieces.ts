@@ -52,7 +52,49 @@ export const PIECES_DES_ACTES: Record<string, PieceDuGuichet[]> = {
       libelle: "Exemplaire de l'accord exprès et de l'information préalable du conjoint",
     },
   ],
+  /*
+   * L'attestation du cabinet vaut titre de jouissance des locaux.
+   *
+   * C'est le même code que le bail d'une société installée dans ses murs : le guichet
+   * demande de quoi établir que la société a le droit d'être à cette adresse, et une
+   * mise à disposition écrite en est un.
+   */
+  "attestation-cabinet": [
+    {
+      code: "PJ_25",
+      libelle:
+        "Justificatif de la jouissance des locaux (titre de propriété, contrat de bail)",
+    },
+  ],
 };
+
+/**
+ * Les actes que nous produisons sans savoir sous quel code les joindre.
+ *
+ * Le pouvoir donné au cabinet est de ceux-là. La page officielle des justificatifs ne
+ * l'écrit que « Mandat », sans code ; le dictionnaire de données de l'INPI - la feuille
+ * `typeDocument` d'où viennent tous les codes de ce fichier - n'est pas publié, et
+ * `/api/data_dictionary` ne rend pas cette table.
+ *
+ * Un code inventé ne se verrait qu'au refus du dépôt, des jours plus tard. L'acte est
+ * donc produit et remis au dossier, mais joint à la main sur le guichet, jusqu'à ce
+ * que quelqu'un lise le bon code dans le dictionnaire et l'écrive ici.
+ *
+ * Cette liste existe pour que le test qui exige un code par acte sache faire la
+ * différence entre un manque assumé et un oubli.
+ */
+export const ACTES_SANS_CODE = new Set([
+  "pouvoir",
+  /*
+   * L'extrait d'immatriculation d'une personne morale.
+   *
+   * Réclamé deux fois - celui du domiciliataire quand une société de domiciliation
+   * héberge le siège, celui du cabinet quand c'est lui qui l'héberge - et pas plus
+   * publié que le mandat. Les deux pièces attendent le même code.
+   */
+  "kbis-domiciliataire",
+  "cabinet-kbis",
+]);
 
 /**
  * Le justificatif du siège, qui n'a pas de code unique.
@@ -70,6 +112,20 @@ export function pieceDuSiege(mode: ModeDomiciliation | undefined): PieceDuGuiche
       return {
         code: "PJ_26",
         libelle: "Justificatif de l'adresse de l'entreprise fixée au local d'habitation",
+      };
+    /*
+     * Le cabinet met ses locaux à disposition : c'est un titre de jouissance.
+     *
+     * Ce n'est pas une domiciliation agréée - le cabinet n'a pas d'agrément préfectoral
+     * et ne conclut pas de contrat de domiciliation - et ce n'est pas un local
+     * d'habitation. Le guichet n'a pas de troisième code : c'est celui des locaux dont
+     * on justifie la jouissance, comme pour un bail.
+     */
+    case "Domiciliation au cabinet":
+      return {
+        code: "PJ_25",
+        libelle:
+          "Justificatif de la jouissance des locaux (titre de propriété, contrat de bail)",
       };
     default:
       return {
@@ -104,6 +160,26 @@ export const PIECE_ATTESTATION_DOMICILE: PieceDuGuichet = {
 export const PIECES_TELEVERSEES: Record<string, PieceDuGuichet> = {
   "depot-capital": { code: "PJ_180", libelle: "Attestation de dépôt des fonds" },
   identite: { code: "PJ_11", libelle: "Copie de la carte nationale d'identité" },
+};
+
+/**
+ * Les pièces du cabinet, quand c'est lui qui domicilie.
+ *
+ * Elles ne viennent pas du dossier mais de l'administration : le cabinet les dépose une
+ * fois et elles servent partout.
+ *
+ * Deux d'entre elles ont un code connu. L'extrait Kbis n'en a pas : le dictionnaire de
+ * données de l'INPI n'est pas publié, la page des justificatifs n'écrit que des
+ * libellés, et un code inventé ne se verrait qu'au refus du dépôt - des jours plus
+ * tard. `ACTES_SANS_CODE` dit lesquels manquent, et le dépôt les signale comme restant
+ * à joindre à la main plutôt que de les taire.
+ */
+export const PIECES_DU_CABINET_AU_GUICHET: Record<string, PieceDuGuichet> = {
+  "cabinet-identite": { code: "PJ_11", libelle: "Copie de la carte nationale d'identité" },
+  "cabinet-domicile": {
+    code: "PJ_25",
+    libelle: "Justificatif de la jouissance des locaux (titre de propriété, contrat de bail)",
+  },
 };
 
 /**

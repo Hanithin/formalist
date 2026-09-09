@@ -51,7 +51,15 @@ describe("la durée de la mise à disposition", () => {
 
     expect(texte).toContain("Mise à disposition de locaux sans limitation de durée");
     expect(texte).toContain("aucune disposition législative ni stipulation contractuelle");
-    expect(texte).toContain("n'est assortie d'aucun terme");
+    /*
+     * Sans terme, et avec un droit de jouissance privatif.
+     *
+     * Le guichet demande à savoir ce que le dirigeant confère à la société : une mise à
+     * disposition dont l'écrit ne dit rien s'entend comme précaire, et le greffe la lit
+     * ainsi à défaut de mieux.
+     */
+    expect(texte).toContain("consentie sans limitation de durée");
+    expect(texte).toContain("droit de jouissance privatif sur les locaux");
     // La borne des cinq ans ne vaut que pour l'autre cas : l'écrire ici se contredirait.
     expect(texte).not.toContain("cinq ans");
     expect(texte).not.toContain("L. 123-11-1");

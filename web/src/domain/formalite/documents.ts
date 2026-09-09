@@ -1,4 +1,5 @@
 import { regle, type Forme } from "./formes";
+import type { ModeDomiciliation } from "./parcours";
 
 /**
  * Quels documents produire, et à partir de quel gabarit.
@@ -12,16 +13,32 @@ export type TypeDocument =
   | "liste-souscripteurs"
   | "declaration-non-condamnation"
   | "attestation-domicile"
+  | "attestation-cabinet"
   | "pv-nomination"
-  | "conjoint";
+  | "conjoint"
+  | "pouvoir";
 
 interface Definition {
   type: TypeDocument;
   titre: string;
   /** Produit seulement dans certains cas. Absent : toujours produit. */
-  condition?: "conjoint-marie" | "avec-dirigeant";
+  condition?:
+    | "conjoint-marie"
+    | "avec-dirigeant"
+    | "domicile-dirigeant"
+    | "domiciliation-cabinet";
   /** Formes pour lesquelles ce document n'existe pas. */
   saufFormes?: Forme[];
+  /**
+   * Un gabarit unique, quelle que soit la forme.
+   *
+   * Les actes constitutifs diffèrent d'une forme à l'autre - une SCI n'a pas d'associé
+   * unique, une SAS n'a pas de gérant - et chacun a donc son fichier, nommé par
+   * préfixe. Le pouvoir donné au cabinet, lui, ne parle pas de la société : il nomme
+   * un mandant, un mandataire et une formalité. Quatre copies du même texte auraient
+   * divergé à la première correction portée à une seule.
+   */
+  gabaritCommun?: string;
 }
 
 const DOCUMENTS: Definition[] = [
@@ -40,8 +57,41 @@ const DOCUMENTS: Definition[] = [
     type: "declaration-non-condamnation",
     titre: "Déclaration de non-condamnation et de filiation",
   },
-  { type: "attestation-domicile", titre: "Attestation de domiciliation" },
+  /*
+   * L'attestation ne vaut que là où quelqu'un met des locaux à disposition.
+   *
+   * Elle sortait sur tous les dossiers : une société installée dans ses murs sous bail
+   * commercial recevait une attestation où son dirigeant certifie mettre son domicile à
+   * disposition. Le greffe attend là un bail, non une attestation - et celle-ci
+   * affirmait un fait qui n'était pas le sien.
+   */
+  {
+    type: "attestation-domicile",
+    titre: "Attestation de domiciliation",
+    condition: "domicile-dirigeant",
+  },
+  /*
+   * Le cabinet met ses propres locaux à disposition.
+   *
+   * Ce n'est pas une domiciliation agréée - le cabinet n'a pas d'agrément préfectoral et
+   * ne conclut pas de contrat de domiciliation. C'est une mise à disposition de locaux
+   * par un tiers, et l'attestation en est le titre.
+   */
+  {
+    type: "attestation-cabinet",
+    titre: "Attestation de mise à disposition de locaux",
+    condition: "domiciliation-cabinet",
+    gabaritCommun: "attestation-domiciliation-cabinet.docx",
+  },
   { type: "pv-nomination", titre: "Procès-verbal de nomination", condition: "avec-dirigeant" },
+  /*
+   * Le pouvoir donné au cabinet pour déposer.
+   *
+   * Le guichet unique laisse un tiers déposer pour le compte d'une société, à condition
+   * qu'un pouvoir le nomme : sans lui, le dossier se dépose sous l'identité du
+   * fondateur, qui doit s'authentifier lui-même à chaque étape.
+   */
+  { type: "pouvoir", titre: "Pouvoir pour les formalités de création", gabaritCommun: "pouvoir.docx" },
   /*
    * L'information du conjoint ne vaut que pour les titres non négociables.
    *
@@ -82,6 +132,8 @@ export interface Contexte {
   /** Un associé marié sous un régime communautaire demande l'accord du conjoint. */
   conjointMarie?: boolean;
   aUnDirigeant?: boolean;
+  /** Où la société fixe son siège : deux des quatre cas produisent une attestation. */
+  modeDomiciliation?: ModeDomiciliation;
 }
 
 export interface DocumentAProduire {
@@ -118,11 +170,17 @@ export function documentsAProduire(contexte: Contexte): DocumentAProduire[] {
     if (forme && d.saufFormes?.includes(forme)) return false;
     if (d.condition === "conjoint-marie") return !!contexte.conjointMarie;
     if (d.condition === "avec-dirigeant") return contexte.aUnDirigeant !== false;
+    if (d.condition === "domicile-dirigeant") {
+      return contexte.modeDomiciliation === "Domicile personnel du dirigeant";
+    }
+    if (d.condition === "domiciliation-cabinet") {
+      return contexte.modeDomiciliation === "Domiciliation au cabinet";
+    }
     return true;
   }).map((d) => ({
     type: d.type,
     titre: d.titre,
-    gabarit: prefixe + "-" + d.type + ".docx",
+    gabarit: d.gabaritCommun ?? prefixe + "-" + d.type + ".docx",
   }));
 }
 
@@ -160,7 +218,23 @@ export interface PieceAttendue {
   quand: "saisie" | "apres-relecture";
 }
 
-export function piecesAttendues(forme: string | null | undefined): PieceAttendue[] {
+/** L'extrait Kbis du domiciliataire, réclamé par le greffe avec le contrat. */
+export const PIECE_KBIS_DOMICILIATAIRE = "kbis-domiciliataire";
+
+export function piecesAttendues(
+  forme: string | null | undefined,
+  /**
+   * Comment la société est domiciliée.
+   *
+   * Une société de domiciliation appelle une pièce de plus : le greffe veut vérifier
+   * que le domiciliataire existe, qu'il est immatriculé et qu'il est bien à l'adresse
+   * qu'il loue. Le contrat seul ne le prouve pas.
+   *
+   * Facultatif : un dossier lu avant que ce mode ne soit saisi ne doit pas réclamer une
+   * pièce dont personne ne sait encore si elle sera due.
+   */
+  modeDomiciliation?: ModeDomiciliation
+): PieceAttendue[] {
   const r = regle(forme);
 
   const pieces: PieceAttendue[] = [
@@ -179,6 +253,17 @@ export function piecesAttendues(forme: string | null | undefined): PieceAttendue
       quand: "saisie",
     },
   ];
+
+  if (modeDomiciliation === "Société de domiciliation") {
+    pieces.push({
+      identifiant: PIECE_KBIS_DOMICILIATAIRE,
+      titre: "Extrait Kbis du domiciliataire",
+      description:
+        "Moins de trois mois. Il prouve que la société de domiciliation existe et qu'elle est immatriculée à l'adresse qu'elle vous loue.",
+      formats: [".pdf"],
+      quand: "saisie",
+    });
+  }
 
   // Une SCI ne dépose pas de capital : lui demander l'attestation n'a pas de sens.
   if (r && r.liberationMinimale > 0) {

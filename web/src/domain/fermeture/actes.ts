@@ -12,6 +12,17 @@
  * dès la première correction portée à un seul.
  */
 
+/*
+ * Le pouvoir est commun aux trois parcours.
+ *
+ * `fermeture-pouvoir.docx` le donnait « au porteur d'un original des présentes » :
+ * cette formule vaut pour un dépôt fait au comptoir d'un greffe par qui se présente,
+ * elle ne vaut pas pour un dépôt électronique signé sous l'identité d'une personne. Le
+ * guichet unique demande un pouvoir qui nomme son mandataire ; c'est ce que fait
+ * `pouvoir.docx`, et la création comme la modification s'en servent aussi.
+ */
+export const MODELE_POUVOIR = "pouvoir.docx";
+
 export interface ActeAProduire {
   titre: string;
   gabarit: string;
@@ -46,7 +57,7 @@ export function actesDeLaFermeture(contexte: ContexteActes): ActeAProduire[] {
       },
       {
         titre: "Pouvoir pour les formalités de dissolution",
-        gabarit: "fermeture-pouvoir.docx",
+        gabarit: MODELE_POUVOIR,
       },
     ];
   }
@@ -94,7 +105,7 @@ function actesDeLaTup(contexte: ContexteActes): ActeAProduire[] {
     },
     {
       titre: "Pouvoir pour les formalités de dissolution",
-      gabarit: "fermeture-pouvoir.docx",
+      gabarit: MODELE_POUVOIR,
     },
   ];
 
@@ -113,7 +124,7 @@ export const GABARITS_DE_FERMETURE = [
   "fermeture-pv-dissolution.docx",
   "fermeture-decision-dissolution.docx",
   "fermeture-declaration-liquidateur.docx",
-  "fermeture-pouvoir.docx",
+  MODELE_POUVOIR,
   "fermeture-comptes-de-liquidation.docx",
   "fermeture-rapport-liquidateur.docx",
   "fermeture-pv-cloture.docx",

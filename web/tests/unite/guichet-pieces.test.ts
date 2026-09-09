@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  ACTES_SANS_CODE,
   CHEMIN_DES_PIECES,
   PIECES_DES_ACTES,
   PIECES_TELEVERSEES,
@@ -34,6 +35,14 @@ describe("les pièces d'un dossier", () => {
         expect(PIECE_ATTESTATION_DOMICILE.code).toMatch(/^PJ_\d+$/);
         continue;
       }
+      /*
+       * Un manque assumé n'est pas un oubli.
+       *
+       * Le pouvoir n'a pas de code connu : l'INPI ne publie pas la feuille où ils se
+       * lisent, et en inventer un ne se verrait qu'au refus du dépôt. `ACTES_SANS_CODE`
+       * dit lesquels, et pourquoi.
+       */
+      if (ACTES_SANS_CODE.has(type)) continue;
       expect(PIECES_DES_ACTES[type], "aucun code pour « " + type + " »").toBeDefined();
     }
   });

@@ -383,12 +383,72 @@ function etablissementPrincipal(
  */
 function caracteristiquesDuSiege(brouillon: Brouillon): Record<string, unknown> {
   const chezLeDirigeant = brouillon.modeDomiciliation === "Domicile personnel du dirigeant";
+  const chezUnDomiciliataire = brouillon.modeDomiciliation === "Société de domiciliation";
 
+  /*
+   * Le domiciliataire se nomme, il ne se signale pas.
+   *
+   * Le drapeau partait seul : le guichet savait que la société était domiciliée, non
+   * chez qui. Or le domicilié « déclare le contrat de domiciliation au registre du
+   * commerce et des sociétés, avec l'indication du nom ou de la dénomination sociale
+   * et des références de l'immatriculation principale » du domiciliataire - articles
+   * L.123-10 et R.123-166-1 du code de commerce. Ces deux informations sont saisies
+   * depuis toujours ; elles n'allaient nulle part.
+   *
+   * Le cabinet, lui, n'est pas un domiciliataire : il n'a pas d'agrément préfectoral et
+   * ne conclut pas de contrat de domiciliation. Il met ses locaux à disposition, comme
+   * le ferait un propriétaire - le drapeau reste faux, et c'est l'attestation qui vaut
+   * titre de jouissance.
+   */
   return {
     ambulant: false,
-    domiciliataire: brouillon.modeDomiciliation === "Société de domiciliation",
+    domiciliataire: chezUnDomiciliataire,
     indicateurDomicileEntrepreneur: chezLeDirigeant,
     ...(chezLeDirigeant ? { indicateurDomicileEntrepreneurValidation: true } : {}),
+  };
+}
+
+/**
+ * Le domiciliataire, nommé au guichet.
+ *
+ * Le drapeau `domiciliataire` partait seul, et le guichet refusait : « Ce champ est
+ * obligatoire car le siège est indiqué comme étant domiciliataire ». Tout dépôt de
+ * société hébergée échouait donc, et le message ne se lisait qu'au refus.
+ *
+ * Le nom du champ vient du guichet lui-même - il l'a écrit dans sa violation - et non
+ * d'une lecture du contrat : le dictionnaire de données ne le publie pas.
+ *
+ * Le cabinet n'en est pas un : il n'a ni agrément préfectoral ni contrat de
+ * domiciliation. Il met ses locaux à disposition, et rien ne part ici.
+ */
+function entrepriseDomiciliataire(
+  brouillon: Brouillon,
+  manques: Manque[]
+): Record<string, unknown> | null {
+  if (brouillon.modeDomiciliation !== "Société de domiciliation") return null;
+
+  const domiciliataire = brouillon.domiciliataire ?? {};
+  const siren = (domiciliataire.siren ?? "").replace(/\D/g, "");
+  const denomination = texte(domiciliataire.denomination);
+
+  if (siren.length !== 9) {
+    manques.push({
+      chemin: "personneMorale.adresseEntreprise.entrepriseDomiciliataire.siren",
+      quoi: "Le SIREN de la société de domiciliation, neuf chiffres",
+      origine: "formulaire",
+    });
+  }
+  if (!denomination) {
+    manques.push({
+      chemin: "personneMorale.adresseEntreprise.entrepriseDomiciliataire.denomination",
+      quoi: "La dénomination de la société de domiciliation",
+      origine: "formulaire",
+    });
+  }
+
+  return {
+    ...(siren.length === 9 ? { siren } : {}),
+    ...(denomination ? { denomination } : {}),
   };
 }
 
@@ -441,6 +501,7 @@ export function contenuDeLaCreation(
 
   const code = regle(forme)!.code;
   const juridique = FORME_JURIDIQUE[code];
+  const domiciliataire = entrepriseDomiciliataire(brouillon, manques);
 
   return {
     contenu: {
@@ -461,6 +522,7 @@ export function contenuDeLaCreation(
         adresseEntreprise: {
           caracteristiques: caracteristiquesDuSiege(brouillon),
           adresse: adresseFrancaise(brouillon.adresse, brouillon.codePostal, brouillon.ville),
+          ...(domiciliataire ? { entrepriseDomiciliataire: domiciliataire } : {}),
         },
         composition: { pouvoirs: pouvoirs(brouillon, code, complement, manques) },
         etablissementPrincipal: etablissementPrincipal(brouillon, complement, manques),

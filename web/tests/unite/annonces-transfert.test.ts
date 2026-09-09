@@ -131,7 +131,14 @@ describe("le nombre d'avis d'un transfert de siège", () => {
 });
 
 describe("ce que les avis d'un transfert disent", () => {
-  it("deux départements et deux ressorts : radiation d'un côté, immatriculation de l'autre", () => {
+  /*
+   * Les deux avis portent la même mention finale.
+   *
+   * Chacun n'en disait que la moitié - radiation ici, immatriculation là. Les deux
+   * greffes lisent pourtant le même fait, et l'avis de départ doit dire où la société
+   * se retrouve après sa radiation.
+   */
+  it("deux départements et deux ressorts : les deux nomment les deux registres", () => {
     const rendus = avis({
       codePostal: "75017",
       nouveauCodePostal: "69003",
@@ -140,8 +147,9 @@ describe("ce que les avis d'un transfert disent", () => {
     });
 
     expect(rendus).toHaveLength(2);
-    expect(rendus[0].texte).toContain("sera radiée du registre du commerce et des sociétés de Paris");
-    expect(rendus[1].texte).toContain("sera immatriculée au registre du commerce et des sociétés de Lyon");
+    for (const un of rendus) {
+      expect(un.texte).toContain("Radiation au RCS de Paris et réimmatriculation au RCS de Lyon.");
+    }
   });
 
   /*
@@ -176,8 +184,8 @@ describe("ce que les avis d'un transfert disent", () => {
     });
 
     expect(rendus).toHaveLength(1);
-    expect(rendus[0].texte).toContain("radiée du registre du commerce et des sociétés de Lille");
-    expect(rendus[0].texte).toContain("immatriculée à celui de Douai");
+    expect(rendus[0].texte).toContain("Radiation au RCS de Lille et réimmatriculation au RCS de Douai.");
+    expect(rendus[0].texte).toContain("déposés au greffe du tribunal de commerce de Douai");
   });
 
   it("ni département ni ressort : un avis, et le dépôt au greffe d'origine", () => {

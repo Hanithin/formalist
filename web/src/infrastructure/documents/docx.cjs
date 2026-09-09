@@ -785,9 +785,18 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
       // « Les associés : » annoncent le nom, ils ne le sont pas. Le trait se posait
       // au-dessus d'eux, pleine largeur, et le procès-verbal en portait deux - celui-ci
       // et celui que le gabarit dessine lui-même sous le libellé.
+      //
+      // Les mêmes intitulés précédés de leur article, et ceux d'un pouvoir.
+      //
+      // « Le Président » ne ressemblait pas à « Président » : le trait se posait sur
+      // l'intitulé au lieu du nom, et le document en montrait un de trop. Un pouvoir
+      // ajoute ses propres lignes entre la date et le nom - « En deux exemplaires
+      // originaux », « Le Mandant » - qui ne sont pas davantage des signatures.
       if (
         /^_{5,}/.test(fullText) ||
-        /^(Pr[ée]sident|G[ée]rant|Directeur|Signature)/i.test(fullText) ||
+        /^(?:L[ae] |L['’])?(Pr[ée]sident|G[ée]rant|Directeur|Directrice|Signature)/i.test(fullText) ||
+        /^(?:Le |La )?(Mandant|Mandataire|Liquidateur|Liquidatrice)/i.test(fullText) ||
+        /^(En (?:deux|trois|quatre) exemplaires|Bon pour pouvoir|Certifi[ée] conforme)/i.test(fullText) ||
         /^(L['’]associ[ée]|Les associ[ée]s|Le[s]? soussign[ée]|Pour la soci[ée]t[ée])/i.test(fullText)
       ) return m;
       let newPara = namePara;
@@ -967,8 +976,22 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
      * condamnation sont les seuls actes qui portent cette phrase, et l'attestation de
      * domiciliation se reconnaît à son contenu comme avant.
      */
+    /*
+     * Les noms de gabarit, non un fragment de nom.
+     *
+     * « domicil » attrapait tout ce qui parle de domiciliation - dont l'attestation par
+     * laquelle le CABINET met ses locaux à disposition, qui n'a rien d'une déclaration
+     * du dirigeant : sa première phrase, « Je soussigné Monsieur MADFAI, agissant en
+     * qualité de Président de la société STERLING PEAK… », était remplacée par l'état
+     * civil du dirigeant de la société hébergée. L'acte changeait d'auteur en silence.
+     *
+     * Les huit actes concernés se nomment par leur forme et leur type ; la condition
+     * les nomme de même.
+     */
     const acteADeclarer =
-      !nomDuGabarit || /non-condamnation|domicil/i.test(nomDuGabarit) || isAttestationDomicile;
+      !nomDuGabarit ||
+      /-(?:declaration-non-condamnation|attestation-domicile)\.docx$/i.test(nomDuGabarit) ||
+      isAttestationDomicile;
 
     let finalText;
     if (!civNomPrenom || !acteADeclarer) {

@@ -25,6 +25,7 @@ import { phraseDAttente, type Progression } from "@/domain/modification/lecture"
 import { Editeur } from "./Editeur";
 import {
   MODIFICATIONS,
+  QUALITES_DU_SIGNATAIRE,
   champVisible,
   definitions,
   valeursParDefautDesChamps,
@@ -578,6 +579,7 @@ export function Parcours({
             anomalies={anomaliesSociete.filter((a) => manquesVus.includes(a.champ))}
             changer={changer}
             majSociete={majSociete}
+            majValeurs={majValeurs}
           />
         )}
 
@@ -1086,11 +1088,13 @@ function EtapeSociete({
   anomalies,
   changer,
   majSociete,
+  majValeurs,
 }: {
   etat: EtatDuDossier;
   anomalies: { champ: string; message: string }[];
   changer: (c: Partial<EtatDuDossier>) => void;
   majSociete: (maj: (societe: EtatDuDossier["societe"]) => EtatDuDossier["societe"]) => void;
+  majValeurs: (maj: (valeurs: Valeurs) => Valeurs) => void;
 }) {
   const [terme, setTerme] = useState("");
   const [resultats, setResultats] = useState<ResultatRecherche[]>([]);
@@ -1364,8 +1368,120 @@ function EtapeSociete({
           />
         </div>
       </div>
+
+      {/*
+        Le représentant légal, parce qu'un pouvoir l'identifie.
+
+        La société était décrite - dénomination, forme, capital, siège, numéro - et
+        personne ne l'était. Les actes s'en passaient : un procès-verbal nomme les
+        associés présents, et le bas de page ne fait que les nommer. Le pouvoir donné
+        au cabinet, lui, identifie son signataire comme le ferait un notaire : c'est ce
+        qui distingue un homonyme, et le guichet unique le vérifie.
+
+        Ces quatre champs sont à l'étape de la société parce qu'ils ne dépendent
+        d'aucun changement : le même gérant signe, qu'on transfère le siège ou qu'on
+        change la dénomination.
+      */}
+      <h3 className={styles.sousTitre}>Le représentant légal</h3>
+      <p className={styles.description}>
+        Celui qui signe le pouvoir donné au cabinet pour déposer la formalité.
+      </p>
+
+      <div className={styles.champs}>
+        <div className={styles.champ}>
+          <label htmlFor="signataire-civilite">Civilité</label>
+          <ChampChoix
+            id="signataire-civilite"
+            valeur={texteDe(etat.valeurs.signataireCivilite)}
+            options={["Monsieur", "Madame"]}
+            surChangement={(v) => majValeurs((x) => ({ ...x, signataireCivilite: v }))}
+          />
+        </div>
+
+        <div className={styles.champ}>
+          <label htmlFor="signataire-qualite">Qualité</label>
+          <ChampChoix
+            id="signataire-qualite"
+            valeur={texteDe(etat.valeurs.signataireQualite)}
+            options={[...QUALITES_DU_SIGNATAIRE]}
+            surChangement={(v) => majValeurs((x) => ({ ...x, signataireQualite: v }))}
+          />
+        </div>
+
+        <div className={styles.champ}>
+          <label htmlFor="signataire-prenom">Prénom</label>
+          <input
+            id="signataire-prenom"
+            value={texteDe(etat.valeurs.signatairePrenom)}
+            onChange={(e) => majValeurs((x) => ({ ...x, signatairePrenom: e.target.value }))}
+          />
+        </div>
+
+        <div className={styles.champ}>
+          <label htmlFor="signataire-nom">Nom</label>
+          <input
+            id="signataire-nom"
+            value={texteDe(etat.valeurs.signataireNom)}
+            onChange={(e) => majValeurs((x) => ({ ...x, signataireNom: e.target.value }))}
+          />
+        </div>
+
+        <div className={styles.champ}>
+          <label htmlFor="signataire-ne-le">Né le</label>
+          <ChampDate
+            id="signataire-ne-le"
+            valeur={texteDe(etat.valeurs.signataireNeLe)}
+            surChangement={(iso) => majValeurs((x) => ({ ...x, signataireNeLe: iso }))}
+          />
+        </div>
+
+        <div className={styles.champ}>
+          <label htmlFor="signataire-ne-a">À</label>
+          <input
+            id="signataire-ne-a"
+            value={texteDe(etat.valeurs.signataireNeA)}
+            placeholder="Lyon (69003)"
+            onChange={(e) => majValeurs((x) => ({ ...x, signataireNeA: e.target.value }))}
+          />
+        </div>
+
+        <div className={styles.champ}>
+          <label htmlFor="signataire-nationalite">Nationalité</label>
+          <input
+            id="signataire-nationalite"
+            value={texteDe(etat.valeurs.signataireNationalite)}
+            placeholder="française"
+            onChange={(e) => majValeurs((x) => ({ ...x, signataireNationalite: e.target.value }))}
+          />
+        </div>
+
+        <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+          <label htmlFor="signataire-adresse">Adresse personnelle</label>
+          {/*
+            Son domicile, non le siège : le mandant signe en son nom. Un pouvoir qui
+            le domicilie au siège ne dit rien de plus que la ligne au-dessus.
+          */}
+          <Adresse
+            id="signataire-adresse"
+            valeur={texteDe(etat.valeurs.signataireAdresse)}
+            surChangement={(voie) => majValeurs((x) => ({ ...x, signataireAdresse: voie }))}
+            surCompletion={(codePostal, ville) =>
+              majValeurs((x) => ({
+                ...x,
+                signataireAdresse:
+                  texteDe(x.signataireAdresse) + ", " + codePostal + " " + ville,
+              }))
+            }
+          />
+        </div>
+      </div>
     </>
   );
+}
+
+/** Une valeur du sac, lue comme du texte : il porte aussi des nombres. */
+function texteDe(valeur: string | number | undefined): string {
+  return typeof valeur === "string" ? valeur : "";
 }
 
 /* ---------------------------------------------------- 2. Les changements */

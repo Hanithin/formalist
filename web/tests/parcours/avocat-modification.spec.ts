@@ -282,8 +282,17 @@ test("les deux avis sont rédigés, et ils diffèrent", async ({ page }) => {
   await expect(avis.locator("pre").first()).toBeVisible();
   const textes = await avis.locator("pre").allTextContents();
   expect(textes).toHaveLength(2);
-  expect(textes[0]).toContain("radiée du registre du commerce et des sociétés de Paris");
-  expect(textes[1]).toContain("immatriculée au registre du commerce et des sociétés de Lyon");
+  /*
+   * Les deux avis nomment les deux registres.
+   *
+   * Chacun n'en disait que la moitié - radiation ici, immatriculation là - et l'avis de
+   * départ ne disait pas où retrouver la société après sa radiation.
+   */
+  for (const texte of textes) {
+    expect(texte).toContain("Radiation au RCS de Paris et réimmatriculation au RCS de Lyon.");
+  }
+  /* Seul l'avis d'arrivée annonce le dépôt des statuts au nouveau greffe. */
+  expect(textes[1]).toContain("déposés au greffe du tribunal de commerce de Lyon");
   expect(textes[0]).not.toBe(textes[1]);
 
   // Le texte porte l'identité de la société et la décision.

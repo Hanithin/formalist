@@ -251,3 +251,98 @@
     font-size: 16px;
   }
 }
+
+/* ---------- Les pièces du cabinet ---------- */
+
+.piecesCabinet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pieceCabinet {
+  padding: 14px 16px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.pieceCabinetTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pieceCabinetTitre {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+/* L'état se lit à la pastille, comme partout ailleurs dans le produit. */
+.pieceCabinetEtat {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: #f4f4f5;
+  color: #8a8a92;
+}
+
+.pieceCabinetEtat[data-etat="fraiche"] {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.pieceCabinetEtat[data-etat="bientot"] {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.pieceCabinetEtat[data-etat="perimee"],
+.pieceCabinetEtat[data-etat="sans-date"] {
+  background: #fef2f2;
+  color: #c2564e;
+}
+
+.pieceCabinetDetail {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #71717a;
+}
+
+.pieceCabinetFichier {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: #3f3f46;
+}
+
+.pieceCabinetActions {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.pieceCabinetDate {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 12.5px;
+  color: #71717a;
+}
+
+.pieceCabinetDate input {
+  margin: 0;
+}

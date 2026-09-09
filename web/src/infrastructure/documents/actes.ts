@@ -138,6 +138,8 @@ export async function produireLesActesDuBrouillon(
     conjointMarie: (brouillon.associes ?? []).some(
       (a) => a.type !== "morale" && conjointRequis(a.personne?.situationMatrimoniale)
     ),
+    /* Deux modes sur quatre produisent une attestation, et ce ne sont pas les mêmes. */
+    modeDomiciliation: brouillon.modeDomiciliation,
   });
 
   /*

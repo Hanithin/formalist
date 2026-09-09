@@ -330,11 +330,24 @@ export function avisAPublier(contexte: ContexteAvis): Avis[] {
       ? "des associés"
       : "de l'assemblée générale extraordinaire";
 
+  /*
+   * « il a été décidé que » ne s'accorde pas avec ce qui suit.
+   *
+   * Les décisions sont écrites au passé accompli - « le siège social a été transféré »,
+   * « la dénomination sociale a été modifiée » - parce que c'est ainsi qu'un avis les
+   * énonce : il constate ce qui a été fait, il n'annonce pas un projet. Introduites par
+   * « il a été décidé que », elles donnaient « il a été décidé que le siège social a été
+   * transféré », qui mêle deux temps et deux points de vue.
+   *
+   * La formule des supports d'annonces légales enchaîne directement : « Aux termes
+   * d'une décision de l'assemblée générale extraordinaire en date du …, le siège social
+   * a été transféré du … au … ».
+   */
   const chapeau =
     "Aux termes d'une décision " +
     organe +
     (quand !== "-" ? " en date du " + quand : "") +
-    ", il a été décidé que " +
+    ", " +
     enumerer(phrases) +
     ".";
 
@@ -366,24 +379,30 @@ export function avisAPublier(contexte: ContexteAvis): Avis[] {
     (horsRessort ? nouveau : actuel) +
     ".";
 
+  /*
+   * La mention que les DEUX avis doivent porter, à l'identique.
+   *
+   * L'avis de départ annonçait la seule radiation, celui d'arrivée la seule
+   * immatriculation : chacun ne disait que la moitié de l'opération. Or les deux
+   * greffes lisent le même fait - la société quitte un registre pour un autre - et
+   * chacun doit y retrouver les deux villes, celle qu'on quitte et celle où l'on va.
+   * Un avis de départ qui tait le nouveau registre ne dit pas où chercher la société
+   * après la radiation.
+   *
+   * C'est aussi la formule des supports d'annonces légales, en fin d'avis : elle se
+   * lit d'un coup d'œil là où une phrase se lit en entier.
+   */
+  const mentionRcs =
+    "Radiation au RCS de " + actuel + " et réimmatriculation au RCS de " + nouveau + ".";
+
+
   /* Un seul département : un seul avis, qui dit la radiation s'il y a lieu. */
   if (!deuxDepartements) {
     return [
       {
         ressort: horsRessort ? nouveau : actuel,
         objet: "Avis de modification",
-        texte: [
-          tete,
-          chapeau,
-          horsRessort
-            ? "La société sera radiée du registre du commerce et des sociétés de " +
-              actuel +
-              " et immatriculée à celui de " +
-              nouveau +
-              ", où les statuts à jour seront déposés."
-            : mentionDepot,
-          fin,
-        ]
+        texte: [tete, chapeau, mentionDepot, horsRessort ? mentionRcs : "", fin]
           .filter(Boolean)
           .join("\n\n"),
       },
@@ -416,24 +435,12 @@ export function avisAPublier(contexte: ContexteAvis): Avis[] {
     {
       ressort: actuel,
       objet: "Avis de radiation - ressort de départ",
-      texte: [
-        tete,
-        chapeau,
-        "La société sera radiée du registre du commerce et des sociétés de " + actuel + ".",
-        fin,
-      ].join("\n\n"),
+      texte: [tete, chapeau, mentionRcs, fin].join("\n\n"),
     },
     {
       ressort: nouveau,
       objet: "Avis d'immatriculation - ressort d'arrivée",
-      texte: [
-        tete,
-        chapeau,
-        "La société sera immatriculée au registre du commerce et des sociétés de " +
-          nouveau +
-          ", et les statuts à jour y seront déposés.",
-        fin,
-      ].join("\n\n"),
+      texte: [tete, chapeau, mentionDepot, mentionRcs, fin].join("\n\n"),
     },
   ];
 }

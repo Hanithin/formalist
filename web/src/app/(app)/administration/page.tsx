@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauAdministration } from "@/infrastructure/db/depots/administration";
 import { Comptes } from "./Comptes";
+import { PiecesDuCabinet } from "./PiecesDuCabinet";
 import styles from "./Administration.module.css";
 
 export const metadata: Metadata = {
@@ -61,6 +62,23 @@ export default async function Administration() {
           }))}
           moi={utilisateur.id}
         />
+      </section>
+
+      {/*
+        Les pièces du cabinet, déposées une fois pour tous les dossiers.
+
+        Elles servent quand le cabinet domicilie une société : le greffe veut son extrait
+        Kbis, l'identité de celui qui signe l'attestation, et son justificatif de domicile.
+        Les redemander dossier par dossier les ferait vieillir en silence.
+      */}
+      <section className={styles.bloc}>
+        <h2>Pièces du cabinet</h2>
+        <p className={styles.precision}>
+          Jointes aux dossiers domiciliés au cabinet. L&apos;extrait Kbis et le justificatif
+          de domicile doivent avoir moins de trois mois le jour du dépôt.
+        </p>
+
+        <PiecesDuCabinet />
       </section>
     </main>
   );

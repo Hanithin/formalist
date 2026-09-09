@@ -13,11 +13,21 @@ import { documentsAProduire } from "@/domain/formalite/documents";
 import { conjointRequis } from "@/domain/formalite/etat-civil";
 import { lireLeStatut } from "@/domain/guichet/statut";
 import {
+  ACTES_SANS_CODE,
   PIECES_DES_ACTES,
+  PIECES_DU_CABINET_AU_GUICHET,
   PIECES_TELEVERSEES,
   pieceDuSiege,
   type PieceDuGuichet,
 } from "@/domain/guichet/pieces";
+import {
+  PIECES_DU_CABINET,
+  piecesDuCabinetIncompletes,
+} from "@/domain/formalite/domiciliation";
+import {
+  lirePieceDuCabinet,
+  piecesDuCabinet,
+} from "@/infrastructure/db/depots/pieces-cabinet";
 import {
   formaliteDeCreation,
   type ComplementDeDepot,
@@ -100,12 +110,28 @@ async function actesDuDossier(
     conjointMarie: (brouillon.associes ?? []).some(
       (a) => a.type !== "morale" && conjointRequis(a.personne?.situationMatrimoniale)
     ),
+    /* Deux modes sur quatre produisent une attestation, et ce ne sont pas les mêmes. */
+    modeDomiciliation: brouillon.modeDomiciliation,
   });
 
   const pieces: PieceAJoindre[] = [];
   for (const document of attendus) {
     const codes = PIECES_DES_ACTES[document.type];
-    if (!codes) continue;
+    if (!codes) {
+      /*
+       * Un acte sans code se dit, il ne se tait pas.
+       *
+       * Le pouvoir n'a pas de code publié au guichet : passé en silence, il manquait au
+       * dossier sans que personne ne puisse le savoir avant le refus.
+       */
+      if (ACTES_SANS_CODE.has(document.type)) {
+        ecartees.push({
+          nom: document.titre,
+          raison: "Le guichet ne publie pas le code de cette pièce : à joindre à la main",
+        });
+      }
+      continue;
+    }
 
     const docx = await lireDocumentProduit(dossierId, document.titre);
     if (!docx) {
@@ -158,7 +184,79 @@ async function piecesDuClient(
     }
     pieces.push({ nom: fichier.nom, type: code, pdf: fichier.contenu });
   }
+
+  /*
+   * Les pièces du cabinet, quand c'est lui qui domicilie.
+   *
+   * Elles ne viennent pas du dossier : le cabinet les dépose une fois dans
+   * l'administration et elles servent partout. L'extrait Kbis n'a pas de code connu au
+   * guichet - il est signalé comme restant à joindre à la main plutôt que d'être tu.
+   */
+  if (brouillon.modeDomiciliation === "Domiciliation au cabinet") {
+    for (const attendue of PIECES_DU_CABINET) {
+      const contenu = await lirePieceDuCabinet(attendue.identifiant);
+      if (!contenu) {
+        ecartees.push({
+          nom: attendue.titre,
+          raison: "Absente : à déposer dans l'administration du cabinet",
+        });
+        continue;
+      }
+
+      const code = PIECES_DU_CABINET_AU_GUICHET[attendue.identifiant];
+      if (!code) {
+        ecartees.push({
+          nom: attendue.titre,
+          raison: "Le guichet ne publie pas le code de cette pièce : à joindre à la main",
+        });
+        continue;
+      }
+
+      if (!estUnPdf(contenu)) {
+        ecartees.push({
+          nom: attendue.titre,
+          raison: "Le guichet n'accepte que le PDF : à joindre à la main",
+        });
+        continue;
+      }
+
+      pieces.push({ nom: attendue.titre + ".pdf", type: code, pdf: contenu });
+    }
+  }
+
   return pieces;
+}
+
+/**
+ * Ce qui manque au cabinet pour domicilier.
+ *
+ * Un extrait Kbis ou un justificatif de domicile de plus de trois mois se fait refuser
+ * au greffe. Le laisser partir, c'est perdre les semaines qui séparent le dépôt du
+ * refus, et recommencer - alors que le manque se voit ici, avant d'envoyer quoi que ce
+ * soit.
+ *
+ * Ces manques rejoignent ceux du contenu : même liste, même écran, même refus 428. Le
+ * dossier n'est pas en cause - c'est le classeur du cabinet - et l'origine le dit.
+ */
+async function manquesDuCabinet(brouillon: Brouillon): Promise<Manque[]> {
+  if (brouillon.modeDomiciliation !== "Domiciliation au cabinet") return [];
+
+  const deposees = (await piecesDuCabinet()).map((p) => ({
+    identifiant: p.identifiant,
+    etabliLe: p.etabliLe,
+  }));
+
+  return piecesDuCabinetIncompletes(deposees).map(({ piece, etat }) => ({
+    chemin: "cabinet." + piece.identifiant,
+    quoi:
+      piece.titre +
+      (etat === "absente"
+        ? " : à déposer dans l'administration du cabinet"
+        : etat === "perimee"
+          ? " : plus de trois mois, à renouveler"
+          : " : sa date n'est pas renseignée"),
+    origine: "configuration" as const,
+  }));
 }
 
 /**
@@ -182,6 +280,7 @@ export async function deposerLaCreation(
     referenceDuDossier(dossierId),
     complement
   );
+  manques.push(...(await manquesDuCabinet(brouillon)));
   if (manques.length > 0) throw new DepotIncomplet(manques);
 
   const cree = (await demander(

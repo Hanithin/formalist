@@ -118,14 +118,27 @@ describe("le transfert hors ressort", () => {
     expect(avis.map((a) => a.ressort)).toEqual(["Paris", "Lyon"]);
   });
 
-  it("les deux textes diffèrent : radiation d'un côté, immatriculation de l'autre", () => {
-    /*
-     * Publier deux fois le même texte est la faute courante. Le greffe de départ
-     * attend l'annonce de la radiation, celui d'arrivée celle de l'immatriculation.
-     */
-    expect(avis[0].texte).toContain("radiée du registre du commerce et des sociétés de Paris");
-    expect(avis[1].texte).toContain("immatriculée au registre du commerce et des sociétés de Lyon");
+  /*
+   * Les deux avis nomment les deux registres.
+   *
+   * L'avis de départ annonçait la seule radiation, celui d'arrivée la seule
+   * immatriculation : chacun ne disait que la moitié de l'opération, et l'avis de
+   * départ ne disait pas où retrouver la société. Les deux portent maintenant la même
+   * mention finale, celle des supports d'annonces légales.
+   */
+  it("portent tous deux la mention de radiation et de réimmatriculation", () => {
+    for (const un of avis) {
+      expect(un.texte).toContain(
+        "Radiation au RCS de Paris et réimmatriculation au RCS de Lyon."
+      );
+    }
+  });
+
+  /* Le dépôt des statuts au nouveau greffe ne se dit que dans l'avis d'arrivée. */
+  it("ne disent pas la même chose pour autant", () => {
     expect(avis[0].texte).not.toBe(avis[1].texte);
+    expect(avis[1].texte).toContain("déposés au greffe du tribunal de commerce de Lyon");
+    expect(avis[0].texte).not.toContain("déposés au greffe");
   });
 
   it("les deux portent la même décision", () => {

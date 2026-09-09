@@ -13,6 +13,8 @@ import { referenceDuDossier } from "@/infrastructure/guichet/formalites";
 import { compteDeLAvocat } from "@/infrastructure/db/depots/identifiants-guichet";
 import { marquerLeDepotAuGuichet } from "@/infrastructure/db/depots/avocat";
 import { etatDesPiecesDuDossier } from "@/infrastructure/documents/verifier-pieces";
+import { piecesDuCabinetIncompletes } from "@/domain/formalite/domiciliation";
+import { piecesDuCabinet } from "@/infrastructure/db/depots/pieces-cabinet";
 
 /**
  * Déposer un dossier de création au guichet unique.
@@ -140,6 +142,35 @@ export const GET = route(async (requete: Request) => {
   const brouillon = lireBrouillon(dossier.data_json);
 
   const { manques } = formaliteDeCreation(brouillon, referenceDuDossier(dossierId));
+
+  /*
+   * Le classeur du cabinet compte comme le dossier.
+   *
+   * Quand c'est le cabinet qui domicilie, un extrait Kbis de plus de trois mois fait
+   * refuser le dépôt au greffe. L'écran doit le dire avant qu'on appuie, non après :
+   * c'est le même refus, et il se répare dans l'administration plutôt que sur le
+   * dossier.
+   */
+  if (brouillon.modeDomiciliation === "Domiciliation au cabinet") {
+    const deposees = (await piecesDuCabinet()).map((piece) => ({
+      identifiant: piece.identifiant,
+      etabliLe: piece.etabliLe,
+    }));
+
+    for (const { piece, etat } of piecesDuCabinetIncompletes(deposees)) {
+      manques.push({
+        chemin: "cabinet." + piece.identifiant,
+        quoi:
+          piece.titre +
+          (etat === "absente"
+            ? " : à déposer dans l'administration du cabinet"
+            : etat === "perimee"
+              ? " : plus de trois mois, à renouveler"
+              : " : sa date n'est pas renseignée"),
+        origine: "configuration",
+      });
+    }
+  }
 
   /* Les dirigeants, pour que l'écran sache de qui il demande la commune de naissance. */
   const associes = brouillon.associes ?? [];

@@ -125,7 +125,16 @@ export async function produireLesActesDeLaModification(
      * chacun des parts.
      */
     (modification.assemblee.associes ?? []).length,
-    modification.cessions ?? []
+    modification.cessions ?? [],
+    /*
+     * Le drapeau du ressort vient des données, non d'un second calcul.
+     *
+     * `IS_HORS_RESSORT` compare les villes de RCS - l'ancienne et la nouvelle - et le
+     * procès-verbal s'en sert déjà pour annoncer la double publication. L'état des
+     * sièges antérieurs répond à la même question : deux calculs auraient fini par
+     * répondre différemment.
+     */
+    donnees.IS_HORS_RESSORT === true
   );
   if (aProduire.length === 0) throw new AucunActeAProduire();
 

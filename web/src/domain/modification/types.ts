@@ -171,6 +171,24 @@ export interface DefinitionModification {
 
 export const CHANGEMENTS_DIRIGEANT = ["Nomination", "Révocation", "Démission"] as const;
 
+/**
+ * Les qualités sous lesquelles on signe pour une société.
+ *
+ * Le pouvoir dit « agissant en qualité de … » : le mot doit être celui des statuts,
+ * non un synonyme. Une SARL a un gérant, une SAS un président, une société civile un
+ * gérant ; le représentant d'une personne morale gérante signe, lui, en cette qualité.
+ */
+export const QUALITES_DU_SIGNATAIRE = [
+  "gérant",
+  "gérante",
+  "président",
+  "présidente",
+  "directeur général",
+  "directrice générale",
+  "représentant légal",
+  "représentante légale",
+] as const;
+
 export const MODIFICATIONS: DefinitionModification[] = [
   {
     code: "transfert_siege",
@@ -260,6 +278,40 @@ export const MODIFICATIONS: DefinitionModification[] = [
         libelle: "Date d'effet du transfert",
         type: "date",
         obligatoire: true,
+      },
+
+      /*
+       * Les sièges d'avant, quand le transfert change de greffe.
+       *
+       * L'article R.123-110 du code de commerce demande alors un document annexé aux
+       * statuts qui mentionne les sièges antérieurs, les greffes où la société a été
+       * immatriculée et la date du dernier transfert. Le greffe d'arrivée le réclame :
+       * il reprend un dossier tenu ailleurs, et cette liste est ce qui relie les deux
+       * immatriculations.
+       *
+       * Le siège qu'on quitte, l'application le connaît - c'est celui de la société, et
+       * l'acte l'écrit tout seul. Ceux d'avant, personne ne les lui a dits : ils se
+       * saisissent ici, une ligne par siège. Les deux champs sont facultatifs, parce
+       * qu'une société qui n'a jamais bougé n'a rien à déclarer de plus.
+       */
+      {
+        identifiant: "siegeDepuisLe",
+        libelle: "Siège actuel occupé depuis le",
+        type: "date",
+        groupe: "Les sièges antérieurs",
+        indication: "Facultatif",
+        aide: "La date à laquelle la société s'est installée à l'adresse qu'elle quitte.",
+      },
+      {
+        identifiant: "siegesAnterieurs",
+        libelle: "Sièges plus anciens",
+        type: "long",
+        groupe: "Les sièges antérieurs",
+        pleineLargeur: true,
+        indication: "Facultatif",
+        aide:
+          "Un siège par ligne, avec son greffe et ses dates - par exemple : " +
+          "12 rue de Rivoli, 75001 Paris, greffe de Paris, du 3 mars 2018 au 14 juin 2021.",
       },
     ],
   },

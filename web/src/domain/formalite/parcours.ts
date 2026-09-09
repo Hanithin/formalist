@@ -151,10 +151,19 @@ export function libellesDesAssocies(
 
 /* ---------- Les listes de choix de l'étape 1 ---------- */
 
+/*
+ * Où la société fixe son siège.
+ *
+ * « Domiciliation au cabinet » n'existait pas : on choisissait « société de
+ * domiciliation » et l'on tapait le cabinet à la main. Cela déclare au greffe une
+ * domiciliation agréée - contrat, numéro d'agrément préfectoral - que le cabinet
+ * n'exerce pas : il met ses locaux à disposition, comme le ferait un tiers.
+ */
 export const MODES_DOMICILIATION = [
   "Bail commercial ou professionnel",
   "Société de domiciliation",
   "Domicile personnel du dirigeant",
+  "Domiciliation au cabinet",
 ] as const;
 export type ModeDomiciliation = (typeof MODES_DOMICILIATION)[number];
 

@@ -1,5 +1,8 @@
 import { dateEnFrancais, nombreEnFrancais, sirenLisible } from "./lettres";
 import { apportsDe, valeurNominale } from "./capital";
+import { donneesDuPouvoir, etatCivil, type Mandant } from "./mandataire";
+import { CABINET } from "./domiciliation";
+import { formeEnToutesLettres } from "@/domain/modification/annonce";
 import { estUnipersonnelle, regle } from "./formes";
 import type { PersonneMorale, PersonnePhysique } from "./etat-civil";
 import type { Associe, Brouillon, Dirigeant } from "./parcours";
@@ -210,6 +213,28 @@ export function situationAccordee(personne: PersonnePhysique): string {
   if (!brute) return "célibataire";
   const feminin = personne.civilite === "Madame";
   return brute.replace(/\(e\)/g, feminin ? "e" : "");
+}
+
+/**
+ * Une personne du dossier, dite comme un pouvoir la dit.
+ *
+ * Le lieu de naissance s'y écrit « Lyon (69003) » - la ville et son code postal - comme
+ * dans `identitePhysique`, dont ce convertisseur ne diffère que par ce qu'il omet : la
+ * situation matrimoniale.
+ */
+function mandantDeLaCreation(personne: PersonnePhysique): Mandant {
+  const ville = personne.villeDeNaissance?.trim();
+  const cp = personne.codePostalDeNaissance?.trim();
+
+  return {
+    civilite: personne.civilite,
+    prenom: personne.prenom,
+    nom: personne.nom,
+    neLe: personne.dateDeNaissance,
+    neA: ville ? ville + (cp ? " (" + cp + ")" : "") : null,
+    nationalite: enMinusculeInitiale(personne.nationalite),
+    adresse: domicile(personne),
+  };
 }
 
 export function identitePhysique(personne: PersonnePhysique): string {
@@ -611,6 +636,35 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     VILLE_SOCIETE: ou(brouillon.ville),
     VILLE_SIGNATURE: ou(brouillon.ville),
     RCS_VILLE: ou(contexte.villeRcs ?? brouillon.ville),
+
+    /* ---------- La domiciliation au cabinet ---------- */
+    /*
+     * Le cabinet met ses locaux à disposition.
+     *
+     * Son identité ne vient pas du dossier : c'est celle de la maison, écrite une fois
+     * dans le domaine. Elle ne paraît que sur cette attestation, et la société qu'elle
+     * héberge y est nommée par les mêmes balises que partout ailleurs.
+     */
+    CABINET_SIGNATAIRE: CABINET.signataire,
+    CABINET_SIGNATURE_PIED: CABINET.signatureEnPied,
+    CABINET_QUALITE: CABINET.qualiteDuSignataire,
+    CABINET_DENOMINATION: CABINET.denomination,
+    CABINET_FORME: CABINET.forme,
+    CABINET_CAPITAL: montant(CABINET.capital),
+    CABINET_ADRESSE: CABINET.adresse,
+    CABINET_GREFFE: CABINET.greffe,
+    CABINET_SIREN: CABINET.siren,
+    CABINET_OCCUPATION: CABINET.occupation,
+    CABINET_VILLE: CABINET.greffe,
+    /*
+     * La forme de la société hébergée, en toutes lettres.
+     *
+     * « société par actions simplifiée en cours d'immatriculation » : l'attestation
+     * nomme la société comme le ferait un acte, non par son sigle.
+     */
+    FORME_EN_CLAIR: formeEnToutesLettres(forme || "SAS").toLowerCase(),
+    /* Qui représente la société qu'on héberge : elle n'est pas encore immatriculée. */
+    DIRIGEANT_DESIGNE: designationDuDirigeant,
     /*
      * À quel titre le dirigeant occupe son domicile, et ce que la loi en tire.
      *
@@ -1060,6 +1114,52 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
   donnees.IDENTITE_GERANT = societeDirigeante
     ? societeDesignee(societeDirigeante)
     : identitePhysique(dirigeant);
+
+  /*
+   * Le pouvoir donné au cabinet, avec les mots des autres actes du dossier.
+   *
+   * Le mandant est le fondateur : à la constitution, il n'y a pas encore de dirigeant
+   * en fonction, et c'est celui qui signe les statuts qui donne le pouvoir. Quand un
+   * dirigeant est désigné, c'est lui - il déposera le dossier ; à défaut, le premier
+   * associé.
+   *
+   * Le siège se dit « envisagé » : la société n'existe pas encore, et l'adresse n'est
+   * pas encore la sienne. C'est ce que porte le modèle du cabinet.
+   */
+  Object.assign(
+    donnees,
+    donneesDuPouvoir({
+      mandant: societeDirigeante
+        ? { identite: societeDesignee(societeDirigeante), nom: designationDuDirigeant }
+        : /*
+           * Sans dirigeant désigné, c'est le premier associé qui signe.
+           *
+           * `personneDuDirigeant` rend un objet vide quand la liste est vide - le
+           * pouvoir serait alors donné par « , né le - à - ». Un dossier peut ne pas
+           * avoir de dirigeant à ce stade : le procès-verbal de nomination est
+           * conditionné, le pouvoir ne l'est pas.
+           *
+           * `etatCivil` et non `identitePhysique` : cette dernière ajoute la situation
+           * matrimoniale, qui a sa place dans des statuts - un apport de bien commun
+           * appelle l'accord du conjoint - et aucune dans un pouvoir, où l'on identifie
+           * un signataire. Le modèle du cabinet ne la porte pas.
+           */
+          {
+            identite: etatCivil(mandantDeLaCreation(dirigeants.length > 0 ? dirigeant : a1)),
+            nom: dirigeants.length > 0 ? designationDuDirigeant : civiliteNomPrenom(a1),
+          },
+      qualite: "fondateur",
+      objet: "creation",
+      societe: {
+        denomination: brouillon.denomination,
+        formeEtCapital: (forme || "SAS") + " au capital de " + montant(capital) + " euros",
+        siege: adresseComplete,
+        siegeEnvisage: true,
+      },
+      ville: brouillon.ville,
+      date: maintenant.toISOString().slice(0, 10),
+    })
+  );
 
   /*
    * Qui signe l'attestation de domiciliation.

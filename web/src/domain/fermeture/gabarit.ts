@@ -1,5 +1,6 @@
 import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gabarit";
 import { natureDeLaForme } from "@/domain/formalite/formes";
+import { donneesDuPouvoir, etatCivil } from "@/domain/formalite/mandataire";
 import { toutesDesFemmes } from "@/domain/formalite/etat-civil";
 /**
  * Ce que les actes de fermeture ont besoin de savoir.
@@ -243,6 +244,45 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
     RCS_VILLE: ou(texte(societe.villeRcs) || texte(societe.ville)),
     RCS_DE: avecElision(texte(societe.villeRcs) || texte(societe.ville)),
     VILLE_SIGNATURE: ou(texte(societe.ville)),
+
+    /* --------------------------------------- Le pouvoir donné au cabinet */
+    /*
+     * Le liquidateur est le mandant.
+     *
+     * C'est lui qui représente la société dissoute - le gérant a cessé ses fonctions le
+     * jour de la dissolution - et c'est donc lui qui donne pouvoir de déposer. Son état
+     * civil est déjà saisi pour la déclaration de non-condamnation : le pouvoir n'en
+     * demande pas davantage.
+     */
+    ...donneesDuPouvoir({
+      mandant: {
+        identite: etatCivil({
+          civilite: texte(valeurs.liquidateurCivilite),
+          prenom: texte(valeurs.liquidateurPrenom),
+          nom: texte(valeurs.liquidateurNom),
+          neLe: texte(valeurs.liquidateurNeLe),
+          neA: texte(valeurs.liquidateurNeA),
+          nationalite: texte(valeurs.liquidateurNationalite),
+          adresse: texte(valeurs.liquidateurAdresse),
+        }),
+        nom: liquidateur,
+      },
+      qualite: "liquidateur",
+      objet: "fermeture",
+      societe: {
+        denomination: texte(societe.denomination),
+        formeEtCapital:
+          avecMajusculeInitiale(formeEnToutesLettres(forme).toLowerCase()) +
+          " au capital de " +
+          montant(societe.capital ?? 0) +
+          " euros",
+        siege: adresseSurUneLigne(societe),
+        greffe: texte(societe.villeRcs) || texte(societe.ville),
+        siren: sirenLisible(texte(societe.siren)),
+      },
+      ville: texte(societe.ville),
+      date: texte(valeurs.dateDissolution),
+    }),
     /* Même table que partout ailleurs : trois formes nommées ici en oubliaient douze. */
     MOT_TITRES: natureDeLaForme(forme).titres,
 

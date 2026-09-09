@@ -5,6 +5,7 @@ import { piecesDesComptes } from "@/domain/comptes/pieces";
 import { lireModification } from "@/infrastructure/db/depots/modifications";
 import { lireComptes } from "@/infrastructure/db/depots/comptes";
 import { lireDeclaration } from "@/infrastructure/db/depots/auto-entrepreneur";
+import { lireBrouillon } from "@/infrastructure/db/depots/brouillons";
 import type { PieceAttendueUnifiee } from "@/domain/formalite/pieces";
 
 /**
@@ -67,7 +68,15 @@ export function piecesAttenduesDuDossier(dossier: {
     return [];
   }
 
-  return piecesAttendues(dossier.forme).map((p) => ({
+  /*
+   * La domiciliation se lit dans le brouillon, non dans la ligne du dossier.
+   *
+   * Elle décide d'une pièce - l'extrait Kbis du domiciliataire - et la colonne `forme`
+   * est la seule information de création que la table porte en clair.
+   */
+  const creation = lireBrouillon(dossier.data_json);
+
+  return piecesAttendues(dossier.forme ?? creation.forme, creation.modeDomiciliation).map((p) => ({
     identifiant: p.identifiant,
     titre: p.titre,
     obligatoire: true,

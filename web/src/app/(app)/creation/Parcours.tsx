@@ -14,12 +14,14 @@ import {
   motAssocie,
   BANQUES,
   MODES_DOMICILIATION,
+  type ModeDomiciliation,
   OCCUPATIONS_DOMICILE,
   OPTIONS_FISCALES,
   REGIMES_TVA,
   type Brouillon,
   type Etape,
 } from "@/domain/formalite/parcours";
+import { CABINET } from "@/domain/formalite/domiciliation";
 import { valeursParDefaut, clotureDepuis } from "@/domain/formalite/valeurs-par-defaut";
 import { FORMES_PROPOSEES, FORMES, regle } from "@/domain/formalite/formes";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
@@ -282,6 +284,30 @@ export function Parcours({
    */
   function modifierPlusieurs(valeurs: Partial<Brouillon>) {
     setBrouillon((actuel) => ({ ...actuel, ...valeurs }));
+  }
+
+  /**
+   * Choisir la domiciliation au cabinet en pose l'adresse.
+   *
+   * L'attestation que le cabinet signe désigne ses locaux ; un siège déclaré ailleurs
+   * ferait dire deux choses au même dossier. L'adresse reste modifiable ensuite : elle
+   * est une valeur de départ, non un verrou.
+   */
+  function choisirLaDomiciliation(mode: ModeDomiciliation) {
+    if (mode !== "Domiciliation au cabinet") {
+      modifier("modeDomiciliation", mode);
+      return;
+    }
+
+    const [voie, commune] = CABINET.adresse.split(", ");
+    const [codePostal, ...ville] = (commune ?? "").split(" ");
+
+    modifierPlusieurs({
+      modeDomiciliation: mode,
+      adresse: voie,
+      codePostal,
+      ville: ville.join(" "),
+    });
   }
 
   function modifierBanque(champ: "nom" | "adresse" | "ville" | "codePostal", valeur: string) {
@@ -779,9 +805,26 @@ export function Parcours({
                   id="modeDomiciliation"
                   valeur={brouillon.modeDomiciliation ?? ""}
                   options={MODES_DOMICILIATION.map((m) => ({ valeur: m, libelle: m }))}
-                  surChangement={(v) => modifier("modeDomiciliation", v)}
+                  surChangement={(v) => choisirLaDomiciliation(v as ModeDomiciliation)}
                 />
               </Champ>
+
+              {/*
+                Domicilier au cabinet, c'est en prendre l'adresse.
+
+                L'attestation que le cabinet signe désigne ses propres locaux ; si le
+                siège déclaré au greffe disait autre chose, les deux se contrediraient
+                dans le même dossier. L'adresse se remplit donc seule, et reste
+                modifiable - un cabinet peut déménager avant que la constante ne suive.
+              */}
+              {brouillon.modeDomiciliation === "Domiciliation au cabinet" && (
+                <p className={styles.note}>
+                  Le siège est fixé à l&apos;adresse du cabinet, {CABINET.adresse}. Nous
+                  joignons au dossier l&apos;attestation de mise à disposition, notre extrait
+                  Kbis, la pièce d&apos;identité du signataire et notre justificatif de
+                  domicile.
+                </p>
+              )}
 
               {/*
                * Le domicile du dirigeant : à quel titre il l'occupe, et si quelque
@@ -1081,7 +1124,7 @@ export function Parcours({
               */}
               <Pieces
                 dossierId={dossier}
-                pieces={piecesAttendues(brouillon.forme).filter(
+                pieces={piecesAttendues(brouillon.forme, brouillon.modeDomiciliation).filter(
                   (p) => p.quand === "saisie" || actesRendus
                 )}
                 deposees={piecesDeposees}

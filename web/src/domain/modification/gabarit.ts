@@ -5,6 +5,12 @@ import { agrementDeDroit, cessionsRedigees, nomDeLAssocie, type Cession } from "
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { identificationDeLAssocie, sirenEspace } from "./pv-age";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
+import {
+  donneesDuPouvoir,
+  etatCivil,
+  nommer,
+  type Mandant,
+} from "@/domain/formalite/mandataire";
 import { definitions, type Valeurs } from "./types";
 import { changeDeRessort } from "./formalites";
 import {
@@ -80,6 +86,12 @@ export const MODELE_BULLETIN_SOUSCRIPTION = "modif-bulletin-souscription.docx";
  */
 export const MODELE_FEUILLE_PRESENCE = "modif-feuille-presence.docx";
 export const MODELE_CESSION = "modif-acte-cession-universel.docx";
+
+/** L'article R.123-110 du code de commerce, quand le transfert change de greffe. */
+export const MODELE_SIEGES_ANTERIEURS = "modif-etat-sieges-anterieurs.docx";
+
+/** Le pouvoir donné au cabinet, commun aux trois parcours. */
+export const MODELE_POUVOIR = "pouvoir.docx";
 
 export interface SocieteModifiee {
   denomination?: string | null;
@@ -707,6 +719,65 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
       codes.includes("transfert_siege") &&
       changeDeRessort(societe.villeRcs ?? societe.ville, contexte.villeRcsNouvelle),
     DATE_EFFET_TRANSFERT: texte(valeurs.dateEffetTransfert),
+
+    /* ------------------------------------- L'état des sièges antérieurs */
+    /*
+     * La liste que l'article R.123-110 demande.
+     *
+     * Elle s'ouvre sur le siège que la société quitte : c'est lui qui devient
+     * antérieur, et c'est le seul que l'application connaisse avec certitude. Les plus
+     * anciens viennent ensuite, tels que le représentant légal les a saisis - une
+     * ligne par siège, les vides écartées.
+     */
+    SIEGES_SIGNATAIRE: etatCivilDuSignataire(valeurs),
+    SIEGES_SIGNATAIRE_NOM: nomDuSignataire(valeurs),
+    SIEGES_QUALITE: qualiteDuSignataire(valeurs, societe.forme),
+    SIEGES_QUALITE_SIGNATURE: qualiteEnTete(valeurs, societe.forme),
+    SIEGES_SOCIETE: ou(societe.denomination),
+    SIEGES_SOCIETE_FORME: formeEtCapital(societe),
+    SIEGES_GREFFE: ou(societe.villeRcs, ou(societe.ville)),
+    /* « 908 221 138 » : le numéro se lit par tranches, comme partout ailleurs. */
+    SIEGES_SIREN: ou(sirenEspace(societe.siren ?? "")),
+    /*
+     * L'immatriculation en une ligne d'en-tête, comme sur les autres actes.
+     *
+     * Elle vivait au milieu d'une phrase qui courait sur toute la largeur : justifiée,
+     * elle laissait le numéro seul en fin de paragraphe. En tête, centrée et en petit
+     * corps, elle tient sur sa ligne quel que soit le nom du greffe.
+     */
+    SIEGES_IMMATRICULATION:
+      "Immatriculée au RCS de " +
+      ou(societe.villeRcs, ou(societe.ville)) +
+      " sous le numéro " +
+      ou(sirenEspace(societe.siren ?? "")),
+    SIEGES_SIEGE: "Siège social : " + siege,
+    SIEGES_LISTE: listeDesSieges(societe, valeurs),
+    SIEGES_NOUVEAU: ou(nouveauSiege),
+    SIEGES_DATE_TRANSFERT: dateEnFrancais(
+      typeof valeurs.dateEffetTransfert === "string" ? valeurs.dateEffetTransfert : null
+    ),
+    SIEGES_VILLE: ou(societe.ville),
+
+    /* --------------------------------------- Le pouvoir donné au cabinet */
+    ...donneesDuPouvoir({
+      mandant: {
+        identite: etatCivilDuSignataire(valeurs),
+        nom: nomDuSignataire(valeurs),
+      },
+      qualite: qualiteDuSignataire(valeurs, societe.forme),
+      objet: "modification",
+      societe: {
+        denomination: societe.denomination,
+        formeEtCapital: formeEtCapital(societe),
+        siege,
+        greffe: societe.villeRcs ?? societe.ville,
+        siren: sirenEspace(societe.siren ?? ""),
+      },
+      ville: societe.ville,
+      date: assemblee.date,
+    }),
+    SIEGES_DATE: dateEnFrancais(assemblee.date ?? null),
+
     DATE_EFFET_TRANSFERT_FR: dateEnFrancais(
       typeof valeurs.dateEffetTransfert === "string" ? valeurs.dateEffetTransfert : null
     ),
@@ -1640,6 +1711,119 @@ export interface ActeAProduire {
  * assemblée. L'acte de cession n'existe que s'il y a cession, et les statuts à jour se
  * font à l'éditeur, sur le document d'origine, non par un avenant qui les recopierait.
  */
+/* ======================= Le signataire et les sièges antérieurs ======================= */
+
+/*
+ * Qui signe le pouvoir et l'état des sièges.
+ *
+ * Le procès-verbal nomme les associés présents ; ces deux actes-là identifient une
+ * personne comme le ferait un notaire - date et lieu de naissance, nationalité,
+ * domicile - parce que c'est ce qui distingue un homonyme, et que le guichet unique le
+ * vérifie. Les quatre champs se saisissent à l'étape de la société : le même
+ * représentant signe, quel que soit le changement décidé.
+ */
+function personneDuSignataire(valeurs: Valeurs): Mandant {
+  return {
+    civilite: texte(valeurs.signataireCivilite) || "Monsieur",
+    prenom: texte(valeurs.signatairePrenom),
+    nom: texte(valeurs.signataireNom),
+    neLe: texte(valeurs.signataireNeLe),
+    neA: texte(valeurs.signataireNeA),
+    nationalite: texte(valeurs.signataireNationalite),
+    adresse: texte(valeurs.signataireAdresse),
+  };
+}
+
+function etatCivilDuSignataire(valeurs: Valeurs): string {
+  return etatCivil(personneDuSignataire(valeurs));
+}
+
+function nomDuSignataire(valeurs: Valeurs): string {
+  return nommer(personneDuSignataire(valeurs));
+}
+
+/*
+ * « gérant », « président » : la qualité vient de la saisie, la forme en décide à défaut.
+ *
+ * Une SARL a un gérant, une société par actions un président. Le champ le demande - un
+ * directeur général peut avoir reçu le pouvoir de représenter - mais un dossier ancien
+ * ne l'a pas, et l'acte doit sortir juste sans lui.
+ */
+function qualiteDuSignataire(valeurs: Valeurs, forme: string | null | undefined): string {
+  const saisie = texte(valeurs.signataireQualite).trim();
+  if (saisie) return saisie;
+  return parActions(forme) ? "président" : "gérant";
+}
+
+/** « Le Gérant », « La Présidente » : la même qualité, en tête de signature. */
+function qualiteEnTete(valeurs: Valeurs, forme: string | null | undefined): string {
+  const qualite = qualiteDuSignataire(valeurs, forme);
+  const feminin = /e$/.test(qualite) && !/directeur|president$/.test(qualite);
+  return (feminin ? "La " : "Le ") + qualite.charAt(0).toUpperCase() + qualite.slice(1);
+}
+
+/** « SASU au capital de 1 000 euros » : la ligne d'identification de la société. */
+function formeEtCapital(societe: SocieteModifiee): string {
+  const capital = societe.capital;
+  return (
+    ou(societe.forme, "SAS") +
+    (typeof capital === "number" && Number.isFinite(capital)
+      ? " au capital de " + montant(capital) + " euros"
+      : "")
+  );
+}
+
+/**
+ * Les sièges qui deviennent antérieurs.
+ *
+ * Le premier est celui que la société quitte : l'application le connaît, avec son
+ * greffe, et l'on n'attend pas du client qu'il le retape. Sa date de début n'est
+ * connue que s'il l'a dite - sans elle, la ligne s'arrête au greffe plutôt que
+ * d'annoncer un intervalle inventé.
+ *
+ * Les suivants viennent de la zone libre, une ligne par siège, dans l'ordre où ils ont
+ * été saisis.
+ */
+function listeDesSieges(societe: SocieteModifiee, valeurs: Valeurs): string[] {
+  const actuel = adresseSurUneLigne(
+    societe.adresse ?? "",
+    societe.codePostal ?? "",
+    societe.ville ?? ""
+  );
+  const greffe = (societe.villeRcs ?? societe.ville ?? "").trim();
+  const depuis = texte(valeurs.siegeDepuisLe);
+  const jusqua = texte(valeurs.dateEffetTransfert);
+
+  const lignes: string[] = [];
+
+  if (actuel && actuel !== TIRET) {
+    /*
+     * « du 14 juin 2021 au 1er septembre 2026 ».
+     *
+     * Le greffe demande une date de début et une date de fin d'occupation. La fin est
+     * connue - c'est la date d'effet du transfert - et la ligne les écrit ensemble dès
+     * qu'on a les deux. Sans date de début, elle s'arrête à « jusqu'au » plutôt que
+     * d'annoncer un intervalle dont une borne est inventée.
+     */
+    const periode = depuis
+      ? jusqua
+        ? ", du " + dateEnFrancais(depuis) + " au " + dateEnFrancais(jusqua)
+        : ", depuis le " + dateEnFrancais(depuis)
+      : jusqua
+        ? ", jusqu'au " + dateEnFrancais(jusqua)
+        : "";
+
+    lignes.push(actuel + (greffe ? ", greffe " + avecElision(greffe) : "") + periode);
+  }
+
+  for (const ligne of texte(valeurs.siegesAnterieurs).split("\n")) {
+    const propre = ligne.trim().replace(/^[-*\u2022]\s*/, "");
+    if (propre) lignes.push(propre);
+  }
+
+  return lignes;
+}
+
 export function actesAProduire(
   codes: string[],
   forme: string | null | undefined,
@@ -1652,7 +1836,15 @@ export function actesAProduire(
    * produit un seul, comme avant - un appelant qui ne les connaît pas ne peut pas
    * savoir qu'il en faudrait deux.
    */
-  cessions: Cession[] = []
+  cessions: Cession[] = [],
+  /**
+   * Le transfert sort-il du ressort du greffe d'immatriculation ?
+   *
+   * Il décide d'un acte : l'état des sièges antérieurs. La donnée est déjà calculée -
+   * `IS_HORS_RESSORT`, employée par le procès-verbal - et l'appelant la passe plutôt
+   * que de la recalculer ici, où l'ancienne ville de RCS n'est pas connue.
+   */
+  horsRessort = false
 ): ActeAProduire[] {
   if (codes.length === 0) return [];
 
@@ -1799,6 +1991,33 @@ export function actesAProduire(
   if (typeof nombreDAssocies === "number" && nombreDAssocies > 1) {
     actes.push({ titre: "Feuille de présence", gabarit: MODELE_FEUILLE_PRESENCE });
   }
+
+  /*
+   * L'état des sièges antérieurs, quand le greffe change.
+   *
+   * L'article R.123-110 du code de commerce demande, pour un transfert hors du ressort
+   * du tribunal au greffe duquel la société est immatriculée, un document annexé aux
+   * statuts qui mentionne les sièges antérieurs et les greffes où elle a été
+   * immatriculée, avec la date du dernier transfert. Le greffe d'arrivée reprend un
+   * dossier tenu ailleurs : cette liste est ce qui relie les deux immatriculations.
+   *
+   * Un déménagement dans le même ressort n'en appelle aucun - la société ne change pas
+   * de greffe, et rien n'est à relier.
+   */
+  if (codes.includes("transfert_siege") && horsRessort) {
+    actes.push({
+      titre: "Liste des sièges sociaux antérieurs",
+      gabarit: MODELE_SIEGES_ANTERIEURS,
+    });
+  }
+
+  /*
+   * Le pouvoir donné au cabinet, en dernier.
+   *
+   * Il ne décide de rien : il autorise le dépôt. Sa place est à la fin du jeu, après
+   * les actes qu'il sert à déposer - c'est aussi l'ordre dans lequel on les signe.
+   */
+  actes.push({ titre: "Pouvoir pour les formalités de modification", gabarit: MODELE_POUVOIR });
 
   return actes;
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import PizZip from "pizzip";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import path from "node:path";
 import { genererDocument } from "@/infrastructure/documents/generation";
 import { renumeroterLesResolutions } from "@/infrastructure/documents/resolutions";
@@ -285,7 +285,8 @@ describe("les actes à produire", () => {
     expect(dissolution.map((a) => a.gabarit)).toEqual([
       "fermeture-pv-dissolution.docx",
       "fermeture-declaration-liquidateur.docx",
-      "fermeture-pouvoir.docx",
+      /* Le pouvoir est commun aux trois parcours depuis qu'il nomme son mandataire. */
+      "pouvoir.docx",
     ]);
     // Le quitus ne se signe pas avant la première opération de liquidation.
     expect(dissolution.map((a) => a.gabarit)).not.toContain("fermeture-pv-cloture.docx");
@@ -342,8 +343,15 @@ describe("la couverture des gabarits", () => {
   const fichiers = readdirSync(GABARITS).filter((f) => f.startsWith("fermeture-"));
   const fournis = new Set(Object.keys(donneesDeLaFermeture(contexte())));
 
-  it("les dix gabarits sont là, et le domaine les nomme tous", () => {
-    expect(fichiers.sort()).toEqual([...GABARITS_DE_FERMETURE].sort());
+  /*
+   * Le pouvoir ne porte plus le préfixe : il sert aussi à la création et à la
+   * modification. Le test compare donc les fichiers « fermeture-* » à ce que le domaine
+   * en nomme, le pouvoir mis à part - et vérifie séparément qu'il existe.
+   */
+  it("les neuf gabarits de fermeture sont là, et le domaine les nomme tous", () => {
+    const propres = GABARITS_DE_FERMETURE.filter((g) => g.startsWith("fermeture-"));
+    expect(fichiers.sort()).toEqual([...propres].sort());
+    expect(existsSync(path.join(GABARITS, "pouvoir.docx"))).toBe(true);
   });
 
   for (const fichier of fichiers) {

@@ -75,7 +75,7 @@ export const POST = route(async (requete: Request) => {
         nombreDeConventions: comptes.conventions.length,
       }).map((p) => ({ identifiant: p.identifiant, titre: p.titre, formats: p.formats }));
     }
-    return piecesAttendues(brouillon.forme);
+    return piecesAttendues(brouillon.forme, brouillon.modeDomiciliation);
   })();
 
   const attendue = attendues.find((p) => p.identifiant === identifiant);
