@@ -161,7 +161,15 @@ export function Registre({ societes }: { societes: LigneDuRegistre[] }) {
           <div className={styles.registreEntete} aria-hidden="true">
             <span>Société</span>
             <span>État</span>
-            <span>Où ça en est</span>
+            {/*
+              « Prochaine étape », non « Où ça en est ».
+
+              La question se posait à voix haute dans un en-tête de tableau, sur un ton
+              qu'aucune autre colonne du produit n'emploie. La colonne porte une
+              échéance quand il y en a une, l'étape du dossier sinon : dans les deux cas,
+              c'est ce qui vient ensuite.
+            */}
+            <span>Prochaine étape</span>
           </div>
 
           <ul className={styles.registreLignes}>

@@ -134,7 +134,15 @@ export function NouvelleFormalite({
                     qu'on veut savoir au moment de choisir - qui tient la plume derrière.
                   */}
                   <p className={styles.soustitre}>
-                    Un avocat relit chaque acte, du premier document au greffe.
+                    {/*
+                      « du premier document au greffe » ne se lisait pas.
+
+                      Le début annonçait un document, la fin un lieu : la phrase liait
+                      deux choses qui ne se comparent pas, et ne disait ni ce que
+                      l'avocat relit ni quand. Ce qu'elle voulait promettre est simple -
+                      rien ne part au greffe sans avoir été relu.
+                    */}
+                    Chaque acte est relu par un avocat avant son dépôt au greffe.
                   </p>
                 </div>
                 <button

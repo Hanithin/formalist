@@ -9,21 +9,23 @@
  * Une seule carte, donc, et les deux endroits ne peuvent plus diverger.
  */
 
+/*
+  Une ligne, non une carte à trois étages.
+
+  Chaque parcours s'écrivait sur trois rangées - titre, description, puis un filet et un
+  pied portant la durée, le prix et une flèche. Huit parcours faisaient donc vingt-quatre
+  rangées et huit filets dans une fenêtre qui ne tenait plus dans l'écran.
+  
+  Tout se lit sur une ligne : l'icône, le nom et sa précision à gauche, le temps et le
+  prix à droite. Le filet disparaît - il séparait deux moitiés d'une même phrase - et la
+  carte passe de cent vingt-deux pixels à soixante.
+*/
 .chemin {
   display: flex;
-  flex-direction: column;
-  /*
-   * Serré, mais pas tassé.
-   *
-   * Huit cartes de cent vingt-deux pixels dans une fenêtre de sept cents laissaient
-   * l'œil courir d'un titre au suivant sans rien tenir : le blanc y disait « ces deux
-   * lignes n'ont pas de rapport », alors qu'elles décrivent la même chose. Le pied
-   * remonte contre le titre, l'icône descend d'un cran, et la carte tient en une
-   * centaine.
-   */
-  gap: 8px;
+  align-items: center;
+  gap: 14px;
   height: 100%;
-  padding: 12px 14px;
+  padding: 11px 14px;
   background: #fff;
   border: 1px solid #eee;
   border-radius: 14px;
@@ -37,9 +39,13 @@
 }
 
 .chemin:hover {
-  border-color: #ddd;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-  transform: translateY(-2px);
+  border-color: #d4d4d8;
+  background: #fafafa;
+}
+
+.chemin:hover .icone {
+  background: #e4e4e7;
+  color: #18181b;
 }
 
 /* Le premier étage : l'icône en face du nom, non en face de la description. */
@@ -47,6 +53,7 @@
   display: flex;
   align-items: center;
   gap: 11px;
+  flex: 1;
   min-width: 0;
 }
 
@@ -75,34 +82,26 @@
  * ici, elles font reconnaître une carte à son pictogramme avant d'en lire le titre -
  * et elles rangent la page sans ajouter un mot.
  */
-.green {
-  background: #ecfdf5;
-  color: #059669;
-}
+/*
+  Une seule teinte, celle de l'encre.
 
-.blue {
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.violet {
-  background: #f5f3ff;
-  color: #7c3aed;
-}
-
-.amber {
-  background: #fffbeb;
-  color: #d97706;
-}
-
-.red {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
+  Le catalogue donnait à chaque parcours la sienne - vert, bleu, violet, ambre, rouge,
+  turquoise - pour qu'on les distingue sans lire. Huit pastilles de huit couleurs dans
+  une fenêtre de sept cents pixels ne distinguent plus rien : elles font un nuancier, et
+  le rouge de « Fermer ma société » avertit d'un danger qui n'existe pas.
+  
+  Les classes restent - le catalogue les nomme, et un jour une famille méritera peut-être
+  sa couleur - mais elles rendent toutes le même gris. Ce qui distingue un parcours, ce
+  sont son pictogramme et son nom.
+*/
+.green,
+.blue,
+.violet,
+.amber,
+.red,
 .teal {
-  background: #f0fdfa;
-  color: #0d9488;
+  background: #f4f4f5;
+  color: #52525b;
 }
 
 .corps {
@@ -142,10 +141,8 @@
 .pied {
   display: flex;
   align-items: center;
+  flex: none;
   gap: 12px;
-  margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid #f4f4f5;
 }
 
 .duree {

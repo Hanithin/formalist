@@ -24,12 +24,16 @@
  * le creux au-dessus des capitales explique les six pixels qui manquent au compte.
  */
 .topbar {
-  padding: 24px 48px 6px;
+  padding: 20px 48px 4px;
   background: transparent;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  gap: 14px;
+}
+
+/* Le badge d'espace reste à droite ; ce qui le précède se serre à gauche du titre. */
+.topbar .spaceBadge {
+  margin-left: auto;
 }
 .topbar h1 {
   font-family: var(--police-titre), var(--police-texte), sans-serif;
@@ -56,11 +60,24 @@
  */
 .introduction {
   padding: 0 48px;
-  margin: 0 0 28px;
+  /*
+    Vingt-huit pixels sous la phrase, seize de plus dans le contenu, quatre sous le
+    titre : soixante pixels de blanc entre une ligne de texte et les onglets qui la
+    suivent. La phrase et les onglets se lisent d'affilée ; ils se tiennent.
+  */
+  margin: 0 0 10px;
   font-size: 15px;
   line-height: 1.5;
   color: #52525b;
-  max-width: 760px;
+  /*
+    Une phrase de dix mots ne se coupe pas en deux.
+
+    La largeur était bornée à sept cent soixante pixels - de quoi garder un paragraphe
+    lisible - mais ces phrases-là en font une seule : la borne les repliait au milieu
+    sur un écran qui avait mille pixels à leur offrir. Elles tiennent sur leur ligne, et
+    la borne ne joue que si l'écran est vraiment étroit.
+  */
+  max-width: 100ch;
 }
 
 @media (max-width: 768px) {
@@ -157,139 +174,82 @@
   background: #ecfdf5;
   color: #047857;
 }
-/* COUNTER CARDS */
-/*
- * Les compteurs reprennent la grille des cartes de « Mes formalités » : mêmes rayon,
- * rembourrage, trait et échelle de chiffre. Ces pages se ressemblent à l'écran, et
- * des valeurs voisines mais différentes se voient comme un défaut d'alignement sans
- * qu'on sache dire lequel.
- */
-/*
- * Les compteurs du cabinet.
- *
- * Ils occupaient un quart de l'écran pour dire « 0 0 2 0 » : le chiffre en quarante
- * pixels attirait l'œil sur ce qui n'existe pas, et une rangée de zéros noirs se lit
- * comme une alerte. La valeur passe à droite du libellé plutôt qu'en dessous, les
- * cartes tiennent sur une ligne, et ce qui vaut zéro s'efface au lieu de crier.
- */
-.counters {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-.counterCard {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px 16px;
-  border: 1px solid #eee;
-}
-.counterLabel {
-  flex: 1;
-  min-width: 0;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: #666;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.counterDot {
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  border-radius: 50%;
-}
-.counterDot.orange {
-  background: #f59e0b;
-}
-.counterDot.blue {
-  background: #3b82f6;
-}
-.counterDot.green {
-  background: #22c55e;
-}
-.counterDot.red {
-  background: #ef4444;
-}
-.counterValue {
-  flex-shrink: 0;
-  font-family: var(--police-titre), var(--police-texte), sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 1;
-  color: #111;
-}
-
-/*
- * Rien à compter.
- *
- * Un tiret gris plutôt qu'un zéro noir : le zéro se lit comme un chiffre qu'on vient
- * chercher, alors qu'il ne dit qu'une absence. La carte reste en place - la faire
- * disparaître déplacerait les trois autres à chaque changement.
- */
-.counterVide .counterValue {
-  color: #ccc;
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.counterVide .counterLabel {
-  color: #999;
-}
-
-.counterVide .counterDot {
-  opacity: 0.35;
-}
-@media (max-width: 900px) {
-  .counters {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 
 /* FILTER TABS */
+/*
+  Les filtres se lisent comme les onglets d'un dossier.
+
+  Sept pastilles bordées faisaient sept objets dessinés, chacun avec son trait et son
+  rayon, pour un seul choix à faire - et la rangée pesait plus lourd que le tableau
+  qu'elle filtre. La fiche d'un dossier a déjà des onglets, à deux clics d'ici : un
+  soulignement sous celui qui est ouvert, rien autour des autres, et le compte sur sa
+  pastille. C'est le même geste et la même question ; ce sera la même forme.
+
+  Ils portent aussi la seule rangée de nombres de la page, depuis que les cartes de
+  compteurs sont parties - elles redisaient ces trois-là sans mener nulle part.
+*/
 .filterTabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 0;
   flex-wrap: wrap;
+  margin: 4px 0 16px;
+  border-bottom: 1px solid #e5e5e5;
 }
+
 .filterTab {
-  padding: 8px 16px;
-  font-size: 13.5px;
-  border-radius: 100px;
-  border: 1px solid #e5e5e5;
-  background: transparent;
-  color: #666;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  margin-bottom: -1px;
+  padding: 11px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: #999;
+  letter-spacing: 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
+
 .filterTab:hover {
-  border-color: #999;
+  color: #52525b;
 }
+
 .filterTab.active {
+  color: #111;
+  font-weight: 500;
+  border-bottom-color: #111;
+}
+
+/*
+  Le compte se pose sur une pastille.
+
+  Nu, il flottait comme une coquille à côté du nom de l'onglet - c'est le constat qui a
+  donné `.tabCount` sur la fiche d'un dossier, et il vaut ici mot pour mot.
+*/
+.filterCount {
+  display: inline-block;
+  min-width: 20px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #e4e4e7;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  color: #52525b;
+}
+
+.filterTab.active .filterCount {
   background: #111;
   color: #fff;
-  border-color: #111;
 }
-.filterCount {
-  font-size: 11.5px;
-  font-weight: 500;
-  opacity: 0.7;
-}
-.filterTab.active .filterCount {
-  opacity: 0.7;
-  color: #fff;
-}
+
 /* DOSSIERS TABLE */
 /* ===== Notes internes d'équipe ===== */
 /*
@@ -409,8 +369,21 @@
   border-color: #111;
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
 }
+/*
+  Les colonnes se répartissent par le métier, non par le hasard du texte.
+
+  Sans largeur déclarée, le navigateur partageait la table au prorata de ce que chaque
+  colonne contenait : « Société » tombait à cent soixante-cinq pixels et « GREMLINS
+  COMMUNICATION » passait à la ligne, pendant que deux colonnes de dates en prenaient
+  cent vingt-sept chacune pour « 6 sept. 2026 ». Une ligne montait à cent sept pixels
+  de haut, et quatre dossiers remplissaient l'écran.
+
+  La table est donc fixe : chaque colonne accessoire reçoit ce qu'il lui faut, et le
+  reste va au nom de la société - la seule colonne qu'on lit vraiment.
+*/
 .dossiersTable {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   background: #fff;
@@ -420,7 +393,7 @@
 }
 .dossiersTable th {
   text-align: left;
-  padding: 14px 20px;
+  padding: 11px 12px;
   font-size: 12px;
   font-weight: 600;
   color: #999;
@@ -430,9 +403,60 @@
   background: #fafafa;
 }
 .dossiersTable td {
-  padding: 16px 20px;
+  padding: 12px 12px;
   font-size: 14px;
   border-bottom: 1px solid #f0f0f0;
+  /*
+    Une ligne, une hauteur.
+
+    Le nom de la société, celui du client et le type passaient à la ligne dès qu'ils
+    dépassaient leur colonne : trois cellules de deux lignes dans la même rangée, et
+    des rangées qui n'avaient plus la même hauteur. Ce qui déborde se coupe.
+  */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/*
+  Les largeurs, mesurées sur ce que chaque colonne porte réellement.
+
+  « Modification » au complet, une date en toutes lettres, la pastille « Assigné à
+  vous » : chacune reçoit de quoi tenir sans se couper, et ce qui reste va au nom de la
+  société. Rogner une colonne accessoire n'économise que ses propres pixels ; les
+  couper toutes met deux cents pixels de plus là où on lit.
+*/
+.dossiersTable th:nth-child(1),
+.dossiersTable td:nth-child(1) {
+  width: 76px;
+}
+.dossiersTable th:nth-child(3),
+.dossiersTable td:nth-child(3) {
+  width: 112px;
+}
+.dossiersTable th:nth-child(4),
+.dossiersTable td:nth-child(4) {
+  width: 96px;
+}
+.dossiersTable th:nth-child(5),
+.dossiersTable td:nth-child(5) {
+  width: 104px;
+}
+.dossiersTable th:nth-child(6),
+.dossiersTable td:nth-child(6) {
+  width: 124px;
+}
+.dossiersTable th:nth-child(7),
+.dossiersTable td:nth-child(7),
+.dossiersTable th:nth-child(8),
+.dossiersTable td:nth-child(8) {
+  /* « 30 août 2026 » mesure cent onze pixels à douze et demi : elle ne se coupe pas. */
+  width: 116px;
+}
+.dossiersTable th:nth-child(9),
+.dossiersTable td:nth-child(9) {
+  width: 156px;
 }
 .dossiersTable tr:last-child td {
   border-bottom: none;
@@ -989,7 +1013,13 @@
 }
 
 .boutonPrise {
-  margin-right: 10px;
+  /*
+    globals.css donne dix-huit pixels de marge haute à tout bouton - ce qui espace les
+    actions d'un formulaire. Dans une cellule de tableau, elle poussait la rangée de
+    cinquante à soixante-dix pixels : les dossiers à prendre étaient plus hauts que les
+    autres, sans raison lisible.
+  */
+  margin: 0 10px 0 0;
   padding: 5px 12px;
   border-radius: 100px;
   border: 1px solid #111;
@@ -1927,17 +1957,31 @@
   gap: 14px;
   flex-wrap: wrap;
 }
+/*
+  Une mention, non une alerte.
+
+  En violet gras sur fond violet, elle était l'objet le plus voyant de la page - plus
+  que le titre, plus que les dossiers. Or elle ne demande rien : elle rappelle une fois
+  pour toutes que ce que l'avocat écrit ici ne remonte pas au client. Une note se lit
+  quand on la cherche ; elle n'a pas à se faire remarquer à chaque ouverture.
+
+  L'œil barré suffit à dire de quoi il s'agit ; le gris dit que ce n'est pas urgent.
+*/
 .spaceBadge {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   font-size: 12.5px;
-  font-weight: 600;
-  color: #6d28d9;
-  background: #f5f3ff;
-  border: 1px solid #ddd6fe;
+  font-weight: 500;
+  color: #52525b;
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
   border-radius: 100px;
   padding: 5px 12px;
+}
+
+.spaceBadge svg {
+  color: #a1a1aa;
 }
 .spaceBadge svg {
   width: 14px;
@@ -1990,7 +2034,7 @@
  * défilement : le récapitulatif sert pendant qu'on relit, pas avant.
  */
 .content {
-  padding: 16px 48px 48px;
+  padding: 8px 48px 48px;
   flex: 1;
 }
 
@@ -2242,9 +2286,6 @@
   .content {
     padding: 0 20px 20px;
   }
-  .counters {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 /* La fiche d'un dossier : sa barre de titre porte les badges et le retour. */
@@ -2324,16 +2365,32 @@
  * au nom qu'elle qualifie - elle semblait flotter. En pastille, elle se range où on
  * la lit.
  */
+/*
+  Le nom d'abord, sa forme ensuite, sur la même ligne.
+
+  La cellule enveloppait : la pastille « SAS » passait sous le nom, et la rangée y
+  gagnait une ligne entière. Le nom se coupe désormais s'il le faut - c'est lui qui
+  cède, parce qu'on le reconnaît à ses premiers mots.
+*/
 .societeCellule {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  min-width: 0;
+}
+
+.societeCellule > :not(.societeNom) {
+  flex: none;
 }
 
 .societeNom {
+  min-width: 0;
+  overflow: hidden;
   font-weight: 600;
   color: #111;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-decoration: none;
 }
 
@@ -2429,18 +2486,38 @@
  * leurs bords ne s'alignaient sur rien. Une hauteur commune, déclarée une fois, vaut
  * mieux que quatre réglages qui se rapprochent.
  */
+/*
+  Une barre d'outils, une ligne, une hauteur.
+
+  Les libellés en surtitre la faisaient tenir sur deux lignes, et chaque commande
+  arrivait avec la sienne : quarante-deux pixels pour la recherche et les dates,
+  quarante-sept pour le tri. Rien ne s'alignait, et le tri - un simple réglage - était
+  le plus voyant des trois.
+*/
 .outils {
-  --hauteur-controle: 42px;
+  --hauteur-controle: 40px;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px;
-  margin-bottom: 18px;
+  align-items: center;
+  gap: 12px 14px;
+  margin-bottom: 16px;
 }
 
+.outils input {
+  height: var(--hauteur-controle);
+}
+
+/*
+  La recherche a la largeur de ce qu'on y tape.
+
+  À `flex: 1`, elle prenait tout ce que les autres commandes laissaient - sept cent
+  soixante-dix pixels pour « Société, référence, client… » - et poussait le tri et les
+  dates contre le bord droit, à un demi-écran de distance.
+*/
 .champRecherche {
   position: relative;
-  flex: 1 1 260px;
+  flex: 1 1 240px;
+  max-width: 380px;
   display: flex;
   align-items: center;
 }
@@ -2475,15 +2552,54 @@
 
 .outil {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  align-items: center;
+  gap: 8px;
+  /*
+    globals.css donne quatorze pixels de marge haute et cinq de marge basse à tout
+    `label` - ce qui espace les champs d'un formulaire. Centrées dans la barre d'outils,
+    ces marges décalaient les trois commandes de cinq pixels vers le bas : elles ne se
+    posaient pas sur la même ligne que la recherche et le bouton d'effacement.
+  */
+  margin: 0;
+}
+
+/*
+  Le tri et les dates au bord droit, sous celui du tableau.
+
+  Serrés contre la recherche, ils laissaient cent soixante pixels de vide à droite - et
+  la barre d'outils s'arrêtait avant le tableau qu'elle commande. Les deux bords
+  coïncident maintenant, et l'espace se répartit entre les deux groupes plutôt que de
+  s'accumuler au bout.
+*/
+.outil:first-of-type {
+  margin-left: auto;
 }
 
 .outilLibelle {
-  font-size: 12px;
-  font-weight: 500;
-  color: #888;
+  flex: none;
+  font-size: 13px;
+  font-weight: 400;
+  color: #71717a;
   letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/*
+  Le choix de tri à la hauteur des autres commandes.
+
+  Le composant partagé se compose pour un formulaire : quarante-quatre pixels de haut,
+  quatorze et demi, et le gras que globals.css donne à tout bouton. Dans une barre
+  d'outils, il dépassait ses voisins de cinq pixels et pesait plus lourd que la valeur
+  qu'il affiche - alors qu'il n'est qu'un réglage de la liste, pas une action.
+*/
+.outilChoix {
+  width: auto;
+  min-width: 190px;
+  min-height: 0;
+  height: var(--hauteur-controle);
+  padding: 0 12px;
+  font-size: 13.5px;
+  font-weight: 400;
 }
 
 .outil select,
@@ -2505,22 +2621,36 @@
   border-color: #111;
 }
 
+/*
+  Effacer les critères, au bout de la rangée.
+
+  Le bouton passait à la ligne : la recherche gardait ses trois cent quarante pixels
+  quoi qu'il arrive, et il ne restait rien pour lui. Il occupait alors une rangée entière
+  à lui seul, sous une barre d'outils déjà complète.
+
+  La recherche cède maintenant la place quand il paraît - c'est elle qui a le plus à
+  donner - et il se range à la suite des dates, avec la même hauteur et le même corps
+  que les commandes qu'il annule. Sans demi-gras : défaire n'engage rien.
+*/
 .effacer {
   height: var(--hauteur-controle);
   margin: 0;
-  padding: 0 16px;
+  padding: 0 14px;
   border: 1px solid #e5e5e5;
   border-radius: 10px;
   background: #fff;
   font-family: inherit;
   font-size: 13.5px;
-  color: #111;
+  font-weight: 400;
+  color: #52525b;
   cursor: pointer;
   letter-spacing: 0;
 }
 
 .effacer:hover {
+  border-color: #a1a1aa;
   background: #fafafa;
+  color: #111;
 }
 
 .avertissement {
@@ -5773,4 +5903,39 @@ button.ligneCorps:disabled {
   font-size: 12px;
   color: #8a8a90;
   letter-spacing: 0;
+}
+
+/*
+  Les messages non lus, à côté du titre.
+
+  Ce n'est pas un filtre de dossiers : c'est un travail en attente, et il ne se range pas
+  dans une rangée qui trie. Il ne paraît que s'il y en a - une carte « Messages non lus -
+  » occupait un quart de la largeur pour dire qu'il n'y avait rien.
+*/
+.messagesEnAttente {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border: 1px solid #fecdd3;
+  border-radius: 100px;
+  background: #fff1f2;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #be123c;
+  letter-spacing: 0;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.messagesEnAttente:hover {
+  background: #ffe4e6;
+}
+
+.messagesPastille {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: #f43f5e;
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -212,37 +211,50 @@ export function Disponibilites({
             </p>
           </div>
 
-          {journees.length === 0 ? (
-            <div className={styles.vide}>
-              Aucun créneau défini.
-              <span className={styles.videSous}>Ajoutez vos heures de présence par jour.</span>
-            </div>
-          ) : (
-            journees.map((journee) => (
-              <div className={styles.groupeJour} key={journee.jour}>
-                <div className={styles.nomJour}>{journee.nom}</div>
-                {journee.plages.map((p) => (
-                  <div className={styles.plage} key={p.id}>
-                    <span>
-                      <span className={styles.heures}>
-                        {p.debut} - {p.fin}
-                      </span>
-                      <span className={styles.detail}>Créneaux de {p.dureeCreneauMinutes} min</span>
-                    </span>
-                    <button
-                      type="button"
-                      className={styles.supprimer}
-                      onClick={() => retirer("plage", p.id)}
-                      disabled={enCours}
-                      aria-label={"Supprimer le créneau du " + journee.nom + " " + p.debut}
-                    >
-                      <Poubelle />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ))
-          )}
+          {/*
+            La semaine se lit en sept colonnes, non en une liste qui descend.
+
+            Empilés, sept jours de deux créneaux faisaient quatorze cartes et douze cents
+            pixels de haut : il fallait faire défiler pour voir le vendredi, et comparer
+            deux journées demandait de les retenir. Côte à côte, la semaine tient dans un
+            écran et se compare d'un regard - c'est la forme d'un emploi du temps.
+
+            Les sept jours paraissent toujours, même vides : un jour sans créneau est une
+            information, et c'est là qu'on clique pour en ajouter un.
+          */}
+          <div className={styles.semaine}>
+            {JOURS.map((jour) => {
+              const journee = journees.find((j) => j.jour === jour.valeur);
+
+              return (
+                <div className={styles.jour} key={jour.valeur}>
+                  <div className={styles.nomJour}>{jour.court}</div>
+
+                  {journee?.plages.length ? (
+                    journee.plages.map((p) => (
+                      <div className={styles.plage} key={p.id}>
+                        <span className={styles.heures}>
+                          {p.debut} - {p.fin}
+                        </span>
+                        <span className={styles.detail}>{p.dureeCreneauMinutes} min</span>
+                        <button
+                          type="button"
+                          className={styles.supprimer}
+                          onClick={() => retirer("plage", p.id)}
+                          disabled={enCours}
+                          aria-label={"Supprimer le créneau du " + jour.nom + " " + p.debut}
+                        >
+                          <Poubelle />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className={styles.jourVide}>Fermé</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
           <button type="button" className={styles.ajouter} onClick={() => ouvrir("plage")}>
             + Ajouter un créneau
@@ -386,18 +398,32 @@ export function Disponibilites({
               </div>
 
               <div>
-                <label className={styles.champLabel} htmlFor="duree">
-                  Durée d&apos;un créneau
-                </label>
-                <ChampChoix
-                  id="duree"
-                  valeur={String(duree)}
-                  options={DUREES_CRENEAU.map((d) => ({
-                    valeur: String(d),
-                    libelle: d + " minutes",
-                  }))}
-                  surChangement={(d) => setDuree(Number(d))}
-                />
+                {/*
+                  Quatre durées se posent côte à côte, elles ne s'ouvrent pas.
+
+                  Le menu déroulant demandait deux gestes pour choisir entre quatre
+                  valeurs, et sa liste s'ouvrait à l'intérieur d'une fenêtre modale qui
+                  défile : les options passaient sous le pied de la fenêtre, et il
+                  fallait faire défiler pour lire « 45 minutes ». Toutes visibles, un
+                  seul geste, et plus rien à déplier.
+                */}
+                <span className={styles.champLabel}>Durée d&apos;un créneau</span>
+                <div className={styles.durees} role="radiogroup" aria-label="Durée d'un créneau">
+                  {DUREES_CRENEAU.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      role="radio"
+                      aria-checked={duree === d}
+                      className={
+                        duree === d ? `${styles.duree} ${styles.dureeActive}` : styles.duree
+                      }
+                      onClick={() => setDuree(d)}
+                    >
+                      {d} min
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {erreur && (

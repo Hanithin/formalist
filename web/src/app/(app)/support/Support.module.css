@@ -1,18 +1,154 @@
-/* Deux colonnes qui occupent la hauteur disponible : la page messagerie utilise
-   tout l'espace plutôt qu'un panneau au milieu du contenu. Seuls le fil et la
-   liste défilent ; le champ de saisie reste visible. */
+/*
+  La page d'une messagerie prend l'écran.
+
+  Elle héritait du gabarit des pages de contenu - neuf cent quatre-vingts pixels au
+  milieu d'un écran qui en offre douze cents - et le fil se trouvait à l'étroit pendant
+  qu'un tiers de la largeur restait gris. Ici, la largeur est celle de la fenêtre et la
+  hauteur aussi : seuls la liste et le fil défilent, l'en-tête et la saisie ne bougent
+  pas.
+*/
+.page {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tete {
+  flex: none;
+  padding: 20px 40px 12px;
+}
+
+.tete h1 {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.tete p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: #52525b;
+}
+
+/* Deux colonnes qui occupent la hauteur disponible : seuls le fil et la liste
+   défilent ; la recherche, l'en-tête et le champ de saisie ne bougent pas. */
 
 .dispositionAdmin {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 1px;
+  margin: 0 40px 40px;
   background: #ececef;
   border: 1px solid #ececef;
   border-radius: 14px;
   overflow: hidden;
-  height: calc(100vh - 180px);
-  height: calc(100dvh - 180px);
-  min-height: 420px;
+}
+
+/* La colonne de gauche : sa recherche ne défile pas avec la liste. */
+.colonneListe {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #fff;
+}
+
+/*
+  La recherche fait partie de la colonne, elle ne s'y pose pas.
+
+  Un champ bordé dans un panneau bordé donnait une boîte dans une boîte, et son cadre
+  arrondi flottait au-dessus d'une liste à angles droits. Il ne garde que sa loupe et le
+  trait qui le sépare de la liste - c'est ainsi que le font les messageries.
+*/
+.rechercheFil {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+  border-bottom: 1px solid #f1f1f3;
+}
+
+.rechercheFil svg {
+  position: absolute;
+  left: 14px;
+  width: 15px;
+  height: 15px;
+  color: #a1a1aa;
+  pointer-events: none;
+}
+
+.rechercheFil input {
+  width: 100%;
+  max-width: none;
+  height: 48px;
+  margin: 0;
+  padding: 0 14px 0 38px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 13.5px;
+}
+
+.rechercheFil input:focus {
+  outline: none;
+  background: #fafafa;
+}
+
+/*
+  À qui l'on écrit, en tête du fil.
+
+  La colonne de droite s'ouvrait sur un message sans dire de qui il venait : le nom
+  n'était que dans la liste de gauche, sur une ligne surlignée qu'il fallait retrouver
+  des yeux.
+*/
+.enTeteFil {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f1f1f3;
+}
+
+.initiales {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  background: #f4f4f5;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+.enTeteTextes {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.enTeteNom {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #111;
+}
+
+.enTeteMail {
+  font-size: 12.5px;
+  color: #a1a1aa;
 }
 
 .conversations {
@@ -22,39 +158,79 @@
   flex-direction: column;
 }
 
+/*
+  Une ligne de liste, non une carte.
+
+  Le nom et son aperçu se lisaient au même poids et presque à la même teinte, séparés
+  d'un blanc : la ligne se lisait comme deux lignes. Le nom porte, l'aperçu suit en gris
+  clair, et le trait ne sépare que ce qui se suit.
+*/
 .conversation,
 .conversationActive {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 8px;
-  padding: 14px 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 8px;
+  margin: 0;
+  padding: 10px 14px;
   border: none;
-  border-bottom: 1px solid #f1f1f3;
+  /*
+    globals.css arrondit tout `button` de dix pixels - ce qui convient à un bouton
+    d'action, et pas à une ligne de liste : le fil ouvert devenait une pastille grise
+    aux quatre coins ronds, flottant au milieu de lignes à angles droits.
+  */
+  border-radius: 0;
   background: #fff;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
 }
 
+.conversation + .conversation,
+.conversation + .conversationActive,
+.conversationActive + .conversation {
+  box-shadow: inset 0 1px 0 #f4f4f5;
+}
+
 .conversation:hover {
   background: #fafafa;
 }
 
+/*
+  Le fil ouvert se marque par son fond, et par rien d'autre.
+
+  Un trait vertical à gauche est un marqueur d'état qui n'a pas cours dans le produit -
+  ce qui est retenu se distingue par sa teinte, sa place ou sa pastille. La ligne
+  entière change de fond : elle est ce qu'on regarde, c'est à elle de le dire.
+*/
 .conversationActive {
-  background: #f3f3f4;
+  background: #f4f4f5;
 }
 
 .client {
-  font-size: 14.5px;
-  font-weight: 600;
+  font-size: 14px;
+  /* Le demi-gras marquait chaque ligne : quand tout ressort, rien ne ressort. */
+  font-weight: 500;
   color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Quand la dernière réponse date : ce qu'on cherche dans une liste, non l'heure exacte. */
+.quand {
+  grid-row: 1;
+  grid-column: 2;
+  align-self: center;
+  font-size: 11.5px;
+  color: #a1a1aa;
+  white-space: nowrap;
 }
 
 .apercu {
   display: block;
   grid-column: 1;
   font-size: 12.5px;
-  color: #71717a;
+  color: #a1a1aa;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -143,37 +319,96 @@
 
 .saisie {
   flex-shrink: 0;
-  display: flex;
-  gap: 10px;
-  padding: 14px;
+  padding: 10px 16px 14px;
   border-top: 1px solid #ececef;
 }
 
-.saisie textarea {
-  flex: 1;
-  resize: none;
-  padding: 10px 14px;
+/*
+  Un seul cadre pour écrire et pour envoyer.
+
+  Le champ et le bouton étaient deux objets côte à côte, et le champ s'arrêtait au
+  milieu de la ligne : globals.css borne tout `textarea` à quatre cent soixante pixels -
+  ce qui garde un formulaire lisible - laissant cinq cents pixels de vide derrière le
+  bouton. Le cadre prend la largeur, le bouton se range dedans.
+*/
+.zoneSaisie {
+  display: flex;
+  flex-direction: column;
   border: 1px solid #e5e5e7;
-  border-radius: 12px;
-  font-family: inherit;
-  font-size: 14.5px;
+  border-radius: 14px;
+  background: #fff;
+  transition: border-color 0.12s;
 }
 
+.zoneSaisie:focus-within {
+  border-color: #a1a1aa;
+}
+
+.saisie textarea {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  resize: none;
+  padding: 10px 14px 4px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+/*
+  Le cadre réagit, le champ ne réagit plus.
+
+  globals.css pose un halo autour de tout champ qui prend le focus. Dans un cadre qui
+  s'éclaircit déjà quand on écrit dedans, ce halo dessinait un second rectangle arrondi
+  à l'intérieur du premier, coupé net au-dessus de la ligne d'astuce.
+*/
 .saisie textarea:focus {
   outline: none;
-  border-color: #18181b;
+  box-shadow: none;
+}
+
+/*
+  Le bouton se range au bord, comme tout ce qui termine une ligne.
+
+  Il a d'abord reculé de cinquante-six pixels pour éviter la bulle d'aide, fixée au coin
+  bas-droit de la fenêtre - un décalage que rien n'expliquait à qui regarde l'écran.
+  C'est la bulle qui s'efface : elle ne sert à rien sur la page qui contient le fil
+  qu'elle résume, et elle disparaissait déjà sur la messagerie pour la même raison.
+*/
+.piedSaisie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px 8px 14px;
+}
+
+/* Le raccourci était appliqué sans être dit : personne ne devine « Maj + Entrée ». */
+.astuce {
+  font-size: 12px;
+  color: #a1a1aa;
 }
 
 .saisie button {
-  padding: 0 20px;
+  height: 34px;
+  margin: 0;
+  padding: 0 16px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #18181b;
   color: #fff;
   font-family: inherit;
-  font-size: 14.5px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
   cursor: pointer;
+  transition: background 0.12s;
+}
+
+.saisie button:hover:not(:disabled) {
+  background: #2a2a2c;
 }
 
 .saisie button:disabled {

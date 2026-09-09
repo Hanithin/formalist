@@ -300,6 +300,51 @@ button:disabled {
   cursor: default;
 }
 
+/*
+ * Un bouton n'est pas toujours l'action d'un formulaire.
+ *
+ * La règle ci-dessus habille le bouton qu'on imagine en écrivant « bouton » : celui
+ * qu'on pose au bas d'un formulaire, seul sur sa ligne, en gras, avec dix-huit pixels
+ * d'air au-dessus et vingt de chaque côté. C'est juste là, et faux partout ailleurs -
+ * or la moitié des commandes d'une interface sont des `<button>` qui ne sont pas cela :
+ * une option de menu déroulant, une action au bout d'une rangée de tableau, une flèche
+ * de pagination, un segment de contrôle.
+ *
+ * Cette marge haute a coûté quatre corrections en une seule journée : « Remplacer les
+ * statuts » qui tombait sous son voisin, un sélecteur d'emplacement à cinquante-huit
+ * pixels de haut, une rangée de tableau plus haute que les autres parce qu'elle portait
+ * un bouton, et les options d'un menu en gras. Chaque fois, le même diagnostic et la
+ * même correction posée au cas par cas.
+ *
+ * D'où cette règle : dans un contexte qui range déjà ses éléments - une navigation, une
+ * cellule, une liste, un menu, une barre d'outils - le bouton n'hérite plus de la mise
+ * en forme d'un bouton de formulaire. Il garde tout le reste, et son propre module dit
+ * le peu qui change.
+ *
+ * Les `label` sont là pour la même raison : ils portent eux aussi quatorze pixels de
+ * marge haute et cinq de marge basse, et une barre d'outils dont les libellés sont des
+ * `label` voyait ses commandes descendre de cinq pixels sous les autres.
+ *
+ * `:where()` ne compte pas dans la spécificité : n'importe quelle classe d'un module
+ * l'emporte encore, sans avoir à surenchérir.
+ */
+:where(
+    nav,
+    td,
+    th,
+    li,
+    [role="listbox"],
+    [role="menu"],
+    [role="radiogroup"],
+    [role="tablist"],
+    [role="toolbar"]
+  )
+  :is(button, label) {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: inherit;
+}
+
 /* ---------- Messages ----------
    Un refus et une confirmation ne se distinguent pas que par la couleur : le
    fond, le trait et le mot changent ensemble. */

@@ -110,7 +110,14 @@
    * coup, et chaque carte garde ses quatre cent quarante pixels - de quoi porter sa
    * durée et son prix sans les serrer.
    */
-  max-width: 940px;
+  /*
+    Cent pixels de plus, depuis que les cartes tiennent sur une ligne.
+
+    Le nom, sa précision, la durée et le prix s'y suivent : « Dissolution, liquidation,
+    radiation » se coupait au dernier mot faute de place, alors que la fenêtre a de la
+    marge sur un écran de bureau.
+  */
+  max-width: 1040px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);

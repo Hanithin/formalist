@@ -63,11 +63,20 @@ export function Recherche() {
         />
       </div>
 
+      {/*
+        Le libellé devant la commande, non au-dessus.
+
+        « Trier par » et « Créés du » posés en surtitre faisaient une barre d'outils de
+        deux lignes pour trois commandes, et trois hauteurs différentes selon que la
+        commande portait son libellé ou non. En ligne, tout se lit d'un trait et les
+        contrôles s'alignent sur une seule base.
+      */}
       <label className={styles.outil}>
         <span className={styles.outilLibelle}>Trier par</span>
         <ChampChoix
           id="recherche-tri"
           aria-label="Trier par"
+          className={styles.outilChoix}
           valeur={tri}
           options={TRIS.map((t) => ({ valeur: t.cle, libelle: t.libelle }))}
           surChangement={(t) => poser("tri", t)}

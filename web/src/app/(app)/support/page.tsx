@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { messagesDe, conversations } from "@/infrastructure/db/depots/support";
 import { Support } from "./Support";
+import styles from "./Support.module.css";
 
 export const metadata: Metadata = {
   title: "Support - Formalist",
@@ -35,13 +36,19 @@ export default async function PageSupport({
   ]);
 
   return (
-    <main>
-      <h1>Support</h1>
-      <p>
-        {estAdmin
-          ? "Les conversations ouvertes avec les clients."
-          : "Une question sur la plateforme ? Écrivez-nous, nous répondons sous 24 heures ouvrées."}
-      </p>
+    /*
+      La page prend l'écran, comme une messagerie.
+
+      Elle héritait du gabarit des pages de contenu - neuf cent quatre-vingts pixels au
+      milieu d'un écran qui en offre douze cents - et le fil des messages s'y trouvait
+      à l'étroit pendant qu'un tiers de la largeur restait gris. Un échange se lit sur
+      toute la place disponible, et sa hauteur est celle de la fenêtre.
+    */
+    <main className={styles.page}>
+      <div className={styles.tete}>
+        <h1>Support</h1>
+        <p>Les conversations ouvertes avec les clients.</p>
+      </div>
 
       <Support
         moi={utilisateur.id}

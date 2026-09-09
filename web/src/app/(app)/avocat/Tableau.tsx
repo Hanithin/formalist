@@ -120,6 +120,7 @@ export function Tableau({ lignes }: { lignes: Ligne[] }) {
                       <Link
                         href={"/avocat/" + d.id}
                         className={styles.societeNom}
+                        title={d.societe}
                         onClick={(e) => e.stopPropagation()}
                       >
                         {d.societe}
@@ -138,7 +139,13 @@ export function Tableau({ lignes }: { lignes: Ligne[] }) {
                       </span>
                     )}
                   </td>
-                  <td>{type}</td>
+                  {/*
+                    Ce qui se coupe se relit au survol.
+
+                    « Cessation d'auto-entrepreneur » ne tient pas dans sa colonne, et la
+                    rogner d'un mot ne dit plus de quel type de dossier il s'agit.
+                  */}
+                  <td title={type}>{type}</td>
                   <td>
                     <span className={`${styles.badge} ${styles[d.offre ?? "starter"] ?? ""}`}>
                       {majuscule(d.offre ?? "starter")}
@@ -150,7 +157,7 @@ export function Tableau({ lignes }: { lignes: Ligne[] }) {
                   <td>
                     <span className={`${styles.badge} ${styles[etat.teinte]}`}>{etat.libelle}</span>
                   </td>
-                  <td>{d.client}</td>
+                  <td title={d.client}>{d.client}</td>
                   <td className={styles.quand}>{dateCourte(new Date(d.creeLe))}</td>
                   <td className={styles.quand}>{depuis(new Date(d.majLe))}</td>
                   <td className={styles.celluleAction}>

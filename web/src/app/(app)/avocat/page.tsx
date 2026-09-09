@@ -26,37 +26,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/**
- * Un compteur du cabinet.
- *
- * Zéro s'écrit « - », en gris : le chiffre zéro se lit comme une valeur qu'on vient
- * chercher, alors qu'il ne dit qu'une absence, et quatre zéros noirs en gros
- * caractères se lisaient comme une alerte.
- *
- * Le tiret est lu « aucun » par les lecteurs d'écran, qui l'annonceraient sinon comme
- * un signe de ponctuation.
- */
-function Compteur({
-  teinte,
-  libelle,
-  valeur,
-}: {
-  teinte: "orange" | "blue" | "green" | "red";
-  libelle: string;
-  valeur: number;
-}) {
-  const vide = valeur === 0;
-
-  return (
-    <div className={vide ? `${styles.counterCard} ${styles.counterVide}` : styles.counterCard}>
-      <div className={styles.counterLabel}>
-        <span className={`${styles.counterDot} ${styles[teinte]}`} /> {libelle}
-      </div>
-      <div className={styles.counterValue}>{vide ? <span aria-label="aucun">-</span> : valeur}</div>
-    </div>
-  );
-}
-
 export default async function EspaceAvocat({
   searchParams,
 }: {
@@ -114,6 +83,13 @@ export default async function EspaceAvocat({
           quand la question que se pose l'avocat devant un écran de travail est de
           savoir ce qui, de ce qu'il écrit, remonte au client.
         */}
+        {nonLus > 0 && (
+          <Link href="/messagerie" className={styles.messagesEnAttente}>
+            <span className={styles.messagesPastille} aria-hidden="true" />
+            {nonLus} message{nonLus > 1 ? "s" : ""} non lu{nonLus > 1 ? "s" : ""}
+          </Link>
+        )}
+
         <span className={styles.spaceBadge}>
           <svg
             viewBox="0 0 24 24"
@@ -133,8 +109,16 @@ export default async function EspaceAvocat({
         </span>
       </div>
 
+      {/*
+        La phrase vaut pour tous les dossiers, non pour les seules créations.
+
+        « jusqu'au Kbis » ne dit juste que d'une constitution : une modification rend un
+        extrait à jour, une fermeture une radiation, un dépôt des comptes un récépissé.
+        L'accomplissement de la formalité les couvre tous, et c'est le mot des actes.
+      */}
       <p className={styles.introduction}>
-        Les dossiers confiés au cabinet, du premier envoi jusqu&apos;au Kbis.
+        Les dossiers confiés au cabinet, de leur transmission à l&apos;accomplissement de
+        la formalité.
       </p>
 
       {/*
@@ -155,13 +139,19 @@ export default async function EspaceAvocat({
           />
         ) : (
           <>
-            <div className={styles.counters}>
-              <Compteur teinte="orange" libelle="À vérifier" valeur={nombres.verifier} />
-              <Compteur teinte="blue" libelle="En cours" valeur={nombres.encours} />
-              <Compteur teinte="green" libelle="Terminées" valeur={nombres.termines} />
-              <Compteur teinte="red" libelle="Messages non lus" valeur={nonLus} />
-            </div>
+            {/*
+              Les quatre cartes de compteurs ont disparu.
 
+              « À vérifier 2 », « En cours 3 », « Terminées 7 » : les trois mêmes mots et
+              les trois mêmes nombres que les filtres, soixante pixels plus bas - à ceci
+              près que les cartes ne se cliquaient pas. Trois cents pixels de haut avant
+              le premier dossier, pour redire ce que la rangée suivante disait mieux.
+
+              Les filtres portent déjà les nombres, et ils mènent quelque part. Reste ce
+              qu'ils ne disaient pas : les messages non lus, qui ne sont pas un filtre de
+              dossiers mais un travail en attente - il rejoint le titre, et ne paraît que
+              s'il y en a.
+            */}
             <nav className={styles.filterTabs} aria-label="Filtrer les dossiers">
               {FILTRES.map((f) => (
                 <Link

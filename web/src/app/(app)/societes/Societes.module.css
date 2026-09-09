@@ -148,10 +148,17 @@
    * elle existe et l'étape du dossier sinon.
    */
   grid-template-columns:
-    minmax(0, 1.6fr) 140px minmax(0, 1.6fr) 20px;
+    minmax(0, 1.6fr) 132px minmax(0, 1.6fr) 20px;
   align-items: center;
-  gap: 20px;
-  padding: 13px 20px;
+  gap: 16px;
+  /*
+    Deux lignes de texte n'ont pas besoin de soixante-dix pixels.
+
+    Chaque rangée en faisait soixante-neuf, et sept sociétés remplissaient l'écran sur
+    vingt-cinq. L'interligne des deux lignes suffit à les séparer ; le rembourrage n'a
+    plus qu'à les décoller du filet.
+  */
+  padding: 9px 16px;
 }
 
 /*
@@ -209,8 +216,9 @@
 }
 
 .nom {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 600;
+  line-height: 1.35;
   color: #18181b;
   letter-spacing: 0;
   overflow: hidden;
@@ -220,10 +228,11 @@
 
 /* La forme sous le nom : même traitement que l'intitulé de nature d'une carte. */
 .forme {
-  font-size: 12px;
+  font-size: 11.5px;
+  line-height: 1.35;
   text-transform: uppercase;
   letter-spacing: 0;
-  color: #71717a;
+  color: #a1a1aa;
 }
 
 .celluleFormalites {
@@ -255,13 +264,16 @@
 }
 
 .echeanceNom {
+  font-size: 13.5px;
+  line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .echeanceQuand {
-  font-size: 12px;
+  font-size: 11.5px;
+  line-height: 1.35;
   /* #a1a1aa donnait 2,6 pour 1 sur le blanc : sous le seuil d'un texte de cette taille. */
   color: #71717a;
   font-variant-numeric: tabular-nums;

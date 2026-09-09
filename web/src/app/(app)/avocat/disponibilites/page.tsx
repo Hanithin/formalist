@@ -33,9 +33,15 @@ export default async function PageDisponibilites() {
       <div className={styles.topbar}>
         <h1>Mes disponibilités</h1>
       </div>
+      {/*
+        Ce que la page contient, non ce qu'elle promet.
+
+        « c'est de là que viennent les créneaux proposés aux clients » explique le
+        produit à celui qui s'en sert tous les jours - un ton de page d'accueil sur un
+        écran de réglage. Le lien entre les deux se dit d'un mot.
+      */}
       <p className={styles.introduction}>
-        Vos heures de présence et vos absences : c&apos;est de là que viennent les créneaux proposés
-        aux clients.
+        Les heures de présence et les absences dont dépendent les créneaux proposés.
       </p>
 
 

@@ -2,28 +2,161 @@
    Regrouper tous les champs dans un seul formulaire donnerait un bouton unique
    qui enregistre des choses sans rapport. */
 
+.page {
+  max-width: none;
+  padding: 0;
+}
+
+.tete {
+  padding: 20px 40px 4px;
+}
+
+.tete h1 {
+  margin: 0;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.tete p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: #52525b;
+}
+
+/*
+  Deux colonnes, parce que la page en avait une pour rien.
+
+  Trois cartes de cinq cent vingt pixels s'empilaient au milieu d'un écran qui en offre
+  douze cents : on faisait défiler pour atteindre la déconnexion, avec les deux tiers de
+  la largeur en gris. Ce qu'on modifie tient à gauche, ce qu'on consulte à droite.
+*/
+.colonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  padding: 16px 40px 40px;
+}
+
+.colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
 .bloc {
-  max-width: 520px;
-  margin-bottom: 18px !important;
-  padding: 24px 26px;
+  margin: 0;
+  padding: 22px 24px;
   background: var(--surface);
   border: 1px solid var(--trait);
   border-radius: var(--rayon-large);
 }
 
 .bloc h2 {
-  margin-bottom: 4px;
+  margin: 0 0 4px;
   font-size: 17px;
 }
 
 .explication {
   margin: 0 0 4px;
   font-size: 13.5px;
+  line-height: 1.5;
   color: var(--gris);
 }
 
 .bloc form label:first-of-type {
   margin-top: 10px;
+}
+
+/*
+  Ce qu'on lit, non ce qu'on remplit.
+
+  Une liste de définition plutôt qu'un tableau : ce sont des couples, pas des rangées,
+  et l'intitulé se lit au-dessus de sa valeur quand la colonne se resserre.
+*/
+.fiche {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 14px 0 0;
+}
+
+.fiche div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.fiche dt {
+  flex: none;
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.fiche dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--encre);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* L'état d'une adresse : une pastille, comme partout ailleurs dans le produit. */
+.pastille {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.confirmee {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.attente {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.roles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.role {
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: #f4f4f5;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #3f3f46;
+  letter-spacing: 0;
+}
+
+/* Ce qui n'est pas encore là se dit en une phrase, non par un tiret. */
+.absent {
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fafafa;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gris);
 }
 
 /* La déconnexion n'est pas une action principale : elle reste discrète. */
@@ -36,4 +169,15 @@
 .session button:hover:not(:disabled) {
   background: var(--critique-fond);
   border-color: var(--critique-trait);
+}
+
+@media (max-width: 1100px) {
+  .colonnes {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px 24px 32px;
+  }
+
+  .tete {
+    padding: 20px 24px 4px;
+  }
 }

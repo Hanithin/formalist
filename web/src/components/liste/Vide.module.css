@@ -205,6 +205,8 @@
   border: 1px solid var(--trait-marque);
   color: var(--encre);
   font-size: 14px;
+  /* Le demi-gras est celui du geste qui engage ; défaire un filtre n'engage rien. */
+  font-weight: 500;
 }
 
 .filtre .action:hover {

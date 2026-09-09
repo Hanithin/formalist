@@ -32,6 +32,8 @@
   color: #18181b;
   font: inherit;
   font-size: 14.5px;
+  /* Comme les options : la valeur affichée n'est pas un titre. */
+  font-weight: 400;
   text-align: left;
   letter-spacing: 0;
   cursor: pointer;
@@ -115,7 +117,18 @@
   z-index: 40;
   top: calc(100% + 6px);
   left: 0;
-  right: 0;
+  /*
+    Le menu s'élargit si ses options le demandent.
+
+    Calé sur la largeur du déclencheur - `right: 0` - il coupait « Sans mouvement depuis
+    longtemps » en deux lignes dans un menu de cent quatre-vingt-dix pixels : les
+    options faisaient deux hauteurs différentes, et la liste se lisait comme un
+    paragraphe. Il part du bord gauche, prend ce qu'il lui faut, et s'arrête avant de
+    couvrir la page.
+  */
+  min-width: 100%;
+  width: max-content;
+  max-width: 340px;
   max-height: 292px;
   padding: 6px;
   border: 1px solid #e4e4e7;
@@ -147,6 +160,14 @@
   color: #18181b;
   font: inherit;
   font-size: 14.5px;
+  /*
+    La graisse est dite, non héritée.
+
+    `font: inherit` prend celle du parent - sauf que globals.css en donne une à tout
+    `<button>`, et l'option d'un menu en sortait en gras : quatre lignes en demi-gras
+    dans un menu déroulant, où seule celle qui est retenue doit se distinguer.
+  */
+  font-weight: 400;
   text-align: left;
   letter-spacing: 0;
   cursor: pointer;

@@ -244,7 +244,14 @@
   gap: 5px;
   margin: 14px 0 0;
   padding: 12px 14px;
-  border-left: 3px solid #16a34a;
+  /*
+    Le trait d'une citation, non celui d'un état.
+
+    C'est un `blockquote` : le filet de gauche est la convention typographique qui dit
+    « ceci est rapporté ». En vert, il disait autre chose - une couleur d'état sur une
+    demande qui n'est justement pas satisfaite.
+  */
+  border-left: 3px solid #e4e4e7;
   border-radius: 0 10px 10px 0;
   background: #fff;
 }

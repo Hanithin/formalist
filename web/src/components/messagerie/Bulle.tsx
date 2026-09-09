@@ -36,7 +36,7 @@ interface Apercu {
  *
  * Elle était dupliquée entre le tableau de bord et le formulaire de création du
  * serveur d'origine, avec des corrections qui tombaient dans la copie morte.
- * Elle n'apparaît pas sur la messagerie, qui est déjà la messagerie.
+ * Elle n'apparaît ni sur la messagerie ni sur le support, qui sont déjà ces écrans.
  */
 export function Bulle() {
   const [ouverte, setOuverte] = useState(false);
@@ -67,7 +67,15 @@ export function Bulle() {
     };
   }, [chemin]);
 
-  if (chemin?.startsWith("/messagerie")) return null;
+  /*
+   * Ni sur la messagerie, ni sur le support : ce sont déjà ces écrans-là.
+   *
+   * La bulle flotte au coin bas-droit, au-dessus de tout - et c'est exactement là que
+   * la messagerie du support pose son bouton d'envoi, qui passait dessous et ne se
+   * cliquait qu'à moitié. Elle ne servait de toute façon à rien sur une page qui
+   * contient le fil qu'elle résume.
+   */
+  if (chemin?.startsWith("/messagerie") || chemin?.startsWith("/support")) return null;
 
   return (
     <>
