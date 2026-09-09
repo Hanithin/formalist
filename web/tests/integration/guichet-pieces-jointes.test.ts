@@ -16,7 +16,7 @@ describe("le corps d'une pièce jointe", () => {
     const corps = corpsDeLaPiece({ nom: "Statuts constitutifs", type: STATUTS, pdf });
 
     expect(corps).toMatchObject({
-      nomDocument: "Statuts constitutifs",
+      nomDocument: "Statuts constitutifs.pdf",
       typeDocument: "PJ_01",
       langueDocument: "fr",
       documentExtension: "pdf",
@@ -25,6 +25,30 @@ describe("le corps d'une pièce jointe", () => {
     expect(Buffer.from(corps.documentBase64 as string, "base64").toString()).toBe(
       "%PDF-1.4 essai"
     );
+  });
+
+  /*
+   * Le guichet refuse un nom sans extension.
+   *
+   * « Le document doit être un PDF (exemple : monDocument.pdf) » - une violation sur
+   * `nomDocument`, alors que l'extension part déjà dans son propre champ et que le
+   * contenu est bien un PDF. Éprouvé contre la démonstration : le même envoi passe avec
+   * « Essai.pdf » et échoue avec « Essai sans extension ».
+   */
+  it("termine le nom par « .pdf », quel qu'il soit", () => {
+    const pdf = Buffer.from("%PDF-1.4 essai");
+
+    expect(corpsDeLaPiece({ nom: "Kbis du domiciliataire", type: STATUTS, pdf })).toMatchObject({
+      nomDocument: "Kbis du domiciliataire.pdf",
+    });
+    /* Un nom qui l'a déjà ne le reçoit pas deux fois, quelle que soit sa casse. */
+    expect(corpsDeLaPiece({ nom: "scan.PDF", type: STATUTS, pdf })).toMatchObject({
+      nomDocument: "scan.PDF",
+    });
+    /* Un nom vide vaut mieux qu'une extension seule : « .pdf » n'est pas un nom. */
+    expect(corpsDeLaPiece({ nom: "   ", type: STATUTS, pdf })).toMatchObject({
+      nomDocument: "Document.pdf",
+    });
   });
 
   /*

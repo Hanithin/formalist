@@ -346,3 +346,24 @@
 .pieceCabinetDate input {
   margin: 0;
 }
+
+/* Le bilan des pièces du cabinet, avant les pièces elles-mêmes. */
+.bilanCabinet {
+  margin: 14px 0 0;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bilanPret {
+  border: 1px solid var(--abouti-trait);
+  background: var(--abouti-fond);
+  color: var(--abouti-encre);
+}
+
+.bilanManque {
+  border: 1px solid var(--attente-trait);
+  background: var(--attente-fond);
+  color: var(--attente-encre);
+}

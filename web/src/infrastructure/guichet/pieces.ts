@@ -56,13 +56,32 @@ export interface PieceAJoindre {
  * accompagne le corps dans le journal, où une pièce refusée doit pouvoir se relire sans
  * ouvrir le dictionnaire.
  */
+/**
+ * Le nom d'une pièce se termine par « .pdf ».
+ *
+ * Le guichet le vérifie, et le dit sans détour : « Le document doit être un PDF
+ * (exemple : monDocument.pdf) » - une violation sur `nomDocument`, alors même que
+ * l'extension part déjà dans son propre champ et que le contenu est bien un PDF.
+ * Éprouvé contre la démonstration : le même envoi passe avec « Essai.pdf » et échoue
+ * avec « Essai sans extension ».
+ *
+ * Les actes du cabinet le portaient déjà, `nomDeFichier` s'en chargeant ; les pièces du
+ * client arrivaient avec le nom du fichier téléversé, et il suffisait qu'un scanner
+ * l'ait nommé sans extension pour que le dépôt soit refusé. La règle appartient au
+ * contrat, donc à cet endroit : elle vaut pour tout ce qui part.
+ */
+function nomAvecExtension(nom: string): string {
+  const propre = nom.trim() || "Document";
+  return /\.pdf$/i.test(propre) ? propre : propre + ".pdf";
+}
+
 export function corpsDeLaPiece(piece: PieceAJoindre): Record<string, unknown> {
   if (piece.pdf.byteLength > TAILLE_MAXIMALE) {
     throw new PieceTropLourde(piece.nom, piece.pdf.byteLength);
   }
 
   return {
-    nomDocument: piece.nom,
+    nomDocument: nomAvecExtension(piece.nom),
     typeDocument: piece.type.code,
     langueDocument: LANGUE_ATTENDUE,
     documentBase64: piece.pdf.toString("base64"),

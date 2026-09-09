@@ -79,9 +79,37 @@ export function PiecesDuCabinet() {
     });
   }
 
+  /*
+   * Ce qui manque, dit en tête plutôt que cherché de carte en carte.
+   *
+   * Les trois pastilles disaient déjà l'état de chaque pièce, mais il fallait les lire
+   * une à une pour savoir si le cabinet peut domicilier - alors que c'est la seule
+   * question qu'on se pose en arrivant ici. Un dépôt au guichet est refusé tant qu'il
+   * reste un manque : autant l'annoncer avant, et nommer ce qui bloque.
+   */
+  const manques = pieces.filter(
+    (p) => !p.deposee || (p.perissable && (p.deposee.etat === "perimee" || p.deposee.etat === "sans-date"))
+  );
+
   return (
     <>
       {refus && <p role="alert">{refus}</p>}
+
+      {pieces.length > 0 &&
+        (manques.length === 0 ? (
+          <p className={`${styles.bilanCabinet} ${styles.bilanPret}`}>
+            Le cabinet peut domicilier : les trois pièces sont déposées et à jour.
+          </p>
+        ) : (
+          <p className={`${styles.bilanCabinet} ${styles.bilanManque}`} role="status">
+            {manques.length === 1
+              ? "Une pièce manque : "
+              : manques.length + " pièces manquent : "}
+            {manques.map((p) => p.titre.toLowerCase()).join(", ")}. Un dossier domicilié au
+            cabinet ne pourra pas être déposé au guichet tant qu&apos;elles ne sont pas à
+            jour.
+          </p>
+        ))}
 
       <ul className={styles.piecesCabinet}>
         {pieces.map((piece) => (
