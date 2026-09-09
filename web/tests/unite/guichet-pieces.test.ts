@@ -3,7 +3,9 @@ import {
   ACTES_SANS_CODE,
   CHEMIN_DES_PIECES,
   PIECES_DES_ACTES,
+  PIECES_DU_CABINET_AU_GUICHET,
   PIECES_TELEVERSEES,
+  PIECE_EXTRAIT_IMMATRICULATION,
   PIECE_ATTESTATION_DOMICILE,
   pieceDuSiege,
   TAILLE_MAXIMALE,
@@ -84,4 +86,23 @@ describe("les pièces d'un dossier", () => {
   it("tiennent la limite du guichet à dix mégaoctets", () => {
     expect(TAILLE_MAXIMALE).toBe(10 * 1024 * 1024);
   });
+});
+
+/**
+ * Le mandat et l'extrait d'immatriculation ont un code, sous réserve.
+ *
+ * Les deux viennent du cabinet et non du dictionnaire de l'INPI, qui n'est pas publié.
+ * L'environnement de démonstration les refuse alors qu'il accepte leurs voisins - sa
+ * table est plus courte que celle de production, ou le code est autre.
+ *
+ * Ce test ne dit pas qu'ils sont bons : il dit qu'ils sont branchés, et que le jour où
+ * quelqu'un lit le vrai code il n'a qu'un endroit à corriger.
+ */
+it("nomme le mandat et l'extrait d'immatriculation", () => {
+  expect(PIECES_DES_ACTES.pouvoir).toEqual([
+    { code: "PJ_44", libelle: "Mandat donné au mandataire pour la formalité" },
+  ]);
+  expect(PIECE_EXTRAIT_IMMATRICULATION.code).toBe("PJ_30");
+  /* Le Kbis du domiciliataire et celui du cabinet sont la même pièce. */
+  expect(PIECES_DU_CABINET_AU_GUICHET["cabinet-kbis"]).toBe(PIECE_EXTRAIT_IMMATRICULATION);
 });

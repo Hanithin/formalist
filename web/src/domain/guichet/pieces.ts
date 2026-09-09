@@ -31,6 +31,20 @@ export interface PieceDuGuichet {
  */
 export const PIECES_DES_ACTES: Record<string, PieceDuGuichet[]> = {
   statuts: [{ code: "PJ_01", libelle: "Copie des statuts" }],
+  /*
+   * Le pouvoir donné au cabinet.
+   *
+   * `PJ_44` vient du cabinet, non du dictionnaire : l'INPI ne publie pas la feuille
+   * `typeDocument`, et `/api/data_dictionary` ne rend pas cette table. L'environnement
+   * de démonstration le refuse - il accepte pourtant PJ_43 et PJ_46 sur la même
+   * formalité, donc ce n'est ni la plage ni la formalité qui trie : sa table est plus
+   * courte que celle de production, ou le code est autre.
+   *
+   * Il est écrit quand même parce qu'il ne coûte plus rien : `deposer` écarte une pièce
+   * refusée et poursuit, en la nommant comme restant à joindre à la main. Si la
+   * production connaît le code, la pièce part seule ; sinon rien n'est perdu.
+   */
+  pouvoir: [{ code: "PJ_44", libelle: "Mandat donné au mandataire pour la formalité" }],
   "liste-souscripteurs": [{ code: "PJ_138", libelle: "Liste des souscripteurs" }],
   "declaration-non-condamnation": [
     {
@@ -83,18 +97,20 @@ export const PIECES_DES_ACTES: Record<string, PieceDuGuichet[]> = {
  * Cette liste existe pour que le test qui exige un code par acte sache faire la
  * différence entre un manque assumé et un oubli.
  */
-export const ACTES_SANS_CODE = new Set([
-  "pouvoir",
-  /*
-   * L'extrait d'immatriculation d'une personne morale.
-   *
-   * Réclamé deux fois - celui du domiciliataire quand une société de domiciliation
-   * héberge le siège, celui du cabinet quand c'est lui qui l'héberge - et pas plus
-   * publié que le mandat. Les deux pièces attendent le même code.
-   */
-  "kbis-domiciliataire",
-  "cabinet-kbis",
-]);
+export const ACTES_SANS_CODE = new Set<string>([]);
+
+/**
+ * L'extrait d'immatriculation d'une personne morale.
+ *
+ * Réclamé deux fois : celui du domiciliataire quand une société de domiciliation héberge
+ * le siège, celui du cabinet quand c'est lui qui l'héberge. Même pièce, même code.
+ *
+ * `PJ_30` a la même provenance et la même réserve que `PJ_44` ci-dessus.
+ */
+export const PIECE_EXTRAIT_IMMATRICULATION: PieceDuGuichet = {
+  code: "PJ_30",
+  libelle: "Extrait d'immatriculation",
+};
 
 /**
  * Le justificatif du siège, qui n'a pas de code unique.
@@ -175,6 +191,7 @@ export const PIECES_TELEVERSEES: Record<string, PieceDuGuichet> = {
  * à joindre à la main plutôt que de les taire.
  */
 export const PIECES_DU_CABINET_AU_GUICHET: Record<string, PieceDuGuichet> = {
+  "cabinet-kbis": PIECE_EXTRAIT_IMMATRICULATION,
   "cabinet-identite": { code: "PJ_11", libelle: "Copie de la carte nationale d'identité" },
   "cabinet-domicile": {
     code: "PJ_25",

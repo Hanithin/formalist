@@ -1,5 +1,5 @@
 import { journal } from "@/lib/journal";
-import { demander, type Identifiants } from "./transport";
+import { demander, GuichetRefuse, type Identifiants } from "./transport";
 import {
   depotDuDossier,
   detailDuDepot,
@@ -9,12 +9,16 @@ import {
 import { joindreLaPiece, pieceDepuisUnActe, type PieceAJoindre } from "./pieces";
 import { noterLeDepot } from "@/infrastructure/db/depots/guichet";
 import { lireDocumentProduit, lirePieceDeposee } from "@/infrastructure/documents/depot";
-import { documentsAProduire } from "@/domain/formalite/documents";
+import {
+  documentsAProduire,
+  PIECE_KBIS_DOMICILIATAIRE,
+} from "@/domain/formalite/documents";
 import { conjointRequis } from "@/domain/formalite/etat-civil";
 import { lireLeStatut } from "@/domain/guichet/statut";
 import {
   ACTES_SANS_CODE,
   PIECES_DES_ACTES,
+  PIECE_EXTRAIT_IMMATRICULATION,
   PIECES_DU_CABINET_AU_GUICHET,
   PIECES_TELEVERSEES,
   pieceDuSiege,
@@ -168,6 +172,14 @@ async function piecesDuClient(
     ["depot-capital", PIECES_TELEVERSEES["depot-capital"]],
     ["identite", PIECES_TELEVERSEES.identite],
     ["domiciliation", pieceDuSiege(brouillon.modeDomiciliation)],
+    /*
+     * L'extrait d'immatriculation du domiciliataire.
+     *
+     * Le parcours le réclame depuis que la domiciliation commerciale est distinguée des
+     * deux autres, et le dossier le portait sans que le dépôt le joigne : il n'avait pas
+     * de code, il n'était donc dans aucune liste. Il en a un maintenant.
+     */
+    [PIECE_KBIS_DOMICILIATAIRE, PIECE_EXTRAIT_IMMATRICULATION],
   ];
 
   const pieces: PieceAJoindre[] = [];
@@ -260,6 +272,38 @@ async function manquesDuCabinet(brouillon: Brouillon): Promise<Manque[]> {
 }
 
 /**
+ * Ce que le guichet reproche à une pièce, en une phrase affichable.
+ *
+ * `details` nomme le champ fautif et la règle ; à défaut il reste le message. Rien
+ * d'autre ne sort : le corps brut d'une réponse d'erreur n'a pas sa place sur l'écran
+ * d'un avocat.
+ */
+function refusEnClair(e: unknown): string {
+  const suite = motifDuRefus(e);
+  return suite ? "Refusée par le guichet (" + suite + ") : à joindre à la main" : "Refusée par le guichet : à joindre à la main";
+}
+
+/** Le reproche du guichet, s'il en formule un d'utile. */
+function motifDuRefus(e: unknown): string | null {
+  if (!(e instanceof GuichetRefuse)) return null;
+
+  /* Les violations nomment le champ fautif : c'est le plus précis qu'il rende. */
+  const violations = Object.values(e.details ?? {}).flat();
+  if (violations.length > 0) return violations.join(" ; ");
+
+  /*
+   * À défaut, le message du corps - sauf quand il ne dit rien.
+   *
+   * Une 500 sur un `typeDocument` hors liste ne rend aucune violation ; « Not Found »
+   * et « Internal Server Error » n'apprennent rien à l'avocat et encombrent l'écran.
+   */
+  const message = (e.corps as { message?: unknown } | null)?.message;
+  if (typeof message !== "string") return null;
+  const propre = message.trim();
+  return propre && !/^(not found|internal server error)$/i.test(propre) ? propre : null;
+}
+
+/**
  * Dépose la création, et rend ce que le guichet en dit.
  *
  * Un dossier déjà déposé ne se redépose pas : le guichet accepterait une seconde
@@ -312,8 +356,26 @@ export async function deposerLaCreation(
 
   const piecesJointes: string[] = [];
   for (const piece of pieces) {
-    await joindreLaPiece(formaliteId, piece, compte);
-    piecesJointes.push(piece.nom);
+    /*
+     * Une pièce refusée écarte la pièce, non le dépôt.
+     *
+     * Le guichet n'accepte qu'une liste fermée de `typeDocument`, qu'il ne publie nulle
+     * part : nous en connaissons une partie par l'essai. Sans ce filet, un code hors
+     * liste faisait remonter l'erreur ici - après la création de la formalité et après
+     * les pièces déjà jointes -, et l'avocat se retrouvait avec un dépôt à moitié fait
+     * chez eux et un écran en échec.
+     *
+     * Le dossier part maintenant avec ce que le guichet a bien voulu prendre, et la
+     * pièce écartée est nommée avec ce qu'il en dit : elle se joint à la main sur leur
+     * site, comme celles dont nous n'avons pas le code.
+     */
+    try {
+      await joindreLaPiece(formaliteId, piece, compte);
+      piecesJointes.push(piece.nom);
+    } catch (e) {
+      journal.warn({ dossierId, formaliteId, piece: piece.nom, e }, "Pièce refusée au guichet");
+      piecesEcartees.push({ nom: piece.nom, raison: refusEnClair(e) });
+    }
   }
 
   /* La synthèse et le panier se recalculent avant la signature, jamais après. */
