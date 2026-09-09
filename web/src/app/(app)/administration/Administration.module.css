@@ -1,6 +1,40 @@
 .page {
-  padding: 32px 40px 60px;
-  max-width: 980px;
+  padding: 0;
+  max-width: none;
+}
+
+.tete {
+  padding: 20px 40px 4px;
+}
+
+.lienSuivi {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: #52525b;
+}
+
+/*
+  Deux colonnes, parce que la page en avait une pour rien.
+
+  Les comptes, les chiffres et les pièces du cabinet s'empilaient sur neuf cent
+  quatre-vingts pixels au milieu d'un écran qui en offre douze cents : il fallait
+  traverser quinze comptes pour atteindre les pièces. La liste, qui est longue, tient à
+  gauche ; ce qui se consulte d'un coup d'œil tient à droite.
+*/
+.colonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  padding: 16px 40px 40px;
+}
+
+.colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
 }
 
 .eyebrow {
@@ -11,14 +45,22 @@
 }
 
 .page h1 {
-  margin: 0 0 22px;
+  margin: 2px 0 0;
   font-family: var(--police-titre), sans-serif;
   font-size: 28px;
+  line-height: 1.1;
 }
 
+/*
+  Quatre chiffres, deux par deux.
+
+  `auto-fit` en rangeait trois sur la première ligne et laissait la quatrième seule à
+  côté d'une case vide, dès que la colonne se resserrait. Deux et deux, quelle que soit
+  la largeur.
+*/
 .chiffres {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   margin: 0;
   background: #ececef;
@@ -38,14 +80,18 @@
 }
 
 .chiffres dd {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   font-family: var(--police-titre), sans-serif;
-  font-size: 24px;
+  font-size: 22px;
   font-variant-numeric: tabular-nums;
 }
 
+.chiffres > div {
+  padding: 12px 14px;
+}
+
 .bloc {
-  margin-top: 32px;
+  margin: 0;
 }
 
 .bloc h2 {
@@ -91,16 +137,39 @@
   gap: 8px;
 }
 
+/*
+  Une ligne de liste, non une carte par compte.
+
+  Quinze comptes faisaient quinze cartes bordées de soixante-dix pixels, séparées de huit
+  pixels de gris : deux cents pixels de traits et de blanc pour quinze noms. Les lignes
+  se suivent dans un seul cadre, et le filet ne sépare que ce qui se suit.
+*/
+.comptes {
+  gap: 0;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
 .compte,
 .compteSuspendu {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 10px 14px;
   background: #fff;
-  border: 1px solid #ececef;
-  border-radius: 12px;
+}
+
+.comptes li + li .compte,
+.comptes li + li .compteSuspendu {
+  box-shadow: inset 0 1px 0 #f4f4f5;
+}
+
+.compte:hover,
+.compteSuspendu:hover {
+  background: #fafafa;
 }
 
 .compteSuspendu {
@@ -111,7 +180,8 @@
 .identite {
   display: flex;
   flex-direction: column;
-  min-width: 190px;
+  flex: 1;
+  min-width: 170px;
 }
 
 .nom {
@@ -123,6 +193,10 @@
 .email {
   font-size: 12.5px;
   color: #71717a;
+  /* « nouvelle-1788790312352@exemple.test » tenait sur deux lignes et déformait la rangée. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .roles {
@@ -366,4 +440,29 @@
   border: 1px solid var(--attente-trait);
   background: var(--attente-fond);
   color: var(--attente-encre);
+}
+
+@media (max-width: 1150px) {
+  .colonnes {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px 24px 32px;
+  }
+
+  .tete {
+    padding: 20px 24px 4px;
+  }
+}
+
+/*
+  Compter n'est pas annoncer une réussite.
+
+  « 15 comptes » est un `role="status"` - il doit l'être, pour que la recherche annonce
+  son résultat à la synthèse vocale - et globals.css habille tout `[role="status"]` du
+  vert de ce qui est abouti. Un décompte n'a rien abouti : il compte.
+*/
+.bloc [role="status"].precision {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #71717a;
 }
