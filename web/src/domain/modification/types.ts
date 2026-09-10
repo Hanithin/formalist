@@ -1,4 +1,4 @@
-import { NATURES_PROPOSEES, natureDeLaForme } from "@/domain/formalite/formes";
+import { NATURES_PROPOSEES, formeConnue, natureDeLaForme } from "@/domain/formalite/formes";
 import { SOUSCRIPTEURS, VOIES_DU_DROIT_PREFERENTIEL } from "./souscription";
 
 /**
@@ -22,9 +22,7 @@ const FORMES_A_PARTS = NATURES_PROPOSEES.filter(
  * l'agrément qui y commande l'entrée d'un nouvel associé. La liste se déduit de la
  * table des formes, comme sa jumelle : une SELAS écrite à la main y aurait manqué.
  */
-const FORMES_A_ACTIONS = NATURES_PROPOSEES.filter(
-  (f) => natureDeLaForme(f).titres === "actions"
-);
+const FORMES_A_ACTIONS = NATURES_PROPOSEES.filter((f) => natureDeLaForme(f).titres === "actions");
 /**
  * Ce qu'on peut changer dans une société, et ce qu'il faut saisir pour chaque
  * changement.
@@ -58,6 +56,23 @@ export type TypeDeChamp =
   | "choix"
   | "long"
   | "adresse"
+  /**
+   * Une commune, arrondissements compris.
+   *
+   * Un lieu de naissance saisi à la main donne « lyon », « Lyon 3 » ou « LYON 03e »
+   * quand l'acte attend « Lyon 3e (69003) » : c'est l'arrondissement qui distingue
+   * deux personnes nées la même année dans la même ville, et le greffe le vérifie sur
+   * l'acte de naissance.
+   */
+  | "commune"
+  /**
+   * Une nationalité prise dans la liste des pays.
+   *
+   * Au féminin - « de nationalité française » s'accorde avec le mot, non avec la
+   * personne - et sans faute de frappe : « francaise » et « portuguaise » se relèvent
+   * au greffe, sur un acte déjà signé.
+   */
+  | "nationalite"
   /**
    * Une société, cherchée au registre plutôt que recopiée.
    *
@@ -189,6 +204,42 @@ export const QUALITES_DU_SIGNATAIRE = [
   "représentant légal",
   "représentante légale",
 ] as const;
+
+/**
+ * Les qualités que la forme admet, et elles seules.
+ *
+ * Les huit étaient offertes à tout le monde : on pouvait signer le pouvoir d'une SAS
+ * « en qualité de gérante », un titre qui n'existe pas chez elle, dans un acte remis au
+ * greffe. L'écran du dépôt des comptes avait déjà connu l'incident - voir
+ * `fonctionsDuDirigeant` - et la même règle vaut ici, dans le vocabulaire du pouvoir :
+ * en minuscules, et accordé.
+ *
+ * « Représentant légal » reste proposé partout : c'est la qualité de celui qui signe
+ * pour une personne morale dirigeante, et elle ne dépend d'aucune forme.
+ */
+export function qualitesDuSignataire(forme: string | null | undefined): string[] {
+  /*
+   * Tant que la forme est inconnue, on ne retranche rien.
+   *
+   * `natureDeLaForme` rend la nature la plus répandue pour ce qu'elle ne connaît pas -
+   * parts sociales et gérant. S'y fier ici retirerait « président » du menu d'un
+   * dossier dont la société n'est pas encore identifiée, c'est-à-dire de tout dossier
+   * à sa première étape.
+   */
+  if (!formeConnue(forme)) return [...QUALITES_DU_SIGNATAIRE];
+
+  const parActions = natureDeLaForme(forme).titreDirigeant === "Président";
+  return parActions
+    ? [
+        "président",
+        "présidente",
+        "directeur général",
+        "directrice générale",
+        "représentant légal",
+        "représentante légale",
+      ]
+    : ["gérant", "gérante", "représentant légal", "représentante légale"];
+}
 
 export const MODIFICATIONS: DefinitionModification[] = [
   {
@@ -406,7 +457,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
       {
         identifiant: "nouveauDirigeantNationalite",
         libelle: "Nationalité",
-        type: "texte",
+        type: "nationalite",
         indication: "Française",
         /*
          * Facultative, elle laissait « de nationalité , » dans le procès-verbal.
@@ -1123,7 +1174,8 @@ export const MODIFICATIONS: DefinitionModification[] = [
     code: "apport_titres",
     libelle: "Apport de titres à une holding",
     libelleCourt: "Apport de titres",
-    description: "Apporter les titres d'une société au capital d'une autre, en report d'imposition.",
+    description:
+      "Apporter les titres d'une société au capital d'une autre, en report d'imposition.",
     /*
      * Le seul changement dont la saisie se range sous des intertitres.
      *
@@ -1269,7 +1321,10 @@ export const MODIFICATIONS: DefinitionModification[] = [
          * personne ne la porte - et c'est la seule trace devant une administration qui
          * contrôle un report d'imposition des années plus tard.
          */
-        obligatoireSi: { champ: "apportCommissaire", vaut: ["Non, dispense décidée à l'unanimité"] },
+        obligatoireSi: {
+          champ: "apportCommissaire",
+          vaut: ["Non, dispense décidée à l'unanimité"],
+        },
         aide:
           "Le traité n'y est pas tenu quand un commissaire aux apports intervient : son " +
           "rapport porte le mode d'évaluation. Sous dispense, c'est la seule trace de ce " +
@@ -1404,12 +1459,18 @@ export const MODIFICATIONS: DefinitionModification[] = [
         colonnes: 2,
         obligatoire: true,
       },
-      { identifiant: "apporteurNeLe", libelle: "Né(e) le", groupe: "L'apporteur", type: "date", obligatoire: true },
+      {
+        identifiant: "apporteurNeLe",
+        libelle: "Né(e) le",
+        groupe: "L'apporteur",
+        type: "date",
+        obligatoire: true,
+      },
       {
         identifiant: "apporteurNeA",
         libelle: "Né(e) à",
         groupe: "L'apporteur",
-        type: "texte",
+        type: "commune",
         obligatoire: true,
         indication: "Commune et département",
       },
@@ -1417,7 +1478,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
         identifiant: "apporteurNationalite",
         libelle: "Nationalité",
         groupe: "L'apporteur",
-        type: "texte",
+        type: "nationalite",
         /* Écrite d'avance : c'est la réponse de la quasi-totalité des dossiers. */
         valeurParDefaut: "Française",
       },
@@ -1597,4 +1658,3 @@ export function valeursParDefautDesChamps(
 
   return ajouts;
 }
-

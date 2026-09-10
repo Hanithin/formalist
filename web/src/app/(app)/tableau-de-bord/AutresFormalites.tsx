@@ -21,7 +21,8 @@ import styles from "./TableauDeBord.module.css";
 export interface AutreFormalite {
   id: number;
   societe: string;
-  nature: string;
+  /** Nul quand le titre de la ligne porte déjà la nature, faute de nom de société. */
+  nature: string | null;
   etat: { ton: Ton; libelle: string };
   /**
    * Ce que le dossier attend, en toutes lettres - « Choisir votre banque ».
@@ -74,7 +75,7 @@ export function AutresFormalites({
                     {formalite.nature}
                     {formalite.attente && (
                       <>
-                        {" · "}
+                        {formalite.nature ? " · " : ""}
                         <span
                           className={formalite.bloque ? styles.coteAttenteBloquante : undefined}
                         >

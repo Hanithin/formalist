@@ -11,7 +11,7 @@ import {
   tonDuDossier,
   type DossierDAccueil,
 } from "@/domain/formalite/accueil";
-import { nomsDEtapes } from "@/domain/formalite/etapes";
+import { etapesDuFormulaire } from "@/domain/formalite/etapes";
 import {
   adresseDuDossier,
   libelleCompletDuType,
@@ -21,13 +21,9 @@ import {
 import { dateEnTete } from "@/lib/dates";
 import { Accueil } from "./Accueil";
 import styles from "./TableauDeBord.module.css";
-import { DocumentsDuDossier, FeuilleDeRoute } from "./Focus";
+import { ApresLEnvoi, DocumentsDuDossier, FeuilleDeRoute } from "./Focus";
 import { DossierEnTete, type EtapeDuChemin } from "./DossierEnTete";
-import {
-  AutresFormalites,
-  EcheancesProches,
-  type AutreFormalite,
-} from "./AutresFormalites";
+import { AutresFormalites, EcheancesProches, type AutreFormalite } from "./AutresFormalites";
 
 /**
  * Combien de formalités la colonne de droite montre.
@@ -61,8 +57,7 @@ function friseDuDossier(
     return suivi.map((etape) => ({
       titre: etape.titre,
       explication: etape.explication,
-      etat:
-        etape.etat === "faite" ? "faite" : etape.etat === "en_cours" ? "en_cours" : "a_venir",
+      etat: etape.etat === "faite" ? "faite" : etape.etat === "en_cours" ? "en_cours" : "a_venir",
       /* Qui tient l'étape : l'encadré s'en sert pour ne rien réclamer hors de son tour. */
       main: etape.main === "vous" ? "vous" : "avocat",
       identifiant: etape.identifiant,
@@ -72,15 +67,31 @@ function friseDuDossier(
   /*
    * Le dossier se remplit encore : ce sont les étapes du formulaire.
    *
-   * Elles n'ont pas d'explication - ce sont des écrans à parcourir, non des choses qui
-   * se passent - et seule la création les numérote. Pour les autres, il n'y a rien
-   * d'honnête à dessiner, et la prochaine étape en toutes lettres dit davantage.
+   * Longtemps réservé à la création, seul parcours dont le domaine connaissait le
+   * chemin. Les trois autres gardaient leur liste dans leur écran et n'enregistraient
+   * pas l'étape atteinte : la carte de tête n'avait rien à dessiner et s'étirait sur
+   * quatre cents pixels de blanc. Le chemin vient maintenant du domaine, et l'étape
+   * du dossier lui-même.
+   *
+   * Ces étapes n'ont pas d'explication : ce sont des écrans à parcourir, non des
+   * choses qui se passent chez le cabinet.
    */
-  if (dossier.type && dossier.type !== "creation") return undefined;
+  const chemin = etapesDuFormulaire(dossier.type, dossier.offre);
+  if (!chemin) return undefined;
 
-  const noms = nomsDEtapes(dossier.offre);
-  return noms.map((titre, rang) => ({
-    titre,
+  if (dossier.type && dossier.type !== "creation") {
+    /* Sans étape enregistrée - un dossier ouvert avant que le parcours ne la retienne -
+       on ne prétend pas savoir où l'on en est : la première étape est la courante. */
+    const atteinte = dossier.etapeDuFormulaire ?? 1;
+    return chemin.map((etape, rang) => ({
+      titre: etape.titre,
+      etat: rang + 1 < atteinte ? "faite" : rang + 1 === atteinte ? "en_cours" : "a_venir",
+      main: "vous",
+    }));
+  }
+
+  return chemin.map((etape, rang) => ({
+    titre: etape.titre,
     etat:
       rang + 1 < dossier.etapeAffichee
         ? "faite"
@@ -98,18 +109,29 @@ export const metadata: Metadata = {
 /**
  * « SASU STUDIO KERN » : la forme précède le nom, comme partout ailleurs.
  *
- * Tant que la société n'est pas choisie, le dossier n'a pas de nom à donner. On écrit
- * alors ce qu'il est plutôt que le marqueur « Société à identifier », qui ressemble à
- * un nom et n'en est pas un.
+ * Nul tant que la société n'est pas choisie. « Société à choisir » tenait cette place :
+ * un marqueur qui occupe la ligne du nom sans en être un, et qu'on lit comme si le
+ * dossier s'appelait ainsi. Quand il n'y a pas de nom, c'est à l'appelant de dire ce
+ * que le dossier est - une modification, un dépôt de comptes - car la formalité, elle,
+ * est toujours connue.
  */
 function nomComplet(dossier: {
   forme: string | null;
   societe: string;
   type?: string | null;
-}): string {
+}): string | null {
   const nom = nomAffichable(dossier.societe);
-  if (!nom) return "Société à choisir";
+  if (!nom) return null;
   return dossier.forme ? dossier.forme.toUpperCase() + " " + nom : nom;
+}
+
+/** Le nom du dossier, ou à défaut ce qu'il est. Jamais un marqueur. */
+function titreDuDossier(dossier: {
+  forme: string | null;
+  societe: string;
+  type?: string | null;
+}): string {
+  return nomComplet(dossier) ?? libelleCompletDuType(dossier.type ?? null) ?? "Formalité";
 }
 
 /**
@@ -165,7 +187,7 @@ export default async function TableauDeBord() {
     societes.map((s) => ({
       id: s.id,
       type: s.type,
-      societe: nomComplet(s),
+      societe: titreDuDossier(s),
       status: s.status,
       limiteDepot: s.limiteDepot,
       termeDuMandat: s.termeDuMandat,
@@ -233,8 +255,8 @@ export default async function TableauDeBord() {
         <div className={styles.content}>
           <div className={styles.deuxColonnes}>
             <DossierEnTete
-              nature={libelleCompletDuType(seul.type) ?? "Formalité"}
-              societe={nomComplet(seul)}
+              nature={nomComplet(seul) ? (libelleCompletDuType(seul.type) ?? "Formalité") : null}
+              societe={titreDuDossier(seul)}
               prochaineEtape={seul.prochaineEtape}
               etat={tonDuDossier(seul)}
               etapes={friseDuDossier(seul, detail?.suivi ?? [])}
@@ -277,8 +299,14 @@ export default async function TableauDeBord() {
     .slice(0, FORMALITES_MONTREES)
     .map((dossier) => ({
       id: dossier.id,
-      societe: nomComplet(dossier),
-      nature: libelleDuType(dossier.type) ?? "Formalité",
+      societe: titreDuDossier(dossier),
+      /*
+       * La nature ne se répète pas sous elle-même.
+       *
+       * Sans nom de société, le titre de la ligne porte déjà « Dépôt des comptes » ;
+       * la redire en dessous ferait deux fois la même chose sur deux lignes.
+       */
+      nature: nomComplet(dossier) ? (libelleDuType(dossier.type) ?? "Formalité") : null,
       etat: tonDuDossier(dossier),
       /*
        * Le premier geste attendu, nommé.
@@ -324,8 +352,10 @@ export default async function TableauDeBord() {
             <span className={styles.voileDuHaut} aria-hidden="true" />
             {enTete ? (
               <DossierEnTete
-                nature={libelleCompletDuType(enTete.type) ?? "Formalité"}
-                societe={nomComplet(enTete)}
+                nature={
+                  nomComplet(enTete) ? (libelleCompletDuType(enTete.type) ?? "Formalité") : null
+                }
+                societe={titreDuDossier(enTete)}
                 prochaineEtape={enTete.prochaineEtape}
                 etat={tonDuDossier(enTete)}
                 etapes={friseDuDossier(enTete, detailEnTete?.suivi ?? [])}
@@ -351,6 +381,11 @@ export default async function TableauDeBord() {
             */}
             {(detailEnTete?.documents.length ?? 0) > 0 && (
               <DocumentsDuDossier documents={detailEnTete?.documents ?? []} />
+            )}
+
+            {/* Ce qui suit l'envoi, tant que le dossier n'est pas parti. */}
+            {(detailEnTete?.apres.length ?? 0) > 0 && (
+              <ApresLEnvoi etapes={detailEnTete?.apres ?? []} />
             )}
             {/* Le voile qui s'éteint au fond : voir `.voileDuBas`. */}
             <span className={styles.voileDuBas} aria-hidden="true" />

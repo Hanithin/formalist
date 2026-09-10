@@ -25,6 +25,8 @@ const ENTREPRENEUR = z.object({
 
 const ENREGISTREMENT = z.object({
   dossier: schemas.identifiant,
+  /* L'étape atteinte : c'est elle que le tableau de bord relit pour dessiner le chemin. */
+  etape: z.number().int().min(1).max(20).optional(),
   nature: z.enum(["definitive", "temporaire"]).optional(),
   entreprise: ENTREPRISE.optional(),
   entrepreneur: ENTREPRENEUR.optional(),

@@ -214,3 +214,43 @@ export function anomaliesDuTour(
 
   return anomalies;
 }
+
+/* ------------------------------------------- Ce que la division change, en clair */
+
+export interface EffetDeLaDivision {
+  /** Le nominal d'une action avant division, en euros. */
+  nominalAvant: number;
+  nominalApres: number;
+  actionsAvant: number;
+  actionsApres: number;
+}
+
+/**
+ * Ce que devient une action quand on divise son nominal.
+ *
+ * Le choix se faisait à l'aveugle : « diviser par 10 » ne dit pas si l'on passe de
+ * 1 euro à 10 centimes ou de 100 euros à 10. Or c'est la seule chose qui compte pour
+ * décider - le nominal après division doit rester un montant qu'un acte peut écrire,
+ * et le nombre d'actions un nombre qu'un registre peut tenir.
+ *
+ * Nul tant que les deux nombres qui le donnent manquent : un capital ou un nombre
+ * d'actions à zéro ne divise rien, et afficher « 0 € » ferait croire à un calcul.
+ */
+export function effetDeLaDivision(
+  capital: number,
+  actionsExistantes: number,
+  diviseur: number
+): EffetDeLaDivision | null {
+  if (!Number.isFinite(capital) || capital <= 0) return null;
+  if (!Number.isFinite(actionsExistantes) || actionsExistantes <= 0) return null;
+  if (!Number.isFinite(diviseur) || diviseur < 1) return null;
+
+  const nominalAvant = capital / actionsExistantes;
+
+  return {
+    nominalAvant,
+    nominalApres: nominalAvant / diviseur,
+    actionsAvant: actionsExistantes,
+    actionsApres: actionsExistantes * diviseur,
+  };
+}

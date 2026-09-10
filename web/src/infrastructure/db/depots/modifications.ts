@@ -3,11 +3,7 @@ import { separerLIdentite } from "@/domain/formalite/noms";
 import { exigerDossierModifiable } from "./dossiers";
 import { proposerAuxAvocats } from "./avocat";
 import { relirePaiement } from "@/infrastructure/paiement/stripe";
-import {
-  estUnTypeConnu,
-  type TypeModification,
-  type Valeurs,
-} from "@/domain/modification/types";
+import { estUnTypeConnu, type TypeModification, type Valeurs } from "@/domain/modification/types";
 import type { AssociePresent, SocieteModifiee } from "@/domain/modification/gabarit";
 import type { Retouche } from "@/domain/modification/edition";
 import type { ContratAir } from "@/domain/modification/air";
@@ -57,6 +53,8 @@ export interface ContratAirDuDossier extends ContratAir {
 }
 
 export interface Modification {
+  /** L'étape du formulaire atteinte, pour que le tableau de bord sache où l'on en est. */
+  etape?: number;
   codes: string[];
   societe: SocieteModifiee;
   valeurs: Valeurs;
@@ -347,9 +345,10 @@ export async function confirmerLeReglement(reference: string, dossierId: number 
    * transmis sans ses actes.
    */
   try {
-    await produireLesActesDeLaModification(dossier.id, lireModification(
-      JSON.stringify({ ...modification, paiementRef: reference, paye: true })
-    ));
+    await produireLesActesDeLaModification(
+      dossier.id,
+      lireModification(JSON.stringify({ ...modification, paiementRef: reference, paye: true }))
+    );
   } catch (e) {
     journal.error(
       { err: e, dossier: dossier.id },

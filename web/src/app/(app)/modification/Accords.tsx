@@ -9,6 +9,7 @@ import {
 } from "@/domain/modification/air";
 import { actesAProduire } from "@/domain/modification/gabarit";
 import type { Valeurs } from "@/domain/modification/types";
+import { gardeDeBoucle } from "@/components/formulaire/garde-de-boucle";
 import styles from "./Modification.module.css";
 
 /** Un accord tel que le dossier le porte : ce qui a été lu, et d'où il vient. */
@@ -50,6 +51,9 @@ export function Accords({
   surAccords: (accords: AccordDepose[]) => void;
   surDivision: (division: number) => void;
 }) {
+  /* Voir `garde-de-boucle` : un dépôt a déjà figé un onglet sans laisser de trace. */
+  gardeDeBoucle("Les accords d'investissement");
+
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const champFichier = useRef<HTMLInputElement>(null);
@@ -114,6 +118,14 @@ export function Accords({
       if (!reponse.ok) throw new Error(corps.error ?? "Le dépôt a échoué");
       surAccords(corps.air ?? []);
     } catch (e) {
+      /*
+       * Le détail dans la console, le message à l'écran.
+       *
+       * `e.message` seul ne dit ni d'où vient l'incident ni ce qui l'a déclenché : un
+       * dépôt qui échoue chez quelqu'un et pas chez nous ne laissait aucune trace à
+       * suivre. La pile part dans la console, sous un repère qu'on peut chercher.
+       */
+      console.error("[Formalist] Dépôt d'un accord interrompu :", e);
       setErreur(e instanceof Error ? e.message : "Le dépôt a échoué");
     } finally {
       setEnvoi(false);
@@ -146,9 +158,9 @@ export function Accords({
     <section className={styles.accords}>
       <h4 className={styles.champsGroupe}>Les accords convertis</h4>
       <p className={styles.accordsIntro}>
-        Déposez les accords signés : leur souscripteur, leur montant, leur valorisation et
-        leur date se lisent seuls. Relisez-les ensuite - ce sont ces chiffres qui fixent le
-        nombre d&apos;actions à créer, et aucun acte ne les redemandera.
+        Déposez les accords signés : leur souscripteur, leur montant, leur valorisation et leur date
+        se lisent seuls. Relisez-les ensuite - ce sont ces chiffres qui fixent le nombre
+        d&apos;actions à créer, et aucun acte ne les redemandera.
       </p>
 
       <div className={styles.accordsDepot}>
@@ -197,13 +209,13 @@ export function Accords({
                 {accords.map((accord, rang) => {
                   const part = calcul.investisseurs[rang];
                   /*
-                     * Chaque case porte son nom.
-                     *
-                     * Un en-tête de colonne se lit à l'œil, non au lecteur d'écran qui
-                     * annonce la case seule. « Montant investi par FIGTUS » dit ce que
-                     * « Montant » ne dit pas quand on arrive dessus à la tabulation.
-                     */
-                    const de = accord.investisseur || accord.fichier;
+                   * Chaque case porte son nom.
+                   *
+                   * Un en-tête de colonne se lit à l'œil, non au lecteur d'écran qui
+                   * annonce la case seule. « Montant investi par FIGTUS » dit ce que
+                   * « Montant » ne dit pas quand on arrive dessus à la tabulation.
+                   */
+                  const de = accord.investisseur || accord.fichier;
                   return (
                     <tr key={accord.fichier + rang}>
                       <td>
@@ -294,8 +306,8 @@ export function Accords({
           */}
           {conseillee > division && (
             <p className={styles.accordsConseil}>
-              À {EUROS.format(apresDivision)} actions, le plus petit souscripteur reçoit un
-              nombre d&apos;actions trop éloigné de ses droits. Divisez la valeur nominale par{" "}
+              À {EUROS.format(apresDivision)} actions, le plus petit souscripteur reçoit un nombre
+              d&apos;actions trop éloigné de ses droits. Divisez la valeur nominale par{" "}
               {EUROS.format(conseillee)} pour ramener tous les arrondis sous 1 %.{" "}
               <button type="button" onClick={() => surDivision(conseillee)}>
                 Appliquer
@@ -328,7 +340,6 @@ function manqueDe(champ: keyof AccordDepose, manque: string): boolean {
   return false;
 }
 
-
 /**
  * Ce qu'on est en train de faire, dit avant de le faire.
  *
@@ -343,20 +354,19 @@ export function ExplicationConstatation() {
     <div className={styles.explication}>
       <p>
         Des bons de souscription ont été exercés. L&apos;augmentation de capital est donc
-        <strong> déjà réalisée</strong> : l&apos;article L. 225-149 du code de commerce la
-        tient pour acquise du seul fait de l&apos;exercice des droits. Il n&apos;y a rien à
-        faire décider par une assemblée - le président la constate, sur délégation, et met
-        les statuts à jour.
+        <strong> déjà réalisée</strong> : l&apos;article L. 225-149 du code de commerce la tient
+        pour acquise du seul fait de l&apos;exercice des droits. Il n&apos;y a rien à faire décider
+        par une assemblée - le président la constate, sur délégation, et met les statuts à jour.
       </p>
       <p>
-        Deux conséquences pratiques. Le dossier ne produit pas de procès-verbal
-        d&apos;assemblée générale. Et aucune attestation de dépôt des fonds n&apos;est due :
-        le même texte écarte les formalités de dépôt des souscriptions.
+        Deux conséquences pratiques. Le dossier ne produit pas de procès-verbal d&apos;assemblée
+        générale. Et aucune attestation de dépôt des fonds n&apos;est due : le même texte écarte les
+        formalités de dépôt des souscriptions.
       </p>
       <p>
-        Le capital d&apos;après ne se saisit pas, il se calcule : chaque accord porte sa
-        propre valorisation, et le nombre d&apos;actions à créer ne se lit qu&apos;en les
-        résolvant tous ensemble. C&apos;est l&apos;objet du tableau, plus bas.
+        Le capital d&apos;après ne se saisit pas, il se calcule : chaque accord porte sa propre
+        valorisation, et le nombre d&apos;actions à créer ne se lit qu&apos;en les résolvant tous
+        ensemble. C&apos;est l&apos;objet du tableau, plus bas.
       </p>
     </div>
   );

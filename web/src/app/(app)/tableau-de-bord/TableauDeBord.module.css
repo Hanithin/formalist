@@ -10,137 +10,401 @@
 /* ============================
        ÉTAT 1 - Une seule formalité (focus)
        ============================ */
-    .singleHero {
-      background: #fff; border: 1px solid #eee; border-radius: 20px;
-      padding: 36px 40px; margin-bottom: 20px; position: relative;
-      display: flex; align-items: center; gap: 36px;
-    }
+.singleHero {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 20px;
+  padding: 36px 40px;
+  margin-bottom: 20px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
 .singleHeroProgress {
-      flex-shrink: 0; width: 132px; height: 132px; position: relative;
-    }
-.singleHeroProgress svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.singleHeroProgress circle:global(.bg) { fill: none; stroke: #f0f0f2; stroke-width: 8; }
+  flex-shrink: 0;
+  width: 132px;
+  height: 132px;
+  position: relative;
+}
+.singleHeroProgress svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.singleHeroProgress circle:global(.bg) {
+  fill: none;
+  stroke: #f0f0f2;
+  stroke-width: 8;
+}
 .singleHeroProgress circle:global(.fg) {
-      fill: none; stroke: #111; stroke-width: 8; stroke-linecap: round;
-      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+  fill: none;
+  stroke: #111;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .singleHeroProgress .pct {
-      position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-    }
-.singleHeroProgress .pctValue { font-size: 26px; font-weight: 700; color: #111; line-height: 1; font-family: var(--police-titre), var(--police-texte), sans-serif; }
-.singleHeroProgress .pctLabel { font-size: 10px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: 0; }
-.singleHeroBody { flex: 1; min-width: 0; }
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.singleHeroProgress .pctValue {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+}
+.singleHeroProgress .pctLabel {
+  font-size: 10px;
+  color: #999;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.singleHeroBody {
+  flex: 1;
+  min-width: 0;
+}
 .singleHeroEyebrow {
-      display: inline-block; padding: 4px 10px; background: #eef2ff; color: #4338ca;
-      font-size: 11px; font-weight: 600; border-radius: 20px; margin-bottom: 10px;
-      text-transform: uppercase; letter-spacing: 0;
-    }
+  display: inline-block;
+  padding: 4px 10px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
 .singleHeroTitle {
-      font-size: 24px; font-weight: 600; margin-bottom: 8px; color: #111;
-      font-family: var(--police-titre), var(--police-texte), sans-serif; letter-spacing: 0;
-    }
-.singleHeroDesc { font-size: 14.5px; color: #666; margin-bottom: 20px; line-height: 1.5; }
-.singleHeroActions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #111;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  letter-spacing: 0;
+}
+.singleHeroDesc {
+  font-size: 14.5px;
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.singleHeroActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 .singleHeroBtn {
-      display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px;
-      background: #111; color: #fff; border: none; border-radius: 10px;
-      font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
-      transition: background 0.15s, transform 0.05s; font-family: inherit;
-    }
-.singleHeroBtn:hover { background: #2a2a2c; }
-.singleHeroBtn:active { transform: scale(0.99); }
-.singleHeroBtn svg { width: 14px; height: 14px; }
-.singleHeroBtn.ghost { background: transparent; color: #666; border: 1px solid #e5e5e7; }
-.singleHeroBtn.ghost:hover { background: #f5f5f7; color: #111; }
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    transform 0.05s;
+  font-family: inherit;
+}
+.singleHeroBtn:hover {
+  background: #2a2a2c;
+}
+.singleHeroBtn:active {
+  transform: scale(0.99);
+}
+.singleHeroBtn svg {
+  width: 14px;
+  height: 14px;
+}
+.singleHeroBtn.ghost {
+  background: transparent;
+  color: #666;
+  border: 1px solid #e5e5e7;
+}
+.singleHeroBtn.ghost:hover {
+  background: #f5f5f7;
+  color: #111;
+}
 /* État 1 - Société terminée : célébration + roadmap */
-    .singleCelebrate {
-      background: linear-gradient(135deg, #065f46 0%, #047857 100%);
-      color: #fff;
-    }
-.singleCelebrate .singleHeroTitle { color: #fff; }
-.singleCelebrate .singleHeroDesc { color: rgba(255,255,255,0.85); }
-.singleCelebrate .singleHeroEyebrow { background: rgba(255,255,255,0.15); color: #fff; }
-.singleCelebrate .singleHeroProgress circle:global(.bg) { stroke: rgba(255,255,255,0.15); }
-.singleCelebrate .singleHeroProgress circle:global(.fg) { stroke: #fff; }
-.singleCelebrate .singleHeroProgress .pctValue { color: #fff; }
-.singleHeroProgress .pctValue svg { width: 26px; height: 26px; display: block; transform: none; }
-.singleCelebrate .singleHeroProgress .pctLabel { color: rgba(255,255,255,0.7); }
-.singleCelebrate .singleHeroBtn { background: #fff; color: #065f46; }
-.singleCelebrate .singleHeroBtn:hover { background: #f0fdf4; }
+.singleCelebrate {
+  background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+  color: #fff;
+}
+.singleCelebrate .singleHeroTitle {
+  color: #fff;
+}
+.singleCelebrate .singleHeroDesc {
+  color: rgba(255, 255, 255, 0.85);
+}
+.singleCelebrate .singleHeroEyebrow {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+.singleCelebrate .singleHeroProgress circle:global(.bg) {
+  stroke: rgba(255, 255, 255, 0.15);
+}
+.singleCelebrate .singleHeroProgress circle:global(.fg) {
+  stroke: #fff;
+}
+.singleCelebrate .singleHeroProgress .pctValue {
+  color: #fff;
+}
+.singleHeroProgress .pctValue svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+  transform: none;
+}
+.singleCelebrate .singleHeroProgress .pctLabel {
+  color: rgba(255, 255, 255, 0.7);
+}
+.singleCelebrate .singleHeroBtn {
+  background: #fff;
+  color: #065f46;
+}
+.singleCelebrate .singleHeroBtn:hover {
+  background: #f0fdf4;
+}
 /* ===== Fenêtre "Toutes vos sociétés" ===== */
-    .smBackdrop {
-      position: fixed; inset: 0; z-index: 9995; display: none;
-      align-items: center; justify-content: center; padding: 24px;
-      background: rgba(17,17,17,0.45); backdrop-filter: blur(2px);
-    }
-.smBackdrop.open { display: flex; animation: smFade 0.15s ease; }
-@keyframes smFade { from { opacity: 0; } to { opacity: 1; } }
+.smBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9995;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 17, 17, 0.45);
+  backdrop-filter: blur(2px);
+}
+.smBackdrop.open {
+  display: flex;
+  animation: smFade 0.15s ease;
+}
+@keyframes smFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .smModal {
-      width: 100%; max-width: 560px; max-height: 80vh; background: #fff;
-      border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.22);
-      display: flex; flex-direction: column; overflow: hidden;
-    }
+  width: 100%;
+  max-width: 560px;
+  /* Sur iOS, 80vh se mesure sur un écran sans barre d'adresse : la coquille dépasse
+     par le bas et ce qui s'y trouve devient inatteignable. La règle vaut pour toute la
+     maison, un test la vérifie - elle échappait au contrôle parce que la déclaration
+     partageait sa ligne avec quatre autres. */
+  max-height: 80vh;
+  max-height: 80dvh;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .smHead {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
-      padding: 24px 26px 16px;
-    }
-.smTitle { font-family: var(--police-titre), var(--police-texte), sans-serif; font-size: 20px; color: #111; }
-.smSub { font-size: 13.5px; color: #71717a; margin-top: 3px; }
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 26px 16px;
+}
+.smTitle {
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 20px;
+  color: #111;
+}
+.smSub {
+  font-size: 13.5px;
+  color: #71717a;
+  margin-top: 3px;
+}
 /* margin et padding à zéro : globals.css habille les boutons, ce que la page
    d'origine ne faisait pas. */
 .smClose {
-      width: 32px; height: 32px; border-radius: 9px; border: none; background: none;
-      margin: 0; padding: 0;
-      color: #71717a; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: background 0.15s, color 0.15s;
-    }
-.smClose:hover:not(:disabled) { background: #f4f4f5; color: #111; border-color: transparent; }
-.smClose svg { width: 17px; height: 17px; }
-.smSearch { position: relative; padding: 0 26px 14px; flex-shrink: 0; }
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: none;
+  background: none;
+  margin: 0;
+  padding: 0;
+  color: #71717a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.smClose:hover:not(:disabled) {
+  background: #f4f4f5;
+  color: #111;
+  border-color: transparent;
+}
+.smClose svg {
+  width: 17px;
+  height: 17px;
+}
+.smSearch {
+  position: relative;
+  padding: 0 26px 14px;
+  flex-shrink: 0;
+}
 .smSearch svg {
-      position: absolute; left: 40px; top: 11px; width: 15px; height: 15px;
-      color: #a1a1aa; pointer-events: none;
-    }
+  position: absolute;
+  left: 40px;
+  top: 11px;
+  width: 15px;
+  height: 15px;
+  color: #a1a1aa;
+  pointer-events: none;
+}
 .smSearch input {
-      width: 100%; max-width: none; padding: 10px 14px 10px 36px; font-family: inherit; font-size: 14px;
-      color: #111; background: #fafafa; border: 1px solid #ececec; border-radius: 100px;
-      outline: none; transition: border-color 0.15s, background 0.15s;
-    }
-.smSearch input::placeholder { color: #a1a1aa; }
-.smSearch input:focus { border-color: #111; background: #fff; box-shadow: none; }
-.smList { flex: 1; min-height: 0; overflow-y: auto; padding: 0 26px 8px; }
+  width: 100%;
+  max-width: none;
+  padding: 10px 14px 10px 36px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #111;
+  background: #fafafa;
+  border: 1px solid #ececec;
+  border-radius: 100px;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.smSearch input::placeholder {
+  color: #a1a1aa;
+}
+.smSearch input:focus {
+  border-color: #111;
+  background: #fff;
+  box-shadow: none;
+}
+.smList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 26px 8px;
+}
 .smRow {
-      display: flex; align-items: center; gap: 14px; padding: 12px 0;
-      border-bottom: 1px solid #f4f4f5; text-decoration: none;
-    }
-.smRow:last-child { border-bottom: none; }
-.smRow:hover .smName { color: #111; text-decoration: underline; }
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f4f4f5;
+  text-decoration: none;
+}
+.smRow:last-child {
+  border-bottom: none;
+}
+.smRow:hover .smName {
+  color: #111;
+  text-decoration: underline;
+}
 .smPct {
-      width: 46px; height: 34px; border-radius: 9px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12.5px; font-weight: 600; background: #f4f4f5; color: #52525b;
-    }
-.smPct.action { background: #fef3c7; color: #92400e; }
-.smPct.done { background: #dcfce7; color: #15803d; }
-.smPct.done svg { width: 16px; height: 16px; }
-.smBody { flex: 1; min-width: 0; }
+  width: 46px;
+  height: 34px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: #f4f4f5;
+  color: #52525b;
+}
+.smPct.action {
+  background: #fef3c7;
+  color: #92400e;
+}
+.smPct.done {
+  background: #dcfce7;
+  color: #15803d;
+}
+.smPct.done svg {
+  width: 16px;
+  height: 16px;
+}
+.smBody {
+  flex: 1;
+  min-width: 0;
+}
 .smName {
-      display: block; font-size: 14.5px; font-weight: 500; color: #111;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-.smStep { display: block; font-size: 12.5px; color: #71717a; margin-top: 2px; }
+  display: block;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.smStep {
+  display: block;
+  font-size: 12.5px;
+  color: #71717a;
+  margin-top: 2px;
+}
 .smStatus {
-      font-size: 11.5px; font-weight: 600; border-radius: 100px; padding: 4px 10px;
-      white-space: nowrap; flex-shrink: 0; background: #f4f4f5; color: #52525b;
-    }
-.smStatus.action { background: #fef3c7; color: #92400e; }
-.smStatus.done { background: #dcfce7; color: #15803d; }
-.smArrow { width: 15px; height: 15px; color: #d4d4d8; flex-shrink: 0; }
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: #f4f4f5;
+  color: #52525b;
+}
+.smStatus.action {
+  background: #fef3c7;
+  color: #92400e;
+}
+.smStatus.done {
+  background: #dcfce7;
+  color: #15803d;
+}
+.smArrow {
+  width: 15px;
+  height: 15px;
+  color: #d4d4d8;
+  flex-shrink: 0;
+}
 /* La recherche sans résultat de cette fenêtre prend le ton « discret » de Vide. */
-.smFoot { padding: 14px 26px 20px; border-top: 1px solid #f4f4f5; flex-shrink: 0; }
-.smFootLink { font-size: 13.5px; color: #52525b; text-decoration: none; }
-.smFootLink:hover { color: #111; }
+.smFoot {
+  padding: 14px 26px 20px;
+  border-top: 1px solid #f4f4f5;
+  flex-shrink: 0;
+}
+.smFootLink {
+  font-size: 13.5px;
+  color: #52525b;
+  text-decoration: none;
+}
+.smFootLink:hover {
+  color: #111;
+}
 /* Accès à toutes les sociétés : un vrai bouton, pas un lien discret */
 /*
  * « Voir tout » se lit comme les autres liens de section, non comme un bouton.
@@ -176,20 +440,40 @@
 .socSeeAllCount {
   font-variant-numeric: tabular-nums;
 }
-.socSeeAll svg { width: 15px; height: 15px; color: #71717a; }
-.socSeeAll:hover svg { color: #111; }
+.socSeeAll svg {
+  width: 15px;
+  height: 15px;
+  color: #71717a;
+}
+.socSeeAll:hover svg {
+  color: #111;
+}
 /* ===== Vue plusieurs dossiers : une carte par société ===== */
-    .socGrid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 16px; margin-bottom: 20px;
-    }
+.socGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
 .socTile {
-      background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 20px 22px;
-      display: flex; flex-direction: column; gap: 14px;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-.socTile:hover { border-color: #d4d4d8; box-shadow: 0 3px 14px rgba(0,0,0,0.05); }
-.socTile.action { border-color: #fde68a; }
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.socTile:hover {
+  border-color: #d4d4d8;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.05);
+}
+.socTile.action {
+  border-color: #fde68a;
+}
 
 /*
  * Un dossier abouti se voit d'un coup d'œil.
@@ -202,7 +486,9 @@
   border-color: #d7f0dd;
   background: #fbfefc;
 }
-.socTile.done:hover { border-color: #a7dfb8; }
+.socTile.done:hover {
+  border-color: #a7dfb8;
+}
 
 /*
  * Terminé : une pastille pleine, non un anneau à 100 %.
@@ -210,8 +496,12 @@
  * Un cercle vert épais autour d'une coche verte fait deux fois le même signe, et le
  * trait ouvert laisse croire qu'il reste un morceau à parcourir.
  */
-.socTile.done .socTileRing circle:global(.bg) { stroke: transparent; }
-.socTile.done .socTileRing circle:global(.fg) { stroke: transparent; }
+.socTile.done .socTileRing circle:global(.bg) {
+  stroke: transparent;
+}
+.socTile.done .socTileRing circle:global(.fg) {
+  stroke: transparent;
+}
 .socTile.done .socTileRing {
   display: flex;
   align-items: center;
@@ -221,26 +511,73 @@
   border-radius: 50%;
   background: #dcfce7;
 }
-.socTile.done .socTileRing svg { display: none; }
-.socTile.done .socTilePct { position: static; }
-.socTile.done .socTilePct svg { width: 24px; height: 24px; color: #15803d; }
-.socTileHead { display: flex; align-items: center; gap: 14px; }
-.socTileRing { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
-.socTileRing svg { width: 64px; height: 64px; transform: rotate(-90deg); }
-.socTileRing circle { fill: none; stroke-width: 5; stroke-linecap: round; }
-.socTileRing circle:global(.bg) { stroke: #f0f0f0; }
-.socTileRing circle:global(.fg) { stroke: #111; transition: stroke-dashoffset 0.8s ease; }
-.socTile.done .socTileRing circle:global(.fg) { stroke: #16a34a; }
+.socTile.done .socTileRing svg {
+  display: none;
+}
+.socTile.done .socTilePct {
+  position: static;
+}
+.socTile.done .socTilePct svg {
+  width: 24px;
+  height: 24px;
+  color: #15803d;
+}
+.socTileHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.socTileRing {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+.socTileRing svg {
+  width: 64px;
+  height: 64px;
+  transform: rotate(-90deg);
+}
+.socTileRing circle {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.socTileRing circle:global(.bg) {
+  stroke: #f0f0f0;
+}
+.socTileRing circle:global(.fg) {
+  stroke: #111;
+  transition: stroke-dashoffset 0.8s ease;
+}
+.socTile.done .socTileRing circle:global(.fg) {
+  stroke: #16a34a;
+}
 .socTilePct {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 600; color: #111;
-    }
-.socTile.done .socTilePct { color: #16a34a; }
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+.socTile.done .socTilePct {
+  color: #16a34a;
+}
 /* transform: none - l'anneau est tourné d'un quart de tour pour démarrer en
    haut, et la coche, qui est à l'intérieur, héritait de cette rotation : elle se
    lisait comme un chevron. */
-.socTile.done .socTilePct svg { width: 20px; height: 20px; transform: none; }
-.socTileIdent { flex: 1; min-width: 0; }
+.socTile.done .socTilePct svg {
+  width: 20px;
+  height: 20px;
+  transform: none;
+}
+.socTileIdent {
+  flex: 1;
+  min-width: 0;
+}
 .socTileName {
   font-family: var(--police-titre), var(--police-texte), sans-serif;
   font-size: 16.5px;
@@ -271,8 +608,14 @@
   background: #f4f4f5;
   color: #52525b;
 }
-.socTileStatus.action { background: #fef3c7; color: #92400e; }
-.socTileStatus.done { background: #dcfce7; color: #15803d; }
+.socTileStatus.action {
+  background: #fef3c7;
+  color: #92400e;
+}
+.socTileStatus.done {
+  background: #dcfce7;
+  color: #15803d;
+}
 /*
  * Ce qu'il reste à faire, en texte plein.
  *
@@ -302,27 +645,50 @@
   white-space: nowrap;
 }
 .socTileBtn {
-      margin-left: auto; font-size: 13.5px; font-weight: 500; color: #fff; background: #111;
-      border-radius: 100px; padding: 9px 18px; text-decoration: none; transition: background 0.15s;
-    }
-.socTileBtn:hover { background: #000; }
+  margin-left: auto;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #fff;
+  background: #111;
+  border-radius: 100px;
+  padding: 9px 18px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.socTileBtn:hover {
+  background: #000;
+}
 @media (max-width: 700px) {
-.socGrid { grid-template-columns: 1fr; }
+  .socGrid {
+    grid-template-columns: 1fr;
+  }
 }
 /* ===== Accueil d'un dossier en cours : parcours, actions, documents, aide ===== */
-    .dashCard {
-      background: #fff; border: 1px solid #eee; border-radius: 16px;
-      padding: 24px 28px; margin-bottom: 20px;
-    }
+.dashCard {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+}
 .dashCardHead {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 16px; margin-bottom: 18px;
-    }
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
 .dashCardTitle {
-      font-family: var(--police-titre), var(--police-texte), sans-serif;
-      font-size: 17px; font-weight: 600; color: #111;
-    }
-.dashCardSub { font-size: 13.5px; color: #71717a; margin-top: 2px; }
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+}
+.dashCardSub {
+  font-size: 13.5px;
+  color: #71717a;
+  margin-top: 2px;
+}
 /*
  * Les liens de tête de carte se traitent comme ceux de la colonne.
  *
@@ -341,77 +707,205 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.dashLoading { font-size: 13.5px; color: #a1a1aa; padding: 6px 0; }
+.dashLoading {
+  font-size: 13.5px;
+  color: #a1a1aa;
+  padding: 6px 0;
+}
 /* .dashEmpty passait par ici : les deux emplacements - « rien à faire » et
    « rien ne s'est encore passé » - prennent le ton « encart » de
    components/liste/Vide, avec la même coche verte pour le premier. */
-.dashCols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.dashCols .dashCard { margin-bottom: 20px; }
+.dashCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.dashCols .dashCard {
+  margin-bottom: 20px;
+}
 /* Actions attendues */
-    .todoList { display: flex; flex-direction: column; gap: 10px; }
+.todoList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .todo {
-      display: flex; align-items: center; gap: 14px;
-      padding: 14px 16px; border: 1px solid #ececec; border-radius: 12px;
-      text-decoration: none; transition: border-color 0.15s, background 0.15s;
-    }
-.todo:hover { border-color: #d4d4d8; background: #fafafa; }
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.todo:hover {
+  border-color: #d4d4d8;
+  background: #fafafa;
+}
 .todoDot {
-      width: 9px; height: 9px; border-radius: 50%; background: #111; flex-shrink: 0;
-    }
-.todo.urgent { border-color: #fecaca; background: #fff5f5; }
-.todo.urgent:hover { border-color: #f87171; }
-.todo.urgent .todoDot { background: #dc2626; }
-.todoBody { flex: 1; min-width: 0; }
-.todoTitle { display: block; font-size: 14.5px; font-weight: 500; color: #111; }
-.todoDesc { display: block; font-size: 13px; color: #71717a; margin-top: 2px; }
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #111;
+  flex-shrink: 0;
+}
+.todo.urgent {
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+.todo.urgent:hover {
+  border-color: #f87171;
+}
+.todo.urgent .todoDot {
+  background: #dc2626;
+}
+.todoBody {
+  flex: 1;
+  min-width: 0;
+}
+.todoTitle {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #111;
+}
+.todoDesc {
+  display: block;
+  font-size: 13px;
+  color: #71717a;
+  margin-top: 2px;
+}
 .todoCta {
-      min-width: 132px; justify-content: center;
-      font-size: 13px; font-weight: 500; color: #111; white-space: nowrap;
-      border: 1px solid #d4d4d8; border-radius: 100px; padding: 7px 14px;
-    }
+  min-width: 132px;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+  white-space: nowrap;
+  border: 1px solid #d4d4d8;
+  border-radius: 100px;
+  padding: 7px 14px;
+}
 .todo:hover .todoCta {
-      min-width: 132px; justify-content: center; border-color: #111; }
+  min-width: 132px;
+  justify-content: center;
+  border-color: #111;
+}
 /* Activité */
-    .actList { display: flex; flex-direction: column; gap: 2px; }
-.actRow { display: flex; gap: 12px; padding: 9px 0; }
+.actList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.actRow {
+  display: flex;
+  gap: 12px;
+  padding: 9px 0;
+}
 .actDot {
-      width: 7px; height: 7px; border-radius: 50%; background: #d4d4d8;
-      flex-shrink: 0; margin-top: 7px;
-    }
-.actBody { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.actText { font-size: 13.5px; color: #3f3f46; line-height: 1.4; }
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d4d4d8;
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+.actBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.actText {
+  font-size: 13.5px;
+  color: #3f3f46;
+  line-height: 1.4;
+}
 /* Chaque ligne du fil multi-dossiers mène au dossier concerné */
-    .actRowLink { text-decoration: none; border-radius: 10px; padding: 9px 8px; margin: 0 -8px; transition: background 0.15s; }
-.actRowLink:hover { background: #fafafa; }
+.actRowLink {
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 9px 8px;
+  margin: 0 -8px;
+  transition: background 0.15s;
+}
+.actRowLink:hover {
+  background: #fafafa;
+}
 /* Deux colonnes : le fil tient sur moitié moins de hauteur */
-    .actCols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
-.actCols .actRow { align-items: flex-start; }
-@media (max-width: 900px) { .actCols { grid-template-columns: 1fr; } }
+.actCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 28px;
+}
+.actCols .actRow {
+  align-items: flex-start;
+}
+@media (max-width: 900px) {
+  .actCols {
+    grid-template-columns: 1fr;
+  }
+}
 .actNote {
   display: block;
-      font-size: 13px; color: #52525b; line-height: 1.45; margin-top: 3px;
-      border-left: 2px solid #e4e4e7; padding-left: 10px;
-    }
-.actTime { display: block; font-size: 12px; color: #a1a1aa; margin-top: 2px; }
+  font-size: 13px;
+  color: #52525b;
+  line-height: 1.45;
+  margin-top: 3px;
+  border-left: 2px solid #e4e4e7;
+  padding-left: 10px;
+}
+.actTime {
+  display: block;
+  font-size: 12px;
+  color: #a1a1aa;
+  margin-top: 2px;
+}
 @media (max-width: 900px) {
-      .dashCols { grid-template-columns: 1fr; }
+  .dashCols {
+    grid-template-columns: 1fr;
+  }
 }
 /* ============================
        ÉTAT 2+ - top action
        ============================ */
-    .topAction {
-      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-      border-radius: 16px; padding: 20px 24px;
-      display: flex; align-items: center; gap: 18px; margin-bottom: 16px;
-      border: 1px solid #fcd34d;
-    }
+.topAction {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+  border: 1px solid #fcd34d;
+}
 .topActionIcon {
-      width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-      background: rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center;
-    }
-.topActionIcon svg { width: 22px; height: 22px; color: #111; }
-.topActionBody { flex: 1; min-width: 0; }
-.topActionTitle { font-size: 15px; font-weight: 600; color: #111; }
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.topActionIcon svg {
+  width: 22px;
+  height: 22px;
+  color: #111;
+}
+.topActionBody {
+  flex: 1;
+  min-width: 0;
+}
+.topActionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
 .topActionDesc {
   display: flex;
   align-items: baseline;
@@ -444,140 +938,266 @@
   background: #fff;
   border-color: #e8e8ea;
 }
-.topActionInfo .topActionDesc { color: #71717a; }
-.topActionInfo .topActionIcon { background: #f4f4f5; }
-.topActionInfo .topActionSociete { background: #f4f4f5; color: #3f3f46; }
+.topActionInfo .topActionDesc {
+  color: #71717a;
+}
+.topActionInfo .topActionIcon {
+  background: #f4f4f5;
+}
+.topActionInfo .topActionSociete {
+  background: #f4f4f5;
+  color: #3f3f46;
+}
 .topActionBtn {
-      flex-shrink: 0; padding: 10px 18px; background: #111; color: #fff;
-      border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none;
-      display: inline-flex; align-items: center; gap: 6px;
-      transition: background 0.15s;
-    }
-.topActionBtn:hover { background: #2a2a2c; }
-.topActionBtn svg { width: 14px; height: 14px; }
+  flex-shrink: 0;
+  padding: 10px 18px;
+  background: #111;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+.topActionBtn:hover {
+  background: #2a2a2c;
+}
+.topActionBtn svg {
+  width: 14px;
+  height: 14px;
+}
 .topActionNav {
-      display: flex; align-items: center; gap: 6px;
-      margin-right: 10px; flex-shrink: 0;
-    }
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
 /* margin et padding à zéro : les boutons reçoivent une mise en forme par défaut
    dans globals.css, que la page d'origine n'avait pas. */
 .taArrow {
-      width: 30px; height: 30px; border-radius: 50%;
-      background: rgba(0,0,0,0.06); border: none; cursor: pointer;
-      margin: 0; padding: 0;
-      display: flex; align-items: center; justify-content: center;
-      color: #111; transition: background 0.15s;
-    }
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  transition: background 0.15s;
+}
 /* :not(:disabled) uniquement pour passer devant la règle de globals.css, qui
    porte déjà ces deux pseudo-classes. */
-.taArrow:hover:not(:disabled) { background: rgba(0,0,0,0.12); border-color: transparent; }
-.taArrow svg { width: 14px; height: 14px; }
+.taArrow:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: transparent;
+}
+.taArrow svg {
+  width: 14px;
+  height: 14px;
+}
 .taCounter {
-      font-size: 12px; font-weight: 600; color: #78350f;
-      min-width: 32px; text-align: center;
-      letter-spacing: 0;
-    }
+  font-size: 12px;
+  font-weight: 600;
+  color: #78350f;
+  min-width: 32px;
+  text-align: center;
+  letter-spacing: 0;
+}
 /* Section header (Vos sociétés, Activité récente) */
-    .dbSectionHead {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; margin: 8px 0 14px;
-    }
+.dbSectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 8px 0 14px;
+}
 .dbSectionHead h2 {
-      font-family: var(--police-titre), var(--police-texte), sans-serif;
-      font-size: 18px; font-weight: 600; color: #111;
-      margin: 0;
-    }
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin: 0;
+}
 .roadmap {
-      background: #fff; border: 1px solid #eee; border-radius: 16px;
-      padding: 28px; margin-bottom: 20px;
-    }
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 20px;
+}
 .roadmapTitle {
-      font-size: 17px; font-weight: 600; color: #111; margin-bottom: 4px;
-      font-family: var(--police-titre), var(--police-texte), sans-serif;
-    }
-.roadmapSubtitle { font-size: 13.5px; color: #888; margin-bottom: 20px; }
-.roadmapSteps { display: flex; flex-direction: column; gap: 10px; }
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 4px;
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+}
+.roadmapSubtitle {
+  font-size: 13.5px;
+  color: #888;
+  margin-bottom: 20px;
+}
+.roadmapSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .roadmapStep {
-      display: flex; align-items: center; gap: 14px; padding: 14px 16px;
-      border: 1px solid #eee; border-radius: 12px; text-decoration: none;
-      color: inherit; transition: border-color 0.15s, background 0.15s;
-    }
-.roadmapStep:hover { border-color: #111; background: #fafafa; }
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.roadmapStep:hover {
+  border-color: #111;
+  background: #fafafa;
+}
 .roadmapStepCheck {
-      width: 22px; height: 22px; border: 2px solid #ddd; border-radius: 50%;
-      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    }
+  width: 22px;
+  height: 22px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .roadmapStep.done .roadmapStepCheck {
-      background: #10b981; border-color: #10b981;
-    }
-.roadmapStep.done .roadmapStepCheck svg { display: block; }
-.roadmapStepCheck svg { display: none; width: 12px; height: 12px; color: #fff; }
-.roadmapStepBody { flex: 1; min-width: 0; }
-.roadmapStepTitle { font-size: 14px; font-weight: 600; color: #111; }
-.roadmapStepDesc { display: block; font-size: 12.5px; color: #888; margin-top: 2px; }
+  background: #10b981;
+  border-color: #10b981;
+}
+.roadmapStep.done .roadmapStepCheck svg {
+  display: block;
+}
+.roadmapStepCheck svg {
+  display: none;
+  width: 12px;
+  height: 12px;
+  color: #fff;
+}
+.roadmapStepBody {
+  flex: 1;
+  min-width: 0;
+}
+.roadmapStepTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+.roadmapStepDesc {
+  display: block;
+  font-size: 12.5px;
+  color: #888;
+  margin-top: 2px;
+}
 .roadmapStepCta {
-      font-size: 12.5px; color: #4338ca; font-weight: 600;
-      padding: 6px 12px; border: 1px solid #c7d2fe; background: #eef2ff;
-      border-radius: 8px; text-decoration: none; transition: all 0.15s;
-    }
-.roadmapStepCta:hover { background: #e0e7ff; border-color: #6366f1; }
-.roadmapStep.done .roadmapStepTitle { color: #888; text-decoration: line-through; text-decoration-thickness: 1px; }
+  font-size: 12.5px;
+  color: #4338ca;
+  font-weight: 600;
+  padding: 6px 12px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.roadmapStepCta:hover {
+  background: #e0e7ff;
+  border-color: #6366f1;
+}
+.roadmapStep.done .roadmapStepTitle {
+  color: #888;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
 /* HERO BANNER */
-    .heroBanner {
-      margin: 0 48px 32px;
-      padding: 28px 32px;
-      border-radius: 20px;
-      background: #FDD835;
-      color: #111;
-      display: flex;
-      align-items: center;
-      gap: 24px;
-    }
+.heroBanner {
+  margin: 0 48px 32px;
+  padding: 28px 32px;
+  border-radius: 20px;
+  background: #fdd835;
+  color: #111;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
 .heroIcon {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      background: rgba(0,0,0,0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: #111;
-    }
-.heroIcon svg { width: 22px; height: 22px; stroke-width: 2; }
-.heroContent { flex: 1; }
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #111;
+}
+.heroIcon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
+}
+.heroContent {
+  flex: 1;
+}
 .heroTitle {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
 .heroDesc {
-      font-size: 13px;
-      color: rgba(0,0,0,0.55);
-      line-height: 1.4;
-    }
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.55);
+  line-height: 1.4;
+}
 .heroBtn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 22px;
-      background: #111;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: background 0.15s;
-      flex-shrink: 0;
-    }
-.heroBtn:hover { background: #333; }
-.heroBtn svg { width: 16px; height: 16px; }
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  background: #111;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.heroBtn:hover {
+  background: #333;
+}
+.heroBtn svg {
+  width: 16px;
+  height: 16px;
+}
 @media (max-width: 768px) {
-.heroBanner { margin: 0 20px 24px; padding: 20px; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .heroBanner {
+    margin: 0 20px 24px;
+    padding: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
 }
 
 /* ---------- Gabarit de la page ----------
@@ -602,43 +1222,61 @@
   width: 100%;
 }
 .topbar {
-      padding: 32px 48px 24px;
-      background: transparent;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 24px;
-    }
-.topbarLeft { min-width: 0; flex: 1; }
+  padding: 32px 48px 24px;
+  background: transparent;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.topbarLeft {
+  min-width: 0;
+  flex: 1;
+}
 .topbar h1 {
-      font-family: var(--police-titre), var(--police-texte), sans-serif;
-      font-size: 24px;
-      font-weight: 600;
-      letter-spacing: 0;
-      color: #111;
-      line-height: 1.2;
-    }
+  font-family: var(--police-titre), var(--police-texte), sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #111;
+  line-height: 1.2;
+}
 .topbarSub {
-      font-size: 14px;
-      color: #888;
-      margin-top: 6px;
-      line-height: 1.4;
-    }
+  font-size: 14px;
+  color: #888;
+  margin-top: 6px;
+  line-height: 1.4;
+}
 .topbarActions {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      flex-shrink: 0;
-      padding-top: 4px;
-    }
-.topbarDate { font-size: 14.5px; color: #888; white-space: nowrap; }
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+.topbarDate {
+  font-size: 14.5px;
+  color: #888;
+  white-space: nowrap;
+}
 /* Dix-huit pixels sous l'en-tête : le contenu venait toucher le bouton. */
-.content { padding: 18px 48px 32px; flex: 1; min-height: 0; }
+.content {
+  padding: 18px 48px 32px;
+  flex: 1;
+  min-height: 0;
+}
 @media (max-width: 768px) {
-      .topbar { flex-direction: column; padding: 24px 20px 16px; }
-      .topbarActions { padding-top: 0; }
-      .content { padding: 0 20px 20px; }
-    }
+  .topbar {
+    flex-direction: column;
+    padding: 24px 20px 16px;
+  }
+  .topbarActions {
+    padding-top: 0;
+  }
+  .content {
+    padding: 0 20px 20px;
+  }
+}
 
 /* Le lien discret à côté du bouton plein, sur le dossier unique. */
 
@@ -665,99 +1303,231 @@
  * production, alors que rien dans cette feuille ne le demandait.
  */
 .journey {
-      display: flex; flex-direction: row; align-items: flex-start; gap: 4px;
-      margin: 0; padding: 0; list-style: none;
-    }
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 .jnStep {
-      flex: 1; min-width: 0; text-align: center; position: relative;
-      display: block; padding: 0; background: none; border: none;
-    }
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  position: relative;
+  display: block;
+  padding: 0;
+  background: none;
+  border: none;
+}
 /* Le trait qui relie une étape à la précédente, sous les pastilles. */
 .jnStep::before {
-      content: ''; position: absolute; top: 15px; left: -50%;
-      width: 100%; height: 2px; background: #ececec; z-index: 0;
-    }
-.jnStep:first-child::before { display: none; }
-.jnStep.jnDone::before, .jnStep.jnCurrent::before { background: #111; }
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: #ececec;
+  z-index: 0;
+}
+.jnStep:first-child::before {
+  display: none;
+}
+.jnStep.jnDone::before,
+.jnStep.jnCurrent::before {
+  background: #111;
+}
 .jnMark {
-      position: relative; z-index: 1; width: 32px; height: 32px;
-      margin: 0 auto 8px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 600;
-      background: #fff; border: 2px solid #ececec; color: #a1a1aa;
-      font-variant-numeric: tabular-nums;
-    }
-.jnMark svg { width: 13px; height: 13px; }
-.jnStep.jnDone .jnMark { background: #111; border-color: #111; color: #fff; }
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+  border: 2px solid #ececec;
+  color: #a1a1aa;
+  font-variant-numeric: tabular-nums;
+}
+.jnMark svg {
+  width: 13px;
+  height: 13px;
+}
+.jnStep.jnDone .jnMark {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
 .jnStep.jnCurrent .jnMark {
-      border-color: #111; color: #111; box-shadow: 0 0 0 4px rgba(17,17,17,0.08);
-    }
+  border-color: #111;
+  color: #111;
+  box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.08);
+}
 .jnLabel {
-      display: block; font-size: 12.5px; color: #71717a;
-      line-height: 1.35; padding: 0 4px;
-    }
-.jnStep.jnCurrent .jnLabel { color: #111; font-weight: 600; }
+  display: block;
+  font-size: 12.5px;
+  color: #71717a;
+  line-height: 1.35;
+  padding: 0 4px;
+}
+.jnStep.jnCurrent .jnLabel {
+  color: #111;
+  font-weight: 600;
+}
 
 /* ---------- Documents du dossier ---------- */
 
-.docList { display: flex; flex-direction: column; }
+.docList {
+  display: flex;
+  flex-direction: column;
+}
 .docRow {
-      display: flex; align-items: center; gap: 12px;
-      padding: 11px 0; border-bottom: 1px solid #f2f2f2; text-decoration: none;
-    }
-.docRow:last-child { border-bottom: none; }
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f2f2f2;
+  text-decoration: none;
+}
+.docRow:last-child {
+  border-bottom: none;
+}
 .docIco {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: #f4f4f5; color: #52525b;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-.docIco svg { width: 14px; height: 14px; }
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #f4f4f5;
+  color: #52525b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.docIco svg {
+  width: 14px;
+  height: 14px;
+}
 .docName {
   display: block;
-      flex: 1; min-width: 0; font-size: 13.5px; color: #111;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .docState {
-      /* L'état d'une pièce se lit, il n'a pas à peser plus que son nom. */
-      font-size: 11.5px; font-weight: 500; color: #52525b;
-      background: #f4f4f5; border-radius: 100px; padding: 3px 9px; white-space: nowrap;
-    }
-.docOk { background: #dcfce7; color: #15803d; }
-.docRejected { background: #fee2e2; color: #b91c1c; }
+  /* L'état d'une pièce se lit, il n'a pas à peser plus que son nom. */
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #52525b;
+  background: #f4f4f5;
+  border-radius: 100px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.docOk {
+  background: #dcfce7;
+  color: #15803d;
+}
+.docRejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 
 /* ---------- Interlocuteur ---------- */
 
 .helpCard {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 24px; flex-wrap: wrap;
-    }
-.helpWho { display: flex; align-items: center; gap: 14px; }
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.helpWho {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 .helpAvatar {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: #ede9fe; color: #7c3aed;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 700; flex-shrink: 0;
-    }
-.helpPending { background: #f4f4f5; color: #a1a1aa; }
-.helpName { font-size: 15px; font-weight: 600; color: #111; }
-.helpRole { font-size: 13px; color: #71717a; }
-.helpActions { display: flex; gap: 10px; flex-wrap: wrap; }
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ede9fe;
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.helpPending {
+  background: #f4f4f5;
+  color: #a1a1aa;
+}
+.helpName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+.helpRole {
+  font-size: 13px;
+  color: #71717a;
+}
+.helpActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .helpBtn {
-      font-size: 13.5px; font-weight: 500; color: #111; text-decoration: none;
-      font-family: inherit; cursor: pointer;
-      background: #fff; border: 1px solid #d4d4d8; border-radius: 100px;
-      padding: 9px 16px; transition: border-color 0.15s, background 0.15s;
-    }
-.helpBtn:hover { border-color: #111; background: #fafafa; }
-.helpPrimary { background: #111; color: #fff; border-color: #111; }
-.helpPrimary:hover { background: #000; }
-
-@media (max-width: 900px) {
-  .journey { flex-wrap: wrap; gap: 14px 4px; }
-  .jnStep { flex: 0 0 33%; }
-  .jnStep::before { display: none; }
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #111;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #d4d4d8;
+  border-radius: 100px;
+  padding: 9px 16px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.helpBtn:hover {
+  border-color: #111;
+  background: #fafafa;
+}
+.helpPrimary {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+.helpPrimary:hover {
+  background: #000;
 }
 
+@media (max-width: 900px) {
+  .journey {
+    flex-wrap: wrap;
+    gap: 14px 4px;
+  }
+  .jnStep {
+    flex: 0 0 33%;
+  }
+  .jnStep::before {
+    display: none;
+  }
+}
 
 /* ==========================================================================
    L'accueil refondu.
@@ -1096,7 +1866,9 @@
   border-radius: 12px;
   background: #fff;
   text-decoration: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .attention:hover {
@@ -1563,7 +2335,6 @@
     justify-self: start;
   }
 }
-
 
 /* =========================================================== La disposition */
 
@@ -2085,7 +2856,6 @@
   }
 }
 
-
 /* ------------------------------------------------- Ce que nous savons faire */
 
 /*
@@ -2301,6 +3071,76 @@
   overflow-y: auto;
 }
 
+/* ---------- Ce qui suit l'envoi ---------- */
+
+/*
+ * Une suite, donc des numéros.
+ *
+ * Ils ne décorent pas : ces quatre étapes s'enchaînent, chacune attend la précédente,
+ * et c'est précisément ce que le client veut savoir - dans quel ordre, et combien il
+ * en reste après la sienne.
+ */
+.apresListe {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * La règle globale fait de tout `li` d'un `ol` une carte : fond, bordure, et surtout
+ * `flex-wrap: wrap`, qui renvoyait le texte sous son numéro. Les autres listes de
+ * cette feuille la neutralisent de la même façon.
+ */
+.apresListe > li.apresEtape {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.apresRang {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.apresCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.apresTitre {
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+}
+
+.apresExplication {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #71717a;
+}
+
 /* ---------- L'encadré de tête ---------- */
 
 /*
@@ -2325,14 +3165,15 @@
   display: flex;
   flex-direction: column;
   /*
-   * Il prend la hauteur disponible sans jamais se comprimer.
+   * Il vaut sa hauteur de contenu, ni plus ni moins.
    *
-   * Sur un écran haut, l'encadré s'arrêtait à sa taille de contenu et laissait la
-   * colonne finir en gris ; sur un écran court, l'étirer aurait chassé les documents
-   * sous le pli. Il grandit, il ne rétrécit pas - et c'est la frise qui prend le
-   * supplément, non un blanc au-dessus du bouton.
+   * Il prenait toute la colonne, à charge pour la frise d'absorber le supplément. Cela
+   * tenait tant que la frise existait et portait ses explications ; sur un chemin de
+   * sept étapes nues, chacune se voyait attribuer soixante-seize pixels et la carte
+   * devenait une échelle. Un encadré dense et court se lit mieux qu'un encadré étiré,
+   * et la colonne a le droit de finir avant le bas de l'écran.
    */
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   padding: 24px 28px 22px;
   border: 1px solid #eee;
   border-radius: 18px;
@@ -2450,7 +3291,9 @@
 .teteChemin {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  /* Le chemin ne s'étire plus pour remplir la carte : c'est son pas régulier qui le
+     fait lire, et la carte vaut désormais sa hauteur de contenu. */
+  flex: 0 0 auto;
   gap: 0;
   margin: 22px 0 0;
   padding: 0;
@@ -2480,8 +3323,12 @@
    * les faisant grandir d'autant, le trait descend jusqu'au bas de la carte - et
    * `auto` en base, non zéro, pour que l'étape qui porte son explication garde sa
    * hauteur de texte.
+   *
+   * La croissance a désormais un plancher plutôt qu'une part : la carte ne s'étire
+   * plus, et chaque jalon garde le pas régulier qui fait lire un chemin.
    */
-  flex: 1 0 auto;
+  flex: 0 0 auto;
+  min-height: 42px;
   gap: 16px;
   padding: 0 0 13px 0;
 }
@@ -2741,7 +3588,6 @@
   overflow: hidden;
 }
 
-
 .coteTete {
   display: flex;
   align-items: center;
@@ -2996,8 +3842,14 @@
  *
  * La dernière prend ce qui reste, et les deux colonnes ferment sur la même ligne. Quand
  * le contenu déborde, il n'y a rien à prendre et rien ne change.
+ *
+ * L'encadré de tête en est excepté. Deux colonnes qui ferment ensemble valent mieux
+ * qu'un décrochement de vingt-cinq pixels, mais pas au prix de deux cents pixels de
+ * blanc dans une carte : un dossier dont le chemin fait sept lignes nues n'a pas de
+ * quoi remplir la colonne, et l'étirer ne remplit rien - cela écarte le bouton du
+ * chemin qu'il conclut.
  */
-.colonneDeTete > section:last-of-type,
+.colonneDeTete > section:last-of-type:not(.teteCarte),
 .coteColonne > section:last-of-type {
   flex: 1 0 auto;
 }

@@ -147,6 +147,28 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
     return { limiteDepot: null, termeDuMandat: termeDuMandat(texte("dateDissolution")) };
   }
 
+  /*
+   * L'étape atteinte dans le formulaire, telle que le parcours l'a enregistrée.
+   *
+   * Elle vit dans `data_json` et non dans la colonne `phase` : celle-ci compte les
+   * cinq phases d'une création, dont la cinquième signifie « chez le cabinet ». La
+   * réutiliser pour un parcours de sept étapes ferait mentir l'avancement partout où
+   * il se calcule.
+   */
+  function etapeDuFormulaire(d: (typeof dossiers)[number]): number | null {
+    if (!d.data_json) return null;
+    try {
+      const lu: unknown = JSON.parse(d.data_json);
+      if (lu && typeof lu === "object" && "etape" in lu) {
+        const etape = (lu as { etape?: unknown }).etape;
+        if (typeof etape === "number" && Number.isInteger(etape) && etape >= 1) return etape;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
   const societes = dossiers.map((d) => {
     const contexte = contextes.get(d.id)!;
     const actions = actionsAttendues(contexte);
@@ -163,6 +185,7 @@ export async function tableauDeBord(utilisateur: UtilisateurConnecte) {
       // la colonne n'a pas encore bougé : sans cela la vignette annonce « Étape 1
       // · Informations » à quelqu'un qui en est au dépôt du capital.
       etapeAffichee: Math.max(d.phase ?? 1, contexte.informationsCompletes ? 2 : 1),
+      etapeDuFormulaire: etapeDuFormulaire(d),
       offre: d.offer,
       nonLus: nonLusPar.get(d.id) ?? 0,
       dernierMessage: (() => {
@@ -262,7 +285,20 @@ export async function focusDuDossier(utilisateur: UtilisateurConnecte, dossierId
    * et ce sont les étapes de celui-ci qui le situent.
    */
   const confie = dossier.status !== "en_cours";
-  const suivi = confie ? etapesDuSuivi(await etatDuDossier(dossier)) : [];
+  const etat = await etatDuDossier(dossier);
+  const suivi = confie ? etapesDuSuivi(etat) : [];
+
+  /*
+   * Ce qui viendra après l'envoi, pour un dossier qu'on remplit encore.
+   *
+   * Le même chemin que le suivi, mais lu à l'envers du temps : non « où en est-on »,
+   * mais « que se passera-t-il quand j'aurai fini ». C'est la question qu'on se pose
+   * en remplissant un formulaire de sept étapes, et rien n'y répondait - la colonne
+   * s'arrêtait sous la carte.
+   */
+  const apres = confie
+    ? []
+    : etapesDuSuivi(etat).map((e) => ({ titre: e.titre, explication: e.explication }));
 
   return {
     documents: documents.map((d) => ({
@@ -274,5 +310,6 @@ export async function focusDuDossier(utilisateur: UtilisateurConnecte, dossierId
     })),
     avocat: avocat?.name ?? null,
     suivi,
+    apres,
   };
 }

@@ -32,16 +32,10 @@ import { Recapitulatif } from "./Recapitulatif";
 import styles from "../modification/Modification.module.css";
 import { remonterEnHaut } from "@/lib/defilement";
 import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
+import { ETAPES_COMPTES } from "@/domain/formalite/etapes";
 
-const ETAPES = [
-  { numero: 1, titre: "La société", court: "Société" },
-  { numero: 2, titre: "L'exercice", court: "Exercice" },
-  { numero: 3, titre: "Les chiffres", court: "Chiffres" },
-  { numero: 4, titre: "L'affectation du résultat", court: "Affectation" },
-  { numero: 5, titre: "Les conventions réglementées", court: "Conventions" },
-  { numero: 6, titre: "La confidentialité", court: "Confidentialité" },
-  { numero: 7, titre: "Récapitulatif et règlement", court: "Règlement" },
-];
+/* Les titres viennent du domaine : le tableau de bord dessine le même chemin. */
+const ETAPES = ETAPES_COMPTES.map((e, rang) => ({ ...e, numero: rang + 1 }));
 
 const TRAITS = {
   fill: "none",
@@ -77,9 +71,7 @@ const euros = (valeur: number) => valeur / 100;
  * on retraversait tout le parcours pour trouver la case en défaut.
  */
 function champsDuGroupe(groupes: string[]): string[] {
-  return CHAMPS_COMPTES.filter((c) => groupes.includes(c.groupe ?? "")).map(
-    (c) => c.identifiant
-  );
+  return CHAMPS_COMPTES.filter((c) => groupes.includes(c.groupe ?? "")).map((c) => c.identifiant);
 }
 
 function etapeDe(champ: string): number {
@@ -124,7 +116,13 @@ export function Parcours({
       capitalCentimes: Math.round((etat.societe.capital ?? 0) * 100),
       reserveExistanteCentimes: centimes(etat.valeurs.reserveLegale),
     }),
-    [forme, etat.valeurs.resultat, etat.valeurs.reportAnterieur, etat.valeurs.reserveLegale, etat.societe.capital]
+    [
+      forme,
+      etat.valeurs.resultat,
+      etat.valeurs.reportAnterieur,
+      etat.valeurs.reserveLegale,
+      etat.societe.capital,
+    ]
   );
 
   const anomalies = useMemo(() => verifierComptes(etat), [etat]);
@@ -174,6 +172,8 @@ export function Parcours({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dossier,
+          /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
+          etape: vers,
           societe: etat.societe,
           associes: etat.associes,
           valeurs: etat.valeurs,
@@ -216,12 +216,7 @@ export function Parcours({
         </div>
 
         {etape === 1 && (
-          <EtapeSociete
-            etat={etat}
-            changer={changer}
-            majSociete={majSociete}
-            refusDe={refusDe}
-          />
+          <EtapeSociete etat={etat} changer={changer} majSociete={majSociete} refusDe={refusDe} />
         )}
 
         {etape === 2 && (
@@ -265,9 +260,7 @@ export function Parcours({
           />
         )}
 
-        {etape === 6 && (
-          <EtapeConfidentialite etat={etat} changer={changer} />
-        )}
+        {etape === 6 && <EtapeConfidentialite etat={etat} changer={changer} />}
 
         {etape === 7 && (
           <EtapeReglement
@@ -467,8 +460,8 @@ function EtapeSociete({
   return (
     <>
       <p className={styles.description}>
-        Tapez le nom de votre société : nous remplissons le formulaire pour vous. Tout
-        reste modifiable.
+        Tapez le nom de votre société : nous remplissons le formulaire pour vous. Tout reste
+        modifiable.
       </p>
 
       <RechercheAuRegistre id="comptes-recherche" surSelection={retenir} />
@@ -588,13 +581,7 @@ function EtapeSociete({
  * La même liste sert à la feuille de présence et aux signatures : elle ne se saisit
  * qu'une fois. Les parts ne servent qu'à l'acte, non à un calcul.
  */
-function Associes({
-  etat,
-  changer,
-}: {
-  etat: Comptes;
-  changer: (c: Partial<Comptes>) => void;
-}) {
+function Associes({ etat, changer }: { etat: Comptes; changer: (c: Partial<Comptes>) => void }) {
   /*
    * Le vocabulaire suit la forme.
    *
@@ -738,9 +725,7 @@ function GroupesDeChamps({
                 majValeurs((v) => ({ ...v, [identifiant]: valeur }))
               }
               surSociete={() => {}}
-              surAdresse={(adresse) =>
-                majValeurs((v) => ({ ...v, [champ.identifiant]: adresse }))
-              }
+              surAdresse={(adresse) => majValeurs((v) => ({ ...v, [champ.identifiant]: adresse }))}
             />
           </Fragment>
         ))}
@@ -794,14 +779,16 @@ function EtapeAffectation({
    * ne savait jamais combien il restait tant qu'on n'avait pas fini de se tromper.
    */
   const reste = verdict.aRepartirCentimes - verdict.reparti;
-  const restants = verdict.anomalies.filter((a) => !a.startsWith("L'affectation ne tombe pas juste"));
+  const restants = verdict.anomalies.filter(
+    (a) => !a.startsWith("L'affectation ne tombe pas juste")
+  );
 
   return (
     <>
       <p className={styles.description}>
         Il y a {montantLisible(verdict.aRepartirCentimes)} à répartir : le résultat de
-        l&apos;exercice, augmenté ou diminué du report à nouveau antérieur. La somme des
-        postes doit tomber juste.
+        l&apos;exercice, augmenté ou diminué du report à nouveau antérieur. La somme des postes doit
+        tomber juste.
       </p>
 
       <ReserveLegale
@@ -1022,14 +1009,12 @@ function EtapeConfidentialite({
         <section className={styles.bloc}>
           <h3 className={styles.blocTitre}>Vous n&apos;avez rien à demander ici</h3>
           <div className={`${styles.verdictConf} ${styles.verdictConfOuvert}`}>
-            <span className={styles.verdictConfTitre}>
-              Vos comptes ne sont jamais publiés
-            </span>
+            <span className={styles.verdictConfTitre}>Vos comptes ne sont jamais publiés</span>
             <p className={styles.verdictConfTexte}>{verdict.explication}</p>
           </div>
           <p className={styles.blocNote}>
-            Continuez : le procès-verbal d&apos;approbation sera produit sans déclaration
-            de confidentialité, puisqu&apos;il n&apos;y a rien à rendre confidentiel.
+            Continuez : le procès-verbal d&apos;approbation sera produit sans déclaration de
+            confidentialité, puisqu&apos;il n&apos;y a rien à rendre confidentiel.
           </p>
         </section>
       ) : (
@@ -1043,9 +1028,7 @@ function EtapeConfidentialite({
                 verdict.modele ? styles.verdictConfOuvert : styles.verdictConfFerme,
               ].join(" ")}
             >
-              <span className={styles.verdictConfTitre}>
-                {TITRES_DE_PORTEE[verdict.portee]}
-              </span>
+              <span className={styles.verdictConfTitre}>{TITRES_DE_PORTEE[verdict.portee]}</span>
               <p className={styles.verdictConfTexte}>{verdict.explication}</p>
 
               {/*
@@ -1116,13 +1099,10 @@ function EtapeConfidentialite({
           </section>
 
           <section className={styles.bloc}>
-            <h3 className={styles.blocTitre}>
-              Votre société est-elle dans un de ces cas ?
-            </h3>
+            <h3 className={styles.blocTitre}>Votre société est-elle dans un de ces cas ?</h3>
             <p className={styles.blocTexte}>
-              La plupart ne le sont pas : laissez tout décoché si aucun ne vous concerne.
-              Chacun ferme la confidentialité, et ce que vous cochez ici est déclaré sur
-              l&apos;honneur.
+              La plupart ne le sont pas : laissez tout décoché si aucun ne vous concerne. Chacun
+              ferme la confidentialité, et ce que vous cochez ici est déclaré sur l&apos;honneur.
             </p>
             <ul className={styles.entreeChoix}>
               {EXCLUSIONS_LISIBLES.map((exclusion) => (
@@ -1311,8 +1291,8 @@ function EtapeReglement({
         <h3 className={styles.blocTitre}>Vos actes</h3>
         <p className={styles.blocTexte}>{regime.explication}</p>
         <p className={styles.blocNote}>
-          Ils sont écrits dès votre règlement, puis relus par un avocat. Vous les
-          retrouverez dans vos documents une fois la relecture faite.
+          Ils sont écrits dès votre règlement, puis relus par un avocat. Vous les retrouverez dans
+          vos documents une fois la relecture faite.
         </p>
       </section>
 
@@ -1356,12 +1336,8 @@ function EtapeReglement({
             <div className={styles.fait} key={ligne.libelle}>
               <dt>{ligne.libelle}</dt>
               <dd>
-                <span className={styles.faitValeur}>
-                  {montantLisible(ligne.centimes)} HT
-                </span>
-                {ligne.precision && (
-                  <span className={styles.faitPrecision}>{ligne.precision}</span>
-                )}
+                <span className={styles.faitValeur}>{montantLisible(ligne.centimes)} HT</span>
+                {ligne.precision && <span className={styles.faitPrecision}>{ligne.precision}</span>}
               </dd>
             </div>
           ))}
@@ -1372,9 +1348,7 @@ function EtapeReglement({
                 <span className={styles.faitValeur}>
                   {montantLisible(ligne.centimes)} {ligne.horsTaxes ? "HT" : "TTC"}
                 </span>
-                {ligne.precision && (
-                  <span className={styles.faitPrecision}>{ligne.precision}</span>
-                )}
+                {ligne.precision && <span className={styles.faitPrecision}>{ligne.precision}</span>}
               </dd>
             </div>
           ))}

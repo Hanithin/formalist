@@ -60,6 +60,8 @@ const CLES_EXCLUSION = EXCLUSIONS.map((e) => e.cle);
 
 const ENREGISTREMENT = z.object({
   dossier: schemas.identifiant,
+  /* L'étape atteinte : c'est elle que le tableau de bord relit pour dessiner le chemin. */
+  etape: z.number().int().min(1).max(20).optional(),
   societe: SOCIETE.optional(),
   // Une assemblée de plus de vingt associés passe par un avocat : la liste sert à
   // nommer les signataires du procès-verbal, pas à tenir un registre.

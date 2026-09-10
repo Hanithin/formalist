@@ -28,8 +28,13 @@ export interface EtapeDuChemin {
 }
 
 export interface DossierEnTeteProps {
-  /** « Création », « Modification » - la nature de la formalité. */
-  nature: string;
+  /**
+   * « Création », « Modification » - la nature de la formalité.
+   *
+   * Nulle quand le titre la porte déjà : un dossier dont la société n'est pas encore
+   * choisie s'appelle par ce qu'il est, et la pastille redirait le titre.
+   */
+  nature: string | null;
   societe: string;
   /** Ce qui suit, en toutes lettres. C'est ce qu'on lit quand on revient. */
   prochaineEtape: string;
@@ -113,13 +118,20 @@ export function DossierEnTete({
       ? "En cours de vérification"
       : (courante?.titre ?? "Chez l'avocat")
     : etat.ton === "action"
-      ? "En attente de vous"
+      ? "Vous avez la main"
       : etat.ton === "termine"
         ? "Terminé"
         : (courante?.titre ?? etat.libelle);
 
-  const detaillees =
-    !enCoursChezNous && (actions.length > 1 || actions[0]?.urgent === true);
+  /*
+   * Qui tient le dossier, quand quelqu'un le tient.
+   *
+   * Nul tant qu'on le remplit soi-même : il n'a été confié à personne, et le dire
+   * ferait attendre un avocat qui n'a rien reçu.
+   */
+  const suivi = avocat ? "Suivi par " + avocat : enCoursChezNous ? "En attente d'un avocat" : null;
+
+  const detaillees = !enCoursChezNous && (actions.length > 1 || actions[0]?.urgent === true);
   const retenues = detaillees ? actions.slice(0, 2) : [];
   const reste = detaillees ? actions.length - retenues.length : 0;
   const sousTitre = enCoursChezNous
@@ -154,7 +166,7 @@ export function DossierEnTete({
           {sousTitre && <p className={styles.teteEtape}>{sousTitre}</p>}
         </div>
 
-        <span className={styles.teteBadgeFormalite}>{nature}</span>
+        {nature && <span className={styles.teteBadgeFormalite}>{nature}</span>}
       </div>
 
       {/*
@@ -248,18 +260,25 @@ export function DossierEnTete({
 
           Un dossier confié à un cabinet n'est pas une file d'attente anonyme : le nom
           de celui qui le tient vaut mieux qu'une barre de progression de plus.
+
+          Rien tant qu'on le remplit encore. « En attente d'un avocat » se lisait à
+          côté de « Vous avez la main » : deux affirmations contraires sur la même
+          ligne, dont l'une reprochait au cabinet une lenteur qui n'existait pas -
+          le dossier n'a pas été envoyé, aucun avocat ne l'attend.
         */}
-        <p className={styles.teteMeta}>
-          {avocat ? "Suivi par " + avocat : "En attente d'un avocat"}
-          {nonLus > 0 && (
-            <>
-              {" · "}
-              <Link href="/messagerie" className={styles.teteMetaLien}>
-                {nonLus > 1 ? nonLus + " messages non lus" : "1 message non lu"}
-              </Link>
-            </>
-          )}
-        </p>
+        {(suivi || nonLus > 0) && (
+          <p className={styles.teteMeta}>
+            {suivi}
+            {nonLus > 0 && (
+              <>
+                {suivi ? " · " : ""}
+                <Link href="/messagerie" className={styles.teteMetaLien}>
+                  {nonLus > 1 ? nonLus + " messages non lus" : "1 message non lu"}
+                </Link>
+              </>
+            )}
+          </p>
+        )}
 
         {/* L'état en face du geste : c'est là qu'on se demande s'il y a à faire. */}
         {etatLisible && (

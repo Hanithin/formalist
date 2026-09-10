@@ -32,7 +32,6 @@ function Coche({ epaisseur = "3" }: { epaisseur?: string }) {
   );
 }
 
-
 /* ---------- Les documents du dossier ---------- */
 
 export interface DocumentDuDossier {
@@ -41,6 +40,51 @@ export interface DocumentDuDossier {
   statut: string | null;
   motifRejet: string | null;
   fichier: string | null;
+}
+
+export interface EtapeApres {
+  titre: string;
+  explication: string;
+}
+
+/**
+ * Ce qui se passera une fois la saisie finie.
+ *
+ * Un dossier qu'on remplit ne dit rien de ce qui l'attend : on voit sept étapes de
+ * formulaire, on ne sait pas ce qu'on déclenche en les finissant. Le chemin vient du
+ * suivi - le même que le client lira ensuite dans son dossier, propre à chaque nature
+ * de formalité - lu à l'envers du temps.
+ *
+ * Numéroté, parce que c'en est une : ces étapes se suivent dans cet ordre, et chacune
+ * attend la précédente.
+ */
+export function ApresLEnvoi({ etapes }: { etapes: EtapeApres[] }) {
+  return (
+    <section className={styles.dashCard} aria-labelledby="et-apres">
+      <div className={styles.dashCardHead}>
+        <div>
+          <h2 id="et-apres" className={styles.dashCardTitle}>
+            Et après ?
+          </h2>
+          <div className={styles.dashCardSub}>Une fois votre saisie terminée</div>
+        </div>
+      </div>
+
+      <ol className={styles.apresListe}>
+        {etapes.map((etape, rang) => (
+          <li key={etape.titre} className={styles.apresEtape}>
+            <span className={styles.apresRang} aria-hidden="true">
+              {rang + 1}
+            </span>
+            <span className={styles.apresCorps}>
+              <span className={styles.apresTitre}>{etape.titre}</span>
+              <span className={styles.apresExplication}>{etape.explication}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
 }
 
 export function DocumentsDuDossier({ documents }: { documents: DocumentDuDossier[] }) {

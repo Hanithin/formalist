@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "./Adresse.module.css";
+import { communesProposees } from "@/domain/formalite/communes";
 
 /**
  * Autocomplétion d'adresse sur la Base Adresse Nationale.
@@ -97,8 +98,7 @@ export function Adresse({ id, valeur, surChangement, surCompletion, placeholder 
         setPropositions(
           traits.slice(0, 6).map((trait) => {
             const p = (trait as { properties?: Record<string, string> }).properties ?? {};
-            const voie =
-              p.name ?? [p.housenumber, p.street].filter(Boolean).join(" ");
+            const voie = p.name ?? [p.housenumber, p.street].filter(Boolean).join(" ");
             return {
               label: p.label ?? "",
               voie: voie || (p.label ?? ""),
@@ -303,11 +303,13 @@ export function AdresseComposee({
 export function Ville({
   id,
   valeur,
+  placeholder,
   surChangement,
   surCompletion,
 }: {
   id: string;
   valeur: string;
+  placeholder?: string;
   surChangement: (ville: string) => void;
   /**
    * Le code postal de la commune retenue, et son nom en second argument.
@@ -346,9 +348,14 @@ export function Ville({
         if (!reponse.ok) return;
 
         const donnees = (await reponse.json()) as { nom: string; codesPostaux?: string[] }[];
-        setCommunes(
-          donnees.map((c) => ({ nom: c.nom, codePostal: c.codesPostaux?.[0] ?? "" }))
-        );
+        /*
+         * Paris, Lyon et Marseille se déplient en arrondissements.
+         *
+         * L'API les rend comme une commune unique portant tous leurs codes postaux ;
+         * n'en garder que le premier proposait « Lyon 69001 » à qui est né dans le
+         * troisième, sans autre issue que de corriger le code à la main.
+         */
+        setCommunes(donnees.flatMap((c) => communesProposees(c.nom, c.codesPostaux)));
         if (document.activeElement !== champ.current) return;
         setOuvert(true);
       } catch {
@@ -368,6 +375,7 @@ export function Ville({
         ref={champ}
         id={id}
         value={valeur}
+        placeholder={placeholder}
         autoComplete="off"
         role="combobox"
         aria-expanded={ouvert && assezLong && communes.length > 0}

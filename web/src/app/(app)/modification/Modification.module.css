@@ -579,6 +579,21 @@
  * plutôt que du balisage : les vingt-quatre explications des quatre parcours en
  * héritent sans qu'on retouche chacune.
  */
+/*
+ * Un début de section dans le formulaire.
+ *
+ * La classe n'existait pas : styles.sousTitre valait undefined, le titre sortait sans
+ * classe et retombait sur le h3 global, dont la marge est à zéro. Il se collait donc
+ * au champ précédent, seul titre du parcours à ne pas respirer.
+ */
+.sousTitre {
+  margin: 34px 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #18181b;
+}
+
 .description {
   display: flex;
   gap: 10px;
@@ -599,9 +614,8 @@
   width: 16px;
   height: 16px;
   margin-top: 2px;
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><line x1='12' y1='16' x2='12' y2='12'/><line x1='12' y1='8' x2='12.01' y2='8'/></svg>")
-      no-repeat center / contain;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><line x1='12' y1='16' x2='12' y2='12'/><line x1='12' y1='8' x2='12.01' y2='8'/></svg>")
+    no-repeat center / contain;
 }
 
 /*
@@ -1203,6 +1217,21 @@
   background: #f4f4f5;
   font-size: 13.5px;
   color: #52525b;
+}
+
+/*
+ * La conséquence, dans la colonne restée vide.
+ *
+ * Les lignes déduites prennent la largeur entière, ce qui convient quand elles suivent
+ * un champ pleine largeur. Celle de la division suit un menu qui n'occupe qu'une demi-
+ * ligne : la poser dessous laissait une moitié de page blanche à sa droite et éloignait
+ * le résultat du réglage qui le produit. Elle prend la moitié libre, et sa marge haute
+ * la met au niveau du menu plutôt qu'à celui du libellé - c'est au choix qu'elle
+ * répond, non à sa question.
+ */
+.champs > .deduitACote {
+  grid-column: span 3;
+  margin-top: 26px;
 }
 
 .recapitulatif {
@@ -1962,7 +1991,9 @@
   border: 1px solid #e5e5e7;
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .changement:hover {
@@ -2006,7 +2037,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .changement:hover .changementCase {
@@ -2433,7 +2466,9 @@
   letter-spacing: 0;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .acteRegistre:hover:not(:disabled) {
@@ -2796,7 +2831,9 @@
   overflow: visible;
   text-align: left;
   font: inherit;
-  transition: background 0.12s, box-shadow 0.12s;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
 }
 
 .repere:hover {
@@ -2938,7 +2975,9 @@
   font-size: 13px;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
 }
 
 .editeurZone:hover {
@@ -3403,7 +3442,9 @@
   font-weight: 600;
   color: #fff;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .paiementBouton:hover {
@@ -3552,7 +3593,10 @@
   font-weight: 500;
   color: #52525b;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
 }
 
 .natures .nature:hover {
@@ -3622,7 +3666,9 @@
   background: none;
   color: #52525b;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .navFleche:hover:not(:disabled) {
@@ -3714,7 +3760,9 @@
   font-weight: 600;
   color: #15803d;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .accesPage:hover {
@@ -3767,7 +3815,6 @@
   border-color: #c9c9cc;
   color: #111;
 }
-
 
 /*
  * La carte s'élargit le temps de la retouche.
@@ -3903,7 +3950,10 @@
   background: #fff;
   border: 2px solid #16a34a;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
-  transition: opacity 0.12s, transform 0.12s, background 0.12s;
+  transition:
+    opacity 0.12s,
+    transform 0.12s,
+    background 0.12s;
 }
 
 .borddroit:hover,
@@ -4166,8 +4216,6 @@
   background: #fff;
 }
 
-
-
 .formeBouton {
   display: inline-flex;
   align-items: center;
@@ -4183,7 +4231,9 @@
   font-size: 13px;
   color: #3f3f46;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .formeBouton:hover {
@@ -4253,7 +4303,9 @@
   background: #fafafa;
   color: #52525b;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .tailleFleche + .tailleFleche {
@@ -4387,7 +4439,9 @@
   font-family: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
 }
 
 .historiqueEtape:hover {
@@ -4599,7 +4653,6 @@
   outline: 2px solid #15803d;
   outline-offset: 2px;
 }
-
 
 .suiviCarte[data-etat="confirme"] .suiviJauge {
   background: #dcf5e3;
@@ -5365,7 +5418,6 @@
  * une quatrième ligne. C'est au prix de prendre ce qui reste, non de deviner sa
  * largeur.
  */
-
 
 /*
  * Ce que le pied dit à la place du prix.
@@ -6172,7 +6224,6 @@
   color: var(--encre-douce, #52525b);
 }
 
-
 /* ---------------------------------------------------------------- Fermeture
  *
  * L'orientation : deux questions fermées, posées avant tout le reste.
@@ -6403,7 +6454,9 @@
  * n'impose rien par !important.
  */
 @media (max-width: 700px) {
-  .champs input, .champs select, .champs textarea {
+  .champs input,
+  .champs select,
+  .champs textarea {
     font-size: 16px;
   }
 
@@ -6419,7 +6472,8 @@
     font-size: 16px;
   }
 
-  .forme select, .forme input {
+  .forme select,
+  .forme input {
     font-size: 16px;
   }
 }
@@ -6512,7 +6566,9 @@
   color: inherit;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .depotBilan:hover {
@@ -6862,7 +6918,6 @@
   stroke-width: 1.9;
 }
 
-
 /* ---------------------------------------------------- La confidentialité */
 
 /*
@@ -6992,7 +7047,9 @@
   background: #fff;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .choixConfCarte:hover {
@@ -7615,7 +7672,6 @@
 .colonneBouton:hover {
   background: #000;
 }
-
 
 /* ------------------------------------------- Ce que le registre a rempli */
 

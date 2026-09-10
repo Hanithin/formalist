@@ -15,6 +15,7 @@ import { devisDeCessation, DELAI, PRESTATIONS } from "@/domain/cessation/offre";
 import styles from "../modification/Modification.module.css";
 import { remonterEnHaut } from "@/lib/defilement";
 import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
+import { ETAPES_CESSATION } from "@/domain/formalite/etapes";
 
 const TRAITS = {
   fill: "none",
@@ -24,11 +25,8 @@ const TRAITS = {
   strokeLinejoin: "round",
 } as const;
 
-const ETAPES = [
-  { titre: "Votre auto-entreprise", court: "Entreprise" },
-  { titre: "L'arrêt et vos échéances", court: "Arrêt" },
-  { titre: "Récapitulatif et règlement", court: "Règlement" },
-];
+/* Les titres viennent du domaine : le tableau de bord dessine le même chemin. */
+const ETAPES = ETAPES_CESSATION;
 
 interface Props {
   dossier: number;
@@ -46,7 +44,13 @@ interface Props {
  * prend de la place ici, c'est le calendrier des suites - la seule chose que le client
  * ne trouvera nulle part ailleurs.
  */
-export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, actesInitiaux }: Props) {
+export function Parcours({
+  dossier,
+  initial,
+  etapeInitiale,
+  issueDuPaiement,
+  actesInitiaux,
+}: Props) {
   const [etat, setEtat] = useState<Cessation>(initial);
   const [etape, setEtape] = useState(etapeInitiale);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -88,6 +92,8 @@ export function Parcours({ dossier, initial, etapeInitiale, issueDuPaiement, act
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dossier,
+          /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
+          etape: vers,
           entreprise: etat.entreprise,
           entrepreneur: etat.entrepreneur,
           valeurs: etat.valeurs,
@@ -281,8 +287,8 @@ function EtapeEntreprise({
   return (
     <>
       <p className={styles.description}>
-        Cherchez votre auto-entreprise au registre : elle y figure sous votre nom, ou
-        sous celui que vous lui avez donné.
+        Cherchez votre auto-entreprise au registre : elle y figure sous votre nom, ou sous celui que
+        vous lui avez donné.
       </p>
 
       <RechercheAuRegistre id="cessation-recherche" surSelection={retenir} />
@@ -362,8 +368,8 @@ function EtapeEntreprise({
       <section className={styles.bloc}>
         <h3 className={styles.blocTitre}>Vous</h3>
         <p className={styles.blocTexte}>
-          Une auto-entreprise se confond avec la personne qui l&apos;exerce : c&apos;est
-          vous qui déclarez, et vous qui signez.
+          Une auto-entreprise se confond avec la personne qui l&apos;exerce : c&apos;est vous qui
+          déclarez, et vous qui signez.
         </p>
 
         <div className={styles.champs}>
@@ -426,9 +432,7 @@ function Champs({
               majValeurs((v) => ({ ...v, [identifiant]: valeur }))
             }
             surSociete={() => {}}
-            surAdresse={(adresse) =>
-              majValeurs((v) => ({ ...v, [champ.identifiant]: adresse }))
-            }
+            surAdresse={(adresse) => majValeurs((v) => ({ ...v, [champ.identifiant]: adresse }))}
           />
         </Fragment>
       ))}
@@ -458,8 +462,8 @@ function Echeances({ etat }: { etat: Cessation }) {
     <section className={styles.bloc}>
       <h3 className={styles.blocTitre}>Ce qu&apos;il vous restera à faire</h3>
       <p className={styles.blocTexte}>
-        Nous déposons la déclaration. Le reste vous appartient, et personne ne vous le
-        rappellera : voici les dates, calculées d&apos;après vos réponses.
+        Nous déposons la déclaration. Le reste vous appartient, et personne ne vous le rappellera :
+        voici les dates, calculées d&apos;après vos réponses.
       </p>
 
       <ul className={styles.jalons}>
@@ -546,9 +550,8 @@ function EtapeReglement({
       <section className={styles.bloc}>
         <h3 className={styles.blocTitre}>Vos pièces</h3>
         <p className={styles.blocTexte}>
-          Une déclaration récapitulative, qui vous reste comme preuve de ce qui a été
-          déclaré, et un pouvoir : le guichet n&apos;accepte un dépôt par un tiers que
-          sur mandat écrit.
+          Une déclaration récapitulative, qui vous reste comme preuve de ce qui a été déclaré, et un
+          pouvoir : le guichet n&apos;accepte un dépôt par un tiers que sur mandat écrit.
         </p>
 
         {documents.length > 0 && (
@@ -595,12 +598,8 @@ function EtapeReglement({
             <div className={styles.fait} key={ligne.libelle}>
               <dt>{ligne.libelle}</dt>
               <dd>
-                <span className={styles.faitValeur}>
-                  {montantLisible(ligne.centimes)} HT
-                </span>
-                {ligne.precision && (
-                  <span className={styles.faitPrecision}>{ligne.precision}</span>
-                )}
+                <span className={styles.faitValeur}>{montantLisible(ligne.centimes)} HT</span>
+                {ligne.precision && <span className={styles.faitPrecision}>{ligne.precision}</span>}
               </dd>
             </div>
           ))}
@@ -641,8 +640,8 @@ function FinDePaiement({ issue, dossier }: { issue: "regle" | "annule"; dossier:
         <li>
           {issue === "regle" ? (
             <>
-              Votre règlement est enregistré. Le dossier {dossier} part au cabinet, qui
-              déposera la déclaration au guichet unique.{" "}
+              Votre règlement est enregistré. Le dossier {dossier} part au cabinet, qui déposera la
+              déclaration au guichet unique.{" "}
               <Link href="/documents">Vos pièces sont dans vos documents.</Link>
             </>
           ) : (

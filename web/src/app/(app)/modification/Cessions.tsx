@@ -18,6 +18,10 @@ import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { AdresseUneLigne } from "@/components/formulaire/Adresse";
 import styles from "./Modification.module.css";
+import { Ville } from "@/components/formulaire/Adresse";
+import { ChampListe } from "@/components/formulaire/ChampListe";
+import { lieuAvecCode } from "@/domain/formalite/communes";
+import { NATIONALITES } from "@/domain/formalite/pays";
 
 /*
  * D'où le cédant tient les titres qu'il cède.
@@ -264,8 +268,8 @@ export function Cessions({
         {associes.some(estIdentifiable) && (
           <div className={styles.etatCivil}>
             <p className={styles.capitalAide}>
-              L&apos;acte de cession est présenté à l&apos;enregistrement au service des impôts :
-              il identifie chaque associé, qu&apos;il cède ou qu&apos;il intervienne.
+              L&apos;acte de cession est présenté à l&apos;enregistrement au service des impôts : il
+              identifie chaque associé, qu&apos;il cède ou qu&apos;il intervienne.
             </p>
 
             <div className={styles.champs}>
@@ -288,11 +292,14 @@ export function Cessions({
 
                     <div className={styles.champ}>
                       <label htmlFor={"associe-" + rang + "-ne-a"}>Né(e) à</label>
-                      <input
+                      <Ville
                         id={"associe-" + rang + "-ne-a"}
-                        placeholder="Lyon (Rhône)"
-                        value={associe.neA ?? ""}
-                        onChange={(e) => modifierAssocie(rang, { neA: e.target.value })}
+                        placeholder="Lyon 3e (69003)"
+                        valeur={associe.neA ?? ""}
+                        surChangement={(ville) => modifierAssocie(rang, { neA: ville })}
+                        surCompletion={(codePostal, ville) =>
+                          modifierAssocie(rang, { neA: lieuAvecCode(ville, codePostal) })
+                        }
                       />
                       {refus("associe-" + rang + "-ne-a") && (
                         <p role="alert">{refus("associe-" + rang + "-ne-a")}</p>
@@ -301,11 +308,12 @@ export function Cessions({
 
                     <div className={styles.champ}>
                       <label htmlFor={"associe-" + rang + "-nationalite"}>Nationalité</label>
-                      <input
+                      <ChampListe
                         id={"associe-" + rang + "-nationalite"}
                         placeholder="Française"
-                        value={associe.nationalite ?? ""}
-                        onChange={(e) => modifierAssocie(rang, { nationalite: e.target.value })}
+                        valeur={associe.nationalite ?? ""}
+                        options={NATIONALITES}
+                        surChangement={(nationalite) => modifierAssocie(rang, { nationalite })}
                       />
                       {refus("associe-" + rang + "-nationalite") && (
                         <p role="alert">{refus("associe-" + rang + "-nationalite")}</p>
@@ -360,14 +368,19 @@ export function Cessions({
                 <label htmlFor={"cession-cedant-" + rang}>Cédant</label>
                 <ChampChoix
                   id={"cession-cedant-" + rang}
-                  valeur={cession.cedant === null || cession.cedant === undefined ? "" : String(cession.cedant)}
+                  valeur={
+                    cession.cedant === null || cession.cedant === undefined
+                      ? ""
+                      : String(cession.cedant)
+                  }
                   invite={nomme ? "Choisir" : "Renseignez d'abord les associés"}
                   disabled={!nomme}
                   options={
                     nomme
                       ? associes.map((associe, i) => ({
                           valeur: String(i),
-                          libelle: nomDeLAssocie(associe, i) + " · " + (associe.parts ?? 0) + " parts",
+                          libelle:
+                            nomDeLAssocie(associe, i) + " · " + (associe.parts ?? 0) + " parts",
                         }))
                       : []
                   }
@@ -384,7 +397,9 @@ export function Cessions({
                   id={"cession-parts-" + rang}
                   decimales={false}
                   valeur={cession.parts ?? ""}
-                  surChangement={(nombre) => modifier(rang, { parts: nombre === "" ? null : nombre })}
+                  surChangement={(nombre) =>
+                    modifier(rang, { parts: nombre === "" ? null : nombre })
+                  }
                 />
                 {detenues > 0 && (
                   <p className={styles.devisPrecision}>
@@ -461,9 +476,7 @@ export function Cessions({
                         { valeur: "physique", libelle: "Une personne" },
                         { valeur: "morale", libelle: "Une société" },
                       ]}
-                      surChangement={(v) =>
-                        modifier(rang, { nature: v as "physique" | "morale" })
-                      }
+                      surChangement={(v) => modifier(rang, { nature: v as "physique" | "morale" })}
                     />
                   </div>
 
@@ -494,7 +507,9 @@ export function Cessions({
                   id={"cession-prix-" + rang}
                   valeur={cession.prix ?? ""}
                   decimales
-                  surChangement={(nombre) => modifier(rang, { prix: nombre === "" ? null : nombre })}
+                  surChangement={(nombre) =>
+                    modifier(rang, { prix: nombre === "" ? null : nombre })
+                  }
                 />
                 {unitaire !== null && (
                   <p className={styles.devisPrecision}>
@@ -543,21 +558,25 @@ export function Cessions({
 
                   <div className={styles.champ}>
                     <label htmlFor={"cession-ne-a-" + rang}>Né(e) à</label>
-                    <input
+                    <Ville
                       id={"cession-ne-a-" + rang}
-                      placeholder="Lyon (Rhône)"
-                      value={cession.neA ?? ""}
-                      onChange={(e) => modifier(rang, { neA: e.target.value })}
+                      placeholder="Lyon 3e (69003)"
+                      valeur={cession.neA ?? ""}
+                      surChangement={(ville) => modifier(rang, { neA: ville })}
+                      surCompletion={(codePostal, ville) =>
+                        modifier(rang, { neA: lieuAvecCode(ville, codePostal) })
+                      }
                     />
                   </div>
 
                   <div className={styles.champ}>
                     <label htmlFor={"cession-nationalite-" + rang}>Nationalité</label>
-                    <input
+                    <ChampListe
                       id={"cession-nationalite-" + rang}
                       placeholder="Française"
-                      value={cession.nationalite ?? ""}
-                      onChange={(e) => modifier(rang, { nationalite: e.target.value })}
+                      valeur={cession.nationalite ?? ""}
+                      options={NATIONALITES}
+                      surChangement={(nationalite) => modifier(rang, { nationalite })}
                     />
                   </div>
                 </>
@@ -593,9 +612,7 @@ export function Cessions({
                       maxLength={9}
                       placeholder="9 chiffres"
                       value={cession.siren ?? ""}
-                      onChange={(e) =>
-                        modifier(rang, { siren: e.target.value.replace(/\D/g, "") })
-                      }
+                      onChange={(e) => modifier(rang, { siren: e.target.value.replace(/\D/g, "") })}
                     />
                   </div>
 
@@ -693,9 +710,9 @@ export function Cessions({
                 surChangement={surAgrementStatutaire}
               />
               <p className={styles.devisPrecision}>
-                La clause figure aux statuts, souvent sous un article « Cession des
-                titres ». Sans réponse, l&apos;acte affirmerait qu&apos;aucun agrément
-                n&apos;est dû, ce que le greffe lit à côté de vos statuts.
+                La clause figure aux statuts, souvent sous un article « Cession des titres ». Sans
+                réponse, l&apos;acte affirmerait qu&apos;aucun agrément n&apos;est dû, ce que le
+                greffe lit à côté de vos statuts.
               </p>
               {refus("agrementRequis") && <p role="alert">{refus("agrementRequis")}</p>}
             </div>
@@ -784,8 +801,8 @@ export function Cessions({
                   <p role="alert">{refus("cessionDureeGarantie")}</p>
                 )}
                 <p className={styles.devisPrecision}>
-                  En matière fiscale et sociale, elle est prorogée d&apos;office jusqu&apos;au
-                  terme du délai de reprise.
+                  En matière fiscale et sociale, elle est prorogée d&apos;office jusqu&apos;au terme
+                  du délai de reprise.
                 </p>
               </div>
 

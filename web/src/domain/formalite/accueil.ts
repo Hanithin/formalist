@@ -29,6 +29,13 @@ export interface DossierDAccueil {
   status: string | null;
   offre: string;
   etapeAffichee: number;
+  /**
+   * L'étape du formulaire, pour les parcours qui l'enregistrent.
+   *
+   * Nulle sur un dossier ouvert avant que les parcours ne la retiennent, et sur ceux
+   * dont les étapes dépendent du moment - la fermeture en a deux jeux.
+   */
+  etapeDuFormulaire?: number | null;
   prochaineEtape: string;
   attendLeClient: boolean;
   actions: ActionAttendue[];

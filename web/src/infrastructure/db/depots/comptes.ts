@@ -24,6 +24,8 @@ import { SOCIETE_A_IDENTIFIER } from "@/domain/formalite/liste";
  */
 
 export interface Comptes {
+  /** L'étape du formulaire atteinte, pour que le tableau de bord sache où l'on en est. */
+  etape?: number;
   societe: SocieteApprouvante;
   associes: AssociePresent[];
   valeurs: Record<string, string | number | undefined>;
@@ -77,7 +79,10 @@ function dirigeantEnTroisChamps(valeurs: Comptes["valeurs"]): Comptes["valeurs"]
 
   const mots = ancien.split(/\s+/);
   const civilite = /^(monsieur|madame)$/i.test(mots[0] ?? "")
-    ? mots[0].replace(/^./, (c) => c.toUpperCase()).toLowerCase().replace(/^./, (c) => c.toUpperCase())
+    ? mots[0]
+        .replace(/^./, (c) => c.toUpperCase())
+        .toLowerCase()
+        .replace(/^./, (c) => c.toUpperCase())
     : "";
   const reste = civilite ? mots.slice(1) : mots;
 
@@ -237,10 +242,7 @@ export async function ouvrirLeReglementDesComptes(
  * Idempotent : Stripe réémet ses avis, et le retour du client passe par le même
  * chemin. Un dossier déjà transmis ne doit pas repartir une seconde fois dans la file.
  */
-export async function confirmerLeReglementDesComptes(
-  reference: string,
-  dossierId: number | null
-) {
+export async function confirmerLeReglementDesComptes(reference: string, dossierId: number | null) {
   const dossier = await prisma.formalites.findFirst({
     where: dossierId ? { id: dossierId } : { data_json: { contains: reference } },
   });

@@ -18,6 +18,8 @@ import type { UtilisateurConnecte } from "../sessions";
  */
 
 export interface Cessation {
+  /** L'étape du formulaire atteinte, pour que le tableau de bord sache où l'on en est. */
+  etape?: number;
   nature: Nature;
   entreprise: EntrepriseCessee;
   entrepreneur: { civilite?: string; prenom?: string; nom?: string; adresse?: string };

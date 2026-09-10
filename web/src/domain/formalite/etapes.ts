@@ -44,10 +44,10 @@ export function nomEtape(phase: number, offre: string | null | undefined): strin
  * Quatre valeurs, et seulement quatre : la pastille ne se coupe pas, un libellé
  * long y pousserait le nom de la société hors de la vignette.
  */
-export function etatCourt(dossier: {
-  status: string | null;
-  attendLeClient: boolean;
-}): { ton: "done" | "pending" | "action" | "progress"; libelle: string } {
+export function etatCourt(dossier: { status: string | null; attendLeClient: boolean }): {
+  ton: "done" | "pending" | "action" | "progress";
+  libelle: string;
+} {
   if (dossier.status === "terminee") return { ton: "done", libelle: "Terminée" };
   if (dossier.status === "en_attente") return { ton: "pending", libelle: "En attente" };
   if (dossier.attendLeClient) return { ton: "action", libelle: "Action requise" };
@@ -64,7 +64,13 @@ export function avancement(phase: number, offre: string | null | undefined): num
 const ETAPES_AUTO_ENTREPRISE = 8;
 
 /** Ce que vaut chaque sous-phase du cabinet dans la seconde moitié du chemin. */
-const SUIVI_AUTO_ENTREPRISE: Record<string, number> = { "5a": 0, "5b": 0, "5c": 1, "5d": 2, "5e": 3 };
+const SUIVI_AUTO_ENTREPRISE: Record<string, number> = {
+  "5a": 0,
+  "5b": 0,
+  "5c": 1,
+  "5d": 2,
+  "5e": 3,
+};
 const ETAPES_DU_SUIVI = 4;
 
 /**
@@ -216,4 +222,68 @@ export function tonDossier(dossier: Dossier): Ton {
  */
 export function accorder(nombre: number, singulier: string, pluriel: string): string {
   return nombre + " " + (nombre <= 1 ? singulier : pluriel);
+}
+
+/* ------------------------------------------- Les étapes de chaque formulaire */
+
+/**
+ * Le chemin d'un formulaire, connu du domaine plutôt que de son écran.
+ *
+ * Chaque parcours gardait sa liste dans son propre composant client : sept titres
+ * dans `modification/Parcours.tsx`, sept autres dans `depot-des-comptes`, trois dans
+ * `cessation`. Le tableau de bord, qui n'a accès à aucun des trois, ne savait dessiner
+ * que le chemin d'une création - et laissait la carte de tête vide pour tout le reste.
+ *
+ * `court` sert la frise du parcours, où la place manque ; `titre` se lit partout
+ * ailleurs.
+ */
+export interface EtapeDeParcours {
+  titre: string;
+  court: string;
+}
+
+export const ETAPES_MODIFICATION: EtapeDeParcours[] = [
+  { titre: "La société", court: "Société" },
+  { titre: "Ce que vous changez", court: "Changements" },
+  { titre: "Les détails", court: "Détails" },
+  { titre: "L'assemblée", court: "Assemblée" },
+  { titre: "Les statuts en vigueur", court: "Statuts" },
+  { titre: "Justificatifs et règlement", court: "Règlement" },
+  { titre: "Vos actes", court: "Actes" },
+];
+
+export const ETAPES_COMPTES: EtapeDeParcours[] = [
+  { titre: "La société", court: "Société" },
+  { titre: "L'exercice", court: "Exercice" },
+  { titre: "Les chiffres", court: "Chiffres" },
+  { titre: "L'affectation du résultat", court: "Affectation" },
+  { titre: "Les conventions réglementées", court: "Conventions" },
+  { titre: "La confidentialité", court: "Confidentialité" },
+  { titre: "Récapitulatif et règlement", court: "Règlement" },
+];
+
+export const ETAPES_CESSATION: EtapeDeParcours[] = [
+  { titre: "Votre auto-entreprise", court: "Entreprise" },
+  { titre: "L'arrêt et vos échéances", court: "Arrêt" },
+  { titre: "Récapitulatif et règlement", court: "Règlement" },
+];
+
+/**
+ * Le chemin à dessiner pour un dossier encore en cours de saisie.
+ *
+ * Nul pour les parcours dont les étapes dépendent de l'endroit où l'on se trouve - la
+ * fermeture en a deux jeux selon qu'on dissout ou qu'on liquide - car une liste fixe y
+ * annoncerait des étapes qui ne viendront pas.
+ */
+export function etapesDuFormulaire(
+  type: string | null | undefined,
+  offre?: string | null
+): EtapeDeParcours[] | undefined {
+  if (!type || type === "creation") {
+    return nomsDEtapes(offre).map((titre) => ({ titre, court: titre }));
+  }
+  if (type === "modification") return ETAPES_MODIFICATION;
+  if (type === "comptes") return ETAPES_COMPTES;
+  if (type === "cessation") return ETAPES_CESSATION;
+  return undefined;
 }

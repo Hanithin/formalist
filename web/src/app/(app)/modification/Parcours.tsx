@@ -1,18 +1,15 @@
 "use client";
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
-import { NATURES_PROPOSEES, fonctionsDuDirigeant, natureDeLaForme } from "@/domain/formalite/formes";
+import {
+  NATURES_PROPOSEES,
+  fonctionsDuDirigeant,
+  natureDeLaForme,
+} from "@/domain/formalite/formes";
 import { dateEnFrancais, elider } from "@/domain/formalite/lettres";
 import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
-import {
-  Fragment,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-  type ReactNode,
-} from "react";
+import { Fragment, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Adresse, AdresseUneLigne, Ville } from "@/components/formulaire/Adresse";
@@ -25,7 +22,7 @@ import { phraseDAttente, type Progression } from "@/domain/modification/lecture"
 import { Editeur } from "./Editeur";
 import {
   MODIFICATIONS,
-  QUALITES_DU_SIGNATAIRE,
+  qualitesDuSignataire,
   champVisible,
   definitions,
   valeursParDefautDesChamps,
@@ -59,6 +56,12 @@ import { remonterEnHaut } from "@/lib/defilement";
 import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
 import { qualitesDuRepresentant } from "@/domain/formalite/formes";
 import { Pieces } from "@/components/formulaire/Pieces";
+import { ETAPES_MODIFICATION } from "@/domain/formalite/etapes";
+import { gardeDeBoucle } from "@/components/formulaire/garde-de-boucle";
+import { lieuAvecCode } from "@/domain/formalite/communes";
+import { effetDeLaDivision } from "@/domain/modification/air";
+import { ChampListe } from "@/components/formulaire/ChampListe";
+import { NATIONALITES } from "@/domain/formalite/pays";
 
 /**
  * Le parcours de modification.
@@ -83,15 +86,8 @@ import { Pieces } from "@/components/formulaire/Pieces";
  * qui reçoit un dossier payé mais incomplet doit relancer quelqu'un qui a déjà quitté
  * l'écran, et la formalité attend.
  */
-const ETAPES = [
-  { numero: 1, titre: "La société", court: "Société" },
-  { numero: 2, titre: "Ce que vous changez", court: "Changements" },
-  { numero: 3, titre: "Les détails", court: "Détails" },
-  { numero: 4, titre: "L'assemblée", court: "Assemblée" },
-  { numero: 5, titre: "Les statuts en vigueur", court: "Statuts" },
-  { numero: 6, titre: "Justificatifs et règlement", court: "Règlement" },
-  { numero: 7, titre: "Vos actes", court: "Actes" },
-];
+/* Les titres viennent du domaine : le tableau de bord dessine le même chemin. */
+const ETAPES = ETAPES_MODIFICATION.map((e, rang) => ({ ...e, numero: rang + 1 }));
 
 /*
  * Les formes proposées viennent du domaine.
@@ -310,6 +306,9 @@ export function Parcours({
   ];
   const anomaliesSociete = verifierSociete(etat.societe);
 
+  /* Voir `garde-de-boucle` : le parcours porte l'état que le dépôt met à jour. */
+  gardeDeBoucle("Le parcours de modification");
+
   function changer(changement: Partial<EtatDuDossier>) {
     setEtat((precedent) => avecCeQuiSeDeduit({ ...precedent, ...changement }));
   }
@@ -335,7 +334,9 @@ export function Parcours({
    * national après un aller-retour, et une écriture bâtie sur l'état de son rendu
    * effacerait la dénomination et le siège qu'on venait d'inscrire.
    */
-  function majAssemblee(maj: (assemblee: EtatDuDossier["assemblee"]) => EtatDuDossier["assemblee"]) {
+  function majAssemblee(
+    maj: (assemblee: EtatDuDossier["assemblee"]) => EtatDuDossier["assemblee"]
+  ) {
     setEtat((precedent) => ({ ...precedent, assemblee: maj(precedent.assemblee) }));
   }
 
@@ -504,6 +505,8 @@ export function Parcours({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dossier,
+          /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
+          etape: vers,
           codes: etat.codes,
           societe: etat.societe,
           valeurs: etat.valeurs,
@@ -858,7 +861,6 @@ interface ResultatRecherche {
   siege?: { adresse?: string; code_postal?: string; libelle_commune?: string };
 }
 
-
 /**
  * La recherche au registre, partagée.
  *
@@ -1035,7 +1037,9 @@ export function RechercheAuRegistre({
   }
 
   return (
-    <div className={compacte ? `${styles.recherche} ${styles.rechercheCompacte}` : styles.recherche}>
+    <div
+      className={compacte ? `${styles.recherche} ${styles.rechercheCompacte}` : styles.recherche}
+    >
       <label htmlFor={id} className={compacte ? styles.invisible : undefined}>
         {libelle}
       </label>
@@ -1075,8 +1079,8 @@ export function RechercheAuRegistre({
       */}
       {ouvert && resultats.length === 0 && (
         <p className={styles.resultatVide}>
-          Aucune société de ce nom au registre. Vérifiez l&apos;orthographe, essayez le
-          SIREN, ou remplissez les champs à la main.
+          Aucune société de ce nom au registre. Vérifiez l&apos;orthographe, essayez le SIREN, ou
+          remplissez les champs à la main.
         </p>
       )}
 
@@ -1091,6 +1095,12 @@ export function RechercheAuRegistre({
       {remarque && <p className={styles.resultatVide}>{remarque}</p>}
     </div>
   );
+}
+
+/** Les qualités de la forme, plus celle déjà choisie si elle n'en est pas. */
+function qualitesProposees(forme: string | null | undefined, choisie: string): string[] {
+  const admises = qualitesDuSignataire(forme);
+  return choisie && !admises.includes(choisie) ? [...admises, choisie] : admises;
 }
 
 function EtapeSociete({
@@ -1180,7 +1190,9 @@ function EtapeSociete({
 
     if (!forme && libelleCategorie) {
       setMessage(
-        "Le registre indique « " + libelleCategorie + " » : choisissez la forme à écrire dans les actes."
+        "Le registre indique « " +
+          libelleCategorie +
+          " » : choisissez la forme à écrire dans les actes."
       );
     }
 
@@ -1221,9 +1233,9 @@ function EtapeSociete({
         geste, d'où viennent les données, et pourquoi on peut les corriger.
       */}
       <p className={styles.description}>
-        Tapez le nom ou le SIREN de votre société : nous reprenons sa forme, son siège
-        et son capital depuis le registre du commerce. Vous pouvez tout corriger
-        ensuite, car le registre n&apos;est pas toujours à jour.
+        Tapez le nom ou le SIREN de votre société : nous reprenons sa forme, son siège et son
+        capital depuis le registre du commerce. Vous pouvez tout corriger ensuite, car le registre
+        n&apos;est pas toujours à jour.
       </p>
 
       {/*
@@ -1280,19 +1292,19 @@ function EtapeSociete({
           </ul>
         )}
 
-      {/*
+        {/*
         Rien trouvé : on le dit.
 
         La liste ne s'affichait que si elle avait quelque chose à montrer : sur un nom
         introuvable, l'écran ne répondait rien, et l'on ne savait pas si la recherche
         tournait, si l'annuaire était en panne, ou si la société n'y était pas.
       */}
-      {ouvert && resultats.length === 0 && (
-        <p className={styles.resultatVide}>
-          Aucune société de ce nom au registre. Vérifiez l&apos;orthographe, essayez le
-          SIREN, ou remplissez les champs à la main.
-        </p>
-      )}
+        {ouvert && resultats.length === 0 && (
+          <p className={styles.resultatVide}>
+            Aucune société de ce nom au registre. Vérifiez l&apos;orthographe, essayez le SIREN, ou
+            remplissez les champs à la main.
+          </p>
+        )}
       </div>
 
       {message && <p className={styles.description}>{message}</p>}
@@ -1394,7 +1406,8 @@ function EtapeSociete({
       */}
       <h3 className={styles.sousTitre}>Le représentant légal</h3>
       <p className={styles.description}>
-        Celui qui signe le pouvoir donné au cabinet pour déposer la formalité.
+        L&apos;avocat dépose la formalité en votre nom : pour cela, il lui faut un pouvoir signé par
+        la société. C&apos;est cette personne qui le signera.
       </p>
 
       <div className={styles.champs}>
@@ -1410,10 +1423,18 @@ function EtapeSociete({
 
         <div className={styles.champ}>
           <label htmlFor="signataire-qualite">Qualité</label>
+          {/*
+            Ce que la forme admet, et rien d'autre.
+
+            Les huit qualités étaient offertes à toute société : une SAS pouvait signer
+            son pouvoir « en qualité de gérante ». Une qualité déjà saisie reste dans la
+            liste même si la forme ne la prévoit pas - un dossier ancien, ou une société
+            identifiée après coup, ne doit pas voir sa saisie disparaître sans un mot.
+          */}
           <ChampChoix
             id="signataire-qualite"
             valeur={texteDe(etat.valeurs.signataireQualite)}
-            options={[...QUALITES_DU_SIGNATAIRE]}
+            options={qualitesProposees(etat.societe.forme, texteDe(etat.valeurs.signataireQualite))}
             surChangement={(v) => majValeurs((x) => ({ ...x, signataireQualite: v }))}
           />
         </div>
@@ -1447,21 +1468,38 @@ function EtapeSociete({
 
         <div className={styles.champ}>
           <label htmlFor="signataire-ne-a">À</label>
-          <input
+          {/*
+            Le lieu de naissance se choisit, il ne se tape plus.
+
+            Le champ était libre : on y écrivait « lyon » ou « Lyon 3 », quand l'acte
+            attend « Lyon 3e (69003) » - c'est l'arrondissement qui distingue deux
+            personnes nées la même année dans la même ville, et le greffe le vérifie
+            sur l'acte de naissance.
+          */}
+          <Ville
             id="signataire-ne-a"
-            value={texteDe(etat.valeurs.signataireNeA)}
-            placeholder="Lyon (69003)"
-            onChange={(e) => majValeurs((x) => ({ ...x, signataireNeA: e.target.value }))}
+            valeur={texteDe(etat.valeurs.signataireNeA)}
+            placeholder="Lyon 3e (69003)"
+            surChangement={(ville) => majValeurs((x) => ({ ...x, signataireNeA: ville }))}
+            surCompletion={(codePostal, ville) =>
+              majValeurs((x) => ({ ...x, signataireNeA: lieuAvecCode(ville, codePostal) }))
+            }
           />
         </div>
 
         <div className={styles.champ}>
           <label htmlFor="signataire-nationalite">Nationalité</label>
-          <input
+          {/* Au féminin : « de nationalité française » s'accorde avec le mot, pas avec
+              la personne. La liste porte donc la seule forme qu'un acte emploie, et
+              évite les « francaise » et « portuguaise » que le greffe relève. */}
+          <ChampListe
             id="signataire-nationalite"
-            value={texteDe(etat.valeurs.signataireNationalite)}
-            placeholder="française"
-            onChange={(e) => majValeurs((x) => ({ ...x, signataireNationalite: e.target.value }))}
+            placeholder="Française"
+            valeur={texteDe(etat.valeurs.signataireNationalite)}
+            options={NATIONALITES}
+            surChangement={(nationalite) =>
+              majValeurs((x) => ({ ...x, signataireNationalite: nationalite }))
+            }
           />
         </div>
 
@@ -1478,8 +1516,7 @@ function EtapeSociete({
             surCompletion={(codePostal, ville) =>
               majValeurs((x) => ({
                 ...x,
-                signataireAdresse:
-                  texteDe(x.signataireAdresse) + ", " + codePostal + " " + ville,
+                signataireAdresse: texteDe(x.signataireAdresse) + ", " + codePostal + " " + ville,
               }))
             }
           />
@@ -1826,90 +1863,93 @@ function EtapeDetails({
         const fait = !incomplete(definition.code);
 
         return (
-        <section
-          key={definition.code}
-          id={"modif-" + definition.code}
-          className={
-            seul
-              ? undefined
-              : deplie
-                ? `${styles.detailsBloc} ${styles.detailsBlocOuvert}`
-                : styles.detailsBloc
-          }
-        >
-          {seul ? (
-            <h3 className={styles.detailsTitre}>{definition.libelle}</h3>
-          ) : (
-            <h3 className={styles.detailsTitre}>
-              <button
-                type="button"
-                className={styles.detailsBascule}
-                onClick={() => setOuvert(deplie ? "" : definition.code)}
-                aria-expanded={deplie}
-                aria-controls={"champs-" + definition.code}
-              >
-                <span className={fait ? `${styles.etapeNum} ${styles.etapeNumFait}` : styles.etapeNum}>
-                  {fait ? "✓" : rang + 1}
-                </span>
-                <span className={styles.detailsNom}>{definition.libelle}</span>
-                {/* L'état du bloc, dit quand il est replié : sinon on l'ouvre pour voir. */}
-                {!deplie && (
-                  <span className={fait ? styles.detailsEtatFait : styles.detailsEtat}>
-                    {fait ? "Complété" : "À compléter"}
-                  </span>
-                )}
-                <span className={styles.detailsChevron} aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+          <section
+            key={definition.code}
+            id={"modif-" + definition.code}
+            className={
+              seul
+                ? undefined
+                : deplie
+                  ? `${styles.detailsBloc} ${styles.detailsBlocOuvert}`
+                  : styles.detailsBloc
+            }
+          >
+            {seul ? (
+              <h3 className={styles.detailsTitre}>{definition.libelle}</h3>
+            ) : (
+              <h3 className={styles.detailsTitre}>
+                <button
+                  type="button"
+                  className={styles.detailsBascule}
+                  onClick={() => setOuvert(deplie ? "" : definition.code)}
+                  aria-expanded={deplie}
+                  aria-controls={"champs-" + definition.code}
+                >
+                  <span
+                    className={fait ? `${styles.etapeNum} ${styles.etapeNumFait}` : styles.etapeNum}
                   >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </span>
-              </button>
-            </h3>
-          )}
+                    {fait ? "✓" : rang + 1}
+                  </span>
+                  <span className={styles.detailsNom}>{definition.libelle}</span>
+                  {/* L'état du bloc, dit quand il est replié : sinon on l'ouvre pour voir. */}
+                  {!deplie && (
+                    <span className={fait ? styles.detailsEtatFait : styles.detailsEtat}>
+                      {fait ? "Complété" : "À compléter"}
+                    </span>
+                  )}
+                  <span className={styles.detailsChevron} aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </span>
+                </button>
+              </h3>
+            )}
 
-          <div id={"champs-" + definition.code} hidden={!deplie}>
-
-          {/*
+            <div id={"champs-" + definition.code} hidden={!deplie}>
+              {/*
             La cession ne se saisit pas en champs plats.
             Elle désigne des associés, se compte à plusieurs, et sa répartition se
             calcule : six cases côte à côte ne peuvent rien vérifier de tout cela.
           */}
-          {/* Ce changement-ci ne se comprend pas sans ses trois phrases : voir le composant. */}
-          {definition.code === "constatation_augmentation" && <ExplicationConstatation />}
+              {/* Ce changement-ci ne se comprend pas sans ses trois phrases : voir le composant. */}
+              {definition.code === "constatation_augmentation" && <ExplicationConstatation />}
 
-          {definition.code === "cession_parts" ? (
-            <Cessions
-              associes={etat.assemblee.associes ?? []}
-              cessions={etat.cessions ?? []}
-              forme={etat.societe.forme}
-              anomalies={anomalies}
-              agrementStatutaire={
-                typeof etat.valeurs.agrementRequis === "string" ? etat.valeurs.agrementRequis : ""
-              }
-              surAssocies={(associes) =>
-                changer({ assemblee: { ...etat.assemblee, associes } })
-              }
-              surCessions={(cessions) => changer({ cessions })}
-              valeurs={etat.valeurs}
-              surAgrementStatutaire={(reponse) =>
-                majValeurs((valeurs) => ({ ...valeurs, agrementRequis: reponse }))
-              }
-              surValeur={(champ, valeur) =>
-                majValeurs((valeurs) => ({ ...valeurs, [champ]: valeur }))
-              }
-            />
-          ) : (
-          <div className={styles.champs}>
-            {definition.champs
-              .filter((champ) => champVisible(champ, etat.valeurs, etat.societe.forme))
-              /*
+              {definition.code === "cession_parts" ? (
+                <Cessions
+                  associes={etat.assemblee.associes ?? []}
+                  cessions={etat.cessions ?? []}
+                  forme={etat.societe.forme}
+                  anomalies={anomalies}
+                  agrementStatutaire={
+                    typeof etat.valeurs.agrementRequis === "string"
+                      ? etat.valeurs.agrementRequis
+                      : ""
+                  }
+                  surAssocies={(associes) =>
+                    changer({ assemblee: { ...etat.assemblee, associes } })
+                  }
+                  surCessions={(cessions) => changer({ cessions })}
+                  valeurs={etat.valeurs}
+                  surAgrementStatutaire={(reponse) =>
+                    majValeurs((valeurs) => ({ ...valeurs, agrementRequis: reponse }))
+                  }
+                  surValeur={(champ, valeur) =>
+                    majValeurs((valeurs) => ({ ...valeurs, [champ]: valeur }))
+                  }
+                />
+              ) : (
+                <div className={styles.champs}>
+                  {definition.champs
+                    .filter((champ) => champVisible(champ, etat.valeurs, etat.societe.forme))
+                    /*
                 Une valeur qui se déduit ne se saisit pas.
 
                 La valeur nominale d'un titre de la société apportée est le capital
@@ -1918,109 +1958,155 @@ function EtapeDetails({
                 deux autres. Elle reparaît quand la division ne tombe pas ronde - c'est
                 alors une décision, non un calcul.
               */
-              .filter(
-                (champ) =>
-                  champ.identifiant !== "apporteeNominale" || nominaleDeduite(etat.valeurs) === null
-              )
-              /*
+                    .filter(
+                      (champ) =>
+                        champ.identifiant !== "apporteeNominale" ||
+                        nominaleDeduite(etat.valeurs) === null
+                    )
+                    /*
                 Ce que le registre remplit ne se demande pas : il se montre.
 
                 Les cinq cases que la recherche renseigne sortent du formulaire tant
                 qu'on n'a pas demandé à les corriger. Elles se lisent en une ligne, sous
                 la recherche, là où elles se trouvaient.
               */
-              .filter(
-                (champ) =>
-                  aCorriger.includes(definition.code) ||
-                  !remplisParLeRegistre(definition).includes(champ.identifiant)
-              )
-              .map((champ, rang, visibles) => (
-                <Fragment key={champ.identifiant}>
-                  {/*
+                    .filter(
+                      (champ) =>
+                        aCorriger.includes(definition.code) ||
+                        !remplisParLeRegistre(definition).includes(champ.identifiant)
+                    )
+                    .map((champ, rang, visibles) => (
+                      <Fragment key={champ.identifiant}>
+                        {/*
                     L'intertitre paraît au premier champ visible de son groupe.
                     Il se calcule sur les champs affichés, non sur la définition : un
                     groupe entièrement masqué par une condition ne doit pas laisser son
                     titre seul au-dessus du groupe suivant.
                   */}
-                  {champ.groupe && champ.groupe !== visibles[rang - 1]?.groupe && (
-                    <h4 className={styles.champsGroupe}>{champ.groupe}</h4>
-                  )}
-                <Champ
-                  /*
-                   * La fonction d'un dirigeant suit la forme de la société.
-                   *
-                   * Les quatre titres étaient offerts à tout le monde : une société par
-                   * actions pouvait nommer un gérant, une SARL un président - titres qui
-                   * n'existent pas chez elles, dans un acte déposé au greffe.
-                   */
-                  champ={
-                    champ.identifiant === "fonctionDirigeant"
-                      ? { ...champ, options: fonctionsDuDirigeant(etat.societe.forme) }
-                      : champ
-                  }
-                  valeur={etat.valeurs[champ.identifiant]}
-                  refus={anomalies.find((a) => a.champ === champ.identifiant)?.message}
-                  surChangement={valeur}
-                  surSociete={remplirDepuisLeRegistre}
-                  surAdresse={(voie, complements) =>
-                    majValeurs((valeurs) => {
-                      const suite: Valeurs = { ...valeurs };
-                      // Une complétion ne porte que le code postal et la ville : la
-                      // voie vient du rappel précédent, dans le même cycle.
-                      if (voie) suite[champ.identifiant] = voie;
+                        {champ.groupe && champ.groupe !== visibles[rang - 1]?.groupe && (
+                          <h4 className={styles.champsGroupe}>{champ.groupe}</h4>
+                        )}
+                        <Champ
+                          /*
+                           * La fonction d'un dirigeant suit la forme de la société.
+                           *
+                           * Les quatre titres étaient offerts à tout le monde : une société par
+                           * actions pouvait nommer un gérant, une SARL un président - titres qui
+                           * n'existent pas chez elles, dans un acte déposé au greffe.
+                           */
+                          champ={
+                            champ.identifiant === "fonctionDirigeant"
+                              ? { ...champ, options: fonctionsDuDirigeant(etat.societe.forme) }
+                              : champ
+                          }
+                          valeur={etat.valeurs[champ.identifiant]}
+                          refus={anomalies.find((a) => a.champ === champ.identifiant)?.message}
+                          surChangement={valeur}
+                          surSociete={remplirDepuisLeRegistre}
+                          surAdresse={(voie, complements) =>
+                            majValeurs((valeurs) => {
+                              const suite: Valeurs = { ...valeurs };
+                              // Une complétion ne porte que le code postal et la ville : la
+                              // voie vient du rappel précédent, dans le même cycle.
+                              if (voie) suite[champ.identifiant] = voie;
 
-                      // L'adresse du nouveau siège remplit aussi ses deux compagnons :
-                      // les retaper serait la meilleure façon d'y glisser un écart.
-                      // Les adresses sur une ligne se composent dans AdresseUneLigne.
-                      if (champ.identifiant === "nouvelleAdresse" && complements) {
-                        if (complements.codePostal) suite.nouveauCodePostal = complements.codePostal;
-                        if (complements.ville) suite.nouvelleVille = complements.ville;
-                      }
-                      return suite;
-                    })
-                  }
-                />
+                              // L'adresse du nouveau siège remplit aussi ses deux compagnons :
+                              // les retaper serait la meilleure façon d'y glisser un écart.
+                              // Les adresses sur une ligne se composent dans AdresseUneLigne.
+                              if (champ.identifiant === "nouvelleAdresse" && complements) {
+                                if (complements.codePostal)
+                                  suite.nouveauCodePostal = complements.codePostal;
+                                if (complements.ville) suite.nouvelleVille = complements.ville;
+                              }
+                              return suite;
+                            })
+                          }
+                        />
 
-                {/*
+                        {/*
                   Ce que le registre a rendu, sous la recherche qui l'a rendu.
                 */}
-                {champ.type === "societe" && remplisParLeRegistre(definition).length > 0 && (
-                  <RegistreRempli
-                    champs={remplisParLeRegistre(definition)}
-                    definition={definition}
-                    valeurs={etat.valeurs}
-                    deplie={aCorriger.includes(definition.code)}
-                    surDeplier={() =>
-                      setACorriger((codes) =>
-                        codes.includes(definition.code)
-                          ? codes.filter((c) => c !== definition.code)
-                          : [...codes, definition.code]
-                      )
-                    }
-                  />
-                )}
+                        {champ.type === "societe" &&
+                          remplisParLeRegistre(definition).length > 0 && (
+                            <RegistreRempli
+                              champs={remplisParLeRegistre(definition)}
+                              definition={definition}
+                              valeurs={etat.valeurs}
+                              deplie={aCorriger.includes(definition.code)}
+                              surDeplier={() =>
+                                setACorriger((codes) =>
+                                  codes.includes(definition.code)
+                                    ? codes.filter((c) => c !== definition.code)
+                                    : [...codes, definition.code]
+                                )
+                              }
+                            />
+                          )}
 
-                {/*
+                        {/*
                   La nominale, lue sous les deux nombres qui la donnent.
 
                   Elle se pose après le nombre de titres, là où sa case se trouvait :
                   l'œil la cherche au même endroit, et voit le calcul plutôt que de le
                   refaire.
                 */}
-                {champ.identifiant === "apporteeNbTitres" &&
-                  nominaleDeduite(etat.valeurs) !== null && (
-                    <p className={styles.deduit}>
-                      Valeur nominale d&apos;un titre :{" "}
-                      <strong>{nominaleDeduite(etat.valeurs)!.toLocaleString("fr-FR")} €</strong>{" "}
-                      - le capital divisé par le nombre de titres.
-                    </p>
-                  )}
-                </Fragment>
-              ))}
-          </div>
-          )}
+                        {/*
+                  Ce que la division fait, dit avant qu'on la choisisse.
 
-          {/*
+                  « Diviser par 10 » ne dit pas si l'on passe de 1 euro à 10 centimes
+                  ou de 100 euros à 10. C'est pourtant la seule chose qui permette de
+                  décider : le nominal d'après doit rester un montant qu'un acte peut
+                  écrire.
+                */}
+                        {champ.identifiant === "airDivision" &&
+                          (() => {
+                            const effet = effetDeLaDivision(
+                              etat.societe.capital ?? 0,
+                              nombreLu(etat.valeurs.airActionsExistantes) ?? 0,
+                              diviseurLu(etat.valeurs.airDivision)
+                            );
+                            if (!effet) return null;
+
+                            return (
+                              <p className={`${styles.deduit} ${styles.deduitACote}`}>
+                                {effet.actionsApres === effet.actionsAvant ? (
+                                  <>
+                                    Valeur nominale actuelle :{" "}
+                                    <strong>{euros(effet.nominalAvant)}</strong> pour{" "}
+                                    {actions(effet.actionsAvant)} actions.
+                                  </>
+                                ) : (
+                                  <>
+                                    Après division :{" "}
+                                    <strong>
+                                      {actions(effet.actionsApres)} actions à{" "}
+                                      {euros(effet.nominalApres)}
+                                    </strong>
+                                    , contre {actions(effet.actionsAvant)} à{" "}
+                                    {euros(effet.nominalAvant)} aujourd&apos;hui. Le capital ne
+                                    bouge pas.
+                                  </>
+                                )}
+                              </p>
+                            );
+                          })()}
+
+                        {champ.identifiant === "apporteeNbTitres" &&
+                          nominaleDeduite(etat.valeurs) !== null && (
+                            <p className={styles.deduit}>
+                              Valeur nominale d&apos;un titre :{" "}
+                              <strong>
+                                {nominaleDeduite(etat.valeurs)!.toLocaleString("fr-FR")} €
+                              </strong>{" "}
+                              - le capital divisé par le nombre de titres.
+                            </p>
+                          )}
+                      </Fragment>
+                    ))}
+                </div>
+              )}
+
+              {/*
             Les accords convertis, sous les champs qui les encadrent.
 
             Ils ne sont pas des champs : un tour se compte en vingt contrats, chacun
@@ -2029,27 +2115,28 @@ function EtapeDetails({
             côte ne peuvent rien vérifier de tout cela - c'est le même motif que la
             cession de parts, qui a son composant pour les mêmes raisons.
           */}
-          {definition.code === "constatation_augmentation" && (
-            <Accords
-              dossier={dossier}
-              accords={etat.air ?? []}
-              actionsExistantes={nombreLu(etat.valeurs.airActionsExistantes) ?? 0}
-              division={diviseurLu(etat.valeurs.airDivision)}
-              surAccords={(air) => changer({ air })}
-              surDivision={(division) =>
-                majValeurs((valeurs) => ({
-                  ...valeurs,
-                  airDivision: division === 1 ? "Aucune division" : division.toLocaleString("fr-FR"),
-                }))
-              }
-            />
-          )}
+              {definition.code === "constatation_augmentation" && (
+                <Accords
+                  dossier={dossier}
+                  accords={etat.air ?? []}
+                  actionsExistantes={nombreLu(etat.valeurs.airActionsExistantes) ?? 0}
+                  division={diviseurLu(etat.valeurs.airDivision)}
+                  surAccords={(air) => changer({ air })}
+                  surDivision={(division) =>
+                    majValeurs((valeurs) => ({
+                      ...valeurs,
+                      airDivision:
+                        division === 1 ? "Aucune division" : division.toLocaleString("fr-FR"),
+                    }))
+                  }
+                />
+              )}
 
-          {definition.code === "constatation_augmentation" && (
-            <ActesPrevus valeurs={etat.valeurs} forme={etat.societe.forme} />
-          )}
-          </div>
-        </section>
+              {definition.code === "constatation_augmentation" && (
+                <ActesPrevus valeurs={etat.valeurs} forme={etat.societe.forme} />
+              )}
+            </div>
+          </section>
         );
       })}
     </div>
@@ -2063,6 +2150,36 @@ function EtapeDetails({
  * libre inviterait à diviser par sept. La valeur porte donc l'espace insécable des
  * milliers, et « 1 000 » ne se convertit pas tout seul.
  */
+/**
+ * Un montant en euros, à la précision qu'un nominal demande.
+ *
+ * Diviser mille euros par trois puis par cent donne 3,333333 euros : arrondir au
+ * centime écrirait « 3,33 » et laisserait croire que le capital a changé. Six
+ * décimales suffisent aux divisions que l'écran propose, et les zéros inutiles
+ * tombent d'eux-mêmes.
+ */
+function euros(montant: number): string {
+  return (
+    montant.toLocaleString("fr-FR", {
+      /* Les centimes toujours écrits : un nominal de « 0,1 € » se lit mal à côté d'un
+         « 1 € », alors que « 0,10 € » et « 1,00 € » se comparent d'un coup d'oeil. */
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    }) + " €"
+  );
+}
+
+/**
+ * Un nombre d'actions, groupé même à quatre chiffres.
+ *
+ * En français, Intl ne sépare qu'à partir de cinq chiffres : « 1000 » puis « 10 000 »
+ * dans la même phrase, ce qui donne l'air d'une coquille. Le groupement est demandé
+ * explicitement pour que les deux nombres se lisent de la même façon.
+ */
+function actions(nombre: number): string {
+  return nombre.toLocaleString("fr-FR", { useGrouping: "always" });
+}
+
 export function diviseurLu(choix: unknown): number {
   const chiffres = (choix ?? "").toString().replace(/[^\d]/g, "");
   const valeur = Number(chiffres);
@@ -2160,8 +2277,7 @@ function RegistreRempli({
   if (lus.length === 0) {
     return (
       <p className={`${styles.pleineLargeur} ${styles.deduit}`}>
-        Sa forme, son SIREN, son siège, son capital et son greffe se rempliront depuis le
-        registre.{" "}
+        Sa forme, son SIREN, son siège, son capital et son greffe se rempliront depuis le registre.{" "}
         <button type="button" className={styles.registreGeste} onClick={surDeplier}>
           Les saisir à la main
         </button>
@@ -2289,7 +2405,30 @@ export function Champ({
       */}
       <label htmlFor={id}>{champ.libelle}</label>
 
-      {champ.type === "choix" ? (
+      {champ.type === "commune" ? (
+        /*
+          Un lieu, choisi plutôt que tapé.
+          Paris, Lyon et Marseille s'y déplient en arrondissements, et le champ
+          reçoit « Lyon 3e (69003) » - la forme que les actes portent.
+        */
+        <Ville
+          id={id}
+          /* Pas de placeholder : `indication` est déjà rendue en ligne d'aide sous le
+             champ, et la répéter dedans dirait deux fois la même chose. */
+          valeur={typeof valeur === "string" ? valeur : ""}
+          surChangement={(ville) => surChangement(champ.identifiant, ville)}
+          surCompletion={(codePostal, ville) =>
+            surChangement(champ.identifiant, lieuAvecCode(ville, codePostal))
+          }
+        />
+      ) : champ.type === "nationalite" ? (
+        <ChampListe
+          id={id}
+          valeur={typeof valeur === "string" ? valeur : ""}
+          options={NATIONALITES}
+          surChangement={(nationalite) => surChangement(champ.identifiant, nationalite)}
+        />
+      ) : champ.type === "choix" ? (
         <ChampChoix
           id={id}
           valeur={typeof valeur === "string" ? valeur : ""}
@@ -2462,20 +2601,20 @@ function EtapeAssemblee({
           <div className={styles.natureEtRecherche}>
             <div className={styles.natures}>
               {(["physique", "morale"] as const).map((nature) => (
-              <label
-                key={nature}
-                className={
-                  (associe.nature ?? "physique") === nature
-                    ? `${styles.nature} ${styles.natureChoisie}`
-                    : styles.nature
-                }
-              >
-                <input
-                  type="radio"
-                  name={"nature-" + rang}
-                  checked={(associe.nature ?? "physique") === nature}
-                  onChange={() => modifierAssocie(rang, { nature })}
-                />
+                <label
+                  key={nature}
+                  className={
+                    (associe.nature ?? "physique") === nature
+                      ? `${styles.nature} ${styles.natureChoisie}`
+                      : styles.nature
+                  }
+                >
+                  <input
+                    type="radio"
+                    name={"nature-" + rang}
+                    checked={(associe.nature ?? "physique") === nature}
+                    onChange={() => modifierAssocie(rang, { nature })}
+                  />
                   {nature === "physique" ? "Une personne" : "Une société"}
                 </label>
               ))}
@@ -3004,9 +3143,7 @@ function EtapeStatuts({
             déposée périme les statuts publiés. C'est au client d'affirmer, et son
             affirmation est datée dans le dossier.
           */}
-          <p className={styles.statutsQuestion}>
-            Est-ce votre dernière version ?
-          </p>
+          <p className={styles.statutsQuestion}>Est-ce votre dernière version ?</p>
           <div className={styles.statutsReponses}>
             <button
               type="button"
@@ -3139,7 +3276,6 @@ function EtapeStatuts({
     </>
   );
 }
-
 
 /**
  * Les statuts trouvés, dans une fenêtre.
@@ -3374,9 +3510,9 @@ function EtapeActes({
       <section className={styles.bloc}>
         <h3 className={styles.blocTitre}>Le procès-verbal</h3>
         <p className={styles.blocTexte}>
-          Il porte toutes vos résolutions, numérotées dans l&apos;ordre : un seul acte pour
-          toute l&apos;assemblée, quel que soit le nombre de décisions. Votre avocat le relit
-          avant qu&apos;il vous soit remis.
+          Il porte toutes vos résolutions, numérotées dans l&apos;ordre : un seul acte pour toute
+          l&apos;assemblée, quel que soit le nombre de décisions. Votre avocat le relit avant
+          qu&apos;il vous soit remis.
         </p>
 
         {documents.length > 0 && (
@@ -3417,8 +3553,8 @@ function EtapeActes({
         */}
         {documents.some((d) => d.enRelecture) && (
           <p className={styles.blocNote}>
-            Vos actes sont partis en relecture chez l&apos;avocat. Vous les retrouverez dans
-            vos documents une fois relus, et vous serez prévenu à ce moment-là.
+            Vos actes sont partis en relecture chez l&apos;avocat. Vous les retrouverez dans vos
+            documents une fois relus, et vous serez prévenu à ce moment-là.
           </p>
         )}
 
@@ -3463,9 +3599,7 @@ function EtapeActes({
                   onClick={ouvrirLEditeur}
                   disabled={enCours || lectureEnCours !== null}
                 >
-                  {enCours || lectureEnCours
-                    ? "Lecture des statuts"
-                    : "Retoucher les statuts"}
+                  {enCours || lectureEnCours ? "Lecture des statuts" : "Retoucher les statuts"}
                 </button>
               </div>
 
@@ -3829,7 +3963,6 @@ function EtapeReglement({
           </dl>
         </details>
       </aside>
-
     </div>
   );
 }
@@ -3846,7 +3979,9 @@ const ANCRE_JUSTIFICATIFS = "vos-justificatifs";
  * le focus, ce qui le cerne et l'annonce aux lecteurs d'écran.
  */
 function allerAuJustificatif(identifiant: string) {
-  document.getElementById(ANCRE_JUSTIFICATIFS)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document
+    .getElementById(ANCRE_JUSTIFICATIFS)
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   /* Le focus après le défilement : le donner d'abord ramènerait la page d'un coup. */
   const zone = document.getElementById("zone-piece-" + identifiant);

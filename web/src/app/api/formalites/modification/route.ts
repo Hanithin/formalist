@@ -68,6 +68,14 @@ const CESSION = z.object({
 
 const ENREGISTREMENT = z.object({
   dossier: schemas.identifiant,
+  /*
+   * L'étape atteinte, enregistrée avec le dossier.
+   *
+   * Elle ne vivait que dans l'adresse : le tableau de bord, qui ne la voyait pas,
+   * ne pouvait dessiner le chemin d'aucun parcours hors création, et la carte de
+   * tête restait vide.
+   */
+  etape: z.number().int().min(1).max(20).optional(),
   // Le plafond est le nombre de changements connus : au-delà, la liste est forgée.
   codes: z
     .array(z.enum(CODES_MODIFICATION as [string, ...string[]]))

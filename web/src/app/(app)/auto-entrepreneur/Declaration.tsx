@@ -41,6 +41,8 @@ import { EnTetePage } from "@/components/page/EnTetePage";
 import { Recapitulatif as ColonneDuDossier } from "./Recapitulatif";
 import { nomDeLaPersonne } from "@/domain/auto-entrepreneur/colonne";
 import Link from "next/link";
+import { ChampListe } from "@/components/formulaire/ChampListe";
+import { NATIONALITES } from "@/domain/formalite/pays";
 
 interface Props {
   /** Nul tant que rien n'a été saisi : la déclaration naît au premier enregistrement. */
@@ -376,10 +378,13 @@ export function Declaration({
             </Champ>
 
             <Champ id="nationalite" libelle={<>Nationalité</>} anomalie={erreur("nationalite")}>
-              <input
+              {/* Au féminin : « de nationalité française » s'accorde avec le mot. */}
+              <ChampListe
                 id="nationalite"
-                value={donnees.nationalite ?? ""}
-                onChange={(e) => modifier("nationalite", e.target.value)}
+                placeholder="Française"
+                valeur={donnees.nationalite ?? ""}
+                options={NATIONALITES}
+                surChangement={(nationalite) => modifier("nationalite", nationalite)}
               />
             </Champ>
 
