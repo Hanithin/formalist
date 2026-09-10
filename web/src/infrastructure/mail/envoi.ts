@@ -29,15 +29,15 @@ function echapper(texte: string): string {
     .replace(/'/g, "&#39;");
 }
 
-export interface Resultat {
-  ok: boolean;
-  /** Vrai quand aucune clé n'est configurée : le message n'est pas parti. */
-  simule?: boolean;
-  /** Ce que le fournisseur a répondu, quand il a refusé. */
-  motif?: string;
-}
-
-export async function envoyer(message: {
+/**
+ * Un message composé, avant qu'on l'envoie.
+ *
+ * La composition et l'expédition étaient un seul geste : chaque `emailDe…` bâtissait son
+ * HTML et le postait dans la foulée. On ne pouvait donc pas relire un message sans
+ * l'envoyer, ni le montrer en développement faute de clé. Séparées, la même valeur sert
+ * aux deux - ce qu'on relit est exactement ce qui part, sans copie à tenir à jour.
+ */
+export interface Message {
   destinataire: string;
   sujet: string;
   html: string;
@@ -47,12 +47,22 @@ export async function envoyer(message: {
    *
    * Sans clé, rien ne part : on ne peut ni confirmer une adresse, ni signer, ni
    * réinitialiser un mot de passe - c'est-à-dire parcourir aucun de ces chemins en
-   * local. Poser une clé réelle sur une machine de développement est pire : les
-   * dossiers d'essai portent des adresses d'essai, et l'un d'eux porte parfois une
-   * vraie. Le lien dans le journal donne le chemin sans rien envoyer à personne.
+   * local. Poser une clé réelle sur une machine de développement est pire : les dossiers
+   * d'essai portent des adresses d'essai, et l'un d'eux porte parfois une vraie. Le lien
+   * dans le journal donne le chemin sans rien envoyer à personne.
    */
   lien?: string;
-}): Promise<Resultat> {
+}
+
+export interface Resultat {
+  ok: boolean;
+  /** Vrai quand aucune clé n'est configurée : le message n'est pas parti. */
+  simule?: boolean;
+  /** Ce que le fournisseur a répondu, quand il a refusé. */
+  motif?: string;
+}
+
+export async function envoyer(message: Message): Promise<Resultat> {
   const cle = process.env.RESEND_API_KEY;
   const expediteur = process.env.MAIL_FROM ?? "Formalist <onboarding@resend.dev>";
 
@@ -155,10 +165,10 @@ function gabarit(titre: string, corps: string, libelleBouton: string, lien: stri
 </body></html>`;
 }
 
-export function emailDeVerification(prenom: string, adresse: string, jeton: string) {
+export function messageDeVerification(prenom: string, adresse: string, jeton: string) {
   const lien = adresseApplication() + "/api/auth/verifier?jeton=" + encodeURIComponent(jeton);
 
-  return envoyer({
+  return {
     lien,
     destinataire: adresse,
     sujet: "Confirmez votre adresse email - Formalist",
@@ -171,7 +181,7 @@ export function emailDeVerification(prenom: string, adresse: string, jeton: stri
     texte:
       "Bienvenue sur Formalist.\n\nConfirmez votre adresse en ouvrant ce lien (valable 24 heures) :\n" +
       lien,
-  });
+  };
 }
 
 /**
@@ -185,11 +195,11 @@ export function emailDeVerification(prenom: string, adresse: string, jeton: stri
  * Le message dit qui demande et sur quoi : un lien de signature reçu sans contexte se
  * prend pour une tentative d'hameçonnage - c'en est la forme exacte - et se jette.
  */
-export function emailDeSignature(nom: string, adresse: string, jeton: string, societe: string) {
+export function messageDeSignature(nom: string, adresse: string, jeton: string, societe: string) {
   const lien = adresseApplication() + "/signer/" + encodeURIComponent(jeton);
   const dossier = societe.trim() || "votre société";
 
-  return envoyer({
+  return {
     lien,
     destinataire: adresse,
     sujet: "Vos actes à signer - " + dossier,
@@ -210,7 +220,7 @@ export function emailDeSignature(nom: string, adresse: string, jeton: string, so
       " sont prêts et attendent votre signature.\n\nRelisez-les et signez ici :\n" +
       lien +
       "\n\nCe lien vous est personnel : chaque signataire a reçu le sien.",
-  });
+  };
 }
 
 /**
@@ -224,10 +234,10 @@ export function emailDeSignature(nom: string, adresse: string, jeton: string, so
  * Le message dit aussi quoi faire si la demande ne vient pas de la personne : sans
  * cela, recevoir ce mail sans l'avoir demandé est inquiétant et sans issue.
  */
-export function emailDeReinitialisation(prenom: string, adresse: string, jeton: string) {
+export function messageDeReinitialisation(prenom: string, adresse: string, jeton: string) {
   const lien = adresseApplication() + "/mot-de-passe-oublie/" + encodeURIComponent(jeton);
 
-  return envoyer({
+  return {
     lien,
     destinataire: adresse,
     sujet: "Réinitialisez votre mot de passe - Formalist",
@@ -243,10 +253,10 @@ export function emailDeReinitialisation(prenom: string, adresse: string, jeton: 
       "Ouvrez ce lien (valable une heure, utilisable une seule fois) :\n" +
       lien +
       "\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.",
-  });
+  };
 }
 
-export function emailInvitationEquipe(
+export function messageInvitationEquipe(
   adresse: string,
   jeton: string,
   equipe: string,
@@ -254,7 +264,7 @@ export function emailInvitationEquipe(
 ) {
   const lien = adresseApplication() + "/api/equipe/accepter?jeton=" + encodeURIComponent(jeton);
 
-  return envoyer({
+  return {
     lien,
     destinataire: adresse,
     sujet: invitant + " vous invite à rejoindre " + equipe,
@@ -273,7 +283,7 @@ export function emailInvitationEquipe(
       equipe +
       " sur Formalist.\n\nLien (valable 7 jours) :\n" +
       lien,
-  });
+  };
 }
 
 /**
@@ -286,8 +296,9 @@ export function emailInvitationEquipe(
  * traduits en paragraphes après échappement, pour que ni le texte ni sa mise en forme
  * ne puissent porter de balise.
  */
-export function emailDAvis(prenom: string, adresse: string, avis: Avis, chemin?: string) {
-  if (!avis.sujet || !avis.corps) return Promise.resolve({ ok: true });
+export function messageDAvis(prenom: string, adresse: string, avis: Avis, chemin?: string) {
+  /* Un avis sans sujet ni corps n'a rien à dire : il n'y a pas de message à composer. */
+  if (!avis.sujet || !avis.corps) return null;
 
   // Le tableau de bord n'est plus qu'un repli : chaque avis dit où il conduit.
   const lien = adresseApplication() + (chemin ?? "/tableau-de-bord");
@@ -296,7 +307,7 @@ export function emailDAvis(prenom: string, adresse: string, avis: Avis, chemin?:
     .map((p) => '<p style="margin:0 0 14px;">' + p.replace(/\n/g, "<br>") + "</p>")
     .join("");
 
-  return envoyer({
+  return {
     lien,
     destinataire: adresse,
     sujet: avis.sujet,
@@ -307,5 +318,40 @@ export function emailDAvis(prenom: string, adresse: string, avis: Avis, chemin?:
       lien
     ),
     texte: avis.corps + "\n\n" + lien,
-  });
+  };
+}
+
+/* ------------------------------------------- Composer puis envoyer, en un geste */
+
+/*
+ * Les appelants ne changent pas : ils demandent un envoi, non une composition. Ce qui
+ * change est qu'entre les deux, le message existe comme valeur - et qu'on peut donc le
+ * relire sans l'envoyer.
+ */
+
+export function emailDeVerification(prenom: string, adresse: string, jeton: string) {
+  return envoyer(messageDeVerification(prenom, adresse, jeton));
+}
+
+export function emailDeSignature(nom: string, adresse: string, jeton: string, societe: string) {
+  return envoyer(messageDeSignature(nom, adresse, jeton, societe));
+}
+
+export function emailDeReinitialisation(prenom: string, adresse: string, jeton: string) {
+  return envoyer(messageDeReinitialisation(prenom, adresse, jeton));
+}
+
+export function emailInvitationEquipe(
+  adresse: string,
+  jeton: string,
+  equipe: string,
+  invitant: string
+) {
+  return envoyer(messageInvitationEquipe(adresse, jeton, equipe, invitant));
+}
+
+export function emailDAvis(prenom: string, adresse: string, avis: Avis, chemin?: string) {
+  const message = messageDAvis(prenom, adresse, avis, chemin);
+  /* Rien à dire, rien à envoyer - et ce n'est pas un échec. */
+  return message ? envoyer(message) : Promise.resolve({ ok: true } as Resultat);
 }
