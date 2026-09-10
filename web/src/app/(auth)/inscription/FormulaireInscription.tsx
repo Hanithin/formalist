@@ -69,21 +69,25 @@ export function FormulaireInscription() {
         </p>
       )}
 
-      <label htmlFor="motDePasse">Mot de passe</label>
-      <input
-        id="motDePasse"
-        name="motDePasse"
-        type="password"
-        autoComplete="new-password"
-        minLength={8}
-        required
-        aria-describedby="aide-mot-de-passe"
-      />
-      {/* On dit la règle avant la saisie, pas après le refus. */}
-      <p id="aide-mot-de-passe" className={styles.aide}>
-        Au moins 8 caractères. Une phrase est plus sûre et plus facile à retenir qu&apos;un mot
-        compliqué.
-      </p>
+      {/* Ce champ vivait hors de tout formGroup, seul de son espèce : il retombait sur
+          le style d'input de globals.css au lieu de celui de cette feuille. */}
+      <div className={styles.formGroup}>
+        <label htmlFor="motDePasse">Mot de passe</label>
+        <input
+          id="motDePasse"
+          name="motDePasse"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          aria-describedby="aide-mot-de-passe"
+        />
+        {/* On dit la règle avant la saisie, pas après le refus. */}
+        <p id="aide-mot-de-passe" className={styles.aide}>
+          Au moins 8 caractères. Une phrase est plus sûre et plus facile à retenir qu&apos;un mot
+          compliqué.
+        </p>
+      </div>
       {erreur("motDePasse") && <p role="alert">{erreur("motDePasse")}</p>}
 
       {erreur("_") && (

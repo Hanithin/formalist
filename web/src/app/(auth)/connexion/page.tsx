@@ -42,10 +42,9 @@ export default async function Connexion({
 
         <div className={styles.authFormWrap}>
           <div className={styles.loginCard}>
-            <h1>Bienvenue sur Formalist</h1>
-            <p className={styles.subtitle}>
-              Créez et modifiez votre société avec un avocat, des statuts jusqu&apos;au Kbis.
-            </p>
+            {/* Le titre dit bonjour, rien de plus : la marque est portée par le logo du
+                bandeau et le panneau de droite explique déjà ce qu'on vient faire. */}
+            <h1 className={styles.titreSeul}>Bienvenue</h1>
 
             {etat && (
               <p role="status" className={styles.authNotice}>
@@ -57,10 +56,9 @@ export default async function Connexion({
               <FormulaireConnexion />
             </Suspense>
 
-            <div className={styles.authOr}>Pas encore de compte ?</div>
-            <Link href="/inscription" className={styles.btnSecondary}>
-              Créer un compte
-            </Link>
+            <p className={styles.authAlt}>
+              Pas encore de compte ? <Link href="/inscription">Créer un compte</Link>
+            </p>
           </div>
         </div>
 

@@ -69,10 +69,9 @@ export default async function NouveauMotDePasse({
               </>
             )}
 
-            <div className={styles.authOr}>Vous vous en souvenez ?</div>
-            <Link href="/connexion" className={styles.btnSecondary}>
-              Retour à la connexion
-            </Link>
+            <p className={styles.authAlt}>
+              Vous vous en souvenez ? <Link href="/connexion">Retour à la connexion</Link>
+            </p>
           </div>
         </div>
 

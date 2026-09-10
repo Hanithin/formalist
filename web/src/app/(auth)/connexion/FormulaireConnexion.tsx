@@ -31,6 +31,7 @@ export function FormulaireConnexion() {
    */
   const [adresse, setAdresse] = useState("");
   const [renvoi, setRenvoi] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
   const [renvoiEnCours, setRenvoiEnCours] = useState(false);
 
   function renvoyerLeLien() {
@@ -113,22 +114,48 @@ export function FormulaireConnexion() {
       </div>
 
       <div className={styles.formGroup}>
-        <div className={styles.labelLigne}>
-          <label htmlFor="motDePasse">Mot de passe</label>
-          {/* Le lien est ici, et non en bas de page : c'est au moment de buter sur ce
-              champ qu'on cherche cette issue. */}
-          <Link href="/mot-de-passe-oublie" className={styles.lienOubli}>
-            Mot de passe oublié ?
-          </Link>
+        <label htmlFor="motDePasse">Mot de passe</label>
+        <div className={styles.champOeil}>
+          {/* Plus de placeholder : il disait « Votre mot de passe » sous un libellé qui
+              disait déjà « Mot de passe ». */}
+          <input
+            id="motDePasse"
+            name="motDePasse"
+            type={visible ? "text" : "password"}
+            autoComplete="current-password"
+            required
+          />
+          {/*
+            Voir ce qu'on tape.
+            Un mot de passe long se saisit mal en aveugle, et c'est justement celui
+            qu'on veut encourager. L'intitulé dit l'action qu'on déclenche, pas
+            l'état du champ.
+          */}
+          <button
+            type="button"
+            className={styles.boutonOeil}
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          >
+            {visible ? (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3l18 18" />
+                <path d="M10.6 10.6a2 2 0 002.8 2.8" />
+                <path d="M9.4 5.2A9.5 9.5 0 0112 5c5 0 9 4.5 9 7 0 1-.7 2.4-1.9 3.7" />
+                <path d="M6.2 6.7C4.1 8.2 3 10.2 3 12c0 2.5 4 7 9 7 1.4 0 2.7-.3 3.8-.9" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 12c0-2.5 4-7 9-7s9 4.5 9 7-4 7-9 7-9-4.5-9-7z" />
+                <circle cx="12" cy="12" r="2.6" />
+              </svg>
+            )}
+          </button>
         </div>
-        <input
-          id="motDePasse"
-          name="motDePasse"
-          type="password"
-          placeholder="Votre mot de passe"
-          autoComplete="current-password"
-          required
-        />
+        {/* L'issue se lit dans l'ordre où l'on bute dessus : le champ, puis le recours. */}
+        <Link href="/mot-de-passe-oublie" className={styles.lienOubli}>
+          Mot de passe oublié ?
+        </Link>
       </div>
 
       {erreur && (

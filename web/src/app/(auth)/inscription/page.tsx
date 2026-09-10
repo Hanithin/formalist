@@ -41,10 +41,9 @@ export default function Inscription() {
 
             <FormulaireInscription />
 
-            <div className={styles.authOr}>Vous avez déjà un compte ?</div>
-            <Link href="/connexion" className={styles.btnSecondary}>
-              Se connecter
-            </Link>
+            <p className={styles.authAlt}>
+              Vous avez déjà un compte ? <Link href="/connexion">Se connecter</Link>
+            </p>
           </div>
         </div>
 
