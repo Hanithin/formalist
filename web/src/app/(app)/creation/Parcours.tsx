@@ -510,6 +510,28 @@ export function Parcours({
   /* La formule retenue, pour la barre de règlement posée en tête de l'étape. */
   const formuleRetenue = offre(brouillon.offre);
 
+  /*
+   * Le règlement est derrière nous.
+   *
+   * L'étape des offres montrait la grille tarifaire et le bouton « Régler et confier »
+   * sans regarder si le dossier était payé : un client revenu sur ses pièces se voyait
+   * reproposer les trois formules en cliquant sur « Continuer », alors qu'il avait déjà
+   * réglé et que son dossier était chez un avocat.
+   */
+  const reglementFait = !!brouillon.paye;
+
+  /*
+   * L'étape suivante saute ce qui est acquis.
+   *
+   * Avancer d'un rang menait tout droit aux offres depuis les pièces justificatives.
+   * Une étape qui n'attend plus rien ne se retraverse pas.
+   */
+  const apres = (numero: number) => {
+    const prochaine = numero + 1;
+    const sautee = etapes.find((e) => e.numero === prochaine)?.identifiant === "offres";
+    return sautee && reglementFait ? prochaine + 1 : prochaine;
+  };
+
   const titreDirigeant = regle(brouillon.forme)?.titreDirigeant ?? "Dirigeant";
 
   /*
@@ -553,7 +575,12 @@ export function Parcours({
    * gardent le titre de leur description.
    */
   const libellesAssocies = libellesDesAssocies(brouillon.forme, (brouillon.associes ?? []).length);
-  const titreDe = (e: Etape) => (e.identifiant === "associes" ? libellesAssocies.titre : e.titre);
+  const titreDe = (e: Etape) => {
+    if (e.identifiant === "associes") return libellesAssocies.titre;
+    /* « Choisissez votre offre » au-dessus d'une formule déjà payée se contredit. */
+    if (e.identifiant === "offres" && reglementFait) return "Votre formule";
+    return e.titre;
+  };
   /*
    * Ce que l'étape des actes annonce dépend de ce qu'on peut en faire.
    *
@@ -566,6 +593,9 @@ export function Parcours({
     if (e.identifiant === "actes" && actesEnRelecture > 0) {
       return "Vos actes seront disponibles dès qu'un avocat les aura relus et validés.";
     }
+    if (e.identifiant === "offres" && reglementFait) {
+      return "Ce qui a été retenu et réglé pour ce dossier.";
+    }
     return e.description;
   };
   const libelleCourtDe = (e: Etape) =>
@@ -574,8 +604,8 @@ export function Parcours({
   return (
     <>
       {!dansUneFenetre && (
-      <div className={styles.tete}>
-        {/*
+        <div className={styles.tete}>
+          {/*
           La date cède la place au retour.
 
           « Samedi 29 août 2026 » situe une liste d'échéances ; sur un formulaire, elle
@@ -583,30 +613,30 @@ export function Parcours({
           seul coin d'où l'on pouvait repartir. Le bouton reprend celui de la fiche
           société : les deux écrans se quittent du même geste.
         */}
-        <EnTetePage
-          titre={titre}
-          sousTitre={sousTitre}
-          quand={quand}
-          sansDate
-          action={
-            <Link href={retour?.adresse ?? "/formalites"} className={styles.retour}>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="19" y1="12" x2="5" y2="12" />
-                <polyline points="12 19 5 12 12 5" />
-              </svg>
-              {retour?.libelle ?? "Mes formalités"}
-            </Link>
-          }
-        />
-      </div>
+          <EnTetePage
+            titre={titre}
+            sousTitre={sousTitre}
+            quand={quand}
+            sansDate
+            action={
+              <Link href={retour?.adresse ?? "/formalites"} className={styles.retour}>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+                {retour?.libelle ?? "Mes formalités"}
+              </Link>
+            }
+          />
+        </div>
       )}
 
       {/*
@@ -722,14 +752,18 @@ export function Parcours({
                 <span>Formule retenue</span>
                 {formuleRetenue.nom} · {formuleRetenue.prix}€ HT
               </p>
-              <button
-                type="button"
-                className={styles.reglerBouton}
-                onClick={reglerEtConfier}
-                disabled={enCours || reglementEnCours}
-              >
-                {reglementEnCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
-              </button>
+              {reglementFait ? (
+                <span className={styles.reglerFait}>Réglé</span>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.reglerBouton}
+                  onClick={reglerEtConfier}
+                  disabled={enCours || reglementEnCours}
+                >
+                  {reglementEnCours ? "Ouverture du paiement" : "Régler et confier à un avocat"}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -819,10 +853,9 @@ export function Parcours({
               */}
               {brouillon.modeDomiciliation === "Domiciliation au cabinet" && (
                 <p className={styles.note}>
-                  Le siège est fixé à l&apos;adresse du cabinet, {CABINET.adresse}. Nous
-                  joignons au dossier l&apos;attestation de mise à disposition, notre extrait
-                  Kbis, la pièce d&apos;identité du signataire et notre justificatif de
-                  domicile.
+                  Le siège est fixé à l&apos;adresse du cabinet, {CABINET.adresse}. Nous joignons au
+                  dossier l&apos;attestation de mise à disposition, notre extrait Kbis, la pièce
+                  d&apos;identité du signataire et notre justificatif de domicile.
                 </p>
               )}
 
@@ -1132,16 +1165,22 @@ export function Parcours({
             </div>
           )}
 
-          {etape.identifiant === "offres" && (
-            <>
+          {etape.identifiant === "offres" &&
+            (reglementFait ? (
+              /* Rien à choisir : la formule est prise, le dossier est parti. On dit ce
+                 qui a été réglé, et l'on rend la main à la suite du parcours. */
+              <p className={styles.reglerRappel}>
+                Votre formule est réglée et votre dossier est entre les mains d&apos;un avocat. Il
+                n&apos;y a rien à choisir ici : la suite se lit dans vos documents.
+              </p>
+            ) : (
               <Offres
                 choisie={brouillon.offre}
                 surChangement={(code) => modifier("offre", code)}
                 /* Le champ non renseigné d'abord, le refus du serveur à défaut. */
                 anomalie={anomalies.offre ?? refus ?? undefined}
               />
-            </>
-          )}
+            ))}
 
           {etape.identifiant === "actes" && dossier !== null && (
             <Actes
@@ -1199,7 +1238,7 @@ export function Parcours({
             Le dossier partait chez l'avocat sans qu'un euro ait changé de main, et le
             client arrivait à l'étape des actes sans savoir qu'il n'avait rien payé.
           */}
-          {etape.identifiant === "offres" && (
+          {etape.identifiant === "offres" && !reglementFait && (
             <button
               type="button"
               className={styles.btnNext}
@@ -1221,11 +1260,11 @@ export function Parcours({
             </button>
           )}
 
-          {etape.numero < etapes.length && etape.identifiant !== "offres" && (
+          {etape.numero < etapes.length && (etape.identifiant !== "offres" || reglementFait) && (
             <button
               type="button"
               className={styles.btnNext}
-              onClick={() => enregistrer(etape.numero + 1)}
+              onClick={() => enregistrer(apres(etape.numero))}
               disabled={enCours}
             >
               {enCours ? "Enregistrement" : "Continuer"}

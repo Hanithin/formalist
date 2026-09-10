@@ -3423,3 +3423,35 @@
   font-size: 13.5px;
   color: #9c2620;
 }
+
+/* ---------- Une formule déjà réglée ---------- */
+
+/*
+ * Ce qui est acquis se dit, il ne se redemande pas.
+ *
+ * L'étape des offres montrait sa grille et son bouton de paiement quel que soit l'état
+ * du dossier : un client revenu sur ses pièces se voyait reproposer les trois formules
+ * alors qu'il avait payé et que son dossier était chez un avocat.
+ */
+.reglerFait {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 18px;
+  border-radius: 100px;
+  background: #ecfdf5;
+  color: #0f766e;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.reglerRappel {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid #e7e7ea;
+  border-radius: 14px;
+  background: #fafafa;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #52525b;
+}
