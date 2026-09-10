@@ -1191,6 +1191,16 @@ export function Parcours({
               attestationRecue={
                 piecesDeposees.some((p) => p.type === PIECE_DEPOT_CAPITAL) && !dossierClos
               }
+              /* L'adresse corrigée rejoint l'associé du dossier ; la sauvegarde continue
+                 s'en charge au repos, comme pour toute autre saisie du parcours. */
+              surEmail={(rang, email) =>
+                modifier(
+                  "associes",
+                  (brouillon.associes ?? []).map((associe, i) =>
+                    i === rang ? { ...associe, personne: { ...associe.personne, email } } : associe
+                  )
+                )
+              }
             />
           )}
         </div>

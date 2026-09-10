@@ -54,6 +54,8 @@ interface Props {
    * à une autre date - et les faire signer deux fois.
    */
   attestationRecue: boolean;
+  /** Corriger l'adresse d'un signataire sans quitter l'écran. */
+  surEmail: (rang: number, email: string) => void;
 }
 
 /** « Jean Dupont » donne « JD » ; un nom seul donne sa première lettre. */
@@ -63,6 +65,24 @@ function initiales(nom: string): string {
   const premiere = mots[0][0] ?? "";
   const derniere = mots.length > 1 ? (mots[mots.length - 1][0] ?? "") : "";
   return (premiere + derniere).toUpperCase();
+}
+
+/** Le crayon qui dit qu'un champ se modifie, là où rien d'autre ne le dit. */
+function Crayon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
 }
 
 function Oeil() {
@@ -162,7 +182,14 @@ function Document() {
  * reconnaître.
  */
 
-export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecue }: Props) {
+export function Actes({
+  dossierId,
+  brouillon,
+  actes,
+  dernierMot,
+  attestationRecue,
+  surEmail,
+}: Props) {
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
   /* La fenêtre d'aperçu ne retient que le nom de l'acte, pas son fichier.
      L'original re-sollicitait un aperçu ouvert après une régénération (« If a preview
@@ -189,15 +216,24 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
 
   const associes = brouillon.associes ?? [];
 
-  /** Les signataires : les associés qui portent un nom et une adresse email. */
-  const signataires = associes
-    .map((a) => ({
+  /*
+   * Ceux qui doivent signer, avec ou sans adresse.
+   *
+   * La liste ne retenait que les associés joignables : celui dont l'adresse manquait
+   * disparaissait de l'écran, remplacé par un décompte en bas de bloc. Il faut au
+   * contraire le voir, puisque c'est ici qu'on renseigne son adresse - le rang le relie
+   * à l'associé du dossier, et c'est lui qu'on modifie.
+   */
+  const destinataires = associes
+    .map((a, rang) => ({
+      rang,
       nom: nomDeLaPartie(a),
       email: a.personne?.email?.trim() ?? "",
     }))
-    .filter((s) => s.nom && s.email);
+    .filter((d) => d.nom);
 
-  const sansEmail = associes.filter((a) => nomDeLaPartie(a) && !a.personne?.email?.trim());
+  /** Ceux à qui la demande partira vraiment. */
+  const signataires = destinataires.filter((d) => d.email);
 
   /* Les actes que l'avocat n'a pas encore relus : ils s'affichent, sans s'ouvrir. */
   const enRelecture = actes.filter((a) => a.statut === A_RELIRE);
@@ -209,7 +245,10 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
       const reponse = await fetch("/api/signature", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossier: dossierId, signataires }),
+        body: JSON.stringify({
+          dossier: dossierId,
+          signataires: signataires.map((s) => ({ nom: s.nom, email: s.email })),
+        }),
       });
       const corps = (await reponse.json().catch(() => ({}))) as { error?: string };
 
@@ -405,16 +444,41 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
               et c'est précisément ce qu'on vient y faire : la demande part par courriel,
               une adresse fausse est une signature qui n'arrive jamais.
             */}
-            {signataires.length > 0 ? (
+            {destinataires.length > 0 ? (
               <ul className={styles.signataires}>
-                {signataires.map((s) => (
-                  <li key={s.email} className={styles.signataire}>
+                {destinataires.map((d) => (
+                  <li key={d.rang} className={styles.signataire}>
                     <span className={styles.signataireInitiales} aria-hidden="true">
-                      {initiales(s.nom)}
+                      {initiales(d.nom)}
                     </span>
                     <span className={styles.signataireIdentite}>
-                      <span className={styles.signataireNom}>{s.nom}</span>
-                      <span className={styles.signataireEmail}>{s.email}</span>
+                      <label
+                        className={styles.signataireNom}
+                        htmlFor={"signataire-email-" + d.rang}
+                      >
+                        {d.nom}
+                      </label>
+                      {/*
+                        L'adresse se corrige ici.
+                        C'est le moment où on la relit - juste avant que la demande ne
+                        parte - et retourner à l'étape des associés pour une faute de
+                        frappe fait perdre l'endroit où l'on était.
+                      */}
+                      <input
+                        id={"signataire-email-" + d.rang}
+                        type="email"
+                        className={styles.signataireChamp}
+                        value={d.email}
+                        placeholder="adresse@exemple.fr"
+                        autoComplete="off"
+                        aria-label={"Adresse email de " + d.nom}
+                        onChange={(e) => surEmail(d.rang, e.target.value)}
+                      />
+                    </span>
+
+                    {/* Décoratif : le champ porte déjà son intitulé. */}
+                    <span className={styles.signataireCrayon}>
+                      <Crayon />
                     </span>
                   </li>
                 ))}
@@ -426,12 +490,11 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
               </p>
             )}
 
-            {/* Ceux qu'on ne peut pas joindre, nommés : « 2 associé(s) » ne dit pas
-                lesquels, et c'est la seule chose qu'on ait besoin de savoir. */}
-            {sansEmail.length > 0 && signataires.length > 0 && (
-              <p className={styles.signatairesManquants} role="alert">
-                Sans adresse email, {sansEmail.map((a) => nomDeLaPartie(a)).join(", ")} ne recevra
-                pas de demande. Renseignez-la à l&apos;étape « Associés ».
+            {/* Le reproche se lit à côté du champ vide, non en bas du bloc. */}
+            {destinataires.some((d) => !d.email) && (
+              <p className={styles.signatairesManquants} role="status">
+                Une adresse manque : la demande ne peut pas partir tant qu&apos;elle n&apos;est pas
+                renseignée.
               </p>
             )}
 

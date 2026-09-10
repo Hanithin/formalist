@@ -3505,8 +3505,10 @@
 
 .signataireIdentite {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 2px;
+  /* Le champ prend la largeur restante : sans cela, l'adresse se coupait au tiers. */
   min-width: 0;
 }
 
@@ -3516,13 +3518,76 @@
   color: #18181b;
 }
 
-/* L'adresse peut être longue : elle se coupe plutôt que de pousser la carte. */
-.signataireEmail {
-  overflow: hidden;
-  font-size: 13px;
+/*
+ * L'adresse se corrige sur place.
+ *
+ * Sans cadre au repos : la ligne se lit comme un renseignement, non comme un formulaire
+ * de plus au milieu des actes. Le cadre paraît au survol et à la saisie, quand on
+ * cherche justement à savoir si l'on peut y toucher.
+ */
+/*
+ * Le crayon au bord de la carte.
+ *
+ * Rien ne disait que l'adresse se modifie : une ligne grise sous un nom se lit comme un
+ * renseignement, pas comme une saisie. Le crayon le dit sans cadre permanent, qui ferait
+ * de ce bloc un formulaire au milieu des actes. Au bord droit, non au bout du champ : là
+ * il se cherche, ici il borne la carte.
+ */
+.signataireCrayon {
+  display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 12px;
+  color: #c4c4cc;
+  transition: color 0.15s;
+}
+
+.signataireCrayon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.signataire:hover .signataireCrayon,
+.signataire:focus-within .signataireCrayon {
+  color: #7c3aed;
+}
+
+.signataireChamp {
+  width: 100%;
+  max-width: none;
+  padding: 3px 8px;
+  margin-left: -8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
   color: #71717a;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: inherit;
+  font-size: 13px;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+
+.signataireChamp:hover {
+  border-color: #e4e4e7;
+}
+
+.signataireChamp:focus {
+  outline: none;
+  border-color: #7c3aed;
+  background: #fff;
+  color: #18181b;
+}
+
+.signataireChamp::placeholder {
+  color: #a1a1aa;
+}
+
+/* Une adresse manquante se voit sur sa ligne, non dans un décompte en bas de bloc. */
+.signataireChamp:placeholder-shown:not(:focus) {
+  border-color: #fed7aa;
+  background: #fff7ed;
 }
 
 .signatairesManquants {
