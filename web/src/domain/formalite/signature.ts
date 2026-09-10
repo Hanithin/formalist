@@ -44,15 +44,7 @@ export function libelleEtat(etat: EtatSignature): string {
  * ouvert sans que le lien soit cliqué. Chaque mot dit exactement ce qu'il sait.
  */
 export type JalonEnvoi =
-  | "non_envoye"
-  | "echec"
-  | "rejete"
-  | "simule"
-  | "envoye"
-  | "remis"
-  | "mail_ouvert"
-  | "lien_ouvert"
-  | "signee";
+  "non_envoye" | "echec" | "rejete" | "envoye" | "remis" | "mail_ouvert" | "lien_ouvert" | "signee";
 
 export interface SuiviDemande extends DemandeSignature {
   envoyeLe: Date | null;
@@ -89,15 +81,12 @@ export function jalonDeLEnvoi(demande: SuiviDemande): JalonEnvoi {
   if (demande.ouverteLe) return "lien_ouvert";
   if (demande.mailOuvertLe) return "mail_ouvert";
   if (demande.remisLe) return "remis";
-  if (demande.motif === MOTIF_SIMULE) return "simule";
   if (demande.motif) return "echec";
   if (demande.envoyeLe) return "envoye";
   return "non_envoye";
 }
 
-/** Ce que le dépôt inscrit comme motif quand aucune clé n'est configurée. */
-export const MOTIF_SIMULE = "simule";
-/** Ce qu'il inscrit quand le fournisseur rend le message : l'adresse ne reçoit pas. */
+/** Ce que le dépôt inscrit quand le fournisseur rend le message : l'adresse ne reçoit pas. */
 export const MOTIF_REJET = "rejet";
 
 /** La date que porte un jalon, celle qu'on affiche à côté de son libellé. */
@@ -107,8 +96,14 @@ export function dateDuJalon(demande: SuiviDemande): Date | null {
   if (jalon === "lien_ouvert") return demande.ouverteLe;
   if (jalon === "mail_ouvert") return demande.mailOuvertLe;
   if (jalon === "remis") return demande.remisLe;
-  /* Le rejet n'a pas de date à lui : ce qu'on affiche est celle de l'envoi qu'il
-     annule - « Adresse rejetée le 11 sept. à 00h27 » dit quel message est revenu. */
+  /*
+   * Un rejet ne porte pas de date dans sa pastille.
+   *
+   * « Adresse incorrecte le 11 sept. à 00h39 » ne se lit pas, et surtout : la date
+   * n'apprend rien à qui doit corriger une adresse. La pastille pose le diagnostic, et
+   * la phrase en dessous dit quand le message est revenu et quoi faire.
+   */
+  if (jalon === "rejete") return null;
   return demande.envoyeLe;
 }
 
@@ -123,8 +118,33 @@ export function dateDuJalon(demande: SuiviDemande): Date | null {
  */
 export function motifLisible(demande: SuiviDemande): string | null {
   if (!demande.motif) return null;
-  if (demande.motif === MOTIF_SIMULE || demande.motif === MOTIF_REJET) return null;
+  if (demande.motif === MOTIF_REJET) return null;
   return demande.motif;
+}
+
+/**
+ * Ce qu'il y a à faire, quand il y a quelque chose à faire.
+ *
+ * Une pastille rouge dit qu'il y a un problème ; elle ne dit pas comment en sortir. Le
+ * conseil se pose sous la ligne, à côté du champ qu'il désigne et du bouton qui
+ * l'applique - « corrigez l'adresse, puis relancez » n'a de sens que là.
+ */
+export function conseilDuJalon(demande: SuiviDemande): string | null {
+  const jalon = jalonDeLEnvoi(demande);
+
+  if (jalon === "rejete") {
+    const quand = demande.envoyeLe;
+    return (
+      "Le message est revenu" +
+      (quand
+        ? " le " + quand.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+        : "") +
+      " : cette adresse ne reçoit pas. Corrigez-la ci-dessus, puis relancez."
+    );
+  }
+
+  if (jalon === "echec") return motifLisible(demande);
+  return null;
 }
 
 export function libelleJalon(jalon: JalonEnvoi): string {
@@ -133,11 +153,10 @@ export function libelleJalon(jalon: JalonEnvoi): string {
   if (jalon === "mail_ouvert") return "Mail ouvert";
   if (jalon === "remis") return "Remis";
   if (jalon === "envoye") return "Envoyé";
-  /* Le libellé se lit suivi d'une date - « Simulé le 11 sept. à 00h24 ». Y glisser
-     l'explication donnait « Simulé, aucune clé d'envoi le 11 sept. », qui ne se lit
-     pas. Le pourquoi se dit une fois, sous le bloc, pas sur chaque ligne. */
-  if (jalon === "simule") return "Simulé";
-  if (jalon === "rejete") return "Adresse rejetée";
+  /* Le diagnostic, non le symptôme. « Adresse rejetée » décrit ce qu'a fait le serveur
+     d'en face ; « Adresse incorrecte » dit ce qu'il faut en conclure, et donc quoi
+     corriger - c'est la seule chose à faire de cette ligne. */
+  if (jalon === "rejete") return "Adresse incorrecte";
   if (jalon === "echec") return "Non parti";
   return "Pas encore envoyé";
 }

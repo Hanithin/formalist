@@ -10,7 +10,6 @@ import {
   toutLeMondeASigne,
   verifierTrace,
   MOTIF_REJET,
-  MOTIF_SIMULE,
   PREFIXE_PNG,
   PHASE_APRES_SIGNATURE,
   type DemandeSignature,
@@ -153,7 +152,21 @@ async function adresserLaDemande(
     : { ok: false as const, motif: "aucun jeton" };
 
   const simule = envoi.ok && "simule" in envoi && !!envoi.simule;
-  const parti = envoi.ok && !simule;
+
+  /*
+   * Sans clé d'envoi, ce n'est pas la même chose ici et là-bas.
+   *
+   * En développement, c'est le fonctionnement normal : aucune clé n'est configurée,
+   * rien ne doit partir, et la demande est aussi aboutie qu'elle peut l'être - le jeton
+   * existe, le lien fonctionne, le message se relit dans le journal. La ligne dit
+   * « Envoyé », et la note sous le bloc dit pourquoi rien n'a quitté la machine.
+   *
+   * En production, c'est une panne, et de celles qui ne se voient pas : les demandes
+   * partent en apparence, personne ne reçoit rien, et le client attend des signatures
+   * qui ne viendront jamais. Elle se dit donc comme un échec, sur la ligne concernée.
+   */
+  const enPanne = simule && process.env.NODE_ENV === "production";
+  const parti = envoi.ok && !enPanne;
 
   /*
    * Le motif porte trois choses distinctes, et c'est voulu.
@@ -168,7 +181,11 @@ async function adresserLaDemande(
     data: {
       envoye_le: new Date(),
       message_id: "identifiant" in envoi ? (envoi.identifiant ?? null) : null,
-      envoi_motif: parti ? null : simule ? MOTIF_SIMULE : (envoi.motif ?? "envoi refusé"),
+      envoi_motif: parti
+        ? null
+        : enPanne
+          ? "aucune clé d'envoi n'est configurée sur le serveur"
+          : (envoi.motif ?? "envoi refusé"),
       /* Une relance efface ce que le précédent envoi avait rapporté : ces dates
          parlaient d'un message qui n'est plus celui qu'on attend. */
       remis_le: null,
@@ -181,14 +198,14 @@ async function adresserLaDemande(
     },
   });
 
-  if (!parti && !simule) {
+  if (!parti) {
     journal.warn(
       { demande: demande.id, motif: envoi.motif },
       "Demande de signature créée, courriel non parti"
     );
   }
 
-  return { parti, simule, motif: parti || simule ? null : (envoi.motif ?? "envoi refusé") };
+  return { parti, simule, motif: parti ? null : (envoi.motif ?? "envoi refusé") };
 }
 
 export async function demanderSignatures(

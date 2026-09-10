@@ -6,7 +6,7 @@ import {
   peutRelancer,
   DELAI_ENTRE_RELANCES,
   MOTIF_REJET,
-  MOTIF_SIMULE,
+  conseilDuJalon,
   type SuiviDemande,
 } from "@/domain/formalite/signature";
 
@@ -44,23 +44,25 @@ describe("le jalon d'une demande de signature", () => {
     expect(jalonDeLEnvoi(VIDE)).toBe("non_envoye");
   });
 
-  it("distingue un envoi simulé d'un envoi refusé", () => {
-    /*
-     * C'est toute la différence entre une machine de développement et une panne. Les
-     * deux se retrouvaient sous le même bandeau rouge, et le cas normal était le plus
-     * fréquent.
-     */
-    const simule = { ...VIDE, envoyeLe: LUNDI, motif: MOTIF_SIMULE };
+  it("tient un refus du fournisseur pour un envoi manqué", () => {
     const refuse = { ...VIDE, envoyeLe: LUNDI, motif: "domain is not verified" };
-
-    expect(jalonDeLEnvoi(simule)).toBe("simule");
     expect(jalonDeLEnvoi(refuse)).toBe("echec");
-    expect(libelleJalon("simule")).not.toBe(libelleJalon("echec"));
+    /* Et la phrase du fournisseur remonte à l'écran : c'est elle qui dit quoi
+       corriger, et elle finissait dans le journal, où personne ne va. */
+    expect(conseilDuJalon(refuse)).toBe("domain is not verified");
   });
 
-  it("dit « Adresse rejetée » quand le message est revenu", () => {
+  it("dit ce qu'il y a à faire d'une adresse qui rend le message", () => {
+    /*
+     * Une pastille rouge dit qu'il y a un problème ; elle ne dit pas comment en sortir.
+     * Ici la seule chose à faire est de corriger l'adresse et de relancer, et c'est ce
+     * que la ligne doit dire - « Adresse rejetée » décrit le geste du serveur d'en
+     * face, pas le nôtre.
+     */
     const rendu = { ...VIDE, envoyeLe: LUNDI, motif: MOTIF_REJET };
     expect(jalonDeLEnvoi(rendu)).toBe("rejete");
+    expect(libelleJalon("rejete")).toBe("Adresse incorrecte");
+    expect(conseilDuJalon(rendu)).toContain("Corrigez-la ci-dessus, puis relancez");
   });
 
   it("n'affirme pas la remise sur la foi de l'envoi", () => {
@@ -94,8 +96,9 @@ describe("le jalon d'une demande de signature", () => {
       motif: MOTIF_REJET,
     };
     expect(jalonDeLEnvoi(rendu)).toBe("rejete");
-    /* Et il porte la date de l'envoi qu'il annule, faute d'en avoir une à lui. */
-    expect(dateDuJalon(rendu)).toBe(LUNDI);
+    /* Sans date dans sa pastille : elle n'apprend rien à qui doit corriger une
+       adresse, et le conseil en dessous la porte déjà. */
+    expect(dateDuJalon(rendu)).toBeNull();
   });
 
   it("laisse la signature emporter tout le reste", () => {

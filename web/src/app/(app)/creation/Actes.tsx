@@ -11,7 +11,7 @@ import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
 import {
   dateDuJalon,
   libelleJalon,
-  motifLisible,
+  conseilDuJalon,
   peutRelancer,
   type JalonEnvoi,
   type SuiviDemande,
@@ -221,6 +221,29 @@ function CocheDeSuivi() {
       aria-hidden="true"
     >
       <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+/**
+ * Une flèche circulaire : le message repart, le lien ne change pas.
+ *
+ * Une enveloppe dirait « envoyer », ce qui laisserait croire à un nouveau lien. Relancer
+ * fait revenir le même : c'est un cycle, pas un départ.
+ */
+function FlecheCirculaire() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12a9 9 0 11-3.5-7.1" />
+      <polyline points="21 3 21 9 15 9" />
     </svg>
   );
 }
@@ -718,16 +741,22 @@ export function Actes({
                                  pas eu le temps d'ouvrir le premier. */
                               disabled={enCours || !peutRelancer(suivi)}
                             >
+                              <FlecheCirculaire />
                               {relance === suivi.id ? "Envoi…" : "Relancer"}
                             </button>
                           )}
                         </span>
                       )}
 
-                      {/* La phrase du fournisseur, là où on peut la corriger - et rien
-                          quand elle ne ferait que redire le libellé en anglais. */}
-                      {suivi && motifLisible(suivi) && (
-                        <span className={styles.suiviMotif}>{motifLisible(suivi)}</span>
+                      {/*
+                        Ce qu'il y a à faire, sous la ligne qui pose le problème.
+
+                        Une pastille rouge dit qu'il y a quelque chose ; elle ne dit pas
+                        comment en sortir. Le conseil se pose ici, entre le champ qu'il
+                        désigne et le bouton qui l'applique.
+                      */}
+                      {suivi && conseilDuJalon(suivi) && (
+                        <span className={styles.suiviConseil}>{conseilDuJalon(suivi)}</span>
                       )}
                     </li>
                   );
@@ -772,7 +801,9 @@ export function Actes({
             <div className={styles.signatureAction}>
               <button
                 type="button"
-                className={styles.actesBouton}
+                className={[styles.actesBouton, circuitOuvert && styles.actesBoutonRetenu]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={ouvrirSignatures}
                 /* Rien à signer tant que rien n'est produit, rien qui ne soit relu, et
                personne à qui l'envoyer sans adresse email. */
@@ -784,14 +815,14 @@ export function Actes({
                   tousOntSigne
                 }
               >
-                {circuitOuvert ? "Reprendre le circuit à zéro" : "Demander les signatures"}
+                {circuitOuvert ? "Renvoyer de nouveaux liens" : "Demander les signatures"}
               </button>
               {signataires.length > 0 && enRelecture.length === 0 && (
                 <span className={styles.signaturePrecision}>
                   {tousOntSigne
                     ? "Tout le monde a signé"
                     : circuitOuvert
-                      ? "De nouveaux liens partent, et les précédents cessent de fonctionner"
+                      ? "Les liens déjà envoyés cesseront de fonctionner - pour une seule personne, préférez Relancer"
                       : signataires.length > 1
                         ? signataires.length + " liens partent maintenant, un par personne"
                         : "Le lien part maintenant"}

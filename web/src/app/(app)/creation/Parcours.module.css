@@ -3629,34 +3629,42 @@
 
 .suiviEtat {
   /*
-   * L'état pousse l'adresse, il ne descend pas sous elle.
+   * Une pastille pour tous les états, une couleur par nature.
    *
-   * Avec un champ à 380 pixels, l'état et son bouton se retrouvaient sur une seconde
-   * ligne : chaque signataire prenait deux hauteurs, et l'oeil ne descendait plus une
-   * colonne mais un escalier. L'adresse a la largeur qui reste, l'état la sienne.
+   * Seule la signature en avait une ; les autres flottaient en texte nu. Deux formes
+   * différentes pour des états qui se comparent - c'est bien la question qu'on se pose
+   * en descendant la liste : lequel a signé, lequel attend, lequel n'a rien reçu - les
+   * rendaient incomparables. Même forme, même taille : ce qui distingue est la couleur,
+   * et c'est ce qu'on lit d'un coup d'oeil.
    */
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   gap: 7px;
-  font-size: 13px;
+  padding: 4px 11px 4px 9px;
+  border-radius: 100px;
+  background: #f4f4f5;
   color: #52525b;
+  font-size: 13px;
+  /* Sans gras : la couleur et le fond disent l'état, l'épaissir par-dessus ferait
+     crier une ligne qui se consulte. */
+  font-weight: 400;
   letter-spacing: 0;
 }
 
 /*
- * La pastille porte l'état ; le texte porte la date.
+ * La pastille reste, dans la pastille.
  *
- * Colorer la ligne entière, ou son bord, ferait crier une information qui se consulte -
- * quatre lignes de couleurs différentes sont illisibles. Un point de six pixels suffit
- * à distinguer d'un coup d'oeil ce qui est fait de ce qui attend.
+ * Elle ne redit pas la couleur du fond - elle est plus dense - et donne à l'oeil un
+ * point d'accroche à gauche de chaque état, à la même abscisse d'une ligne à l'autre.
  */
 .suiviPastille {
   flex-shrink: 0;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #d4d4d8;
+  background: currentColor;
+  opacity: 0.75;
 }
 
 /*
@@ -3664,30 +3672,30 @@
  *
  * La coche remplace la pastille. Une pastille dit qu'il se passe quelque chose ; une
  * coche dit que c'est acquis - et dans une liste qu'on parcourt pour savoir qui manque,
- * la différence se lit sans lire.
- */
-/*
- * Une signature recueillie se pose sur un fond, non sur du blanc.
- *
- * En vert sur blanc, elle avait le même poids qu'un « Envoyé le … » en gris : une ligne
- * de plus dans une colonne. La pastille lui donne son état de chose acquise, et c'est
- * celle des documents - même vert, même rayon, même graisse : deux façons de dire
+ * la différence se lit sans lire. Le vert est celui des documents : deux façons de dire
  * « c'est bon » sur le même écran en feraient deux choses différentes.
  */
 .suiviFait {
-  padding: 4px 11px 4px 9px;
-  border-radius: 100px;
   background: #dcfce7;
   color: #16a34a;
-  /* Sans gras : la couleur et le fond disent déjà l'état, et l'épaissir par-dessus
-     ferait crier une ligne qui se consulte. */
-  font-weight: 400;
 }
 
 .suiviCoche {
   flex-shrink: 0;
   width: 14px;
   height: 14px;
+}
+
+/* En route : remis, ouvert. Rien à faire, mais quelque chose se passe. */
+.suiviEnRoute {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+/* Rien n'est arrivé, et cela demande un geste. */
+.suiviManque {
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 /*
@@ -3702,7 +3710,6 @@
   flex-shrink: 0;
   width: auto;
   height: 30px;
-  margin-left: 4px;
   object-fit: contain;
   object-position: left center;
   /* Les tracés sont peints en noir sur fond transparent : sur le blanc de la carte,
@@ -3710,27 +3717,15 @@
   max-width: 190px;
 }
 
-/* En route : remis, ouvert. Rien à faire, mais quelque chose se passe. */
-.suiviEnRoute .suiviPastille {
-  background: #7c3aed;
-}
-
-/* Rien n'est arrivé, et cela demande un geste. */
-.suiviManque {
-  color: #b91c1c;
-}
-
-.suiviManque .suiviPastille {
-  background: #dc2626;
-}
-
 /*
- * Le motif du refus, sous la ligne qu'il concerne.
+ * Ce qu'il y a à faire, sous la ligne qui pose le problème.
  *
- * « domain is not verified », « the recipient does not exist » : c'est ce qui dit quoi
- * corriger, et cela finissait dans le journal, où le client ne va pas.
+ * Une pastille rouge dit qu'il y a quelque chose ; elle ne dit pas comment en sortir.
+ * « Corrigez l'adresse ci-dessus, puis relancez » n'a de sens qu'ici, entre le champ
+ * qu'il désigne et le bouton qui l'applique - et la phrase du fournisseur, quand il y
+ * en a une, finissait dans le journal, où le client ne va pas.
  */
-.suiviMotif {
+.suiviConseil {
   flex-basis: 100%;
   margin: 0 0 0 48px;
   order: 1;
@@ -3741,38 +3736,74 @@
 }
 
 /*
- * Relancer : discret tant que rien ne cloche.
+ * Relancer : un bouton qui ressemble à un bouton.
  *
- * Le geste existe pour tout le monde - un message se perd sans que rien ne le dise -
- * mais il ne doit pas se disputer l'attention avec « Demander les signatures ». Un
- * bouton de texte, bordé au survol.
+ * C'était un mot posé à côté de l'état, sans bord ni fond : rien ne disait qu'on
+ * pouvait cliquer, et le geste le plus utile de ce bloc - celui qu'on cherche quand un
+ * message n'est pas arrivé - passait pour une légende. Bordé et porté par une flèche
+ * circulaire, il se donne pour ce qu'il est.
+ *
+ * Il reste discret : il ne doit pas se disputer l'attention avec le bouton noir du bas,
+ * et il y en a un par ligne.
  */
 .suiviRelance {
+  display: inline-flex;
   flex-shrink: 0;
-  padding: 4px 10px;
-  margin-left: -4px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: none;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 10px;
+  border: 1px solid #e5e5e7;
+  border-radius: 100px;
+  background: #fff;
   color: #52525b;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0;
   cursor: pointer;
   transition:
     border-color 0.15s,
+    background 0.15s,
     color 0.15s;
 }
 
+.suiviRelance svg {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+}
+
 .suiviRelance:hover:not(:disabled) {
-  border-color: #e5e5e7;
+  border-color: #d4d4d8;
+  background: #fafafa;
   color: #18181b;
 }
 
 .suiviRelance:disabled {
+  border-color: #f0f0f2;
   color: #a1a1aa;
   cursor: default;
+}
+
+/*
+ * Rouvrir le circuit n'est pas l'action principale : c'est le contraire.
+ *
+ * Le bouton porte deux gestes selon le moment. Avant le premier envoi, il ouvre la
+ * signature - c'est ce qu'on vient faire, il est noir. Après, il détruit les demandes
+ * non signées et invalide les jetons en circulation ; en noir, il continuait d'inviter
+ * au clic, à côté d'un « Relancer » discret qui est presque toujours le bon geste.
+ */
+.actesBoutonRetenu {
+  border: 1px solid #e5e5e7;
+  background: #fff;
+  color: #52525b;
+  font-weight: 500;
+}
+
+.actesBoutonRetenu:hover:not(:disabled) {
+  border-color: #d4d4d8;
+  background: #fafafa;
+  color: #18181b;
 }
 
 /* L'adresse de qui a signé ne se corrige plus : il n'y a plus rien à lui envoyer. */
