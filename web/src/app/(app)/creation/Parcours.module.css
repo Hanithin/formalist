@@ -3659,13 +3659,55 @@
   background: #d4d4d8;
 }
 
-/* Signé : c'est fini, et c'est la seule chose qu'on cherche dans cette colonne. */
+/*
+ * Signé : c'est fini, et c'est la seule chose qu'on cherche dans cette colonne.
+ *
+ * La coche remplace la pastille. Une pastille dit qu'il se passe quelque chose ; une
+ * coche dit que c'est acquis - et dans une liste qu'on parcourt pour savoir qui manque,
+ * la différence se lit sans lire.
+ */
+/*
+ * Une signature recueillie se pose sur un fond, non sur du blanc.
+ *
+ * En vert sur blanc, elle avait le même poids qu'un « Envoyé le … » en gris : une ligne
+ * de plus dans une colonne. La pastille lui donne son état de chose acquise, et c'est
+ * celle des documents - même vert, même rayon, même graisse : deux façons de dire
+ * « c'est bon » sur le même écran en feraient deux choses différentes.
+ */
 .suiviFait {
-  color: #15803d;
+  padding: 4px 11px 4px 9px;
+  border-radius: 100px;
+  background: #dcfce7;
+  color: #16a34a;
+  /* Sans gras : la couleur et le fond disent déjà l'état, et l'épaissir par-dessus
+     ferait crier une ligne qui se consulte. */
+  font-weight: 400;
 }
 
-.suiviFait .suiviPastille {
-  background: #16a34a;
+.suiviCoche {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+/*
+ * Le tracé recueilli, à côté de sa date.
+ *
+ * C'est la même image que celle apposée au bas des actes : la ligne ne dit plus
+ * seulement qu'une signature a été enregistrée, elle la montre. La hauteur est celle
+ * d'une ligne de texte - il s'agit de reconnaître une signature, non de l'examiner ;
+ * l'acte est là pour cela.
+ */
+.suiviTrace {
+  flex-shrink: 0;
+  width: auto;
+  height: 30px;
+  margin-left: 4px;
+  object-fit: contain;
+  object-position: left center;
+  /* Les tracés sont peints en noir sur fond transparent : sur le blanc de la carte,
+     rien à faire, mais une signature très large ne doit pas pousser la ligne. */
+  max-width: 190px;
 }
 
 /* En route : remis, ouvert. Rien à faire, mais quelque chose se passe. */

@@ -11,6 +11,7 @@ import {
   verifierTrace,
   MOTIF_REJET,
   MOTIF_SIMULE,
+  PREFIXE_PNG,
   PHASE_APRES_SIGNATURE,
   type DemandeSignature,
   type SuiviDemande,
@@ -350,6 +351,36 @@ export async function inscrireLAvis(avis: AvisDeResend): Promise<boolean> {
 
   await prisma.signature_requests.update({ where: { id: demande.id }, data: inscription });
   return true;
+}
+
+/**
+ * Le tracé d'une signature recueillie, en octets.
+ *
+ * L'écran disait « Signé le 10 septembre à 23h41 » et rien d'autre : une date, sur la
+ * foi de la plateforme. Or ce qui prouve une signature, c'est la signature - celle-là
+ * même qui est apposée au bas des actes. La montrer relie les deux : ce qu'on voit dans
+ * le suivi est ce que porte le document.
+ *
+ * Elle sort par une route à elle plutôt que dans le suivi. Un tracé pèse quelques
+ * dizaines de milliers d'octets ; quatre signataires en JSON, rechargés à chaque geste,
+ * feraient passer une liste de quatre lignes pour un téléversement.
+ */
+export async function traceDeLaSignature(
+  utilisateur: UtilisateurConnecte,
+  demandeId: number
+): Promise<Buffer | null> {
+  const demande = await prisma.signature_requests.findUnique({
+    where: { id: demandeId },
+    select: { formalite_id: true, signature_data: true },
+  });
+  if (!demande?.signature_data) return null;
+
+  /* Les droits sont ceux du dossier : une signature n'est pas plus publique que l'acte
+     qu'elle porte. */
+  await exigerDossier(utilisateur, demande.formalite_id);
+
+  if (!demande.signature_data.startsWith(PREFIXE_PNG)) return null;
+  return Buffer.from(demande.signature_data.slice(PREFIXE_PNG.length), "base64");
 }
 
 /**

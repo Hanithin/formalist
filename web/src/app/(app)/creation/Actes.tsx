@@ -201,6 +201,30 @@ function versSuivi(brut: Record<string, unknown>): Suivi {
   };
 }
 
+/**
+ * La marque d'une signature recueillie.
+ *
+ * Une pastille dit « il se passe quelque chose » ; une coche dit « c'est fait ». La
+ * différence compte dans une colonne qu'on parcourt pour savoir qui manque : ce qui est
+ * acquis doit se distinguer d'un coup d'oeil de ce qui est en route.
+ */
+function CocheDeSuivi() {
+  return (
+    <svg
+      className={styles.suiviCoche}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 /** La pastille et sa teinte : fait, en route, ou rien n'est arrivé. */
 function tonDuJalon(jalon: JalonEnvoi): string {
   if (jalon === "signee") return "suiviFait";
@@ -658,10 +682,31 @@ export function Actes({
                               .filter(Boolean)
                               .join(" ")}
                           >
-                            <span className={styles.suiviPastille} aria-hidden="true" />
+                            {jalon === "signee" ? (
+                              <CocheDeSuivi />
+                            ) : (
+                              <span className={styles.suiviPastille} aria-hidden="true" />
+                            )}
                             {libelleJalon(jalon)}
                             {quand ? " le " + dateHeureCourte(quand) : ""}
                           </span>
+
+                          {/*
+                            Le tracé, à côté de sa date.
+
+                            « Signé le 10 septembre à 23h41 » est une date, affirmée par
+                            la plateforme. Ce qui prouve une signature, c'est la
+                            signature - et c'est exactement celle qui figure au bas des
+                            actes. La montrer ici relie les deux.
+                          */}
+                          {suivi.signeeLe && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              className={styles.suiviTrace}
+                              src={"/api/signature/trace?demande=" + suivi.id}
+                              alt={"Signature de " + d.nom}
+                            />
+                          )}
 
                           {!suivi.signeeLe && (
                             <button
