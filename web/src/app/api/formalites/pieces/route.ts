@@ -71,7 +71,9 @@ export const POST = route(async (requete: Request) => {
         forme: comptes.societe.forme,
         avecCommissaire: comptes.valeurs.commissaireAuxComptes === "Oui",
         commissaireNom:
-          typeof comptes.valeurs.commissaireNom === "string" ? comptes.valeurs.commissaireNom : null,
+          typeof comptes.valeurs.commissaireNom === "string"
+            ? comptes.valeurs.commissaireNom
+            : null,
         nombreDeConventions: comptes.conventions.length,
       }).map((p) => ({ identifiant: p.identifiant, titre: p.titre, formats: p.formats }));
     }
@@ -106,19 +108,21 @@ export const POST = route(async (requete: Request) => {
     if (attendue.identifiant === TYPE_ATTESTATION_CAPITAL && ligne.type !== "auto-entrepreneur") {
       try {
         /*
-         * Re-datés, les actes repassent devant l'avocat.
+         * Re-datés, les actes restent disponibles : ils ne repassent pas en relecture.
          *
-         * Ce ne sont plus les mêmes documents : ils portent une autre date, celle du
-         * jour où l'attestation a été déposée ici. Les laisser à disposition
-         * remettrait au client, sans relecture, des statuts qu'il pourrait signer
-         * aussitôt. C'est cette seconde validation qui ouvre la mise en signature.
+         * Ils repartaient devant l'avocat, au motif que ce ne sont plus les mêmes
+         * documents. C'est vrai de la date, et d'elle seule : le contenu que l'avocat a
+         * relu et validé ne change pas d'une ligne, seul le jour de signature suit
+         * celui où la banque a délivré l'attestation. Faire relire une seconde fois ce
+         * qui n'a pas bougé arrêtait le client au moment précis où il pouvait enfin
+         * signer, et lui reprenait des actes qu'il venait de voir marqués « Prêt ».
          *
-         * Avant la transmission, il n'y a pas d'avocat : les actes restent alors ce
-         * qu'ils sont, une lecture de travail.
+         * Le dépôt de l'attestation ouvre donc la signature plutôt que de la reporter.
+         * Ce que l'on accepte en échange est nommé : les actes datés du jour ne
+         * repassent devant personne, et c'est la validation d'avant le dépôt qui
+         * les couvre.
          */
-        await produireLesActes(utilisateur, dossierId, {
-          forcerLaRelecture: ligne.status !== "en_cours",
-        });
+        await produireLesActes(utilisateur, dossierId, { forcerLaRelecture: false });
         redates = true;
       } catch (e) {
         if (!(e instanceof DossierIncomplet)) throw e;

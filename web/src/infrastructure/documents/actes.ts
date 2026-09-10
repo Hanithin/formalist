@@ -45,8 +45,10 @@ export class DossierIncomplet extends Error {
  * client dont le dossier est chez l'avocat déverrouillait les cinq actes d'un clic sur
  * « Régénérer les documents », et pouvait les signer avant que quiconque les ait lus.
  *
- * `forcerLaRelecture` sert au cas inverse : l'acte change - il est re-daté du jour de
- * l'attestation - et doit repasser devant l'avocat même s'il était déjà remis.
+ * `forcerLaRelecture` sert au cas inverse : l'acte a changé de fond et doit repasser
+ * devant l'avocat même s'il était déjà remis - une correction demandée, par exemple.
+ * Le dépôt de l'attestation de capital ne s'en sert plus : il ne change que la date de
+ * signature, et le contenu relu reste celui que l'avocat a validé.
  */
 /**
  * Produit les actes d'un dossier, quel qu'il soit.
@@ -177,4 +179,3 @@ export async function produireLesActesDuBrouillon(
 
   return remplacerDocumentsProduits(dossierId, actes, { aRelire: options.aRelire });
 }
-

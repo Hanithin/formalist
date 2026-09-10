@@ -75,14 +75,13 @@ export function DepotDuCapital({ dossierId }: { dossierId: number }) {
       {/*
         Ce que le dépôt déclenche, dit avant qu'on le fasse.
 
-        L'attestation re-date les actes : c'est le jour où la banque la délivre qu'on
-        signe les statuts. Les actes repartent donc chez l'avocat pour une seconde
-        lecture, et retrouver « À relire » sans avertissement se lit comme un retour en
-        arrière alors que c'est la marche normale.
+        L'attestation date les actes : c'est le jour où la banque la délivre qu'on signe
+        les statuts. Ils sont donc reproduits à cette date - leur contenu ne bouge pas,
+        seule la date suit - et la signature s'ouvre dans la foulée.
       */}
       <p className={styles.capitalConsequence}>
-        Vos actes seront redatés du jour de cette attestation, puis relus une dernière fois par
-        votre avocat avant la mise en signature.
+        Vos actes seront datés du jour de cette attestation, et la signature s&apos;ouvrira aussitôt
+        : leur contenu ne change pas, seule la date suit.
       </p>
 
       <div className={styles.capitalAction}>
