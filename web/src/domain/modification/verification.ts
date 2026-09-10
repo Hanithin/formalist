@@ -6,6 +6,8 @@ import { anomaliesDuTraite } from "./traite-apport";
 import { anomaliesDeLActeDeCession } from "./acte-cession";
 import { verifierCessions } from "./cession";
 import type { ContexteGabarit } from "./gabarit";
+import { anomaliesDuTour, type ContratAir } from "./air";
+import { diviseurDuNominal } from "./constatation";
 
 /**
  * Ce qui manque, et ce qui ne tient pas debout.
@@ -251,7 +253,15 @@ export function verifierModification(
   valeurs: Valeurs,
   societe: Societe,
   assemblee?: ContexteGabarit["assemblee"],
-  cessions: ContexteGabarit["cessions"] = []
+  cessions: ContexteGabarit["cessions"] = [],
+  /**
+   * Les accords convertis, quand le dossier constate une augmentation.
+   *
+   * Ils ne sont pas des champs : sans eux, le tableau des souscripteurs sort vide et
+   * les actes annoncent un capital que rien ne fonde. L'appelant qui ne les connaît pas
+   * ne s'en voit rien reprocher - le paramètre est facultatif.
+   */
+  air?: ContratAir[]
 ): Anomalie[] {
   if (codes.length === 0) {
     return [{ champ: "modifications", message: "Choisissez au moins une modification" }];
@@ -264,6 +274,7 @@ export function verifierModification(
     ...verifierSociete(societe),
     ...verifierChamps(codes, valeurs, societe.forme),
     ...verifierCoherence(codes, valeurs, societe.forme),
+    ...verifierLaConstatation(codes, valeurs, air),
     /*
      * Sans assemblée transmise, on ne reproche pas son absence.
      *
@@ -330,3 +341,38 @@ export function avancement(codes: string[], valeurs: Valeurs, societe: Societe):
   return Math.round((faits / 3) * 100);
 }
 
+
+
+/**
+ * Ce qui empêche de produire les actes d'une constatation.
+ *
+ * Trois choses, et elles sont toutes de fond. Sans accord, le tableau des souscripteurs
+ * est vide et les actes affirment un capital que rien ne fonde. Sans nombre d'actions ni
+ * valeur nominale, le capital d'après ne se calcule pas. Et un arrondi qui écarte un
+ * souscripteur de ses droits de plus d'un pour cent n'est plus une approximation : il se
+ * corrige par une division du nominal, non par une signature.
+ */
+export function verifierLaConstatation(
+  codes: string[],
+  valeurs: Valeurs,
+  air: ContratAir[] | undefined
+): Anomalie[] {
+  if (!codes.includes("constatation_augmentation") || air === undefined) return [];
+
+  const utiles = air.filter((a) => a.montant > 0 && a.valorisation > 0);
+  if (utiles.length === 0) {
+    return [
+      {
+        champ: "air",
+        message: "Déposez au moins un accord, et complétez son montant et sa valorisation",
+      },
+    ];
+  }
+
+  const existantes = (nombre(valeurs.airActionsExistantes) ?? 0) * diviseurDuNominal(valeurs);
+  if (existantes <= 0 || (nombre(valeurs.airValeurNominale) ?? 0) <= 0) return [];
+
+  return anomaliesDuTour(existantes, utiles)
+    .filter((anomalie) => anomalie.gravite === "bloquant")
+    .map((anomalie) => ({ champ: "air", message: anomalie.message }));
+}

@@ -12,6 +12,8 @@ import {
   type Mandant,
 } from "@/domain/formalite/mandataire";
 import { definitions, type Valeurs } from "./types";
+import type { ContratAir } from "./air";
+import { donneesDeLaConstatation } from "./constatation";
 import { changeDeRessort } from "./formalites";
 import {
   capitalAuDepartDeLApport,
@@ -93,6 +95,27 @@ export const MODELE_SIEGES_ANTERIEURS = "modif-etat-sieges-anterieurs.docx";
 /** Le pouvoir donné au cabinet, commun aux trois parcours. */
 export const MODELE_POUVOIR = "pouvoir.docx";
 
+/*
+ * Les quatre actes d'une augmentation déjà réalisée.
+ *
+ * Ils ne remplacent pas ceux de l'augmentation décidée : ils répondent à une autre
+ * question. L'article L. 225-149 fait de l'exercice des bons le fait générateur, et le
+ * président constate. Un procès-verbal d'assemblée décidant l'augmentation ferait
+ * délibérer sur ce qui est acquis.
+ */
+
+/** La décision collective qui divise le nominal, ratifie l'émission et délègue. */
+export const MODELE_AIR_DECISIONS = "modif-air-decisions-collectives.docx";
+
+/** La renonciation individuelle au DPS, au profit des souscripteurs dénommés. */
+export const MODELE_AIR_RENONCIATION = "modif-air-renonciation-dps.docx";
+
+/** L'avenant par lequel un souscripteur accepte de convertir avant le terme. */
+export const MODELE_AIR_AVENANT = "modif-air-avenant-conversion.docx";
+
+/** La décision du président constatant la réalisation : l'acte que le greffe attend. */
+export const MODELE_AIR_CONSTATATION = "modif-air-constatation.docx";
+
 export interface SocieteModifiee {
   denomination?: string | null;
   forme?: string | null;
@@ -171,6 +194,14 @@ export interface ContexteGabarit {
   villeRcsNouvelle?: string | null;
   /** Les cessions décidées, qui désignent les associés de l'assemblée. */
   cessions?: Cession[];
+  /**
+   * Les accords convertis, quand le dossier constate une augmentation.
+   *
+   * Ils ne tiennent pas dans `valeurs`, qui ne porte que des chaînes : un tour se compte
+   * en vingt contrats, chacun avec sa propre valorisation, et le nombre d'actions à
+   * créer ne se lit qu'en les résolvant ensemble.
+   */
+  air?: ContratAir[];
 }
 
 function ou(valeur: string | null | undefined, defaut = TIRET): string {
@@ -689,6 +720,7 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     IS_REDUCTION_CAPITAL: codes.includes("reduction_capital"),
     IS_CESSION_PARTS: codes.includes("cession_parts"),
     IS_PROROGATION: codes.includes("prorogation"),
+    IS_CONSTATATION: codes.includes("constatation_augmentation"),
     IS_APPORT_TITRES: codes.includes("apport_titres"),
 
     IS_SAS: forme === "SAS",
@@ -1103,6 +1135,30 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     DATE_EXPIRATION_ACTUELLE: texte(valeurs.dateExpirationActuelle),
     DATE_EXPIRATION_ACTUELLE_FR: dateEnFrancais(
       typeof valeurs.dateExpirationActuelle === "string" ? valeurs.dateExpirationActuelle : null
+    ),
+
+    /* ------------------------------------------- Constatation d'augmentation */
+    ...donneesDeLaConstatation({ valeurs, air: contexte.air ?? [], capital }),
+    /*
+     * Le signataire des actes de constatation, saisi à l'étape de la société.
+     *
+     * Les mêmes quatre champs servent au pouvoir et à l'état des sièges antérieurs. Un
+     * second jeu de cases aurait fait ressaisir le président d'une société pour un
+     * changement qui ne le concerne pas plus qu'un autre.
+     */
+    AIR_SIGNATAIRE_NOM: nomDuSignataire(valeurs),
+    AIR_SIGNATAIRE_QUALITE: qualiteDuSignataire(valeurs, societe.forme),
+    AIR_SIGNATAIRE_QUALITE_TETE: qualiteEnTete(valeurs, societe.forme),
+    /*
+     * La qualité en capitales, sans son article.
+     *
+     * `qualiteEnTete` rend « Le Président », qui va au bas d'un acte mais donne
+     * « DÉCISION DU Le Président » dans un titre. Trois endroits lisaient la mauvaise
+     * des deux.
+     */
+    AIR_SIGNATAIRE_QUALITE_MAJ: qualiteDuSignataire(valeurs, societe.forme).toLocaleUpperCase("fr-FR"),
+    AIR_DATE_FR: dateEnFrancais(
+      typeof valeurs.airDateEvenement === "string" ? valeurs.airDateEvenement : null
     ),
   };
 }
@@ -1724,7 +1780,15 @@ export interface ActeAProduire {
  */
 function personneDuSignataire(valeurs: Valeurs): Mandant {
   return {
-    civilite: texte(valeurs.signataireCivilite) || "Monsieur",
+    /*
+     * « Monsieur » quand rien n'est coché, non un tiret.
+     *
+     * `texte` rend le tiret de remplacement pour une valeur vide, et un tiret est une
+     * chaîne non vide : le défaut ne s'appliquait jamais. Le pouvoir sortait « Je
+     * soussigné, - Lucas LARÉGINIE » sur tout dossier dont la case n'avait pas été
+     * ouverte, et la case n'a pas de valeur par défaut.
+     */
+    civilite: texteBrut(valeurs.signataireCivilite) || "Monsieur",
     prenom: texte(valeurs.signatairePrenom),
     nom: texte(valeurs.signataireNom),
     neLe: texte(valeurs.signataireNeLe),
@@ -1849,19 +1913,105 @@ export function actesAProduire(
   if (codes.length === 0) return [];
 
   const choisies = definitions(codes);
-  const actes: ActeAProduire[] = [
-    {
-      titre:
-        choisies.length === 1
-          ? "Procès-verbal - " + choisies[0].libelle
-          : "Procès-verbal d'assemblée générale extraordinaire",
-      gabarit: gabaritProcesVerbal(forme, nombreDAssocies),
-      moteur:
-        gabaritProcesVerbal(forme, nombreDAssocies) === MODELE_UNIVERSEL
-          ? ("pv-age" as const)
-          : ("classique" as const),
-    },
-  ];
+
+  /*
+   * Une augmentation déjà réalisée ne se décide pas en assemblée.
+   *
+   * L'article L. 225-149 du code de commerce fait de l'exercice des bons le fait
+   * générateur : l'augmentation « est définitivement réalisée du seul fait de l'exercice
+   * des droits », et le président la constate sur délégation. Un procès-verbal
+   * d'assemblée générale extraordinaire décidant cette augmentation ferait délibérer sur
+   * ce qui est acquis, et daterait l'opération du jour de l'assemblée plutôt que de
+   * celui de l'exercice.
+   *
+   * Le procès-verbal reparaît dès qu'un autre changement l'appelle - une dénomination,
+   * un siège : celui-là se décide bien, et la constatation le suit sans s'y fondre.
+   */
+  const seulementConstatation =
+    codes.length === 1 && codes[0] === "constatation_augmentation";
+
+  const actes: ActeAProduire[] = seulementConstatation
+    ? []
+    : [
+        {
+          titre:
+            choisies.length === 1
+              ? "Procès-verbal - " + choisies[0].libelle
+              : "Procès-verbal d'assemblée générale extraordinaire",
+          gabarit: gabaritProcesVerbal(forme, nombreDAssocies),
+          moteur:
+            gabaritProcesVerbal(forme, nombreDAssocies) === MODELE_UNIVERSEL
+              ? ("pv-age" as const)
+              : ("classique" as const),
+        },
+      ];
+
+  if (codes.includes("constatation_augmentation")) {
+    const aRatifier =
+      valeurs.airDecisionEmission ===
+      "N'a pas fait l'objet d'une décision collective : à ratifier";
+    const divise = texte(valeurs.airDivision).replace(/[^\d]/g, "") !== "";
+
+    /*
+     * Les décisions collectives, quand il y a quelque chose à décider.
+     *
+     * Deux choses seulement l'appellent : diviser la valeur nominale, qui est une
+     * modification statutaire, et ratifier une émission que le président a consentie
+     * seul. Quand l'émission a été régulièrement décidée et que le nominal convient, la
+     * délégation figure déjà dans la décision d'origine et cet acte n'ajoute rien.
+     */
+    if (aRatifier || divise) {
+      actes.push({
+        titre: "Décisions collectives des associés",
+        gabarit: MODELE_AIR_DECISIONS,
+      });
+    }
+
+    /*
+     * La renonciation individuelle, qui évite un commissaire aux comptes.
+     *
+     * Supprimer le droit préférentiel par décision collective appelle le rapport spécial
+     * de l'article L. 225-138 III, et faute de commissaire en place il faut en désigner
+     * un pour l'occasion. Y renoncer individuellement (article L. 225-132 alinéa 5)
+     * n'emporte aucune suppression : ni rapport, ni commissaire. Elle n'a de sens que
+     * si l'émission se décide maintenant - décidée en son temps, la question l'a été
+     * avec elle.
+     */
+    if (
+      aRatifier &&
+      valeurs.airDroitPreferentiel ===
+        "Chaque associé y renonce individuellement, au profit des souscripteurs"
+    ) {
+      actes.push({
+        titre: "Renonciations individuelles au droit préférentiel de souscription",
+        gabarit: MODELE_AIR_RENONCIATION,
+      });
+    }
+
+    /*
+     * L'avenant, quand la conversion devance son terme ou qu'un pacte la conditionne.
+     *
+     * La clôture du tour dans lequel les bons ont été souscrits n'est pas un cas de
+     * conversion automatique : les accords visent une levée ultérieure. Convertir dès la
+     * clôture suppose donc l'accord écrit de chaque souscripteur, et c'est aussi par cet
+     * acte qu'il adhère au pacte lorsque son adhésion conditionne la conversion.
+     */
+    if (
+      valeurs.airEvenement === "Clôture du tour de financement, par accord des parties" ||
+      valeurs.airPacte === "Un pacte existe et son adhésion conditionne la conversion"
+    ) {
+      actes.push({
+        titre: "Avenants de conversion anticipée",
+        gabarit: MODELE_AIR_AVENANT,
+      });
+    }
+
+    /* L'acte que le greffe attend, et le seul qui modifie les statuts. */
+    actes.push({
+      titre: "Décision du président constatant l'augmentation de capital",
+      gabarit: MODELE_AIR_CONSTATATION,
+    });
+  }
 
   if (codes.includes("cession_parts")) {
     /*

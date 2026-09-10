@@ -54,6 +54,14 @@ const AVIS_REQUIS: TypeModification[] = [
   "dirigeant",
   "objet_social",
   "augmentation_capital",
+  /*
+   * La constatation publie comme l'augmentation décidée.
+   *
+   * L'article L. 225-149 écarte les formalités de l'article L. 225-142 - l'information
+   * préalable des associés -, non l'avis de modification : le capital est une mention
+   * publiée au registre, et il change.
+   */
+  "constatation_augmentation",
   "reduction_capital",
   "prorogation",
   // L'apport de titres augmente le capital de la bénéficiaire : la mention publiée
@@ -177,6 +185,7 @@ const STATUTS_TOUCHES: TypeModification[] = [
   "denomination",
   "objet_social",
   "augmentation_capital",
+  "constatation_augmentation",
   "reduction_capital",
   "cession_parts",
   "prorogation",
@@ -193,6 +202,7 @@ export const ARTICLE_VISE: Partial<Record<TypeModification, string>> = {
   denomination: "Dénomination sociale",
   objet_social: "Objet",
   augmentation_capital: "Capital social",
+  constatation_augmentation: "Capital social",
   reduction_capital: "Capital social",
   cession_parts: "Apports",
   prorogation: "Durée",

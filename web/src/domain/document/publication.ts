@@ -25,7 +25,18 @@ export interface ActeProduit {
   id: number;
   titre: string;
   enRelecture: boolean;
+  /** Le fichier, quand l'écran doit pouvoir le proposer au téléchargement. */
+  fichier?: string | null;
 }
+
+/**
+ * Le titre sous lequel les accords déposés rejoignent le dossier.
+ *
+ * Numéroté à la suite : un dépôt de même titre remplace le précédent, et vingt accords
+ * sous un titre unique n'en laisseraient qu'un. Le préfixe sert aussi à les écarter de
+ * la liste des actes produits - ils viennent du client, non du cabinet.
+ */
+export const PREFIXE_ACCORD = "Accord BSA AIR ";
 
 /** Ce qui identifie un acte produit par nous, par opposition à une pièce déposée. */
 const PRODUIT_PAR_NOUS = "system";

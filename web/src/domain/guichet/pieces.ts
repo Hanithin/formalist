@@ -40,6 +40,13 @@ export const PIECES_DES_ACTES: Record<string, PieceDuGuichet[]> = {
    * formalité, donc ce n'est ni la plage ni la formalité qui trie : sa table est plus
    * courte que celle de production, ou le code est autre.
    *
+   * Le dictionnaire se reconstitue par ailleurs, société par société : la liste des
+   * actes déposés (`/api/companies/{siren}/attachments`) rend pour chaque pièce son code
+   * **et** son libellé officiel. `tests/manuel/inpi-actes.test.ts` en fait le tour. Ni
+   * « Mandat » ni « Extrait d'immatriculation » n'y figurent - ces pièces accompagnent
+   * une formalité sans jamais être publiées comme actes, et cette voie-là ne les rendra
+   * donc pas.
+   *
    * Il est écrit quand même parce qu'il ne coûte plus rien : `deposer` écarte une pièce
    * refusée et poursuit, en la nommant comme restant à joindre à la main. Si la
    * production connaît le code, la pièce part seule ; sinon rien n'est perdu.
@@ -223,3 +230,47 @@ export const CHEMIN_DES_PIECES = "piecesJointes";
 export const EXTENSION_ATTENDUE = "pdf";
 export const LANGUE_ATTENDUE = "fr";
 export const TAILLE_MAXIMALE = 10 * 1024 * 1024;
+
+
+/**
+ * Les codes lus dans les dépôts publiés, avec leur libellé officiel.
+ *
+ * Ils ne viennent d'aucune supposition : `/api/companies/{siren}/attachments` rend, pour
+ * chaque acte déposé au registre, son `typeDocument` et le libellé que l'INPI lui donne.
+ * `tests/manuel/inpi-actes.test.ts` parcourt quelques sociétés et reconstitue la table ;
+ * ce qui suit en est le fruit, et c'est la seule partie du dictionnaire dont nous soyons
+ * certains.
+ *
+ * Rien ne s'en sert encore : le dépôt d'une modification au guichet n'est pas branché.
+ * Ils sont ici pour que le jour où il le sera, personne ne recommence à deviner.
+ */
+export const CODES_OBSERVES: Record<string, string> = {
+  PJ_01: "Copie des statuts",
+  PJ_02: "Copie des statuts mis à jour",
+  PJ_03: "Copie des actes de nomination des membres des organes de gestion",
+  PJ_52: "Décision de modification certifiée conforme par le représentant légal",
+  PJ_54: "PV ayant décidé et constaté la modification enregistrée, certifié conforme",
+  PJ_55: "Décision du CA ou du Directoire (modification du capital social d'une SA ou d'une SAS)",
+  PJ_68: "Exemplaire de l'accord exprès et de l'information préalable du conjoint",
+  PJ_85: "Déclaration de régularité et de conformité",
+  PJ_138: "Liste des souscripteurs",
+  PJ_152: "Procès-verbal décidant de la mise à jour des statuts",
+  PJ_155: "La décision d'augmentation du capital / procès-verbal d'assemblée générale",
+  PJ_156: "Procès-verbal actant le principe d'une réduction de capital",
+  PJ_163: "Le rapport du commissaire aux apports",
+  PJ_180: "Attestation de dépôt des fonds",
+  PJ_200: "Projet de statuts mis à jour",
+};
+
+/**
+ * La pièce sous laquelle se dépose la constatation d'une augmentation.
+ *
+ * `PJ_55` est le seul code observé qui nomme exactement cet acte : « Décision du CA ou du
+ * Directoire (modification du capital social d'une SA ou d'une SAS) ». En société par
+ * actions simplifiée, c'est le président qui exerce cette compétence sur délégation des
+ * associés - l'acte est le même, et le guichet ne distingue pas.
+ */
+export const PIECE_CONSTATATION: PieceDuGuichet = {
+  code: "PJ_55",
+  libelle: "Décision du CA ou du Directoire (modification du capital social d'une SA ou d'une SAS)",
+};

@@ -10,6 +10,7 @@ import {
 } from "@/domain/modification/types";
 import type { AssociePresent, SocieteModifiee } from "@/domain/modification/gabarit";
 import type { Retouche } from "@/domain/modification/edition";
+import type { ContratAir } from "@/domain/modification/air";
 import type { Cession } from "@/domain/modification/cession";
 import type { EtapeDHistorique } from "@/domain/modification/historique";
 import { journal } from "@/lib/journal";
@@ -40,6 +41,21 @@ export interface StatutsDuDossier {
   fichier?: string;
 }
 
+/** Un accord déposé : ce que la lecture en a tiré, et le fichier d'où il vient. */
+export interface ContratAirDuDossier extends ContratAir {
+  /** Le nom du fichier déposé, pour que l'écran dise de quel accord il parle. */
+  fichier: string;
+  /**
+   * Le titre sous lequel le PDF est enregistré dans le dossier.
+   *
+   * Il n'est pas décoratif : un dépôt de même titre remplace le précédent, et c'est ce
+   * titre qui garantit que deux accords ne se recouvrent pas.
+   */
+  document?: string;
+  /** Ce que la lecture n'a pas su trouver, et que quelqu'un a dû saisir. */
+  manques?: string[];
+}
+
 export interface Modification {
   codes: string[];
   societe: SocieteModifiee;
@@ -52,6 +68,15 @@ export interface Modification {
    * désigne des associés par leur rang et se compte à plusieurs dans une assemblée.
    */
   cessions?: Cession[];
+  /**
+   * Les accords d'investissement rapide déposés, tels qu'ils ont été lus puis corrigés.
+   *
+   * Hors de `valeurs`, qui ne porte que des chaînes : un tour se compte en vingt
+   * accords, chacun avec son souscripteur, son montant et sa propre valorisation. Ce
+   * sont eux qui déterminent le nombre d'actions à créer, et l'écran les affiche pour
+   * relecture avant que le moindre acte n'en soit tiré.
+   */
+  air?: ContratAirDuDossier[];
   statuts?: StatutsDuDossier;
   retouches?: Retouche[];
   /**

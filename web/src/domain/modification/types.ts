@@ -45,6 +45,7 @@ export type TypeModification =
   | "dirigeant"
   | "objet_social"
   | "augmentation_capital"
+  | "constatation_augmentation"
   | "reduction_capital"
   | "cession_parts"
   | "prorogation"
@@ -952,6 +953,144 @@ export const MODIFICATIONS: DefinitionModification[] = [
      * s'affichent plus : on ne pouvait plus passer l'étape.
      */
     champs: [],
+  },
+  {
+    /**
+     * L'augmentation qui a déjà eu lieu.
+     *
+     * Quand des bons de souscription sont exercés, l'article L. 225-149 du code de
+     * commerce dit que l'augmentation « est définitivement réalisée du seul fait de
+     * l'exercice des droits ». Il n'y a donc rien à décider : le président constate, sur
+     * délégation, et modifie corrélativement les statuts.
+     *
+     * C'est pourquoi ce n'est pas un mode de plus sous « Augmentation de capital » : ce
+     * changement-là ne produit pas de procès-verbal d'assemblée, et en produire un
+     * ferait décider une assemblée sur ce qui est déjà acquis.
+     */
+    code: "constatation_augmentation",
+    libelle: "Constatation d'une augmentation de capital",
+    libelleCourt: "Constatation",
+    description: "Acter la conversion de BSA, BSA AIR, BSPCE ou obligations convertibles.",
+    champs: [
+      {
+        identifiant: "airActionsExistantes",
+        libelle: "Nombre d'actions existantes",
+        type: "nombre",
+        groupe: "Le capital avant conversion",
+        obligatoire: true,
+        indication: "Celui qui figure à l'article « Capital social » de vos statuts",
+      },
+      {
+        identifiant: "airValeurNominale",
+        libelle: "Valeur nominale d'une action, en euros",
+        type: "nombre",
+        groupe: "Le capital avant conversion",
+        obligatoire: true,
+      },
+      {
+        /*
+         * La division du nominal, qui n'est pas une coquetterie.
+         *
+         * Un tour d'amorçage se conclut à quelques milliers d'euros le ticket sur une
+         * société qui n'a que mille actions. Le plus petit souscripteur a alors droit à
+         * une fraction d'action, et une fraction d'action ne s'émet pas. Sans division
+         * préalable, il reçoit zéro ou cinq fois ses droits.
+         */
+        identifiant: "airDivision",
+        libelle: "Diviser la valeur nominale par",
+        type: "choix",
+        groupe: "Le capital avant conversion",
+        options: ["Aucune division", "10", "100", "1 000", "10 000"],
+        valeurParDefaut: "Aucune division",
+        aide: "Diviser le nominal multiplie le nombre d'actions sans toucher au capital. C'est ce qui permet d'attribuer à chaque souscripteur un nombre entier d'actions proche de ses droits. L'écran propose la division qui convient une fois les accords déposés.",
+      },
+      {
+        identifiant: "airEvenement",
+        libelle: "Ce qui a déclenché la conversion",
+        type: "choix",
+        groupe: "La conversion",
+        options: [
+          "Clôture du tour de financement, par accord des parties",
+          "Levée de fonds ultérieure",
+          "Cession du contrôle de la société",
+          "Cotation des titres",
+          "Terme prévu par les accords",
+        ],
+        pleineLargeur: true,
+        obligatoire: true,
+        aide: "La clôture du tour dans lequel les bons ont été souscrits n'est pas, en général, un cas de conversion automatique : les accords visent une levée ultérieure. Convertir dès la clôture suppose donc l'accord écrit de chaque souscripteur, que le dossier produit.",
+      },
+      {
+        identifiant: "airDateEvenement",
+        libelle: "Date de la conversion",
+        type: "date",
+        groupe: "La conversion",
+        obligatoire: true,
+      },
+      {
+        /*
+         * La question qui décide s'il faut un commissaire aux comptes.
+         *
+         * Supprimer le droit préférentiel de souscription par décision collective appelle
+         * le rapport spécial de l'article L. 225-138 III, et faute de commissaire en
+         * place il faut en désigner un pour l'occasion. Faire renoncer chaque associé
+         * individuellement (article L. 225-132 alinéa 5) n'emporte aucune suppression :
+         * ni rapport, ni commissaire.
+         */
+        identifiant: "airDroitPreferentiel",
+        libelle: "Le droit préférentiel de souscription",
+        type: "choix",
+        groupe: "La régularité de l'émission",
+        options: [
+          "Chaque associé y renonce individuellement, au profit des souscripteurs",
+          "Il a été supprimé par décision collective, avec rapport du commissaire aux comptes",
+        ],
+        pleineLargeur: true,
+        obligatoire: true,
+        valeurParDefaut: "Chaque associé y renonce individuellement, au profit des souscripteurs",
+        aide: "La renonciation individuelle évite la désignation d'un commissaire aux comptes ad hoc. Elle suppose l'accord de tous les associés : un seul refus, et il faut passer par la suppression.",
+      },
+      {
+        identifiant: "airDecisionEmission",
+        libelle: "L'émission des bons",
+        type: "choix",
+        groupe: "La régularité de l'émission",
+        options: [
+          "A été décidée par les associés, procès-verbal à l'appui",
+          "N'a pas fait l'objet d'une décision collective : à ratifier",
+        ],
+        pleineLargeur: true,
+        obligatoire: true,
+        aide: "L'émission de valeurs mobilières donnant accès au capital relève des associés. Signée par le seul président, elle reste ratifiable : le dossier produit alors la décision de ratification, et l'action en nullité s'éteint dès que la cause a cessé (article L. 235-3 du code de commerce).",
+      },
+      {
+        identifiant: "airPacte",
+        libelle: "Adhésion à un pacte d'associés",
+        type: "choix",
+        groupe: "La régularité de l'émission",
+        options: [
+          "Un pacte existe et son adhésion conditionne la conversion",
+          "Un pacte existe, sans condition d'adhésion",
+          "Il n'y a pas de pacte",
+        ],
+        pleineLargeur: true,
+        valeurParDefaut: "Il n'y a pas de pacte",
+        aide: "Quand l'adhésion conditionne la conversion, elle doit précéder ou accompagner celle-ci : recueillie après, la condition n'est pas remplie au moment où elle doit l'être.",
+      },
+      {
+        identifiant: "airLiberation",
+        libelle: "Libération du prix d'exercice",
+        type: "choix",
+        groupe: "La conversion",
+        options: [
+          "Par imputation sur le prix des bons, déjà versé",
+          "Par un versement en numéraire à la conversion",
+        ],
+        pleineLargeur: true,
+        valeurParDefaut: "Par imputation sur le prix des bons, déjà versé",
+        aide: "Les actions issues de bons se souscrivent souvent à la valeur nominale, l'argent étant entré au moment de la souscription des bons. L'article L. 225-149 écarte alors les formalités de dépôt des fonds : aucune attestation bancaire n'est due.",
+      },
+    ],
   },
   {
     code: "prorogation",

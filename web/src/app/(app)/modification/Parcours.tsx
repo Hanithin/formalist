@@ -52,6 +52,7 @@ import { anomaliesDeLActeDeCession } from "@/domain/modification/acte-cession";
 import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification/offre";
 import type { Retouche, Zone } from "@/domain/modification/edition";
 import type { ActeProduit } from "@/domain/document/publication";
+import { Accords, ActesPrevus, ExplicationConstatation, type AccordDepose } from "./Accords";
 import styles from "./Modification.module.css";
 import { Recapitulatif } from "./Recapitulatif";
 import { remonterEnHaut } from "@/lib/defilement";
@@ -160,6 +161,14 @@ export interface EtatDuDossier {
   assemblee: { date?: string | null; totalParts?: number | null; associes?: Associe[] };
   /** Les cessions décidées, quand il y en a. */
   cessions?: Cession[];
+  /**
+   * Les accords d'investissement rapide déposés et relus.
+   *
+   * Ils ne passent pas par l'enregistrement général du parcours : ils arrivent par leur
+   * propre route, au dépôt, et s'y corrigent. Le `PUT` du dossier n'envoie que les
+   * champs saisis, et écraserait la liste par un blanc s'il la portait aussi.
+   */
+  air?: AccordDepose[];
   statuts?: {
     source: "inpi" | "depot";
     nature?: string;
@@ -587,6 +596,7 @@ export function Parcours({
 
         {etape === 3 && (
           <EtapeDetails
+            dossier={dossier}
             etat={etat}
             /*
               Les manques d'une cession se montrent dès la tentative, comme les autres,
@@ -1636,12 +1646,15 @@ function Devis({ chiffrage }: { chiffrage: ReturnType<typeof devis> }) {
 /* --------------------------------------------------------- 3. Les détails */
 
 function EtapeDetails({
+  dossier,
   etat,
   anomalies,
   restants,
   majValeurs,
   changer,
 }: {
+  /** Le dépôt des accords passe par sa propre route : elle a besoin du dossier. */
+  dossier: number;
   etat: EtatDuDossier;
   anomalies: { champ: string; message: string }[];
   /** Tout ce qui manque, montré ou non : le sommaire s'en sert pour cocher. */
@@ -1868,6 +1881,9 @@ function EtapeDetails({
             Elle désigne des associés, se compte à plusieurs, et sa répartition se
             calcule : six cases côte à côte ne peuvent rien vérifier de tout cela.
           */}
+          {/* Ce changement-ci ne se comprend pas sans ses trois phrases : voir le composant. */}
+          {definition.code === "constatation_augmentation" && <ExplicationConstatation />}
+
           {definition.code === "cession_parts" ? (
             <Cessions
               associes={etat.assemblee.associes ?? []}
@@ -2003,12 +2019,54 @@ function EtapeDetails({
               ))}
           </div>
           )}
+
+          {/*
+            Les accords convertis, sous les champs qui les encadrent.
+
+            Ils ne sont pas des champs : un tour se compte en vingt contrats, chacun
+            avec son souscripteur, son montant et sa propre valorisation, et le nombre
+            d'actions à créer ne se lit qu'en les résolvant ensemble. Six cases côte à
+            côte ne peuvent rien vérifier de tout cela - c'est le même motif que la
+            cession de parts, qui a son composant pour les mêmes raisons.
+          */}
+          {definition.code === "constatation_augmentation" && (
+            <Accords
+              dossier={dossier}
+              accords={etat.air ?? []}
+              actionsExistantes={nombreLu(etat.valeurs.airActionsExistantes) ?? 0}
+              division={diviseurLu(etat.valeurs.airDivision)}
+              surAccords={(air) => changer({ air })}
+              surDivision={(division) =>
+                majValeurs((valeurs) => ({
+                  ...valeurs,
+                  airDivision: division === 1 ? "Aucune division" : division.toLocaleString("fr-FR"),
+                }))
+              }
+            />
+          )}
+
+          {definition.code === "constatation_augmentation" && (
+            <ActesPrevus valeurs={etat.valeurs} forme={etat.societe.forme} />
+          )}
           </div>
         </section>
         );
       })}
     </div>
   );
+}
+
+/**
+ * Le diviseur du nominal, tel que le choix l'écrit.
+ *
+ * Le champ est un choix - « Aucune division », « 10 », « 1 000 » - parce qu'un nombre
+ * libre inviterait à diviser par sept. La valeur porte donc l'espace insécable des
+ * milliers, et « 1 000 » ne se convertit pas tout seul.
+ */
+export function diviseurLu(choix: unknown): number {
+  const chiffres = (choix ?? "").toString().replace(/[^\d]/g, "");
+  const valeur = Number(chiffres);
+  return Number.isFinite(valeur) && valeur >= 1 ? valeur : 1;
 }
 
 /**
@@ -3329,6 +3387,24 @@ function EtapeActes({
                 <span className={d.enRelecture ? styles.acteEnRelecture : styles.acteRemis}>
                   {d.enRelecture ? "En relecture" : "Relu, à votre disposition"}
                 </span>
+                {/*
+                  Le téléchargement n'apparaît qu'une fois l'acte relu.
+                  Un acte en relecture n'est pas remis : `visibleParLeClient` le dit
+                  déjà côté serveur, et `/api/fichier` vérifie l'accès à son tour.
+                */}
+                {!d.enRelecture && d.fichier && (
+                  <a
+                    className={styles.acteLien}
+                    href={
+                      "/api/fichier?nom=" +
+                      encodeURIComponent(d.fichier) +
+                      "&titre=" +
+                      encodeURIComponent(d.titre)
+                    }
+                  >
+                    Télécharger
+                  </a>
+                )}
               </li>
             ))}
           </ul>

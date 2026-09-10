@@ -45,7 +45,8 @@ export const POST = route(async (requete: Request) => {
     modification.valeurs,
     modification.societe,
     modification.assemblee,
-    modification.cessions
+    modification.cessions,
+    modification.air
   );
   if (manques.length > 0) {
     return NextResponse.json(

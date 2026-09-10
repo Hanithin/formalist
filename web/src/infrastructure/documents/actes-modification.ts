@@ -86,7 +86,8 @@ export async function produireLesActesDeLaModification(
     modification.valeurs,
     modification.societe,
     modification.assemblee,
-    modification.cessions
+    modification.cessions,
+    modification.air
   );
   if (manques.length > 0) throw new DossierIncompletPourLesActes(manques);
 
@@ -103,6 +104,8 @@ export async function produireLesActesDeLaModification(
     codes: modification.codes,
     valeurs: modification.valeurs,
     cessions: modification.cessions,
+    /* Les accords convertis : c'est d'eux que sortent le tableau et le capital d'après. */
+    air: modification.air,
     villeRcsNouvelle: villeDuRcs(
       typeof modification.valeurs.nouveauCodePostal === "string"
         ? modification.valeurs.nouveauCodePostal

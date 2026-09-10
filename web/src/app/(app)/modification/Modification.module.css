@@ -7681,3 +7681,308 @@
 .registreGeste:hover {
   color: #18181b;
 }
+
+/* ------------------------------------------------- Les accords convertis */
+
+/*
+ * Le tableau des accords, sous les champs du changement.
+ *
+ * Il porte des cases modifiables, non un affichage : ce qui a été lu se corrige à
+ * l'endroit où on le lit. Les deux colonnes calculées se distinguent par la couleur du
+ * texte et l'alignement, jamais par un fond ni un filet - une valeur dérivée n'est pas
+ * un état.
+ */
+.accords {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid #e4e4e7;
+}
+
+.accordsIntro {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #52525b;
+  max-width: 68ch;
+}
+
+.accordsDepot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+/* Le champ natif est illisible et intraduisible : c'est l'étiquette qui fait le bouton. */
+.accordsFichier {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.accordsBouton {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 16px;
+  border: 1px solid #18181b;
+  border-radius: 10px;
+  background: #18181b;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  letter-spacing: 0;
+}
+
+.accordsBouton:hover {
+  background: #27272a;
+}
+
+.accordsFichier:disabled + .accordsBouton {
+  background: #a1a1aa;
+  border-color: #a1a1aa;
+  cursor: default;
+}
+
+.accordsPrecision {
+  font-size: 13.5px;
+  color: #71717a;
+}
+
+.accordsTableau {
+  overflow-x: auto;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+}
+
+.accordsTableau table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.accordsTableau th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 400;
+  color: #71717a;
+  border-bottom: 1px solid #e4e4e7;
+  white-space: nowrap;
+}
+
+.accordsTableau td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f4f4f5;
+  vertical-align: middle;
+}
+
+.accordsTableau tr:last-child td {
+  border-bottom: none;
+}
+
+.accordsTableau input {
+  width: 100%;
+  min-width: 108px;
+  padding: 7px 9px;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #18181b;
+  background: #fff;
+  letter-spacing: 0;
+}
+
+.accordsTableau input:focus {
+  outline: none;
+  border-color: #18181b;
+}
+
+/* Le fichier d'où vient la ligne : on doit pouvoir retrouver le contrat sur son disque. */
+.accordsFichierNom {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #a1a1aa;
+  overflow-wrap: anywhere;
+}
+
+.accordsCalcule {
+  text-align: right;
+  color: #52525b;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.accordsRetirer {
+  padding: 2px 8px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #a1a1aa;
+  cursor: pointer;
+}
+
+.accordsRetirer:hover {
+  color: #18181b;
+}
+
+.accordsBilan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  margin: 18px 0 0;
+  padding: 0;
+  background: #e4e4e7;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.accordsBilan > div {
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.accordsBilan dt {
+  font-size: 12.5px;
+  color: #71717a;
+}
+
+.accordsBilan dd {
+  margin: 3px 0 0;
+  font-size: 17px;
+  color: #18181b;
+  font-variant-numeric: tabular-nums;
+}
+
+.accordsConseil,
+.accordsBloquant,
+.accordsAvertit {
+  margin: 12px 0 0;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.accordsConseil {
+  background: #f4f4f5;
+  color: #3f3f46;
+}
+
+.accordsConseil button {
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: #18181b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  letter-spacing: 0;
+}
+
+/* Ce qui empêche de signer se distingue par la couleur du texte, non par un filet. */
+.accordsBloquant {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.accordsAvertit {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.accordsErreur {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: #991b1b;
+}
+
+/*
+ * Le préambule d'un changement qui ne ressemble à aucun autre.
+ *
+ * Trois paragraphes gris, sans encadré ni pastille : c'est une explication, pas un
+ * avertissement. Le fond légèrement teinté suffit à le détacher des champs sans lui
+ * donner l'urgence d'une alerte.
+ */
+.explication {
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: #fafafa;
+  max-width: 74ch;
+}
+
+.explication p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #3f3f46;
+}
+
+.explication p:last-child {
+  margin-bottom: 0;
+}
+
+.explication strong {
+  font-weight: 500;
+  color: #18181b;
+}
+
+/* Ce qui sortira du dossier, et pourquoi : une liste, non des cartes. */
+.actesPrevus {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid #e4e4e7;
+}
+
+.actesPrevus ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actesPrevus li {
+  display: grid;
+  gap: 3px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f4f4f5;
+  font-size: 14px;
+  color: #18181b;
+}
+
+.actesPrevus li:last-child {
+  border-bottom: none;
+}
+
+.actesPourquoi {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #71717a;
+  max-width: 76ch;
+}
+
+/* Le téléchargement d'un acte relu : un lien, non un bouton - ce n'est pas l'action de l'écran. */
+.acteLien {
+  flex-shrink: 0;
+  font-size: 13.5px;
+  color: #3f3f46;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: 0;
+}
+
+.acteLien:hover {
+  color: #18181b;
+}

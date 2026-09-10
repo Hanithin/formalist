@@ -35,6 +35,8 @@ export const GET = route(async (requete: Request) => {
     societe: modification.societe,
     codes: modification.codes,
     valeurs: modification.valeurs,
+    /* L'avis d'une constatation chiffre le capital sur les accords, non sur une saisie. */
+    air: modification.air,
     dateAssemblee: modification.assemblee?.date ?? null,
     ressortActuel: villeDuRcs(modification.societe.codePostal, modification.societe.ville),
     ressortNouveau: villeDuRcs(

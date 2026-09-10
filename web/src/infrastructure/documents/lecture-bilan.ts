@@ -124,3 +124,16 @@ async function reconnaissance(source: string, dossier: string): Promise<string> 
   if (morceaux.join("").trim().length === 0) throw new BilanIllisible();
   return morceaux.join("\n");
 }
+
+/**
+ * Le texte d'un PDF quelconque.
+ *
+ * `lireLeBilan` ne doit rien à la liasse fiscale : couche texte d'abord, reconnaissance
+ * ensuite, et le même seuil pour trancher entre les deux. Les accords d'investissement
+ * rapide passent par ce chemin, et un second module qui recopierait pdftotext et
+ * tesseract aurait divergé à la première correction portée à un seul.
+ *
+ * Le nom change, la fonction non : c'est le contrat qui est générique, pas le contenu.
+ */
+export const lireLeTexteDUnPdf = lireLeBilan;
+export { BilanIllisible as DocumentIllisible };

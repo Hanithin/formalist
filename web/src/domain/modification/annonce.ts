@@ -2,6 +2,8 @@ import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais } from "@/domain/formalite/lettres";
 import { changeDeDepartement, changeDeRessort } from "./formalites";
 import type { Valeurs } from "./types";
+import { repartition, type ContratAir } from "./air";
+import { diviseurDuNominal } from "./constatation";
 import type { SocieteModifiee } from "./gabarit";
 
 /**
@@ -39,6 +41,45 @@ export interface ContexteAvis {
   ressortActuel?: string | null;
   /** Ville du RCS du nouveau siège, en cas de transfert. */
   ressortNouveau?: string | null;
+  /** Les accords convertis, quand l'avis constate une augmentation déjà réalisée. */
+  air?: ContratAir[];
+}
+
+/**
+ * Le capital d'avant et d'après, pour l'avis d'une constatation.
+ *
+ * Les deux montants ne se lisent pas dans les valeurs saisies : ils se calculent sur les
+ * accords, comme dans les actes. Les recopier dans deux cases aurait fait publier un
+ * capital que le procès-verbal aurait démenti.
+ */
+function capitalDeLaConstatation(
+  valeurs: Valeurs,
+  air: ContratAir[] | undefined
+): { avant: string; apres: string; divise: boolean; diviseur: string } | null {
+  const contrats = (air ?? []).filter((a) => a.montant > 0 && a.valorisation > 0);
+  if (contrats.length === 0) return null;
+
+  const diviseur = diviseurDuNominal(valeurs);
+  const existantes = nombreDe(valeurs.airActionsExistantes) * diviseur;
+  const nominale = diviseur > 1 ? nombreDe(valeurs.airValeurNominale) / diviseur : nombreDe(valeurs.airValeurNominale);
+  if (existantes <= 0 || nominale <= 0) return null;
+
+  const parts = repartition(existantes, contrats);
+  const decimales = nominale < 0.01 ? 3 : 2;
+  const ecrire = (valeur: number) =>
+    valeur.toLocaleString("fr-FR", { maximumFractionDigits: decimales }).replace(/[\u202f\u00a0]/g, " ");
+
+  return {
+    avant: ecrire(existantes * nominale),
+    apres: ecrire(parts.actionsApres * nominale),
+    divise: diviseur > 1,
+    diviseur: diviseur.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " "),
+  };
+}
+
+function nombreDe(brut: unknown): number {
+  const valeur = typeof brut === "number" ? brut : Number((brut ?? "").toString().replace(",", "."));
+  return Number.isFinite(valeur) ? valeur : 0;
 }
 
 function texte(valeur: string | number | null | undefined): string {
@@ -156,7 +197,7 @@ function enTete(societe: SocieteModifiee): string {
  * n'appelle donc pas d'avis.
  */
 function decisions(contexte: ContexteAvis): string[] {
-  const { codes, valeurs, societe } = contexte;
+  const { codes, valeurs, societe, air } = contexte;
   const phrases: string[] = [];
 
   if (codes.includes("transfert_siege")) {
@@ -246,6 +287,31 @@ function decisions(contexte: ContexteAvis): string[] {
           ? ", par " + texte(valeurs.modeAugmentation).toLowerCase()
           : "")
     );
+  }
+
+  /*
+   * La constatation, qui dit d'où viennent les actions nouvelles.
+   *
+   * « Augmenté par apport en numéraire » serait faux : rien n'a été apporté au moment de
+   * l'augmentation, l'argent est entré à la souscription des bons. L'avis nomme donc
+   * l'exercice des bons, qui est le fait générateur retenu par l'article L. 225-149.
+   */
+  if (codes.includes("constatation_augmentation")) {
+    const chiffres = capitalDeLaConstatation(valeurs, air);
+    if (chiffres) {
+      phrases.push(
+        (chiffres.divise
+          ? "la valeur nominale des actions a été divisée par " +
+            chiffres.diviseur +
+            ", le capital social demeurant inchangé, puis "
+          : "") +
+          "il a été constaté la réalisation définitive d'une augmentation de capital résultant de l'exercice de bons de souscription d'actions, portant le capital social de " +
+          chiffres.avant +
+          " euros à " +
+          chiffres.apres +
+          " euros"
+      );
+    }
   }
 
   if (codes.includes("reduction_capital")) {

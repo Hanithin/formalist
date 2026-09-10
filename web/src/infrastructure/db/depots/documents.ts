@@ -3,6 +3,7 @@ import { mesDossiers, exigerDossier } from "./dossiers";
 import { paiementDuBrouillon } from "./brouillons";
 import {
   A_RELIRE,
+  PREFIXE_ACCORD,
   visibleParLeClient,
   type ActeProduit,
 } from "@/domain/document/publication";
@@ -347,14 +348,29 @@ export async function actesDuDossier(
        * rédigés.
        */
       name: { not: TITRE_STATUTS_EN_VIGUEUR },
+      /*
+       * Les accords déposés par le client ne sont pas non plus des actes produits.
+       *
+       * Ils rejoignent le dossier par le même chemin que les statuts en vigueur - même
+       * table, même « uploaded_by » - et pour la même raison : la lecture les relit page
+       * par page. Vingt contrats de BSA AIR s'affichaient parmi « vos actes », marqués
+       * « Relu, à votre disposition », comme si le cabinet les avait rédigés.
+       */
+      NOT: { name: { startsWith: PREFIXE_ACCORD } },
     },
     orderBy: { created_at: "asc" },
-    select: { id: true, name: true, status: true },
+    select: { id: true, name: true, status: true, file_path: true },
   });
 
   return lignes.map((l) => ({
     id: l.id,
     titre: l.name,
     enRelecture: l.status === A_RELIRE,
+    /*
+     * Le chemin du fichier, pour que l'écran des actes puisse en proposer le
+     * téléchargement. `/api/fichier` vérifie l'accès à son tour : ce chemin ne donne
+     * rien à qui n'a pas le dossier.
+     */
+    fichier: l.file_path ?? null,
   }));
 }

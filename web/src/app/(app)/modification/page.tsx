@@ -308,6 +308,7 @@ export default async function Modification({
     valeurs: modification.valeurs,
     assemblee: modification.assemblee,
     cessions: modification.cessions,
+    air: modification.air,
     statuts: modification.statuts,
     retouches: modification.retouches,
     statutsAJour: modification.statutsAJour,
