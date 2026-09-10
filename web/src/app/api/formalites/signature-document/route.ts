@@ -91,10 +91,22 @@ export const GET = route(async (requete: Request) => {
     return NextResponse.json({ error: "Document introuvable" }, { status: 404 });
   }
 
+  /*
+   * Le paraphe suit la signature, document par document.
+   *
+   * Tous les paraphes descendaient au bas de chaque page de n'importe quel document
+   * demandé. Or un acte ne porte que les signatures qu'il appelle : une attestation
+   * de domiciliation que le cabinet signe seul n'a pas d'emplacement pour les associés,
+   * et n'a donc pas à porter leurs initiales. On ne retient que ceux dont la signature
+   * a effectivement trouvé sa place.
+   */
+  const paraphesAApposer: string[] = [];
+
   signatures.forEach((s, index) => {
-    if (s.signature_data) {
-      contenu = apposerSignature(contenu, s.signature_data, s.associe_name, index);
-    }
+    if (!s.signature_data) return;
+    const resultat = apposerSignature(contenu, s.signature_data, s.associe_name, index);
+    contenu = resultat.docx;
+    if (resultat.apposee && s.paraphe_data) paraphesAApposer.push(s.paraphe_data);
   });
 
   try {
@@ -106,10 +118,7 @@ export const GET = route(async (requete: Request) => {
      * Un document Word n'a pas de pages : sa pagination est décidée par le logiciel qui
      * l'ouvre. « En bas de chaque page » ne veut donc rien dire avant la conversion.
      */
-    const paraphes = await apposerLesParaphes(
-      pdf,
-      signatures.map((s) => s.paraphe_data).filter((d): d is string => !!d)
-    );
+    const paraphes = await apposerLesParaphes(pdf, paraphesAApposer);
 
     return new NextResponse(new Uint8Array(paraphes), {
       headers: {

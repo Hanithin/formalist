@@ -20,8 +20,7 @@ const PIXEL =
 
 /** Un document Word minimal, avec deux lignes de signature et leurs noms. */
 function documentDEssai(): Buffer {
-  const ligne = (texte: string) =>
-    "<w:p><w:r><w:t>" + texte + "</w:t></w:r></w:p>";
+  const ligne = (texte: string) => "<w:p><w:r><w:t>" + texte + "</w:t></w:r></w:p>";
 
   const document =
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -50,8 +49,8 @@ function documentDEssai(): Buffer {
 describe("l'apposition des signatures dans un acte", () => {
   it("donne son propre fichier image à chaque signataire", () => {
     let docx = documentDEssai();
-    docx = apposerSignature(docx, PIXEL, "Jean Dupont", 0);
-    docx = apposerSignature(docx, PIXEL, "Claire Martin", 1);
+    docx = apposerSignature(docx, PIXEL, "Jean Dupont", 0).docx;
+    docx = apposerSignature(docx, PIXEL, "Claire Martin", 1).docx;
 
     const zip = new PizZip(docx);
     expect(zip.file("word/media/signature1.png")).not.toBeNull();
@@ -60,8 +59,8 @@ describe("l'apposition des signatures dans un acte", () => {
 
   it("relie chaque emplacement à sa propre image", () => {
     let docx = documentDEssai();
-    docx = apposerSignature(docx, PIXEL, "Jean Dupont", 0);
-    docx = apposerSignature(docx, PIXEL, "Claire Martin", 1);
+    docx = apposerSignature(docx, PIXEL, "Jean Dupont", 0).docx;
+    docx = apposerSignature(docx, PIXEL, "Claire Martin", 1).docx;
 
     const zip = new PizZip(docx);
     const rels = zip.file("word/_rels/document.xml.rels")!.asText();
@@ -79,8 +78,8 @@ describe("l'apposition des signatures dans un acte", () => {
 
   it("ne donne pas le même identifiant de dessin à deux images", () => {
     let docx = documentDEssai();
-    docx = apposerSignature(docx, PIXEL, "Jean Dupont", 0);
-    docx = apposerSignature(docx, PIXEL, "Claire Martin", 1);
+    docx = apposerSignature(docx, PIXEL, "Jean Dupont", 0).docx;
+    docx = apposerSignature(docx, PIXEL, "Claire Martin", 1).docx;
 
     const document = new PizZip(docx).file("word/document.xml")!.asText();
     const identifiants = [...document.matchAll(/<wp:docPr id="(\d+)"/g)].map((m) => m[1]);
@@ -89,8 +88,44 @@ describe("l'apposition des signatures dans un acte", () => {
     expect(new Set(identifiants).size).toBe(2);
   });
 
+  it("dit qu'il n'a rien apposé sur un document sans emplacement de signature", () => {
+    /*
+     * Un acte que ces personnes ne signent pas - une attestation du cabinet - n'a pas
+     * d'emplacement pour elles. Le savoir décide si leur paraphe descend au bas de ses
+     * pages : sans cela, toutes les initiales tombaient sur n'importe quel document.
+     */
+    const zip = new PizZip();
+    zip.file(
+      "[Content_Types].xml",
+      '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>'
+    );
+    zip.file(
+      "word/_rels/document.xml.rels",
+      '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>'
+    );
+    zip.file(
+      "word/document.xml",
+      '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+        "<w:p><w:r><w:t>Attestation de domiciliation</w:t></w:r></w:p>" +
+        "</w:body></w:document>"
+    );
+
+    const resultat = apposerSignature(
+      zip.generate({ type: "nodebuffer" }),
+      PIXEL,
+      "Jean Dupont",
+      0
+    );
+    expect(resultat.apposee).toBe(false);
+  });
+
+  it("dit qu'il a apposé quand l'emplacement existe", () => {
+    const resultat = apposerSignature(documentDEssai(), PIXEL, "Jean Dupont", 0);
+    expect(resultat.apposee).toBe(true);
+  });
+
   it("retombe sur le premier rang quand aucun n'est donné", () => {
-    const docx = apposerSignature(documentDEssai(), PIXEL, "Jean Dupont");
+    const docx = apposerSignature(documentDEssai(), PIXEL, "Jean Dupont").docx;
     expect(new PizZip(docx).file("word/media/signature1.png")).not.toBeNull();
   });
 });

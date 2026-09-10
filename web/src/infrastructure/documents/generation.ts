@@ -23,7 +23,7 @@ interface ModuleDocx {
     signatureBase64: string,
     nomSignataire: string,
     index?: number
-  ) => Buffer;
+  ) => { docx: Buffer; apposee: boolean };
 }
 
 let module_: ModuleDocx | null = null;
@@ -63,7 +63,7 @@ export function apposerSignature(
   signature: string,
   nomSignataire: string,
   index?: number
-): Buffer {
+): { docx: Buffer; apposee: boolean } {
   return charger().injectSignature(docx, signature, nomSignataire, index);
 }
 

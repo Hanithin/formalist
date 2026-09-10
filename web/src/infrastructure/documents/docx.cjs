@@ -1890,7 +1890,15 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
     zip.file("word/document.xml", docXml);
   }
 
-  return zip.generate({ type: "nodebuffer" });
+  /*
+   * On dit si la signature a trouvé sa place.
+   *
+   * Le zip revenait tel quel, apposé ou non, et l'appelant ne pouvait pas savoir : un
+   * document sans emplacement de signature - une attestation que le cabinet signe seul,
+   * par exemple - se voyait tout de même traité comme signé. C'est ce qui décide si le
+   * paraphe doit descendre au bas de ses pages.
+   */
+  return { docx: zip.generate({ type: "nodebuffer" }), apposee: injected };
 }
 
 module.exports = { TEMPLATES, templateCache, loadTemplate, loadAllTemplates, generateDocx, generateDocxFromBuffer, injectSignature, uniformiserLaPolice, normaliserLeTexte };
