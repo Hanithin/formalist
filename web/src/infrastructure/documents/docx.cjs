@@ -1757,7 +1757,18 @@ function generateDocx(templateName, data) {
 function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
   if (!signatureBase64) return docxBuffer;
 
-  const idx = sigIndex || 1;
+  /*
+   * Le rang du signataire, à partir de un.
+   *
+   * `sigIndex || 1` traitait le premier signataire comme absent : son index vaut zéro,
+   * qui est faux en JavaScript. Les deux premières signatures d'un acte retombaient
+   * donc sur le même numéro, écrivaient le même fichier `signature1.png` et la même
+   * relation - la seconde écrasait la première, et les deux emplacements affichaient la
+   * dernière image. Un acte portait ainsi la signature de la mauvaise personne sous le
+   * nom de l'autre.
+   */
+  const rang = Number.isInteger(sigIndex) && sigIndex >= 0 ? sigIndex + 1 : 1;
+  const idx = rang;
   const zip = new PizZip(docxBuffer);
 
   const imgData = Buffer.from(signatureBase64.replace(/^data:image\/\w+;base64,/, ""), "base64");
@@ -1781,12 +1792,12 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
     `<w:p><w:pPr><w:spacing w:before="120" w:after="0"/></w:pPr><w:r><w:drawing>`
     + `<wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">`
     + `<wp:extent cx="${cx}" cy="${cy}"/>`
-    + `<wp:docPr id="999" name="Signature"/>`
+    + `<wp:docPr id="${900 + idx}" name="Signature ${idx}"/>`
     + `<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr>`
     + `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">`
     + `<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">`
     + `<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">`
-    + `<pic:nvPicPr><pic:cNvPr id="0" name="signature.png"/><pic:cNvPicPr/></pic:nvPicPr>`
+    + `<pic:nvPicPr><pic:cNvPr id="${idx}" name="signature${idx}.png"/><pic:cNvPicPr/></pic:nvPicPr>`
     + `<pic:blipFill><a:blip r:embed="${relId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>`
     + `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`
     + `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>`
@@ -1834,9 +1845,19 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
     }
 
     if (!nameText) {
+      /*
+       * On remonte, mais pas au-delà d'une autre ligne de signature.
+       *
+       * Le repli cherchait un nom trois paragraphes en arrière sans regarder ce qu'il
+       * traversait : la ligne de Claire trouvait ainsi « Monsieur Jean DUPONT », qui la
+       * précède et qui a déjà la sienne. La signature de Jean s'apposait donc aussi sous
+       * le nom de Claire. Un nom situé au-delà d'une autre ligne de signature appartient
+       * à cette ligne-là, pas à celle-ci.
+       */
       for (let back = 1; back <= 3 && (i - back) >= 0; back++) {
         const prevText = paraTexts[i - back].trim();
         if (!prevText) continue;
+        if (/^[_\s]+$/.test(prevText) && prevText.length >= 10) break;
         if (looksLikeName(prevText) && matchesSignerName(prevText)) {
           nameText = prevText;
           break;
@@ -1852,6 +1873,14 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
       const sigForSplit = sigImageParagraph.replace(/<\/w:p>$/, "");
       paragraphs[i] = paragraphs[i].substring(0, pStartIdx) + sigForSplit;
       injected = true;
+      /*
+       * Une personne signe une fois.
+       *
+       * La boucle parcourait toutes les lignes de signature et apposait la même image
+       * partout où un nom paraissait convenir. Chaque appel ne porte qu'un signataire :
+       * dès qu'il a trouvé sa place, il n'en cherche pas d'autre.
+       */
+      break;
     }
   }
 
