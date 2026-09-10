@@ -67,24 +67,6 @@ function initiales(nom: string): string {
   return (premiere + derniere).toUpperCase();
 }
 
-/** Le crayon qui dit qu'un champ se modifie, là où rien d'autre ne le dit. */
-function Crayon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
-
 function Oeil() {
   return (
     <svg
@@ -451,35 +433,25 @@ export function Actes({
                     <span className={styles.signataireInitiales} aria-hidden="true">
                       {initiales(d.nom)}
                     </span>
-                    <span className={styles.signataireIdentite}>
-                      <label
-                        className={styles.signataireNom}
-                        htmlFor={"signataire-email-" + d.rang}
-                      >
-                        {d.nom}
-                      </label>
-                      {/*
+                    <label className={styles.signataireNom} htmlFor={"signataire-email-" + d.rang}>
+                      {d.nom}
+                    </label>
+                    {/*
                         L'adresse se corrige ici.
                         C'est le moment où on la relit - juste avant que la demande ne
                         parte - et retourner à l'étape des associés pour une faute de
                         frappe fait perdre l'endroit où l'on était.
                       */}
-                      <input
-                        id={"signataire-email-" + d.rang}
-                        type="email"
-                        className={styles.signataireChamp}
-                        value={d.email}
-                        placeholder="adresse@exemple.fr"
-                        autoComplete="off"
-                        aria-label={"Adresse email de " + d.nom}
-                        onChange={(e) => surEmail(d.rang, e.target.value)}
-                      />
-                    </span>
-
-                    {/* Décoratif : le champ porte déjà son intitulé. */}
-                    <span className={styles.signataireCrayon}>
-                      <Crayon />
-                    </span>
+                    <input
+                      id={"signataire-email-" + d.rang}
+                      type="email"
+                      className={styles.signataireChamp}
+                      value={d.email}
+                      placeholder="adresse@exemple.fr"
+                      autoComplete="off"
+                      aria-label={"Adresse email de " + d.nom}
+                      onChange={(e) => surEmail(d.rang, e.target.value)}
+                    />
                   </li>
                 ))}
               </ul>

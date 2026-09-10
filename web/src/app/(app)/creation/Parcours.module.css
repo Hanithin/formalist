@@ -3459,18 +3459,17 @@
 /* ---------- Les signataires ---------- */
 
 /*
- * Des personnes, non une énumération.
+ * Une liste de personnes, non un empilement de cartes.
  *
- * Elles tenaient dans une phrase, adresses entre parenthèses, qu'il fallait relire deux
- * fois pour vérifier une adresse - ce qu'on vient précisément y faire, puisque la
- * demande part par courriel et qu'une adresse fausse est une signature qui n'arrive
- * jamais. Une ligne par personne, le nom au-dessus de son adresse : l'oeil descend au
- * lieu de découper une phrase.
+ * Chacune avait sa propre carte bordée, à l'intérieur de la carte de l'étape, avec un
+ * champ qui prenait un troisième cadre au survol et un crayon pour redire ce que ce
+ * cadre disait déjà. Quatre traits pour une ligne. Un filet entre les lignes suffit à
+ * les séparer, et le champ ressemble à un champ - c'est tout ce qu'il faut pour qu'on
+ * sache qu'on peut y toucher.
  */
 .signataires {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   margin: 0 0 20px;
   padding: 0;
   list-style: none;
@@ -3478,13 +3477,19 @@
 
 .signataires > li.signataire {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 14px;
   margin: 0;
-  padding: 10px 14px;
-  border: 1px solid #ededf0;
-  border-radius: 12px;
-  background: #fff;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid #f2f2f4;
+  border-radius: 0;
+  background: none;
+}
+
+.signataires > li.signataire:last-child {
+  border-bottom: 0;
 }
 
 /* Les initiales tiennent lieu de portrait : c'est quelqu'un, pas une adresse. */
@@ -3503,81 +3508,52 @@
   letter-spacing: 0;
 }
 
-.signataireIdentite {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  /* Le champ prend la largeur restante : sans cela, l'adresse se coupait au tiers. */
-  min-width: 0;
-}
-
+/*
+ * Le nom sur une colonne fixe.
+ *
+ * Les champs s'alignent alors les uns sous les autres quel que soit le nom, et l'oeil
+ * descend la colonne des adresses d'un seul mouvement - c'est ce qu'on vient y faire.
+ */
 .signataireNom {
+  flex-shrink: 0;
+  width: 170px;
+  margin: 0;
   font-size: 14.5px;
   font-weight: 500;
   color: #18181b;
 }
 
 /*
- * L'adresse se corrige sur place.
+ * Un champ qui ressemble à un champ.
  *
- * Sans cadre au repos : la ligne se lit comme un renseignement, non comme un formulaire
- * de plus au milieu des actes. Le cadre paraît au survol et à la saisie, quand on
- * cherche justement à savoir si l'on peut y toucher.
+ * Il n'en prenait l'air qu'au survol : au repos, une ligne grise sous un nom se lit
+ * comme un renseignement, et il fallait un crayon pour démentir. Bordé en permanence,
+ * il se dit lui-même, et le crayon n'a plus rien à ajouter.
  */
-/*
- * Le crayon au bord de la carte.
- *
- * Rien ne disait que l'adresse se modifie : une ligne grise sous un nom se lit comme un
- * renseignement, pas comme une saisie. Le crayon le dit sans cadre permanent, qui ferait
- * de ce bloc un formulaire au milieu des actes. Au bord droit, non au bout du champ : là
- * il se cherche, ici il borne la carte.
- */
-.signataireCrayon {
-  display: flex;
-  flex-shrink: 0;
-  margin-left: auto;
-  padding-left: 12px;
-  color: #c4c4cc;
-  transition: color 0.15s;
-}
-
-.signataireCrayon svg {
-  width: 15px;
-  height: 15px;
-}
-
-.signataire:hover .signataireCrayon,
-.signataire:focus-within .signataireCrayon {
-  color: #7c3aed;
-}
-
 .signataireChamp {
-  width: 100%;
-  max-width: none;
-  padding: 3px 8px;
-  margin-left: -8px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: none;
-  color: #71717a;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+  padding: 9px 13px;
+  border: 1px solid #e5e5e7;
+  border-radius: 10px;
+  background: #fff;
+  color: #18181b;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   transition:
     border-color 0.15s,
-    background 0.15s,
-    color 0.15s;
+    box-shadow 0.15s;
 }
 
-.signataireChamp:hover {
-  border-color: #e4e4e7;
+.signataireChamp:hover:not(:focus) {
+  border-color: #d4d4d8;
 }
 
 .signataireChamp:focus {
   outline: none;
   border-color: #7c3aed;
-  background: #fff;
-  color: #18181b;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.13);
 }
 
 .signataireChamp::placeholder {
