@@ -24,14 +24,41 @@ import type { UtilisateurConnecte } from "../sessions";
  * « system » pour ce que la plateforme produit à partir des gabarits.
  */
 export async function estActeProduit(nomFichier: string): Promise<boolean> {
-  const nom = path.basename(nomFichier || "");
-  if (!nom) return false;
+  return (await acteProduit(nomFichier)) !== null;
+}
 
+/**
+ * L'acte produit qui porte ce fichier, et le dossier dont il relève.
+ *
+ * Le dossier décide de ce qu'on remet : c'est lui qui porte les signatures recueillies,
+ * qu'il faut apposer avant de servir l'acte. Savoir seulement que le fichier est un acte
+ * ne suffisait plus.
+ */
+export async function acteProduit(
+  nomFichier: string
+): Promise<{ id: number; dossierId: number; source: string | null } | null> {
+  const nom = path.basename(nomFichier || "");
+  if (!nom) return null;
+
+  /*
+   * L'un ou l'autre de ses deux chemins.
+   *
+   * Un acte est stocké deux fois : le PDF qu'on remet et le Word qui l'a produit. Les
+   * écrans demandent le premier - c'est ce que porte `file_path` - et la recherche ne
+   * regardait que lui. Retrouver l'acte par son Word sert à qui l'ouvre par sa source,
+   * et rendre celle-ci sert à recomposer la version signée, qui ne peut se faire que
+   * depuis le Word.
+   */
   const acte = await prisma.documents.findFirst({
-    where: { file_path: { endsWith: nom }, uploaded_by: "system" },
-    select: { id: true },
+    where: {
+      OR: [{ file_path: { endsWith: nom } }, { source_path: { endsWith: nom } }],
+      uploaded_by: "system",
+    },
+    select: { id: true, formalite_id: true, source_path: true },
   });
-  return acte !== null;
+  return acte
+    ? { id: acte.id, dossierId: acte.formalite_id, source: acte.source_path }
+    : null;
 }
 
 /** L'équipe de l'utilisateur, dans la forme attendue par les règles d'accès. */

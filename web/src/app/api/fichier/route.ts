@@ -3,6 +3,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { fichierLisible, estActeProduit } from "@/infrastructure/db/depots/fichiers";
+import { acteSigneAServir } from "@/infrastructure/documents/acte-signe";
 import { convertirEnPdf, ConversionImpossible } from "@/infrastructure/documents/conversion";
 import { journal } from "@/lib/journal";
 import { route } from "@/lib/reponses";
@@ -70,7 +71,20 @@ export const GET = route(async (requete: Request) => {
 
   let livree = extension;
 
-  if (extension === ".docx" && (await estActeProduit(nom))) {
+  /*
+   * Ce qu'on remet est l'acte tel qu'il est signé.
+   *
+   * Les signatures étaient recueillies et n'allaient nulle part : la route qui les
+   * apposait n'était appelée d'aucun écran, et « Télécharger » servait la version vierge.
+   * Le client signait, ses associés signaient, et le document qu'il obtenait ne portait
+   * rien. Sans signature au dossier, rien n'est recomposé et le fichier déjà là repart
+   * tel quel.
+   */
+  const signe = await acteSigneAServir(nom);
+  if (signe) {
+    contenu = signe;
+    livree = ".pdf";
+  } else if (extension === ".docx" && (await estActeProduit(nom))) {
     try {
       contenu = await convertirEnPdf(contenu);
       livree = ".pdf";

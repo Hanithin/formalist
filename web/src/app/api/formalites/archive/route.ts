@@ -6,6 +6,7 @@ import { prisma } from "@/infrastructure/db/client";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { fichierLisible } from "@/infrastructure/db/depots/fichiers";
 import { convertirEnPdf, ConversionImpossible } from "@/infrastructure/documents/conversion";
+import { acteSigneAServir } from "@/infrastructure/documents/acte-signe";
 import { journal } from "@/lib/journal";
 import { route } from "@/lib/reponses";
 
@@ -92,7 +93,13 @@ export const GET = route(async (requete: Request) => {
     }
 
     let extension = path.extname(nom).toLowerCase();
-    if (extension === ".docx") {
+
+    /* L'archive porte les actes tels qu'ils sont signés, comme le reste de ce qu'on remet. */
+    const signe = await acteSigneAServir(nom);
+    if (signe) {
+      contenu = signe;
+      extension = ".pdf";
+    } else if (extension === ".docx") {
       /*
        * L'archive est en PDF, comme le reste de ce qu'on remet.
        *
