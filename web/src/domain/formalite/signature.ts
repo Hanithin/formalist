@@ -56,7 +56,8 @@ export function resumeSignatures(demandes: DemandeSignature[]): string {
  * par la zone de signature. Refuser le reste évite qu'un contenu arbitraire soit
  * stocké puis réinjecté dans un document Word.
  */
-const PREFIXE_PNG = "data:image/png;base64,";
+/** Ce par quoi commence une image acceptée : rien d'autre n'entre dans un acte. */
+export const PREFIXE_PNG = "data:image/png;base64,";
 const TAILLE_MAXIMALE = 512 * 1024;
 
 export class SignatureRefusee extends Error {

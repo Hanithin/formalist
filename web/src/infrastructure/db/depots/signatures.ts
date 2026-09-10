@@ -227,8 +227,10 @@ export async function ouvrirLienDeSignature(jetonRecu: string) {
  * Le jeton devient inutilisable : une signature ne se rejoue pas. Quand tous ont
  * signé, le dossier avance - c'est le seul moment où il le fait tout seul.
  */
-export async function signer(jetonRecu: string, trace: string) {
+export async function signer(jetonRecu: string, trace: string, paraphe: string | null = null) {
   verifierTrace(trace);
+  /* Le paraphe passe le même contrôle : il finit au bas de chaque page d'un acte. */
+  if (paraphe) verifierTrace(paraphe);
 
   const demande = await prisma.signature_requests.findUnique({ where: { token: jetonRecu } });
   if (!demande) return { ok: false as const, raison: "introuvable" as const };
@@ -236,7 +238,12 @@ export async function signer(jetonRecu: string, trace: string) {
 
   await prisma.signature_requests.update({
     where: { id: demande.id },
-    data: { signature_data: trace, signed_at: new Date(), status: "signed" },
+    data: {
+      signature_data: trace,
+      paraphe_data: paraphe,
+      signed_at: new Date(),
+      status: "signed",
+    },
   });
 
   const toutes = await prisma.signature_requests.findMany({

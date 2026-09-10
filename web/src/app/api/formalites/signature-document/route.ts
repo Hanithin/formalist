@@ -8,6 +8,7 @@ import { exigerDossier } from "@/infrastructure/db/depots/dossiers";
 import { visibleParLeClient } from "@/domain/document/publication";
 import { convertirEnPdf, ConversionImpossible } from "@/infrastructure/documents/conversion";
 import { apposerSignature } from "@/infrastructure/documents/generation";
+import { apposerLesParaphes } from "@/infrastructure/documents/paraphes";
 import { validerParametres, schemas } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
@@ -46,16 +47,30 @@ export const GET = route(async (requete: Request) => {
    * Même réponse que pour un document inexistant : elle ne doit pas apprendre qu'il
    * existe.
    */
-  const duCabinet =
-    utilisateur.roles.includes("avocat") || utilisateur.roles.includes("admin");
+  const duCabinet = utilisateur.roles.includes("avocat") || utilisateur.roles.includes("admin");
   if (!duCabinet && !visibleParLeClient(piece)) {
     return NextResponse.json({ error: "Document introuvable" }, { status: 404 });
   }
 
-  const signatures = await prisma.signature_requests.findMany({
+  const recueillies = await prisma.signature_requests.findMany({
     where: { formalite_id: dossier, signed_at: { not: null } },
-    orderBy: { associe_index: "asc" },
+    orderBy: [{ associe_index: "asc" }, { signed_at: "asc" }],
   });
+
+  /*
+   * Une signature par personne, la dernière en date.
+   *
+   * Relancer le circuit n'efface que les demandes non signées : celles qui l'ont été
+   * restent, et c'est voulu - on ne détruit pas la trace d'une signature recueillie.
+   * Mais le document, lui, n'a pas à porter deux fois la même personne : un acte
+   * relancé après une première signature sortait avec le paraphe de son signataire
+   * apposé deux fois au bas de chaque page.
+   *
+   * La plus récente l'emporte : c'est celle qui porte sur la version qu'on lit.
+   */
+  const parSignataire = new Map<number, (typeof recueillies)[number]>();
+  for (const s of recueillies) parSignataire.set(s.associe_index, s);
+  const signatures = [...parSignataire.values()];
 
   if (signatures.length === 0) {
     return NextResponse.json({ error: "Aucune signature recueillie" }, { status: 400 });
@@ -66,10 +81,7 @@ export const GET = route(async (requete: Request) => {
   // produits avant ce changement n'ont que leur .docx dans file_path.
   const aSigner = piece.source_path ?? piece.file_path;
   if (path.extname(aSigner).toLowerCase() !== ".docx") {
-    return NextResponse.json(
-      { error: "Ce document n'a pas de version signable" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Ce document n'a pas de version signable" }, { status: 400 });
   }
 
   let contenu: Buffer;
@@ -87,7 +99,19 @@ export const GET = route(async (requete: Request) => {
 
   try {
     const pdf = await convertirEnPdf(contenu);
-    return new NextResponse(new Uint8Array(pdf), {
+
+    /*
+     * Les paraphes s'apposent sur le PDF, non sur le Word.
+     *
+     * Un document Word n'a pas de pages : sa pagination est décidée par le logiciel qui
+     * l'ouvre. « En bas de chaque page » ne veut donc rien dire avant la conversion.
+     */
+    const paraphes = await apposerLesParaphes(
+      pdf,
+      signatures.map((s) => s.paraphe_data).filter((d): d is string => !!d)
+    );
+
+    return new NextResponse(new Uint8Array(paraphes), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": 'inline; filename="document-signe.pdf"',

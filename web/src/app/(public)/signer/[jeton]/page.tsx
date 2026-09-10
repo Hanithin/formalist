@@ -1,8 +1,23 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Dancing_Script, Great_Vibes } from "next/font/google";
 import { ouvrirLienDeSignature } from "@/infrastructure/db/depots/signatures";
 import { ZoneDeSignature } from "./ZoneDeSignature";
 import styles from "./Signature.module.css";
+
+/*
+ * Deux écritures manuscrites, et pas davantage.
+ *
+ * Elles ne servent qu'à cet écran : les charger dans la mise en page générale ferait
+ * porter deux polices à toute l'application pour un usage d'une page. Toutes deux sont
+ * sous licence ouverte - une signature électronique n'est pas l'endroit où l'on
+ * découvre qu'une police n'était pas cessible.
+ *
+ * Le nom de famille généré part au composant client : il sert autant à l'aperçu qu'au
+ * canevas qui en tire le PNG, et les deux doivent parler de la même police.
+ */
+const dancing = Dancing_Script({ subsets: ["latin"], weight: ["600"] });
+const greatVibes = Great_Vibes({ subsets: ["latin"], weight: ["400"] });
 
 export const metadata: Metadata = {
   title: "Signer les statuts - Formalist",
@@ -37,7 +52,14 @@ export default async function Signer({ params }: { params: Promise<{ jeton: stri
         {demande.forme ? " (" + demande.forme + ")" : ""}.
       </p>
 
-      <ZoneDeSignature jeton={jeton} />
+      <ZoneDeSignature
+        jeton={jeton}
+        nom={demande.nom ?? ""}
+        polices={[
+          { cle: "dancing", nom: "Dancing Script", famille: dancing.style.fontFamily },
+          { cle: "great-vibes", nom: "Great Vibes", famille: greatVibes.style.fontFamily },
+        ]}
+      />
     </main>
   );
 }
