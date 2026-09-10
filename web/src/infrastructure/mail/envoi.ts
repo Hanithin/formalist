@@ -42,6 +42,16 @@ export async function envoyer(message: {
   sujet: string;
   html: string;
   texte: string;
+  /**
+   * Le lien que porte le message, pour le suivre en développement.
+   *
+   * Sans clé, rien ne part : on ne peut ni confirmer une adresse, ni signer, ni
+   * réinitialiser un mot de passe - c'est-à-dire parcourir aucun de ces chemins en
+   * local. Poser une clé réelle sur une machine de développement est pire : les
+   * dossiers d'essai portent des adresses d'essai, et l'un d'eux porte parfois une
+   * vraie. Le lien dans le journal donne le chemin sans rien envoyer à personne.
+   */
+  lien?: string;
 }): Promise<Resultat> {
   const cle = process.env.RESEND_API_KEY;
   const expediteur = process.env.MAIL_FROM ?? "Formalist <onboarding@resend.dev>";
@@ -62,7 +72,12 @@ export async function envoyer(message: {
         "Aucune clé Resend en production : aucun email transactionnel ne part"
       );
     } else {
-      journal.info({ sujet: message.sujet }, "Email non envoyé : aucune clé configurée");
+      /* Le lien ne sort qu'ici : en production, la branche du dessus ne le consigne
+         pas - un jeton dans un journal est un jeton en circulation. */
+      journal.info(
+        { sujet: message.sujet, lien: message.lien },
+        "Email non envoyé : aucune clé configurée"
+      );
     }
     return { ok: true, simule: true, motif: "aucune clé configurée" };
   }
@@ -144,6 +159,7 @@ export function emailDeVerification(prenom: string, adresse: string, jeton: stri
   const lien = adresseApplication() + "/api/auth/verifier?jeton=" + encodeURIComponent(jeton);
 
   return envoyer({
+    lien,
     destinataire: adresse,
     sujet: "Confirmez votre adresse email - Formalist",
     html: gabarit(
@@ -174,6 +190,7 @@ export function emailDeSignature(nom: string, adresse: string, jeton: string, so
   const dossier = societe.trim() || "votre société";
 
   return envoyer({
+    lien,
     destinataire: adresse,
     sujet: "Vos actes à signer - " + dossier,
     html: gabarit(
@@ -211,6 +228,7 @@ export function emailDeReinitialisation(prenom: string, adresse: string, jeton: 
   const lien = adresseApplication() + "/mot-de-passe-oublie/" + encodeURIComponent(jeton);
 
   return envoyer({
+    lien,
     destinataire: adresse,
     sujet: "Réinitialisez votre mot de passe - Formalist",
     html: gabarit(
@@ -237,6 +255,7 @@ export function emailInvitationEquipe(
   const lien = adresseApplication() + "/api/equipe/accepter?jeton=" + encodeURIComponent(jeton);
 
   return envoyer({
+    lien,
     destinataire: adresse,
     sujet: invitant + " vous invite à rejoindre " + equipe,
     html: gabarit(
@@ -278,6 +297,7 @@ export function emailDAvis(prenom: string, adresse: string, avis: Avis, chemin?:
     .join("");
 
   return envoyer({
+    lien,
     destinataire: adresse,
     sujet: avis.sujet,
     html: gabarit(
