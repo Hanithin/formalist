@@ -10,6 +10,7 @@ import { A_RELIRE } from "@/domain/document/publication";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Apercu } from "./Apercu";
+import { DepotDuCapital } from "./DepotDuCapital";
 import styles from "./Parcours.module.css";
 
 /**
@@ -165,6 +166,9 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
      sous la note à l'avocat, personne ne le lit. */
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
+
+  /* Des actes produits, et aucun qui attende encore l'avocat. */
+  const actesRendus = actes.length > 0 && actes.every((a) => a.statut !== A_RELIRE);
 
   const associes = brouillon.associes ?? [];
 
@@ -348,8 +352,15 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
           fallait y penser, et invitait à reproduire des actes que l'avocat était en
           train de relire.
         */}
-
       </div>
+
+      {/*
+        Ce qu'on fait des actes qu'on vient de télécharger.
+
+        Le suivi nommait le geste dans la colonne de droite, sans dire comment s'y
+        prendre ; il se pose ici, sous les documents à porter à la banque.
+      */}
+      {actesRendus && !attestationRecue && <DepotDuCapital dossierId={dossierId} />}
 
       {/*
         ---------- La signature ----------
@@ -439,7 +450,6 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
         </p>
       )}
 
-
       {acteApercu?.fichier && (
         <Apercu
           nom={acteApercu.nom}
@@ -514,8 +524,8 @@ function Echanges({ dossierId, dernierMot }: { dossierId: number; dernierMot: De
         </blockquote>
       ) : (
         <p className={styles.echangesVide}>
-          Une question, une précision sur votre situation ? Écrivez au cabinet : vous pouvez
-          joindre un document, et tout reste au dossier.
+          Une question, une précision sur votre situation ? Écrivez au cabinet : vous pouvez joindre
+          un document, et tout reste au dossier.
         </p>
       )}
 
@@ -535,13 +545,10 @@ function Echanges({ dossierId, dernierMot }: { dossierId: number; dernierMot: De
         </Link>
       </div>
 
-      {ouverte && (
-        <EcrireAuCabinet dossierId={dossierId} surFermeture={() => setOuverte(false)} />
-      )}
+      {ouverte && <EcrireAuCabinet dossierId={dossierId} surFermeture={() => setOuverte(false)} />}
     </section>
   );
 }
-
 
 /* Le temps d'un aller-retour en base, sans marteler le serveur. */
 const REPOS_MS = 2_000;
@@ -583,8 +590,8 @@ function EnProduction() {
       <p className={styles.actesEnProductionTexte}>
         {renonce ? (
           <>
-            La production prend plus de temps que prévu. Vos actes ne sont pas perdus - le
-            cabinet les voit de son côté.{" "}
+            La production prend plus de temps que prévu. Vos actes ne sont pas perdus - le cabinet
+            les voit de son côté.{" "}
             <button
               type="button"
               className={styles.actesRelance}

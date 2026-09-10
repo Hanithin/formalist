@@ -95,16 +95,38 @@ export async function etatDuDossier(dossier: {
      * la banque ouvre le compte sur présentation des statuts - ceux-là mêmes que
      * l'avocat est en train de relire.
      */
-    actesEnRelecture: await desActesEnRelecture(dossier.id),
+    ...(await etatDesActes(dossier.id)),
   };
+}
+
+/**
+ * Où en sont les actes produits : ce qui reste à relire, et ce qui est rendu.
+ *
+ * Les deux faits se lisent aux mêmes lignes ; les compter en deux requêtes séparées
+ * ferait deux allers pour une seule question. « Rendus » demande qu'il y ait des actes :
+ * un dossier qui n'en a encore produit aucun n'a rien fait relire, ce qui n'est pas la
+ * même chose que d'avoir tout fait relire.
+ */
+async function etatDesActes(
+  dossierId: number
+): Promise<{ actesEnRelecture: boolean; actesRendus: boolean }> {
+  const lignes = await prisma.documents.groupBy({
+    by: ["status"],
+    where: { formalite_id: dossierId, uploaded_by: "system" },
+    _count: { _all: true },
+  });
+
+  const produits = lignes.reduce((total, l) => total + l._count._all, 0);
+  const aRelire = lignes
+    .filter((l) => l.status === A_RELIRE)
+    .reduce((total, l) => total + l._count._all, 0);
+
+  return { actesEnRelecture: aRelire > 0, actesRendus: produits > 0 && aRelire === 0 };
 }
 
 /** Reste-t-il un acte produit que l'avocat n'a pas relu ? */
 export async function desActesEnRelecture(dossierId: number): Promise<boolean> {
-  const compte = await prisma.documents.count({
-    where: { formalite_id: dossierId, uploaded_by: "system", status: A_RELIRE },
-  });
-  return compte > 0;
+  return (await etatDesActes(dossierId)).actesEnRelecture;
 }
 
 /** Le cabinet a-t-il déclaré la publication ? Une lecture prudente d'un JSON libre. */

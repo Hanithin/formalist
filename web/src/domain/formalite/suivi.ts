@@ -59,6 +59,15 @@ export interface EtatDuDossier {
    */
   actesEnRelecture?: boolean;
   /**
+   * Les actes sont produits, et aucun n'attend plus l'avocat.
+   *
+   * Valider les actes un par un ne touche ni la sous-phase du cabinet ni le statut du
+   * dossier : le suivi laissait donc « Vérification par un avocat » en cours devant un
+   * écran où tous les documents portaient « Prêt », et l'attestation de dépôt de
+   * capital restait « À venir » alors que le client pouvait aller à sa banque.
+   */
+  actesRendus?: boolean;
+  /**
    * La phase d'une fermeture : dissolution, puis clôture.
    *
    * Une fermeture se joue en deux temps séparés de plusieurs mois - la dissolution met
@@ -139,7 +148,8 @@ const TOUTES: Definition[] = [
   {
     identifiant: "transmis",
     titre: "Dossier transmis à un avocat",
-    explication: "Votre dossier est parti au cabinet. Un avocat en accuse réception et le prend en main.",
+    explication:
+      "Votre dossier est parti au cabinet. Un avocat en accuse réception et le prend en main.",
     main: "avocat",
     faite: (e) => e.status !== "en_cours" && e.status !== null,
   },
@@ -161,7 +171,12 @@ const TOUTES: Definition[] = [
     ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
-      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+      (auMoins(e.sousPhase, "5c") ||
+        e.status === "valide" ||
+        e.status === "terminee" ||
+        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+           ne laisse pas d'autre trace que l'état de chaque document. */
+        !!e.actesRendus),
   },
   {
     identifiant: "attestation",
@@ -251,7 +266,12 @@ const AUTO_ENTREPRISE: Definition[] = [
     ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
-      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+      (auMoins(e.sousPhase, "5c") ||
+        e.status === "valide" ||
+        e.status === "terminee" ||
+        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+           ne laisse pas d'autre trace que l'état de chaque document. */
+        !!e.actesRendus),
   },
   {
     identifiant: "guichet",
@@ -304,7 +324,12 @@ const MODIFICATION: Definition[] = [
     ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
-      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+      (auMoins(e.sousPhase, "5c") ||
+        e.status === "valide" ||
+        e.status === "terminee" ||
+        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+           ne laisse pas d'autre trace que l'état de chaque document. */
+        !!e.actesRendus),
   },
   {
     identifiant: "annonce",
@@ -377,7 +402,12 @@ const COMPTES: Definition[] = [
     ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
-      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+      (auMoins(e.sousPhase, "5c") ||
+        e.status === "valide" ||
+        e.status === "terminee" ||
+        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+           ne laisse pas d'autre trace que l'état de chaque document. */
+        !!e.actesRendus),
   },
   {
     identifiant: "greffe",
@@ -439,7 +469,12 @@ const FERMETURE: Definition[] = [
     ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
-      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+      (auMoins(e.sousPhase, "5c") ||
+        e.status === "valide" ||
+        e.status === "terminee" ||
+        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+           ne laisse pas d'autre trace que l'état de chaque document. */
+        !!e.actesRendus),
   },
   {
     identifiant: "annonce",
@@ -480,8 +515,7 @@ const FERMETURE: Definition[] = [
       "Une fois l'actif réalisé et le passif apuré, l'assemblée approuve les comptes de liquidation et donne quitus au liquidateur. Le greffe radie alors la société et en délivre l'attestation. Comptez plusieurs mois.",
     main: "avocat",
     faite: (e) =>
-      e.phaseDeFermeture === "cloture" &&
-      (auMoins(e.sousPhase, "5e") || e.status === "terminee"),
+      e.phaseDeFermeture === "cloture" && (auMoins(e.sousPhase, "5e") || e.status === "terminee"),
   },
 ];
 
@@ -512,7 +546,12 @@ const CESSATION: Definition[] = [
     ou: "messagerie",
     faite: (e) =>
       e.status !== "corrections_demandees" &&
-      (auMoins(e.sousPhase, "5c") || e.status === "valide" || e.status === "terminee"),
+      (auMoins(e.sousPhase, "5c") ||
+        e.status === "valide" ||
+        e.status === "terminee" ||
+        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+           ne laisse pas d'autre trace que l'état de chaque document. */
+        !!e.actesRendus),
   },
   {
     identifiant: "guichet",
