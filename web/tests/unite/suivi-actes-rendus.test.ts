@@ -54,6 +54,24 @@ describe("le suivi d'une création, quand l'avocat a rendu les actes", () => {
     expect(etape(etat, "verification")?.etat).toBe("en_cours");
   });
 
+  it("ne franchit rien sur un brouillon dont les actes ont été produits", () => {
+    /*
+     * Un acte produit avant la transmission naît « generated », non « à relire » : il
+     * n'y a donc rien à relire sur un brouillon, ce qui ne veut pas dire qu'un avocat
+     * l'a vu. Sans cette garde, tout dossier ayant produit ses actes déclarait sa
+     * vérification faite.
+     */
+    const brouillon: EtatDuDossier = {
+      ...TRANSMIS,
+      status: "en_cours",
+      sousPhase: null,
+      actesEnRelecture: false,
+      actesRendus: true,
+    };
+    expect(etape(brouillon, "verification")?.etat).toBe("a_venir");
+    expect(etape(brouillon, "transmis")?.etat).toBe("en_cours");
+  });
+
   it("rend l'attestation franchie une fois la pièce au dossier", () => {
     const etat = {
       ...TRANSMIS,

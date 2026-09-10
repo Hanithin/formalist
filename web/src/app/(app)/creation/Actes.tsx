@@ -167,8 +167,16 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
 
-  /* Des actes produits, et aucun qui attende encore l'avocat. */
-  const actesRendus = actes.length > 0 && actes.every((a) => a.statut !== A_RELIRE);
+  /*
+   * Des actes produits, aucun qui attende encore l'avocat - et un dossier confié.
+   *
+   * La dernière condition n'est pas une précaution de plus : un acte produit avant le
+   * règlement naît « generated », non « à relire ». Sans elle, un brouillon qui a
+   * produit ses actes s'entendrait dire qu'ils sont validés et serait envoyé à sa
+   * banque avec des statuts que personne n'a lus.
+   */
+  const actesRendus =
+    !!brouillon.paye && actes.length > 0 && actes.every((a) => a.statut !== A_RELIRE);
 
   const associes = brouillon.associes ?? [];
 

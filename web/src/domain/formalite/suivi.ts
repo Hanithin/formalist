@@ -174,9 +174,16 @@ const TOUTES: Definition[] = [
       (auMoins(e.sousPhase, "5c") ||
         e.status === "valide" ||
         e.status === "terminee" ||
-        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
-           ne laisse pas d'autre trace que l'état de chaque document. */
-        !!e.actesRendus),
+        /*
+         * Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+         * ne laisse pas d'autre trace que l'état de chaque document.
+         *
+         * Sur un dossier confié, et sur lui seul. Un acte produit avant la transmission
+         * naît « generated », non « à relire » : sans cette condition, un brouillon dont
+         * les actes ont été produits déclarait sa vérification faite alors que personne
+         * ne l'avait reçu.
+         */
+        (!!e.actesRendus && confie(e))),
   },
   {
     identifiant: "attestation",
@@ -269,9 +276,16 @@ const AUTO_ENTREPRISE: Definition[] = [
       (auMoins(e.sousPhase, "5c") ||
         e.status === "valide" ||
         e.status === "terminee" ||
-        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
-           ne laisse pas d'autre trace que l'état de chaque document. */
-        !!e.actesRendus),
+        /*
+         * Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+         * ne laisse pas d'autre trace que l'état de chaque document.
+         *
+         * Sur un dossier confié, et sur lui seul. Un acte produit avant la transmission
+         * naît « generated », non « à relire » : sans cette condition, un brouillon dont
+         * les actes ont été produits déclarait sa vérification faite alors que personne
+         * ne l'avait reçu.
+         */
+        (!!e.actesRendus && confie(e))),
   },
   {
     identifiant: "guichet",
@@ -327,9 +341,16 @@ const MODIFICATION: Definition[] = [
       (auMoins(e.sousPhase, "5c") ||
         e.status === "valide" ||
         e.status === "terminee" ||
-        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
-           ne laisse pas d'autre trace que l'état de chaque document. */
-        !!e.actesRendus),
+        /*
+         * Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+         * ne laisse pas d'autre trace que l'état de chaque document.
+         *
+         * Sur un dossier confié, et sur lui seul. Un acte produit avant la transmission
+         * naît « generated », non « à relire » : sans cette condition, un brouillon dont
+         * les actes ont été produits déclarait sa vérification faite alors que personne
+         * ne l'avait reçu.
+         */
+        (!!e.actesRendus && confie(e))),
   },
   {
     identifiant: "annonce",
@@ -405,9 +426,16 @@ const COMPTES: Definition[] = [
       (auMoins(e.sousPhase, "5c") ||
         e.status === "valide" ||
         e.status === "terminee" ||
-        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
-           ne laisse pas d'autre trace que l'état de chaque document. */
-        !!e.actesRendus),
+        /*
+         * Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+         * ne laisse pas d'autre trace que l'état de chaque document.
+         *
+         * Sur un dossier confié, et sur lui seul. Un acte produit avant la transmission
+         * naît « generated », non « à relire » : sans cette condition, un brouillon dont
+         * les actes ont été produits déclarait sa vérification faite alors que personne
+         * ne l'avait reçu.
+         */
+        (!!e.actesRendus && confie(e))),
   },
   {
     identifiant: "greffe",
@@ -472,9 +500,16 @@ const FERMETURE: Definition[] = [
       (auMoins(e.sousPhase, "5c") ||
         e.status === "valide" ||
         e.status === "terminee" ||
-        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
-           ne laisse pas d'autre trace que l'état de chaque document. */
-        !!e.actesRendus),
+        /*
+         * Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+         * ne laisse pas d'autre trace que l'état de chaque document.
+         *
+         * Sur un dossier confié, et sur lui seul. Un acte produit avant la transmission
+         * naît « generated », non « à relire » : sans cette condition, un brouillon dont
+         * les actes ont été produits déclarait sa vérification faite alors que personne
+         * ne l'avait reçu.
+         */
+        (!!e.actesRendus && confie(e))),
   },
   {
     identifiant: "annonce",
@@ -549,9 +584,16 @@ const CESSATION: Definition[] = [
       (auMoins(e.sousPhase, "5c") ||
         e.status === "valide" ||
         e.status === "terminee" ||
-        /* Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
-           ne laisse pas d'autre trace que l'état de chaque document. */
-        !!e.actesRendus),
+        /*
+         * Les actes tous relus valent vérification : c'est le geste de l'avocat, et il
+         * ne laisse pas d'autre trace que l'état de chaque document.
+         *
+         * Sur un dossier confié, et sur lui seul. Un acte produit avant la transmission
+         * naît « generated », non « à relire » : sans cette condition, un brouillon dont
+         * les actes ont été produits déclarait sa vérification faite alors que personne
+         * ne l'avait reçu.
+         */
+        (!!e.actesRendus && confie(e))),
   },
   {
     identifiant: "guichet",
@@ -579,6 +621,17 @@ const CESSATION: Definition[] = [
  * avant le dépôt au greffe ne ferait pas sauter la file, il signalerait une erreur de
  * saisie qu'il vaut mieux voir.
  */
+/**
+ * Le dossier a-t-il quitté les mains du client ?
+ *
+ * Une société part en changeant de statut ; une auto-entreprise part en étant réglée.
+ * La règle vaut pour les deux, et sert partout où l'on veut savoir si quelqu'un d'autre
+ * que son auteur a le dossier.
+ */
+function confie(e: EtatDuDossier): boolean {
+  return (e.status !== "en_cours" && e.status !== null) || !!e.paye;
+}
+
 export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
   /*
    * Chaque formalité a son parcours.
