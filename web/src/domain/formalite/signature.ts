@@ -30,6 +30,133 @@ export function libelleEtat(etat: EtatSignature): string {
   return "En attente";
 }
 
+/**
+ * Où en est une demande, du premier envoi à la signature.
+ *
+ * Le circuit ne disait rien entre les deux. « Chacun reçoit son lien par email »
+ * s'affichait une fois, et le client qui attendait une signature n'avait plus aucune
+ * prise : ni savoir si le message était parti, ni s'il était arrivé, ni le renvoyer
+ * autrement qu'en relançant tout le circuit - ce qui invalide les jetons de ceux qui
+ * n'ont pas encore signé.
+ *
+ * L'ordre des jalons est celui du temps, et il ne se contracte pas : un message peut
+ * être accepté par le fournisseur sans jamais être remis, remis sans être ouvert,
+ * ouvert sans que le lien soit cliqué. Chaque mot dit exactement ce qu'il sait.
+ */
+export type JalonEnvoi =
+  | "non_envoye"
+  | "echec"
+  | "rejete"
+  | "simule"
+  | "envoye"
+  | "remis"
+  | "mail_ouvert"
+  | "lien_ouvert"
+  | "signee";
+
+export interface SuiviDemande extends DemandeSignature {
+  envoyeLe: Date | null;
+  remisLe: Date | null;
+  mailOuvertLe: Date | null;
+  /** Ce que le fournisseur a répondu quand il a refusé le message, ou l'a rendu. */
+  motif: string | null;
+  relances: number;
+}
+
+/**
+ * Le jalon le plus avancé qu'on puisse affirmer.
+ *
+ * On lit à rebours : ce qui est le plus tardif emporte le reste, puisqu'on ne signe
+ * pas sans avoir ouvert et qu'on n'ouvre pas sans avoir reçu. Un rejet fait exception -
+ * il vient après l'envoi et l'annule, et c'est la seule chose à dire d'une adresse qui
+ * n'existe pas.
+ */
+export function jalonDeLEnvoi(demande: SuiviDemande): JalonEnvoi {
+  if (demande.signeeLe) return "signee";
+
+  /*
+   * Un rejet passe devant tout ce qui l'a précédé.
+   *
+   * Il vient après l'envoi et il l'annule : une adresse qui rend le message ne le
+   * recevra pas davantage la prochaine fois. Le laisser derrière « Remis » ou « Mail
+   * ouvert » - c'est l'ordre du temps, et le serveur d'en face peut très bien accepter
+   * puis rendre - afficherait un message en route alors qu'il est revenu, et cacherait
+   * la seule chose à faire : corriger l'adresse. Une relance efface ces dates, donc un
+   * rejet affiché parle toujours du dernier message envoyé.
+   */
+  if (demande.motif === MOTIF_REJET) return "rejete";
+
+  if (demande.ouverteLe) return "lien_ouvert";
+  if (demande.mailOuvertLe) return "mail_ouvert";
+  if (demande.remisLe) return "remis";
+  if (demande.motif === MOTIF_SIMULE) return "simule";
+  if (demande.motif) return "echec";
+  if (demande.envoyeLe) return "envoye";
+  return "non_envoye";
+}
+
+/** Ce que le dépôt inscrit comme motif quand aucune clé n'est configurée. */
+export const MOTIF_SIMULE = "simule";
+/** Ce qu'il inscrit quand le fournisseur rend le message : l'adresse ne reçoit pas. */
+export const MOTIF_REJET = "rejet";
+
+/** La date que porte un jalon, celle qu'on affiche à côté de son libellé. */
+export function dateDuJalon(demande: SuiviDemande): Date | null {
+  const jalon = jalonDeLEnvoi(demande);
+  if (jalon === "signee") return demande.signeeLe;
+  if (jalon === "lien_ouvert") return demande.ouverteLe;
+  if (jalon === "mail_ouvert") return demande.mailOuvertLe;
+  if (jalon === "remis") return demande.remisLe;
+  /* Le rejet n'a pas de date à lui : ce qu'on affiche est celle de l'envoi qu'il
+     annule - « Adresse rejetée le 11 sept. à 00h27 » dit quel message est revenu. */
+  return demande.envoyeLe;
+}
+
+/**
+ * Le motif tel qu'on peut l'afficher, ou null s'il n'apprend rien.
+ *
+ * La colonne porte deux sortes de valeurs : nos propres marqueurs - « simule »,
+ * « rejet » -, que le libellé du jalon dit déjà en français, et la phrase du
+ * fournisseur, qui est la seule à valoir d'être lue. « domain is not verified » désigne
+ * le domaine à vérifier, « the recipient does not exist » l'adresse à corriger : c'est
+ * ce qui dit quoi faire, et cela finissait dans le journal, où personne ne va.
+ */
+export function motifLisible(demande: SuiviDemande): string | null {
+  if (!demande.motif) return null;
+  if (demande.motif === MOTIF_SIMULE || demande.motif === MOTIF_REJET) return null;
+  return demande.motif;
+}
+
+export function libelleJalon(jalon: JalonEnvoi): string {
+  if (jalon === "signee") return "Signé";
+  if (jalon === "lien_ouvert") return "Lien ouvert";
+  if (jalon === "mail_ouvert") return "Mail ouvert";
+  if (jalon === "remis") return "Remis";
+  if (jalon === "envoye") return "Envoyé";
+  /* Le libellé se lit suivi d'une date - « Simulé le 11 sept. à 00h24 ». Y glisser
+     l'explication donnait « Simulé, aucune clé d'envoi le 11 sept. », qui ne se lit
+     pas. Le pourquoi se dit une fois, sous le bloc, pas sur chaque ligne. */
+  if (jalon === "simule") return "Simulé";
+  if (jalon === "rejete") return "Adresse rejetée";
+  if (jalon === "echec") return "Non parti";
+  return "Pas encore envoyé";
+}
+
+/**
+ * Peut-on relancer cette personne ?
+ *
+ * Pas celle qui a signé - il n'y a plus rien à lui demander. Pas deux fois dans la
+ * minute non plus : un double clic sur « Relancer » ne doit pas poster deux messages
+ * identiques à quelqu'un qui n'a pas encore eu le temps d'ouvrir le premier.
+ */
+export const DELAI_ENTRE_RELANCES = 60_000;
+
+export function peutRelancer(demande: SuiviDemande, maintenant: Date = new Date()): boolean {
+  if (demande.signeeLe) return false;
+  if (!demande.envoyeLe) return true;
+  return maintenant.getTime() - demande.envoyeLe.getTime() >= DELAI_ENTRE_RELANCES;
+}
+
 /** Le dossier avance quand tout le monde a signé, pas avant. */
 export function toutLeMondeASigne(demandes: DemandeSignature[]): boolean {
   return demandes.length > 0 && demandes.every((d) => d.signeeLe !== null);

@@ -56,6 +56,9 @@ export const POST = route(async (requete: Request) => {
       ok: true,
       demandes: creees.map((d) => ({ id: d.id, nom: d.nom })),
       courrielsPartis: creees.filter((d) => d.courrielParti).length,
+      /* Sans clé d'envoi, rien ne part et c'est normal : l'écran le dit autrement
+         qu'une panne, au lieu du bandeau rouge qu'il affichait en développement. */
+      simules: creees.filter((d) => d.simule).length,
     },
     { status: 201 }
   );

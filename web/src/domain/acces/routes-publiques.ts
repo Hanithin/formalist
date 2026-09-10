@@ -33,6 +33,11 @@ export const API_PUBLIQUES = [
   // authentification est la signature du corps, vérifiée avant toute lecture :
   // sans elle, la route refuse. Voir api/paiement/webhook.
   "/api/paiement/webhook",
+  // Resend appelle depuis ses serveurs pour dire ce qu'un courriel est devenu -
+  // remis, ouvert, rendu. Comme Stripe, il n'a pas de session chez nous, et son
+  // authentification est la signature du corps, vérifiée avant toute lecture. Sans
+  // secret configuré, la route refuse tout. Voir api/courriels/evenements.
+  "/api/courriels/evenements",
   // Mot de passe oublié : par définition, on ne peut pas être connecté pour s'en
   // servir. La demande ne dit jamais si l'adresse est connue, et la pose du nouveau
   // mot de passe exige un jeton envoyé à l'adresse du compte.

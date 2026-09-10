@@ -82,6 +82,16 @@ services:
       # abouti : rien ne remontait.
       - key: MAIL_FROM
         value: Formalist <contact@formalist.fr>
+      # Secret du webhook à créer dans le tableau de bord Resend, sur
+      # https://app.formalist.fr/api/courriels/evenements, abonné aux quatre
+      # événements que le code traite (voir SORTS, infrastructure/mail/evenements.ts) :
+      # email.delivered, email.opened, email.bounced et email.complained.
+      #
+      # Sans lui, la route refuse tout et le suivi des demandes de signature s'arrête à
+      # « Envoyé » : on sait ce qu'on a posté, jamais ce qui est arrivé. C'est une
+      # dégradation silencieuse, pas une panne - d'où cette note plutôt qu'un repli.
+      - key: RESEND_WEBHOOK_SECRET
+        sync: false
       - key: ADMIN_EMAIL
         sync: false
       # Paiement des consultations juridiques. La clé de production n'est acceptée

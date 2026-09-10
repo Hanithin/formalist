@@ -3479,9 +3479,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 14px;
+  gap: 5px 14px;
   margin: 0;
-  padding: 12px 0;
+  padding: 11px 0;
   border: 0;
   border-bottom: 1px solid #f2f2f4;
   border-radius: 0;
@@ -3516,7 +3516,7 @@
  */
 .signataireNom {
   flex-shrink: 0;
-  width: 170px;
+  width: 150px;
   margin: 0;
   font-size: 14.5px;
   font-weight: 500;
@@ -3532,8 +3532,8 @@
  */
 .signataireChamp {
   flex: 1;
-  min-width: 220px;
-  max-width: 380px;
+  min-width: 200px;
+  max-width: 360px;
   padding: 9px 13px;
   border: 1px solid #e5e5e7;
   border-radius: 10px;
@@ -3593,5 +3593,151 @@
 
 .signaturePrecision {
   font-size: 13px;
+  color: #71717a;
+}
+
+/* ---------- Le suivi d'une demande partie ---------- */
+
+/*
+ * Ce que devient chaque demande, sur la ligne de la personne concernée.
+ *
+ * L'écran annonçait « chacun reçoit son lien par email » une fois, puis se taisait :
+ * celui qui attendait trois signatures ne savait ni si les messages étaient partis, ni
+ * qui avait ouvert, ni comment relancer quelqu'un sans reprendre tout le circuit - ce
+ * qui invalide les jetons de ceux qui n'ont pas encore signé.
+ *
+ * L'état se lit à droite du nom, daté, et le bouton qui le corrige est juste à côté.
+ */
+/*
+ * L'état sous le nom, non à côté.
+ *
+ * Cinq colonnes ne tiennent pas dans les 650 pixels de la carte : le nom, l'adresse,
+ * l'état et son bouton se disputaient la place, et « Adresse rejetée le 11 sept. à
+ * 00h25 » - le plus long des états - repoussait le champ sous sa largeur minimale. Le
+ * résultat se cassait tout seul, chaque ligne au hasard de la longueur de son état.
+ *
+ * Deux lignes assumées valent mieux qu'une ligne qui se rompt : ce qu'on renseigne en
+ * haut, ce qui en advient en dessous, aligné sur le nom.
+ */
+.suiviFin {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 14px;
+  margin-left: 48px;
+}
+
+.suiviEtat {
+  /*
+   * L'état pousse l'adresse, il ne descend pas sous elle.
+   *
+   * Avec un champ à 380 pixels, l'état et son bouton se retrouvaient sur une seconde
+   * ligne : chaque signataire prenait deux hauteurs, et l'oeil ne descendait plus une
+   * colonne mais un escalier. L'adresse a la largeur qui reste, l'état la sienne.
+   */
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+/*
+ * La pastille porte l'état ; le texte porte la date.
+ *
+ * Colorer la ligne entière, ou son bord, ferait crier une information qui se consulte -
+ * quatre lignes de couleurs différentes sont illisibles. Un point de six pixels suffit
+ * à distinguer d'un coup d'oeil ce qui est fait de ce qui attend.
+ */
+.suiviPastille {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d4d4d8;
+}
+
+/* Signé : c'est fini, et c'est la seule chose qu'on cherche dans cette colonne. */
+.suiviFait {
+  color: #15803d;
+}
+
+.suiviFait .suiviPastille {
+  background: #16a34a;
+}
+
+/* En route : remis, ouvert. Rien à faire, mais quelque chose se passe. */
+.suiviEnRoute .suiviPastille {
+  background: #7c3aed;
+}
+
+/* Rien n'est arrivé, et cela demande un geste. */
+.suiviManque {
+  color: #b91c1c;
+}
+
+.suiviManque .suiviPastille {
+  background: #dc2626;
+}
+
+/*
+ * Le motif du refus, sous la ligne qu'il concerne.
+ *
+ * « domain is not verified », « the recipient does not exist » : c'est ce qui dit quoi
+ * corriger, et cela finissait dans le journal, où le client ne va pas.
+ */
+.suiviMotif {
+  flex-basis: 100%;
+  margin: 0 0 0 48px;
+  order: 1;
+  padding-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #9f1239;
+}
+
+/*
+ * Relancer : discret tant que rien ne cloche.
+ *
+ * Le geste existe pour tout le monde - un message se perd sans que rien ne le dise -
+ * mais il ne doit pas se disputer l'attention avec « Demander les signatures ». Un
+ * bouton de texte, bordé au survol.
+ */
+.suiviRelance {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  margin-left: -4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: #52525b;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.suiviRelance:hover:not(:disabled) {
+  border-color: #e5e5e7;
+  color: #18181b;
+}
+
+.suiviRelance:disabled {
+  color: #a1a1aa;
+  cursor: default;
+}
+
+/* L'adresse de qui a signé ne se corrige plus : il n'y a plus rien à lui envoyer. */
+.suiviAdresse {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+  font-size: 14px;
   color: #71717a;
 }

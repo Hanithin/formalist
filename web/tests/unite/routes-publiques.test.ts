@@ -25,6 +25,10 @@ const OUVERTURES_ATTENDUES = [
   "/api/paiement/webhook",
   // Mot de passe oublié : on ne peut pas être connecté pour s'en servir.
   "/api/auth/mot-de-passe-oublie",
+  // Resend non plus n'a pas de session chez nous : il dit ce qu'un courriel est
+  // devenu, et la signature du corps tient lieu d'authentification. Sans secret
+  // configuré, la route refuse tout.
+  "/api/courriels/evenements",
 ];
 
 describe("liste des adresses publiques", () => {

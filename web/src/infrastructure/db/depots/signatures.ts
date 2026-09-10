@@ -5,15 +5,21 @@ import { estClos } from "@/domain/acces/regles";
 import { exigerDossier, exigerDossierModifiable } from "./dossiers";
 import {
   etatDemande,
+  jalonDeLEnvoi,
+  peutRelancer,
   toutLeMondeASigne,
   verifierTrace,
+  MOTIF_REJET,
+  MOTIF_SIMULE,
   PHASE_APRES_SIGNATURE,
   type DemandeSignature,
+  type SuiviDemande,
 } from "@/domain/formalite/signature";
 import { jeton } from "@/lib/mots-de-passe";
 import type { UtilisateurConnecte } from "../sessions";
 import { emailDeSignature } from "@/infrastructure/mail/envoi";
 import { journal } from "@/lib/journal";
+import type { AvisDeResend } from "@/infrastructure/mail/evenements";
 
 /**
  * Demandes de signature.
@@ -39,19 +45,71 @@ function versDemande(ligne: {
   };
 }
 
+/** La même demande, avec ce que l'on sait du courriel qui la porte. */
+function versSuivi(ligne: {
+  id: number;
+  associe_name: string;
+  associe_email: string | null;
+  opened_at: Date | null;
+  signed_at: Date | null;
+  envoye_le: Date | null;
+  remis_le: Date | null;
+  mail_ouvert_le: Date | null;
+  envoi_motif: string | null;
+  relances: number;
+}): SuiviDemande {
+  return {
+    ...versDemande(ligne),
+    envoyeLe: ligne.envoye_le,
+    remisLe: ligne.remis_le,
+    mailOuvertLe: ligne.mail_ouvert_le,
+    motif: ligne.envoi_motif,
+    relances: ligne.relances,
+  };
+}
+
+/**
+ * L'état du circuit de signature, tel que l'écran le montre.
+ *
+ * Ces lignes existaient et personne ne les lisait : l'écran annonçait « chacun reçoit
+ * son lien par email » et se taisait ensuite. Le client qui attendait une signature
+ * n'avait ni le moyen de savoir où en était chacun, ni celui de relancer.
+ */
 export async function demandesDuDossier(utilisateur: UtilisateurConnecte, dossierId: number) {
   await exigerDossier(utilisateur, dossierId);
 
   const lignes = await prisma.signature_requests.findMany({
     where: { formalite_id: dossierId },
-    orderBy: { associe_index: "asc" },
+    orderBy: [{ associe_index: "asc" }, { id: "asc" }],
   });
 
-  return lignes.map((l) => ({
-    ...versDemande(l),
-    role: l.role,
-    etat: etatDemande(versDemande(l)),
-  }));
+  /*
+   * Une ligne par personne, et c'est la signature qui l'emporte.
+   *
+   * Une même place peut porter plusieurs demandes : relancer le circuit n'efface que
+   * les demandes non signées - on ne détruit pas la trace d'une signature recueillie -
+   * et laisse donc, à côté d'elle, les précédentes. L'écran prenait la première venue
+   * et annonçait « Pas encore envoyé » à quelqu'un dont la signature figurait déjà sur
+   * les actes.
+   */
+  const parPlace = new Map<number, (typeof lignes)[number]>();
+  for (const ligne of lignes) {
+    const retenue = parPlace.get(ligne.associe_index);
+    if (!retenue || (!retenue.signed_at && ligne.signed_at))
+      parPlace.set(ligne.associe_index, ligne);
+  }
+
+  return [...parPlace.values()].map((l) => {
+    const suivi = versSuivi(l);
+    return {
+      ...suivi,
+      rang: l.associe_index,
+      role: l.role,
+      etat: etatDemande(suivi),
+      jalon: jalonDeLEnvoi(suivi),
+      relancable: peutRelancer(suivi),
+    };
+  });
 }
 
 /** Ouvre le circuit : une demande par associé. */
@@ -65,6 +123,71 @@ function formeDuDossier(dossier: { forme: string | null; data_json: string | nul
     /* Un brouillon illisible ne dit rien de la forme : on s'en tient à la colonne. */
   }
   return null;
+}
+
+/**
+ * Poste le lien de signature, et inscrit ce qu'il en advient.
+ *
+ * Le circuit créait le jeton et postait le message sans rien en garder : ni la date de
+ * l'envoi, ni l'identifiant que rend le fournisseur, ni le motif de son refus. L'écran
+ * annonçait « chacun reçoit son lien par email » et le journal, seul, savait que rien
+ * n'était parti - or personne ne lit le journal en attendant une signature.
+ *
+ * Un envoi manqué n'annule pas la demande : le jeton reste valable, l'écran dit ce qui
+ * n'est pas parti, et le bouton de relance le reprend.
+ */
+async function adresserLaDemande(
+  demande: { id: number; token: string | null; associe_name: string; associe_email: string | null },
+  societe: string
+) {
+  /* Sans jeton, le lien mènerait à une page introuvable : mieux vaut ne rien envoyer et
+     le dire que poster une porte close. */
+  const envoi = demande.token
+    ? await emailDeSignature(
+        demande.associe_name ?? "",
+        demande.associe_email ?? "",
+        demande.token,
+        societe
+      )
+    : { ok: false as const, motif: "aucun jeton" };
+
+  const simule = envoi.ok && "simule" in envoi && !!envoi.simule;
+  const parti = envoi.ok && !simule;
+
+  /*
+   * Le motif porte trois choses distinctes, et c'est voulu.
+   *
+   * « simule » n'est pas une panne : en développement, aucune clé n'est configurée et
+   * rien ne doit partir. L'écran l'affichait pourtant en rouge, avec « Prévenez le
+   * cabinet » - un message alarmant pour un fonctionnement normal. Un refus du
+   * fournisseur, lui, porte sa propre phrase, et c'est elle qui dit quoi corriger.
+   */
+  await prisma.signature_requests.update({
+    where: { id: demande.id },
+    data: {
+      envoye_le: new Date(),
+      message_id: "identifiant" in envoi ? (envoi.identifiant ?? null) : null,
+      envoi_motif: parti ? null : simule ? MOTIF_SIMULE : (envoi.motif ?? "envoi refusé"),
+      /* Une relance efface ce que le précédent envoi avait rapporté : ces dates
+         parlaient d'un message qui n'est plus celui qu'on attend. */
+      remis_le: null,
+      mail_ouvert_le: null,
+      /* `status` n'est pas touché ici. Il ne porte que trois valeurs - pending, opened,
+         signed - qu'une contrainte de la base impose, et rien ne le lit : ce sont les
+         dates qui disent où en est une demande. Y écrire « sent » ou « delivered »
+         demanderait d'élargir cette contrainte pour une colonne redondante, qui se
+         mettrait à diverger des dates au premier oubli. */
+    },
+  });
+
+  if (!parti && !simule) {
+    journal.warn(
+      { demande: demande.id, motif: envoi.motif },
+      "Demande de signature créée, courriel non parti"
+    );
+  }
+
+  return { parti, simule, motif: parti || simule ? null : (envoi.motif ?? "envoi refusé") };
 }
 
 export async function demanderSignatures(
@@ -138,8 +261,30 @@ export async function demanderSignatures(
     where: { formalite_id: dossierId, signed_at: null },
   });
 
+  /*
+   * On ne redemande pas sa signature à qui a signé.
+   *
+   * Reprendre le circuit créait une demande pour tout le monde, y compris pour ceux
+   * dont la signature figurait déjà sur les actes. Deux conséquences, l'une visible et
+   * l'autre non : l'écran leur annonçait « Pas encore envoyé » alors qu'ils avaient
+   * signé, et surtout un nouveau jeton partait chez eux - une seconde signature
+   * recueillie remplace la première, puisque c'est la plus récente qui est apposée.
+   * Quelqu'un qui avait signé pouvait donc voir sa signature remplacée par un tracé
+   * fait à la va-vite sur un lien qu'il ne comprenait pas.
+   */
+  const dejaSignees = new Set(
+    (
+      await prisma.signature_requests.findMany({
+        where: { formalite_id: dossierId, signed_at: { not: null } },
+        select: { associe_index: true },
+      })
+    ).map((d) => d.associe_index)
+  );
+
   const creees = [];
   for (const [index, signataire] of signataires.entries()) {
+    if (dejaSignees.has(index)) continue;
+
     const demande = await prisma.signature_requests.create({
       data: {
         formalite_id: dossierId,
@@ -152,44 +297,111 @@ export async function demanderSignatures(
       },
     });
 
-    /*
-     * Le lien part, enfin.
-     *
-     * Le circuit créait le jeton et s'arrêtait là : la page publique qui l'ouvre
-     * fonctionnait, l'écran annonçait « chacun reçoit son lien par email », et les
-     * jetons dormaient en base. Personne ne recevait rien, et rien ne le disait - ni
-     * un message d'échec, ni une ligne de journal.
-     *
-     * Un envoi manqué n'annule pas la demande : le jeton reste valable, et l'écran
-     * dit ce qui n'est pas parti pour qu'on puisse le relancer.
-     */
-    /* Sans jeton, le lien mènerait à une page introuvable : mieux vaut ne rien
-       envoyer et le dire que poster une porte close. */
-    const envoi = demande.token
-      ? await emailDeSignature(
-          demande.associe_name ?? "",
-          demande.associe_email ?? "",
-          demande.token,
-          dossierASigner?.societe ?? ""
-        )
-      : { ok: false, motif: "aucun jeton" };
-
-    if (!envoi.ok) {
-      journal.warn(
-        { dossier: dossierId, demande: demande.id, motif: envoi.motif },
-        "Demande de signature créée, courriel non parti"
-      );
-    }
+    const envoi = await adresserLaDemande(demande, dossierASigner?.societe ?? "");
 
     creees.push({
       id: demande.id,
       nom: demande.associe_name,
       jeton: demande.token,
-      courrielParti: envoi.ok && !("simule" in envoi && envoi.simule),
+      courrielParti: envoi.parti,
+      simule: envoi.simule,
+      motif: envoi.motif,
     });
   }
 
   return creees;
+}
+
+/**
+ * Inscrit ce qu'un avis du fournisseur apprend sur un message.
+ *
+ * L'avis désigne le message, jamais la demande : le rapprochement se fait par
+ * l'identifiant rendu à l'envoi. L'adresse ne suffirait pas - la même personne peut
+ * avoir deux demandes en cours dans deux dossiers.
+ *
+ * Un avis qui ne retrouve rien est ignoré sans bruit : c'est le sort d'un message
+ * envoyé avant que ce suivi n'existe, ou d'un courriel qui n'est pas une demande de
+ * signature - une confirmation d'adresse, une invitation.
+ */
+export async function inscrireLAvis(avis: AvisDeResend): Promise<boolean> {
+  const demande = await prisma.signature_requests.findFirst({
+    where: { message_id: avis.identifiant },
+    select: { id: true },
+  });
+  if (!demande) return false;
+
+  /*
+   * « Remis » et « ouvert » se datent ; un rejet se dit.
+   *
+   * Un message rendu par le serveur d'en face - adresse inexistante, boîte pleine - est
+   * la seule chose qui compte à afficher : le lien n'arrivera jamais, et c'est l'adresse
+   * qu'il faut corriger. Le classer indésirable revient au même de notre point de vue :
+   * il est parti et personne ne le verra.
+   */
+  const inscription =
+    avis.sort === "remis"
+      ? { remis_le: avis.quand, envoi_motif: null }
+      : avis.sort === "ouvert"
+        ? /* Ouvrir suppose d'avoir reçu, et l'avis d'ouverture arrive parfois sans que
+             celui de remise soit passé : on date les deux plutôt que d'afficher un
+             message ouvert dont on ignorerait qu'il est arrivé. */
+          { mail_ouvert_le: avis.quand, remis_le: avis.quand, envoi_motif: null }
+        : { envoi_motif: MOTIF_REJET };
+
+  await prisma.signature_requests.update({ where: { id: demande.id }, data: inscription });
+  return true;
+}
+
+/**
+ * Renvoie le lien à une seule personne.
+ *
+ * Le même jeton : relancer, c'est faire revenir le message, non casser le lien qui est
+ * déjà dans une boîte. Reprendre tout le circuit était le seul recours - et il supprime
+ * les demandes non signées, donc invalide les jetons de tous ceux qui n'ont pas encore
+ * signé pour renvoyer à un seul.
+ */
+export async function relancerSignature(
+  utilisateur: UtilisateurConnecte,
+  demandeId: number,
+  adresse?: string
+) {
+  const demande = await prisma.signature_requests.findUnique({
+    where: { id: demandeId },
+    include: { formalites: { select: { id: true, societe: true } } },
+  });
+  if (!demande?.formalites) return null;
+
+  await exigerDossierModifiable(utilisateur, demande.formalites.id);
+
+  if (demande.signed_at) {
+    throw new SignatureRetenue(demande.associe_name + " a déjà signé : il n'y a rien à relancer.");
+  }
+
+  if (!peutRelancer(versSuivi(demande))) {
+    throw new SignatureRetenue(
+      "Le dernier message vient de partir. Laissez-lui une minute avant de relancer."
+    );
+  }
+
+  /* L'adresse se corrige au moment de relancer : c'est le geste qu'on fait quand le
+     message n'est pas arrivé, et une faute de frappe en est la première cause. */
+  const corrigee = adresse?.trim();
+  if (corrigee && corrigee !== demande.associe_email) {
+    await prisma.signature_requests.update({
+      where: { id: demande.id },
+      data: { associe_email: corrigee },
+    });
+    demande.associe_email = corrigee;
+  }
+
+  const envoi = await adresserLaDemande(demande, demande.formalites.societe ?? "");
+
+  await prisma.signature_requests.update({
+    where: { id: demande.id },
+    data: { relances: { increment: 1 } },
+  });
+
+  return envoi;
 }
 
 /**

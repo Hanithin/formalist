@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { dateHeureLongue } from "@/lib/dates";
+import { dateHeureLongue, dateHeureCourte } from "@/lib/dates";
 import { presentation } from "@/domain/messagerie/messages";
 import { EcrireAuCabinet } from "./EcrireAuCabinet";
 import { useRouter } from "next/navigation";
 import { A_RELIRE } from "@/domain/document/publication";
 import { nomDeLaPartie } from "@/domain/formalite/etat-civil";
+import {
+  dateDuJalon,
+  libelleJalon,
+  motifLisible,
+  peutRelancer,
+  type JalonEnvoi,
+  type SuiviDemande,
+} from "@/domain/formalite/signature";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Apercu } from "./Apercu";
 import { DepotDuCapital } from "./DepotDuCapital";
@@ -164,6 +172,45 @@ function Document() {
  * reconnaître.
  */
 
+/**
+ * Une demande de signature telle que l'API la rend.
+ *
+ * Les dates y passent en texte : JSON n'a pas de type date. On les rétablit à la
+ * lecture, sans quoi les règles du domaine compareraient des chaînes.
+ */
+interface Suivi extends SuiviDemande {
+  rang: number;
+  jalon: JalonEnvoi;
+}
+
+function versSuivi(brut: Record<string, unknown>): Suivi {
+  const date = (v: unknown) => (typeof v === "string" ? new Date(v) : null);
+  return {
+    id: Number(brut.id),
+    rang: Number(brut.rang),
+    nom: String(brut.nom ?? ""),
+    email: String(brut.email ?? ""),
+    ouverteLe: date(brut.ouverteLe),
+    signeeLe: date(brut.signeeLe),
+    envoyeLe: date(brut.envoyeLe),
+    remisLe: date(brut.remisLe),
+    mailOuvertLe: date(brut.mailOuvertLe),
+    motif: typeof brut.motif === "string" ? brut.motif : null,
+    relances: Number(brut.relances ?? 0),
+    jalon: brut.jalon as JalonEnvoi,
+  };
+}
+
+/** La pastille et sa teinte : fait, en route, ou rien n'est arrivé. */
+function tonDuJalon(jalon: JalonEnvoi): string {
+  if (jalon === "signee") return "suiviFait";
+  if (jalon === "lien_ouvert" || jalon === "mail_ouvert" || jalon === "remis") {
+    return "suiviEnRoute";
+  }
+  if (jalon === "echec" || jalon === "rejete") return "suiviManque";
+  return "";
+}
+
 export function Actes({
   dossierId,
   brouillon,
@@ -180,6 +227,16 @@ export function Actes({
      obtenir le même comportement, et la fenêtre ne peut pas montrer une version
      périmée. */
   const [apercuDe, setApercuDe] = useState<string | null>(null);
+  /*
+   * Où en est chaque demande partie.
+   *
+   * Ces lignes existaient en base - dates d'envoi, d'ouverture, de signature - et aucun
+   * écran ne les lisait : le bloc annonçait « chacun reçoit son lien par email » puis
+   * se taisait. On les relit après chaque geste, et au retour sur l'écran : une
+   * signature arrive pendant qu'on regarde ailleurs.
+   */
+  const [demandes, setDemandes] = useState<Suivi[] | null>(null);
+  const [relance, setRelance] = useState<number | null>(null);
   /* L'échec de production se dit sous le bouton qui l'a déclenché. Au bas de la page,
      sous la note à l'avocat, personne ne le lit. */
   const [enCours, demarrer] = useTransition();
@@ -217,8 +274,85 @@ export function Actes({
   /** Ceux à qui la demande partira vraiment. */
   const signataires = destinataires.filter((d) => d.email);
 
+  /* Des demandes sont-elles en circulation ? Le bouton d'ouverture ne dit pas la même
+     chose selon la réponse : la seconde fois, il détruit ce qui est déjà parti. */
+  const circuitOuvert = (demandes?.length ?? 0) > 0;
+
+  /* Plus rien à demander quand tout le monde a signé : rouvrir le circuit ne créerait
+     aucune demande, et le bouton n'aurait plus qu'à annoncer qu'il n'a rien fait. */
+  const tousOntSigne = circuitOuvert && (demandes ?? []).every((d) => d.signeeLe);
+
   /* Les actes que l'avocat n'a pas encore relus : ils s'affichent, sans s'ouvrir. */
   const enRelecture = actes.filter((a) => a.statut === A_RELIRE);
+
+  /*
+   * On relit le suivi à l'ouverture de l'écran, puis après chaque geste.
+   *
+   * Pas de rafraîchissement continu : une signature qui arrive pendant qu'on regarde
+   * l'écran est un cas rare, et interroger le serveur toutes les dix secondes pour
+   * l'attraper coûterait plus qu'il ne rapporte. Revenir sur l'écran suffit.
+   */
+  const relireLeSuivi = useCallback(async () => {
+    if (!attestationRecue) return;
+    try {
+      const reponse = await fetch("/api/signature?dossier=" + dossierId);
+      if (!reponse.ok) return;
+      const corps = (await reponse.json()) as { demandes?: Record<string, unknown>[] };
+      setDemandes((corps.demandes ?? []).map(versSuivi));
+    } catch {
+      /* Le suivi qui ne se charge pas ne casse pas l'écran : le bloc reste ce qu'il
+         était avant, avec son bouton. */
+    }
+  }, [dossierId, attestationRecue]);
+
+  useEffect(() => {
+    /* L'appel passe par une fonction asynchrone, comme partout ici : l'état ne se pose
+       pas dans le corps de l'effet, mais quand la réponse arrive. */
+    void (async () => {
+      await relireLeSuivi();
+    })();
+  }, [relireLeSuivi]);
+
+  /** Renvoie le lien à une personne, sans toucher aux jetons des autres. */
+  function relancer(demande: Suivi) {
+    setMessage(null);
+    setRelance(demande.id);
+
+    demarrer(async () => {
+      try {
+        const reponse = await fetch("/api/signature/relance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          /* L'adresse part telle qu'elle est à l'écran : c'est souvent qu'on vient de
+             la corriger, et relancer à l'ancienne serait sans objet. */
+          body: JSON.stringify({
+            demande: demande.id,
+            email: destinataires.find((d) => d.rang === demande.rang)?.email || undefined,
+          }),
+        });
+        const corps = (await reponse.json().catch(() => ({}))) as {
+          error?: string;
+          parti?: boolean;
+          simule?: boolean;
+        };
+
+        if (!reponse.ok) {
+          setMessage({ ok: false, texte: corps.error ?? "La relance n'a pas abouti" });
+          return;
+        }
+
+        setMessage({
+          ok: true,
+          texte: corps.simule
+            ? "Relance simulée : aucune clé d'envoi n'est configurée sur cette machine."
+            : "Le lien est reparti à " + demande.nom + ".",
+        });
+      } finally {
+        setRelance(null);
+        await relireLeSuivi();
+      }
+    });
+  }
 
   function ouvrirSignatures() {
     setMessage(null);
@@ -235,6 +369,7 @@ export function Actes({
       const corps = (await reponse.json().catch(() => ({}))) as {
         error?: string;
         courrielsPartis?: number;
+        simules?: number;
       };
 
       if (!reponse.ok) {
@@ -243,28 +378,40 @@ export function Actes({
       }
 
       /*
-       * On n'annonce un envoi que s'il a eu lieu.
+       * On dit ce qui s'est passé, sans alarmer pour un fonctionnement normal.
        *
-       * L'écran disait « chacun reçoit son lien par email » sans avoir aucun moyen de
-       * le savoir - et rien ne partait. Le compte vient du serveur, qui sait ce que le
-       * fournisseur a répondu.
+       * Le message d'échec - « aucun courriel n'est parti, prévenez le cabinet » -
+       * s'affichait aussi en développement, où aucune clé d'envoi n'est configurée et
+       * où rien ne doit partir. C'était le cas le plus fréquent, en rouge, pour un
+       * circuit qui marchait. Et en cas de vrai refus, prévenir le cabinet n'est plus
+       * le recours : le suivi ci-dessus porte le motif et le bouton qui relance.
        */
       const partis = corps.courrielsPartis ?? 0;
+      const simules = corps.simules ?? 0;
+
       setMessage(
         partis > 0
           ? {
               ok: true,
               texte:
-                "Demande envoyée à " +
-                signataires.map((s) => s.nom).join(", ") +
-                ". Chacun reçoit son lien par email.",
+                partis > 1
+                  ? partis + " liens de signature sont partis."
+                  : "Le lien de signature est parti.",
             }
-          : {
-              ok: false,
-              texte:
-                "Les demandes sont créées, mais aucun courriel n'est parti. Prévenez le cabinet.",
-            }
+          : simules > 0
+            ? {
+                ok: true,
+                texte:
+                  "Demandes créées. Aucune clé d'envoi sur cette machine : les messages " +
+                  "sont simulés, et les liens s'ouvrent depuis le journal du serveur.",
+              }
+            : {
+                ok: false,
+                texte: "Aucun message n'est parti. Le détail est sur la ligne de chacun.",
+              }
       );
+
+      await relireLeSuivi();
       router.refresh();
     });
   }
@@ -447,32 +594,99 @@ export function Actes({
             */}
             {destinataires.length > 0 ? (
               <ul className={styles.signataires}>
-                {destinataires.map((d) => (
-                  <li key={d.rang} className={styles.signataire}>
-                    <span className={styles.signataireInitiales} aria-hidden="true">
-                      {initiales(d.nom)}
-                    </span>
-                    <label className={styles.signataireNom} htmlFor={"signataire-email-" + d.rang}>
-                      {d.nom}
-                    </label>
-                    {/*
-                        L'adresse se corrige ici.
-                        C'est le moment où on la relit - juste avant que la demande ne
-                        parte - et retourner à l'étape des associés pour une faute de
-                        frappe fait perdre l'endroit où l'on était.
+                {destinataires.map((d) => {
+                  /* La demande partie pour cette personne, s'il y en a une. Le rang la
+                     relie à l'associé du dossier, comme partout ailleurs ici. */
+                  const suivi = demandes?.find((s) => s.rang === d.rang);
+                  const jalon = suivi?.jalon;
+                  const quand = suivi ? dateDuJalon(suivi) : null;
+
+                  return (
+                    <li key={d.rang} className={styles.signataire}>
+                      <span className={styles.signataireInitiales} aria-hidden="true">
+                        {initiales(d.nom)}
+                      </span>
+                      <label
+                        className={styles.signataireNom}
+                        htmlFor={"signataire-email-" + d.rang}
+                      >
+                        {d.nom}
+                      </label>
+
+                      {/*
+                        L'adresse de qui a signé ne se corrige plus.
+
+                        Il n'y a plus rien à lui envoyer, et un champ ouvert laisserait
+                        croire qu'on peut encore changer quelque chose à sa signature.
                       */}
-                    <input
-                      id={"signataire-email-" + d.rang}
-                      type="email"
-                      className={styles.signataireChamp}
-                      value={d.email}
-                      placeholder="adresse@exemple.fr"
-                      autoComplete="off"
-                      aria-label={"Adresse email de " + d.nom}
-                      onChange={(e) => surEmail(d.rang, e.target.value)}
-                    />
-                  </li>
-                ))}
+                      {suivi?.signeeLe ? (
+                        <span className={styles.suiviAdresse}>{d.email}</span>
+                      ) : (
+                        /*
+                          L'adresse se corrige ici.
+                          C'est le moment où on la relit - juste avant que la demande ne
+                          parte - et retourner à l'étape des associés pour une faute de
+                          frappe fait perdre l'endroit où l'on était.
+                        */
+                        <input
+                          id={"signataire-email-" + d.rang}
+                          type="email"
+                          className={styles.signataireChamp}
+                          value={d.email}
+                          placeholder="adresse@exemple.fr"
+                          autoComplete="off"
+                          aria-label={"Adresse email de " + d.nom}
+                          onChange={(e) => surEmail(d.rang, e.target.value)}
+                        />
+                      )}
+
+                      {/*
+                        Où en est sa demande, datée, et le geste qui la reprend.
+
+                        Les deux tiennent dans une largeur fixe, à droite : sans elle,
+                        l'état d'une ligne signée - qui n'a pas de bouton - glissait
+                        jusqu'au bord et ne s'alignait avec aucune autre. On lit une
+                        colonne, pas un escalier.
+
+                        Rien tant qu'aucune demande n'est partie : une colonne d'états
+                        vides avant le premier envoi n'apprend rien et prend la place.
+                      */}
+                      {suivi && jalon && (
+                        <span className={styles.suiviFin}>
+                          <span
+                            className={[styles.suiviEtat, styles[tonDuJalon(jalon)]]
+                              .filter(Boolean)
+                              .join(" ")}
+                          >
+                            <span className={styles.suiviPastille} aria-hidden="true" />
+                            {libelleJalon(jalon)}
+                            {quand ? " le " + dateHeureCourte(quand) : ""}
+                          </span>
+
+                          {!suivi.signeeLe && (
+                            <button
+                              type="button"
+                              className={styles.suiviRelance}
+                              onClick={() => relancer(suivi)}
+                              /* Pas deux fois dans la minute : un double clic ne doit
+                                 pas poster deux messages identiques à quelqu'un qui n'a
+                                 pas eu le temps d'ouvrir le premier. */
+                              disabled={enCours || !peutRelancer(suivi)}
+                            >
+                              {relance === suivi.id ? "Envoi…" : "Relancer"}
+                            </button>
+                          )}
+                        </span>
+                      )}
+
+                      {/* La phrase du fournisseur, là où on peut la corriger - et rien
+                          quand elle ne ferait que redire le libellé en anglais. */}
+                      {suivi && motifLisible(suivi) && (
+                        <span className={styles.suiviMotif}>{motifLisible(suivi)}</span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className={styles.actesVide}>
@@ -502,6 +716,14 @@ export function Actes({
               </p>
             )}
 
+            {/*
+              Le circuit se rouvre, il ne se répète pas.
+
+              Le bouton crée les demandes et supprime celles qui ne sont pas signées :
+              cliquer une seconde fois invalide les jetons en circulation. Tant qu'il
+              disait « Demander les signatures » après un envoi, il invitait à le faire.
+              Pour renvoyer à quelqu'un, c'est « Relancer », sur sa ligne.
+            */}
             <div className={styles.signatureAction}>
               <button
                 type="button"
@@ -513,16 +735,21 @@ export function Actes({
                   enCours ||
                   actes.length === 0 ||
                   signataires.length === 0 ||
-                  enRelecture.length > 0
+                  enRelecture.length > 0 ||
+                  tousOntSigne
                 }
               >
-                Demander les signatures
+                {circuitOuvert ? "Reprendre le circuit à zéro" : "Demander les signatures"}
               </button>
               {signataires.length > 0 && enRelecture.length === 0 && (
                 <span className={styles.signaturePrecision}>
-                  {signataires.length > 1
-                    ? signataires.length + " liens partent maintenant, un par personne"
-                    : "Le lien part maintenant"}
+                  {tousOntSigne
+                    ? "Tout le monde a signé"
+                    : circuitOuvert
+                      ? "De nouveaux liens partent, et les précédents cessent de fonctionner"
+                      : signataires.length > 1
+                        ? signataires.length + " liens partent maintenant, un par personne"
+                        : "Le lien part maintenant"}
                 </span>
               )}
             </div>

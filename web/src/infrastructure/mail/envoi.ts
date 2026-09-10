@@ -60,6 +60,14 @@ export interface Resultat {
   simule?: boolean;
   /** Ce que le fournisseur a répondu, quand il a refusé. */
   motif?: string;
+  /**
+   * L'identifiant que Resend rend à l'envoi.
+   *
+   * C'est par lui, et par lui seul, que ses événements ultérieurs - remis, ouvert,
+   * rejeté - se rattachent à ce qui les a provoqués. L'adresse ne suffirait pas : la
+   * même personne peut avoir deux demandes en cours dans deux dossiers.
+   */
+  identifiant?: string;
 }
 
 export async function envoyer(message: Message): Promise<Resultat> {
@@ -135,7 +143,9 @@ export async function envoyer(message: Message): Promise<Resultat> {
       );
       return { ok: false, motif: motif.slice(0, 300) };
     }
-    return { ok: true };
+
+    const accuse = (await reponse.json().catch(() => ({}))) as { id?: string };
+    return { ok: true, identifiant: accuse.id };
   } catch (e) {
     journal.error({ err: e }, "Envoi interrompu");
     return { ok: false, motif: "envoi interrompu" };

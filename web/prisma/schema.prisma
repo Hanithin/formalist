@@ -309,6 +309,12 @@ model signature_requests {
   opened_at      DateTime?  @db.Timestamptz(6)
   signed_at      DateTime?  @db.Timestamptz(6)
   role           String?    @default("Associé")
+  envoye_le      DateTime?  @db.Timestamptz(6)
+  message_id     String?
+  remis_le       DateTime?  @db.Timestamptz(6)
+  mail_ouvert_le DateTime?  @db.Timestamptz(6)
+  envoi_motif    String?
+  relances       Int        @default(0)
   formalites     formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 

@@ -33,6 +33,22 @@ export function dateHeureLongue(quand: Date): string {
   return jour + " à " + heure;
 }
 
+/**
+ * « 10 sept. à 14h32 » : un horodatage qui tient dans une ligne de liste.
+ *
+ * dateHeureLongue écrit « Jeudi 10 septembre 2026 à 14h32 » - juste pour annoncer un
+ * rendez-vous, trop long pour une colonne d'états où l'on en lit quatre d'affilée. Le
+ * jour de la semaine et l'année n'apprennent rien de ce qui vient de se passer.
+ */
+export function dateHeureCourte(quand: Date): string {
+  const jour = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(quand);
+  const heure = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    .format(quand)
+    .replace(":", "h");
+
+  return jour + " à " + heure;
+}
+
 /** « 10h00 » seul, pour une liste de créneaux d'une même journée. */
 export function heureCourte(quand: Date): string {
   return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" })
