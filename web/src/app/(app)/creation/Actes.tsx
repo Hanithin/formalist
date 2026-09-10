@@ -232,20 +232,39 @@ export function Actes({
           signataires: signataires.map((s) => ({ nom: s.nom, email: s.email })),
         }),
       });
-      const corps = (await reponse.json().catch(() => ({}))) as { error?: string };
+      const corps = (await reponse.json().catch(() => ({}))) as {
+        error?: string;
+        courrielsPartis?: number;
+      };
 
       if (!reponse.ok) {
         setMessage({ ok: false, texte: corps.error ?? "L'ouverture des signatures a échoué" });
         return;
       }
 
-      setMessage({
-        ok: true,
-        texte:
-          "Demande envoyée à " +
-          signataires.map((s) => s.nom).join(", ") +
-          ". Chacun reçoit son lien par email.",
-      });
+      /*
+       * On n'annonce un envoi que s'il a eu lieu.
+       *
+       * L'écran disait « chacun reçoit son lien par email » sans avoir aucun moyen de
+       * le savoir - et rien ne partait. Le compte vient du serveur, qui sait ce que le
+       * fournisseur a répondu.
+       */
+      const partis = corps.courrielsPartis ?? 0;
+      setMessage(
+        partis > 0
+          ? {
+              ok: true,
+              texte:
+                "Demande envoyée à " +
+                signataires.map((s) => s.nom).join(", ") +
+                ". Chacun reçoit son lien par email.",
+            }
+          : {
+              ok: false,
+              texte:
+                "Les demandes sont créées, mais aucun courriel n'est parti. Prévenez le cabinet.",
+            }
+      );
       router.refresh();
     });
   }

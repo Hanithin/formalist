@@ -46,10 +46,17 @@ export const POST = route(async (requete: Request) => {
     throw e;
   }
 
-  // Les jetons ne sortent pas d'ici : ils partent par email, pas dans une réponse
-  // que le navigateur conserve.
+  /*
+   * Les jetons ne sortent pas d'ici : ils partent par email, pas dans une réponse que
+   * le navigateur conserve. Ce qui sort, c'est de savoir si le courriel est parti -
+   * l'écran annonçait « chacun reçoit son lien » sans avoir aucun moyen de le savoir.
+   */
   return NextResponse.json(
-    { ok: true, demandes: creees.map((d) => ({ id: d.id, nom: d.nom })) },
+    {
+      ok: true,
+      demandes: creees.map((d) => ({ id: d.id, nom: d.nom })),
+      courrielsPartis: creees.filter((d) => d.courrielParti).length,
+    },
     { status: 201 }
   );
 });

@@ -12,6 +12,8 @@ import {
 } from "@/domain/formalite/signature";
 import { jeton } from "@/lib/mots-de-passe";
 import type { UtilisateurConnecte } from "../sessions";
+import { emailDeSignature } from "@/infrastructure/mail/envoi";
+import { journal } from "@/lib/journal";
 
 /**
  * Demandes de signature.
@@ -123,6 +125,13 @@ export async function demanderSignatures(
     );
   }
 
+  /* Le nom qui figurera dans le message : un lien de signature sans contexte se prend
+     pour une tentative d'hameçonnage, et se jette. */
+  const dossierASigner = await prisma.formalites.findUnique({
+    where: { id: dossierId },
+    select: { societe: true },
+  });
+
   // On repart de zéro : relancer le circuit ne doit pas laisser d'anciens jetons
   // valides en circulation.
   await prisma.signature_requests.deleteMany({
@@ -142,7 +151,42 @@ export async function demanderSignatures(
         status: "pending",
       },
     });
-    creees.push({ id: demande.id, nom: demande.associe_name, jeton: demande.token });
+
+    /*
+     * Le lien part, enfin.
+     *
+     * Le circuit créait le jeton et s'arrêtait là : la page publique qui l'ouvre
+     * fonctionnait, l'écran annonçait « chacun reçoit son lien par email », et les
+     * jetons dormaient en base. Personne ne recevait rien, et rien ne le disait - ni
+     * un message d'échec, ni une ligne de journal.
+     *
+     * Un envoi manqué n'annule pas la demande : le jeton reste valable, et l'écran
+     * dit ce qui n'est pas parti pour qu'on puisse le relancer.
+     */
+    /* Sans jeton, le lien mènerait à une page introuvable : mieux vaut ne rien
+       envoyer et le dire que poster une porte close. */
+    const envoi = demande.token
+      ? await emailDeSignature(
+          demande.associe_name ?? "",
+          demande.associe_email ?? "",
+          demande.token,
+          dossierASigner?.societe ?? ""
+        )
+      : { ok: false, motif: "aucun jeton" };
+
+    if (!envoi.ok) {
+      journal.warn(
+        { dossier: dossierId, demande: demande.id, motif: envoi.motif },
+        "Demande de signature créée, courriel non parti"
+      );
+    }
+
+    creees.push({
+      id: demande.id,
+      nom: demande.associe_name,
+      jeton: demande.token,
+      courrielParti: envoi.ok && !("simule" in envoi && envoi.simule),
+    });
   }
 
   return creees;

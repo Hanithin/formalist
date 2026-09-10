@@ -159,6 +159,44 @@ export function emailDeVerification(prenom: string, adresse: string, jeton: stri
 }
 
 /**
+ * La demande de signature.
+ *
+ * Elle n'existait pas. Le circuit créait bien un jeton par signataire et la page
+ * publique qui l'ouvre fonctionnait, mais rien ne portait le lien jusqu'à son
+ * destinataire : l'écran annonçait « chacun reçoit son lien par email », les jetons
+ * dormaient en base, et personne ne recevait rien.
+ *
+ * Le message dit qui demande et sur quoi : un lien de signature reçu sans contexte se
+ * prend pour une tentative d'hameçonnage - c'en est la forme exacte - et se jette.
+ */
+export function emailDeSignature(nom: string, adresse: string, jeton: string, societe: string) {
+  const lien = adresseApplication() + "/signer/" + encodeURIComponent(jeton);
+  const dossier = societe.trim() || "votre société";
+
+  return envoyer({
+    destinataire: adresse,
+    sujet: "Vos actes à signer - " + dossier,
+    html: gabarit(
+      "Bonjour" + (nom ? " " + echapper(nom) : ""),
+      "Les actes de constitution de <strong>" +
+        echapper(dossier) +
+        "</strong> sont prêts et vous attendez de les signer. Vous pourrez les relire avant de signer, et vous recevrez une copie signée.<br><br>" +
+        "Ce lien vous est personnel : ne le transmettez pas, chaque signataire a reçu le sien.",
+      "Relire et signer",
+      lien
+    ),
+    texte:
+      "Bonjour" +
+      (nom ? " " + nom : "") +
+      ",\n\nLes actes de constitution de " +
+      dossier +
+      " sont prêts et attendent votre signature.\n\nRelisez-les et signez ici :\n" +
+      lien +
+      "\n\nCe lien vous est personnel : chaque signataire a reçu le sien.",
+  });
+}
+
+/**
  * Le lien de réinitialisation.
  *
  * Il mène à une page, non à une route qui agirait d'elle-même : ouvrir le lien ne
@@ -236,7 +274,7 @@ export function emailDAvis(prenom: string, adresse: string, avis: Avis, chemin?:
   const lien = adresseApplication() + (chemin ?? "/tableau-de-bord");
   const corpsHtml = echapper(avis.corps)
     .split(/\n{2,}/)
-    .map((p) => "<p style=\"margin:0 0 14px;\">" + p.replace(/\n/g, "<br>") + "</p>")
+    .map((p) => '<p style="margin:0 0 14px;">' + p.replace(/\n/g, "<br>") + "</p>")
     .join("");
 
   return envoyer({
