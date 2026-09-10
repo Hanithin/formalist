@@ -83,3 +83,44 @@ describe("le suivi d'une création, quand l'avocat a rendu les actes", () => {
     expect(etape(etat, "annonce")?.etat).toBe("en_cours");
   });
 });
+
+describe("ce qu'une étape franchie dit de celles qui la précèdent", () => {
+  const RENDU: EtatDuDossier = {
+    ...TRANSMIS,
+    sousPhase: "5c",
+    actesEnRelecture: false,
+    actesRendus: true,
+  };
+
+  it("ne coche pas l'attestation de capital parce que l'annonce a paru", () => {
+    /*
+     * Le cabinet publie l'avis quand il veut : cela ne dit rien du compte en banque du
+     * client. L'étape qui lui revient doit rester la sienne, sans quoi le seul endroit
+     * d'où déposer l'attestation disparaît de l'écran.
+     */
+    const etat = { ...RENDU, aLAnnoncePubliee: true, aLAttestationDeCapital: false };
+
+    expect(etape(etat, "attestation")?.etat).toBe("en_cours");
+    expect(etape(etat, "attestation")?.main).toBe("vous");
+    expect(etape(etat, "annonce")?.etat).toBe("faite");
+  });
+
+  it("coche tout ce qui précède un Kbis délivré", () => {
+    /* On n'immatricule pas une société dont le capital n'a pas été versé : si le Kbis
+       est là, l'attestation a existé, quoi qu'en disent les documents du dossier. */
+    /* Le Kbis ne compte qu'une fois le dépôt fait : déposé avant, il signale une
+       erreur de saisie plutôt qu'un dossier plus avancé. */
+    const etat = { ...RENDU, sousPhase: "5e", aLeKbis: true, aLAttestationDeCapital: false };
+
+    expect(etape(etat, "attestation")?.etat).toBe("faite");
+    expect(etape(etat, "annonce")?.etat).toBe("faite");
+    expect(etape(etat, "kbis")?.etat).toBe("faite");
+  });
+
+  it("coche tout ce qui précède un dépôt au greffe", () => {
+    const etat = { ...RENDU, sousPhase: "5d", aLAttestationDeCapital: false };
+
+    expect(etape(etat, "greffe")?.etat).toBe("faite");
+    expect(etape(etat, "attestation")?.etat).toBe("faite");
+  });
+});

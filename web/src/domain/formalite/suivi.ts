@@ -142,6 +142,19 @@ interface Definition {
    */
   ou?: "dossier" | "messagerie";
   faite: (etat: EtatDuDossier) => boolean;
+  /**
+   * Cette étape suppose-t-elle celles qui la précèdent ?
+   *
+   * Un dépôt au greffe et un Kbis délivré les supposent toutes : on n'immatricule pas
+   * une société dont le capital n'a pas été versé. Une annonce légale, non - le cabinet
+   * la publie quand il veut, et cela ne dit rien du compte en banque du client.
+   *
+   * Le rail les traitait toutes de la même façon : une annonce parue cochait
+   * l'attestation de dépôt de capital, et l'écran passait au greffe sur un dossier où
+   * le client n'était jamais allé à sa banque. L'étape qui lui revenait disparaissait,
+   * et avec elle le seul endroit d'où la déposer.
+   */
+  emporteLesPrecedentes?: boolean;
 }
 
 const TOUTES: Definition[] = [
@@ -222,6 +235,7 @@ const TOUTES: Definition[] = [
   },
   {
     identifiant: "greffe",
+    emporteLesPrecedentes: true,
     titre: "Dépôt au greffe",
     explication: "Le cabinet dépose le dossier complet au guichet unique. Comptez quelques jours.",
     main: "avocat",
@@ -229,6 +243,7 @@ const TOUTES: Definition[] = [
   },
   {
     identifiant: "kbis",
+    emporteLesPrecedentes: true,
     titre: "Kbis délivré",
     explication:
       "Votre société est immatriculée. Le Kbis, et le registre des bénéficiaires s'il a été établi, sont dans vos documents.",
@@ -289,6 +304,7 @@ const AUTO_ENTREPRISE: Definition[] = [
   },
   {
     identifiant: "guichet",
+    emporteLesPrecedentes: true,
     titre: "Dépôt au guichet unique",
     explication:
       "Le cabinet dépose votre déclaration à l'INPI en votre nom. Comptez quelques jours ouvrés.",
@@ -297,6 +313,7 @@ const AUTO_ENTREPRISE: Definition[] = [
   },
   {
     identifiant: "siret",
+    emporteLesPrecedentes: true,
     titre: "SIRET délivré",
     explication:
       "L'INSEE vous attribue votre numéro SIRET, sous une à quatre semaines. Votre auto-entreprise existe.",
@@ -370,6 +387,7 @@ const MODIFICATION: Definition[] = [
   },
   {
     identifiant: "guichet",
+    emporteLesPrecedentes: true,
     titre: "Dépôt au guichet unique",
     explication:
       "Votre avocat dépose la modification à l'INPI en votre nom, statuts à jour à l'appui. Comptez trois à sept jours ouvrés.",
@@ -439,6 +457,7 @@ const COMPTES: Definition[] = [
   },
   {
     identifiant: "greffe",
+    emporteLesPrecedentes: true,
     titre: "Dépôt au greffe",
     explication:
       "Votre avocat dépose vos comptes au greffe du tribunal de commerce, en votre nom. Comptez quelques jours ouvrés.",
@@ -521,6 +540,7 @@ const FERMETURE: Definition[] = [
   },
   {
     identifiant: "greffe",
+    emporteLesPrecedentes: true,
     titre: "Dépôt au guichet unique",
     explication:
       "Votre avocat dépose la dissolution en votre nom. La radiation se demandera à la clôture de la liquidation, des mois plus tard.",
@@ -537,6 +557,7 @@ const FERMETURE: Definition[] = [
   },
   {
     identifiant: "radiation",
+    emporteLesPrecedentes: true,
     titre: "Clôture de la liquidation et radiation",
     /*
      * Les deux temps d'une fermeture.
@@ -597,6 +618,7 @@ const CESSATION: Definition[] = [
   },
   {
     identifiant: "guichet",
+    emporteLesPrecedentes: true,
     titre: "Dépôt au guichet unique",
     explication:
       "Votre avocat déclare la cessation à l'INPI en votre nom, sur mandat. La démarche est gratuite.",
@@ -605,6 +627,7 @@ const CESSATION: Definition[] = [
   },
   {
     identifiant: "recepisse",
+    emporteLesPrecedentes: true,
     titre: "Récépissé de cessation",
     explication:
       "Le guichet unique enregistre la cessation et en accuse réception. Le récépissé rejoint vos documents : c'est la preuve de votre radiation.",
@@ -680,7 +703,16 @@ export function etapesDuSuivi(etat: EtatDuDossier): EtapeDeSuivi[] {
    * précédentes ; il fallait aussi qu'une étape tardive faite achève ce qui la précède.
    * Les deux ensemble, le rail ne peut plus se contredire.
    */
-  const derniereFaite = declarees.lastIndexOf(true);
+  /*
+   * La dernière étape faite qui suppose les précédentes.
+   *
+   * `lastIndexOf(true)` prenait n'importe laquelle : il suffisait qu'une étape tardive
+   * mais indépendante soit franchie pour que tout ce qui la précède se déclare fait.
+   */
+  const derniereFaite = declarees.reduce(
+    (dernier, faite, rang) => (faite && retenues[rang].emporteLesPrecedentes ? rang : dernier),
+    -1
+  );
 
   let enCoursTrouvee = false;
 
