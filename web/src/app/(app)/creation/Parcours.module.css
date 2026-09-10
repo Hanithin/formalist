@@ -3455,3 +3455,102 @@
   line-height: 1.6;
   color: #52525b;
 }
+
+/* ---------- Les signataires ---------- */
+
+/*
+ * Des personnes, non une énumération.
+ *
+ * Elles tenaient dans une phrase, adresses entre parenthèses, qu'il fallait relire deux
+ * fois pour vérifier une adresse - ce qu'on vient précisément y faire, puisque la
+ * demande part par courriel et qu'une adresse fausse est une signature qui n'arrive
+ * jamais. Une ligne par personne, le nom au-dessus de son adresse : l'oeil descend au
+ * lieu de découper une phrase.
+ */
+.signataires {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.signataires > li.signataire {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid #ededf0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* Les initiales tiennent lieu de portrait : c'est quelqu'un, pas une adresse. */
+.signataireInitiales {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.signataireIdentite {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.signataireNom {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #18181b;
+}
+
+/* L'adresse peut être longue : elle se coupe plutôt que de pousser la carte. */
+.signataireEmail {
+  overflow: hidden;
+  font-size: 13px;
+  color: #71717a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signatairesManquants {
+  margin: -8px 0 20px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+/*
+ * Le geste et sa conséquence sur la même ligne.
+ *
+ * Le bouton était collé à la liste, sans rien dire de ce qu'il déclenche. Un envoi de
+ * courriels ne se rattrape pas : savoir combien de liens partent, et à qui, avant de
+ * cliquer, c'est le minimum.
+ */
+.signatureAction {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.signaturePrecision {
+  font-size: 13px;
+  color: #71717a;
+}

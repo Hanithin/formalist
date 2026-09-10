@@ -56,6 +56,15 @@ interface Props {
   attestationRecue: boolean;
 }
 
+/** « Jean Dupont » donne « JD » ; un nom seul donne sa première lettre. */
+function initiales(nom: string): string {
+  const mots = nom.trim().split(/\s+/).filter(Boolean);
+  if (mots.length === 0) return "?";
+  const premiere = mots[0][0] ?? "";
+  const derniere = mots.length > 1 ? (mots[mots.length - 1][0] ?? "") : "";
+  return (premiere + derniere).toUpperCase();
+}
+
 function Oeil() {
   return (
     <svg
@@ -388,10 +397,28 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
               </p>
             </div>
 
+            {/*
+              Les signataires se lisent un par un.
+
+              Ils tenaient dans une phrase - « Jean Dupont (jean@…), Claire Martin
+              (claire@…). » - qu'il fallait relire deux fois pour vérifier une adresse,
+              et c'est précisément ce qu'on vient y faire : la demande part par courriel,
+              une adresse fausse est une signature qui n'arrive jamais.
+            */}
             {signataires.length > 0 ? (
-              <p className={styles.actesVide}>
-                {signataires.map((s) => s.nom + " (" + s.email + ")").join(", ")}.
-              </p>
+              <ul className={styles.signataires}>
+                {signataires.map((s) => (
+                  <li key={s.email} className={styles.signataire}>
+                    <span className={styles.signataireInitiales} aria-hidden="true">
+                      {initiales(s.nom)}
+                    </span>
+                    <span className={styles.signataireIdentite}>
+                      <span className={styles.signataireNom}>{s.nom}</span>
+                      <span className={styles.signataireEmail}>{s.email}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <p className={styles.actesVide}>
                 Aucun signataire : renseignez l&apos;adresse email des associés à l&apos;étape «
@@ -399,9 +426,12 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
               </p>
             )}
 
+            {/* Ceux qu'on ne peut pas joindre, nommés : « 2 associé(s) » ne dit pas
+                lesquels, et c'est la seule chose qu'on ait besoin de savoir. */}
             {sansEmail.length > 0 && signataires.length > 0 && (
-              <p role="alert">
-                {sansEmail.length} associé(s) sans adresse email ne recevront pas de demande.
+              <p className={styles.signatairesManquants} role="alert">
+                Sans adresse email, {sansEmail.map((a) => nomDeLaPartie(a)).join(", ")} ne recevra
+                pas de demande. Renseignez-la à l&apos;étape « Associés ».
               </p>
             )}
 
@@ -418,7 +448,7 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
               </p>
             )}
 
-            <div className={styles.actesEntete}>
+            <div className={styles.signatureAction}>
               <button
                 type="button"
                 className={styles.actesBouton}
@@ -434,6 +464,13 @@ export function Actes({ dossierId, brouillon, actes, dernierMot, attestationRecu
               >
                 Demander les signatures
               </button>
+              {signataires.length > 0 && enRelecture.length === 0 && (
+                <span className={styles.signaturePrecision}>
+                  {signataires.length > 1
+                    ? signataires.length + " liens partent maintenant, un par personne"
+                    : "Le lien part maintenant"}
+                </span>
+              )}
             </div>
           </div>
         </>
