@@ -124,6 +124,51 @@ describe("l'apposition des signatures dans un acte", () => {
     expect(resultat.apposee).toBe(true);
   });
 
+  it("reconnaît un emplacement annoncé par le mot « Signature »", () => {
+    /*
+     * Tous les gabarits ne tirent pas un trait au-dessus du nom. sasu-pv-nomination.docx
+     * pose le mot « Signature » et laisse l'espace vide en dessous : ne reconnaître que
+     * le trait faisait ressortir ce procès-verbal vierge, alors que tous les autres
+     * actes du même dossier portaient bien la signature - et rien ne le signalait.
+     */
+    const zip = new PizZip();
+    zip.file(
+      "[Content_Types].xml",
+      '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>'
+    );
+    zip.file(
+      "word/_rels/document.xml.rels",
+      '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>'
+    );
+
+    const ligne = (texte: string) => "<w:p><w:r><w:t>" + texte + "</w:t></w:r></w:p>";
+    zip.file(
+      "word/document.xml",
+      '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>' +
+        ligne("Fait le 10 septembre 2026 a Paris.") +
+        ligne("Signature") +
+        ligne("") +
+        ligne("Madame Amel BELOUAFI") +
+        "</w:body></w:document>"
+    );
+
+    const resultat = apposerSignature(
+      zip.generate({ type: "nodebuffer" }),
+      PIXEL,
+      "Amel Belouafi",
+      0
+    );
+    expect(resultat.apposee).toBe(true);
+
+    /* La mention reste : c'est une légende, non la place de la signature. L'image se
+       pose entre elle et le nom, dans l'espace laissé vide pour cela. */
+    const document = new PizZip(resultat.docx).file("word/document.xml")!.asText();
+    expect(document).toContain("Signature");
+    expect(document).toContain('r:embed="rIdSig1"');
+    expect(document.indexOf("rIdSig1")).toBeLessThan(document.indexOf("BELOUAFI"));
+  });
+
   it("retombe sur le premier rang quand aucun n'est donné", () => {
     const docx = apposerSignature(documentDEssai(), PIXEL, "Jean Dupont").docx;
     expect(new PizZip(docx).file("word/media/signature1.png")).not.toBeNull();

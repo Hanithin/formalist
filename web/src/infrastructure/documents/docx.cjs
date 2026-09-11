@@ -1824,7 +1824,39 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
     return text.length > 0 && text.length < 60
       && !text.includes(".")
       && !/^\d/.test(text)
+      /*
+       * Un emplacement de signature n'est pas un nom.
+       *
+       * Une ligne de tirets bas passait tous les autres contrôles - courte, sans point,
+       * sans chiffre initial - et seul le rapprochement avec le nom du signataire
+       * l'écartait. Sans nom fourni, ce rapprochement accepte tout : la mention
+       * « Signature » de sasu-liste-souscripteurs.docx aurait alors pris la ligne qui la
+       * suit pour le nom, et posé l'image au-dessus d'un trait resté vide.
+       */
+      && !estUnEmplacement(text)
       && !/^(Article|ARTICLE|Chapitre|TITRE|ANNEXE)/.test(text);
+  }
+
+  /*
+   * Un emplacement de signature s'écrit de deux façons.
+   *
+   * La plupart des gabarits tirent un trait - une suite de tirets bas - au-dessus du
+   * nom du signataire. Mais certains posent simplement le mot « Signature », et laissent
+   * l'espace vide en dessous : sasu-pv-nomination.docx est écrit ainsi. Ne reconnaître
+   * que le trait faisait que ce procès-verbal ressortait vierge alors que tous les
+   * autres actes du même dossier portaient la signature - sans que rien ne le signale.
+   */
+  function estUnTrait(texte) {
+    const t = texte.trim();
+    return /^[_\s]+$/.test(t) && t.length >= 10;
+  }
+
+  function estUneMentionDeSignature(texte) {
+    return /^signatures?\s*:?$/i.test(texte.trim());
+  }
+
+  function estUnEmplacement(texte) {
+    return estUnTrait(texte) || estUneMentionDeSignature(texte);
   }
 
   let injected = false;
@@ -1833,15 +1865,19 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
     const text = paraTexts[i];
     if (!text) continue;
 
-    const isUnderscoreLine = /^[_\s]+$/.test(text.trim()) && text.trim().length >= 10;
-    if (!isUnderscoreLine) continue;
+    const emplacementEstUnTrait = estUnTrait(text);
+    if (!emplacementEstUnTrait && !estUneMentionDeSignature(text)) continue;
 
     let nameText = null;
+    let nameIdx = -1;
     let nextIdx = i + 1;
     while (nextIdx < paraTexts.length && !paraTexts[nextIdx].trim()) nextIdx++;
     if (nextIdx < paraTexts.length) {
       const nt = paraTexts[nextIdx].trim();
-      if (looksLikeName(nt) && matchesSignerName(nt)) nameText = nt;
+      if (looksLikeName(nt) && matchesSignerName(nt)) {
+        nameText = nt;
+        nameIdx = nextIdx;
+      }
     }
 
     if (!nameText) {
@@ -1857,7 +1893,7 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
       for (let back = 1; back <= 3 && (i - back) >= 0; back++) {
         const prevText = paraTexts[i - back].trim();
         if (!prevText) continue;
-        if (/^[_\s]+$/.test(prevText) && prevText.length >= 10) break;
+        if (estUnEmplacement(prevText)) break;
         if (looksLikeName(prevText) && matchesSignerName(prevText)) {
           nameText = prevText;
           break;
@@ -1867,10 +1903,40 @@ function injectSignature(docxBuffer, signatureBase64, signerName, sigIndex) {
 
     if (!nameText) continue;
 
+    const sigForSplit = sigImageParagraph.replace(/<\/w:p>$/, "");
+
+    if (!emplacementEstUnTrait) {
+      /*
+       * Le mot « Signature » reste, l'image se pose dans l'espace réservé sous lui.
+       *
+       * Un trait se remplace : c'est la place de la signature, il n'a plus rien à dire
+       * une fois qu'elle y est. Une mention est une légende - l'effacer laisserait un nom
+       * précédé d'une image sans rien qui l'annonce. L'image va donc juste au-dessus du
+       * nom, dans le blanc que le gabarit laissait pour une signature manuscrite.
+       *
+       * Et ce blanc, il faut le reprendre. Le nom porte un « espace avant » de près de
+       * deux centimètres, qui n'existait que pour laisser la place : l'y ajouter à une
+       * image de deux centimètres et demi repoussait le nom à la page suivante - une
+       * signature en bas d'une page, le nom de son signataire en haut de la suivante.
+       * L'espace a rempli son office, on le rend.
+       */
+      const cible = nameIdx > i ? nameIdx : i + 1;
+      paragraphs[cible - 1] = paragraphs[cible - 1] + "</w:p>" + sigForSplit;
+      if (nameIdx > i) {
+        paragraphs[nameIdx] = paragraphs[nameIdx].replace(
+          /(<w:spacing\b[^>]*?)\sw:before="(\d+)"/,
+          function (tout, debut, valeur) {
+            return Number(valeur) >= 400 ? debut + ' w:before="0"' : tout;
+          }
+        );
+      }
+      injected = true;
+      break;
+    }
+
     let pStartIdx = paragraphs[i].lastIndexOf("<w:p ");
     if (pStartIdx === -1) pStartIdx = paragraphs[i].lastIndexOf("<w:p>");
     if (pStartIdx !== -1) {
-      const sigForSplit = sigImageParagraph.replace(/<\/w:p>$/, "");
       paragraphs[i] = paragraphs[i].substring(0, pStartIdx) + sigForSplit;
       injected = true;
       /*
