@@ -371,6 +371,78 @@ export async function inscrireLAvis(avis: AvisDeResend): Promise<boolean> {
 }
 
 /**
+ * Efface une signature recueillie, et redemande la même.
+ *
+ * Une signature tracée de travers, un doigt qui dérape sur un téléphone, une personne
+ * qui signe sans avoir relu : le circuit ne savait pas revenir en arrière. Une fois la
+ * dernière signature recueillie, l'écran annonçait « Tout le monde a signé » et
+ * n'offrait plus rien - il fallait passer par le cabinet.
+ *
+ * Trois choses se défont ensemble. Le tracé et le paraphe, qui sont ce que portent les
+ * actes ; les dates, qui racontaient une signature qui n'a plus lieu ; et le jeton, qui
+ * est remplacé - le lien déjà reçu doit cesser de fonctionner, sans quoi deux liens
+ * vivraient dans la même boîte pour la même signature.
+ *
+ * La phase du dossier ne bouge pas. Elle dit qu'il est passé au cabinet, ce qui reste
+ * vrai : la reculer ferait croire à une transmission qui n'a pas eu lieu, et le suivi
+ * ne la lit pas pour savoir qui a signé - il lit les signatures.
+ *
+ * Une société immatriculée, en revanche, ne resigne pas ses statuts constitutifs : ce
+ * qui est déposé est déposé.
+ */
+export async function annulerSignature(utilisateur: UtilisateurConnecte, demandeId: number) {
+  const demande = await prisma.signature_requests.findUnique({
+    where: { id: demandeId },
+    include: { formalites: { select: { id: true, societe: true, status: true } } },
+  });
+  if (!demande?.formalites) return null;
+
+  await exigerDossierModifiable(utilisateur, demande.formalites.id);
+
+  if (estClos(demande.formalites.status)) {
+    throw new SignatureRetenue("Ce dossier est clos : ses actes ne se resignent plus.");
+  }
+  if (!demande.signed_at) {
+    throw new SignatureRetenue(demande.associe_name + " n'a pas encore signé.");
+  }
+
+  const repris = await prisma.signature_requests.update({
+    where: { id: demande.id },
+    data: {
+      signature_data: null,
+      paraphe_data: null,
+      signed_at: null,
+      opened_at: null,
+      envoye_le: null,
+      remis_le: null,
+      mail_ouvert_le: null,
+      envoi_motif: null,
+      message_id: null,
+      /* Un jeton neuf : le lien déjà reçu cesse de fonctionner, sans quoi deux liens
+         vivraient dans la même boîte pour la même signature. */
+      token: jeton(),
+      status: "pending",
+    },
+  });
+
+  /* Effacer une signature recueillie se trace : c'est la seule pièce qui dira, plus
+     tard, pourquoi l'acte porte une signature datée d'un autre jour. */
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: demande.formalites.id,
+      actor_id: utilisateur.id,
+      actor_role: "client",
+      action: "signature_annulee",
+      target_field: demande.associe_name,
+      before_value: demande.signed_at.toISOString(),
+    },
+  });
+
+  const envoi = await adresserLaDemande(repris, demande.formalites.societe ?? "");
+  return { ...envoi, nom: demande.associe_name };
+}
+
+/**
  * Le tracé d'une signature recueillie, en octets.
  *
  * L'écran disait « Signé le 10 septembre à 23h41 » et rien d'autre : une date, sur la

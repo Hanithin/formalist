@@ -288,6 +288,9 @@ export function Actes({
   /* La même adresse pour deux signataires : on ne refuse pas, on demande. Voir
      adressesPartagees et le bloc de confirmation plus bas. */
   const [doublonsAConfirmer, setDoublonsAConfirmer] = useState(false);
+  /* La signature qu'on s'apprête à effacer. Un geste qui détruit ce qui a été
+     recueilli ne part pas d'un seul clic. */
+  const [annulationAConfirmer, setAnnulationAConfirmer] = useState<Suivi | null>(null);
   /* L'échec de production se dit sous le bouton qui l'a déclenché. Au bas de la page,
      sous la note à l'avocat, personne ne le lit. */
   const [enCours, demarrer] = useTransition();
@@ -363,6 +366,41 @@ export function Actes({
       await relireLeSuivi();
     })();
   }, [relireLeSuivi]);
+
+  /** Efface une signature recueillie, et redemande la même à la même personne. */
+  function annulerLaSignature(demande: Suivi) {
+    setMessage(null);
+    setAnnulationAConfirmer(null);
+
+    demarrer(async () => {
+      try {
+        const reponse = await fetch("/api/signature/annuler", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ demande: demande.id }),
+        });
+        const corps = (await reponse.json().catch(() => ({}))) as {
+          error?: string;
+          simule?: boolean;
+        };
+
+        if (!reponse.ok) {
+          setMessage({ ok: false, texte: corps.error ?? "La signature n'a pas pu être reprise" });
+          return;
+        }
+
+        setMessage({
+          ok: true,
+          texte: corps.simule
+            ? "Signature effacée. Nouveau lien simulé : aucune clé d'envoi sur cette machine."
+            : "Signature effacée. Un nouveau lien est parti à " + demande.nom + ".",
+        });
+      } finally {
+        await relireLeSuivi();
+        router.refresh();
+      }
+    });
+  }
 
   /** Renvoie le lien à une personne, sans toucher aux jetons des autres. */
   function relancer(demande: Suivi) {
@@ -756,9 +794,44 @@ export function Actes({
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                               className={styles.suiviTrace}
-                              src={"/api/signature/trace?demande=" + suivi.id}
+                              /*
+                                L'adresse porte la date de la signature.
+
+                                Le navigateur garde ce tracé une heure - il ne change
+                                pas, le jeton étant à usage unique. Il change pourtant
+                                depuis qu'une signature se reprend : sans ce repère,
+                                celui qui vient de refaire la sienne reverrait l'ancienne
+                                jusqu'à ce que le cache expire. Une signature reprise est
+                                une autre adresse, donc une autre image.
+                              */
+                              src={
+                                "/api/signature/trace?demande=" +
+                                suivi.id +
+                                "&v=" +
+                                suivi.signeeLe.getTime()
+                              }
                               alt={"Signature de " + d.nom}
                             />
+                          )}
+
+                          {/*
+                            Une signature se reprend.
+
+                            Un tracé de travers, un doigt qui dérape sur un téléphone,
+                            quelqu'un qui signe sans avoir relu : le circuit ne savait
+                            pas revenir en arrière, et l'écran n'offrait plus rien une
+                            fois la dernière signature recueillie.
+                          */}
+                          {suivi.signeeLe && (
+                            <button
+                              type="button"
+                              className={styles.suiviRelance}
+                              onClick={() => setAnnulationAConfirmer(suivi)}
+                              disabled={enCours}
+                            >
+                              <FlecheCirculaire />
+                              Refaire signer
+                            </button>
                           )}
 
                           {!suivi.signeeLe && (
@@ -818,6 +891,49 @@ export function Actes({
               <p className={styles.actesRelecture} role="status">
                 La signature s&apos;ouvrira dès que votre avocat aura validé vos actes.
               </p>
+            )}
+
+            {/*
+              Effacer une signature ne part pas d'un seul clic.
+
+              C'est la seule chose de ce bloc qui détruise quelque chose de recueilli, et
+              cela ne se rattrape pas : le tracé n'est gardé nulle part ailleurs. La
+              question dit ce qui disparaît et ce qui repart, avant.
+            */}
+            {annulationAConfirmer && (
+              <div
+                className={styles.doublons}
+                role="alertdialog"
+                aria-label="Reprendre une signature"
+              >
+                <p className={styles.doublonsTitre}>
+                  Effacer la signature de {annulationAConfirmer.nom} ?
+                </p>
+
+                <p className={styles.doublonsPrecision}>
+                  Son tracé disparaîtra des actes et ne pourra pas être rétabli. Un nouveau lien
+                  partira à {annulationAConfirmer.email}, et le lien qu&apos;elle a déjà reçu
+                  cessera de fonctionner.
+                </p>
+
+                <div className={styles.doublonsGestes}>
+                  <button
+                    type="button"
+                    className={styles.actesBouton}
+                    onClick={() => annulerLaSignature(annulationAConfirmer)}
+                    disabled={enCours}
+                  >
+                    Effacer et redemander
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.actesBouton} ${styles.actesBoutonRetenu}`}
+                    onClick={() => setAnnulationAConfirmer(null)}
+                  >
+                    Garder la signature
+                  </button>
+                </div>
+              </div>
             )}
 
             {/*

@@ -17,7 +17,9 @@ import { route } from "@/lib/reponses";
  * liste de quatre lignes pour un téléversement. Ici le navigateur la garde en cache, et
  * ne la redemande pas.
  */
-const DEMANDE = z.object({ demande: schemas.identifiant });
+/* `v` porte la date de la signature : elle ne sert qu'à distinguer deux adresses, pour
+   qu'une signature reprise ne se lise pas dans le cache du navigateur. */
+const DEMANDE = z.object({ demande: schemas.identifiant, v: z.string().max(20).optional() });
 
 export const GET = route(async (requete: Request) => {
   const utilisateur = await exigerUtilisateur();
@@ -32,9 +34,13 @@ export const GET = route(async (requete: Request) => {
     headers: {
       "Content-Type": "image/png",
       /*
-       * Privée, mais gardée : une signature ne change plus une fois recueillie - le
-       * jeton est à usage unique - et la ligne se réaffiche à chaque retour sur
-       * l'écran. « private » interdit les caches partagés, pas celui du navigateur.
+       * Privée, mais gardée : « private » interdit les caches partagés, pas celui du
+       * navigateur, et la ligne se réaffiche à chaque retour sur l'écran.
+       *
+       * Une signature peut désormais être reprise - c'est ce que fait « Refaire
+       * signer ». L'écran demande donc le tracé sous une adresse qui porte la date de
+       * la signature : une signature refaite est une autre adresse, et le cache de
+       * l'ancienne ne peut pas la masquer.
        */
       "Cache-Control": "private, max-age=3600",
     },
