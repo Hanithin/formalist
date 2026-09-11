@@ -1,7 +1,12 @@
 import { prisma } from "../client";
 import { nomDeLaSociete } from "@/domain/formalite/demande";
 import { exigerDossier, mesDossiers } from "./dossiers";
-import { typeValide, LONGUEUR_MAXIMALE } from "@/domain/messagerie/messages";
+import {
+  typeValide,
+  peutSupprimerUnMessage,
+  MENTION_SUPPRIME,
+  LONGUEUR_MAXIMALE,
+} from "@/domain/messagerie/messages";
 import type { UtilisateurConnecte } from "../sessions";
 import { prevenir } from "./avis";
 import { messageRecu, redireParCourriel } from "@/domain/formalite/avis";
@@ -27,9 +32,21 @@ export async function messagesDuDossier(utilisateur: UtilisateurConnecte, dossie
     id: m.id,
     expediteurId: m.sender_id,
     expediteur: m.users?.name ?? "Inconnu",
-    contenu: m.content,
-    type: m.kind,
-    fichier: m.file_path,
+    /*
+     * Un message retiré garde sa place, pas son contenu.
+     *
+     * Le faire disparaître laisserait un trou dans une conversation que l'autre partie
+     * avait peut-être déjà lue, et rien pour dire qu'il y avait là quelque chose. La
+     * mention tient la place ; ce qui ne doit plus être lu ne sort pas d'ici - ni le
+     * texte, ni le nom du fichier joint, ni le geste que son type réclamait.
+     */
+    contenu: m.supprime_le ? MENTION_SUPPRIME : m.content,
+    /* `!!` et non `!== null` : la colonne vaut `undefined` tant qu'un client Prisma
+       d'avant la migration tourne, et `undefined !== null` est vrai - tout le fil
+       passait alors pour supprimé. Ce qui compte est qu'une date soit posée. */
+    supprime: !!m.supprime_le,
+    type: m.supprime_le ? "text" : m.kind,
+    fichier: m.supprime_le ? null : m.file_path,
     // Le message auquel celui-ci répond : la bulle en cite un extrait.
     repondA: m.reply_to_id,
     lu: !!m.read,
@@ -153,6 +170,67 @@ async function prevenirLAutrePartie(
  * Sans cette ligne, un client qui remplit son dossier ne saurait pas qu'on l'attend
  * ailleurs.
  */
+/**
+ * Retire un message du fil, sans l'effacer de la base.
+ *
+ * L'avocat qui tient le dossier n'avait aucun moyen de le faire : ni pour son propre
+ * message, écrit trop vite ou dans le mauvais fil, ni pour celui d'un client qui vient
+ * de poster un relevé bancaire en clair ou un fichier destiné à un autre dossier. Il
+ * fallait passer par le support, qui ouvrait la base à la main.
+ *
+ * N'importe quel message du fil, non les siens seulement : un message du client envoyé
+ * par erreur est justement le cas où le retrait sert à quelque chose. Le client, lui,
+ * ne retire rien - ce qui s'échange ici fait partie du dossier, et l'y laisser est ce
+ * qui permet à chacun de s'y référer plus tard.
+ *
+ * La ligne reste, avec qui l'a retirée et quand. Sans cela, une suppression serait
+ * indiscernable d'un message qui n'aurait jamais existé, et personne ne pourrait
+ * répondre à « qu'est-ce qui a disparu de mon dossier ».
+ *
+ * La pièce jointe reste elle aussi sur le disque, et cesse simplement d'être nommée.
+ * L'effacer détruirait un fichier que le dossier a peut-être déjà repris ailleurs - une
+ * pièce versée au dossier vaut plus que l'octet qu'elle occupe.
+ */
+export async function supprimerMessage(utilisateur: UtilisateurConnecte, messageId: number) {
+  if (!peutSupprimerUnMessage(utilisateur.roles)) {
+    throw new SuppressionRefusee("Seul un avocat peut retirer un message d'un fil.");
+  }
+
+  const message = await prisma.messages.findUnique({
+    where: { id: messageId },
+    select: { id: true, formalite_id: true, supprime_le: true },
+  });
+  if (!message) return null;
+
+  /* L'accès reste celui du dossier : un avocat ne retire pas un message d'un fil qu'il
+     n'a pas le droit de lire. */
+  await exigerDossier(utilisateur, message.formalite_id);
+
+  if (message.supprime_le) return { dejaFait: true as const, dossierId: message.formalite_id };
+
+  await prisma.messages.update({
+    where: { id: message.id },
+    data: { supprime_le: new Date(), supprime_par: utilisateur.id },
+  });
+
+  await prisma.audit_log.create({
+    data: {
+      formalite_id: message.formalite_id,
+      actor_id: utilisateur.id,
+      actor_role: "avocat",
+      action: "message_supprime",
+      target_field: String(message.id),
+    },
+  });
+
+  return { dejaFait: false as const, dossierId: message.formalite_id };
+}
+
+/** Le retrait demandé par qui n'en a pas le droit. */
+export class SuppressionRefusee extends Error {
+  readonly statut = 403;
+}
+
 export async function dernierMotDuCabinet(utilisateur: UtilisateurConnecte, dossierId: number) {
   await exigerDossier(utilisateur, dossierId);
 
@@ -172,10 +250,12 @@ export async function dernierMotDuCabinet(utilisateur: UtilisateurConnecte, doss
   return {
     message: {
       auteur: dernier.users?.name ?? "Le cabinet",
-      contenu: dernier.content,
-      /* Le type dit la nature de la demande : une pièce réclamée, une correction. */
-      type: dernier.kind && dernier.kind !== "text" ? dernier.kind : null,
-      aUnePieceJointe: !!dernier.file_path,
+      contenu: dernier.supprime_le ? MENTION_SUPPRIME : dernier.content,
+      /* Le type dit la nature de la demande : une pièce réclamée, une correction. Un
+         message retiré n'en réclame plus aucune : le parcours ne doit pas continuer
+         d'afficher le geste attendu d'un message qui n'est plus là. */
+      type: !dernier.supprime_le && dernier.kind && dernier.kind !== "text" ? dernier.kind : null,
+      aUnePieceJointe: !dernier.supprime_le && !!dernier.file_path,
       envoyeLe: dernier.created_at.toISOString(),
     },
     nonLus,
@@ -250,7 +330,8 @@ export async function conversations(utilisateur: UtilisateurConnecte) {
         societe: d.societe || "Sans nom",
         forme: d.forme,
         avocat: d.assigned_avocat_id ? (nomsDAvocat.get(d.assigned_avocat_id) ?? null) : null,
-        dernierMessage: dernier?.content ?? null,
+        /* L'aperçu ne ressuscite pas ce que le fil ne montre plus. */
+        dernierMessage: dernier ? (dernier.supprime_le ? MENTION_SUPPRIME : dernier.content) : null,
         dernierAuteur: dernier?.users?.name ?? null,
         // « Vous : » devant l'aperçu quand c'est soi qui a écrit en dernier.
         dernierDeMoi: dernier ? dernier.sender_id === utilisateur.id : false,
@@ -303,9 +384,13 @@ export async function messagesDepuis(
     id: m.id,
     expediteurId: m.sender_id,
     expediteur: m.users?.name ?? "Inconnu",
-    contenu: m.content,
-    type: m.kind,
-    fichier: m.file_path,
+    contenu: m.supprime_le ? MENTION_SUPPRIME : m.content,
+    /* `!!` et non `!== null` : la colonne vaut `undefined` tant qu'un client Prisma
+       d'avant la migration tourne, et `undefined !== null` est vrai - tout le fil
+       passait alors pour supprimé. Ce qui compte est qu'une date soit posée. */
+    supprime: !!m.supprime_le,
+    type: m.supprime_le ? "text" : m.kind,
+    fichier: m.supprime_le ? null : m.file_path,
     repondA: m.reply_to_id,
     envoyeLe: m.created_at,
   }));

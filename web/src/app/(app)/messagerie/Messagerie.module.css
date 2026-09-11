@@ -40,6 +40,7 @@
 .chatBtnAttach,
 .chatBtnSend,
 .chatMsgReplyBtn,
+.chatMsgDeleteBtn,
 .chatMsgCta,
 .rcClose {
   margin: 0;
@@ -221,7 +222,9 @@
   border: 1px solid #ececef;
   border-radius: 100px;
   outline: none;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .convSearch input::placeholder {
@@ -347,7 +350,9 @@
   border-radius: 14px;
   font-family: inherit;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .wcv:hover {
@@ -889,7 +894,6 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-
 .chatMsgTime {
   margin: 3px 12px 0;
   font-size: 11px;
@@ -899,7 +903,6 @@
 .chatMsgSent .chatMsgTime {
   text-align: right;
 }
-
 
 /* La pastille du type, collée au-dessus de la bulle. */
 .chatMsgKind {
@@ -968,7 +971,10 @@
   justify-content: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    border-color 0.15s;
   padding: 0;
 }
 
@@ -994,6 +1000,174 @@
 .chatMsgWrap:hover .chatMsgReplyBtn,
 .chatMsgReplyBtn:focus-visible {
   opacity: 1;
+}
+
+/*
+ * Retirer un message : la croix suit le bouton de réponse, décalée.
+ *
+ * Même forme, même apparition au survol - ce sont deux gestes sur la même bulle. Le
+ * rouge ne vient qu'au survol de la croix : à l'arrêt, une pastille rouge sur chaque
+ * message d'un fil crierait un danger qui n'existe pas.
+ */
+.chatMsgDeleteBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #e5e5e7;
+  border-radius: 50%;
+  background: #fff;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.chatMsgDeleteBtn:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+.chatMsgDeleteBtn:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.chatMsgDeleteBtn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.chatMsgWrapSent .chatMsgDeleteBtn {
+  left: -70px;
+}
+
+.chatMsgWrapReceived .chatMsgDeleteBtn {
+  right: -70px;
+}
+
+.chatMsgWrap:hover .chatMsgDeleteBtn,
+.chatMsgDeleteBtn:focus-visible {
+  opacity: 1;
+}
+
+/*
+ * Ce qui tient la place d'un message retiré.
+ *
+ * En creux, non en bulle : le fil doit montrer qu'il y avait là quelque chose, sans
+ * donner à cette absence le poids d'un message. Le trait est discontinu - rien ne se
+ * lit à l'intérieur.
+ */
+.chatMsgVide {
+  background: none !important;
+  border: 1px dashed #e4e4e7 !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  padding: 7px 12px !important;
+}
+
+.chatMsgSupprime {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-style: italic;
+  color: #a1a1aa;
+  letter-spacing: 0;
+}
+
+.chatMsgSupprime svg {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+}
+
+/* ---------- Retirer un message ---------- */
+
+/*
+ * La question, au-dessus de la barre d'écriture.
+ *
+ * C'est le seul geste de cet écran qui ôte quelque chose du dossier d'un client, et il
+ * n'y a pas de retour. En ambre : rien n'est cassé, on demande - comme partout ailleurs
+ * dans l'application.
+ */
+.chatRetrait {
+  margin: 0 20px 12px;
+  padding: 14px 16px;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #fffbf5;
+}
+
+.chatRetraitTitre {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #9a3412;
+  letter-spacing: 0;
+}
+
+.chatRetraitExtrait {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #7c2d12;
+}
+
+.chatRetraitNote {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #9a5b3a;
+}
+
+.chatRetraitGestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chatRetraitConfirme,
+.chatRetraitAnnule {
+  padding: 8px 15px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.chatRetraitConfirme {
+  border: 1px solid #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.chatRetraitConfirme:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.chatRetraitAnnule {
+  border: 1px solid #e5e5e7;
+  background: #fff;
+  color: #52525b;
+}
+
+.chatRetraitAnnule:hover {
+  border-color: #d4d4d8;
+  color: #18181b;
 }
 
 /* Le message cité, dans la bulle qui lui répond. */
@@ -1148,8 +1322,6 @@
   color: #111;
 }
 
-
-
 .chatInputArea input[type="file"] {
   display: none;
 }
@@ -1212,8 +1384,6 @@
   background: #d4d4d8;
   cursor: default;
 }
-
-
 
 /*
  * Un bouton d'envoi vide reste lisible.

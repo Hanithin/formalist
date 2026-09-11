@@ -46,6 +46,16 @@ export function Avion() {
   );
 }
 
+/** Un cercle barré : ce qui était là a été retiré du fil. */
+export function Interdit() {
+  return (
+    <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="1.9" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
+    </svg>
+  );
+}
+
 export function Croix() {
   return (
     <svg viewBox="0 0 24 24" {...TRAITS} strokeWidth="2" aria-hidden="true">

@@ -220,9 +220,7 @@ export function apercuDeConversation(dernier: {
   if (!texte) return "Aucun message";
 
   const complet = (dernier.deMoi ? "Vous : " : "") + texte;
-  return complet.length > LONGUEUR_APERCU
-    ? complet.slice(0, LONGUEUR_APERCU) + "…"
-    : complet;
+  return complet.length > LONGUEUR_APERCU ? complet.slice(0, LONGUEUR_APERCU) + "…" : complet;
 }
 
 export interface Message {
@@ -273,3 +271,22 @@ export function libelleJour(jour: string, maintenant: Date = new Date()): string
 }
 
 export const LONGUEUR_MAXIMALE = 5000;
+
+/**
+ * Qui peut retirer un message d'un fil.
+ *
+ * L'avocat qui tient le dossier, et lui seul. Un client ne retire pas ce qu'il a écrit à
+ * son conseil : ce qui s'échange ici fait partie du dossier, et l'y laisser est
+ * précisément ce qui permet à chacun de s'y référer plus tard. L'avocat, lui, en répond
+ * - c'est à lui d'écarter un relevé bancaire posté en clair, un fichier destiné à un
+ * autre dossier, ou sa propre réponse écrite trop vite.
+ *
+ * N'importe quel message du fil, non les siens seulement : un message du client envoyé
+ * par erreur est justement le cas où le retrait sert à quelque chose.
+ */
+export function peutSupprimerUnMessage(roles: readonly string[]): boolean {
+  return roles.includes("avocat") || roles.includes("admin");
+}
+
+/** Ce qui tient la place d'un message retiré, des deux côtés du fil. */
+export const MENTION_SUPPRIME = "Message supprimé";

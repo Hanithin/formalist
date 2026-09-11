@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { conversations, messagesDuDossier } from "@/infrastructure/db/depots/messages";
 import { messagesDe, nonLus as nonLusDuSupport } from "@/infrastructure/db/depots/support";
+import { peutSupprimerUnMessage } from "@/domain/messagerie/messages";
 import { Messagerie, type Fil, type MessageAffiche } from "./Messagerie";
 
 export const metadata: Metadata = {
@@ -114,6 +115,8 @@ export default async function PageMessagerie({
       type: null,
       fichier: m.fichier,
       repondA: null,
+      /* Le support est une autre table, qui ne connaît pas le retrait. */
+      supprime: false,
       // La colonne created_at du support accepte le nul : un message sans date se
       // place à l'instant de la lecture plutôt que de faire tomber la page.
       envoyeLe: (m.envoyeLe ?? new Date()).toISOString(),
@@ -128,6 +131,7 @@ export default async function PageMessagerie({
       type: m.type,
       fichier: m.fichier,
       repondA: m.repondA,
+      supprime: m.supprime,
       envoyeLe: m.envoyeLe.toISOString(),
     }));
   }
@@ -141,6 +145,9 @@ export default async function PageMessagerie({
       filActif={actif?.cle ?? ""}
       messagesInitiaux={messages}
       moi={utilisateur.id}
+      /* La croix ne s'affiche qu'à qui en a le droit. Le refus tient au serveur : un
+         écran se contourne, la requête part d'un navigateur. */
+      peutSupprimer={peutSupprimerUnMessage(utilisateur.roles)}
     />
   );
 }

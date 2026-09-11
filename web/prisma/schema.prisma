@@ -218,6 +218,8 @@ model messages {
   file_path    String?
   kind         String?    @default("text")
   reply_to_id  Int?
+  supprime_le  DateTime?  @db.Timestamptz(6)
+  supprime_par Int?
   formalites   formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users        users      @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

@@ -12,12 +12,14 @@ import {
   heureCourte,
   dateCourte,
   apercuDeConversation,
+  MENTION_SUPPRIME,
 } from "@/domain/messagerie/messages";
 import {
   Loupe,
   Bulle,
   Trombone,
   Croix,
+  Interdit,
   FlecheRetour,
   FlecheDroite,
   Televersement,
@@ -58,6 +60,8 @@ export interface MessageAffiche {
   type: string | null;
   fichier: string | null;
   repondA: number | null;
+  /** Retiré du fil par l'avocat : la mention tient la place, sans le contenu. */
+  supprime: boolean;
   envoyeLe: string;
 }
 
@@ -74,6 +78,14 @@ interface Props {
    * toute messagerie. C'est celui qui regarde qui décide.
    */
   moi: number;
+  /**
+   * L'avocat peut retirer un message du fil, le client non.
+   *
+   * Ce qui s'échange ici fait partie du dossier : l'y laisser est ce qui permet à
+   * chacun de s'y référer plus tard. L'avocat, lui, en répond - c'est à lui d'écarter
+   * un relevé bancaire posté en clair ou un fichier destiné à un autre dossier.
+   */
+  peutSupprimer: boolean;
 }
 
 /** Les classes de bulle par type, le CSS module n'acceptant pas de nom calculé. */
@@ -86,13 +98,50 @@ const CLASSES_DE_TYPE: Record<string, string | undefined> = {
   status_note: styles.kindStatusNote,
 };
 
-export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
+export function Messagerie({ fils, filActif, messagesInitiaux, moi, peutSupprimer }: Props) {
   const [messages, setMessages] = useState(messagesInitiaux);
   const [recherche, setRecherche] = useState("");
   const [repondA, setRepondA] = useState<MessageAffiche | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [brouillon, setBrouillon] = useState("");
   const [enCours, demarrer] = useTransition();
+  /* Le message qu'on s'apprête à retirer : un geste qui ôte quelque chose du dossier
+     d'un client ne part pas d'un seul clic. */
+  const [aRetirer, setARetirer] = useState<MessageAffiche | null>(null);
+
+  /**
+   * Retire un message du fil.
+   *
+   * L'écran ne recharge pas tout : la bulle devient la mention, à sa place. C'est
+   * exactement ce que le serveur rendra à la prochaine lecture, et cela évite de faire
+   * sauter le fil sous les yeux de celui qui vient de cliquer.
+   */
+  function retirer(message: MessageAffiche) {
+    setARetirer(null);
+    setErreur(null);
+
+    demarrer(async () => {
+      const reponse = await fetch("/api/messages/supprimer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message.id }),
+      });
+
+      if (!reponse.ok) {
+        const corps = (await reponse.json().catch(() => ({}))) as { error?: string };
+        setErreur(corps.error ?? "Le message n'a pas pu être retiré");
+        return;
+      }
+
+      setMessages((liste) =>
+        liste.map((m) =>
+          m.id === message.id
+            ? { ...m, supprime: true, contenu: MENTION_SUPPRIME, type: null, fichier: null }
+            : m
+        )
+      );
+    });
+  }
 
   const filRef = useRef<HTMLDivElement>(null);
   const champRef = useRef<HTMLInputElement>(null);
@@ -130,9 +179,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
   useEffect(() => {
     if (!actif || actif.genre !== "dossier" || actif.dossierId === null) return;
 
-    const dernier = messagesInitiaux.length
-      ? messagesInitiaux[messagesInitiaux.length - 1].id
-      : 0;
+    const dernier = messagesInitiaux.length ? messagesInitiaux[messagesInitiaux.length - 1].id : 0;
     const source = new EventSource(
       "/api/messages/flux?dossier=" + actif.dossierId + "&depuis=" + dernier
     );
@@ -223,7 +270,10 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
   }
 
   const visibles = useMemo(
-    () => fils.filter((f) => correspond({ titre: f.titre, dernierMessage: f.dernierMessage }, recherche)),
+    () =>
+      fils.filter((f) =>
+        correspond({ titre: f.titre, dernierMessage: f.dernierMessage }, recherche)
+      ),
     [fils, recherche]
   );
 
@@ -287,9 +337,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
             <div className={styles.chatViewHeader}>
               <div className={styles.chatViewInfo}>
                 <span
-                  className={
-                    estSupport ? `${styles.avBig} ${styles.avBigSupport}` : styles.avBig
-                  }
+                  className={estSupport ? `${styles.avBig} ${styles.avBigSupport}` : styles.avBig}
                   aria-hidden="true"
                 >
                   {initiales(actif.titre)}
@@ -308,10 +356,7 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
               </div>
 
               {actif.genre === "dossier" && actif.dossierId !== null && (
-                <a
-                  className={styles.chatBackBtn}
-                  href={"/creation?dossier=" + actif.dossierId}
-                >
+                <a className={styles.chatBackBtn} href={"/creation?dossier=" + actif.dossierId}>
                   <FlecheDroite />
                   Ouvrir le dossier
                 </a>
@@ -373,59 +418,84 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
                             className={[
                               styles.chatMsg,
                               deMoi ? styles.chatMsgSent : styles.chatMsgReceived,
+                              /* La bulle s'efface avec son contenu : garder le fond
+                                 d'un message envoyé donnerait à son absence le poids
+                                 qu'avait le message. */
+                              m.supprime ? styles.chatMsgVide : "",
                               type ? styles.chatMsgTypeE : "",
                               type ? (CLASSES_DE_TYPE[type] ?? "") : "",
                             ]
                               .filter(Boolean)
                               .join(" ")}
                           >
-                            {cite && (
-                              <div className={styles.chatMsgQuote}>
-                                <div className={styles.chatMsgQuoteSender}>{cite.expediteur}</div>
-                                {citation(cite.contenu)}
-                              </div>
-                            )}
+                            {/*
+                              Un message retiré ne porte plus rien de ce qu'il portait.
 
-                            {m.contenu && <div>{m.contenu}</div>}
+                              Ni la citation de ce à quoi il répondait, ni sa pièce
+                              jointe, ni le geste que son type réclamait : il n'en
+                              reste que la mention, en retrait, à la place qu'il
+                              occupait dans la conversation.
+                            */}
+                            {m.supprime ? (
+                              <span className={styles.chatMsgSupprime}>
+                                <Interdit />
+                                {MENTION_SUPPRIME}
+                              </span>
+                            ) : (
+                              <>
+                                {cite && (
+                                  <div className={styles.chatMsgQuote}>
+                                    <div className={styles.chatMsgQuoteSender}>
+                                      {cite.expediteur}
+                                    </div>
+                                    {citation(cite.contenu)}
+                                  </div>
+                                )}
 
-                            {m.fichier && (
-                              <a
-                                className={styles.chatMsgFile}
-                                href={"/api/fichier?nom=" + encodeURIComponent(m.fichier)}
-                              >
-                                <PieceJointe />
-                                Pièce jointe
-                              </a>
-                            )}
+                                {m.contenu && <div>{m.contenu}</div>}
 
-                            {/* Le geste attendu, du côté de qui le reçoit. */}
-                            {type && !deMoi && genre.action === "dossier" && actif.dossierId && (
-                              <a
-                                className={styles.chatMsgCta}
-                                href={"/creation?dossier=" + actif.dossierId}
-                              >
-                                <FlecheDroite />
-                                {genre.libelleAction}
-                              </a>
-                            )}
-                            {type && !deMoi && genre.action === "piece" && (
-                              <button
-                                type="button"
-                                className={styles.chatMsgCta}
-                                onClick={() => fichierRef.current?.click()}
-                              >
-                                <Televersement />
-                                {genre.libelleAction}
-                              </button>
-                            )}
+                                {m.fichier && (
+                                  <a
+                                    className={styles.chatMsgFile}
+                                    href={"/api/fichier?nom=" + encodeURIComponent(m.fichier)}
+                                  >
+                                    <PieceJointe />
+                                    Pièce jointe
+                                  </a>
+                                )}
 
+                                {/* Le geste attendu, du côté de qui le reçoit. */}
+                                {type &&
+                                  !deMoi &&
+                                  genre.action === "dossier" &&
+                                  actif.dossierId && (
+                                    <a
+                                      className={styles.chatMsgCta}
+                                      href={"/creation?dossier=" + actif.dossierId}
+                                    >
+                                      <FlecheDroite />
+                                      {genre.libelleAction}
+                                    </a>
+                                  )}
+                                {type && !deMoi && genre.action === "piece" && (
+                                  <button
+                                    type="button"
+                                    className={styles.chatMsgCta}
+                                    onClick={() => fichierRef.current?.click()}
+                                  >
+                                    <Televersement />
+                                    {genre.libelleAction}
+                                  </button>
+                                )}
+                              </>
+                            )}
                           </div>
 
                           <div className={styles.chatMsgTime}>
                             {heureCourte(new Date(m.envoyeLe))}
                           </div>
 
-                          {actif.genre === "dossier" && (
+                          {actif.genre === "dossier" && !m.supprime && (
                             <button
                               type="button"
                               className={styles.chatMsgReplyBtn}
@@ -437,6 +507,28 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
                               }}
                             >
                               <FlecheRetour />
+                            </button>
+                          )}
+
+                          {/*
+                            Retirer un message : à l'avocat, jamais au client.
+
+                            Ce qui s'échange ici fait partie du dossier, et l'y laisser
+                            est ce qui permet à chacun de s'y référer plus tard.
+                            L'avocat, lui, en répond - c'est à lui d'écarter un relevé
+                            bancaire posté en clair ou un fichier destiné à un autre
+                            dossier, fût-il écrit par le client.
+                          */}
+                          {peutSupprimer && actif.genre === "dossier" && !m.supprime && (
+                            <button
+                              type="button"
+                              className={styles.chatMsgDeleteBtn}
+                              title={"Retirer le message de " + m.expediteur}
+                              aria-label={"Retirer le message de " + m.expediteur}
+                              onClick={() => setARetirer(m)}
+                              disabled={enCours}
+                            >
+                              <Croix />
                             </button>
                           )}
                         </div>
@@ -462,6 +554,50 @@ export function Messagerie({ fils, filActif, messagesInitiaux, moi }: Props) {
                 >
                   <Croix />
                 </button>
+              </div>
+            )}
+
+            {/*
+              Retirer un message ne part pas d'un seul clic.
+
+              C'est le seul geste de cet écran qui ôte quelque chose du dossier d'un
+              client, et il n'y a pas de retour : la mention restera. La question cite
+              l'auteur et un extrait, pour qu'on retire bien celui qu'on croit.
+            */}
+            {aRetirer && (
+              <div
+                className={styles.chatRetrait}
+                role="alertdialog"
+                aria-label="Retirer un message"
+              >
+                <p className={styles.chatRetraitTitre}>
+                  Retirer le message de {aRetirer.expediteur} ?
+                </p>
+                <p className={styles.chatRetraitExtrait}>
+                  «&nbsp;{citation(aRetirer.contenu)}&nbsp;»
+                </p>
+                <p className={styles.chatRetraitNote}>
+                  Il disparaîtra du fil des deux côtés, remplacé par la mention «&nbsp;
+                  {MENTION_SUPPRIME}&nbsp;». Le dossier en garde la trace, mais le contenu ne sera
+                  plus lisible.
+                </p>
+                <div className={styles.chatRetraitGestes}>
+                  <button
+                    type="button"
+                    className={styles.chatRetraitConfirme}
+                    onClick={() => retirer(aRetirer)}
+                    disabled={enCours}
+                  >
+                    Retirer le message
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.chatRetraitAnnule}
+                    onClick={() => setARetirer(null)}
+                  >
+                    Le garder
+                  </button>
+                </div>
               </div>
             )}
 
@@ -614,8 +750,8 @@ function Accueil({ fils, surChoix }: { fils: Fil[]; surChoix: (cle: string) => v
         </div>
         <h2 className={styles.welcomeTitle}>Choisissez une conversation</h2>
         <p className={styles.welcomeDesc}>
-          Un fil par dossier avec l&apos;avocat qui le suit, et un fil avec le support
-          pour tout le reste.
+          Un fil par dossier avec l&apos;avocat qui le suit, et un fil avec le support pour tout le
+          reste.
         </p>
 
         {fils.length > 0 && (
