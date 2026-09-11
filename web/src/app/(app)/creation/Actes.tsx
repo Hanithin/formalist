@@ -12,6 +12,7 @@ import {
   dateDuJalon,
   libelleJalon,
   conseilDuJalon,
+  adressesPartagees,
   peutRelancer,
   type JalonEnvoi,
   type SuiviDemande,
@@ -284,6 +285,9 @@ export function Actes({
    */
   const [demandes, setDemandes] = useState<Suivi[] | null>(null);
   const [relance, setRelance] = useState<number | null>(null);
+  /* La même adresse pour deux signataires : on ne refuse pas, on demande. Voir
+     adressesPartagees et le bloc de confirmation plus bas. */
+  const [doublonsAConfirmer, setDoublonsAConfirmer] = useState(false);
   /* L'échec de production se dit sous le bouton qui l'a déclenché. Au bas de la page,
      sous la note à l'avocat, personne ne le lit. */
   const [enCours, demarrer] = useTransition();
@@ -401,8 +405,26 @@ export function Actes({
     });
   }
 
-  function ouvrirSignatures() {
+  /* Ceux qui se partagent une boîte, s'il y en a. Recalculé à chaque frappe : corriger
+     l'adresse fait disparaître la question sans qu'on ait à la refermer. */
+  const partagees = adressesPartagees(signataires);
+
+  function ouvrirSignatures(doublonsAcceptes = false) {
     setMessage(null);
+
+    /*
+     * On ne signe pas deux fois dans la même boîte sans l'avoir voulu.
+     *
+     * Deux jetons à la même adresse, ce sont deux signatures que la même personne peut
+     * tracer - l'une sous son nom, l'autre sous celui d'un associé qui n'a rien vu.
+     * C'est parfois délibéré, souvent un copier-coller : on demande plutôt que de
+     * refuser, et la question se pose ici, au-dessus des champs qui la règlent.
+     */
+    if (partagees.length > 0 && !doublonsAcceptes) {
+      setDoublonsAConfirmer(true);
+      return;
+    }
+    setDoublonsAConfirmer(false);
 
     demarrer(async () => {
       const reponse = await fetch("/api/signature", {
@@ -436,21 +458,29 @@ export function Actes({
       const partis = corps.courrielsPartis ?? 0;
       const simules = corps.simules ?? 0;
 
+      /*
+       * La machine de développement se dit avant le compte.
+       *
+       * Les lignes annoncent « Envoyé » - c'est ce qui advient de la demande, et sans
+       * clé d'envoi c'est le fonctionnement normal. Mais ce message-ci ne s'affiche
+       * qu'une fois, au moment du geste : c'est le seul endroit où dire que rien n'a
+       * quitté la machine, et « 2 liens sont partis » y serait faux à la lettre.
+       */
       setMessage(
-        partis > 0
+        simules > 0
           ? {
               ok: true,
               texte:
-                partis > 1
-                  ? partis + " liens de signature sont partis."
-                  : "Le lien de signature est parti.",
+                "Demandes créées. Aucune clé d'envoi sur cette machine : les messages " +
+                "sont simulés, et les liens s'ouvrent depuis le journal du serveur.",
             }
-          : simules > 0
+          : partis > 0
             ? {
                 ok: true,
                 texte:
-                  "Demandes créées. Aucune clé d'envoi sur cette machine : les messages " +
-                  "sont simulés, et les liens s'ouvrent depuis le journal du serveur.",
+                  partis > 1
+                    ? partis + " liens de signature sont partis."
+                    : "Le lien de signature est parti.",
               }
             : {
                 ok: false,
@@ -791,6 +821,57 @@ export function Actes({
             )}
 
             {/*
+              La question posée là où on peut y répondre.
+
+              Un dirigeant qui signe pour deux entités, un couple qui n'a qu'une boîte,
+              un cabinet qui centralise : ce n'est pas nécessairement une faute, et
+              refuser serait aussi faux que de laisser passer sans rien dire. La
+              question se pose au-dessus des champs qui la règlent, et disparaît dès
+              qu'une adresse change - il n'y a rien à refermer.
+            */}
+            {doublonsAConfirmer && partagees.length > 0 && (
+              <div className={styles.doublons} role="alertdialog" aria-label="Adresse partagée">
+                <p className={styles.doublonsTitre}>
+                  {partagees.length > 1
+                    ? "Plusieurs adresses servent à deux signataires"
+                    : "Deux signataires ont la même adresse"}
+                </p>
+
+                <ul className={styles.doublonsListe}>
+                  {partagees.map((g) => (
+                    <li key={g.email}>
+                      <strong>{g.noms.join(" et ")}</strong> recevront tous deux leur lien à{" "}
+                      {g.email}
+                    </li>
+                  ))}
+                </ul>
+
+                <p className={styles.doublonsPrecision}>
+                  Qui ouvre cette boîte pourra signer pour l&apos;un comme pour l&apos;autre. Si
+                  c&apos;est voulu, poursuivez ; sinon, corrigez l&apos;adresse ci-dessus.
+                </p>
+
+                <div className={styles.doublonsGestes}>
+                  <button
+                    type="button"
+                    className={styles.actesBouton}
+                    onClick={() => ouvrirSignatures(true)}
+                    disabled={enCours}
+                  >
+                    C&apos;est voulu, envoyer
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.actesBouton} ${styles.actesBoutonRetenu}`}
+                    onClick={() => setDoublonsAConfirmer(false)}
+                  >
+                    Corriger l&apos;adresse
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/*
               Le circuit se rouvre, il ne se répète pas.
 
               Le bouton crée les demandes et supprime celles qui ne sont pas signées :
@@ -804,7 +885,7 @@ export function Actes({
                 className={[styles.actesBouton, circuitOuvert && styles.actesBoutonRetenu]
                   .filter(Boolean)
                   .join(" ")}
-                onClick={ouvrirSignatures}
+                onClick={() => ouvrirSignatures()}
                 /* Rien à signer tant que rien n'est produit, rien qui ne soit relu, et
                personne à qui l'envoyer sans adresse email. */
                 disabled={

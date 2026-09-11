@@ -7,6 +7,7 @@ import {
   DELAI_ENTRE_RELANCES,
   MOTIF_REJET,
   conseilDuJalon,
+  adressesPartagees,
   type SuiviDemande,
 } from "@/domain/formalite/signature";
 
@@ -141,5 +142,67 @@ describe("la relance", () => {
     /* C'est précisément le cas où l'on en a besoin : le premier envoi a échoué, et le
        jeton dort en base sans que personne ne l'ait reçu. */
     expect(peutRelancer(VIDE, MERCREDI)).toBe(true);
+  });
+});
+
+describe("les adresses partagées par plusieurs signataires", () => {
+  it("ne signale rien quand chacun a la sienne", () => {
+    expect(
+      adressesPartagees([
+        { nom: "Jean Dupont", email: "jean@exemple.fr" },
+        { nom: "Claire Martin", email: "claire@exemple.fr" },
+      ])
+    ).toEqual([]);
+  });
+
+  it("réunit ceux qui se partagent une boîte", () => {
+    /*
+     * Ce n'est pas nécessairement une erreur - un couple, un cabinet qui centralise -
+     * mais c'est le plus souvent un copier-coller. Et deux jetons dans la même boîte,
+     * ce sont deux signatures que la même personne peut tracer : l'une sous son nom,
+     * l'autre sous celui d'un associé qui n'a rien vu.
+     */
+    expect(
+      adressesPartagees([
+        { nom: "Jean Dupont", email: "contact@exemple.fr" },
+        { nom: "Claire Martin", email: "contact@exemple.fr" },
+        { nom: "Paul Leroy", email: "paul@exemple.fr" },
+      ])
+    ).toEqual([{ email: "contact@exemple.fr", noms: ["Jean Dupont", "Claire Martin"] }]);
+  });
+
+  it("ne se laisse pas tromper par la casse ni les espaces", () => {
+    const partagees = adressesPartagees([
+      { nom: "Jean Dupont", email: "Contact@Exemple.fr" },
+      { nom: "Claire Martin", email: "  contact@exemple.fr " },
+    ]);
+    expect(partagees).toHaveLength(1);
+    expect(partagees[0].noms).toEqual(["Jean Dupont", "Claire Martin"]);
+  });
+
+  it("tient deux alias d'un même fournisseur pour deux adresses", () => {
+    /*
+     * Les points de Gmail et le « + » désignent la même boîte, et l'on pourrait les
+     * réduire. Ce serait décider à la place du client que deux adresses distinctes n'en
+     * font qu'une - précisément ce qu'on lui demande de trancher.
+     */
+    expect(
+      adressesPartagees([
+        { nom: "Jean Dupont", email: "jean@exemple.fr" },
+        { nom: "Claire Martin", email: "jean+claire@exemple.fr" },
+      ])
+    ).toEqual([]);
+  });
+
+  it("ignore les adresses vides, qui sont un autre problème", () => {
+    /* Une adresse manquante se dit déjà sur sa ligne, et la demande ne part pas sans
+       elle : la compter comme un doublon ferait demander une confirmation pour deux
+       champs que personne n'a remplis. */
+    expect(
+      adressesPartagees([
+        { nom: "Jean Dupont", email: "" },
+        { nom: "Claire Martin", email: "" },
+      ])
+    ).toEqual([]);
   });
 });

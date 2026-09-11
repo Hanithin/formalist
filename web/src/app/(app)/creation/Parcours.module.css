@@ -3785,6 +3785,59 @@
   cursor: default;
 }
 
+/* ---------- Deux signataires, une seule adresse ---------- */
+
+/*
+ * La question, posée au-dessus des champs qui la règlent.
+ *
+ * Ni un refus ni un silence : un dirigeant qui signe pour deux entités, un couple qui
+ * n'a qu'une boîte, c'est légitime - un copier-coller entre deux lignes voisines l'est
+ * moins, et c'est le cas le plus fréquent. Le bloc se pose entre la liste et le bouton,
+ * là où l'on vient de cliquer et à un champ de distance de la correction.
+ *
+ * En ambre et non en rouge : rien n'est cassé, on demande.
+ */
+.doublons {
+  margin: 4px 0 18px;
+  padding: 16px 18px;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #fffbf5;
+}
+
+.doublonsTitre {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #9a3412;
+  letter-spacing: 0;
+}
+
+.doublonsListe {
+  margin: 0 0 10px;
+  padding: 0 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #7c2d12;
+}
+
+.doublonsListe strong {
+  font-weight: 600;
+}
+
+.doublonsPrecision {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #9a5b3a;
+}
+
+.doublonsGestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 /*
  * Rouvrir le circuit n'est pas l'action principale : c'est le contraire.
  *

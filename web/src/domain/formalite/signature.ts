@@ -162,6 +162,41 @@ export function libelleJalon(jalon: JalonEnvoi): string {
 }
 
 /**
+ * Les adresses que plusieurs signataires se partagent.
+ *
+ * Ce n'est pas nécessairement une erreur - un dirigeant qui signe pour deux sociétés
+ * d'un même groupe, un couple qui n'a qu'une boîte, un cabinet qui centralise - mais
+ * c'est le plus souvent un copier-coller. Le confondre avec une faute et refuser serait
+ * aussi faux que de laisser passer sans rien dire : on demande.
+ *
+ * Ce qui se joue n'est pas seulement une commodité. Chaque demande porte son jeton, et
+ * deux jetons dans la même boîte, ce sont deux signatures que la même personne peut
+ * tracer - l'une sous son nom, l'autre sous celui d'un associé qui n'a rien vu. Sur un
+ * acte constitutif, cela se remarque le jour où quelqu'un le conteste.
+ *
+ * La comparaison est insensible à la casse et aux espaces de bordure, et s'arrête là :
+ * tenir les alias d'un fournisseur pour la même boîte - les points de Gmail, le « + » -
+ * reviendrait à décider à la place du client que deux adresses distinctes n'en font
+ * qu'une, ce qui est précisément ce qu'on lui demande.
+ */
+export function adressesPartagees(
+  signataires: { nom: string; email: string }[]
+): { email: string; noms: string[] }[] {
+  const parAdresse = new Map<string, { email: string; noms: string[] }>();
+
+  for (const s of signataires) {
+    const clef = s.email.trim().toLowerCase();
+    if (!clef) continue;
+
+    const groupe = parAdresse.get(clef);
+    if (groupe) groupe.noms.push(s.nom);
+    else parAdresse.set(clef, { email: s.email.trim(), noms: [s.nom] });
+  }
+
+  return [...parAdresse.values()].filter((g) => g.noms.length > 1);
+}
+
+/**
  * Peut-on relancer cette personne ?
  *
  * Pas celle qui a signé - il n'y a plus rien à lui demander. Pas deux fois dans la
