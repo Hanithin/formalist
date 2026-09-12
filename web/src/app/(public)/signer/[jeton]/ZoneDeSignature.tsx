@@ -1,7 +1,35 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { ADRESSE_SITE } from "@/lib/site";
 import styles from "./Signature.module.css";
+
+/**
+ * Ce que la signature vient de changer, dit juste.
+ *
+ * « Tous les associés ont signé » s'affichait à l'associée unique d'une SASU, qui
+ * venait de signer seule : la phrase parle d'un collectif qui n'existe pas. Et
+ * « nous attendons encore les autres » ne disait pas combien, alors que le chiffre
+ * est connu et que c'est la seule chose qu'on veuille savoir.
+ */
+export function confirmation(corps: {
+  complet?: boolean;
+  restants?: number;
+  seul?: boolean;
+}): string {
+  if (corps.complet) {
+    return corps.seul
+      ? "Votre signature est enregistrée. Le dossier peut avancer."
+      : "Signature enregistrée. Tous les associés ont signé, le dossier peut avancer.";
+  }
+
+  const restants = corps.restants ?? 0;
+  if (restants === 1) return "Signature enregistrée. Il reste une signature à recueillir.";
+  if (restants > 1) {
+    return "Signature enregistrée. Il reste " + restants + " signatures à recueillir.";
+  }
+  return "Signature enregistrée.";
+}
 
 /**
  * Zone de signature.
@@ -195,12 +223,7 @@ export function ZoneDeSignature({
 
       setRetour(
         reponse.ok
-          ? {
-              ok: true,
-              texte: corps.complet
-                ? "Signature enregistrée. Tous les associés ont signé, le dossier peut avancer."
-                : "Signature enregistrée. Nous attendons encore les autres associés.",
-            }
+          ? { ok: true, texte: confirmation(corps) }
           : { ok: false, texte: corps.error ?? "La signature n'a pas pu être enregistrée" }
       );
     });
@@ -208,9 +231,26 @@ export function ZoneDeSignature({
 
   if (retour?.ok) {
     return (
-      <p role="status" className={styles.confirmation}>
-        {retour.texte}
-      </p>
+      <div className={styles.apresSignature}>
+        <p role="status" className={styles.confirmation}>
+          {retour.texte}
+        </p>
+
+        {/*
+          Où aller ensuite.
+
+          La page s'arrêtait sur sa phrase verte, et l'on restait devant un écran mort :
+          celui qui signe n'a pas de compte chez nous, il est arrivé par un lien reçu
+          par courriel. Il lui faut une sortie - et c'est le seul moment où il nous
+          regarde.
+        */}
+        <p className={styles.apresSignatureTexte}>
+          Formalist crée, modifie et ferme les sociétés en ligne, avec un avocat.
+        </p>
+        <a className={styles.apresSignatureBouton} href={ADRESSE_SITE}>
+          Découvrir Formalist
+        </a>
+      </div>
     );
   }
 

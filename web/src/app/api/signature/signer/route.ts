@@ -39,7 +39,12 @@ export const POST = route(async (requete: Request) => {
       );
     }
 
-    return NextResponse.json({ ok: true, complet: resultat.complet });
+    return NextResponse.json({
+      ok: true,
+      complet: resultat.complet,
+      restants: resultat.restants,
+      seul: resultat.seul,
+    });
   } catch (e) {
     if (e instanceof SignatureRefusee) {
       return NextResponse.json({ error: e.message }, { status: 400 });

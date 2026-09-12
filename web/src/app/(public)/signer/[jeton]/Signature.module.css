@@ -231,3 +231,40 @@
   color: #065f46;
   font-size: 15px;
 }
+
+/*
+ * Après la signature, une sortie.
+ *
+ * La page s'arrêtait sur sa phrase verte : celui qui signe n'a pas de compte ici, il
+ * est arrivé par un lien reçu par courriel, et restait devant un écran mort. C'est
+ * aussi le seul moment où il nous regarde.
+ */
+.apresSignature {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.apresSignatureTexte {
+  margin: 26px 0 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #52525b;
+}
+
+.apresSignatureBouton {
+  display: inline-flex;
+  align-items: center;
+  padding: 11px 20px;
+  border-radius: 10px;
+  background: #18181b;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  letter-spacing: 0;
+}
+
+.apresSignatureBouton:hover {
+  background: #27272a;
+}

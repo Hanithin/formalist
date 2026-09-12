@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Dancing_Script, Great_Vibes } from "next/font/google";
 import { ouvrirLienDeSignature } from "@/infrastructure/db/depots/signatures";
 import { accordDuSignataire } from "@/domain/formalite/signature";
+import { ADRESSE_SITE } from "@/lib/site";
 import { ZoneDeSignature } from "./ZoneDeSignature";
 import styles from "./Signature.module.css";
 
@@ -40,10 +41,18 @@ export default async function Signer({ params }: { params: Promise<{ jeton: stri
     return (
       <main className={styles.page}>
         <h1>Vous avez déjà signé</h1>
-        <p>
-          Votre signature pour {demande.societe} a bien été enregistrée. Vous pouvez fermer cette
-          page.
-        </p>
+        <p>Votre signature pour {demande.societe} a bien été enregistrée.</p>
+
+        {/* La même sortie qu'après la signature : rouvrir le lien mène ici, et il n'y
+            avait qu'une invitation à fermer la page. */}
+        <div className={styles.apresSignature}>
+          <p className={styles.apresSignatureTexte}>
+            Formalist crée, modifie et ferme les sociétés en ligne, avec un avocat.
+          </p>
+          <a className={styles.apresSignatureBouton} href={ADRESSE_SITE}>
+            Découvrir Formalist
+          </a>
+        </div>
       </main>
     );
   }

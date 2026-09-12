@@ -612,7 +612,14 @@ export async function signer(jetonRecu: string, trace: string, paraphe: string |
     },
   });
 
-  return { ok: true as const, complet };
+  /*
+   * Ce qui reste à recueillir, pour que l'écran le dise juste.
+   *
+   * « Tous les associés ont signé » s'affichait à l'associée unique d'une SASU, qui
+   * venait de signer seule : la phrase parle d'un collectif qui n'existe pas.
+   */
+  const restants = toutes.filter((d) => !d.signed_at).length;
+  return { ok: true as const, complet, restants, seul: toutes.length === 1 };
 }
 
 /** La signature demandée trop tôt : les actes attendent encore l'avocat. */
