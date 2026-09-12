@@ -1938,38 +1938,6 @@ function EtapeDetails({
                 </>
               )}
 
-              {/*
-            Les accords convertis, avant les champs qu'ils commandent.
-
-            Ils se déposaient en dernier, sous quatre groupes de questions dont les
-            réponses ne se vérifiaient qu'une fois le tableau rempli : on renseignait le
-            capital sans savoir ce qu'il allait produire. Or c'est par là qu'on arrive -
-            on a des accords signés, on veut les convertir - et tout le reste s'y
-            rapporte.
-
-            Ils ne sont pas des champs : un tour se compte en vingt contrats, chacun
-            avec son souscripteur, son montant et sa propre valorisation, et le nombre
-            d'actions à créer ne se lit qu'en les résolvant ensemble. Six cases côte à
-            côte ne peuvent rien vérifier de tout cela - c'est le même motif que la
-            cession de parts, qui a son composant pour les mêmes raisons.
-          */}
-              {definition.code === "constatation_augmentation" && (
-                <Accords
-                  dossier={dossier}
-                  accords={etat.air ?? []}
-                  actionsExistantes={nombreLu(etat.valeurs.airActionsExistantes) ?? 0}
-                  division={diviseurLu(etat.valeurs.airDivision)}
-                  surAccords={(air) => changer({ air })}
-                  surDivision={(division) =>
-                    majValeurs((valeurs) => ({
-                      ...valeurs,
-                      airDivision:
-                        division === 1 ? "Aucune division" : division.toLocaleString("fr-FR"),
-                    }))
-                  }
-                />
-              )}
-
               {definition.code === "cession_parts" ? (
                 <Cessions
                   associes={etat.assemblee.associes ?? []}
@@ -2152,6 +2120,37 @@ function EtapeDetails({
                       </Fragment>
                     ))}
                 </div>
+              )}
+
+              {/*
+            Les accords convertis, après les chiffres qu'ils augmentent.
+
+            Ils se déposaient d'abord, au motif qu'on arrive par là - on a des accords
+            signés, on veut les convertir. Mais la conversion se calcule sur le capital
+            d'avant : déposer avant de l'avoir dit affiche vingt lignes à « 0 action » et
+            un blocage rouge, pour une saisie qui tenait en un champ.
+
+            Ils ne sont pas des champs pour autant : un tour se compte en vingt contrats,
+            chacun avec son souscripteur, son montant et sa propre valorisation, et le
+            nombre d'actions à créer ne se lit qu'en les résolvant ensemble. Six cases
+            côte à côte ne peuvent rien vérifier de tout cela - c'est le même motif que la
+            cession de parts, qui a son composant pour les mêmes raisons.
+          */}
+              {definition.code === "constatation_augmentation" && (
+                <Accords
+                  dossier={dossier}
+                  accords={etat.air ?? []}
+                  actionsExistantes={nombreLu(etat.valeurs.airActionsExistantes) ?? 0}
+                  division={diviseurLu(etat.valeurs.airDivision)}
+                  surAccords={(air) => changer({ air })}
+                  surDivision={(division) =>
+                    majValeurs((valeurs) => ({
+                      ...valeurs,
+                      airDivision:
+                        division === 1 ? "Aucune division" : division.toLocaleString("fr-FR"),
+                    }))
+                  }
+                />
               )}
 
               {definition.code === "constatation_augmentation" && (

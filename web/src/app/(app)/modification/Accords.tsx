@@ -471,31 +471,34 @@ export function SuiviDuTour({
   /*
    * L'état de chaque moment, en deux mots.
    *
-   * La phrase qui explique appartient à la ligne du bas : répétée trois fois, elle
-   * transforme un repère en pavé de texte, et on ne voit plus où l'on en est.
+   * Les trois suivent l'ordre de la page : le capital d'avant, que les accords viennent
+   * augmenter ; les accords eux-mêmes ; les actes qui en découlent. La phrase qui
+   * explique appartient à la ligne du bas - répétée trois fois, elle transforme un
+   * repère en pavé de texte, et on ne voit plus où l'on en est.
    */
   const moments = [
     {
-      titre: "Vos accords signés",
-      fait: deposes > 0,
+      titre: "Votre capital actuel",
+      fait: actionsExistantes > 0,
       etat:
-        deposes === 0 ? "Aucun déposé" : deposes + (deposes === 1 ? " déposé" : " déposés"),
+        actionsExistantes > 0
+          ? actionsExistantes.toLocaleString("fr-FR") + " actions"
+          : "À renseigner",
     },
     {
-      titre: "Les chiffres du tour",
-      fait: chiffresPrets,
-      etat: !deposes
-        ? "Lus dans vos accords"
-        : incomplets > 0
-          ? incomplets + " à compléter"
-          : actionsExistantes > 0
-            ? "Complets"
-            : "Capital à renseigner",
+      titre: "Vos accords signés",
+      fait: deposes > 0 && incomplets === 0,
+      etat:
+        deposes === 0
+          ? "Aucun déposé"
+          : incomplets > 0
+            ? incomplets + " à compléter"
+            : deposes + (deposes === 1 ? " déposé" : " déposés"),
     },
     {
       titre: "Vos actes",
       fait: false,
-      etat: chiffresPrets ? "Prêts à éditer" : "Après les chiffres",
+      etat: chiffresPrets ? "Prêts à éditer" : "Après les accords",
     },
   ];
 
@@ -503,13 +506,14 @@ export function SuiviDuTour({
      que parle la ligne du bas. */
   const courant = moments.findIndex((moment) => !moment.fait);
 
-  const aFaire = !deposes
-    ? "Déposez les BSA AIR que vos souscripteurs ont signés : leur lecture remplit le tableau pour vous."
-    : incomplets > 0
-      ? "Complétez les accords que la lecture n'a pas pu remplir - ils sont signalés dans le tableau."
-      : actionsExistantes <= 0
-        ? "Renseignez le nombre d'actions existant avant la conversion : sans lui, aucune conversion ne se calcule."
-        : "Tout y est. Les actes s'éditent à la dernière étape ; la liste figure en bas de cette page.";
+  const aFaire =
+    actionsExistantes <= 0
+      ? "Renseignez le nombre d'actions existant avant la conversion : c'est lui que les accords viennent augmenter."
+      : !deposes
+        ? "Déposez les BSA AIR que vos souscripteurs ont signés : leur lecture remplit le tableau pour vous."
+        : incomplets > 0
+          ? "Complétez les accords que la lecture n'a pas pu remplir - ils sont signalés dans le tableau."
+          : "Tout y est. Les actes s'éditent à la dernière étape ; la liste figure en bas de cette page.";
 
   return (
     <section className={styles.suiviTour} aria-label="Où en êtes-vous">
