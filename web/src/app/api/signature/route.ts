@@ -19,6 +19,8 @@ const OUVERTURE = z.object({
         nom: schemas.nom,
         email: schemas.email,
         role: z.string().trim().max(30).optional(),
+        /* « Madame », « Monsieur » : ce qui permet d'accorder ce qu'on lui écrit. */
+        civilite: z.string().trim().max(20).optional(),
       })
     )
     .min(1, "Indiquez au moins un signataire")

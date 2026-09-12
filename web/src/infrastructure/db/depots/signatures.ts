@@ -137,7 +137,13 @@ function formeDuDossier(dossier: { forme: string | null; data_json: string | nul
  * n'est pas parti, et le bouton de relance le reprend.
  */
 async function adresserLaDemande(
-  demande: { id: number; token: string | null; associe_name: string; associe_email: string | null },
+  demande: {
+    id: number;
+    token: string | null;
+    associe_name: string;
+    associe_email: string | null;
+    civilite?: string | null;
+  },
   societe: string
 ) {
   /* Sans jeton, le lien mènerait à une page introuvable : mieux vaut ne rien envoyer et
@@ -147,7 +153,8 @@ async function adresserLaDemande(
         demande.associe_name ?? "",
         demande.associe_email ?? "",
         demande.token,
-        societe
+        societe,
+        demande.civilite
       )
     : { ok: false as const, motif: "aucun jeton" };
 
@@ -211,7 +218,7 @@ async function adresserLaDemande(
 export async function demanderSignatures(
   utilisateur: UtilisateurConnecte,
   dossierId: number,
-  signataires: { nom: string; email: string; role?: string }[]
+  signataires: { nom: string; email: string; role?: string; civilite?: string }[]
 ) {
   await exigerDossierModifiable(utilisateur, dossierId);
 
@@ -309,6 +316,9 @@ export async function demanderSignatures(
         associe_index: index,
         associe_name: signataire.nom,
         associe_email: signataire.email,
+        /* Figée avec le nom : une correction du dossier après l'envoi ferait diverger
+           le message reçu et la page qu'il ouvre. */
+        civilite: signataire.civilite?.trim() || null,
         role: signataire.role ?? "associe",
         token: jeton(),
         status: "pending",
@@ -547,6 +557,8 @@ export async function ouvrirLienDeSignature(jetonRecu: string) {
 
   return {
     nom: demande.associe_name,
+    /* La page s'adresse à la personne : sans sa civilité, elle le ferait au masculin. */
+    civilite: demande.civilite,
     societe: demande.formalites?.societe ?? "",
     forme: demande.formalites?.forme ?? "",
     dejaSignee: demande.signed_at !== null,

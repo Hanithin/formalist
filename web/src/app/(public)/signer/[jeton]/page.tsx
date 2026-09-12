@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Dancing_Script, Great_Vibes } from "next/font/google";
 import { ouvrirLienDeSignature } from "@/infrastructure/db/depots/signatures";
+import { accordDuSignataire } from "@/domain/formalite/signature";
 import { ZoneDeSignature } from "./ZoneDeSignature";
 import styles from "./Signature.module.css";
 
@@ -32,6 +33,9 @@ export default async function Signer({ params }: { params: Promise<{ jeton: stri
   // Jeton inconnu : 404, sans dire s'il a existé.
   if (!demande) notFound();
 
+  /* Ce qu'on lui écrit s'accorde avec sa civilité, jamais avec son prénom. */
+  const accord = accordDuSignataire(demande.civilite, demande.nom);
+
   if (demande.dejaSignee) {
     return (
       <main className={styles.page}>
@@ -48,7 +52,8 @@ export default async function Signer({ params }: { params: Promise<{ jeton: stri
     <main className={styles.page}>
       <h1>Signer les statuts</h1>
       <p>
-        {demande.nom}, vous êtes appelé à signer les statuts de {demande.societe}
+        {accord.nomme ? accord.nomme + ", vous êtes " : "Vous êtes "}
+        {accord.accorde("appelé")} à signer les statuts de {demande.societe}
         {demande.forme ? " (" + demande.forme + ")" : ""}.
       </p>
 

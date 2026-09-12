@@ -555,7 +555,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
     code: "augmentation_capital",
     libelle: "Augmentation de capital",
     libelleCourt: "Capital +",
-    description: "Augmenter le capital social.",
+    description: "Décider une augmentation : apports en numéraire, en nature, ou réserves incorporées.",
     champs: [
       {
         identifiant: "capitalActuelAugm",
@@ -1021,7 +1021,8 @@ export const MODIFICATIONS: DefinitionModification[] = [
     code: "constatation_augmentation",
     libelle: "Constatation d'une augmentation de capital",
     libelleCourt: "Constatation",
-    description: "Acter la conversion de BSA, BSA AIR, BSPCE ou obligations convertibles.",
+    description:
+      "Le capital a déjà augmenté par l'exercice de BSA, BSA AIR, BSPCE ou d'obligations convertibles : il reste à le constater.",
     champs: [
       {
         identifiant: "airActionsExistantes",

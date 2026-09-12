@@ -1,6 +1,7 @@
 import { journal } from "@/lib/journal";
 import { adresseApplication } from "@/lib/site";
 import type { Avis } from "@/domain/formalite/avis";
+import { accordDuSignataire } from "@/domain/formalite/signature";
 
 /**
  * Envoi d'emails transactionnels, par Resend.
@@ -205,31 +206,46 @@ export function messageDeVerification(prenom: string, adresse: string, jeton: st
  * Le message dit qui demande et sur quoi : un lien de signature reçu sans contexte se
  * prend pour une tentative d'hameçonnage - c'en est la forme exacte - et se jette.
  */
-export function messageDeSignature(nom: string, adresse: string, jeton: string, societe: string) {
+export function messageDeSignature(
+  nom: string,
+  adresse: string,
+  jeton: string,
+  societe: string,
+  /* Sans elle, le message s'adresse à tout le monde au masculin : voir
+     `accordDuSignataire`, qui n'accorde que sur une civilité explicite. */
+  civilite?: string | null
+) {
   const lien = adresseApplication() + "/signer/" + encodeURIComponent(jeton);
   const dossier = societe.trim() || "votre société";
+  const accord = accordDuSignataire(civilite, nom);
+
+  /* « Les actes n'attendent que votre signature », non « vous attendez de les signer » :
+     la phrase disait que c'est le destinataire qui patiente. */
+  const appele = "Vous êtes " + accord.accorde("appelé") + " à signer en votre nom";
 
   return {
     lien,
     destinataire: adresse,
     sujet: "Vos actes à signer - " + dossier,
     html: gabarit(
-      "Bonjour" + (nom ? " " + echapper(nom) : ""),
+      echapper(accord.appel),
       "Les actes de constitution de <strong>" +
         echapper(dossier) +
-        "</strong> sont prêts et vous attendez de les signer. Vous pourrez les relire avant de signer, et vous recevrez une copie signée.<br><br>" +
-        "Ce lien vous est personnel : ne le transmettez pas, chaque signataire a reçu le sien.",
+        "</strong> sont prêts et n'attendent que votre signature. Vous pourrez les relire avant de signer, et vous recevrez une copie signée.<br><br>" +
+        appele +
+        " : ce lien vous est personnel, ne le transmettez pas - chaque signataire a reçu le sien.",
       "Relire et signer",
       lien
     ),
     texte:
-      "Bonjour" +
-      (nom ? " " + nom : "") +
+      accord.appel +
       ",\n\nLes actes de constitution de " +
       dossier +
-      " sont prêts et attendent votre signature.\n\nRelisez-les et signez ici :\n" +
+      " sont prêts et n'attendent que votre signature.\n\nRelisez-les et signez ici :\n" +
       lien +
-      "\n\nCe lien vous est personnel : chaque signataire a reçu le sien.",
+      "\n\n" +
+      appele +
+      " : ce lien vous est personnel, chaque signataire a reçu le sien.",
   };
 }
 
@@ -343,8 +359,14 @@ export function emailDeVerification(prenom: string, adresse: string, jeton: stri
   return envoyer(messageDeVerification(prenom, adresse, jeton));
 }
 
-export function emailDeSignature(nom: string, adresse: string, jeton: string, societe: string) {
-  return envoyer(messageDeSignature(nom, adresse, jeton, societe));
+export function emailDeSignature(
+  nom: string,
+  adresse: string,
+  jeton: string,
+  societe: string,
+  civilite?: string | null
+) {
+  return envoyer(messageDeSignature(nom, adresse, jeton, societe, civilite));
 }
 
 export function emailDeReinitialisation(prenom: string, adresse: string, jeton: string) {

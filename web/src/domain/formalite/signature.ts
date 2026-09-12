@@ -265,3 +265,58 @@ export function verifierTrace(trace: string): void {
 
 /** Phase du dossier une fois toutes les signatures recueillies. */
 export const PHASE_APRES_SIGNATURE = 5;
+
+/**
+ * À qui l'on parle, et comment l'accorder.
+ *
+ * Le courriel de demande et la page de signature s'adressent à une personne : « vous
+ * êtes appelé à signer ». Au masculin pour tout le monde, la phrase accorde au nom de
+ * quelqu'un d'autre - et c'est la première chose que lit une femme à qui l'on demande
+ * de signer les statuts de sa propre société.
+ *
+ * L'accord se décide sur la civilité saisie, jamais sur le prénom : c'est la règle déjà
+ * portée par `toutesDesFemmes`, et elle vaut ici pour la même raison - deviner le genre
+ * d'après un prénom se trompe, et se trompe surtout sur les noms les moins courants.
+ * Sans civilité, le masculin, qui ne prête à personne un genre qu'on ignore.
+ */
+export interface AccordDuSignataire {
+  feminin: boolean;
+  /** « Madame », « Monsieur », ou rien quand on ne sait pas. */
+  civilite: string;
+  /** « Madame DUPONT », ou le nom entier à défaut de civilité. */
+  nomme: string;
+  /** « Bonjour Madame DUPONT », « Bonjour Claire DUPONT » à défaut de civilité. */
+  appel: string;
+  /** « appelée », « appelé ». */
+  accorde: (participe: string) => string;
+}
+
+const FEMININ = /^(madame|mademoiselle|mme|mlle)$/i;
+const MASCULIN = /^(monsieur|m\.|mr)$/i;
+
+export function accordDuSignataire(
+  civilite: string | null | undefined,
+  nom?: string | null
+): AccordDuSignataire {
+  const saisie = (civilite ?? "").trim();
+  const feminin = FEMININ.test(saisie);
+  const connue = feminin || MASCULIN.test(saisie);
+  const titre = feminin ? "Madame" : connue ? "Monsieur" : "";
+
+  /*
+   * Avec la civilité, le nom de famille suffit - « Madame Claire DUPONT » se dit dans
+   * un faire-part, non dans un courriel. Sans elle, on reprend le nom tel qu'il a été
+   * saisi plutôt que de deviner lequel des deux mots est le patronyme.
+   */
+  const entier = (nom ?? "").trim();
+  const famille = titre ? entier.split(/\s+/).slice(-1)[0] : entier;
+  const appele = [titre, titre ? famille : entier].filter(Boolean).join(" ");
+
+  return {
+    feminin,
+    civilite: titre,
+    nomme: appele,
+    appel: appele ? "Bonjour " + appele : "Bonjour",
+    accorde: (participe: string) => participe + (feminin ? "e" : ""),
+  };
+}

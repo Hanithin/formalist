@@ -67,7 +67,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
   {
     code: "augmentation_capital",
     libelle: "Augmentation de capital",
-    description: "Augmenter le capital social.",
+    description: "Décider une augmentation : apports en numéraire, en nature, ou réserves incorporées.",
     champs: [{ identifiant: "nouveauCapital", libelle: "Nouveau capital, en euros", type: "nombre" }],
   },
   {

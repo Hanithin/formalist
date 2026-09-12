@@ -322,6 +322,9 @@ export function Actes({
       rang,
       nom: nomDeLaPartie(a),
       email: a.personne?.email?.trim() ?? "",
+      /* Elle n'accompagnait pas la demande : le courriel et la page de signature
+         s'adressaient à tout le monde au masculin. */
+      civilite: a.type === "morale" ? "" : (a.personne?.civilite ?? ""),
     }))
     .filter((d) => d.nom);
 
@@ -470,7 +473,11 @@ export function Actes({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dossier: dossierId,
-          signataires: signataires.map((s) => ({ nom: s.nom, email: s.email })),
+          signataires: signataires.map((s) => ({
+            nom: s.nom,
+            email: s.email,
+            civilite: s.civilite || undefined,
+          })),
         }),
       });
       const corps = (await reponse.json().catch(() => ({}))) as {
