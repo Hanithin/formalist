@@ -40,6 +40,46 @@ export function rangSuivant(air: ContratAirDuDossier[]): number {
   return Math.max(0, ...rangs) + 1;
 }
 
+/**
+ * Ce que l'écran a déjà lu, par nom de fichier.
+ *
+ * Illisible ou absent, on ne rend rien et le dépôt relit : mieux vaut une lecture de
+ * trop qu'une liste de lignes vides parce qu'un paramètre était mal formé.
+ */
+function lecturesTransmises(brut: FormDataEntryValue | null): Map<string, AirLu> {
+  if (typeof brut !== "string") return new Map();
+
+  try {
+    const lu: unknown = JSON.parse(brut);
+    if (!Array.isArray(lu)) return new Map();
+
+    return new Map(
+      lu.flatMap((entree) => {
+        const ligne = entree as Record<string, unknown>;
+        const nom = typeof ligne.nom === "string" ? ligne.nom : null;
+        if (!nom) return [];
+        return [
+          [
+            nom,
+            {
+              investisseur:
+                typeof ligne.investisseur === "string" ? ligne.investisseur.slice(0, 200) : null,
+              montant: Number(ligne.montant) > 0 ? Number(ligne.montant) : null,
+              valorisation: Number(ligne.valorisation) > 0 ? Number(ligne.valorisation) : null,
+              signeLe: typeof ligne.signeLe === "string" ? ligne.signeLe.slice(0, 10) : null,
+              manques: Array.isArray(ligne.manques)
+                ? ligne.manques.filter((m): m is string => typeof m === "string").slice(0, 8)
+                : [],
+            } satisfies AirLu,
+          ] as [string, AirLu],
+        ];
+      })
+    );
+  } catch {
+    return new Map();
+  }
+}
+
 /** Un tour d'amorçage se compte en dizaines d'accords, pas en centaines. */
 const ACCORDS_MAXIMUM = 60;
 
@@ -61,6 +101,21 @@ export const POST = route(async (requete: Request) => {
   const formulaire = await requete.formData();
   const dossierId = Number(formulaire.get("dossier"));
   const fichiers = formulaire.getAll("fichiers").filter((f): f is File => f instanceof File);
+
+  /*
+   * La lecture déjà faite, quand elle l'a été.
+   *
+   * L'écran passe d'abord par /air/analyse, qui lit sans rien écrire et montre le
+   * résultat avant que le dossier ne soit touché. Relire ici serait extraire une
+   * seconde fois le texte de chaque PDF - et pour un document numérisé, refaire une
+   * reconnaissance de caractères qui se compte en dizaines de secondes.
+   *
+   * Ces valeurs viennent du navigateur, donc de nulle part : c'est sans conséquence.
+   * Les quatre champs sont modifiables dans le tableau par construction - « la lecture
+   * propose, l'avocat dispose » - et rien de ce qui est lu n'est tenu pour acquis. Une
+   * valeur forgée ici ne peut pas davantage qu'une valeur tapée là.
+   */
+  const dejaLus = lecturesTransmises(formulaire.get("lectures"));
 
   if (!Number.isInteger(dossierId) || dossierId <= 0) {
     return NextResponse.json({ error: "Dossier invalide" }, { status: 400 });
@@ -103,14 +158,25 @@ export const POST = route(async (requete: Request) => {
      * qu'on n'a jamais vu : la lecture échoue et le dossier n'en est pas moins réel.
      * L'accord rejoint la liste avec ses quatre champs vides, et l'écran les demande.
      */
-    let lu: AirLu = { investisseur: null, montant: null, valorisation: null, signeLe: null, manques: [] };
-    try {
-      const { texte } = await lireLeTexteDUnPdf(contenu);
-      lu = lireUnAir(texte);
-    } catch (e) {
-      if (!(e instanceof DocumentIllisible)) throw e;
-      journal.warn({ dossierId, fichier: fichier.name }, "Accord BSA AIR illisible");
-      lu.manques = ["tout : le document n'a pas pu être lu"];
+    let lu: AirLu = {
+      investisseur: null,
+      montant: null,
+      valorisation: null,
+      signeLe: null,
+      manques: [],
+    };
+    const transmis = dejaLus.get(fichier.name);
+    if (transmis) {
+      lu = transmis;
+    } else {
+      try {
+        const { texte } = await lireLeTexteDUnPdf(contenu);
+        lu = lireUnAir(texte);
+      } catch (e) {
+        if (!(e instanceof DocumentIllisible)) throw e;
+        journal.warn({ dossierId, fichier: fichier.name }, "Accord BSA AIR illisible");
+        lu.manques = ["tout : le document n'a pas pu être lu"];
+      }
     }
 
     ajoutes.push({

@@ -7800,10 +7800,349 @@
   background: #27272a;
 }
 
-.accordsFichier:disabled + .accordsBouton {
-  background: #a1a1aa;
+/* Le bouton porte désormais sa propre police : c'est un <button>, non un <label>. */
+.accordsBouton {
+  font-family: inherit;
+  font-weight: 500;
+}
+
+/* ---------- La fenêtre de dépôt ---------- */
+
+/*
+ * On voit ce qu'on dépose avant que le dossier ne soit touché.
+ *
+ * Le bouton envoyait, lisait et ajoutait d'un seul geste : un fichier choisi par erreur
+ * entrait dans la liste des accords avant qu'on ait pu le voir, avec ses quatre champs
+ * vides - indiscernable d'un contrat qu'on n'avait pas su lire. La fenêtre met une
+ * relecture entre le sélecteur et le dossier.
+ */
+.depotVoile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(9, 9, 11, 0.5);
+}
+
+.depotFenetre {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  max-height: 84vh;
+  max-height: 84dvh;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.depotEntete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #f0f0f2;
+}
+
+.depotTitre {
+  margin: 0 0 3px;
+  font-size: 16.5px;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0;
+}
+
+.depotSous {
+  margin: 0;
+  font-size: 13.5px;
+  color: #71717a;
+  letter-spacing: 0;
+}
+
+.depotFermer {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #71717a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.depotFermer:hover:not(:disabled) {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.depotFermer svg {
+  width: 17px;
+  height: 17px;
+}
+
+.depotCorps {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px;
+}
+
+/* Le sélecteur reste un label : c'est lui qui ouvre la boîte de dialogue du système. */
+.depotChoisir {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 16px;
+  border: 1px dashed #d4d4d8;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #3f3f46;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0;
+}
+
+.depotChoisir:hover {
   border-color: #a1a1aa;
+  background: #f4f4f5;
+}
+
+.depotVide {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+.depotListe {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.depotLigne {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 13px 0;
+  border: 0;
+  border-bottom: 1px solid #f4f4f5;
+}
+
+.depotLigne:last-child {
+  border-bottom: 0;
+}
+
+.depotCase {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: #18181b;
+  cursor: pointer;
+}
+
+/* Tant que la lecture court, la case garde sa place sans rien proposer. */
+.depotCaseVide {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.depotInfos {
+  flex: 1;
+  min-width: 0;
+}
+
+.depotNom {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+  letter-spacing: 0;
+  word-break: break-word;
+}
+
+.depotPoids {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #a1a1aa;
+}
+
+.depotEnCours {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: #71717a;
+}
+
+/*
+ * La roue qui tourne, par fichier.
+ *
+ * Sur une dizaine de contrats la lecture prend quelques secondes, et un écran qui ne
+ * bouge pas pendant ce temps passe pour un écran bloqué - c'est exactement ce qu'on
+ * reprochait à l'ancien dépôt.
+ */
+.depotRoue {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #e4e4e7;
+  border-top-color: #71717a;
+  border-radius: 50%;
+  animation: depotTourne 0.7s linear infinite;
+}
+
+@keyframes depotTourne {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .depotRoue {
+    animation-duration: 2.4s;
+  }
+}
+
+/* Une couleur par verdict, jamais un code. */
+.depotVerdictBon,
+.depotVerdictTiede,
+.depotVerdictMauvais {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.depotVerdictBon {
+  color: #15803d;
+}
+
+.depotVerdictTiede {
+  color: #b45309;
+}
+
+.depotVerdictMauvais {
+  color: #b91c1c;
+}
+
+/* Ce qu'on a tiré du contrat : c'est cela qui remplira le tableau. */
+.depotLu {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #52525b;
+}
+
+/* Le motif du verdict : sans lui, il ne se discute pas. */
+.depotIndices {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a1a1aa;
+}
+
+.depotRetirer {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.depotRetirer:hover:not(:disabled) {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.depotRetirer svg {
+  width: 14px;
+  height: 14px;
+}
+
+.depotPied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 22px;
+  border-top: 1px solid #f0f0f2;
+  background: #fafafa;
+}
+
+.depotCompte {
+  font-size: 13.5px;
+  color: #52525b;
+  letter-spacing: 0;
+}
+
+.depotGestes {
+  display: flex;
+  gap: 10px;
+}
+
+.depotAnnuler,
+.depotValider {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.depotAnnuler {
+  border: 1px solid #e4e4e7;
+  background: #fff;
+  color: #52525b;
+}
+
+.depotAnnuler:hover:not(:disabled) {
+  border-color: #d4d4d8;
+  color: #18181b;
+}
+
+.depotValider {
+  border: 1px solid #18181b;
+  background: #18181b;
+  color: #fff;
+}
+
+.depotValider:hover:not(:disabled) {
+  background: #27272a;
+}
+
+.depotAnnuler:disabled,
+.depotValider:disabled {
   cursor: default;
+  opacity: 0.5;
 }
 
 .accordsPrecision {

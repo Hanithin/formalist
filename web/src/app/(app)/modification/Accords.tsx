@@ -10,6 +10,7 @@ import {
 import { actesAProduire } from "@/domain/modification/gabarit";
 import type { Valeurs } from "@/domain/modification/types";
 import { gardeDeBoucle } from "@/components/formulaire/garde-de-boucle";
+import { DepotDesAccords } from "./DepotDesAccords";
 import styles from "./Modification.module.css";
 
 /** Un accord tel que le dossier le porte : ce qui a été lu, et d'où il vient. */
@@ -54,9 +55,10 @@ export function Accords({
   /* Voir `garde-de-boucle` : un dépôt a déjà figé un onglet sans laisser de trace. */
   gardeDeBoucle("Les accords d'investissement");
 
-  const [envoi, setEnvoi] = useState(false);
+  /* Le dépôt passe par une fenêtre : on voit ce qu'on dépose avant que le dossier ne
+     soit touché. Voir DepotDesAccords. */
+  const [fenetreOuverte, setFenetreOuverte] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const champFichier = useRef<HTMLInputElement>(null);
   const differe = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /*
@@ -101,38 +103,6 @@ export function Accords({
   const anomalies = anomaliesDuTour(apresDivision, contrats);
   const conseillee = divisionRecommandee(actionsExistantes, contrats);
 
-  async function deposer(fichiers: FileList | null) {
-    if (!fichiers || fichiers.length === 0) return;
-    setErreur(null);
-    setEnvoi(true);
-    try {
-      const formulaire = new FormData();
-      formulaire.append("dossier", String(dossier));
-      for (const fichier of Array.from(fichiers)) formulaire.append("fichiers", fichier);
-
-      const reponse = await fetch("/api/formalites/modification/air", {
-        method: "POST",
-        body: formulaire,
-      });
-      const corps = (await reponse.json()) as { air?: AccordDepose[]; error?: string };
-      if (!reponse.ok) throw new Error(corps.error ?? "Le dépôt a échoué");
-      surAccords(corps.air ?? []);
-    } catch (e) {
-      /*
-       * Le détail dans la console, le message à l'écran.
-       *
-       * `e.message` seul ne dit ni d'où vient l'incident ni ce qui l'a déclenché : un
-       * dépôt qui échoue chez quelqu'un et pas chez nous ne laissait aucune trace à
-       * suivre. La pile part dans la console, sous un repère qu'on peut chercher.
-       */
-      console.error("[Formalist] Dépôt d'un accord interrompu :", e);
-      setErreur(e instanceof Error ? e.message : "Le dépôt a échoué");
-    } finally {
-      setEnvoi(false);
-      if (champFichier.current) champFichier.current.value = "";
-    }
-  }
-
   function corriger(rang: number, champ: keyof AccordDepose, valeur: string) {
     const suivants = accords.map((accord, i) =>
       i !== rang
@@ -163,24 +133,32 @@ export function Accords({
         d&apos;actions à créer, et aucun acte ne les redemandera.
       </p>
 
+      {/*
+        Un seul chemin vers le tableau, et il passe par la relecture.
+
+        L'envoi direct a disparu : il déposait, lisait et ajoutait d'un geste, si bien
+        qu'un fichier choisi par erreur entrait au dossier avant qu'on ait pu le voir.
+      */}
       <div className={styles.accordsDepot}>
-        <input
-          ref={champFichier}
-          id="depot-air"
-          type="file"
-          accept=".pdf"
-          multiple
-          className={styles.accordsFichier}
-          disabled={envoi}
-          onChange={(e) => deposer(e.target.files)}
-        />
-        <label htmlFor="depot-air" className={styles.accordsBouton}>
-          {envoi ? "Lecture en cours…" : "Déposer des accords (PDF)"}
-        </label>
+        <button
+          type="button"
+          className={styles.accordsBouton}
+          onClick={() => setFenetreOuverte(true)}
+        >
+          Déposer des accords (PDF)
+        </button>
         <span className={styles.accordsPrecision}>
-          Plusieurs fichiers à la fois. Les gabarits français et anglais sont reconnus.
+          Plusieurs fichiers à la fois. Chacun est lu et présenté avant d&apos;être ajouté.
         </span>
       </div>
+
+      {fenetreOuverte && (
+        <DepotDesAccords
+          dossier={dossier}
+          surFermeture={() => setFenetreOuverte(false)}
+          surDepot={(suivants) => surAccords(suivants)}
+        />
+      )}
 
       {erreur && (
         <p className={styles.accordsErreur} role="alert">
