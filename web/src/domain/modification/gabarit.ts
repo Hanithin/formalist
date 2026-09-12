@@ -5,12 +5,7 @@ import { agrementDeDroit, cessionsRedigees, nomDeLAssocie, type Cession } from "
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { identificationDeLAssocie, sirenEspace } from "./pv-age";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
-import {
-  donneesDuPouvoir,
-  etatCivil,
-  nommer,
-  type Mandant,
-} from "@/domain/formalite/mandataire";
+import { donneesDuPouvoir, etatCivil, nommer, type Mandant } from "@/domain/formalite/mandataire";
 import { definitions, type Valeurs } from "./types";
 import type { ContratAir } from "./air";
 import { donneesDeLaConstatation } from "./constatation";
@@ -79,6 +74,21 @@ export const MODELE_RENONCIATION_DPS = "modif-renonciation-dps.docx";
  * de l'obtenir - le client se présentait à son agence les mains vides.
  */
 export const MODELE_BULLETIN_SOUSCRIPTION = "modif-bulletin-souscription.docx";
+
+/**
+ * L'attestation d'inscription en compte, une par titulaire.
+ *
+ * Dans une société par actions, les titres sont nominatifs : ce n'est pas l'acte qui
+ * fait l'associé, c'est l'inscription en compte. Le dossier produisait la décision qui
+ * constate la conversion et les statuts qui en portent le capital, mais rien que le
+ * souscripteur puisse produire pour prouver qu'il est actionnaire - or c'est la seule
+ * pièce qu'il détient en propre, et celle qu'on lui réclamera.
+ *
+ * Le gabarit répète le bloc entier pour chaque titulaire, avec l'en-tête de la société :
+ * c'est une attestation qu'il détache et produit seule, non l'extrait d'un document
+ * commun.
+ */
+export const MODELE_AIR_ATTESTATION_COMPTE = "modif-attestation-inscription-compte.docx";
 /**
  * La feuille de présence, que le procès-verbal cite depuis toujours.
  *
@@ -221,9 +231,7 @@ function ou(valeur: string | null | undefined, defaut = TIRET): string {
  * cherche « 15 000 » dans le document produit qui l'a montré. Il est là pour ça.
  */
 function montant(valeur: number): string {
-  return valeur
-    .toLocaleString("fr-FR", { maximumFractionDigits: 2 })
-    .replace(/[  ]/g, " ");
+  return valeur.toLocaleString("fr-FR", { maximumFractionDigits: 2 }).replace(/[  ]/g, " ");
 }
 
 /** La valeur telle quelle, sans le tiret de remplacement : pour décider, non pour écrire. */
@@ -287,16 +295,76 @@ export function adresseSurUneLigne(
  * Laugier », et les particules suivent la même règle - « 12 boulevard de la Villette ».
  */
 const TYPES_DE_VOIE = new Set([
-  "rue", "avenue", "boulevard", "place", "impasse", "allee", "allees", "chemin",
-  "quai", "route", "cours", "voie", "square", "passage", "esplanade", "faubourg",
-  "villa", "cite", "sentier", "ruelle", "traverse", "montee", "descente", "digue",
-  "hameau", "lieu-dit", "residence", "zone", "parc", "port", "pont", "rond-point",
-  "avenue", "promenade", "galerie", "peripherique", "autoroute", "domaine", "clos",
-  "mail", "sente", "vallon", "corniche", "plage", "batiment", "immeuble", "etage",
-  "bis", "ter", "quater",
+  "rue",
+  "avenue",
+  "boulevard",
+  "place",
+  "impasse",
+  "allee",
+  "allees",
+  "chemin",
+  "quai",
+  "route",
+  "cours",
+  "voie",
+  "square",
+  "passage",
+  "esplanade",
+  "faubourg",
+  "villa",
+  "cite",
+  "sentier",
+  "ruelle",
+  "traverse",
+  "montee",
+  "descente",
+  "digue",
+  "hameau",
+  "lieu-dit",
+  "residence",
+  "zone",
+  "parc",
+  "port",
+  "pont",
+  "rond-point",
+  "avenue",
+  "promenade",
+  "galerie",
+  "peripherique",
+  "autoroute",
+  "domaine",
+  "clos",
+  "mail",
+  "sente",
+  "vallon",
+  "corniche",
+  "plage",
+  "batiment",
+  "immeuble",
+  "etage",
+  "bis",
+  "ter",
+  "quater",
 ]);
 
-const PARTICULES = new Set(["de", "du", "des", "d", "la", "le", "les", "l", "au", "aux", "et", "sur", "sous", "en", "lez", "les"]);
+const PARTICULES = new Set([
+  "de",
+  "du",
+  "des",
+  "d",
+  "la",
+  "le",
+  "les",
+  "l",
+  "au",
+  "aux",
+  "et",
+  "sur",
+  "sous",
+  "en",
+  "lez",
+  "les",
+]);
 
 /** Sans accents ni casse, pour comparer un mot à une liste. */
 function nu(mot: string): string {
@@ -482,7 +550,9 @@ export function societeDesignee(associe: AssociePresent): string {
   if (representant) {
     const qualite = ou(associe.qualiteRepresentant, "");
     morceaux.push(
-      "représentée par " + representant + (qualite ? " en sa qualité de " + qualite.toLowerCase() : "")
+      "représentée par " +
+        representant +
+        (qualite ? " en sa qualité de " + qualite.toLowerCase() : "")
     );
   }
 
@@ -576,9 +646,8 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
     typeof valeurs.nouvelleVille === "string" ? valeurs.nouvelleVille : ""
   );
 
-  const changement = typeof valeurs.typeChangementDirigeant === "string"
-    ? valeurs.typeChangementDirigeant
-    : "";
+  const changement =
+    typeof valeurs.typeChangementDirigeant === "string" ? valeurs.typeChangementDirigeant : "";
 
   /*
    * L'agrément est dû, ou il ne l'est pas : les deux actes doivent dire la même chose.
@@ -637,7 +706,9 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      * société. La forme reste en bas de casse partout ailleurs, où elle suit une
      * virgule - « La société X, société par actions simplifiée… ».
      */
-    FORME_EN_CLAIR_CAPITALE: avecMajusculeInitiale(formeEnToutesLettres(societe.forme).toLowerCase()),
+    FORME_EN_CLAIR_CAPITALE: avecMajusculeInitiale(
+      formeEnToutesLettres(societe.forme).toLowerCase()
+    ),
 
     /* -------------------------------------------------------- L'assemblée */
     DATE_AGE: dateEnFrancais(assemblee.date),
@@ -1102,8 +1173,12 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      * en plus plutôt que de renommer un gabarit déjà employé par la création.
      */
     CIVILITE_NOM_PRENOM_1: nomComplet({
-      civilite: typeof valeurs.nouveauDirigeantCivilite === "string" ? valeurs.nouveauDirigeantCivilite : "",
-      prenom: typeof valeurs.nouveauDirigeantPrenom === "string" ? valeurs.nouveauDirigeantPrenom : "",
+      civilite:
+        typeof valeurs.nouveauDirigeantCivilite === "string"
+          ? valeurs.nouveauDirigeantCivilite
+          : "",
+      prenom:
+        typeof valeurs.nouveauDirigeantPrenom === "string" ? valeurs.nouveauDirigeantPrenom : "",
       nom: typeof valeurs.nouveauDirigeantNom === "string" ? valeurs.nouveauDirigeantNom : "",
     }),
     ADRESSE_ASSOCIE_1: adresseLisible(texte(valeurs.nouveauDirigeantAdresse)),
@@ -1156,7 +1231,9 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
      * « DÉCISION DU Le Président » dans un titre. Trois endroits lisaient la mauvaise
      * des deux.
      */
-    AIR_SIGNATAIRE_QUALITE_MAJ: qualiteDuSignataire(valeurs, societe.forme).toLocaleUpperCase("fr-FR"),
+    AIR_SIGNATAIRE_QUALITE_MAJ: qualiteDuSignataire(valeurs, societe.forme).toLocaleUpperCase(
+      "fr-FR"
+    ),
     AIR_DATE_FR: dateEnFrancais(
       typeof valeurs.airDateEvenement === "string" ? valeurs.airDateEvenement : null
     ),
@@ -1217,8 +1294,7 @@ export function gabaritProcesVerbal(
    * d'activité, transformation, dissolution, cadres libres - ne sont activés par aucun
    * d'eux.
    */
-  const seul =
-    nombreDAssocies === undefined ? nature.unipersonnelle : nombreDAssocies === 1;
+  const seul = nombreDAssocies === undefined ? nature.unipersonnelle : nombreDAssocies === 1;
   if (!seul) return MODELE_UNIVERSEL;
 
   /*
@@ -1280,7 +1356,8 @@ function donneesDuRapportSurLAugmentation(
   const parActionsSociete = parActions(societe.forme);
 
   const mode = texteBrut(valeurs.modeAugmentation);
-  const valeurDuTitre = nominale > 0 ? ", à raison de " + montant(nominale) + " euros de valeur nominale" : "";
+  const valeurDuTitre =
+    nominale > 0 ? ", à raison de " + montant(nominale) + " euros de valeur nominale" : "";
 
   /*
    * Ce que le titre nouveau paie, et qui le reçoit.
@@ -1292,10 +1369,17 @@ function donneesDuRapportSurLAugmentation(
    */
   const modalites = !augmentationSouscrite(mode)
     ? mode.startsWith("Apport en nature")
-      ? "Les " + titres + " nouvelles rémunèrent l'apport en nature" + valeurDuTitre +
+      ? "Les " +
+        titres +
+        " nouvelles rémunèrent l'apport en nature" +
+        valeurDuTitre +
         ", et sont attribuées à l'apporteur. Aucun versement n'est demandé aux associés."
-      : "Les " + titres + " nouvelles seront attribuées aux associés sans versement de leur " +
-        "part" + valeurDuTitre + ", par prélèvement sur les sommes incorporées au capital."
+      : "Les " +
+        titres +
+        " nouvelles seront attribuées aux associés sans versement de leur " +
+        "part" +
+        valeurDuTitre +
+        ", par prélèvement sur les sommes incorporées au capital."
     : "Les " +
       titres +
       " nouvelles seront souscrites en numéraire et intégralement libérées à la souscription" +
@@ -1350,8 +1434,7 @@ function donneesDuRapportSurLAugmentation(
     MARCHE_DES_AFFAIRES:
       phraseClose(avecMajusculeInitiale(texteBrut(valeurs.marcheDesAffaires))) ||
       "L'activité de l'exercice en cours se poursuit dans les conditions décrites par les comptes du dernier exercice clos, qui sont à votre disposition au siège social.",
-    MODALITES_EMISSION_RAPPORT:
-      modalites + (justificationDuPrix ? " " + justificationDuPrix : ""),
+    MODALITES_EMISSION_RAPPORT: modalites + (justificationDuPrix ? " " + justificationDuPrix : ""),
     /*
      * L'exercice précédent, tant que ses comptes n'ont pas été approuvés.
      *
@@ -1408,7 +1491,9 @@ function donneesDesBulletins(
   return {
     SOUSCRIPTIONS: souscriptions,
     PRIME_EN_CLAIR:
-      prime > 0 ? ", assorties d'une prime d'émission de " + montant(prime) + " euros par titre" : "",
+      prime > 0
+        ? ", assorties d'une prime d'émission de " + montant(prime) + " euros par titre"
+        : "",
     MODE_SOUSCRIPTION_BULLETIN: compensation
       ? "Les " +
         titres +
@@ -1459,32 +1544,36 @@ export function acceptationsDesSouscripteurs(
   renoncant: string
 ): { PHRASE: string }[] {
   return lignesDesSouscripteurs(nommes).map((ligne) => {
-      /* Le nombre de titres suit le nom : il fait apposition, et la virgule est due. */
-      const apposition = ligne.includes(",") ? "," : "";
-      const civilite = /^(Monsieur|Madame|Mademoiselle|M\.|Mme|Mlle)\s+/i.exec(ligne);
-      /*
-       * Une société ne se soussigne pas : elle accepte par qui la représente.
-       *
-       * La civilité est ce qui distingue les deux, faute de mieux dans un champ libre.
-       */
-      if (!civilite) {
-        return {
-          PHRASE:
-            ligne + apposition + " accepte la renonciation qui précède, faite à son profit par " + renoncant + ".",
-        };
-      }
-      const feminin = /^(Madame|Mme|Mademoiselle|Mlle)/i.test(civilite[1]);
+    /* Le nombre de titres suit le nom : il fait apposition, et la virgule est due. */
+    const apposition = ligne.includes(",") ? "," : "";
+    const civilite = /^(Monsieur|Madame|Mademoiselle|M\.|Mme|Mlle)\s+/i.exec(ligne);
+    /*
+     * Une société ne se soussigne pas : elle accepte par qui la représente.
+     *
+     * La civilité est ce qui distingue les deux, faute de mieux dans un champ libre.
+     */
+    if (!civilite) {
       return {
         PHRASE:
-          "Je soussigné" +
-          (feminin ? "e" : "") +
-          " " +
-          ligne.slice(civilite[0].length) +
+          ligne +
           apposition +
-          " accepte la renonciation qui précède, faite à mon profit par " +
+          " accepte la renonciation qui précède, faite à son profit par " +
           renoncant +
           ".",
       };
+    }
+    const feminin = /^(Madame|Mme|Mademoiselle|Mlle)/i.test(civilite[1]);
+    return {
+      PHRASE:
+        "Je soussigné" +
+        (feminin ? "e" : "") +
+        " " +
+        ligne.slice(civilite[0].length) +
+        apposition +
+        " accepte la renonciation qui précède, faite à mon profit par " +
+        renoncant +
+        ".",
+    };
   });
 }
 
@@ -1624,9 +1713,7 @@ function donneesDeLApport(
   const titresApportes = nb("apportNbTitres");
   const titresApporteeTotal = nb("apporteeNbTitres");
   const partDetenue =
-    titresApporteeTotal > 0
-      ? Math.round((titresApportes / titresApporteeTotal) * 10000) / 100
-      : 0;
+    titresApporteeTotal > 0 ? Math.round((titresApportes / titresApporteeTotal) * 10000) / 100 : 0;
 
   const formeApportee = texte(valeurs.apporteeForme);
   /*
@@ -1707,9 +1794,7 @@ function donneesDeLApport(
     CAPITAL_AVANT_FORMATE: montant(capitalActuel),
     CAPITAL_AVANT_LETTRES: nombreEnFrancais(capitalActuel),
     CAPITAL_APRES_NUMERAIRE_FORMATE: montant(enEuros(plan.capitalApresNumeraireCentimes)),
-    CAPITAL_APRES_NUMERAIRE_LETTRES: nombreEnFrancais(
-      enEuros(plan.capitalApresNumeraireCentimes)
-    ),
+    CAPITAL_APRES_NUMERAIRE_LETTRES: nombreEnFrancais(enEuros(plan.capitalApresNumeraireCentimes)),
     CAPITAL_FINAL_FORMATE: montant(enEuros(plan.capitalFinalCentimes)),
     CAPITAL_FINAL_LETTRES: nombreEnFrancais(enEuros(plan.capitalFinalCentimes)),
     APPORT_PART_CAPITAL: String(plan.partDeLApport).replace(".", ","),
@@ -1927,8 +2012,7 @@ export function actesAProduire(
    * Le procès-verbal reparaît dès qu'un autre changement l'appelle - une dénomination,
    * un siège : celui-là se décide bien, et la constatation le suit sans s'y fondre.
    */
-  const seulementConstatation =
-    codes.length === 1 && codes[0] === "constatation_augmentation";
+  const seulementConstatation = codes.length === 1 && codes[0] === "constatation_augmentation";
 
   const actes: ActeAProduire[] = seulementConstatation
     ? []
@@ -1948,8 +2032,7 @@ export function actesAProduire(
 
   if (codes.includes("constatation_augmentation")) {
     const aRatifier =
-      valeurs.airDecisionEmission ===
-      "N'a pas fait l'objet d'une décision collective : à ratifier";
+      valeurs.airDecisionEmission === "N'a pas fait l'objet d'une décision collective : à ratifier";
     const divise = texte(valeurs.airDivision).replace(/[^\d]/g, "") !== "";
 
     /*
@@ -2010,6 +2093,18 @@ export function actesAProduire(
     actes.push({
       titre: "Décision du président constatant l'augmentation de capital",
       gabarit: MODELE_AIR_CONSTATATION,
+    });
+
+    /*
+     * Ce que le souscripteur emporte, et qui vient après tout le reste.
+     *
+     * L'attestation constate une inscription en compte : elle suppose la conversion
+     * constatée et les registres tenus. Elle se place donc en dernier, après la
+     * décision qu'elle présuppose.
+     */
+    actes.push({
+      titre: "Attestations d'inscription en compte",
+      gabarit: MODELE_AIR_ATTESTATION_COMPTE,
     });
   }
 
@@ -2072,7 +2167,11 @@ export function actesAProduire(
    */
 
   const declaration = gabaritDeLaDeclaration(forme, valeurs);
-  if (codes.includes("dirigeant") && valeurs.typeChangementDirigeant === "Nomination" && declaration) {
+  if (
+    codes.includes("dirigeant") &&
+    valeurs.typeChangementDirigeant === "Nomination" &&
+    declaration
+  ) {
     actes.push({ titre: "Déclaration de non-condamnation et de filiation", gabarit: declaration });
   }
 
@@ -2193,7 +2292,9 @@ export function gabaritDeLaDeclaration(
   const fonction = typeof valeurs.fonctionDirigeant === "string" ? valeurs.fonctionDirigeant : "";
 
   if ((f === "SAS" || f === "SASU") && fonction === "Président") {
-    return f === "SASU" ? "sasu-declaration-non-condamnation.docx" : "sas-declaration-non-condamnation.docx";
+    return f === "SASU"
+      ? "sasu-declaration-non-condamnation.docx"
+      : "sas-declaration-non-condamnation.docx";
   }
 
   const gerance = fonction === "Gérant" || fonction === "Co-gérant";

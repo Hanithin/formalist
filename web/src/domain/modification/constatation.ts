@@ -51,7 +51,15 @@ function texte(valeur: unknown): string {
 
 function nombre(valeurs: Valeurs, champ: string): number {
   const brut = valeurs[champ];
-  const valeur = typeof brut === "number" ? brut : Number((brut ?? "").toString().replace(/[^\d.,-]/g, "").replace(",", "."));
+  const valeur =
+    typeof brut === "number"
+      ? brut
+      : Number(
+          (brut ?? "")
+            .toString()
+            .replace(/[^\d.,-]/g, "")
+            .replace(",", ".")
+        );
   return Number.isFinite(valeur) ? valeur : 0;
 }
 
@@ -111,6 +119,13 @@ export function donneesDeLaConstatation(contexte: ContexteConstatation): Record<
 
   const decimales = nominale > 0 && nominale < 0.01 ? 3 : 2;
 
+  /*
+   * Une ligne par souscripteur, qui sert deux fois.
+   *
+   * Le tableau annexé à la décision du président la lit en ligne de tableau ;
+   * l'attestation d'inscription en compte répète le même jeu de balises sur une page
+   * entière, une par titulaire. Les deux gabarits parcourent la même liste.
+   */
   const lignes: LigneDeConversion[] = parts.investisseurs.map((investisseur) => ({
     INVESTISSEUR: investisseur.investisseur || TIRET,
     MONTANT: montant(investisseur.montant, 0) + " euros",
@@ -157,7 +172,8 @@ export function donneesDeLaConstatation(contexte: ContexteConstatation): Record<
     AIR_DIVISEUR_LETTRES: nombreEnFrancais(diviseur),
 
     /* Ce qui décide du contenu des actes. */
-    IS_RATIFICATION: valeurs.airDecisionEmission === "N'a pas fait l'objet d'une décision collective : à ratifier",
+    IS_RATIFICATION:
+      valeurs.airDecisionEmission === "N'a pas fait l'objet d'une décision collective : à ratifier",
     IS_RENONCIATION_INDIVIDUELLE:
       valeurs.airDroitPreferentiel ===
       "Chaque associé y renonce individuellement, au profit des souscripteurs",

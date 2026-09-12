@@ -113,8 +113,12 @@ describe("la constatation d'une augmentation de capital", () => {
       },
       2
     ).map((a) => a.titre);
+    /* L'attestation d'inscription en compte accompagne toute conversion : c'est la
+       seule pièce que le souscripteur détient en propre, et elle ne dépend d'aucune
+       des conditions qui font naître les autres actes. */
     expect(titres.filter((t) => !AUTRES.some((a) => t.includes(a)))).toEqual([
       "Décision du président constatant l'augmentation de capital",
+      "Attestations d'inscription en compte",
     ]);
   });
 
