@@ -57,7 +57,18 @@ export function typographierLeDocument(docx: Buffer): Buffer {
  */
 function elidersAuTravers(xml: string): string {
   return xml.replace(
-    /\bde[\u0020]?(<\/w:t>(?:(?!<w:t[ >])(?!<\/w:p>)[\s\S])*?<w:t[^>]*>)[\u0020]?(?=[aàâeéèêëiîïoôuùûüyAÀÂEÉÈÊËIÎÏOÔUÙÛÜY])/g,
+    /*
+     * Le mot « de », non les trois dernières lettres d'un autre.
+     *
+     * La règle commençait par `\bde`. En JavaScript, la limite de mot se définit sur
+     * [A-Za-z0-9_] : une lettre accentuée n'en fait pas partie, et `\b` s'y trouve donc
+     * satisfaite au milieu d'un mot. « La Société procède au dépôt » sortait « procèd'au
+     * dépôt », et de même pour « précède », « possède », « concède » - tout mot dont la
+     * syllabe finale est « de » après un accent.
+     *
+     * Le regard en arrière exclut explicitement les lettres, accents compris.
+     */
+    /(?<![A-Za-zÀ-ÖØ-öø-ÿ])de[\u0020]?(<\/w:t>(?:(?!<w:t[ >])(?!<\/w:p>)[\s\S])*?<w:t[^>]*>)[\u0020]?(?=[aàâeéèêëiîïoôuùûüyAÀÂEÉÈÊËIÎÏOÔUÙÛÜY])/g,
     (_tout, entreDeux: string) => "d'" + entreDeux
   );
 }

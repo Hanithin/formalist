@@ -118,7 +118,20 @@ export function referencesLiees(texte: string): string {
  * ferait une faute une fois sur deux plutôt qu'une fois de temps en temps.
  */
 function elisions(texte: string): string {
-  return texte.replace(/\bde\s+(?=[aàâeéèêëiîïoôuùûüyAÀÂEÉÈÊËIÎÏOÔUÙÛÜY])/g, "d'");
+  /*
+   * Le mot « de », non les dernières lettres d'un autre.
+   *
+   * En JavaScript, la limite de mot se définit sur [A-Za-z0-9_] : une lettre accentuée
+   * n'en fait pas partie, et `\bde` se trouvait donc satisfaite au milieu d'un mot. « La
+   * Société procède au dépôt de ses comptes » sortait « la Société procèd'au dépôt » -
+   * et de même pour « précède », « possède », « concède », « excède ».
+   *
+   * Le regard en arrière exclut explicitement toute lettre, accents compris.
+   */
+  return texte.replace(
+    /(?<![A-Za-zÀ-ÖØ-öø-ÿ])de\s+(?=[aàâeéèêëiîïoôuùûüyAÀÂEÉÈÊËIÎÏOÔUÙÛÜY])/g,
+    "d'"
+  );
 }
 
 export function typographier(texte: string): string {

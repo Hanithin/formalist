@@ -73,6 +73,28 @@ describe("tout, en une passe", () => {
     expect(rendu).toContain("2" + INSECABLE + "000" + INSECABLE + "euros");
   });
 
+  it("élide « de » devant une voyelle, et lui seul", () => {
+    expect(typographier("Signature de Amel Belouafi")).toContain("d'Amel");
+    expect(typographier("déposés auprès de Etude Notariale")).toContain("d'Etude");
+  });
+
+  it("n'élide pas la dernière syllabe d'un autre mot", () => {
+    /*
+     * En JavaScript, la limite de mot se définit sur [A-Za-z0-9_] : une lettre accentuée
+     * n'en fait pas partie, et « \bde » se trouvait donc satisfaite au milieu d'un mot.
+     * La déclaration de confidentialité sortait « la Société procèd'au dépôt de ses
+     * comptes annuels », dans un acte destiné au greffe.
+     */
+    expect(typographier("la Société procède au dépôt")).toContain("procède au");
+    expect(typographier("l'article qui précède est applicable")).toContain("précède est");
+    expect(typographier("celui qui possède une part")).toContain("possède une");
+    expect(typographier("le montant excède un million")).toContain("excède un");
+  });
+
+  it("laisse le « h » tranquille : muet ou aspiré, rien ne les distingue", () => {
+    expect(typographier("une déclaration de honneur")).toContain("de honneur");
+  });
+
   it("ne laisse aucune faute derrière elle", () => {
     const rendu = typographier("Article 1 — Objet : «ACME» détient 2 000 parts ; c'est tout !");
     expect(fautesDeTypographie(rendu)).toEqual([]);

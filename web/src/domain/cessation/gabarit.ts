@@ -52,8 +52,17 @@ function texte(valeur: unknown): string {
   return typeof valeur === "string" ? valeur.trim() : "";
 }
 
-function ou(valeur: string, defaut = TIRET): string {
-  return valeur.trim() || defaut;
+/*
+ * Une valeur absente rend le tiret des actes, elle n'interrompt pas la production.
+ *
+ * Le type annonce une chaîne, et `.trim()` suffisait tant que l'appelant en fournissait
+ * une. Mais ces données viennent d'un `data_json` écrit parfois des mois plus tôt : un
+ * champ ajouté depuis - la nature d'une convention réglementée, par exemple - est
+ * absent des dossiers antérieurs, et la génération de tous les actes du dossier
+ * s'arrêtait alors sur un TypeError, sans dire lequel.
+ */
+function ou(valeur: string | null | undefined, defaut = TIRET): string {
+  return typeof valeur === "string" && valeur.trim() ? valeur.trim() : defaut;
 }
 
 /*

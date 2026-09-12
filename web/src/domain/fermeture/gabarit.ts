@@ -62,8 +62,17 @@ function texte(valeur: unknown): string {
   return typeof valeur === "string" ? valeur.trim() : "";
 }
 
-function ou(valeur: string, defaut = TIRET): string {
-  return valeur.trim() || defaut;
+/*
+ * Une valeur absente rend le tiret des actes, elle n'interrompt pas la production.
+ *
+ * Le type annonce une chaîne, et `.trim()` suffisait tant que l'appelant en fournissait
+ * une. Mais ces données viennent d'un `data_json` écrit parfois des mois plus tôt : un
+ * champ ajouté depuis - la nature d'une convention réglementée, par exemple - est
+ * absent des dossiers antérieurs, et la génération de tous les actes du dossier
+ * s'arrêtait alors sur un TypeError, sans dire lequel.
+ */
+function ou(valeur: string | null | undefined, defaut = TIRET): string {
+  return typeof valeur === "string" && valeur.trim() ? valeur.trim() : defaut;
 }
 
 function montant(valeur: number): string {
@@ -168,6 +177,7 @@ function accord(civilite: string): {
   enfantDe: string;
   nomme: string;
   soussigne: string;
+  pronom: string;
 } {
   const femme = /^(madame|mademoiselle|mme)$/i.test(civilite.trim());
   return {
@@ -175,6 +185,18 @@ function accord(civilite: string): {
     enfantDe: femme ? "fille de" : "fils de",
     nomme: femme ? "nommée" : "nommé",
     soussigne: femme ? "Je soussignée" : "Je soussigné",
+    /*
+     * Le pronom qui reprend la personne, non la fonction.
+     *
+     * Les actes écrivaient « nommée liquidateur Madame Claire DUFOUR » puis, deux
+     * paragraphes plus bas, « Il rappelle que la société a été dissoute » : le même
+     * document changeait son signataire de genre en cours de route.
+     *
+     * Il ne concerne que les deux phrases où le pronom reprend la personne. Les autres
+     * « Il » de ces actes sont impersonnels - « Il est exposé que… » - ou reprennent le
+     * mandat, qui est masculin quel que soit celui qui l'exerce.
+     */
+    pronom: femme ? "Elle" : "Il",
   };
 }
 
@@ -338,6 +360,7 @@ export function donneesDeLaFermeture(contexte: ContexteFermeture): Record<string
     LIQUIDATEUR_ENFANT_DE: accordDuLiquidateur.enfantDe,
     LIQUIDATEUR_NOMME: accordDuLiquidateur.nomme,
     LIQUIDATEUR_SOUSSIGNE: accordDuLiquidateur.soussigne,
+    LIQUIDATEUR_PRONOM: accordDuLiquidateur.pronom,
     LIQUIDATEUR_NE_LE_FR: dateEnFrancais(texte(valeurs.liquidateurNeLe)),
     LIQUIDATEUR_NE_A: ou(texte(valeurs.liquidateurNeA)),
     LIQUIDATEUR_NATIONALITE: ou(texte(valeurs.liquidateurNationalite), "française"),
