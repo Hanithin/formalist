@@ -8574,6 +8574,18 @@
  * l'étape suivante ce que le dossier en avait fait. Ce qui est apporté, ce qui est
  * relu, ce qui est signé - il n'y a rien d'autre à dire, et cela tient en trois lignes.
  */
+/*
+ * Le parcours rangé dans la fenêtre de correction.
+ *
+ * La barre « Étape 1 sur 7 / Continuer » est collante en bas : sur la page, elle suit
+ * la lecture ; dans une fenêtre haute de cinq cents pixels, son fond blanc recouvrait
+ * les premiers champs, et le formulaire avait l'air vide sous sa recherche. Elle
+ * défile ici avec le reste - la fenêtre a ses propres boutons en pied.
+ */
+.parcoursDansUneFenetre .actions {
+  position: static;
+}
+
 .suiviTour {
   margin-bottom: 22px;
 }

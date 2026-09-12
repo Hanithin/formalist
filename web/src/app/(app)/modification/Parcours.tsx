@@ -196,6 +196,19 @@ interface Props {
   actesInitiaux: ActeProduit[];
   /** Les justificatifs déjà remis : l'étape du règlement en dépend pour laisser payer. */
   piecesDeposees: { type: string; nom: string }[];
+  /**
+   * Le parcours vit dans une fenêtre, non sur sa page.
+   *
+   * L'avocat corrige le dossier depuis l'espace du cabinet, et veut le formulaire du
+   * client tel qu'il est - ses sept étapes, ses aides, ses listes de personnes, son
+   * « Continuer ». La fenêtre n'avait que les champs déclarés de l'étape des détails,
+   * à plat : ni la société, ni le représentant légal, ni l'assemblée, ni les accords.
+   *
+   * Deux choses ne suivent pas : la colonne du récapitulatif, que la fiche du dossier
+   * porte déjà à droite, et le défilement vers le haut de la page, qui ferait remonter
+   * la fiche derrière la fenêtre plutôt que la fenêtre elle-même.
+   */
+  dansUneFenetre?: boolean;
 }
 
 /* ------------------------------------------------------------------ Outils */
@@ -246,6 +259,7 @@ export function Parcours({
   issueDuPaiement,
   actesInitiaux,
   piecesDeposees,
+  dansUneFenetre,
 }: Props) {
   const [etape, setEtape] = useState(etapeInitiale);
   const [etat, setEtat] = useState<EtatDuDossier>(() => avecCeQuiSeDeduit(initial));
@@ -276,6 +290,7 @@ export function Parcours({
   const [atteinte, setAtteinte] = useState(etapeInitiale);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
+  const racine = useRef<HTMLDivElement>(null);
 
   /*
    * Les incohérences du procès-verbal se lisent ici, pas à la génération.
@@ -559,9 +574,13 @@ export function Parcours({
       }
 
       setEtape(vers);
-      memoriserEtape(dossier, vers);
+      /* L'étape ne s'écrit dans l'adresse que sur sa page : dans la fenêtre de l'avocat,
+         elle ajouterait « ?dossier=…&etape=3 » à l'adresse de la fiche du dossier. */
+      if (!dansUneFenetre) memoriserEtape(dossier, vers);
       setAtteinte((loin) => Math.max(loin, vers));
-      remonterEnHaut();
+      /* Dans une fenêtre, c'est elle qu'on remonte : la page derrière ne bouge pas. */
+      if (dansUneFenetre) racine.current?.scrollIntoView({ block: "start" });
+      else remonterEnHaut();
     });
   }
 
@@ -577,10 +596,19 @@ export function Parcours({
    * le même total en gros dans sa carte. La colonne n'y répétait donc qu'elle-même, et
    * prenait trois cent vingt pixels à l'écran qui en a le plus besoin.
    */
-  const avecColonne = etape !== 6;
+  const avecColonne = etape !== 6 && !dansUneFenetre;
 
   return (
-    <div className={avecColonne ? `${styles.parcours} ${styles.parcoursColonne}` : styles.parcours}>
+    <div
+      ref={racine}
+      className={[
+        styles.parcours,
+        avecColonne ? styles.parcoursColonne : "",
+        dansUneFenetre ? styles.parcoursDansUneFenetre : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       {issueDuPaiement && <FinDePaiement issue={issueDuPaiement} dossier={dossier} />}
 
       {/* La dernière étape ne s'ouvre qu'une fois la formalité réglée. */}

@@ -26,6 +26,11 @@ import { aRelire } from "@/domain/document/publication";
 import { Piece, type PieceAffichee } from "./Piece";
 import { DepotParution } from "./DepotParution";
 import { Parcours } from "@/app/(app)/creation/Parcours";
+import {
+  Parcours as ParcoursDeModification,
+  type EtatDuDossier,
+} from "@/app/(app)/modification/Parcours";
+import { lireModification } from "@/infrastructure/db/depots/modifications";
 import { ETAPES as ETAPES_DE_CREATION } from "@/domain/formalite/parcours";
 import type { Brouillon } from "@/domain/formalite/parcours";
 import { Corriger } from "./Corriger";
@@ -83,6 +88,30 @@ function teinteJournal(action: string): string {
 function quand(date: Date | null): string {
   if (!date) return "";
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(date);
+}
+
+/**
+ * L'état du dossier de modification, tel que le parcours l'attend.
+ *
+ * `lireModification` rend l'objet du client avec ses valeurs par défaut : la fenêtre
+ * lit le même JSON que la page du client, et non un sous-ensemble reconstruit.
+ */
+function etatDeLaModification(donnees: Record<string, unknown> | null): EtatDuDossier {
+  /* La fiche a déjà lu le JSON ; `lireModification` en attend le texte, et c'est lui
+     qui pose les valeurs par défaut d'un dossier ancien. */
+  const modification = lireModification(donnees ? JSON.stringify(donnees) : null);
+  return {
+    codes: modification.codes,
+    societe: modification.societe,
+    valeurs: modification.valeurs,
+    assemblee: modification.assemblee,
+    cessions: modification.cessions,
+    air: modification.air,
+    statuts: modification.statuts,
+    retouches: modification.retouches,
+    statutsAJour: modification.statutsAJour,
+    paye: modification.paye,
+  };
 }
 
 export default async function DossierAvocat({ params }: { params: Promise<{ dossier: string }> }) {
@@ -742,6 +771,26 @@ export default async function DossierAvocat({ params }: { params: Promise<{ doss
                             actesProduits={[]}
                             dernierMot={{ message: null, nonLus: 0 }}
                             quand={new Date()}
+                          />
+                        ) : type === "modification" ? (
+                          /*
+                            Le formulaire du client, entier.
+
+                            La fenêtre n'offrait que les champs déclarés de l'étape des
+                            détails : ni la société, ni le représentant légal, ni
+                            l'assemblée, ni les accords convertis. On corrigeait une
+                            coquille de conversion, et l'on ne pouvait pas toucher au
+                            président qui signe l'acte.
+                          */
+                          <ParcoursDeModification
+                            dansUneFenetre
+                            dossier={dossier.id}
+                            initial={etatDeLaModification(donnees)}
+                            etapeInitiale={1}
+                            actesInitiaux={[]}
+                            piecesDeposees={documents
+                              .filter((d) => d.type && d.status !== "generated")
+                              .map((d) => ({ type: d.type as string, nom: d.name }))}
                           />
                         ) : undefined
                       }
