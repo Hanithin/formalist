@@ -11,6 +11,7 @@ import { adresseSurUneLigne as adresseDuSiege } from "@/domain/modification/gaba
 import { dateEnFrancais, dateDeTitre, sirenLisible } from "@/domain/formalite/lettres";
 import { echeancesDe, type Nature, type Periodicite } from "./regles";
 import { toutesDesFemmes } from "@/domain/formalite/etat-civil";
+import { etatCivilDuMandataire } from "@/domain/formalite/mandataire";
 
 const TIRET = "-";
 
@@ -41,6 +42,8 @@ export interface EntrepriseCessee {
 
 export interface ContexteCessation {
   nature: Nature;
+  /** Le jour où l'on signe, qui n'est pas celui où l'activité s'arrête. */
+  aujourdHui?: Date;
   entreprise: EntrepriseCessee;
   /** L'entrepreneur : une auto-entreprise se confond avec la personne. */
   entrepreneur: { civilite?: string; prenom?: string; nom?: string; adresse?: string };
@@ -102,6 +105,26 @@ export function donneesDeLaCessation(contexte: ContexteCessation): Record<string
     ACTIVITE: ou(texte(entreprise.activite)),
     ADRESSE: adresseSurUneLigne(entreprise),
     VILLE_SIGNATURE: ou(texte(entreprise.ville)),
+    /*
+     * Le jour de la signature, non celui de l'arrêt.
+     *
+     * Les deux actes écrivaient « Fait à Lyon, le {{DATE_CESSATION_FR}} » : une
+     * déclaration remplie le 12 pour un arrêt au 30 portait donc une date future, et le
+     * pouvoir qui l'accompagne n'autorisait rien avant elle. Déclarée après coup, elle
+     * était antidatée. Ce sont deux pièces signées : elles portent la date du jour.
+     */
+    DATE_SIGNATURE_FR: dateEnFrancais(
+      (contexte.aujourdHui ?? new Date()).toISOString().slice(0, 10)
+    ),
+    /*
+     * Le mandataire se nomme, il n'est pas « le porteur d'un original ».
+     *
+     * Cette formule vaut pour un dépôt au comptoir du greffe, fait par qui se présente.
+     * Le guichet unique, lui, reçoit un dépôt électronique signé sous l'identité d'une
+     * personne : il faut que le pouvoir la nomme. Les trois autres parcours l'avaient
+     * corrigé ; celui-ci était resté sur l'ancienne formule.
+     */
+    MANDATAIRE: etatCivilDuMandataire(),
 
     /* ---------------------------------------------------- L'entrepreneur */
     ENTREPRENEUR: ou(nom),

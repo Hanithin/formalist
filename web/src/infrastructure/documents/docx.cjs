@@ -1520,7 +1520,30 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
       );
     }
 
+    /*
+     * Le mandataire n'est pas une signataire.
+     *
+     * Ces accords portent sur celles qui signent l'acte. Le pouvoir, lui, nomme aussi
+     * celui à qui il est donné - l'avocat qui déposera - et sa phrase porte le même
+     * « né le » : le pouvoir d'une société fondée par une femme sortait « Monsieur Hani
+     * MADFAI, née le 12 avril 1985 ». Une faute sur le nom du mandataire, dans la pièce
+     * qui l'habilite à déposer.
+     *
+     * Sa phrase est donc mise à l'abri le temps des remplacements, puis remise en place.
+     */
+    const mandataire = [data.POUVOIR_MANDATAIRE, data.MANDATAIRE]
+      .filter((v) => typeof v === "string" && v.trim().length > 10);
+    const ABRI = "\u0000MANDATAIRE";
+
+    mandataire.forEach((phrase, rang) => {
+      docXml = docXml.split(phrase).join(ABRI + rang + "\u0000");
+    });
+
     for (const [motif, remplacement] of accords) docXml = docXml.replace(motif, remplacement);
+
+    mandataire.forEach((phrase, rang) => {
+      docXml = docXml.split(ABRI + rang + "\u0000").join(phrase);
+    });
   }
 
   /*

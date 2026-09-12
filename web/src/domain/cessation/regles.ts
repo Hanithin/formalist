@@ -185,7 +185,10 @@ export function echeancesDe(situation: Situation): Echeance[] {
     explication:
       "Le chiffre d'affaires réalisé du 1er janvier à la date de cessation se reporte sur le formulaire 2042-C-PRO, avec la déclaration de revenus.",
     limite: null,
-    quand: "au printemps suivant, avec votre déclaration de revenus",
+    /* La même phrase sert à l'écran et à la déclaration signée, qui parle à la première
+       personne : « avec votre déclaration de revenus » y détonnait, et répétait
+       l'intitulé de la ligne. */
+    quand: "au printemps suivant, avec la déclaration de revenus du foyer",
     fondement: "Article 50-0 du code général des impôts",
   });
 
