@@ -48,15 +48,19 @@ export default async function IncidentsDeLaPlateforme({
         </Link>
       </div>
 
-      <Incidents
-        incidents={incidents.map((i) => ({
-          ...i,
-          premiereLe: i.premiereLe.toISOString(),
-          derniereLe: i.derniereLe.toISOString(),
-          resoluLe: i.resoluLe?.toISOString() ?? null,
-        }))}
-        resolus={resolus}
-      />
+      {/* Le corps prend les marges des autres écrans de l'administration : sans elles,
+          la liste touchait le bord droit de la fenêtre. */}
+      <div className={styles.incidentsCorps}>
+        <Incidents
+          incidents={incidents.map((i) => ({
+            ...i,
+            premiereLe: i.premiereLe.toISOString(),
+            derniereLe: i.derniereLe.toISOString(),
+            resoluLe: i.resoluLe?.toISOString() ?? null,
+          }))}
+          resolus={resolus}
+        />
+      </div>
     </main>
   );
 }

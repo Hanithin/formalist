@@ -51,27 +51,55 @@ export function Incidents({
 
   return (
     <>
-      <div className={styles.incidentsOnglets}>
-        <Link
-          href="/administration/incidents"
-          className={resolus ? styles.incidentsOnglet : styles.incidentsOngletActif}
-        >
-          À regarder
-        </Link>
-        <Link
-          href="/administration/incidents?voir=resolus"
-          className={resolus ? styles.incidentsOngletActif : styles.incidentsOnglet}
-        >
-          Réglés
-        </Link>
+      {/*
+        Ce qu'on sait de l'ensemble, puis de quoi changer de vue.
+
+        La page ouvrait sur deux pilules posées sous le titre, et rien d'autre : ni
+        combien il y en a, ni depuis quand. Le résumé tient en une ligne et répond aux
+        deux questions qu'on se pose en arrivant.
+      */}
+      <div className={styles.incidentsBarre}>
+        <p className={styles.incidentsResume}>{resume(incidents, resolus)}</p>
+
+        <div className={styles.incidentsOnglets}>
+          <Link
+            href="/administration/incidents"
+            className={resolus ? styles.incidentsOnglet : styles.incidentsOngletActif}
+          >
+            À regarder
+          </Link>
+          <Link
+            href="/administration/incidents?voir=resolus"
+            className={resolus ? styles.incidentsOngletActif : styles.incidentsOnglet}
+          >
+            Réglés
+          </Link>
+        </div>
       </div>
 
       {incidents.length === 0 ? (
-        <p className={styles.incidentsVide}>
-          {resolus
-            ? "Rien n'a encore été marqué réglé."
-            : "Aucun incident. Le serveur n'a rien signalé depuis la dernière remise à zéro."}
-        </p>
+        <div className={styles.incidentsVide}>
+          <div className={styles.incidentsVideIcone} aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
+          <h2 className={styles.incidentsVideTitre}>
+            {resolus ? "Rien de classé pour l'instant" : "Rien à signaler"}
+          </h2>
+          <p className={styles.incidentsVideTexte}>
+            {resolus
+              ? "Les pannes que vous marquerez réglées viendront ici, avec leur compteur - c'est lui qui dira si la correction a tenu."
+              : "Aucune erreur rapportée par le serveur. Les pannes arrivent ici d'elles-mêmes, groupées par cause."}
+          </p>
+        </div>
       ) : (
         <ul className={styles.incidents}>
           {incidents.map((incident) => (
@@ -105,14 +133,14 @@ export function Incidents({
 
               {ouvert === incident.id && (
                 <div className={styles.incidentDetail}>
+                  {/* Le chemin prend la ligne : serré en colonne, il se coupait au
+                      milieu d'un mot - « /statuts/d epot ». */}
+                  <p className={styles.incidentChemin}>
+                    {incident.methode ? incident.methode + " " : ""}
+                    {incident.chemin ?? "-"}
+                  </p>
+
                   <dl className={styles.incidentFaits}>
-                    <div>
-                      <dt>Chemin</dt>
-                      <dd>
-                        {incident.methode ? incident.methode + " " : ""}
-                        {incident.chemin ?? "-"}
-                      </dd>
-                    </div>
                     <div>
                       <dt>Contexte</dt>
                       <dd>{incident.origine ?? "-"}</dd>
@@ -142,6 +170,24 @@ export function Incidents({
       )}
     </>
   );
+}
+
+/**
+ * Ce qu'on veut savoir avant de lire la liste.
+ *
+ * Combien, et depuis quand : deux questions, une ligne. Le décompte des occurrences
+ * compte davantage que celui des lignes - trois pannes vues deux mille fois ne sont pas
+ * trois incidents isolés.
+ */
+function resume(incidents: IncidentAffiche[], resolus: boolean): string {
+  if (incidents.length === 0) return resolus ? "Aucune panne classée" : "Aucune panne ouverte";
+
+  const pannes = incidents.length === 1 ? "1 panne" : incidents.length + " pannes";
+  const fois = incidents.reduce((total, i) => total + i.occurrences, 0);
+  const compte = fois === incidents.length ? "" : ", " + fois + " occurrences";
+
+  if (resolus) return pannes + compte + " - classées";
+  return pannes + compte + " - la plus récente " + depuis(incidents[0].derniereLe);
 }
 
 /** « il y a 3 h » : ce qu'on veut savoir d'abord, c'est si c'est encore vivant. */

@@ -244,7 +244,6 @@
   cursor: pointer;
 }
 
-
 /* ---------- Suivi ----------
    Chaque bloc a le même gabarit : un titre, une précision, une pile de lignes. */
 
@@ -476,10 +475,36 @@
  * combien de fois, et où. La ligne y répond ; la pile, qui ne sert qu'une fois qu'on a
  * choisi laquelle regarder, attend qu'on la déplie.
  */
+/* Les marges des autres écrans de l'administration, et une mesure qui se lit. */
+.incidentsCorps {
+  max-width: 1060px;
+  padding: 16px 40px 48px;
+}
+
+/*
+ * Combien, et depuis quand : ce qu'on veut savoir avant de lire la liste.
+ *
+ * La page ouvrait sur deux pilules posées sous le titre, et rien d'autre. Le résumé
+ * tient à gauche, les deux vues à droite - une barre, pas un empilement.
+ */
+.incidentsBarre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.incidentsResume {
+  margin: 0;
+  font-size: 13.5px;
+  color: #52525b;
+}
+
 .incidentsOnglets {
   display: flex;
   gap: 6px;
-  margin-bottom: 18px;
 }
 
 .incidentsOnglet,
@@ -505,13 +530,53 @@
   color: #fff;
 }
 
+/*
+ * Quand il n'y a rien, le dire comme une bonne nouvelle.
+ *
+ * Une phrase grise seule dans un rectangle blanc large comme l'écran se lit comme une
+ * panne d'affichage. C'est pourtant l'état qu'on espère : une carte, une coche, et ce
+ * que la page fera le jour où il y aura quelque chose.
+ */
 .incidentsVide {
-  margin: 0;
-  padding: 28px;
+  max-width: 520px;
+  margin: 40px auto;
+  padding: 34px 32px;
   border: 1px solid #e5e5e7;
-  border-radius: 14px;
+  border-radius: 16px;
   background: #fff;
+  text-align: center;
+}
+
+.incidentsVideIcone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  border-radius: 13px;
+  background: #ecfdf5;
+}
+
+.incidentsVideIcone svg {
+  width: 22px;
+  height: 22px;
+  color: #16a34a;
+}
+
+.incidentsVideTitre {
+  margin: 0 0 7px;
+  font-family: var(--police-titre), sans-serif;
+  font-size: 17px;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.incidentsVideTexte {
+  margin: 0 auto;
+  max-width: 40ch;
   font-size: 13.5px;
+  line-height: 1.6;
   color: #71717a;
 }
 
@@ -573,11 +638,15 @@
   color: #18181b;
 }
 
+/* Deux colonnes de largeur fixe : sans elles, « 1 fois » et « 812 fois » décalaient
+   tout ce qui suit d'une ligne à l'autre. */
 .incidentCompte {
   flex: none;
+  width: 64px;
   font-size: 12.5px;
   font-weight: 500;
   color: #3f3f46;
+  text-align: right;
 }
 
 .incidentQuand {
@@ -615,11 +684,23 @@
   border-top: 1px solid #f4f4f5;
 }
 
+/* Le chemin, en pleine largeur et dans la police du code : c'est une adresse. */
+.incidentChemin {
+  margin: 14px 0 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #fafafa;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  color: #3f3f46;
+  overflow-wrap: anywhere;
+}
+
 .incidentFaits {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px 18px;
-  margin: 14px 0;
+  margin: 12px 0 14px;
 }
 
 .incidentFaits dt {
