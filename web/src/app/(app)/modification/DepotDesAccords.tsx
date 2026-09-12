@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AirLu } from "@/domain/modification/lecture-air";
 import type { NatureDuDepot } from "@/domain/modification/nature-accord";
 import type { AccordDepose } from "./Accords";
@@ -78,17 +78,36 @@ export function DepotDesAccords({
   const [lignes, setLignes] = useState<Ligne[]>([]);
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  /* Le fichier dont l'aperçu est ouvert : un seul à la fois, la fenêtre est étroite. */
+  const [apercuDe, setApercuDe] = useState<string | null>(null);
   const champFichier = useRef<HTMLInputElement>(null);
 
-  /* Échap ferme, comme sur toute fenêtre de ce genre - sauf pendant l'envoi, où
-     l'interrompre laisserait une partie des accords déposés et l'autre non. */
+  /*
+   * L'aperçu se lit depuis le navigateur, sans passer par le serveur.
+   *
+   * Le fichier est déjà là - c'est tout l'objet de cette fenêtre : rien n'est encore
+   * déposé. L'envoyer pour le relire ensuite serait un aller-retour pour un document
+   * qu'on tient dans la main.
+   *
+   * L'adresse se calcule, elle ne se range pas : une adresse d'objet garde son fichier
+   * en mémoire tant qu'elle existe, et l'effet de nettoyage la révoque dès qu'on change
+   * de document ou qu'on referme la fenêtre - sans quoi vingt accords ouverts l'un après
+   * l'autre feraient grossir l'onglet sans que rien ne le libère.
+   */
+  const fichierApercu = apercuDe
+    ? (lignes.find((l) => l.cle === apercuDe)?.fichier ?? null)
+    : null;
+
+  const adresseApercu = useMemo(
+    () => (fichierApercu ? URL.createObjectURL(fichierApercu) : null),
+    [fichierApercu]
+  );
+
   useEffect(() => {
-    function auClavier(e: KeyboardEvent) {
-      if (e.key === "Escape" && !envoi) surFermeture();
-    }
-    document.addEventListener("keydown", auClavier);
-    return () => document.removeEventListener("keydown", auClavier);
-  }, [surFermeture, envoi]);
+    return () => {
+      if (adresseApercu) URL.revokeObjectURL(adresseApercu);
+    };
+  }, [adresseApercu]);
 
   /**
    * Lit les fichiers choisis, sans rien déposer.
@@ -336,6 +355,24 @@ export function DepotDesAccords({
                     )}
                   </div>
 
+                  {/*
+                    Voir le document, pour trancher soi-même.
+
+                    « Ce document ne ressemble pas à un accord » est un avis, et il peut
+                    se tromper sur un gabarit qu'on n'a jamais vu. Le contester suppose
+                    de pouvoir regarder - et le fichier est là, dans le navigateur.
+                  */}
+                  <button
+                    type="button"
+                    className={styles.depotVoir}
+                    aria-expanded={apercuDe === ligne.cle}
+                    onClick={() =>
+                      setApercuDe((ouvert) => (ouvert === ligne.cle ? null : ligne.cle))
+                    }
+                  >
+                    {apercuDe === ligne.cle ? "Masquer" : "Voir"}
+                  </button>
+
                   <button
                     type="button"
                     className={styles.depotRetirer}
@@ -354,6 +391,14 @@ export function DepotDesAccords({
                       <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   </button>
+
+                  {apercuDe === ligne.cle && adresseApercu && (
+                    <iframe
+                      className={styles.depotApercu}
+                      src={adresseApercu}
+                      title={"Aperçu de " + ligne.fichier.name}
+                    />
+                  )}
                 </li>
               ))}
             </ul>

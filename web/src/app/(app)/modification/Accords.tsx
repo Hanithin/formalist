@@ -170,16 +170,28 @@ export function Accords({
         <>
           <div className={styles.accordsTableau}>
             <table>
+              {/* Les largeurs sont posées ici : la mise en page fixe du tableau les
+                  suit, et un nom de fichier long n'écrase plus les champs de saisie. */}
+              <colgroup>
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Souscripteur</th>
                   <th>Montant</th>
                   <th>Valorisation</th>
                   <th>Signé le</th>
-                  <th>Prix / action</th>
-                  <th>Actions</th>
+                  {/* Deux colonnes en une : le prix et le nombre d'actions disent la
+                      même chose de la même ligne, et séparés ils prenaient la place
+                      des quatre champs qu'on vient saisir. */}
+                  <th>Conversion</th>
                   <th>
-                    <span className="sr-only">Retirer</span>
+                    <span className={styles.accordsInvisible}>Retirer</span>
                   </th>
                 </tr>
               </thead>
@@ -203,7 +215,13 @@ export function Accords({
                           placeholder="À compléter"
                           onChange={(e) => corriger(rang, "investisseur", e.target.value)}
                         />
-                        <span className={styles.accordsFichierNom}>{accord.fichier}</span>
+                        {/* Sur une ligne, écourté : le nom entier se lit au survol.
+                            Étalé, un « COMPANY - FAST INVESTMENT AGREEMENT - BSA AIR VF
+                            copie (signed).pdf » prenait cinq lignes et triplait la
+                            hauteur de chaque rangée. */}
+                        <span className={styles.accordsFichierNom} title={accord.fichier}>
+                          {accord.fichier}
+                        </span>
                       </td>
                       <td>
                         <input
@@ -232,10 +250,22 @@ export function Accords({
                         />
                       </td>
                       <td className={styles.accordsCalcule}>
-                        {part && part.part > 0 ? PRIX.format(part.prix) + " €" : "-"}
-                      </td>
-                      <td className={styles.accordsCalcule}>
-                        {part && part.part > 0 ? EUROS.format(part.actions) : "-"}
+                        {/* Sans actions existantes, le prix par action divise par zéro :
+                            « ∞ € » est vrai en arithmétique et ne dit rien à personne. */}
+                        {part && part.part > 0 && Number.isFinite(part.actions) ? (
+                          <>
+                            <span className={styles.accordsActions}>
+                              {EUROS.format(part.actions)} actions
+                            </span>
+                            {Number.isFinite(part.prix) && (
+                              <span className={styles.accordsPrix}>
+                                {PRIX.format(part.prix)} € l&apos;une
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          "-"
+                        )}
                       </td>
                       <td>
                         <button

@@ -7930,6 +7930,8 @@
 
 .depotLigne {
   display: flex;
+  /* L'aperçu se déplie sous la ligne : elle doit pouvoir passer à la ligne suivante. */
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 12px;
   margin: 0;
@@ -8059,6 +8061,51 @@
   color: #a1a1aa;
 }
 
+/*
+ * Voir le document, pour trancher soi-même.
+ *
+ * « Ce document ne ressemble pas à un accord » est un avis : il peut se tromper sur un
+ * gabarit qu'on n'a jamais vu, et le contester suppose de pouvoir regarder. Discret -
+ * on ne l'ouvre que lorsqu'on doute.
+ */
+.depotVoir {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  background: #fff;
+  color: #52525b;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.depotVoir:hover {
+  border-color: #d4d4d8;
+  color: #18181b;
+}
+
+/*
+ * Le document sous sa ligne, non dans une autre fenêtre.
+ *
+ * Ce qu'on vient vérifier, c'est le verdict : le voir à côté de lui, et pouvoir cocher
+ * dans la foulée, vaut mieux qu'un onglet où l'on perd le fil de ce qu'on relisait.
+ */
+.depotApercu {
+  flex-basis: 100%;
+  width: 100%;
+  height: 440px;
+  margin-top: 12px;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
 .depotRetirer {
   flex-shrink: 0;
   width: 26px;
@@ -8160,21 +8207,71 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
+  /* Des colonnes qui ne dépendent pas de la longueur des noms de fichiers : sans cela,
+     un contrat au nom à rallonge écrasait les quatre champs de saisie. */
+  table-layout: fixed;
+}
+
+.accordsTableau col:nth-child(1) {
+  width: 24%;
+}
+
+.accordsTableau col:nth-child(2) {
+  width: 15%;
+}
+
+.accordsTableau col:nth-child(3) {
+  width: 17%;
+}
+
+/* La plus large : le sélecteur de date du navigateur a une taille qui ne se négocie
+   pas, et plus étroit il tronquait l'année. */
+.accordsTableau col:nth-child(4) {
+  width: 22%;
+}
+
+.accordsTableau col:nth-child(5) {
+  width: 16%;
+}
+
+.accordsTableau col:nth-child(6) {
+  width: 6%;
+}
+
+/*
+ * Un intitulé pour le lecteur d'écran, pas pour l'oeil.
+ *
+ * L'en-tête de la colonne de retrait portait la classe « sr-only », qui n'est définie
+ * nulle part dans ce projet : le mot « Retirer » s'affichait donc en clair, coupé par le
+ * bord du tableau. C'est la convention du module de messagerie, reprise ici.
+ */
+.accordsInvisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .accordsTableau th {
   padding: 10px 12px;
   text-align: left;
   font-weight: 400;
+  font-size: 13px;
   color: #71717a;
   border-bottom: 1px solid #e4e4e7;
-  white-space: nowrap;
+}
+
+/* La colonne calculée s'aligne à droite, en-tête compris. */
+.accordsTableau th:nth-child(5) {
+  text-align: right;
 }
 
 .accordsTableau td {
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-bottom: 1px solid #f4f4f5;
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 .accordsTableau tr:last-child td {
@@ -8183,7 +8280,7 @@
 
 .accordsTableau input {
   width: 100%;
-  min-width: 108px;
+  min-width: 0;
   padding: 7px 9px;
   border: 1px solid #e4e4e7;
   border-radius: 8px;
@@ -8199,20 +8296,55 @@
   border-color: #18181b;
 }
 
-/* Le fichier d'où vient la ligne : on doit pouvoir retrouver le contrat sur son disque. */
+/*
+ * Le fichier d'où vient la ligne, sur une seule ligne.
+ *
+ * Il sert à retrouver le contrat sur son disque, pas à être lu en entier : étalé, un
+ * « COMPANY - FAST INVESTMENT AGREEMENT - BSA AIR VF copie (signed).pdf » prenait cinq
+ * lignes et triplait la hauteur de la rangée, au point qu'on ne voyait plus que deux
+ * accords à l'écran. Écourté, il se lit entier au survol.
+ */
 .accordsFichierNom {
   display: block;
-  margin-top: 4px;
+  overflow: hidden;
+  margin-top: 5px;
   font-size: 12px;
   color: #a1a1aa;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* Les cases calculées s'alignent sur le haut des champs, non sur leur milieu. */
+.accordsCalcule {
+  padding-top: 17px !important;
+}
+
+/*
+ * Le résultat de la ligne, sur deux lignes.
+ *
+ * Le nombre d'actions et leur prix disent la même chose du même accord : séparés en
+ * deux colonnes, ils prenaient la largeur des quatre champs qu'on vient justement
+ * saisir, et le sélecteur de date s'en trouvait tronqué. Le nombre d'abord - c'est ce
+ * qu'on cherche - le prix en dessous, plus discret.
+ */
 .accordsCalcule {
   text-align: right;
   color: #52525b;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.accordsActions {
+  display: block;
+  font-size: 13.5px;
+  color: #18181b;
+}
+
+.accordsPrix {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  color: #a1a1aa;
 }
 
 .accordsRetirer {
