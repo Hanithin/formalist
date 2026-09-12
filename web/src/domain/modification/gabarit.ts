@@ -1913,7 +1913,11 @@ function nomDuSignataire(valeurs: Valeurs): string {
  * ne l'a pas, et l'acte doit sortir juste sans lui.
  */
 function qualiteDuSignataire(valeurs: Valeurs, forme: string | null | undefined): string {
-  const saisie = texte(valeurs.signataireQualite).trim();
+  /* `texte` rend le tiret de remplacement pour une valeur vide, et un tiret est une
+     chaîne non vide : le défaut ne s'appliquait jamais. Le pouvoir sortait « agissant en
+     qualité de - de la Société », et la décision de constatation « Le - » sous la
+     signature - le même piège que la civilité, sur le champ d'à côté. */
+  const saisie = texteBrut(valeurs.signataireQualite);
   if (saisie) return saisie;
   return parActions(forme) ? "président" : "gérant";
 }
