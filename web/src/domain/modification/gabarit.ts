@@ -2206,7 +2206,7 @@ export function actesAProduire(
 
     /* Ce que la Société doit porter à son registre, et que l'attestation invoque. */
     actes.push({
-      titre: "Registre des mouvements de titres",
+      titre: "Inscriptions au registre des mouvements de titres",
       gabarit: MODELE_AIR_REGISTRE_TITRES,
     });
   }

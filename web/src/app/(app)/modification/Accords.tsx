@@ -638,8 +638,8 @@ export function ActesPrevus({ valeurs, forme }: { valeurs: Valeurs; forme?: stri
           <li>
             <span>Reporter les inscriptions à votre registre</span>
             <span className={styles.actesPourquoi}>
-              Le dossier édite le feuillet des mouvements du jour. C&apos;est au registre que la
-              Société tient qu&apos;il doit être porté.
+              Le dossier édite le feuillet des mouvements du jour. Le registre, lui, se tient au
+              siège - sur papier ou sur support durable - et c&apos;est là qu&apos;il se reporte.
             </span>
           </li>
           <li>
@@ -681,5 +681,5 @@ const POURQUOI: Record<string, string> = {
   "modif-air-attestation-compte.docx":
     "Une par souscripteur : la pièce qu'il détient en propre pour prouver qu'il est actionnaire.",
   "modif-air-registre-titres.docx":
-    "Les inscriptions du jour, à reporter au registre que la Société tient. C'est lui qui fait foi de la détention.",
+    "Le feuillet des inscriptions du jour, à reporter au registre que la Société tient à son siège. C'est lui qui fait foi de la détention.",
 };

@@ -97,7 +97,7 @@ describe("la constatation d'une augmentation de capital", () => {
       "Avenants de conversion anticipée",
       "Décision du président constatant l'augmentation de capital",
       "Attestations d'inscription en compte",
-      "Registre des mouvements de titres",
+      "Inscriptions au registre des mouvements de titres",
     ]);
   });
 
@@ -124,7 +124,7 @@ describe("la constatation d'une augmentation de capital", () => {
     expect(titres.filter((t) => !AUTRES.some((a) => t.includes(a)))).toEqual([
       "Décision du président constatant l'augmentation de capital",
       "Attestations d'inscription en compte",
-      "Registre des mouvements de titres",
+      "Inscriptions au registre des mouvements de titres",
     ]);
   });
 
