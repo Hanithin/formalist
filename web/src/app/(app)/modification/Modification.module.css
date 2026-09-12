@@ -8390,44 +8390,72 @@
   font-variant-numeric: tabular-nums;
 }
 
-.accordsConseil,
-.accordsBloquant,
-.accordsAvertit {
-  margin: 12px 0 0;
-  padding: 11px 14px;
-  border-radius: 10px;
+/*
+ * Ce qui cloche, en un seul bloc.
+ *
+ * Les anomalies s'empilaient sous le tableau, une par souscripteur : sept paragraphes
+ * rouges qu'il fallait dérouler pour lire, et qui disaient tous la même chose. Le
+ * domaine les groupe désormais, et l'écran les rassemble - un titre qui compte, une
+ * liste qui tient en trois lignes, au-dessus du tableau où l'on cherchera la ligne
+ * fautive.
+ *
+ * Le fond dit la gravité, sans filet de couleur sur le bord.
+ */
+.accordsBilanBloquant,
+.accordsBilanAvertit {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 12px;
   font-size: 13.5px;
   line-height: 1.55;
 }
 
-.accordsConseil {
-  background: #f4f4f5;
-  color: #3f3f46;
+.accordsBilanBloquant {
+  background: #fef2f2;
+  color: #991b1b;
 }
 
-.accordsConseil button {
+.accordsBilanAvertit {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.accordsBilanTitre {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.accordsBilanListe {
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.accordsBilanListe li + li {
+  margin-top: 7px;
+}
+
+/*
+ * Le geste, au bout de la phrase qui l'appelle.
+ *
+ * « Renseigner » mène au champ vide et lui donne le curseur ; « Appliquer » pose la
+ * division proposée. Dans les deux cas, nommer ce qu'il faut faire sans permettre de le
+ * faire là où on le lit est un aller-retour de trop.
+ */
+.accordsMener {
   margin-left: 6px;
   padding: 0;
   border: none;
   background: none;
   font-family: inherit;
   font-size: 13.5px;
-  color: #18181b;
+  font-weight: 500;
+  color: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
   letter-spacing: 0;
-}
-
-/* Ce qui empêche de signer se distingue par la couleur du texte, non par un filet. */
-.accordsBloquant {
-  background: #fef2f2;
-  color: #991b1b;
-}
-
-.accordsAvertit {
-  background: #fffbeb;
-  color: #92400e;
 }
 
 .accordsErreur {

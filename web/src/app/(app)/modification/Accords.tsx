@@ -103,6 +103,35 @@ export function Accords({
   const anomalies = anomaliesDuTour(apresDivision, contrats);
   const conseillee = divisionRecommandee(actionsExistantes, contrats);
 
+  /*
+   * La division ne se propose qu'une fois le capital connu.
+   *
+   * Sans actions existantes, `divisionRecommandee` rend un million - il n'y a pas de
+   * diviseur qui sauve une division par zéro. Le conseil s'affichait quand même, sous
+   * un titre qui annonçait une seule chose à corriger : deux lignes pour une cause.
+   */
+  const aConseiller = actionsExistantes > 0 && conseillee > division;
+
+  const bloquants = anomalies.filter((a) => a.gravite === "bloquant");
+  const avertissements = anomalies.filter((a) => a.gravite !== "bloquant");
+  const aBloquer = bloquants.length > 0;
+
+  /**
+   * Amène le champ nommé sous les yeux, et lui donne le curseur.
+   *
+   * L'étape fait trois écrans de haut : nommer le champ à remplir sans y conduire
+   * laisse chercher. Les champs du parcours portent un identifiant tiré du leur -
+   * « champ-airActionsExistantes » - c'est par là qu'on le retrouve.
+   */
+  function menerAuChamp(identifiant: string) {
+    const champ = document.getElementById("champ-" + identifiant);
+    if (!champ) return;
+    champ.scrollIntoView({ behavior: "smooth", block: "center" });
+    /* Le curseur après le défilement : le poser avant fait sauter la page d'un coup,
+       le navigateur amenant lui-même le champ focalisé à l'écran. */
+    window.setTimeout(() => champ.focus({ preventScroll: true }), 400);
+  }
+
   function corriger(rang: number, champ: keyof AccordDepose, valeur: string) {
     const suivants = accords.map((accord, i) =>
       i !== rang
@@ -164,6 +193,70 @@ export function Accords({
         <p className={styles.accordsErreur} role="alert">
           {erreur}
         </p>
+      )}
+
+      {/*
+        Ce qui cloche, au-dessus de ce qui cloche.
+
+        Les anomalies s'empilaient sous le tableau, une par souscripteur, et il fallait
+        dérouler la page pour les découvrir - puis constater qu'elles disaient toutes la
+        même chose. Regroupées par le domaine, elles tiennent en deux ou trois lignes ;
+        posées ici, elles se voient avant qu'on ne cherche dans le tableau ce qui ne va
+        pas.
+      */}
+      {accords.length > 0 && (aBloquer || aConseiller || avertissements.length > 0) && (
+        <div
+          className={aBloquer ? styles.accordsBilanBloquant : styles.accordsBilanAvertit}
+          role={aBloquer ? "alert" : "status"}
+        >
+          <p className={styles.accordsBilanTitre}>
+            {aBloquer
+              ? bloquants.length === 1
+                ? "Une chose empêche de convertir"
+                : bloquants.length + " choses empêchent de convertir"
+              : "À vérifier avant de convertir"}
+          </p>
+
+          <ul className={styles.accordsBilanListe}>
+            {bloquants.map((anomalie, rang) => (
+              <li key={"b" + rang}>
+                {anomalie.message}
+                {/* Le champ vide se remplit d'ici : la page fait trois écrans de haut,
+                    et chercher soi-même le champ nommé est un aller-retour de trop. */}
+                {anomalie.champ && (
+                  <button
+                    type="button"
+                    className={styles.accordsMener}
+                    onClick={() => menerAuChamp(anomalie.champ!)}
+                  >
+                    Renseigner
+                  </button>
+                )}
+              </li>
+            ))}
+
+            {/* La division proposée, avec sa raison : un bouton qui pose un nombre sans
+                dire pourquoi ne s'utilise pas. */}
+            {aConseiller && (
+              <li>
+                À {EUROS.format(apresDivision)} actions, le plus petit souscripteur reçoit un nombre
+                d&apos;actions trop éloigné de ses droits. Divisez la valeur nominale par{" "}
+                {EUROS.format(conseillee)} pour ramener tous les arrondis sous 1 %.{" "}
+                <button
+                  type="button"
+                  className={styles.accordsMener}
+                  onClick={() => surDivision(conseillee)}
+                >
+                  Appliquer
+                </button>
+              </li>
+            )}
+
+            {avertissements.map((anomalie, rang) => (
+              <li key={"a" + rang}>{anomalie.message}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {accords.length > 0 && (
@@ -306,33 +399,6 @@ export function Accords({
               </dd>
             </div>
           </dl>
-
-          {/*
-            La division proposée, avec sa raison.
-            Un bouton qui pose un nombre sans dire pourquoi ne s'utilise pas : il dit ce
-            que la division change, et ce qu'elle coûte de ne pas la faire.
-          */}
-          {conseillee > division && (
-            <p className={styles.accordsConseil}>
-              À {EUROS.format(apresDivision)} actions, le plus petit souscripteur reçoit un nombre
-              d&apos;actions trop éloigné de ses droits. Divisez la valeur nominale par{" "}
-              {EUROS.format(conseillee)} pour ramener tous les arrondis sous 1 %.{" "}
-              <button type="button" onClick={() => surDivision(conseillee)}>
-                Appliquer
-              </button>
-            </p>
-          )}
-
-          {anomalies.map((anomalie, rang) => (
-            <p
-              key={rang}
-              className={
-                anomalie.gravite === "bloquant" ? styles.accordsBloquant : styles.accordsAvertit
-              }
-            >
-              {anomalie.message}
-            </p>
-          ))}
         </>
       )}
     </section>

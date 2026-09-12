@@ -42,15 +42,63 @@ describe("la conversion d'un tour de BSA AIR", () => {
   it("refuse de convertir quand la valeur nominale est trop grosse", () => {
     const anomalies = anomaliesDuTour(1_000, TOUR);
     expect(anomalies.some((a) => a.gravite === "bloquant")).toBe(true);
-    expect(anomalies.some((a) => a.message.includes("BERDAH") && a.message.includes("aucune action entière"))).toBe(
-      true
-    );
+    expect(
+      anomalies.some(
+        (a) => a.message.includes("BERDAH") && a.message.includes("aucune action entière")
+      )
+    ).toBe(true);
+  });
+
+  it("nomme le champ vide plutôt que d'accuser chaque souscripteur", () => {
+    /*
+     * Sans actions existantes, chacun reçoit zéro action - et la règle reprochait à
+     * chacun de n'avoir droit à rien. Sept phrases identiques pour un champ vide, et pas
+     * un mot sur le champ. C'est lui que les accords viennent augmenter : il se dit une
+     * fois, et l'écran peut y conduire.
+     */
+    const anomalies = anomaliesDuTour(0, TOUR);
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0].champ).toBe("airActionsExistantes");
+    expect(anomalies[0].message).toContain("actions existantes");
+  });
+
+  it("ne dit qu'une fois ce qui vaut pour plusieurs souscripteurs", () => {
+    /*
+     * Sur ce tour de sept accords, la règle rendait sept paragraphes rigoureusement
+     * identiques au mot près - le nom changeait. Il fallait dérouler la page pour
+     * découvrir qu'ils appelaient tous le même geste.
+     *
+     * Il reste deux anomalies, et c'est juste : ce sont deux défauts différents - celui
+     * qui ne reçoit aucune action, et ceux que l'arrondi écarte de leurs droits.
+     */
+    const bloquants = anomaliesDuTour(1_000, TOUR).filter((a) => a.gravite === "bloquant");
+    expect(bloquants).toHaveLength(2);
+    expect(bloquants.length).toBeLessThan(TOUR.length);
+    expect(bloquants.every((a) => a.message.includes("Divisez la valeur nominale"))).toBe(true);
+  });
+
+  it("énumère les souscripteurs concernés, puis compte au-delà de quatre", () => {
+    /*
+     * Au-delà, la phrase devient une liste qu'on ne lit plus : on en nomme trois et l'on
+     * compte les autres. Ce qui importe est le nombre et le geste à faire.
+     */
+    const minuscules: ContratAir[] = ["A", "B", "C", "D", "E", "F"].map((nom) => ({
+      investisseur: nom,
+      montant: 100,
+      valorisation: 10_000_000,
+    }));
+
+    const message = anomaliesDuTour(10, minuscules).find((a) => a.gravite === "bloquant")!.message;
+    expect(message).toContain("6 souscripteurs");
+    expect(message).toContain("A, B, C et 3 autres");
   });
 
   it("propose la division qui rend les arrondis honnêtes", () => {
     const diviseur = divisionRecommandee(1_000, TOUR);
     expect(diviseur).toBe(1_000);
-    expect(anomaliesDuTour(1_000 * diviseur, TOUR).filter((a) => a.gravite === "bloquant")).toEqual([]);
+    expect(anomaliesDuTour(1_000 * diviseur, TOUR).filter((a) => a.gravite === "bloquant")).toEqual(
+      []
+    );
   });
 
   it("signale que les accords n'ont pas tous la même valorisation", () => {
@@ -91,8 +139,20 @@ describe("le rang du prochain accord déposé", () => {
     expect(rangSuivant([])).toBe(1);
     expect(
       rangSuivant([
-        { fichier: "a.pdf", document: "Accord BSA AIR 01", investisseur: "A", montant: 1, valorisation: 2 },
-        { fichier: "c.pdf", document: "Accord BSA AIR 03", investisseur: "C", montant: 1, valorisation: 2 },
+        {
+          fichier: "a.pdf",
+          document: "Accord BSA AIR 01",
+          investisseur: "A",
+          montant: 1,
+          valorisation: 2,
+        },
+        {
+          fichier: "c.pdf",
+          document: "Accord BSA AIR 03",
+          investisseur: "C",
+          montant: 1,
+          valorisation: 2,
+        },
       ])
     ).toBe(4);
   });
@@ -112,7 +172,10 @@ describe("les lignes incomplètes", () => {
    * fausser le total.
    */
   it("pèsent zéro sans fausser le total", () => {
-    const avec = repartition(1_000_000, [...TOUR, { investisseur: "À compléter", montant: 0, valorisation: 0 }]);
+    const avec = repartition(1_000_000, [
+      ...TOUR,
+      { investisseur: "À compléter", montant: 0, valorisation: 0 },
+    ]);
     const sans = repartition(1_000_000, TOUR);
     expect(avec.actionsApres).toBe(sans.actionsApres);
     expect(avec.investisseurs[avec.investisseurs.length - 1].actions).toBe(0);

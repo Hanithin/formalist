@@ -72,7 +72,13 @@ export function repartition(actionsExistantes: number, contrats: ContratAir[]): 
    * une répartition vide, et `anomalies` dit pourquoi.
    */
   if (sommeDesParts >= 1) {
-    return { actionsExistantes, sommeDesParts, actionsCreees: 0, actionsApres: actionsExistantes, investisseurs: [] };
+    return {
+      actionsExistantes,
+      sommeDesParts,
+      actionsCreees: 0,
+      actionsApres: actionsExistantes,
+      investisseurs: [],
+    };
   }
 
   const actionsApresTheorique = actionsExistantes / (1 - sommeDesParts);
@@ -145,6 +151,26 @@ export function divisionRecommandee(
 export interface AnomalieDuTour {
   gravite: "bloquant" | "avertissement";
   message: string;
+  /**
+   * Le champ à remplir, quand il y en a un.
+   *
+   * Une anomalie qui désigne un champ vide peut y conduire : l'écran pose un bouton qui
+   * l'amène sous les yeux et lui donne le curseur, plutôt que de laisser chercher dans
+   * une page qui fait trois écrans de haut.
+   */
+  champ?: string;
+}
+
+/**
+ * Une énumération qui se lit, jusqu'à quatre noms.
+ *
+ * Au-delà, la phrase devient une liste qu'on ne lit plus : on en nomme trois et l'on
+ * compte les autres. Ce qui importe est le nombre et le geste à faire, non le catalogue.
+ */
+function enumerer(noms: string[]): string {
+  if (noms.length <= 2) return noms.join(" et ");
+  if (noms.length <= 4) return noms.slice(0, -1).join(", ") + " et " + noms[noms.length - 1];
+  return noms.slice(0, 3).join(", ") + " et " + (noms.length - 3) + " autres";
 }
 
 /**
@@ -162,6 +188,24 @@ export function anomaliesDuTour(
   const anomalies: AnomalieDuTour[] = [];
   if (contrats.length === 0) return anomalies;
 
+  /*
+   * Sans actions existantes, rien ne se calcule - et le reproche tombe sur les autres.
+   *
+   * C'est ce nombre que les accords viennent augmenter : à zéro, chaque souscripteur
+   * reçoit zéro action, et la règle reprochait à chacun de n'avoir droit à rien. Sept
+   * phrases identiques pour un champ vide, et pas un mot sur le champ. La cause se dit
+   * une fois, et elle désigne ce qu'il faut remplir.
+   */
+  if (actionsExistantes <= 0) {
+    anomalies.push({
+      gravite: "bloquant",
+      champ: "airActionsExistantes",
+      message:
+        "Le nombre d'actions existantes n'est pas renseigné. C'est lui que les accords viennent augmenter : sans lui, aucune conversion ne se calcule.",
+    });
+    return anomalies;
+  }
+
   const parts = repartition(actionsExistantes, contrats);
 
   if (parts.sommeDesParts >= 1) {
@@ -175,30 +219,57 @@ export function anomaliesDuTour(
     return anomalies;
   }
 
-  for (const investisseur of parts.investisseurs) {
-    if (investisseur.actions === 0) {
-      anomalies.push({
-        gravite: "bloquant",
-        message:
-          investisseur.investisseur +
-          " n'a droit à aucune action entière : sa souscription vaut " +
-          investisseur.actionsExactes.toFixed(2) +
-          " action. Divisez la valeur nominale avant de convertir.",
-      });
-    } else if (Math.abs(investisseur.ecart) > ecartTolere) {
-      anomalies.push({
-        gravite: "bloquant",
-        message:
-          "L'arrondi fait " +
-          (investisseur.ecart > 0 ? "gagner " : "perdre ") +
-          Math.abs(investisseur.ecart * 100).toFixed(1) +
-          " % de ses droits à " +
-          investisseur.investisseur +
-          ". Divisez la valeur nominale pour le ramener sous " +
-          (ecartTolere * 100).toFixed(0) +
-          " %.",
-      });
-    }
+  /*
+   * Un même défaut ne se dit qu'une fois, quel que soit le nombre de souscripteurs.
+   *
+   * Une anomalie par ligne donnait, sur un tour de sept accords, sept paragraphes
+   * rigoureusement identiques au mot près - le nom changeait. Il fallait dérouler la
+   * page pour les lire tous et découvrir qu'ils disaient la même chose, et appelaient le
+   * même geste : diviser la valeur nominale.
+   */
+  const sansAction = parts.investisseurs.filter((i) => i.actions === 0);
+  if (sansAction.length > 0) {
+    anomalies.push({
+      gravite: "bloquant",
+      message:
+        sansAction.length === 1
+          ? sansAction[0].investisseur +
+            " n'a droit à aucune action entière : sa souscription vaut " +
+            sansAction[0].actionsExactes.toFixed(2) +
+            " action. Divisez la valeur nominale avant de convertir."
+          : sansAction.length +
+            " souscripteurs n'ont droit à aucune action entière - " +
+            enumerer(sansAction.map((i) => i.investisseur)) +
+            ". Divisez la valeur nominale avant de convertir.",
+    });
+  }
+
+  const malArrondis = parts.investisseurs.filter(
+    (i) => i.actions > 0 && Math.abs(i.ecart) > ecartTolere
+  );
+  if (malArrondis.length > 0) {
+    const pire = malArrondis.reduce((a, b) => (Math.abs(b.ecart) > Math.abs(a.ecart) ? b : a));
+    anomalies.push({
+      gravite: "bloquant",
+      message:
+        (malArrondis.length === 1
+          ? "L'arrondi fait " +
+            (pire.ecart > 0 ? "gagner " : "perdre ") +
+            Math.abs(pire.ecart * 100).toFixed(1) +
+            " % de ses droits à " +
+            pire.investisseur
+          : "L'arrondi écarte " +
+            malArrondis.length +
+            " souscripteurs de leurs droits - " +
+            enumerer(malArrondis.map((i) => i.investisseur)) +
+            ", jusqu'à " +
+            Math.abs(pire.ecart * 100).toFixed(1) +
+            " % pour " +
+            pire.investisseur) +
+        ". Divisez la valeur nominale pour les ramener sous " +
+        (ecartTolere * 100).toFixed(0) +
+        " %.",
+    });
   }
 
   const valorisations = new Set(contrats.map((c) => c.valorisation));
