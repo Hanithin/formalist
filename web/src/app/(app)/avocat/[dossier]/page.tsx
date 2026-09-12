@@ -14,20 +14,13 @@ import { libelleJournal } from "@/domain/formalite/journal";
 import { SOUS_PHASES_ORDONNEES, estSousPhase } from "@/domain/formalite/avocat";
 import { Travail } from "./Travail";
 import { Annonce } from "./Annonce";
-import {
-  travailDuCabinet,
-  typeDeDossier,
-  type TypeDeDossier,
-} from "@/domain/formalite/cabinet";
+import { travailDuCabinet, typeDeDossier, type TypeDeDossier } from "@/domain/formalite/cabinet";
 import {
   statutsAMettreAJour,
   TITRE_STATUTS_A_JOUR,
   TITRE_STATUTS_EN_VIGUEUR,
 } from "@/domain/modification/formalites";
-import {
-  attestationDeParution,
-  publicationsAPrevoir,
-} from "@/domain/modification/formalites";
+import { attestationDeParution, publicationsAPrevoir } from "@/domain/modification/formalites";
 import { villeDuRcs } from "@/infrastructure/documents/rcs";
 import { aRelire } from "@/domain/document/publication";
 import { Piece, type PieceAffichee } from "./Piece";
@@ -92,11 +85,7 @@ function quand(date: Date | null): string {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(date);
 }
 
-export default async function DossierAvocat({
-  params,
-}: {
-  params: Promise<{ dossier: string }>;
-}) {
+export default async function DossierAvocat({ params }: { params: Promise<{ dossier: string }> }) {
   const utilisateur = await exigerUtilisateur();
   if (!utilisateur.roles.includes("avocat") && !utilisateur.roles.includes("admin")) notFound();
 
@@ -110,7 +99,16 @@ export default async function DossierAvocat({
    * Leur volet a été retiré de la barre : le composant, son API et la table restent en
    * place, mais plus rien n'y mène depuis cet écran.
    */
-  const { dossier, client, documents, historique, donnees, nonLus, payeCentimes, dossiersAPrendre } = vue;
+  const {
+    dossier,
+    client,
+    documents,
+    historique,
+    donnees,
+    nonLus,
+    payeCentimes,
+    dossiersAPrendre,
+  } = vue;
 
   /*
    * Une modification ne se range pas comme une création.
@@ -127,7 +125,7 @@ export default async function DossierAvocat({
    * Activité, Capital social - sous « Le client n'a encore rien renseigné ». La société
    * est immatriculée depuis des années ; c'est son exercice qu'on approuve.
    */
-  
+
   const sections = estUneModification(donnees)
     ? recapitulatifDeModification(donnees)
     : dossier.type === "comptes"
@@ -198,8 +196,7 @@ export default async function DossierAvocat({
     }))
   );
   // Un document refusé ne compte pas comme remis : il attend son remplacement.
-  const remis = (type: string) =>
-    documents.some((d) => d.type === type && !d.rejection_reason);
+  const remis = (type: string) => documents.some((d) => d.type === type && !d.rejection_reason);
 
   /*
    * Ce qu'il reste à faire, déduit de l'état du dossier.
@@ -360,9 +357,8 @@ export default async function DossierAvocat({
      * sous un libellé qui dit déjà « Étape annoncée au client : Dépôt ». Personne n'a
      * jamais tapé ces codes, et ils ne veulent rien dire pour qui les lit.
      */
-    avant: h.action.startsWith("sous_phase_") || h.action.startsWith("etat_")
-      ? null
-      : h.before_value,
+    avant:
+      h.action.startsWith("sous_phase_") || h.action.startsWith("etat_") ? null : h.before_value,
     /* Une valeur qui redit l'auteur n'apprend rien : « Dossier pris en charge » y
        inscrit le nom du preneur, que la ligne porte déjà. */
     apres:
@@ -462,17 +458,13 @@ export default async function DossierAvocat({
             typeof valeursDuDossier.nouveauCodePostal === "string"
               ? valeursDuDossier.nouveauCodePostal
               : "",
-            typeof valeursDuDossier.nouvelleVille === "string"
-              ? valeursDuDossier.nouvelleVille
-              : ""
+            typeof valeursDuDossier.nouvelleVille === "string" ? valeursDuDossier.nouvelleVille : ""
           ),
         }).map((p) => p.ressort)
       : [];
 
   const parutionsDeposees = Array.from({ length: Math.max(1, avisAPublier) }, (_, rang) =>
-    documents.some((d) => d.name === attestationDeParution(rang, ressortsDesAvis).titre)
-      ? rang
-      : -1
+    documents.some((d) => d.name === attestationDeParution(rang, ressortsDesAvis).titre) ? rang : -1
   ).filter((rang) => rang >= 0);
 
   const statutsAProduire =
@@ -576,11 +568,11 @@ export default async function DossierAvocat({
 
       <div className={`${styles.content} ${styles.contentDossier}`}>
         <div className={styles.colonnePrincipale}>
-        {/* Avant les onglets : on décide de prendre le dossier avant de travailler
+          {/* Avant les onglets : on décide de prendre le dossier avant de travailler
             dedans, et le bandeau dit pourquoi rien n'y répond encore. */}
-        {libre && <PriseEnCharge dossier={dossier.id} />}
+          {libre && <PriseEnCharge dossier={dossier.id} />}
 
-        {/*
+          {/*
           Le dossier est à vous : une ligne le dit, et dit par quoi continuer.
 
           Le bandeau tenait sur quatre étages - une icône, un titre, une phrase
@@ -591,7 +583,7 @@ export default async function DossierAvocat({
           est le seul endroit qui porte l'avancement d'ensemble.
         */}
 
-            {/*
+          {/*
               L'avancement au-dessus des tâches, sur une ligne.
 
               Il tenait une carte de cinq étages au bas de la page, sous les tâches
@@ -600,8 +592,8 @@ export default async function DossierAvocat({
               Le bloc garde son ancre, où mène la tâche « Déposer au guichet unique ».
             */}
 
-            <Travail
-              /*
+          <Travail
+            /*
                 La barre du dossier et la prochaine étape n'en font qu'une.
 
                 C'étaient deux cartes empilées, l'une disant à qui est le dossier et où
@@ -610,63 +602,65 @@ export default async function DossierAvocat({
                 d'ici - la page seule connaît le client et le compte - et Travail les
                 réunit, parce que lui seul tient la fenêtre des étapes.
               */
-              bandeau={
-                monDossier && !libre ? (
-                  <>
-            <span className={styles.bandeauAssigneIcone} aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-            </span>
+            bandeau={
+              monDossier && !libre ? (
+                <>
+                  <span className={styles.bandeauAssigneIcone} aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
 
-            {/*
+                  {/*
               Le nom du client, non « Assigné à vous ».
               
               L'avocat sait que le dossier est le sien - il vient de l'ouvrir depuis sa
               liste. Ce qu'il ne sait pas de tête, c'est pour qui il travaille.
             */}
-            <span className={styles.bandeauAssigneTitre}>{client?.name ?? "Client inconnu"}</span>
+                  <span className={styles.bandeauAssigneTitre}>
+                    {client?.name ?? "Client inconnu"}
+                  </span>
 
-            <span className={styles.jauge} aria-hidden="true">
-              <span style={{ width: Math.round((faites / taches.length) * 100) + "%" }} />
-            </span>
+                  <span className={styles.jauge} aria-hidden="true">
+                    <span style={{ width: Math.round((faites / taches.length) * 100) + "%" }} />
+                  </span>
 
-            {/* « 4 sur 7 faites » se lisait comme un résultat d'examen : ce qui compte
+                  {/* « 4 sur 7 faites » se lisait comme un résultat d'examen : ce qui compte
                 est ce qui reste. */}
-            <span className={styles.bandeauAssigneCompte}>
-              {taches.length - faites === 0
-                ? "Tout est fait"
-                : taches.length - faites === 1
-                  ? "1 tâche restante"
-                  : taches.length - faites + " tâches restantes"}
-            </span>
+                  <span className={styles.bandeauAssigneCompte}>
+                    {taches.length - faites === 0
+                      ? "Tout est fait"
+                      : taches.length - faites === 1
+                        ? "1 tâche restante"
+                        : taches.length - faites + " tâches restantes"}
+                  </span>
 
-            {/*
+                  {/*
               La barre dit à qui est le dossier et où il en est, non ce qu'il y a à faire.
 
               Elle nommait la tâche du moment - « À faire · Vérifier les informations du
               dossier » - au-dessus de la liste qui la porte désormais en première ligne,
               avec son geste. Deux fois la même phrase, dont l'une ne fait rien.
             */}
-                  </>
-                ) : null
-              }
-              /*
-               * L'avis, le journal et les notes tiennent chacun dans un bouton.
-               *
-               * Ils s'interposaient entre l'avocat et les actes qu'il vient lire : trois
-               * sections dépliées en permanence, dont l'une porte le texte de l'avis en
-               * toutes lettres. Aucune ne se consulte en continu - on publie l'avis une
-               * fois, on relit le journal quand quelque chose cloche.
-               */
-              /*
+                </>
+              ) : null
+            }
+            /*
+             * L'avis, le journal et les notes tiennent chacun dans un bouton.
+             *
+             * Ils s'interposaient entre l'avocat et les actes qu'il vient lire : trois
+             * sections dépliées en permanence, dont l'une porte le texte de l'avis en
+             * toutes lettres. Aucune ne se consulte en continu - on publie l'avis une
+             * fois, on relit le journal quand quelque chose cloche.
+             */
+            /*
                 La clé sur une section qui n'est pourtant pas dans une liste.
                 
                 React la réclamait : « Each child in a list should have a unique key
@@ -676,24 +670,24 @@ export default async function DossierAvocat({
                 de dossier. La clé est stable et sans effet sur le rendu ; elle rend la
                 console au reste.
               */
-              apresLaTacheDuMoment={
-          <section key="documents" id="documents" className={styles.sectionDuDossier}>
-              {/*
+            apresLaTacheDuMoment={
+              <section key="documents" id="documents" className={styles.sectionDuDossier}>
+                {/*
                 Un seul titre pour une seule liste.
 
                 La section portait « Les documents du dossier » puis, trois lignes plus
                 bas, « Documents du dossier » : deux intitulés pour la même chose, dont
                 le premier n'annonçait rien que le second ne redise.
               */}
-              <div className={styles.documentsTete}>
-                <h2 className={styles.sectionDuDossierTitre}>Documents du dossier</h2>
-                {/*
+                <div className={styles.documentsTete}>
+                  <h2 className={styles.sectionDuDossierTitre}>Documents du dossier</h2>
+                  {/*
                   Corriger la source, plutôt que le document.
                   Reprendre un acte au Word laissait la faute dans le dossier : l'acte
                   suivant la reprenait, et le document remis ne correspondait plus aux
                   données dont il sortait.
                 */}
-                {/*
+                  {/*
                   Un seul bouton, et le vrai formulaire dedans.
 
                   Deux gestes y menaient : « Ouvrir le formulaire », qui emmenait sur le
@@ -705,98 +699,98 @@ export default async function DossierAvocat({
                   parcours du client s'ouvre donc tel quel, avec ses étapes, ses aides et
                   ses listes de personnes - ce que le client avait sous les yeux.
                 */}
-                <span className={styles.documentsGestes}>
-                  {/*
+                  <span className={styles.documentsGestes}>
+                    {/*
                     Le dépôt, au même endroit que le formulaire.
 
                     L'avocat rouvrait le site de l'INPI, retapait le dossier et revenait
                     cocher « Dépôt » ici. Le geste appartient à cet écran : c'est là qu'il
                     vérifie les pièces, et c'est de là qu'il doit pouvoir envoyer.
                   */}
-                  <DeposerAuGuichet
-                    dossier={dossier.id}
-                    type={type}
-                    depose={
-                      depotGuichet
-                        ? {
-                            formaliteId: depotGuichet.formaliteId,
-                            numNat: depotGuichet.numNat,
-                            deposeLe: depotGuichet.deposeLe.toISOString(),
-                            lien: depotGuichet.formaliteId
-                              ? lienVersLaFormalite(depotGuichet.formaliteId)
-                              : null,
-                            statut: depotGuichet.statut,
-                          }
-                        : null
-                    }
-                  />
-                  <Corriger
-                    dossier={dossier.id}
-                    champs={formulaire.champs}
-                    valeurs={formulaire.valeurs}
-                    parcours={
-                      type === "creation" ? (
-                        <Parcours
-                          dansUneFenetre
-                          dossierId={dossier.id}
-                          etapes={ETAPES_DE_CREATION}
-                          etapeCourante={1}
-                          brouillonInitial={donnees as Brouillon}
-                          piecesDeposees={documents
-                            .filter((d) => d.status !== "generated")
-                            .map((d) => ({ type: d.type, nom: d.name }))}
-                          actesProduits={[]}
-                          dernierMot={{ message: null, nonLus: 0 }}
-                          quand={new Date()}
-                        />
-                      ) : undefined
-                    }
-                  />
-                </span>
-              </div>
+                    <DeposerAuGuichet
+                      dossier={dossier.id}
+                      type={type}
+                      depose={
+                        depotGuichet
+                          ? {
+                              formaliteId: depotGuichet.formaliteId,
+                              numNat: depotGuichet.numNat,
+                              deposeLe: depotGuichet.deposeLe.toISOString(),
+                              lien: depotGuichet.formaliteId
+                                ? lienVersLaFormalite(depotGuichet.formaliteId)
+                                : null,
+                              statut: depotGuichet.statut,
+                            }
+                          : null
+                      }
+                    />
+                    <Corriger
+                      dossier={dossier.id}
+                      champs={formulaire.champs}
+                      valeurs={formulaire.valeurs}
+                      parcours={
+                        type === "creation" ? (
+                          <Parcours
+                            dansUneFenetre
+                            dossierId={dossier.id}
+                            etapes={ETAPES_DE_CREATION}
+                            etapeCourante={1}
+                            brouillonInitial={donnees as Brouillon}
+                            piecesDeposees={documents
+                              .filter((d) => d.status !== "generated")
+                              .map((d) => ({ type: d.type, nom: d.name }))}
+                            actesProduits={[]}
+                            dernierMot={{ message: null, nonLus: 0 }}
+                            quand={new Date()}
+                          />
+                        ) : undefined
+                      }
+                    />
+                  </span>
+                </div>
 
-              {/*
+                {/*
                 Ce que le guichet en sait, sous le titre.
 
                 La rangée des boutons ne peut pas porter une date, une pastille d'état et
                 deux gestes de plus : le bouton du formulaire passait dessous. Le dépôt
                 est un fait, non une commande - il a sa ligne.
               */}
-              {depotGuichet && (
-                <DepotAuGuichet
-                  dossier={dossier.id}
-                  depose={{
-                    formaliteId: depotGuichet.formaliteId,
-                    numNat: depotGuichet.numNat,
-                    deposeLe: depotGuichet.deposeLe.toISOString(),
-                    lien: depotGuichet.formaliteId
-                      ? lienVersLaFormalite(depotGuichet.formaliteId)
-                      : null,
-                    statut: depotGuichet.statut,
-                  }}
-                />
-              )}
-
-                            {pieces.length === 0 ? (
-                <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />
-              ) : (
-                pieces.map((piece) => (
-                  <Piece
-                    key={piece.id}
-                    piece={piece}
+                {depotGuichet && (
+                  <DepotAuGuichet
                     dossier={dossier.id}
-                    retouchable={retoucheDesStatuts}
-                    repris={statutsRepris}
+                    depose={{
+                      formaliteId: depotGuichet.formaliteId,
+                      numNat: depotGuichet.numNat,
+                      deposeLe: depotGuichet.deposeLe.toISOString(),
+                      lien: depotGuichet.formaliteId
+                        ? lienVersLaFormalite(depotGuichet.formaliteId)
+                        : null,
+                      statut: depotGuichet.statut,
+                    }}
                   />
-                ))
-              )}
-          {/*
+                )}
+
+                {pieces.length === 0 ? (
+                  <Vide ton="encart" texte="Aucun document au dossier pour l'instant." />
+                ) : (
+                  pieces.map((piece) => (
+                    <Piece
+                      key={piece.id}
+                      piece={piece}
+                      dossier={dossier.id}
+                      retouchable={retoucheDesStatuts}
+                      repris={statutsRepris}
+                    />
+                  ))
+                )}
+                {/*
             Les statuts à jour, annoncés avant d'exister.
             Ils ne sont produits qu'à la sortie de l'éditeur de retouches : la liste des
             pièces ne les montrait donc pas, et rien n'y disait qu'un document manquait
             encore au dossier ni où on le fabrique. La ligne dit l'un et mène à l'autre.
           */}
-          {/*
+                {/*
             L'attestation de parution se dépose parmi les documents.
 
             Elle n'a de place nulle part ailleurs : les deux routes de dépôt sont les
@@ -804,53 +798,53 @@ export default async function DossierAvocat({
             reçoit aussi, là où l'on vient de copier le texte publié - mais c'est ici
             qu'on la cherche, avec le reste du dossier.
           */}
-          {sAnnonce && (
-            <DepotParution
-              dossier={dossier.id}
-              attendues={Math.max(1, avisAPublier)}
-              deposees={parutionsDeposees}
-              ressorts={ressortsDesAvis}
-              avis={
-                avisAPublier > 0 ? (
-                  <Volet
-                    libelle="Annonce légale"
-                    titre={
-                      avisAPublier === 1
-                        ? "L'avis à publier"
-                        : "Les " + avisAPublier + " avis à publier"
+                {sAnnonce && (
+                  <DepotParution
+                    dossier={dossier.id}
+                    attendues={Math.max(1, avisAPublier)}
+                    deposees={parutionsDeposees}
+                    ressorts={ressortsDesAvis}
+                    avis={
+                      avisAPublier > 0 ? (
+                        <Volet
+                          libelle="Annonce légale"
+                          titre={
+                            avisAPublier === 1
+                              ? "L'avis à publier"
+                              : "Les " + avisAPublier + " avis à publier"
+                          }
+                          large
+                        >
+                          <Annonce
+                            dossier={dossier.id}
+                            route={routeDeLAnnonce}
+                            deposees={parutionsDeposees}
+                          />
+                        </Volet>
+                      ) : null
                     }
-                    large
-                  >
-                    <Annonce
-                      dossier={dossier.id}
-                      route={routeDeLAnnonce}
-                      deposees={parutionsDeposees}
-                    />
-                  </Volet>
-                ) : null
-              }
-            />
-          )}
+                  />
+                )}
 
-          {statutsAProduire && (
-            <div className={styles.docCard}>
-              <div className={styles.docIcon}>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-              </div>
-              <div className={styles.docInfo}>
-                <div className={styles.docName}>Statuts mis à jour</div>
-                {/*
+                {statutsAProduire && (
+                  <div className={styles.docCard}>
+                    <div className={styles.docIcon}>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                    </div>
+                    <div className={styles.docInfo}>
+                      <div className={styles.docName}>Statuts mis à jour</div>
+                      {/*
                   La mention tient en trois mots.
 
                   « Seuls les passages que les décisions changent sont remplacés »
@@ -859,66 +853,70 @@ export default async function DossierAvocat({
                   une pastille et un bouton. La phrase entière accueille l'éditeur, sur
                   sa page, où elle a la place de se lire.
                 */}
-                <div className={styles.docMeta}>
-                  <span className={`${styles.docEtat} ${styles.attente}`}>En cours de révision</span>
-                  <span className={styles.docQuand}>à produire depuis les statuts en vigueur</span>
-                </div>
-              </div>
-              <div className={styles.docActions}>
-                <Link
-                  href={"/avocat/" + dossier.id + "/statuts"}
-                  className={styles.decisionPrincipale}
-                >
-                  Mettre à jour les statuts
-                </Link>
-              </div>
-            </div>
-          )}
-          {/*
+                      <div className={styles.docMeta}>
+                        <span className={`${styles.docEtat} ${styles.attente}`}>
+                          En cours de révision
+                        </span>
+                        <span className={styles.docQuand}>
+                          à produire depuis les statuts en vigueur
+                        </span>
+                      </div>
+                    </div>
+                    <div className={styles.docActions}>
+                      <Link
+                        href={"/avocat/" + dossier.id + "/statuts"}
+                        className={styles.decisionPrincipale}
+                      >
+                        Mettre à jour les statuts
+                      </Link>
+                    </div>
+                  </div>
+                )}
+                {/*
             Écrire au client sans quitter le dossier.
             Il fallait passer par la messagerie, y retrouver le bon fil, puis revenir :
             on écrivait de mémoire, sans ce qu'on voulait commenter sous les yeux. C'est
             le même fil - la même table, le même point d'entrée.
           */}
-          </section>
-              }
-              dossier={dossier.id}
-              taches={taches}
+              </section>
+            }
+            dossier={dossier.id}
+            taches={taches}
+            /*
+             * Une modification les produit toujours ; les autres parcours quand ils
+             * n'en ont pas. À la création, les actes naissent à l'encaissement, dont
+             * l'échec est rattrapé par un commentaire promettant « les actes se
+             * régénèrent d'un clic côté cabinet » - un clic qui n'existait pas. La
+             * tâche renvoyait vers l'onglet des documents, où rien ne les produit.
+             */
+            peutProduireLesActes={
+              type === "modification" || !documents.some((d) => d.uploaded_by === "system")
+            }
+            routeDeProduction={
+              type === "modification"
+                ? "/api/formalites/modification/documents"
+                : "/api/formalites/documents"
+            }
+            informationsVerifiees={informationsVerifiees}
+            dossiersAPrendre={dossiersAPrendre}
+            etapePrecedente={etapePrecedente}
+            termineLe={termineLe}
+            correctionsEnCours={dossier.status === "corrections_demandees"}
+            pieces={pieces}
+            /* Les documents remis sont les pièces de l'étape « Déposer ». */
+            livrables={{
+              documentFinal: documentFinalDe(type, phaseDeLaFermeture),
+              aLeKbis: remis(TYPE_KBIS),
+              aLeRbe: remis(TYPE_RBE),
               /*
-               * Une modification les produit toujours ; les autres parcours quand ils
-               * n'en ont pas. À la création, les actes naissent à l'encaissement, dont
-               * l'échec est rattrapé par un commentaire promettant « les actes se
-               * régénèrent d'un clic côté cabinet » - un clic qui n'existait pas. La
-               * tâche renvoyait vers l'onglet des documents, où rien ne les produit.
+               * Le registre se dépose à la constitution et se met à jour quand la
+               * détention change : un dépôt de comptes n'y touche pas.
                */
-              peutProduireLesActes={
-                type === "modification" || !documents.some((d) => d.uploaded_by === "system")
-              }
-              routeDeProduction={
-                type === "modification"
-                  ? "/api/formalites/modification/documents"
-                  : "/api/formalites/documents"
-              }
-              informationsVerifiees={informationsVerifiees}
-              dossiersAPrendre={dossiersAPrendre}
-              etapePrecedente={etapePrecedente}
-              termineLe={termineLe}
-              correctionsEnCours={dossier.status === "corrections_demandees"}
-              pieces={pieces}
-              /* Les documents remis sont les pièces de l'étape « Déposer ». */
-              livrables={{
-                documentFinal: documentFinalDe(type, phaseDeLaFermeture),
-                aLeKbis: remis(TYPE_KBIS),
-                aLeRbe: remis(TYPE_RBE),
-                /*
-                 * Le registre se dépose à la constitution et se met à jour quand la
-                 * détention change : un dépôt de comptes n'y touche pas.
-                 */
-                registreConcerne: type === "creation" || type === "modification",
-              }}
-            />
+              registreConcerne: type === "creation" || type === "modification",
+            }}
+          />
 
-        {/*
+          {/*
           Tous les documents du dossier, avec ce qu'on peut en faire.
 
           Ils n'étaient atteignables que par les tâches qui les nomment : celui qu'on
@@ -927,23 +925,22 @@ export default async function DossierAvocat({
           corriger le Word, déposer sa version, valider, revenir sur la décision.
         */}
 
-        {/*
+          {/*
           Les échanges restent sur la page : écrire au client fait partie du travail.
 
           Relire un acte et le commenter se fait d'un même geste, et une conversation
           rangée derrière un bouton ne se voit plus. La colonne qui l'accompagnait, elle,
           redisait le nom du client et deux compteurs déjà à l'écran.
         */}
-        <section id="communication" className={styles.sectionDuDossier}>
-          <h2 className={styles.sectionDuDossierTitre}>Les échanges avec le client</h2>
-          <Communication
-            dossier={dossier.id}
-            moi={utilisateur.id}
-            messages={fil}
-            nonLus={nonLus}
-          />
-        </section>
-
+          <section id="communication" className={styles.sectionDuDossier}>
+            <h2 className={styles.sectionDuDossierTitre}>Les échanges avec le client</h2>
+            <Communication
+              dossier={dossier.id}
+              moi={utilisateur.id}
+              messages={fil}
+              nonLus={nonLus}
+            />
+          </section>
         </div>
 
         {/*
@@ -982,34 +979,35 @@ export default async function DossierAvocat({
             que le lecteur d'écran annonce à chaque rendu alors qu'elle ne change pas.
           */}
           {(pieces_.manquantes.length > 0 || pieces_.refusees.length > 0) && (
-              <div className={styles.piecesManquantes} aria-label="Pièces manquantes">
-                <p className={styles.piecesManquantesTitre}>
-                  {pieces_.manquantes.length + pieces_.refusees.length === 1
-                    ? "Une pièce empêche le dépôt"
-                    : pieces_.manquantes.length + pieces_.refusees.length +
-                      " pièces empêchent le dépôt"}
-                </p>
-                <ul className={styles.piecesManquantesListe}>
-                  {pieces_.manquantes.map((piece) => (
-                    <li key={piece.identifiant}>
-                      {piece.titre}
-                      <span className={styles.piecesManquantesMotif}>jamais déposée</span>
-                    </li>
-                  ))}
-                  {pieces_.refusees.map((piece) => (
-                    <li key={piece.identifiant}>
-                      {piece.titre}
-                      <span className={styles.piecesManquantesMotif}>
-                        refusée, en attente de remplacement
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <p className={styles.piecesManquantesNote}>
-                  Le client la voit manquante de son côté. Écrivez-lui si elle tarde.
-                </p>
-              </div>
-            )}
+            <div className={styles.piecesManquantes} aria-label="Pièces manquantes">
+              <p className={styles.piecesManquantesTitre}>
+                {pieces_.manquantes.length + pieces_.refusees.length === 1
+                  ? "Une pièce empêche le dépôt"
+                  : pieces_.manquantes.length +
+                    pieces_.refusees.length +
+                    " pièces empêchent le dépôt"}
+              </p>
+              <ul className={styles.piecesManquantesListe}>
+                {pieces_.manquantes.map((piece) => (
+                  <li key={piece.identifiant}>
+                    {piece.titre}
+                    <span className={styles.piecesManquantesMotif}>jamais déposée</span>
+                  </li>
+                ))}
+                {pieces_.refusees.map((piece) => (
+                  <li key={piece.identifiant}>
+                    {piece.titre}
+                    <span className={styles.piecesManquantesMotif}>
+                      refusée, en attente de remplacement
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className={styles.piecesManquantesNote}>
+                Le client la voit manquante de son côté. Écrivez-lui si elle tarde.
+              </p>
+            </div>
+          )}
 
           {/*
             Le client est une information du dossier, non une carte à part.
@@ -1060,26 +1058,47 @@ export default async function DossierAvocat({
               )}
             </div>
 
-                {sections ? (
-                  sections.map((section) => (
-                    <div key={section.titre} className={styles.recapSection}>
-                      <h2 className={styles.recapTitle}>{section.titre}</h2>
-                      {section.faits.map((fait, rang) => (
-                        <div key={rang} className={styles.recapRow}>
-                          <span className={styles.recapLabel}>{fait.libelle}</span>
-                          <span className={styles.recapValue}>{fait.valeur}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ))
-                ) : (
-                  <>
-                    <div className={styles.recapSection}>
-                      {/* Un titre de section reste un titre : la page d'origine le posait
-                          en div, invisible à la navigation par titres. */}
-                      <h2 className={styles.recapTitle}>Informations du dossier</h2>
+            {sections ? (
+              sections.map((section) => (
+                <div key={section.titre} className={styles.recapSection}>
+                  <h2 className={styles.recapTitle}>{section.titre}</h2>
+                  {/*
+                        Une valeur longue passe sous son libellé - ici aussi.
 
-                      {/*
+                        La règle existait pour les informations du dossier et n'avait
+                        jamais été appliquée aux sections. « Ce que le client change »
+                        met en regard le nom du changement et sa description : un
+                        libellé de quarante signes face à une phrase de soixante-dix,
+                        dans une colonne qui n'en garde que cinquante pixels. La phrase
+                        se cassait au milieu des mots, une syllabe par ligne.
+
+                        Le libellé compte autant que la valeur : ce qui décide n'est pas
+                        la longueur de l'un mais la place qu'il reste à l'autre.
+                      */}
+                  {section.faits.map((fait, rang) => (
+                    <div
+                      key={rang}
+                      className={`${styles.recapRow} ${
+                        fait.valeur.length > 60 ||
+                        (fait.libelle.length > 28 && fait.valeur.length > 12)
+                          ? styles.recapRowLong
+                          : ""
+                      }`}
+                    >
+                      <span className={styles.recapLabel}>{fait.libelle}</span>
+                      <span className={styles.recapValue}>{fait.valeur}</span>
+                    </div>
+                  ))}
+                </div>
+              ))
+            ) : (
+              <>
+                <div className={styles.recapSection}>
+                  {/* Un titre de section reste un titre : la page d'origine le posait
+                          en div, invisible à la navigation par titres. */}
+                  <h2 className={styles.recapTitle}>Informations du dossier</h2>
+
+                  {/*
                         Une valeur longue passe sous son libellé.
 
                         L'objet social tient cinq lignes : aligné à droite dans une
@@ -1087,43 +1106,41 @@ export default async function DossierAvocat({
                         lisait en escalier avec un bord gauche déchiqueté. Ce qui tient
                         sur une ligne reste en regard du libellé, où l'œil le compare.
                       */}
-                      {renseignes.map((c) => {
-                        const valeur = String(donnees[c.cle]);
-                        return (
-                          <div
-                            key={c.cle}
-                            className={`${styles.recapRow} ${
-                              valeur.length > 60 ? styles.recapRowLong : ""
-                            }`}
-                          >
-                            <span className={styles.recapLabel}>{c.libelle}</span>
-                            <span className={styles.recapValue}>{valeur}</span>
-                          </div>
-                        );
-                      })}
-
-                      {renseignes.length === 0 && (
-                        <Vide ton="encart" texte="Le client n'a encore rien renseigné." />
-                      )}
-                    </div>
-
-                    {manquants.length > 0 && (
-                      <div className={styles.recapSection}>
-                        <h2 className={styles.recapTitle}>Pas encore renseigné par le client</h2>
-                        {manquants.map((c) => (
-                          <div key={c.cle} className={styles.recapRow}>
-                            <span className={styles.recapLabel}>{c.libelle}</span>
-                            <span className={styles.recapValue}>-</span>
-                          </div>
-                        ))}
+                  {renseignes.map((c) => {
+                    const valeur = String(donnees[c.cle]);
+                    return (
+                      <div
+                        key={c.cle}
+                        className={`${styles.recapRow} ${
+                          valeur.length > 60 ? styles.recapRowLong : ""
+                        }`}
+                      >
+                        <span className={styles.recapLabel}>{c.libelle}</span>
+                        <span className={styles.recapValue}>{valeur}</span>
                       </div>
-                    )}
-                  </>
+                    );
+                  })}
+
+                  {renseignes.length === 0 && (
+                    <Vide ton="encart" texte="Le client n'a encore rien renseigné." />
+                  )}
+                </div>
+
+                {manquants.length > 0 && (
+                  <div className={styles.recapSection}>
+                    <h2 className={styles.recapTitle}>Pas encore renseigné par le client</h2>
+                    {manquants.map((c) => (
+                      <div key={c.cle} className={styles.recapRow}>
+                        <span className={styles.recapLabel}>{c.libelle}</span>
+                        <span className={styles.recapValue}>-</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
+              </>
+            )}
           </div>
-
         </aside>
-
       </div>
     </main>
   );
