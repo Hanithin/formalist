@@ -21,6 +21,33 @@ export interface AccordDepose extends ContratAir {
   manques?: string[];
 }
 
+/**
+ * Une corbeille, non une croix.
+ *
+ * Une croix ferme ; une corbeille jette. Sur une ligne de tableau qui porte un contrat
+ * déposé, la nuance n'est pas décorative - on ne referme pas un accord, on le retire du
+ * dossier.
+ */
+function Corbeille() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2" />
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  );
+}
+
 const EUROS = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 const PRIX = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
@@ -367,7 +394,7 @@ export function Accords({
                           onClick={() => retirer(rang)}
                           aria-label={"Retirer " + (accord.investisseur || accord.fichier)}
                         >
-                          ×
+                          <Corbeille />
                         </button>
                       </td>
                     </tr>

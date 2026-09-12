@@ -8347,18 +8347,44 @@
   color: #a1a1aa;
 }
 
+/*
+ * La corbeille, alignée sur les champs de sa ligne.
+ *
+ * La croix flottait en haut de la cellule, à la hauteur du bord des champs et non de
+ * leur milieu - d'autant que la cellule est calée en haut pour laisser le nom du fichier
+ * passer sous le premier champ. Les 3 pixels la ramènent au centre de la ligne de
+ * saisie, comme la colonne « Conversion » d'à côté.
+ */
 .accordsRetirer {
-  padding: 2px 8px;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 3px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
   background: none;
-  font-size: 18px;
-  line-height: 1;
   color: #a1a1aa;
   cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
 }
 
+.accordsRetirer svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Le rouge ne vient qu'au survol : une corbeille rouge sur chaque ligne crierait un
+   danger qui n'existe pas. */
 .accordsRetirer:hover {
-  color: #18181b;
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 .accordsBilan {
