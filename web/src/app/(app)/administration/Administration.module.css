@@ -466,3 +466,238 @@
   background: none;
   color: #71717a;
 }
+
+/* ---------- Le journal des incidents ---------- */
+
+/*
+ * Ce qui a cassé, en une ligne par panne.
+ *
+ * Ce qu'on cherche en ouvrant la page tient en trois questions : est-ce que ça dure,
+ * combien de fois, et où. La ligne y répond ; la pile, qui ne sert qu'une fois qu'on a
+ * choisi laquelle regarder, attend qu'on la déplie.
+ */
+.incidentsOnglets {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.incidentsOnglet,
+.incidentsOngletActif {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  text-decoration: none;
+  letter-spacing: 0;
+}
+
+.incidentsOnglet {
+  color: #71717a;
+  background: #f4f4f5;
+}
+
+.incidentsOnglet:hover {
+  background: #e9e9ec;
+}
+
+.incidentsOngletActif {
+  background: #18181b;
+  color: #fff;
+}
+
+.incidentsVide {
+  margin: 0;
+  padding: 28px;
+  border: 1px solid #e5e5e7;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 13.5px;
+  color: #71717a;
+}
+
+.incidents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.incident {
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.incidentLigne {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+}
+
+/* Le titre prend la place qui reste, et cède quand elle manque. */
+.incidentTitre {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  letter-spacing: 0;
+}
+
+.incidentType {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.incidentMessage {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13.5px;
+  color: #18181b;
+}
+
+.incidentCompte {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #3f3f46;
+}
+
+.incidentQuand {
+  flex: none;
+  width: 96px;
+  font-size: 12.5px;
+  color: #a1a1aa;
+  text-align: right;
+}
+
+.incidentGeste {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: #3f3f46;
+  cursor: pointer;
+  letter-spacing: 0;
+}
+
+.incidentGeste:hover:not(:disabled) {
+  background: #fafafa;
+}
+
+.incidentGeste:disabled {
+  color: #a1a1aa;
+  cursor: default;
+}
+
+.incidentDetail {
+  padding: 0 14px 14px;
+  border-top: 1px solid #f4f4f5;
+}
+
+.incidentFaits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px 18px;
+  margin: 14px 0;
+}
+
+.incidentFaits dt {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  letter-spacing: 0;
+}
+
+.incidentFaits dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #18181b;
+  word-break: break-word;
+}
+
+.incidentPile {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fafafa;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #3f3f46;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.incidentSansPile {
+  margin: 0;
+  font-size: 12.5px;
+  color: #a1a1aa;
+}
+
+@media (max-width: 760px) {
+  .incidentLigne {
+    flex-wrap: wrap;
+  }
+
+  .incidentTitre {
+    flex-basis: 100%;
+  }
+
+  .incidentQuand {
+    width: auto;
+  }
+}
+
+/* Le compte des incidents, sur le tableau : il ne paraît que s'il y en a. */
+.incidentsAlerte {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 13px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 13.5px;
+  text-decoration: none;
+  letter-spacing: 0;
+}
+
+.incidentsAlerte:hover {
+  background: #fee9e9;
+}
+
+.incidentsAlerteCompte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 8px;
+  background: #991b1b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}

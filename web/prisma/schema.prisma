@@ -297,6 +297,24 @@ model sessions {
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model incidents {
+  id             Int       @id @default(autoincrement())
+  empreinte      String    @unique
+  type           String
+  message        String
+  chemin         String?
+  methode        String?
+  origine        String?
+  pile           String?
+  occurrences    Int       @default(1)
+  premiere_le    DateTime  @default(now()) @db.Timestamptz(6)
+  derniere_le    DateTime  @default(now()) @db.Timestamptz(6)
+  resolu_le      DateTime? @db.Timestamptz(6)
+  resolu_par     Int?
+
+  @@index([resolu_le, derniere_le(sort: Desc)], map: "idx_incidents_ouverts")
+}
+
 model signature_requests {
   id             Int        @id @default(autoincrement())
   formalite_id   Int

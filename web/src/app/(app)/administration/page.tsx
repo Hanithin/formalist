@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { tableauAdministration } from "@/infrastructure/db/depots/administration";
+import { incidentsOuverts } from "@/infrastructure/db/depots/incidents";
 import { Comptes } from "./Comptes";
 import { PiecesDuCabinet } from "./PiecesDuCabinet";
 import styles from "./Administration.module.css";
@@ -19,6 +20,7 @@ export default async function Administration() {
   if (!utilisateur.roles.includes("admin")) notFound();
 
   const { comptes, chiffres } = await tableauAdministration(utilisateur);
+  const incidents = await incidentsOuverts(utilisateur);
 
   return (
     <main className={styles.page}>
@@ -59,6 +61,23 @@ export default async function Administration() {
         </div>
 
         <div className={styles.colonne}>
+          {/*
+            Ce qui a cassé, annoncé là où l'on passe.
+
+            Un journal d'incidents que rien ne signale ne se consulte pas : il faut y
+            penser, et l'on n'y pense que le jour où un client écrit. Le compte se lit
+            donc ici, avec le reste du tableau, et ne s'affiche que s'il y a quelque
+            chose - une ligne verte permanente cesse d'être vue au bout d'une semaine.
+          */}
+          {incidents > 0 && (
+            <Link className={styles.incidentsAlerte} href="/administration/incidents">
+              <span className={styles.incidentsAlerteCompte}>{incidents}</span>
+              <span>
+                {incidents === 1 ? "incident à regarder" : "incidents à regarder"}
+              </span>
+            </Link>
+          )}
+
           <dl className={styles.chiffres}>
             <div>
               <dt>Comptes</dt>
