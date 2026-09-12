@@ -442,6 +442,82 @@ function manqueDe(champ: keyof AccordDepose, manque: string): boolean {
 }
 
 /**
+ * Où l'on en est, en trois moments.
+ *
+ * Le parcours posait quinze questions et un tableau sans jamais dire où l'on allait. On
+ * remplissait des cases en espérant que ce soit les bonnes, et l'on découvrait à
+ * l'étape suivante ce que le dossier en avait fait.
+ *
+ * Trois moments suffisent à le dire, parce que ce sont les trois seuls : ce que l'on
+ * apporte, ce que l'on relit, ce que l'on signe. Chacun porte son état - fait, en cours,
+ * à venir - et ce qu'il reste à y faire quand il n'est pas fait.
+ */
+export function SuiviDuTour({
+  accords,
+  actionsExistantes,
+}: {
+  accords: AccordDepose[];
+  actionsExistantes: number;
+}) {
+  const deposes = accords.length;
+  const incomplets = accords.filter(
+    (a) => !a.investisseur || !a.montant || !a.valorisation || !a.signeLe
+  ).length;
+
+  /* Les chiffres ne sont bons que si tout a été lu et que le capital d'avant est là :
+     sans lui, aucune conversion ne se calcule - c'est ce que dit déjà le bloc rouge. */
+  const chiffresPrets = deposes > 0 && incomplets === 0 && actionsExistantes > 0;
+
+  const moments = [
+    {
+      titre: "Vos accords signés",
+      fait: deposes > 0,
+      reste:
+        deposes === 0
+          ? "Déposez les BSA AIR que vos souscripteurs ont signés"
+          : deposes === 1
+            ? "1 accord déposé"
+            : deposes + " accords déposés",
+    },
+    {
+      titre: "Les chiffres du tour",
+      fait: chiffresPrets,
+      reste: !deposes
+        ? "Souscripteur, montant, valorisation et date se lisent dans vos accords"
+        : incomplets > 0
+          ? incomplets + (incomplets === 1 ? " accord à compléter" : " accords à compléter")
+          : actionsExistantes > 0
+            ? "Relus et complets"
+            : "Renseignez le capital avant conversion",
+    },
+    {
+      titre: "Vos actes",
+      fait: false,
+      reste: chiffresPrets
+        ? "Prêts à être édités : la liste figure en bas de cette page"
+        : "Édités dès que les chiffres tiennent",
+    },
+  ];
+
+  return (
+    <section className={styles.suiviTour} aria-label="Où en êtes-vous">
+      <h4 className={styles.champsGroupe}>Où en êtes-vous</h4>
+      <ol className={styles.suiviTourListe}>
+        {moments.map((moment, rang) => (
+          <li key={moment.titre} className={moment.fait ? styles.suiviTourFait : ""}>
+            <span className={styles.suiviTourRang} aria-hidden="true">
+              {moment.fait ? "✓" : rang + 1}
+            </span>
+            <span className={styles.suiviTourTitre}>{moment.titre}</span>
+            <span className={styles.suiviTourReste}>{moment.reste}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/**
  * Ce qu'on est en train de faire, dit avant de le faire.
  *
  * Ce changement-ci ne ressemble à aucun autre du parcours : il n'y a rien à décider, et
@@ -487,17 +563,63 @@ export function ActesPrevus({ valeurs, forme }: { valeurs: Valeurs; forme?: stri
   );
 
   return (
-    <div className={styles.actesPrevus}>
-      <h4 className={styles.champsGroupe}>Les actes que ce dossier produira</h4>
-      <ul>
-        {actes.map((acte) => (
-          <li key={acte.gabarit}>
-            <span>{acte.titre}</span>
-            <span className={styles.actesPourquoi}>{POURQUOI[acte.gabarit]}</span>
+    <>
+      <div className={styles.actesPrevus}>
+        <h4 className={styles.champsGroupe}>Les actes que ce dossier produira</h4>
+        <ul>
+          {actes.map((acte) => (
+            <li key={acte.gabarit}>
+              <span>{acte.titre}</span>
+              <span className={styles.actesPourquoi}>{POURQUOI[acte.gabarit]}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/*
+        Ce que le dossier ne fait pas à votre place.
+        Les actes édités ne clôturent pas le tour : deux registres restent à tenir, et
+        l'un d'eux se dépose au greffe. Ne pas le dire revient à laisser croire que tout
+        est fini quand les documents sont produits.
+      */}
+      <div className={styles.resteAFaire}>
+        <h4 className={styles.champsGroupe}>Ce qu&apos;il vous restera à faire</h4>
+        <ul>
+          <li>
+            <span>Faire signer les actes</span>
+            <span className={styles.actesPourquoi}>
+              Le dossier recueille les signatures par courriel, à l&apos;étape des actes.
+            </span>
           </li>
-        ))}
-      </ul>
-    </div>
+          <li>
+            <span>Reporter les inscriptions à votre registre</span>
+            <span className={styles.actesPourquoi}>
+              Le dossier édite le feuillet des mouvements du jour. C&apos;est au registre que la
+              Société tient qu&apos;il doit être porté.
+            </span>
+          </li>
+          <li>
+            <span>Remettre son attestation à chaque souscripteur</span>
+            <span className={styles.actesPourquoi}>
+              C&apos;est la seule pièce qu&apos;il détient en propre. Une banque ou un futur
+              investisseur la lui réclamera.
+            </span>
+          </li>
+          <li>
+            <span>Mettre à jour le registre des bénéficiaires effectifs</span>
+            <span className={styles.actesPourquoi}>
+              Toute variation de détention le périme : la part de chacun change avec le capital. La
+              déclaration se dépose au greffe.
+            </span>
+          </li>
+          <li>
+            <span>Déposer au greffe</span>
+            <span className={styles.actesPourquoi}>
+              Décision, statuts à jour et attestation de parution, transmis par le guichet unique.
+            </span>
+          </li>
+        </ul>
+      </div>
+    </>
   );
 }
 
@@ -511,4 +633,8 @@ const POURQUOI: Record<string, string> = {
     "Recueille l'accord de chaque souscripteur pour convertir avant le terme, et son adhésion au pacte.",
   "modif-air-constatation.docx":
     "La décision du président qui constate l'augmentation et modifie les statuts. C'est l'acte que le greffe attend.",
+  "modif-air-attestation-compte.docx":
+    "Une par souscripteur : la pièce qu'il détient en propre pour prouver qu'il est actionnaire.",
+  "modif-air-registre-titres.docx":
+    "Les inscriptions du jour, à reporter au registre que la Société tient. C'est lui qui fait foi de la détention.",
 };

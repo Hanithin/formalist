@@ -49,7 +49,13 @@ import { anomaliesDeLActeDeCession } from "@/domain/modification/acte-cession";
 import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification/offre";
 import type { Retouche, Zone } from "@/domain/modification/edition";
 import type { ActeProduit } from "@/domain/document/publication";
-import { Accords, ActesPrevus, ExplicationConstatation, type AccordDepose } from "./Accords";
+import {
+  Accords,
+  ActesPrevus,
+  ExplicationConstatation,
+  SuiviDuTour,
+  type AccordDepose,
+} from "./Accords";
 import styles from "./Modification.module.css";
 import { Recapitulatif } from "./Recapitulatif";
 import { remonterEnHaut } from "@/lib/defilement";
@@ -1920,7 +1926,49 @@ function EtapeDetails({
             calcule : six cases côte à côte ne peuvent rien vérifier de tout cela.
           */}
               {/* Ce changement-ci ne se comprend pas sans ses trois phrases : voir le composant. */}
-              {definition.code === "constatation_augmentation" && <ExplicationConstatation />}
+              {definition.code === "constatation_augmentation" && (
+                <>
+                  {/* Où l'on en est, avant de dire ce qu'on fait : trois moments, celui
+                      où l'on se trouve marqué. */}
+                  <SuiviDuTour
+                    accords={etat.air ?? []}
+                    actionsExistantes={nombreLu(etat.valeurs.airActionsExistantes) ?? 0}
+                  />
+                  <ExplicationConstatation />
+                </>
+              )}
+
+              {/*
+            Les accords convertis, avant les champs qu'ils commandent.
+
+            Ils se déposaient en dernier, sous quatre groupes de questions dont les
+            réponses ne se vérifiaient qu'une fois le tableau rempli : on renseignait le
+            capital sans savoir ce qu'il allait produire. Or c'est par là qu'on arrive -
+            on a des accords signés, on veut les convertir - et tout le reste s'y
+            rapporte.
+
+            Ils ne sont pas des champs : un tour se compte en vingt contrats, chacun
+            avec son souscripteur, son montant et sa propre valorisation, et le nombre
+            d'actions à créer ne se lit qu'en les résolvant ensemble. Six cases côte à
+            côte ne peuvent rien vérifier de tout cela - c'est le même motif que la
+            cession de parts, qui a son composant pour les mêmes raisons.
+          */}
+              {definition.code === "constatation_augmentation" && (
+                <Accords
+                  dossier={dossier}
+                  accords={etat.air ?? []}
+                  actionsExistantes={nombreLu(etat.valeurs.airActionsExistantes) ?? 0}
+                  division={diviseurLu(etat.valeurs.airDivision)}
+                  surAccords={(air) => changer({ air })}
+                  surDivision={(division) =>
+                    majValeurs((valeurs) => ({
+                      ...valeurs,
+                      airDivision:
+                        division === 1 ? "Aucune division" : division.toLocaleString("fr-FR"),
+                    }))
+                  }
+                />
+              )}
 
               {definition.code === "cession_parts" ? (
                 <Cessions
@@ -2104,32 +2152,6 @@ function EtapeDetails({
                       </Fragment>
                     ))}
                 </div>
-              )}
-
-              {/*
-            Les accords convertis, sous les champs qui les encadrent.
-
-            Ils ne sont pas des champs : un tour se compte en vingt contrats, chacun
-            avec son souscripteur, son montant et sa propre valorisation, et le nombre
-            d'actions à créer ne se lit qu'en les résolvant ensemble. Six cases côte à
-            côte ne peuvent rien vérifier de tout cela - c'est le même motif que la
-            cession de parts, qui a son composant pour les mêmes raisons.
-          */}
-              {definition.code === "constatation_augmentation" && (
-                <Accords
-                  dossier={dossier}
-                  accords={etat.air ?? []}
-                  actionsExistantes={nombreLu(etat.valeurs.airActionsExistantes) ?? 0}
-                  division={diviseurLu(etat.valeurs.airDivision)}
-                  surAccords={(air) => changer({ air })}
-                  surDivision={(division) =>
-                    majValeurs((valeurs) => ({
-                      ...valeurs,
-                      airDivision:
-                        division === 1 ? "Aucune division" : division.toLocaleString("fr-FR"),
-                    }))
-                  }
-                />
               )}
 
               {definition.code === "constatation_augmentation" && (

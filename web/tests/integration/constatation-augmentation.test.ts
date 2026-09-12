@@ -86,13 +86,18 @@ describe("la constatation d'une augmentation de capital", () => {
     expect(actes.some((a) => a.titre.includes("Procès-verbal"))).toBe(true);
   });
 
-  it("produit les quatre actes de la voie complète", () => {
+  it("produit les actes de la voie complète, jusqu'aux titres inscrits", () => {
     const titres = actesDeLaConstatation(VALEURS);
+    /* Les quatre premiers décident et constatent ; les deux derniers font ce que la
+       constatation présuppose - les titres portés au registre, et la pièce que chaque
+       souscripteur détient en propre pour en justifier. */
     expect(titres).toEqual([
       "Décisions collectives des associés",
       "Renonciations individuelles au droit préférentiel de souscription",
       "Avenants de conversion anticipée",
       "Décision du président constatant l'augmentation de capital",
+      "Attestations d'inscription en compte",
+      "Registre des mouvements de titres",
     ]);
   });
 
@@ -119,6 +124,7 @@ describe("la constatation d'une augmentation de capital", () => {
     expect(titres.filter((t) => !AUTRES.some((a) => t.includes(a)))).toEqual([
       "Décision du président constatant l'augmentation de capital",
       "Attestations d'inscription en compte",
+      "Registre des mouvements de titres",
     ]);
   });
 
@@ -138,7 +144,7 @@ describe("la constatation d'une augmentation de capital", () => {
     expect(sfdi.PRIX).not.toBe(figtus.PRIX);
   });
 
-  it("rend les quatre actes sans laisser de balise", () => {
+  it("rend chacun des actes sans laisser de balise", () => {
     const donnees = donneesDuGabarit(contexte());
     for (const acte of actesAProduire(["constatation_augmentation"], "SAS", VALEURS, 2).filter(
       (a) => a.gabarit.startsWith("modif-air-")
@@ -155,7 +161,7 @@ describe("la constatation d'une augmentation de capital", () => {
    * Le tableau annexé porte une ligne par souscripteur.
    *
    * C'est la seule pièce qui relie une action à l'argent qui l'a payée : une boucle qui
-   * ne se déroule pas laisserait quatre actes affirmant un capital sans dire d'où il
+   * ne se déroule pas laisserait des actes affirmant un capital sans dire d'où il
    * vient.
    */
   it("déroule le tableau des souscripteurs dans les actes", () => {

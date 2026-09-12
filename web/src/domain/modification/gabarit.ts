@@ -88,7 +88,21 @@ export const MODELE_BULLETIN_SOUSCRIPTION = "modif-bulletin-souscription.docx";
  * c'est une attestation qu'il détache et produit seule, non l'extrait d'un document
  * commun.
  */
-export const MODELE_AIR_ATTESTATION_COMPTE = "modif-attestation-inscription-compte.docx";
+export const MODELE_AIR_ATTESTATION_COMPTE = "modif-air-attestation-compte.docx";
+
+/**
+ * Le registre des mouvements de titres, à la date de la conversion.
+ *
+ * Un BSA AIR n'est pas qu'un contrat : c'est un titre financier, et les actions qui
+ * naissent de son exercice s'inscrivent à ce registre. C'est lui qui fait foi de la
+ * détention, et l'attestation remise au souscripteur l'invoque - il était donc affirmé
+ * sans être fourni.
+ *
+ * Un feuillet, non le registre entier : la Société tient le sien, et nous ne le
+ * connaissons pas. Ce que le dossier sait, ce sont les inscriptions du jour ; elles se
+ * reportent.
+ */
+export const MODELE_AIR_REGISTRE_TITRES = "modif-air-registre-titres.docx";
 /**
  * La feuille de présence, que le procès-verbal cite depuis toujours.
  *
@@ -2105,6 +2119,12 @@ export function actesAProduire(
     actes.push({
       titre: "Attestations d'inscription en compte",
       gabarit: MODELE_AIR_ATTESTATION_COMPTE,
+    });
+
+    /* Ce que la Société doit porter à son registre, et que l'attestation invoque. */
+    actes.push({
+      titre: "Registre des mouvements de titres",
+      gabarit: MODELE_AIR_REGISTRE_TITRES,
     });
   }
 

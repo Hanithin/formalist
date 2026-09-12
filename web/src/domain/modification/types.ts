@@ -1079,6 +1079,19 @@ export const MODIFICATIONS: DefinitionModification[] = [
         obligatoire: true,
       },
       {
+        identifiant: "airLiberation",
+        libelle: "Libération du prix d'exercice",
+        type: "choix",
+        groupe: "La conversion",
+        options: [
+          "Par imputation sur le prix des bons, déjà versé",
+          "Par un versement en numéraire à la conversion",
+        ],
+        pleineLargeur: true,
+        valeurParDefaut: "Par imputation sur le prix des bons, déjà versé",
+        aide: "Les actions issues de bons se souscrivent souvent à la valeur nominale, l'argent étant entré au moment de la souscription des bons. L'article L. 225-149 écarte alors les formalités de dépôt des fonds : aucune attestation bancaire n'est due.",
+      },
+      {
         /*
          * La question qui décide s'il faut un commissaire aux comptes.
          *
@@ -1127,19 +1140,6 @@ export const MODIFICATIONS: DefinitionModification[] = [
         pleineLargeur: true,
         valeurParDefaut: "Il n'y a pas de pacte",
         aide: "Quand l'adhésion conditionne la conversion, elle doit précéder ou accompagner celle-ci : recueillie après, la condition n'est pas remplie au moment où elle doit l'être.",
-      },
-      {
-        identifiant: "airLiberation",
-        libelle: "Libération du prix d'exercice",
-        type: "choix",
-        groupe: "La conversion",
-        options: [
-          "Par imputation sur le prix des bons, déjà versé",
-          "Par un versement en numéraire à la conversion",
-        ],
-        pleineLargeur: true,
-        valeurParDefaut: "Par imputation sur le prix des bons, déjà versé",
-        aide: "Les actions issues de bons se souscrivent souvent à la valeur nominale, l'argent étant entré au moment de la souscription des bons. L'article L. 225-149 écarte alors les formalités de dépôt des fonds : aucune attestation bancaire n'est due.",
       },
     ],
   },

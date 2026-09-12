@@ -8522,6 +8522,106 @@
 }
 
 /* Ce qui sortira du dossier, et pourquoi : une liste, non des cartes. */
+/* ---------- Où en êtes-vous ---------- */
+
+/*
+ * Trois moments, en tête d'étape.
+ *
+ * Le parcours posait quinze questions et un tableau sans jamais dire où l'on allait :
+ * on remplissait des cases en espérant que ce soit les bonnes, et l'on découvrait à
+ * l'étape suivante ce que le dossier en avait fait. Ce qui est apporté, ce qui est
+ * relu, ce qui est signé - il n'y a rien d'autre à dire, et cela tient en trois lignes.
+ */
+.suiviTour {
+  margin-bottom: 22px;
+}
+
+.suiviTourListe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.suiviTourListe li {
+  display: grid;
+  grid-template-columns: 26px 200px 1fr;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f4f4f5;
+  font-size: 14px;
+  color: #18181b;
+}
+
+.suiviTourListe li:last-child {
+  border-bottom: none;
+}
+
+/* Le rang devient une coche dès que le moment est acquis : on compte ce qui reste. */
+.suiviTourRang {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f4f4f5;
+  color: #71717a;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.suiviTourFait .suiviTourRang {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.suiviTourTitre {
+  letter-spacing: 0;
+}
+
+.suiviTourReste {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #71717a;
+}
+
+/* ---------- Ce qu'il vous restera à faire ---------- */
+
+/*
+ * Les actes édités ne clôturent pas le tour.
+ *
+ * Deux registres restent à tenir, et l'un d'eux se dépose au greffe. Ne pas le dire
+ * reviendrait à laisser croire que tout est fini quand les documents sont produits - et
+ * c'est précisément là qu'un tour se referme mal.
+ */
+.resteAFaire {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #fafafa;
+}
+
+.resteAFaire ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resteAFaire li {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f2;
+  font-size: 14px;
+  color: #18181b;
+}
+
+.resteAFaire li:last-child {
+  border-bottom: none;
+}
+
 .actesPrevus {
   margin-top: 26px;
   padding-top: 22px;
