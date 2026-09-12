@@ -877,23 +877,26 @@ export default async function DossierAvocat({ params }: { params: Promise<{ doss
 
                 {statutsAProduire && (
                   <div className={styles.docCard}>
-                    <div className={styles.docIcon}>
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                    </div>
-                    <div className={styles.docInfo}>
-                      <div className={styles.docName}>Statuts mis à jour</div>
-                      {/*
+                    {/* La carte est une colonne ; la rangée - icône, nom, état, gestes -
+                        est `docLigne`. Sans elle, le bouton passait sous le nom. */}
+                    <div className={styles.docLigne}>
+                      <div className={styles.docIcon}>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                      </div>
+                      <div className={styles.docInfo}>
+                        <div className={styles.docName}>Statuts mis à jour</div>
+                        {/*
                   La mention tient en trois mots.
 
                   « Seuls les passages que les décisions changent sont remplacés »
@@ -902,22 +905,23 @@ export default async function DossierAvocat({ params }: { params: Promise<{ doss
                   une pastille et un bouton. La phrase entière accueille l'éditeur, sur
                   sa page, où elle a la place de se lire.
                 */}
-                      <div className={styles.docMeta}>
-                        <span className={`${styles.docEtat} ${styles.attente}`}>
-                          En cours de révision
-                        </span>
-                        <span className={styles.docQuand}>
-                          à produire depuis les statuts en vigueur
-                        </span>
+                        <div className={styles.docMeta}>
+                          <span className={`${styles.docEtat} ${styles.attente}`}>
+                            En cours de révision
+                          </span>
+                          <span className={styles.docQuand}>
+                            à produire depuis les statuts en vigueur
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className={styles.docActions}>
-                      <Link
-                        href={"/avocat/" + dossier.id + "/statuts"}
-                        className={styles.decisionPrincipale}
-                      >
-                        Mettre à jour les statuts
-                      </Link>
+                      <div className={styles.docActions}>
+                        <Link
+                          href={"/avocat/" + dossier.id + "/statuts"}
+                          className={styles.decisionPrincipale}
+                        >
+                          Mettre à jour les statuts
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 )}
