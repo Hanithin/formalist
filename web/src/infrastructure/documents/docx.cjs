@@ -895,7 +895,21 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
   // DNC template: rewrite the "Je soussigné..." block as a single justified, non-bold paragraph.
   // Order: civilité+nom, naissance, nationalité, parents (mère née), demeurant.
   {
-    const civNomPrenom = (cleanData.CIVILITE_NOM_PRENOM_1 || cleanData.CIVILITE_NOM_PRENOM || '').trim();
+    /*
+     * C'est le dirigeant qui déclare, non le premier associé.
+     *
+     * Cette passe lisait CIVILITE_NOM_PRENOM_1 - l'associé numéro un. Dans la plupart
+     * des dossiers c'est la même personne, et le défaut ne se voyait pas ; dès que le
+     * gérant ou le président était un autre associé, la déclaration de non-condamnation
+     * sortait au nom de quelqu'un qui n'a rien à déclarer, avec son état civil et sa
+     * filiation, et l'attestation de domicile faisait héberger le siège chez lui.
+     *
+     * Deux pièces signées sur l'honneur et déposées au greffe, au nom d'une personne qui
+     * ne les a pas souscrites. Les clés du dirigeant passent donc devant, et celles de
+     * l'associé restent en repli pour les parcours qui n'en désignent pas.
+     */
+    const civNomPrenom = (cleanData.CIVILITE_NOM_PRENOM_DIRIGEANT || cleanData.GERANT_CIVILITE_NOM_PRENOM
+      || cleanData.CIVILITE_NOM_PRENOM_1 || cleanData.CIVILITE_NOM_PRENOM || '').trim();
 
     /*
      * Une personne morale n'a ni naissance, ni filiation, ni nationalité.
@@ -905,13 +919,19 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
      * inventée de toutes pièces. Sa désignation - forme, capital, siège, immatriculation,
      * représentant - a déjà été composée par le gabarit, et elle tient lieu de tout cela.
      */
-    const estMorale = cleanData.ASSOC_1_EST_MORALE === true
-      || cleanData.DIRIGEANT_EST_MORALE === true;
-    const dateNaiss = (cleanData.DATE_NAISSANCE_1 || cleanData.DATE_NAISSANCE || '').trim();
-    const lieuNaiss = (cleanData.LIEU_NAISSANCE_1 || cleanData.LIEU_NAISSANCE || '').trim();
-    const nationalite = (cleanData.NATIONALITE_1 || cleanData.NATIONALITE || '').trim();
-    const nomPere = (cleanData.NOM_PERE_1 || cleanData.NOM_PERE || '').trim();
-    const nomMere = (cleanData.NOM_MERE_1 || cleanData.NOM_MERE || '').trim();
+    /* Un tiret de remplacement n'est pas une date : sans cette garde, la phrase
+       écrivait « né le - à - ». */
+    const vide = (v) => !v || v === '-';
+    const estMorale = cleanData.DIRIGEANT_EST_MORALE === true
+      || (cleanData.DIRIGEANT_EST_MORALE === undefined && cleanData.ASSOC_1_EST_MORALE === true);
+    const dateNaiss = (cleanData.GERANT_DATE_NAISSANCE || cleanData.DATE_NAISSANCE_1
+      || cleanData.DATE_NAISSANCE || '').trim();
+    const lieuNaiss = (cleanData.GERANT_LIEU_NAISSANCE || cleanData.LIEU_NAISSANCE_1
+      || cleanData.LIEU_NAISSANCE || '').trim();
+    const nationalite = (cleanData.GERANT_NATIONALITE || cleanData.NATIONALITE_1
+      || cleanData.NATIONALITE || '').trim();
+    const nomPere = (cleanData.GERANT_NOM_PERE || cleanData.NOM_PERE_1 || cleanData.NOM_PERE || '').trim();
+    const nomMere = (cleanData.GERANT_NOM_MERE || cleanData.NOM_MERE_1 || cleanData.NOM_MERE || '').trim();
     /*
      * Le nom de jeune fille ne se déduit plus : c'est le champ lui-même.
      *
@@ -920,7 +940,8 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
      * précisément le nom de jeune fille que la déclaration doit porter, puisqu'il sert à
      * distinguer d'un homonyme : le formulaire le demande maintenant, sous ce nom.
      */
-    const adresse = (cleanData.ADRESSE_ASSOCIE_1 || cleanData.ADRESSE_PERSO || cleanData.ADRESSE || '').trim();
+    const adresse = (cleanData.ADRESSE_DIRIGEANT || cleanData.GERANT_ADRESSE
+      || cleanData.ADRESSE_ASSOCIE_1 || cleanData.ADRESSE_PERSO || cleanData.ADRESSE || '').trim();
 
     function fnEsc(s) {
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -999,11 +1020,11 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     } else if (isAttestationDomicile) {
       // Attestation de domiciliation: include "agissant en qualité de Président..." and "déclare domicilier..."
       const parts = [jeSoussigne + civNomPrenom + ','];
-      if (!estMorale && dateNaiss) {
-        parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
+      if (!estMorale && !vide(dateNaiss)) {
+        parts.push(neLe + dateNaiss + (vide(lieuNaiss) ? '' : ' à ' + lieuNaiss) + ',');
       }
-      if (!estMorale && nationalite) parts.push('de nationalité ' + nationalite + ',');
-      if (adresse && !estMorale) parts.push('demeurant ' + adresse + ',');
+      if (!estMorale && !vide(nationalite)) parts.push('de nationalité ' + nationalite + ',');
+      if (!vide(adresse) && !estMorale) parts.push('demeurant ' + adresse + ',');
       let agissant = 'agissant en qualité de Président de la société ' + nomSociete + ',';
       if (capital || formeDescription) {
         agissant = 'agissant en qualité de Président de la société ' + nomSociete + ', ' + formeDescription
@@ -1015,11 +1036,11 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
     } else {
       // DNC-style sentence with parents
       const parts = [jeSoussigne + civNomPrenom + ','];
-      if (!estMorale && dateNaiss) {
-        parts.push(neLe + dateNaiss + (lieuNaiss ? ' à ' + lieuNaiss : '') + ',');
+      if (!estMorale && !vide(dateNaiss)) {
+        parts.push(neLe + dateNaiss + (vide(lieuNaiss) ? '' : ' à ' + lieuNaiss) + ',');
       }
-      if (!estMorale && nationalite) parts.push('de nationalité ' + nationalite + ',');
-      if (!estMorale && (nomPere || nomMere)) {
+      if (!estMorale && !vide(nationalite)) parts.push('de nationalité ' + nationalite + ',');
+      if (!estMorale && (!vide(nomPere) || !vide(nomMere))) {
         /*
          * « fils de Paul MARCHAND et de Anne BERGER » : le second « de » se lisait
          * devant une voyelle. La préposition s'élide, comme partout ailleurs.
@@ -1029,9 +1050,9 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
           /^[aeiouyàâéèêëîïôöùûü]/i.test(nom.trim()) ? 'd\u2019' + nom : 'de ' + nom;
 
         let parents = '';
-        if (nomPere) parents += enfantDe + de(nomPere);
-        if (nomPere && nomMere) parents += ' et ' + de(nomMere);
-        else if (nomMere) parents += enfantDe + de(nomMere);
+        if (!vide(nomPere)) parents += enfantDe + de(nomPere);
+        if (!vide(nomPere) && !vide(nomMere)) parents += ' et ' + de(nomMere);
+        else if (!vide(nomMere)) parents += enfantDe + de(nomMere);
         parts.push(parents);
       }
       /*
@@ -1041,7 +1062,7 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
        * 75013 Paris, représentée par Monsieur Marc BERTIN, dont le siège social est 8
        * quai de la Gare ».
        */
-      if (adresse && !estMorale) parts.push('et demeurant ' + adresse + ',');
+      if (!vide(adresse) && !estMorale) parts.push('et demeurant ' + adresse + ',');
       finalText = parts.join(' ');
     }
 
@@ -1105,6 +1126,42 @@ function generateDocxFromBuffer(buf, data, nomDuGabarit) {
         return newPara + remaining;
       }
     );
+
+    /*
+     * Le nom sous la ligne de signature est celui qui vient de déclarer.
+     *
+     * Les gabarits de SARL et de SCI le prenaient à {{CIVILITE_NOM_PRENOM}}, c'est-à-dire
+     * au premier associé : le corps de l'acte déclarait le gérant, et la signature au bas
+     * de la même page nommait quelqu'un d'autre. Une pièce qui se contredit elle-même.
+     *
+     * La ligne se reconnaît à ce qui la précède - « Signée électroniquement », puis le
+     * trait de signature - et son texte est remplacé par le déclarant, celui-là même dont
+     * la phrase d'ouverture vient d'être composée.
+     */
+    if (finalText && civNomPrenom) {
+      const bouts = docXml.split('</w:p>');
+      const texteDu = (b) => {
+        const t = [];
+        b.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, function (_m, x) { t.push(x); });
+        return t.join('').trim();
+      };
+
+      for (let i = 2; i < bouts.length; i++) {
+        const nom = texteDu(bouts[i]);
+        if (!nom || nom === civNomPrenom) continue;
+        /* Un nom, non une phrase : la ligne ne porte qu'une civilité et un patronyme. */
+        if (!/^(Monsieur|Madame|Mademoiselle)\b/i.test(nom) || nom.length > 60) continue;
+        if (!/^[_\s]{6,}$/.test(texteDu(bouts[i - 1]))) continue;
+        if (!/Sign[ée]e\s+(électroniquement|electroniquement)/i.test(texteDu(bouts[i - 2]))) continue;
+
+        bouts[i] = bouts[i].replace(
+          /(<w:t[^>]*>)[^<]*(<\/w:t>)/,
+          '$1' + fnEsc(civNomPrenom) + '$2'
+        );
+        break;
+      }
+      docXml = bouts.join('</w:p>');
+    }
   }
 
   // Signature date paragraph: ensure it reads "Fait à VILLE, le DATE," with breathing room

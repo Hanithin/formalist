@@ -1115,6 +1115,7 @@ export function donneesDeGabarit(brouillon: Brouillon, contexte: ContexteGabarit
     ? societeDesignee(societeDirigeante)
     : identitePhysique(dirigeant);
 
+
   /*
    * Le pouvoir donné au cabinet, avec les mots des autres actes du dossier.
    *
