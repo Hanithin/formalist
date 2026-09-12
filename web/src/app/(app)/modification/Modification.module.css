@@ -8536,55 +8536,119 @@
   margin-bottom: 22px;
 }
 
-.suiviTourListe {
+/*
+ * Un seul objet, pas trois cartes.
+ *
+ * Chaque moment tenait dans un cadre à lui, avec son numéro et sa phrase : trois pavés
+ * hauts qui répétaient le compteur d'étapes du haut de page et repoussaient le
+ * formulaire sous la ligne de flottaison. Ici l'état des trois tient sur une ligne, et
+ * ce qu'il y a à faire maintenant - une seule chose à la fois - se lit dessous.
+ */
+.suiviTourRail {
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* La règle générale des listes de la page met chaque li en cadre : ici on la défait. */
+.suiviTourRail ol {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   margin: 0;
   padding: 0;
   list-style: none;
-  counter-reset: none;
 }
 
-.suiviTourListe li {
-  display: grid;
-  grid-template-columns: 26px 200px 1fr;
-  align-items: baseline;
-  gap: 4px 12px;
-  padding: 9px 0;
-  border-bottom: 1px solid #f4f4f5;
+.suiviTourRail ol li {
+  display: block;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 12px 14px;
   font-size: 14px;
-  color: #18181b;
 }
 
-.suiviTourListe li:last-child {
-  border-bottom: none;
-}
-
-/* Le rang devient une coche dès que le moment est acquis : on compte ce qui reste. */
-.suiviTourRang {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #f4f4f5;
-  color: #71717a;
-  font-size: 12px;
-  letter-spacing: 0;
-}
-
-.suiviTourFait .suiviTourRang {
-  background: #dcfce7;
-  color: #16a34a;
+/* Un filet entre les moments : c'est une séparation, pas un état. */
+.suiviTourRail ol li + li {
+  border-left: 1px solid #f1f1f3;
 }
 
 .suiviTourTitre {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #a1a1aa;
   letter-spacing: 0;
 }
 
-.suiviTourReste {
-  font-size: 13.5px;
-  line-height: 1.5;
+/*
+ * La pastille dit l'état, et rien d'autre ne le dit.
+ *
+ * Creuse et grise, le moment est à venir ; pleine et noire, on y est ; verte et cochée,
+ * il est acquis.
+ */
+.suiviTourPoint {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid #d4d4d8;
+}
+
+.suiviTourCourant .suiviTourTitre {
+  color: #18181b;
+  font-weight: 500;
+}
+
+.suiviTourCourant .suiviTourPoint {
+  background: #18181b;
+  border-color: #18181b;
+}
+
+.suiviTourFait .suiviTourTitre {
+  color: #18181b;
+}
+
+.suiviTourFait .suiviTourPoint {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.suiviTourEtat {
+  display: block;
+  margin-top: 3px;
+  padding-left: 15px;
+  font-size: 13px;
+  line-height: 1.45;
   color: #71717a;
+  letter-spacing: 0;
+}
+
+.suiviTourFait .suiviTourEtat {
+  color: #16a34a;
+}
+
+/* La seule chose à faire maintenant, sous le filet qui la sépare de l'état. */
+.suiviTourAFaire {
+  margin: 0;
+  padding: 11px 14px;
+  border-top: 1px solid #f1f1f3;
+  background: #fafafa;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #3f3f46;
+  letter-spacing: 0;
+}
+
+@media (max-width: 640px) {
+  .suiviTourRail ol {
+    grid-template-columns: 1fr;
+  }
+
+  .suiviTourRail ol li + li {
+    border-left: none;
+    border-top: 1px solid #f1f1f3;
+  }
 }
 
 /* ---------- Ce qu'il vous restera à faire ---------- */

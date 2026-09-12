@@ -468,51 +468,75 @@ export function SuiviDuTour({
      sans lui, aucune conversion ne se calcule - c'est ce que dit déjà le bloc rouge. */
   const chiffresPrets = deposes > 0 && incomplets === 0 && actionsExistantes > 0;
 
+  /*
+   * L'état de chaque moment, en deux mots.
+   *
+   * La phrase qui explique appartient à la ligne du bas : répétée trois fois, elle
+   * transforme un repère en pavé de texte, et on ne voit plus où l'on en est.
+   */
   const moments = [
     {
       titre: "Vos accords signés",
       fait: deposes > 0,
-      reste:
-        deposes === 0
-          ? "Déposez les BSA AIR que vos souscripteurs ont signés"
-          : deposes === 1
-            ? "1 accord déposé"
-            : deposes + " accords déposés",
+      etat:
+        deposes === 0 ? "Aucun déposé" : deposes + (deposes === 1 ? " déposé" : " déposés"),
     },
     {
       titre: "Les chiffres du tour",
       fait: chiffresPrets,
-      reste: !deposes
-        ? "Souscripteur, montant, valorisation et date se lisent dans vos accords"
+      etat: !deposes
+        ? "Lus dans vos accords"
         : incomplets > 0
-          ? incomplets + (incomplets === 1 ? " accord à compléter" : " accords à compléter")
+          ? incomplets + " à compléter"
           : actionsExistantes > 0
-            ? "Relus et complets"
-            : "Renseignez le capital avant conversion",
+            ? "Complets"
+            : "Capital à renseigner",
     },
     {
       titre: "Vos actes",
       fait: false,
-      reste: chiffresPrets
-        ? "Prêts à être édités : la liste figure en bas de cette page"
-        : "Édités dès que les chiffres tiennent",
+      etat: chiffresPrets ? "Prêts à éditer" : "Après les chiffres",
     },
   ];
+
+  /* Le premier moment qui n'est pas acquis : c'est là qu'on se trouve, et c'est de lui
+     que parle la ligne du bas. */
+  const courant = moments.findIndex((moment) => !moment.fait);
+
+  const aFaire = !deposes
+    ? "Déposez les BSA AIR que vos souscripteurs ont signés : leur lecture remplit le tableau pour vous."
+    : incomplets > 0
+      ? "Complétez les accords que la lecture n'a pas pu remplir - ils sont signalés dans le tableau."
+      : actionsExistantes <= 0
+        ? "Renseignez le nombre d'actions existant avant la conversion : sans lui, aucune conversion ne se calcule."
+        : "Tout y est. Les actes s'éditent à la dernière étape ; la liste figure en bas de cette page.";
 
   return (
     <section className={styles.suiviTour} aria-label="Où en êtes-vous">
       <h4 className={styles.champsGroupe}>Où en êtes-vous</h4>
-      <ol className={styles.suiviTourListe}>
-        {moments.map((moment, rang) => (
-          <li key={moment.titre} className={moment.fait ? styles.suiviTourFait : ""}>
-            <span className={styles.suiviTourRang} aria-hidden="true">
-              {moment.fait ? "✓" : rang + 1}
-            </span>
-            <span className={styles.suiviTourTitre}>{moment.titre}</span>
-            <span className={styles.suiviTourReste}>{moment.reste}</span>
-          </li>
-        ))}
-      </ol>
+      <div className={styles.suiviTourRail}>
+        <ol>
+          {moments.map((moment, rang) => (
+            <li
+              key={moment.titre}
+              className={
+                moment.fait
+                  ? styles.suiviTourFait
+                  : rang === courant
+                    ? styles.suiviTourCourant
+                    : ""
+              }
+            >
+              <span className={styles.suiviTourTitre}>
+                <span className={styles.suiviTourPoint} aria-hidden="true" />
+                {moment.titre}
+              </span>
+              <span className={styles.suiviTourEtat}>{moment.etat}</span>
+            </li>
+          ))}
+        </ol>
+        <p className={styles.suiviTourAFaire}>{aFaire}</p>
+      </div>
     </section>
   );
 }
