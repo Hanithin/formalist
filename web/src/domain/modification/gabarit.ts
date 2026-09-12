@@ -1892,16 +1892,95 @@ function personneDuSignataire(valeurs: Valeurs): Mandant {
     nom: texte(valeurs.signataireNom),
     neLe: texte(valeurs.signataireNeLe),
     neA: texte(valeurs.signataireNeA),
-    nationalite: texte(valeurs.signataireNationalite),
+    /* Lue sans le tiret de remplacement : `etatCivil` retombe sur « française », et un
+       tiret est une chaîne non vide qui l'en aurait empêché. */
+    nationalite: texteBrut(valeurs.signataireNationalite),
     adresse: texte(valeurs.signataireAdresse),
   };
 }
 
+/*
+ * Le représentant légal peut être une société.
+ *
+ * Une société par actions est souvent présidée par une holding, et rien n'interdit à
+ * une SARL d'avoir un gérant personne morale. L'acte doit alors désigner cette société
+ * comme il désignerait un associé personne morale - sa forme, son capital, son siège,
+ * son numéro - puis nommer celui qui la représente elle-même. Écrire « Monsieur » et
+ * un état civil vide à sa place donnerait un pouvoir signé par personne.
+ */
+function signataireEstUneSociete(valeurs: Valeurs): boolean {
+  return texteBrut(valeurs.signataireNature) === "morale";
+}
+
+/**
+ * « son président », « sa présidente » : la qualité dans sa propre société.
+ *
+ * Le possessif s'accorde avec le mot, non avec la personne - c'est la même règle que
+ * « Le Président » / « La Présidente » au bas des actes, et le même piège : « directeur »
+ * et « président » finissent par une consonne, leurs féminins par un e. Devant une
+ * voyelle, le français impose « son » quel que soit le genre.
+ */
+function qualiteDuRepresentant(valeurs: Valeurs): string {
+  const saisie = texteBrut(valeurs.signataireRepresentantQualite);
+  if (!saisie) return "son représentant légal";
+  const feminin = /e$/.test(saisie) && !/directeur|president$/i.test(saisie);
+  const voyelle = /^[aeiouyàâéèêîôùûh]/i.test(saisie);
+  return (feminin && !voyelle ? "sa " : "son ") + saisie;
+}
+
+/** « SAS au capital de 1 000 euros », pour une société qui n'est pas celle du dossier. */
+function formeEtCapitalBruts(forme: string, capital: string | number | undefined): string {
+  const lu =
+    typeof capital === "number" ? capital : Number(String(capital ?? "").replace(",", "."));
+  return (
+    (forme || "SAS") +
+    (Number.isFinite(lu) && lu > 0 ? " au capital de " + montant(lu) + " euros" : "")
+  );
+}
+
+/**
+ * La société qui représente, décrite comme un acte la décrit.
+ *
+ * L'ordre est celui des actes : la dénomination, ce qu'elle est, où elle siège, à quel
+ * registre elle est inscrite, et qui la représente. Une mention absente s'efface au
+ * lieu d'annoncer un registre sans numéro - sauf la dénomination et le siège, dont le
+ * trou doit se voir.
+ */
+function societeSignataire(valeurs: Valeurs): { identite: string; nom: string } {
+  const denomination = texteBrut(valeurs.signataireSocieteDenomination);
+  const siren = texteBrut(valeurs.signataireSocieteSiren);
+  const rcs = texteBrut(valeurs.signataireSocieteRcs);
+  const nomme = "La société " + (denomination || TIRET);
+  const representee =
+    "représentée par " +
+    nommer(personneDuSignataire(valeurs)) +
+    ", " +
+    qualiteDuRepresentant(valeurs);
+
+  return {
+    identite: [
+      nomme,
+      formeEtCapitalBruts(
+        texteBrut(valeurs.signataireSocieteForme),
+        valeurs.signataireSocieteCapital
+      ),
+      "dont le siège social est situé " + (texteBrut(valeurs.signataireSocieteSiege) || TIRET),
+      rcs && siren ? "immatriculée au RCS de " + rcs + " sous le numéro " + sirenEspace(siren) : "",
+      representee,
+    ]
+      .filter(Boolean)
+      .join(", "),
+    nom: nomme + ", " + representee,
+  };
+}
+
 function etatCivilDuSignataire(valeurs: Valeurs): string {
+  if (signataireEstUneSociete(valeurs)) return societeSignataire(valeurs).identite;
   return etatCivil(personneDuSignataire(valeurs));
 }
 
 function nomDuSignataire(valeurs: Valeurs): string {
+  if (signataireEstUneSociete(valeurs)) return societeSignataire(valeurs).nom;
   return nommer(personneDuSignataire(valeurs));
 }
 

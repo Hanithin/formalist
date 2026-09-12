@@ -68,6 +68,67 @@ export function verifierSociete(societe: Societe): Anomalie[] {
   return anomalies;
 }
 
+/**
+ * Le représentant légal, sans qui le pouvoir ne vaut rien.
+ *
+ * L'avocat dépose au guichet unique sous son identité, pour le compte de la société :
+ * c'est le pouvoir qui l'y autorise, et le pouvoir identifie son signataire comme le
+ * ferait un notaire. Ces champs étaient facultatifs - un dossier entier pouvait aller
+ * jusqu'aux actes et produire « Monsieur - -, né le - à - », un document que le guichet
+ * refuse et qui ne se répare qu'en refaisant la formalité.
+ *
+ * La nationalité n'est pas exigée : l'acte retombe sur « française », qui est la
+ * mention par défaut assumée ailleurs dans le produit. Le reste n'a pas de défaut
+ * possible - on n'invente ni une date de naissance ni un domicile.
+ */
+export function verifierLeRepresentant(valeurs: Valeurs): Anomalie[] {
+  const anomalies: Anomalie[] = [];
+  const vide = (champ: string) => {
+    const valeur = valeurs[champ];
+    return typeof valeur === "number" ? false : !(valeur ?? "").trim();
+  };
+  const exiger = (champ: string, message: string) => {
+    if (vide(champ)) anomalies.push({ champ, message });
+  };
+
+  if ((valeurs.signataireNature ?? "physique") === "morale") {
+    exiger(
+      "signataireSocieteDenomination",
+      "La dénomination de la société représentante est requise"
+    );
+    exiger("signataireSocieteForme", "La forme de la société représentante est requise");
+    exiger("signataireSocieteSiege", "Le siège de la société représentante est requis");
+
+    const siren = String(valeurs.signataireSocieteSiren ?? "").replace(/\s/g, "");
+    if (!siren) {
+      anomalies.push({
+        champ: "signataireSocieteSiren",
+        message: "Le SIREN de la société représentante est requis",
+      });
+    } else if (!SIREN.test(siren)) {
+      anomalies.push({
+        champ: "signataireSocieteSiren",
+        message: "Le SIREN de la société représentante comporte neuf chiffres",
+      });
+    }
+
+    exiger("signatairePrenom", "Le prénom de qui représente cette société est requis");
+    exiger("signataireNom", "Le nom de qui représente cette société est requis");
+    exiger(
+      "signataireRepresentantQualite",
+      "La qualité de qui représente cette société est requise"
+    );
+    return anomalies;
+  }
+
+  exiger("signatairePrenom", "Le prénom du représentant légal est requis");
+  exiger("signataireNom", "Le nom du représentant légal est requis");
+  exiger("signataireNeLe", "La date de naissance du représentant légal est requise");
+  exiger("signataireNeA", "Le lieu de naissance du représentant légal est requis");
+  exiger("signataireAdresse", "L'adresse du représentant légal est requise");
+  return anomalies;
+}
+
 function nombre(valeur: string | number | undefined): number | null {
   if (typeof valeur === "number") return Number.isFinite(valeur) ? valeur : null;
   if (typeof valeur !== "string" || !valeur.trim()) return null;
@@ -288,14 +349,22 @@ export function verifierModification(
       codes,
       valeurs,
       cessions,
-    } as ContexteGabarit).filter((a) => assemblee !== undefined || !a.champ.startsWith("assemblee")),
+    } as ContexteGabarit).filter(
+      (a) => assemblee !== undefined || !a.champ.startsWith("assemblee")
+    ),
     /*
      * Le traité d'apport a ses propres incohérences, et le même besoin d'être relu
      * avant le règlement : un nominal qui ne divise pas la valeur de l'apport, un
      * commissaire aux apports partie à l'opération, une dispense que la loi n'ouvre pas.
      */
     ...(codes.includes("apport_titres")
-      ? anomaliesDuTraite({ societe, assemblee: assemblee ?? {}, codes, valeurs, cessions } as ContexteGabarit)
+      ? anomaliesDuTraite({
+          societe,
+          assemblee: assemblee ?? {},
+          codes,
+          valeurs,
+          cessions,
+        } as ContexteGabarit)
       : []),
     /*
      * L'acte de cession a ses propres exigences : un acquéreur nommé, un nombre total
@@ -340,8 +409,6 @@ export function avancement(codes: string[], valeurs: Valeurs, societe: Societe):
   const faits = [societeFaite, choixFait, champsFaits].filter(Boolean).length;
   return Math.round((faits / 3) * 100);
 }
-
-
 
 /**
  * Ce qui empêche de produire les actes d'une constatation.

@@ -31,6 +31,7 @@ import {
 } from "@/domain/modification/types";
 import {
   verifierSociete,
+  verifierLeRepresentant,
   verifierChamps,
   verifierCoherence,
   type Societe,
@@ -313,7 +314,12 @@ export function Parcours({
         })
       : []),
   ];
-  const anomaliesSociete = verifierSociete(etat.societe);
+  /* Le pouvoir se signe : sans représentant identifié, il sort avec des trous et le
+     guichet le refuse. Les deux jeux de manques se posent à la même étape. */
+  const anomaliesSociete = [
+    ...verifierSociete(etat.societe),
+    ...verifierLeRepresentant(etat.valeurs),
+  ];
 
   /* Voir `garde-de-boucle` : le parcours porte l'état que le dépôt met à jour. */
   gardeDeBoucle("Le parcours de modification");
@@ -1252,6 +1258,50 @@ function EtapeSociete({
 
   const refus = (champ: string) => anomalies.find((a) => a.champ === champ)?.message;
 
+  const natureDuSignataire =
+    texteDe(etat.valeurs.signataireNature) === "morale" ? "morale" : "physique";
+  const signataireMoral = natureDuSignataire === "morale";
+
+  /**
+   * La société qui préside, retenue au registre.
+   *
+   * Comme pour un associé personne morale : la dénomination, la forme, le numéro et le
+   * siège arrivent ensemble ; le capital et le greffe compétent demandent deux appels
+   * de plus, qui peuvent échouer sans rien empêcher - les champs restent saisissables.
+   */
+  function remplirLaSocieteRepresentante(trouvee: SocieteTrouvee) {
+    majValeurs((x) => ({
+      ...x,
+      signataireSocieteDenomination: trouvee.denomination,
+      signataireSocieteForme: trouvee.forme || texteDe(x.signataireSocieteForme),
+      signataireSocieteSiren: trouvee.siren,
+      signataireSocieteSiege: trouvee.siege,
+    }));
+
+    capitalAuRegistre(trouvee.siren).then((capital) => {
+      if (capital !== null) majValeurs((x) => ({ ...x, signataireSocieteCapital: capital }));
+    });
+
+    /* Le greffe compétent n'est pas la commune du siège : Argenteuil relève de
+       Pontoise, et la table des exceptions vit derrière /api/rcs. */
+    if (trouvee.codePostal) {
+      fetch(
+        "/api/rcs?codePostal=" +
+          encodeURIComponent(trouvee.codePostal) +
+          "&ville=" +
+          encodeURIComponent(trouvee.commune)
+      )
+        .then((r) => (r.ok ? r.json() : null))
+        .then((corps: { villeRcs?: string } | null) => {
+          const trouve = corps?.villeRcs || trouvee.commune;
+          if (trouve) majValeurs((x) => ({ ...x, signataireSocieteRcs: trouve }));
+        })
+        .catch(() => {
+          if (trouvee.commune) majValeurs((x) => ({ ...x, signataireSocieteRcs: trouvee.commune }));
+        });
+    }
+  }
+
   return (
     <>
       {/*
@@ -1441,6 +1491,158 @@ function EtapeSociete({
         la société. C&apos;est cette personne qui le signera.
       </p>
 
+      {/*
+        Un dirigeant peut être une société.
+
+        Une SAS est souvent présidée par une holding, et rien n'interdit à une SARL
+        d'avoir un gérant personne morale. Le pouvoir doit alors désigner cette société
+        - sa forme, son capital, son siège, son numéro - puis nommer qui la représente
+        elle-même. Le formulaire n'offrait qu'une personne physique : on y saisissait le
+        dirigeant de la holding, et le pouvoir le donnait en son nom propre.
+      */}
+      <div className={styles.natureEtRecherche}>
+        <div className={styles.natures}>
+          {(["physique", "morale"] as const).map((nature) => (
+            <label
+              key={nature}
+              className={
+                natureDuSignataire === nature
+                  ? `${styles.nature} ${styles.natureChoisie}`
+                  : styles.nature
+              }
+            >
+              <input
+                type="radio"
+                name="signataire-nature"
+                checked={natureDuSignataire === nature}
+                onChange={() => majValeurs((x) => ({ ...x, signataireNature: nature }))}
+              />
+              {nature === "physique" ? "Une personne" : "Une société"}
+            </label>
+          ))}
+        </div>
+
+        {/* La recherche n'a de sens que pour une société : elle paraît avec elle. */}
+        {signataireMoral && (
+          <RechercheAuRegistre
+            id="signataire-societe-recherche"
+            compacte
+            surSelection={remplirLaSocieteRepresentante}
+          />
+        )}
+      </div>
+
+      {signataireMoral && (
+        <div className={styles.champs}>
+          <div className={styles.champ}>
+            <label htmlFor="signataire-societe-denomination">Dénomination</label>
+            <input
+              id="signataire-societe-denomination"
+              value={texteDe(etat.valeurs.signataireSocieteDenomination)}
+              onChange={(e) =>
+                majValeurs((x) => ({ ...x, signataireSocieteDenomination: e.target.value }))
+              }
+            />
+            {refus("signataireSocieteDenomination") && (
+              <p role="alert">{refus("signataireSocieteDenomination")}</p>
+            )}
+          </div>
+
+          <div className={styles.champ}>
+            <label htmlFor="signataire-societe-forme">Forme juridique</label>
+            <ChampChoix
+              id="signataire-societe-forme"
+              valeur={texteDe(etat.valeurs.signataireSocieteForme)}
+              options={FORMES}
+              surChangement={(forme) =>
+                majValeurs((x) => ({ ...x, signataireSocieteForme: forme }))
+              }
+            />
+            {refus("signataireSocieteForme") && (
+              <p role="alert">{refus("signataireSocieteForme")}</p>
+            )}
+          </div>
+
+          <div className={styles.champ}>
+            <label htmlFor="signataire-societe-siren">SIREN</label>
+            <input
+              id="signataire-societe-siren"
+              inputMode="numeric"
+              value={texteDe(etat.valeurs.signataireSocieteSiren)}
+              onChange={(e) =>
+                majValeurs((x) => ({ ...x, signataireSocieteSiren: e.target.value }))
+              }
+            />
+            {refus("signataireSocieteSiren") && (
+              <p role="alert">{refus("signataireSocieteSiren")}</p>
+            )}
+          </div>
+
+          <div className={styles.champ}>
+            <label htmlFor="signataire-societe-capital">Capital, en euros</label>
+            <ChampNombre
+              id="signataire-societe-capital"
+              valeur={
+                typeof etat.valeurs.signataireSocieteCapital === "number"
+                  ? etat.valeurs.signataireSocieteCapital
+                  : texteDe(etat.valeurs.signataireSocieteCapital)
+              }
+              decimales={true}
+              surChangement={(nombre) =>
+                majValeurs((x) => ({
+                  ...x,
+                  signataireSocieteCapital: nombre === "" ? undefined : nombre,
+                }))
+              }
+            />
+          </div>
+
+          <div className={styles.champ}>
+            <label htmlFor="signataire-societe-siege">Siège social</label>
+            {/* Le siège part dans l'acte tel quel : il se cherche plutôt que de se
+                recopier depuis un extrait. */}
+            <AdresseUneLigne
+              id="signataire-societe-siege"
+              valeur={texteDe(etat.valeurs.signataireSocieteSiege)}
+              surChangement={(siege) =>
+                majValeurs((x) => ({ ...x, signataireSocieteSiege: siege }))
+              }
+            />
+            {refus("signataireSocieteSiege") && (
+              <p role="alert">{refus("signataireSocieteSiege")}</p>
+            )}
+          </div>
+
+          <div className={styles.champ}>
+            <label htmlFor="signataire-societe-rcs">Immatriculée au RCS de</label>
+            {/* Le greffe, non la commune : Argenteuil relève de Pontoise. La recherche
+                le pose ; sans lui, la ligne d'immatriculation s'efface de l'acte. */}
+            <Ville
+              id="signataire-societe-rcs"
+              valeur={texteDe(etat.valeurs.signataireSocieteRcs)}
+              surChangement={(ville) => majValeurs((x) => ({ ...x, signataireSocieteRcs: ville }))}
+            />
+          </div>
+
+          {/* Qualité dans votre société : c'est la société qui préside, non la
+              personne qui la représente. */}
+          <div className={styles.champ}>
+            <label htmlFor="signataire-qualite">Qualité dans votre société</label>
+            <ChampChoix
+              id="signataire-qualite"
+              valeur={texteDe(etat.valeurs.signataireQualite)}
+              options={qualitesProposees(
+                etat.societe.forme,
+                texteDe(etat.valeurs.signataireQualite)
+              )}
+              surChangement={(v) => majValeurs((x) => ({ ...x, signataireQualite: v }))}
+            />
+          </div>
+        </div>
+      )}
+
+      {signataireMoral && <h4 className={styles.champsGroupe}>Qui représente cette société</h4>}
+
       <div className={styles.champs}>
         <div className={styles.champ}>
           <label htmlFor="signataire-civilite">Civilité</label>
@@ -1452,23 +1654,28 @@ function EtapeSociete({
           />
         </div>
 
-        <div className={styles.champ}>
-          <label htmlFor="signataire-qualite">Qualité</label>
-          {/*
-            Ce que la forme admet, et rien d'autre.
+        {!signataireMoral && (
+          <div className={styles.champ}>
+            <label htmlFor="signataire-qualite">Qualité</label>
+            {/*
+              Ce que la forme admet, et rien d'autre.
 
-            Les huit qualités étaient offertes à toute société : une SAS pouvait signer
-            son pouvoir « en qualité de gérante ». Une qualité déjà saisie reste dans la
-            liste même si la forme ne la prévoit pas - un dossier ancien, ou une société
-            identifiée après coup, ne doit pas voir sa saisie disparaître sans un mot.
-          */}
-          <ChampChoix
-            id="signataire-qualite"
-            valeur={texteDe(etat.valeurs.signataireQualite)}
-            options={qualitesProposees(etat.societe.forme, texteDe(etat.valeurs.signataireQualite))}
-            surChangement={(v) => majValeurs((x) => ({ ...x, signataireQualite: v }))}
-          />
-        </div>
+              Les huit qualités étaient offertes à toute société : une SAS pouvait signer
+              son pouvoir « en qualité de gérante ». Une qualité déjà saisie reste dans la
+              liste même si la forme ne la prévoit pas - un dossier ancien, ou une société
+              identifiée après coup, ne doit pas voir sa saisie disparaître sans un mot.
+            */}
+            <ChampChoix
+              id="signataire-qualite"
+              valeur={texteDe(etat.valeurs.signataireQualite)}
+              options={qualitesProposees(
+                etat.societe.forme,
+                texteDe(etat.valeurs.signataireQualite)
+              )}
+              surChangement={(v) => majValeurs((x) => ({ ...x, signataireQualite: v }))}
+            />
+          </div>
+        )}
 
         <div className={styles.champ}>
           <label htmlFor="signataire-prenom">Prénom</label>
@@ -1477,6 +1684,7 @@ function EtapeSociete({
             value={texteDe(etat.valeurs.signatairePrenom)}
             onChange={(e) => majValeurs((x) => ({ ...x, signatairePrenom: e.target.value }))}
           />
+          {refus("signatairePrenom") && <p role="alert">{refus("signatairePrenom")}</p>}
         </div>
 
         <div className={styles.champ}>
@@ -1486,20 +1694,46 @@ function EtapeSociete({
             value={texteDe(etat.valeurs.signataireNom)}
             onChange={(e) => majValeurs((x) => ({ ...x, signataireNom: e.target.value }))}
           />
+          {refus("signataireNom") && <p role="alert">{refus("signataireNom")}</p>}
         </div>
 
-        <div className={styles.champ}>
-          <label htmlFor="signataire-ne-le">Né le</label>
-          <ChampDate
-            id="signataire-ne-le"
-            valeur={texteDe(etat.valeurs.signataireNeLe)}
-            surChangement={(iso) => majValeurs((x) => ({ ...x, signataireNeLe: iso }))}
-          />
-        </div>
+        {/* Sa qualité dans la société qui préside, non dans la vôtre : l'acte écrit
+            « représentée par Monsieur X, son président ». */}
+        {signataireMoral && (
+          <div className={styles.champ}>
+            <label htmlFor="signataire-representant-qualite">Sa qualité dans cette société</label>
+            <ChampChoix
+              id="signataire-representant-qualite"
+              valeur={texteDe(etat.valeurs.signataireRepresentantQualite)}
+              options={qualitesProposees(
+                texteDe(etat.valeurs.signataireSocieteForme),
+                texteDe(etat.valeurs.signataireRepresentantQualite)
+              )}
+              surChangement={(qualite) =>
+                majValeurs((x) => ({ ...x, signataireRepresentantQualite: qualite }))
+              }
+            />
+            {refus("signataireRepresentantQualite") && (
+              <p role="alert">{refus("signataireRepresentantQualite")}</p>
+            )}
+          </div>
+        )}
 
-        <div className={styles.champ}>
-          <label htmlFor="signataire-ne-a">À</label>
-          {/*
+        {!signataireMoral && (
+          <>
+            <div className={styles.champ}>
+              <label htmlFor="signataire-ne-le">Né le</label>
+              <ChampDate
+                id="signataire-ne-le"
+                valeur={texteDe(etat.valeurs.signataireNeLe)}
+                surChangement={(iso) => majValeurs((x) => ({ ...x, signataireNeLe: iso }))}
+              />
+              {refus("signataireNeLe") && <p role="alert">{refus("signataireNeLe")}</p>}
+            </div>
+
+            <div className={styles.champ}>
+              <label htmlFor="signataire-ne-a">À</label>
+              {/*
             Le lieu de naissance se choisit, il ne se tape plus.
 
             Le champ était libre : on y écrivait « lyon » ou « Lyon 3 », quand l'acte
@@ -1507,51 +1741,56 @@ function EtapeSociete({
             personnes nées la même année dans la même ville, et le greffe le vérifie
             sur l'acte de naissance.
           */}
-          <Ville
-            id="signataire-ne-a"
-            valeur={texteDe(etat.valeurs.signataireNeA)}
-            placeholder="Lyon 3e (69003)"
-            surChangement={(ville) => majValeurs((x) => ({ ...x, signataireNeA: ville }))}
-            surCompletion={(codePostal, ville) =>
-              majValeurs((x) => ({ ...x, signataireNeA: lieuAvecCode(ville, codePostal) }))
-            }
-          />
-        </div>
+              <Ville
+                id="signataire-ne-a"
+                valeur={texteDe(etat.valeurs.signataireNeA)}
+                placeholder="Lyon 3e (69003)"
+                surChangement={(ville) => majValeurs((x) => ({ ...x, signataireNeA: ville }))}
+                surCompletion={(codePostal, ville) =>
+                  majValeurs((x) => ({ ...x, signataireNeA: lieuAvecCode(ville, codePostal) }))
+                }
+              />
+              {refus("signataireNeA") && <p role="alert">{refus("signataireNeA")}</p>}
+            </div>
 
-        <div className={styles.champ}>
-          <label htmlFor="signataire-nationalite">Nationalité</label>
-          {/* Au féminin : « de nationalité française » s'accorde avec le mot, pas avec
+            <div className={styles.champ}>
+              <label htmlFor="signataire-nationalite">Nationalité</label>
+              {/* Au féminin : « de nationalité française » s'accorde avec le mot, pas avec
               la personne. La liste porte donc la seule forme qu'un acte emploie, et
               évite les « francaise » et « portuguaise » que le greffe relève. */}
-          <ChampListe
-            id="signataire-nationalite"
-            placeholder="Française"
-            valeur={texteDe(etat.valeurs.signataireNationalite)}
-            options={NATIONALITES}
-            surChangement={(nationalite) =>
-              majValeurs((x) => ({ ...x, signataireNationalite: nationalite }))
-            }
-          />
-        </div>
+              <ChampListe
+                id="signataire-nationalite"
+                placeholder="Française"
+                valeur={texteDe(etat.valeurs.signataireNationalite)}
+                options={NATIONALITES}
+                surChangement={(nationalite) =>
+                  majValeurs((x) => ({ ...x, signataireNationalite: nationalite }))
+                }
+              />
+            </div>
 
-        <div className={`${styles.champ} ${styles.pleineLargeur}`}>
-          <label htmlFor="signataire-adresse">Adresse personnelle</label>
-          {/*
+            <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+              <label htmlFor="signataire-adresse">Adresse personnelle</label>
+              {/*
             Son domicile, non le siège : le mandant signe en son nom. Un pouvoir qui
             le domicilie au siège ne dit rien de plus que la ligne au-dessus.
           */}
-          <Adresse
-            id="signataire-adresse"
-            valeur={texteDe(etat.valeurs.signataireAdresse)}
-            surChangement={(voie) => majValeurs((x) => ({ ...x, signataireAdresse: voie }))}
-            surCompletion={(codePostal, ville) =>
-              majValeurs((x) => ({
-                ...x,
-                signataireAdresse: texteDe(x.signataireAdresse) + ", " + codePostal + " " + ville,
-              }))
-            }
-          />
-        </div>
+              <Adresse
+                id="signataire-adresse"
+                valeur={texteDe(etat.valeurs.signataireAdresse)}
+                surChangement={(voie) => majValeurs((x) => ({ ...x, signataireAdresse: voie }))}
+                surCompletion={(codePostal, ville) =>
+                  majValeurs((x) => ({
+                    ...x,
+                    signataireAdresse:
+                      texteDe(x.signataireAdresse) + ", " + codePostal + " " + ville,
+                  }))
+                }
+              />
+              {refus("signataireAdresse") && <p role="alert">{refus("signataireAdresse")}</p>}
+            </div>
+          </>
+        )}
       </div>
     </>
   );
