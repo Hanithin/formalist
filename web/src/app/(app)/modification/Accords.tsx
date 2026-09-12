@@ -568,17 +568,27 @@ export function ExplicationConstatation() {
         Des bons de souscription ont été exercés. L&apos;augmentation de capital est donc
         <strong> déjà réalisée</strong> : l&apos;article L. 225-149 du code de commerce la tient
         pour acquise du seul fait de l&apos;exercice des droits. Il n&apos;y a rien à faire décider
-        par une assemblée - le président la constate, sur délégation, et met les statuts à jour.
+        par une assemblée - le président la constate et met les statuts à jour. Encore faut-il
+        qu&apos;il y ait été habilité : c&apos;est la décision collective qui a émis les bons qui
+        l&apos;en charge, et si elle a manqué, le dossier la fait d&apos;abord ratifier.
       </p>
       <p>
         Deux conséquences pratiques. Le dossier ne produit pas de procès-verbal d&apos;assemblée
         générale. Et aucune attestation de dépôt des fonds n&apos;est due : le même texte écarte les
         formalités de dépôt des souscriptions.
       </p>
+      {/*
+        Réalisée en droit, pas encore écrite.
+        Ce décalage surprend : on arrive ici sans avoir rien changé au capital, et l'écran
+        affirme que l'augmentation est acquise. Les deux sont vrais, et c'est précisément
+        l'objet de la formalité - le dire évite de chercher l'erreur.
+      */}
       <p>
-        Le capital d&apos;après ne se saisit pas, il se calcule : chaque accord porte sa propre
-        valorisation, et le nombre d&apos;actions à créer ne se lit qu&apos;en les résolvant tous
-        ensemble. C&apos;est l&apos;objet du tableau, plus bas.
+        Vos statuts portent donc encore l&apos;ancien capital, et c&apos;est normal : c&apos;est ce
+        décalage que la constatation vient fermer. Le nombre d&apos;actions demandé plus bas est
+        celui de vos statuts d&apos;aujourd&apos;hui. Le capital d&apos;après, lui, ne se saisit
+        pas : chaque accord porte sa propre valorisation, et le nombre d&apos;actions à créer ne se
+        lit qu&apos;en les résolvant tous ensemble - c&apos;est l&apos;objet du tableau, plus bas.
       </p>
     </div>
   );
