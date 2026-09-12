@@ -914,7 +914,7 @@ export default async function DossierAvocat({ params }: { params: Promise<{ doss
                           </span>
                         </div>
                       </div>
-                      <div className={styles.docActions}>
+                      <div className={`${styles.docActions} ${styles.docActionsFin}`}>
                         <Link
                           href={"/avocat/" + dossier.id + "/statuts"}
                           className={styles.decisionPrincipale}

@@ -78,6 +78,9 @@ export function Statuts({
    */
   const [attente, setAttente] = useState<Progression | null>(null);
   const [manquants, setManquants] = useState(false);
+  /* Le refus d'un dépôt, distinct de celui qui dit que les statuts manquent : le second
+     est l'état de départ, et l'écran le dit sans alarme. */
+  const [refusDuDepot, setRefusDuDepot] = useState<string | null>(null);
   /* Relancer la lecture, c'est rejouer l'effet : ce compteur en est la clé. */
   const [essai, setEssai] = useState(0);
   /*
@@ -123,6 +126,7 @@ export function Statuts({
    */
   function deposer(fichier: File) {
     setRefus(null);
+    setRefusDuDepot(null);
     demarrer(async () => {
       const corps = new FormData();
       corps.append("dossier", String(dossier));
@@ -135,7 +139,7 @@ export function Statuts({
       const retour = await reponse.json().catch(() => ({}));
 
       if (!reponse.ok) {
-        setRefus(retour.error ?? "Le dépôt a été refusé");
+        setRefusDuDepot(retour.error ?? "Le dépôt a été refusé");
         return;
       }
       setRetour("Statuts reçus. Les passages à remplacer sont repérés ci-dessous.");
@@ -414,31 +418,56 @@ export function Statuts({
     );
   }
 
+  /*
+   * Les statuts manquent : c'est un début, non une panne.
+   *
+   * L'écran ouvrait sur un bandeau rouge - « Les statuts en vigueur ne sont pas au
+   * dossier » - suivi d'un cadre en pointillés large comme la page, contenant le
+   * sélecteur de fichier du navigateur, et de deux écrans de vide. Rien n'y était faux,
+   * tout y semblait cassé : c'est pourtant l'état normal d'un dossier dont le client
+   * n'a pas encore franchi l'étape des statuts.
+   *
+   * Une carte, ce qu'elle attend, et le geste qui l'apporte.
+   */
   if (refus && !lecture) {
     return (
-      <div className={styles.travail}>
-        <p className={styles.travailRefus} role="alert">
-          {refus}
+      <div className={styles.statutsAbsents}>
+        <div className={styles.statutsAbsentsIcone} aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+        </div>
+
+        <h2 className={styles.statutsAbsentsTitre}>Les statuts en vigueur manquent</h2>
+        <p className={styles.statutsAbsentsTexte}>
+          C&apos;est sur leur texte que les décisions se reportent : sans eux, il n&apos;y a
+          rien à retoucher. Déposez le PDF, demandez-le au client par message, ou reprenez-le
+          au registre national.
         </p>
 
         {/*
-          Le client ne peut plus rien déposer une fois le dossier réglé : c'est donc
-          au cabinet de le faire, avec ce que le client lui a envoyé.
+          L'étiquette fait le bouton : le champ natif est illisible et intraduisible -
+          « Choisir un fichier / Aucun fichier choisi » en plein milieu d'une carte.
         */}
-        <div className={styles.depotStatuts}>
-          <p className={styles.tacheExplication}>
-            Déposez les statuts en vigueur, au format PDF. Vous pouvez les demander au
-            client par message, ou les reprendre au registre national.
-          </p>
-          {/*
-            Le champ est visible, et le paragraphe au-dessus ne le nomme pas.
-            Une explication n'est pas une étiquette : elle se lit avant, elle ne se
-            rattache pas au champ, et la synthèse vocale annonçait ici « Choisir un
-            fichier » sans dire lequel.
-          */}
+        <label
+          className={
+            enCours
+              ? `${styles.statutsAbsentsBouton} ${styles.statutsAbsentsBoutonInactif}`
+              : styles.statutsAbsentsBouton
+          }
+        >
           <input
             type="file"
             accept=".pdf"
+            className={styles.statutsAbsentsChamp}
             aria-label="Déposer les statuts en vigueur, au format PDF"
             disabled={enCours}
             onChange={(e) => {
@@ -446,7 +475,18 @@ export function Statuts({
               if (fichier) deposer(fichier);
             }}
           />
-        </div>
+          {enCours ? "Dépôt en cours…" : "Déposer les statuts (PDF)"}
+        </label>
+
+        <p className={styles.statutsAbsentsMention}>
+          Le document tel qu&apos;il a été déposé au greffe, en un seul fichier.
+        </p>
+
+        {refusDuDepot && (
+          <p className={styles.statutsAbsentsRefus} role="alert">
+            {refusDuDepot}
+          </p>
+        )}
 
         {retour && (
           <p className={styles.travailRetour} role="status">
