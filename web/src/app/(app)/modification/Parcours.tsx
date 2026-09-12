@@ -95,6 +95,9 @@ import { NATIONALITES } from "@/domain/formalite/pays";
 /* Les titres viennent du domaine : le tableau de bord dessine le même chemin. */
 const ETAPES = ETAPES_MODIFICATION.map((e, rang) => ({ ...e, numero: rang + 1 }));
 
+/* Le rang de l'assemblée dans la frise : ce qu'on reprend des étapes d'avant s'y arrête. */
+const ETAPE_ASSEMBLEE = ETAPES.findIndex((e) => e.court === "Assemblée") + 1;
+
 /*
  * Les formes proposées viennent du domaine.
  *
@@ -505,6 +508,28 @@ export function Parcours({
     setManquesVus([]);
     setTentative(false);
 
+    /*
+     * Le total des actions, repris plutôt que redemandé.
+     *
+     * La constatation demande déjà, à l'étape des détails, le nombre d'actions existant
+     * avant la conversion. L'assemblée redemandait le même chiffre pour sa feuille de
+     * présence : une saisie de plus, et deux valeurs qui peuvent diverger alors que
+     * c'est la première qui fait foi - c'est elle qui calcule les conversions.
+     *
+     * C'est bien le nombre d'avant division : l'assemblée qui divise le nominal se tient
+     * sur le capital tel qu'il est au moment où elle se réunit. Et la reprise ne joue
+     * qu'avant l'étape de l'assemblée, pour qu'un chiffre corrigé à la main y reste.
+     */
+    const assemblee =
+      etape < ETAPE_ASSEMBLEE &&
+      etat.assemblee.totalParts == null &&
+      etat.codes.includes("constatation_augmentation") &&
+      (nombreLu(etat.valeurs.airActionsExistantes) ?? 0) > 0
+        ? { ...etat.assemblee, totalParts: nombreLu(etat.valeurs.airActionsExistantes) }
+        : etat.assemblee;
+
+    if (assemblee !== etat.assemblee) changer({ assemblee });
+
     demarrer(async () => {
       const reponse = await fetch("/api/formalites/modification", {
         method: "PUT",
@@ -516,7 +541,7 @@ export function Parcours({
           codes: etat.codes,
           societe: etat.societe,
           valeurs: etat.valeurs,
-          assemblee: etat.assemblee,
+          assemblee,
           cessions: etat.cessions,
         }),
       });
@@ -2552,6 +2577,13 @@ function EtapeAssemblee({
   /* Une société par actions compte des actions : l'étape le dit comme l'acte l'écrira. */
   const titres = natureDeLaForme(etat.societe.forme).titres;
 
+  /* Le chiffre vient de la constatation, où il commande déjà tous les calculs : le dire
+     évite de se demander si l'on doit compter les actions nouvelles. */
+  const reprisDeLaConstatation =
+    etat.codes.includes("constatation_augmentation") &&
+    etat.assemblee.totalParts != null &&
+    etat.assemblee.totalParts === (nombreLu(etat.valeurs.airActionsExistantes) ?? null);
+
   function modifierAssocie(rang: number, changement: Partial<Associe>) {
     const suite = montres.map((a, i) => (i === rang ? { ...a, ...changement } : a));
     changer({ assemblee: { ...etat.assemblee, associes: suite } });
@@ -2596,6 +2628,11 @@ function EtapeAssemblee({
               })
             }
           />
+          {reprisDeLaConstatation && (
+            <p className={styles.devisPrecision}>
+              Le nombre d&apos;actions avant la conversion, comme à l&apos;étape précédente.
+            </p>
+          )}
         </div>
       </div>
 
