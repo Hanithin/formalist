@@ -48,7 +48,12 @@ function Corbeille() {
   );
 }
 
-const EUROS = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+/* En français, Intl ne sépare qu'à partir de cinq chiffres : « 1000 » puis « 10 000 »
+   dans la même phrase donne l'air d'une coquille. Le groupement est demandé. */
+const EUROS = new Intl.NumberFormat("fr-FR", {
+  maximumFractionDigits: 0,
+  useGrouping: "always",
+});
 const PRIX = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
 /**
@@ -183,11 +188,6 @@ export function Accords({
   return (
     <section className={styles.accords}>
       <h4 className={styles.champsGroupe}>Les accords convertis</h4>
-      <p className={styles.accordsIntro}>
-        Déposez les accords signés : leur souscripteur, leur montant, leur valorisation et leur date
-        se lisent seuls. Relisez-les ensuite - ce sont ces chiffres qui fixent le nombre
-        d&apos;actions à créer, et aucun acte ne les redemandera.
-      </p>
 
       {/*
         Un seul chemin vers le tableau, et il passe par la relecture.
@@ -196,6 +196,16 @@ export function Accords({
         qu'un fichier choisi par erreur entrait au dossier avant qu'on ait pu le voir.
       */}
       <div className={styles.accordsDepot}>
+        <div className={styles.accordsDepotTexte}>
+          <p className={styles.accordsDepotPhrase}>
+            Déposez les accords signés : souscripteur, montant, valorisation et date se lisent
+            seuls.
+          </p>
+          <p className={styles.accordsPrecision}>
+            Plusieurs PDF à la fois, relus avant d&apos;entrer au dossier. Ce sont ces chiffres qui
+            fixent le nombre d&apos;actions à créer.
+          </p>
+        </div>
         <button
           type="button"
           className={styles.accordsBouton}
@@ -203,9 +213,6 @@ export function Accords({
         >
           Déposer des accords (PDF)
         </button>
-        <span className={styles.accordsPrecision}>
-          Plusieurs fichiers à la fois. Chacun est lu et présenté avant d&apos;être ajouté.
-        </span>
       </div>
 
       {fenetreOuverte && (

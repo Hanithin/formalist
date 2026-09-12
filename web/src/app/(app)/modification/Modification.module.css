@@ -7754,20 +7754,46 @@
   border-top: 1px solid #e4e4e7;
 }
 
-.accordsIntro {
-  margin: 0 0 16px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #52525b;
-  max-width: 68ch;
-}
-
+/*
+ * Le dépôt tient dans un objet, pas en trois morceaux.
+ *
+ * Une phrase d'introduction, un bouton noir posé seul sur le fond, puis une mention
+ * grise que le retour à la ligne avait décrochée sous lui : trois éléments flottants
+ * pour une seule action. Ils sont réunis - ce qu'on dépose à gauche, le geste à droite.
+ */
 .accordsDepot {
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
   margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.accordsDepotTexte {
+  min-width: 0;
+}
+
+.accordsDepotPhrase {
+  margin: 0 0 3px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #3f3f46;
+}
+
+/* Le bouton ne se comprime pas : c'est la phrase qui cède la place. */
+.accordsDepot .accordsBouton {
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .accordsDepot {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* Le champ natif est illisible et intraduisible : c'est l'étiquette qui fait le bouton. */
@@ -8193,7 +8219,9 @@
 }
 
 .accordsPrecision {
-  font-size: 13.5px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
   color: #71717a;
 }
 
@@ -8427,39 +8455,53 @@
  *
  * Le fond dit la gravité, sans filet de couleur sur le bord.
  */
+/*
+ * Le trait suit le fond, et non le rôle.
+ *
+ * globals.css encadre tout [role="alert"] de rouge et tout [role="status"] de vert. Le
+ * bilan porte bien ces rôles - il faut que la synthèse vocale annonce ce qui bloque -
+ * mais un avertissement ambre cerclé de vert n'annonce plus rien du tout. Le trait est
+ * donc redit ici, de la teinte du fond.
+ */
 .accordsBilanBloquant,
 .accordsBilanAvertit {
   margin: 16px 0;
-  padding: 14px 16px;
+  padding: 13px 15px;
+  border: 1px solid;
   border-radius: 12px;
   font-size: 13.5px;
   line-height: 1.55;
 }
 
 .accordsBilanBloquant {
+  border-color: #fecaca;
   background: #fef2f2;
   color: #991b1b;
 }
 
 .accordsBilanAvertit {
+  border-color: #fde68a;
   background: #fffbeb;
   color: #92400e;
 }
 
 .accordsBilanTitre {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 600;
+  margin: 0 0 5px;
+  font-size: 13.5px;
+  font-weight: 500;
   letter-spacing: 0;
 }
 
+/* Une anomalie seule ne fait pas une liste : la puce et son retrait décalaient la
+   phrase sous un titre qu'elle explique, pour un article unique. */
 .accordsBilanListe {
   margin: 0;
-  padding: 0 0 0 18px;
+  padding: 0;
+  list-style: none;
 }
 
 .accordsBilanListe li + li {
-  margin-top: 7px;
+  margin-top: 6px;
 }
 
 /*
