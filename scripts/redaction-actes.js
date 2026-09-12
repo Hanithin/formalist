@@ -40,8 +40,6 @@ const UNIPERSONNELS = [
   "modif-pv-transfert-siege-eurl.docx",
 ];
 
-const AVENANT = "modif-avenant-statuts.docx";
-
 function paragraphe(texte, options = {}) {
   const gras = options.gras ? "<w:rPr><w:b/></w:rPr>" : "";
   const indentation = options.puce ? '<w:ind w:left="425" w:hanging="170"/>' : "";
@@ -289,7 +287,6 @@ function clotureRedigee(xml) {
 const CONCERNES = [
   ...COLLEGIAUX,
   ...UNIPERSONNELS,
-  AVENANT,
   /*
    * Les autres actes ne reçoivent que la reprise de l'en-tête : leur rédaction n'a pas
    * été revue ici, mais tous portent le même bloc d'identification.
@@ -297,7 +294,7 @@ const CONCERNES = [
   ...fs
     .readdirSync(TEMPLATES)
     .filter((nom) => nom.endsWith(".docx"))
-    .filter((nom) => ![...COLLEGIAUX, ...UNIPERSONNELS, AVENANT].includes(nom)),
+    .filter((nom) => ![...COLLEGIAUX, ...UNIPERSONNELS].includes(nom)),
 ];
 let modifies = 0;
 

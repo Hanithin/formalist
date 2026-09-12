@@ -416,66 +416,6 @@ function pvAgeSCI() {
 }
 
 // ====== Avenant aux statuts (générique) ======
-function avenantStatuts() {
-  return p('AVENANT AUX STATUTS', { bold: true, size: 32, center: true, underline: true, spacing: 400 })
-    + p('{{SOCIETE}}', { bold: true, size: 28, center: true })
-    + p('{{FORME_JURIDIQUE}} au capital de {{CAPITAL_FORMATE}} euros', { center: true, size: 20 })
-    + p('Siège social : {{SIEGE_SOCIAL}}', { center: true, size: 20 })
-    + p('RCS {{RCS_VILLE}} — SIREN : {{SIREN}}', { center: true, size: 20, spacing: 400 })
-    + p('Suite à la décision {{#IS_UNIPERSONNELLE}}de l\'associé unique{{/IS_UNIPERSONNELLE}}{{^IS_UNIPERSONNELLE}}de l\'assemblée générale extraordinaire{{/IS_UNIPERSONNELLE}} en date du {{DATE_AGE}}, les statuts de la société sont modifiés comme suit :', { spacing: 400 })
-    // Transfert siège
-    + p('{#IS_TRANSFERT_SIEGE}', {})
-    + p('Article — Siège social', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('Ancienne rédaction :', { bold: true })
-    + p('« Le siège social est fixé au {{SIEGE_SOCIAL}}. »', { spacing: 200 })
-    + p('Nouvelle rédaction :', { bold: true })
-    + p('« Le siège social est fixé au {{NOUVEAU_SIEGE}}. »', { spacing: 200 })
-    + p('{/IS_TRANSFERT_SIEGE}', {})
-    // Dénomination
-    + p('{#IS_DENOMINATION}', {})
-    + p('Article — Dénomination sociale', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('Ancienne rédaction :', { bold: true })
-    + p('« La société prend la dénomination de : {{SOCIETE}}. »', { spacing: 200 })
-    + p('Nouvelle rédaction :', { bold: true })
-    + p('« La société prend la dénomination de : {{NOUVELLE_DENOMINATION}}. »', { spacing: 200 })
-    + p('{/IS_DENOMINATION}', {})
-    // Objet social
-    + p('{#IS_OBJET_SOCIAL}', {})
-    + p('Article — Objet social', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('Nouvelle rédaction :', { bold: true })
-    + p('« {{NOUVEL_OBJET_SOCIAL}} »', { spacing: 200 })
-    + p('{/IS_OBJET_SOCIAL}', {})
-    // Capital
-    + p('{#IS_AUGMENTATION_CAPITAL}', {})
-    + p('Article — Capital social', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('Ancienne rédaction :', { bold: true })
-    + p('« Le capital social est fixé à {{CAPITAL_ACTUEL_AUGM}} euros. »', { spacing: 200 })
-    + p('Nouvelle rédaction :', { bold: true })
-    + p('« Le capital social est fixé à {{NOUVEAU_CAPITAL_AUGM}} euros. »', { spacing: 200 })
-    + p('{/IS_AUGMENTATION_CAPITAL}', {})
-    + p('{#IS_REDUCTION_CAPITAL}', {})
-    + p('Article — Capital social', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('Ancienne rédaction :', { bold: true })
-    + p('« Le capital social est fixé à {{CAPITAL_ACTUEL_RED}} euros. »', { spacing: 200 })
-    + p('Nouvelle rédaction :', { bold: true })
-    + p('« Le capital social est fixé à {{NOUVEAU_CAPITAL_RED}} euros. »', { spacing: 200 })
-    + p('{/IS_REDUCTION_CAPITAL}', {})
-    // Prorogation
-    + p('{#IS_PROROGATION}', {})
-    + p('Article — Durée', { bold: true, size: 24, underline: true, spacing: 200 })
-    + p('Ancienne rédaction :', { bold: true })
-    + p('« La durée de la société est fixée à {{DUREE_ACTUELLE}} ans. »', { spacing: 200 })
-    + p('Nouvelle rédaction :', { bold: true })
-    + p('« La durée de la société est fixée à {{NOUVELLE_DUREE}} ans. »', { spacing: 200 })
-    + p('{/IS_PROROGATION}', {})
-    // Closing
-    + p('Les autres articles des statuts demeurent inchangés.', { spacing: 400 })
-    + p('Fait au siège social, le {{DATE_AGE}}.', { spacing: 400 })
-    + p('{#ASSOCIES}', {})
-    + p('{{nomComplet}}', { spacing: 100 })
-    + p('____________________________', { spacing: 200 })
-    + p('{/ASSOCIES}', {});
-}
 
 // ====== Acte de cession ======
 /*
@@ -545,7 +485,6 @@ const templates = {
   'modif-pv-transfert-siege-sas.docx': pvAgeSAS(),
   'modif-pv-transfert-siege-sasu.docx': pvAgeSASU(),
   'modif-pv-transfert-siege-sci.docx': pvAgeSCI(),
-  'modif-avenant-statuts.docx': avenantStatuts(),
   'modif-acte-cession.docx': acteCession(),
 };
 
