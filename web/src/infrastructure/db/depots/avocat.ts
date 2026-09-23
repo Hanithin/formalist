@@ -550,6 +550,19 @@ export async function statuerSurDocument(
   const document = await prisma.documents.findUnique({ where: { id: documentId } });
   if (!document) throw new Interdit("Ce document n'existe pas ou ne vous est pas accessible");
 
+  /*
+   * Ce geste juge une pièce du client, jamais un acte du cabinet.
+   *
+   * Nos actes ont leur propre chemin - le projet se relit, puis se met à disposition -
+   * et leurs états le disent. Passer l'un d'eux en « vérifié » le sortait des états que
+   * la reproduction sait remplacer : le procès-verbal se figeait pour de bon, et
+   * corriger le dossier ne le refaisait plus. L'écran ne l'offre pas ; la règle, elle,
+   * doit tenir aussi pour un appel direct.
+   */
+  if (document.uploaded_by === "system") {
+    throw new Interdit("Un acte produit par le cabinet se relit, il ne se vérifie pas");
+  }
+
   // Le contrôle porte sur le dossier : c'est lui qui décide de l'accès.
   await exigerDossier(utilisateur, document.formalite_id);
 

@@ -26,8 +26,15 @@ const REPOS = 1_500;
 interface Sauvegarde {
   /** Ouvre le dossier s'il n'existe pas, et rend son identifiant. */
   ouvrirLeDossier: () => Promise<number | null>;
-  /** Écrit tout de suite, sans attendre le repos. */
-  enregistrerMaintenant: () => Promise<void>;
+  /**
+   * Écrit tout de suite, sans attendre le repos.
+   *
+   * Rend faux quand l'écriture n'a pas abouti. Le repos et le départ de la page s'en
+   * moquent - ils ne peuvent rien en faire - mais la fenêtre de correction de l'avocat
+   * enchaîne sur la reproduction des actes : elle ne doit pas la lancer sur un dossier
+   * qui n'a pas reçu la dernière frappe.
+   */
+  enregistrerMaintenant: () => Promise<boolean>;
 }
 
 export function useSauvegardeContinue(args: {
@@ -114,17 +121,18 @@ export function useSauvegardeContinue(args: {
     return ouvert;
   }, [surOuverture]);
 
-  const enregistrerMaintenant = useCallback(async () => {
+  const enregistrerMaintenant = useCallback(async (): Promise<boolean> => {
     const brouillonCourant = courant.current;
     const serialise = JSON.stringify(brouillonCourant);
-    if (serialise === dernierEnvoi.current) return;
+    /* Rien à écrire : la base porte déjà ce que l'écran affiche. */
+    if (serialise === dernierEnvoi.current) return true;
 
     /* Tant que la société n'a pas de nom, il n'y a pas de dossier à ouvrir. */
     const nomme = !!brouillonCourant.denomination?.trim();
-    if (identifiant.current === null && !nomme) return;
+    if (identifiant.current === null && !nomme) return true;
 
     const cible = await ouvrirLeDossier();
-    if (cible === null) return;
+    if (cible === null) return false;
 
     /*
      * `keepalive` porte l'envoi au-delà de la page.
@@ -133,12 +141,20 @@ export function useSauvegardeContinue(args: {
      * de repos serait perdue, c'est-à-dire la dernière ligne écrite - celle qu'on
      * vient d'écrire, et donc celle dont on se souvient.
      */
-    await fetch("/api/formalites/brouillon", {
+    const ecriture = await fetch("/api/formalites/brouillon", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dossier: cible, modifications: brouillonCourant }),
       keepalive: true,
     });
+
+    /*
+     * Un refus ne se note pas comme un envoi réussi.
+     *
+     * `dernierEnvoi` dit ce que la base porte : l'y écrire après un 400 faisait taire
+     * le repos, qui ne réessayait plus - la saisie refusée paraissait enregistrée.
+     */
+    if (!ecriture.ok) return false;
 
     dernierEnvoi.current = serialise;
 
@@ -146,6 +162,8 @@ export function useSauvegardeContinue(args: {
       annonce.current = true;
       surPremierEnregistrement?.(cible);
     }
+
+    return true;
   }, [ouvrirLeDossier, surPremierEnregistrement]);
 
   /* Le repos : on écrit une fois la frappe retombée, non à chaque lettre. */

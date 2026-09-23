@@ -1293,18 +1293,28 @@ export const MODIFICATIONS: DefinitionModification[] = [
       },
 
       /* -------------------------------------------------------- La valorisation */
+      /*
+       * Le seul montant global du parcours, au milieu de deux valeurs unitaires.
+       *
+       * « Valeur retenue » ne disait ni de quoi ni pour combien de titres. Trois champs
+       * portent ici le mot « valeur » - la nominale d'un titre de la société apportée,
+       * celle des titres que la holding émet, et celle-ci - et c'est la seule qui vaut
+       * pour l'ensemble du bloc apporté. On saisissait la valeur d'un titre, et l'apport
+       * d'un bloc à 400 000 euros entrait au traité pour 20.
+       */
       {
         identifiant: "apportValeur",
-        libelle: "Valeur retenue, en euros",
-        groupe: "Ce que valent les titres",
+        libelle: "Valeur globale des titres apportés, en euros",
+        groupe: "Ce que valent les titres apportés",
         type: "nombre",
         obligatoire: true,
+        indication: "Pour l'ensemble des titres apportés, non par titre",
         aide: "C'est le chiffre que le report d'imposition prend pour base. L'administration peut le contrôler des années plus tard : il doit reposer sur une méthode qu'on puisse expliquer.",
       },
       {
         identifiant: "apportMethodeValorisation",
         libelle: "Méthode retenue",
-        groupe: "Ce que valent les titres",
+        groupe: "Ce que valent les titres apportés",
         type: "choix",
         options: [
           "Actif net comptable",
@@ -1334,7 +1344,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
       {
         identifiant: "apportCommissaire",
         libelle: "Recourir à un commissaire aux apports ?",
-        groupe: "Ce que valent les titres",
+        groupe: "Ce que valent les titres apportés",
         type: "choix",
         options: ["Oui", "Non, dispense décidée à l'unanimité"],
         obligatoire: true,
@@ -1344,7 +1354,7 @@ export const MODIFICATIONS: DefinitionModification[] = [
       {
         identifiant: "apportCommissaireNom",
         libelle: "Nom du commissaire aux apports",
-        groupe: "Ce que valent les titres",
+        groupe: "Ce que valent les titres apportés",
         type: "texte",
         pleineLargeur: true,
         visibleSi: { champ: "apportCommissaire", vaut: ["Oui"] },

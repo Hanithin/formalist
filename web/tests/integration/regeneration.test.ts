@@ -235,6 +235,24 @@ avecBase("régénération des actes", () => {
     expect(survivant[0].file_path).toBe(statuts.file_path);
   });
 
+  it("un acte figé est nommé dans les conservés, non passé sous silence", async () => {
+    const dossier = await nouveauDossier();
+
+    await remplacerDocumentsProduits(dossier, JEU);
+    const statuts = (await actesDu(dossier)).find((d) => d.name === "Statuts constitutifs")!;
+    await prisma.documents.update({ where: { id: statuts.id }, data: { status: "verified" } });
+
+    const { produits, conserves } = await remplacerDocumentsProduits(dossier, JEU);
+
+    // La fenêtre de correction s'en sert pour dire ce qu'elle n'a pas refait.
+    expect(conserves.map((d) => d.titre)).toEqual(["Statuts constitutifs"]);
+    expect(produits.map((d) => d.titre).sort()).toEqual(
+      JEU.map((a) => a.titre)
+        .filter((t) => t !== "Statuts constitutifs")
+        .sort()
+    );
+  });
+
   it("les pièces déposées par le client ne sont pas emportées", async () => {
     const dossier = await nouveauDossier();
 

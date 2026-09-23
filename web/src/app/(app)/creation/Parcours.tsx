@@ -25,6 +25,7 @@ import { CABINET } from "@/domain/formalite/domiciliation";
 import { valeursParDefaut, clotureDepuis } from "@/domain/formalite/valeurs-par-defaut";
 import { FORMES_PROPOSEES, FORMES, regle } from "@/domain/formalite/formes";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
+import { useInscrireLEnregistrement } from "@/components/formulaire/enregistrement-du-parcours";
 import { Choix } from "./Choix";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { Associes } from "./Associes";
@@ -241,6 +242,17 @@ export function Parcours({
     surPremierEnregistrement: (identifiant) =>
       router.replace("/creation?dossier=" + identifiant, { scroll: false }),
   });
+
+  /*
+   * Dans la fenêtre de l'avocat, la reproduction attend l'écriture.
+   *
+   * Le repos suffit sur la page du client : il part une seconde et demie après la
+   * dernière frappe, et rien n'en dépend dans l'instant. Dans la fenêtre, si : l'avocat
+   * corrige un chiffre et clique aussitôt sur « Reproduire les actes ». Les actes se
+   * refaisaient alors à partir du dossier d'avant sa correction, et ressortaient
+   * identiques.
+   */
+  useInscrireLEnregistrement(enregistrerMaintenant);
 
   const [etapeDansLaFenetre, setEtapeDansLaFenetre] = useState(etapeCourante);
   const etapeVue = dansUneFenetre ? etapeDansLaFenetre : etapeCourante;

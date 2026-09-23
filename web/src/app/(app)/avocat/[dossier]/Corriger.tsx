@@ -1,9 +1,13 @@
 "use client";
 
-import { Fragment, useState, useTransition } from "react";
+import { Fragment, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Champ } from "@/app/(app)/modification/Parcours";
 import type { ChampModification } from "@/domain/modification/types";
+import {
+  ParcoursQuiSEnregistre,
+  type EnregistrerLeParcours,
+} from "@/components/formulaire/enregistrement-du-parcours";
 import styles from "../Avocat.module.css";
 
 type Valeurs = Record<string, string | number | undefined>;
@@ -42,45 +46,87 @@ export function Corriger({
   const [saisie, setSaisie] = useState<Valeurs>(valeurs);
   const [refus, setRefus] = useState<string | null>(null);
   const [manques, setManques] = useState<{ champ: string; message: string }[]>([]);
+  /*
+   * Les actes que la reproduction n'a pas refaits.
+   *
+   * Un acte signé, vérifié ou déposé au greffe est figé : le remplacer détruirait une
+   * signature ou changerait une pièce que le greffe a reçue. La fenêtre le taisait, et
+   * l'avocat repartait en croyant avoir corrigé un procès-verbal qui n'avait pas bougé.
+   */
+  const [conserves, setConserves] = useState<string[]>([]);
   const [enCours, demarrer] = useTransition();
   const router = useRouter();
+
+  /* Ce que le parcours affiché sait écrire de lui-même - voir enregistrement-du-parcours. */
+  const enregistrerLeParcours = useRef<EnregistrerLeParcours | null>(null);
 
   function poser(identifiant: string, valeur: string | number) {
     setSaisie((avant) => ({ ...avant, [identifiant]: valeur }));
   }
 
   /*
-   * Le parcours a déjà tout écrit : il ne reste qu'à refaire les actes.
+   * Le parcours écrit, puis les actes se refont.
    *
    * Envoyer les valeurs des champs à plat écraserait ce que le formulaire vient
-   * d'enregistrer, avec l'état qu'ils avaient à l'ouverture de la fenêtre.
+   * d'enregistrer, avec l'état qu'ils avaient à l'ouverture de la fenêtre : le corps
+   * part donc vide, et c'est le parcours qui a la main sur ce qu'il enregistre.
+   *
+   * Encore faut-il qu'il l'ait fait. Le parcours de modification n'écrit qu'au
+   * changement d'étape, et ce bouton n'en est pas un : l'avocat corrigeait le montant
+   * d'un apport, cliquait ici, et le serveur reproduisait les actes à partir du dossier
+   * tel qu'il était avant sa correction. Aucune erreur, aucune trace, et un
+   * procès-verbal identique à celui qu'il venait de corriger.
    */
   function reproduireSeulement() {
     setRefus(null);
     setManques([]);
+    setConserves([]);
 
     demarrer(async () => {
+      const ecrire = enregistrerLeParcours.current;
+      if (ecrire && !(await ecrire())) {
+        setRefus("Vos corrections n'ont pas pu être enregistrées");
+        return;
+      }
+
       const reponse = await fetch("/api/avocat/correction", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dossier, valeurs: {} }),
       });
 
+      const retour = await reponse.json().catch(() => ({}));
+
       if (!reponse.ok) {
-        const retour = await reponse.json().catch(() => ({}));
         setRefus(retour.error ?? "La correction n'a pas abouti");
         setManques(Array.isArray(retour.manques) ? retour.manques : []);
         return;
       }
 
-      setOuverte(false);
       router.refresh();
+
+      /*
+       * La fenêtre reste ouverte quand un acte n'a pas suivi.
+       *
+       * Se fermer sur une réussite partielle revient à taire la moitié de la réponse :
+       * l'avocat lirait « reproduit » sur un procès-verbal figé. Il ferme lui-même une
+       * fois qu'il a vu lequel, et ce qu'il lui reste à faire - reprendre l'acte, ou
+       * refaire le dépôt.
+       */
+      const figes: string[] = Array.isArray(retour.conserves) ? retour.conserves : [];
+      if (figes.length > 0) {
+        setConserves(figes);
+        return;
+      }
+
+      setOuverte(false);
     });
   }
 
   function enregistrer() {
     setRefus(null);
     setManques([]);
+    setConserves([]);
 
     demarrer(async () => {
       /* Seules les valeurs des champs affichés partent : le reste du dossier ne bouge pas. */
@@ -96,15 +142,31 @@ export function Corriger({
         body: JSON.stringify({ dossier, valeurs: corrections }),
       });
 
+      const retour = await reponse.json().catch(() => ({}));
+
       if (!reponse.ok) {
-        const retour = await reponse.json().catch(() => ({}));
         setRefus(retour.error ?? "La correction n'a pas abouti");
         setManques(Array.isArray(retour.manques) ? retour.manques : []);
         return;
       }
 
-      setOuverte(false);
       router.refresh();
+
+      /*
+       * La fenêtre reste ouverte quand un acte n'a pas suivi.
+       *
+       * Se fermer sur une réussite partielle revient à taire la moitié de la réponse :
+       * l'avocat lirait « reproduit » sur un procès-verbal figé. Il ferme lui-même une
+       * fois qu'il a vu lequel, et ce qu'il lui reste à faire - reprendre l'acte, ou
+       * refaire le dépôt.
+       */
+      const figes: string[] = Array.isArray(retour.conserves) ? retour.conserves : [];
+      if (figes.length > 0) {
+        setConserves(figes);
+        return;
+      }
+
+      setOuverte(false);
     });
   }
 
@@ -122,7 +184,13 @@ export function Corriger({
       <button
         type="button"
         className={styles.decisionSecondaire}
-        onClick={() => setOuverte(true)}
+        onClick={() => {
+          /* Ce qu'on a lu la fois d'avant ne vaut plus : la fenêtre s'ouvre nette. */
+          setRefus(null);
+          setManques([]);
+          setConserves([]);
+          setOuverte(true);
+        }}
       >
         Ouvrir le formulaire
       </button>
@@ -198,12 +266,47 @@ export function Corriger({
               </div>
             )}
 
+            {/*
+              Ce qui n'a pas été refait se dit aussi.
+
+              Un acte signé, vérifié ou déposé au greffe est figé : le reproduire
+              détruirait une signature, ou changerait une pièce que le greffe a déjà
+              reçue. La fenêtre se contentait de se fermer, et l'avocat repartait en
+              croyant avoir corrigé un procès-verbal qui n'avait pas bougé d'un mot.
+            */}
+            {conserves.length > 0 && (
+              <div className={styles.correctionConserves} role="status">
+                <p className={styles.correctionRefusTitre}>
+                  {conserves.length === 1
+                    ? "Un acte n'a pas été reproduit"
+                    : conserves.length + " actes n'ont pas été reproduits"}
+                </p>
+                <p className={styles.correctionRefusNote}>
+                  Ils sont figés - signés, vérifiés ou déjà déposés - et n&apos;ont pas été
+                  remplacés. Reprenez-les depuis leur ligne pour les refaire.
+                </p>
+                <ul className={styles.correctionManques}>
+                  {conserves.map((titre) => (
+                    <li key={titre}>{titre}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {parcours ? (
               /*
-                Le parcours enregistre au fil de la frappe : il n'y a rien à
-                soumettre, seulement à reproduire les actes quand on a fini.
+                Le parcours écrit lui-même, et le bouton le lui fait faire avant de
+                reproduire : les champs à plat n'ont donc rien à soumettre ici.
               */
-              <div className={styles.correctionParcours}>{parcours}</div>
+              <div className={styles.correctionParcours}>
+                <ParcoursQuiSEnregistre
+                  surInscription={(ecrire) => {
+                    enregistrerLeParcours.current = ecrire;
+                  }}
+                >
+                  {parcours}
+                </ParcoursQuiSEnregistre>
+              </div>
             ) : (
             <div className={styles.correctionChamps}>
               {champs.map((champ, rang) => (
@@ -265,11 +368,7 @@ export function Corriger({
                 onClick={parcours ? reproduireSeulement : enregistrer}
                 disabled={enCours}
               >
-                {enCours
-                  ? "Reproduction…"
-                  : parcours
-                    ? "Reproduire les actes"
-                    : "Enregistrer et reproduire les actes"}
+                {enCours ? "Reproduction…" : "Enregistrer et reproduire les actes"}
               </button>
             </div>
           </div>

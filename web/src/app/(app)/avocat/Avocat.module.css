@@ -4354,6 +4354,26 @@ button.ligneCorps:disabled {
 }
 
 /*
+ * Ce qui n'a pas été reproduit n'est pas une faute : c'est un fait à savoir.
+ *
+ * Le rouge du refus dirait que le geste a échoué, alors qu'il a abouti - simplement,
+ * un acte figé n'a pas suivi, et c'est la règle qui protège une signature. L'ambre le
+ * distingue de l'encart rouge, qui peut s'afficher au même endroit.
+ */
+.correctionConserves {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #fffbeb;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.correctionConserves .correctionRefusNote {
+  color: #a16207;
+}
+
+/*
  * Les champs défilent ; l'en-tête et les gestes restent en place.
  *
  * La grille est celle du parcours - six colonnes - parce que les champs portent ses
@@ -6055,4 +6075,42 @@ button.ligneCorps:disabled {
   flex: none;
   border-radius: 50%;
   background: #f43f5e;
+}
+
+/*
+ * Ce que le contrôle automatique a relevé sur une pièce, sans refus.
+ *
+ * Une réserve n'est pas un refus : la pièce est au dossier, elle peut très bien
+ * convenir, et seule une personne peut en juger - une carte prorogée est valable, un
+ * nom d'usage qui diffère du nom de naissance aussi. Le bloc reprend donc la forme du
+ * motif de refus, sans sa teinte : c'est une information portée à la connaissance de
+ * l'avocat, pas un verdict.
+ */
+.docControle {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #666;
+}
+
+.docControlePhrase {
+  margin: 0;
+}
+
+.docControleListe {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}
+
+.docControleListe:first-child {
+  margin-top: 0;
+}
+
+/* Dans le bloc de refus, la liste hérite de sa teinte plutôt que de la contredire. */
+.docRejectionInfo .docControleListe,
+.docRejectionInfo .docControlePhrase {
+  color: inherit;
 }

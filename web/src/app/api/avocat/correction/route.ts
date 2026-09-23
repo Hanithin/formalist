@@ -34,8 +34,15 @@ export const PUT = route(async (requete: Request) => {
   );
 
   try {
-    const { produits } = await corrigerEtReproduire(utilisateur, dossier, valeurs);
-    return NextResponse.json({ ok: true, produits });
+    const { produits, conserves } = await corrigerEtReproduire(utilisateur, dossier, valeurs);
+    /*
+     * Ce qui n'a pas été refait se dit, plutôt que de se taire.
+     *
+     * Un acte signé, vérifié ou déposé au greffe n'est pas remplacé : c'est la règle, et
+     * elle est juste. Mais la fenêtre annonçait « Reproduction » puis se fermait, si bien
+     * que l'avocat croyait avoir corrigé un procès-verbal qui n'avait pas bougé.
+     */
+    return NextResponse.json({ ok: true, produits, conserves });
   } catch (e) {
     /* Ce qui manque est nommé : l'avocat corrige, il ne devine pas. */
     if (e instanceof ComptesIncomplets || e instanceof CessationIncomplete) {

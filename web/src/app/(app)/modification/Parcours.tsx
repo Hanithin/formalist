@@ -44,7 +44,7 @@ import {
   statutsAMettreAJour,
 } from "@/domain/modification/formalites";
 import { anomaliesDuPvAge } from "@/domain/modification/pv-age";
-import { anomaliesDuTraite } from "@/domain/modification/traite-apport";
+import { anomaliesDuTraite, paritéDeLApport } from "@/domain/modification/traite-apport";
 import { nominaleDeduite } from "@/domain/modification/apport";
 import { anomaliesDeLActeDeCession } from "@/domain/modification/acte-cession";
 import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification/offre";
@@ -68,6 +68,7 @@ import { gardeDeBoucle } from "@/components/formulaire/garde-de-boucle";
 import { lieuAvecCode } from "@/domain/formalite/communes";
 import { effetDeLaDivision } from "@/domain/modification/air";
 import { ChampListe } from "@/components/formulaire/ChampListe";
+import { useInscrireLEnregistrement } from "@/components/formulaire/enregistrement-du-parcours";
 import { NATIONALITES } from "@/domain/formalite/pays";
 
 /**
@@ -487,6 +488,50 @@ export function Parcours({
     return depuis + 1;
   }
 
+  /**
+   * Écrit l'état courant du dossier, sans rien décider d'autre.
+   *
+   * Extraite du changement d'étape parce qu'elle sert aussi à la fenêtre de correction
+   * de l'avocat : son bouton « Reproduire les actes » n'avance d'aucune étape, et la
+   * saisie qui le précédait se perdait donc sans trace.
+   */
+  async function ecrireLeDossier(
+    etapeAEcrire: number,
+    assembleeAEcrire: EtatDuDossier["assemblee"] = etat.assemblee
+  ): Promise<boolean> {
+    const reponse = await fetch("/api/formalites/modification", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dossier,
+        /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
+        etape: etapeAEcrire,
+        codes: etat.codes,
+        societe: etat.societe,
+        valeurs: etat.valeurs,
+        assemblee: assembleeAEcrire,
+        cessions: etat.cessions,
+      }),
+    });
+
+    if (!reponse.ok) {
+      const corps = await reponse.json().catch(() => ({}));
+      setErreur(corps.error ?? "L'enregistrement n'a pas abouti");
+      return false;
+    }
+
+    return true;
+  }
+
+  /*
+   * Dans la fenêtre de l'avocat, c'est elle qui fait écrire avant de reproduire.
+   *
+   * L'étape écrite est celle où l'on se trouve : corriger un dossier ne le fait pas
+   * avancer, et ramener le client à l'étape 1 parce qu'un avocat y a relu la société
+   * serait une conséquence qu'on n'a pas demandée.
+   */
+  useInscrireLEnregistrement(() => ecrireLeDossier(etape));
+
   /** Enregistre puis avance : l'étape suivante lit ce que le serveur a retenu. */
   function aller(vers: number) {
     setErreur(null);
@@ -552,26 +597,7 @@ export function Parcours({
     if (assemblee !== etat.assemblee) changer({ assemblee });
 
     demarrer(async () => {
-      const reponse = await fetch("/api/formalites/modification", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dossier,
-          /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
-          etape: vers,
-          codes: etat.codes,
-          societe: etat.societe,
-          valeurs: etat.valeurs,
-          assemblee,
-          cessions: etat.cessions,
-        }),
-      });
-
-      if (!reponse.ok) {
-        const corps = await reponse.json().catch(() => ({}));
-        setErreur(corps.error ?? "L'enregistrement n'a pas abouti");
-        return;
-      }
+      if (!(await ecrireLeDossier(vers, assemblee))) return;
 
       setEtape(vers);
       /* L'étape ne s'écrit dans l'adresse que sur sa page : dans la fenêtre de l'avocat,
@@ -2409,6 +2435,62 @@ function EtapeDetails({
                               - le capital divisé par le nombre de titres.
                             </p>
                           )}
+
+                        {/*
+                          Le chiffre global, ramené au titre.
+
+                          Trois champs de ce parcours portent le mot « valeur », et
+                          celui-ci est le seul qui vaille pour l'ensemble du bloc : on y
+                          saisissait la valeur d'un titre, et l'apport partait au traité
+                          pour vingt euros. Le rapporter au titre le dit sans un mot de
+                          plus - « 400 000 € pour 1 000 titres, soit 400 € par titre »
+                          se relit tout seul.
+                        */}
+                        {champ.identifiant === "apportValeur" &&
+                          (() => {
+                            const globale = nombreLu(etat.valeurs.apportValeur) ?? 0;
+                            const apportes = nombreLu(etat.valeurs.apportNbTitres) ?? 0;
+                            if (globale <= 0 || apportes <= 0) return null;
+                            return (
+                              <p className={styles.deduit}>
+                                Soit <strong>{euros(globale / apportes)}</strong> par titre
+                                apporté, pour {actions(apportes)} titres.
+                              </p>
+                            );
+                          })()}
+
+                        {/*
+                          Ce que la holding émet, et ce qui reste en prime.
+
+                          La parité se calcule dans la couche du traité : le
+                          procès-verbal et le traité la lisent tous deux, et l'écran doit
+                          lire la même. Une prime qui se découvre à la lecture de l'acte
+                          est une surprise de trop.
+                        */}
+                        {champ.identifiant === "apportNominaleBeneficiaire" &&
+                          (() => {
+                            const globale = nombreLu(etat.valeurs.apportValeur) ?? 0;
+                            const nominale = nombreLu(etat.valeurs.apportNominaleBeneficiaire) ?? 0;
+                            if (globale <= 0 || nominale <= 0) return null;
+                            const parite = paritéDeLApport(etat.valeurs);
+                            if (parite.actions <= 0) return null;
+                            return (
+                              <p className={styles.deduit}>
+                                <strong>
+                                  {actions(Math.round(parite.actions))} titres émis
+                                </strong>{" "}
+                                en rémunération de {euros(globale)}
+                                {parite.prime > 0 ? (
+                                  <>
+                                    , dont <strong>{euros(parite.prime)}</strong> de prime
+                                    d&apos;apport - elle va en réserve, non au capital.
+                                  </>
+                                ) : (
+                                  <> - la valeur entre entièrement au capital.</>
+                                )}
+                              </p>
+                            );
+                          })()}
                       </Fragment>
                     ))}
                 </div>

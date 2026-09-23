@@ -224,7 +224,7 @@ export async function corrigerEtReproduire(
       where: { formalite_id: dossierId, uploaded_by: "system", status: "generated" },
     });
 
-    const { produits } = await produireLesActes(utilisateur, dossierId, {
+    const { produits, conserves } = await produireLesActes(utilisateur, dossierId, {
       forcerLaRelecture: true,
     });
 
@@ -238,39 +238,39 @@ export async function corrigerEtReproduire(
       await avancerSelonLeTravail(utilisateur, dossierId);
     }
 
-    return { produits: produits.length };
+    return { produits: produits.length, conserves: conserves.map((d) => d.titre) };
   }
   if (dossier.type === "comptes") {
-    const { produits } = await produireLesActesDesComptes(
+    const { produits, conserves } = await produireLesActesDesComptes(
       dossierId,
       lireComptes(JSON.stringify(ecrit)),
       { par }
     );
-    return { produits: produits.length };
+    return { produits: produits.length, conserves: conserves.map((d) => d.titre) };
   }
   if (dossier.type === "modification") {
-    const { produits } = await produireLesActesDeLaModification(
+    const { produits, conserves } = await produireLesActesDeLaModification(
       dossierId,
       lireModification(JSON.stringify(ecrit)),
       { par }
     );
-    return { produits: produits.length };
+    return { produits: produits.length, conserves: conserves.map((d) => d.titre) };
   }
   if (dossier.type === "fermeture") {
-    const { produits } = await produireLesActesDeLaFermeture(
+    const { produits, conserves } = await produireLesActesDeLaFermeture(
       dossierId,
       lireFermeture(JSON.stringify(ecrit)),
       { par }
     );
-    return { produits: produits.length };
+    return { produits: produits.length, conserves: conserves.map((d) => d.titre) };
   }
   if (dossier.type === "cessation") {
-    const { produits } = await produireLesActesDeLaCessation(
+    const { produits, conserves } = await produireLesActesDeLaCessation(
       dossierId,
       lireCessation(JSON.stringify(ecrit)),
       { par }
     );
-    return { produits: produits.length };
+    return { produits: produits.length, conserves: conserves.map((d) => d.titre) };
   }
 
   throw new Interdit("Ce type de dossier ne produit pas d'actes");

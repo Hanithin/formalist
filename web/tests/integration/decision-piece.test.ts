@@ -105,6 +105,32 @@ avecBase("décider d'une pièce", () => {
     expect(apres.rejection_reason).toBeNull();
   });
 
+  /*
+   * Nos actes ne passent pas par ce geste.
+   *
+   * Un acte du cabinet se relit, puis se met à disposition ; ses états le disent. Passer
+   * l'un d'eux en « vérifié » le sortait des états que la reproduction sait remplacer :
+   * le procès-verbal se figeait pour de bon, et corriger le dossier ne le refaisait
+   * plus. L'écran ne l'offre pas ; la règle doit tenir aussi pour un appel direct.
+   */
+  it("un acte produit par le cabinet ne se vérifie pas", async () => {
+    const acte = await prisma.documents.create({
+      data: {
+        formalite_id: dossier,
+        name: "Procès-verbal d'assemblée générale",
+        type: "pdf",
+        file_path: "essai-acte-produit.pdf",
+        uploaded_by: "system",
+        status: "generated",
+      },
+    });
+
+    await expect(statuerSurDocument(avocat as never, acte.id, "valider")).rejects.toThrow();
+
+    const inchange = await prisma.documents.findUnique({ where: { id: acte.id } });
+    expect(inchange?.status).toBe("generated");
+  });
+
   it("revenir sur une décision ne prévient pas le client", async () => {
     // Il a vu une pièce validée : lui annoncer qu'elle ne l'est plus, avant qu'on ait
     // retranché, ne ferait qu'inquiéter. Le journal, lui, garde la trace.
