@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { etatDocument, estStatutsRepris } from "@/domain/document/statuts";
 import { A_RELIRE } from "@/domain/document/publication";
 import { TITRE_STATUTS_A_JOUR, TITRE_STATUTS_EN_VIGUEUR } from "@/domain/modification/formalites";
+import type { Controle } from "@/domain/formalite/controle-identite";
 import { Verification } from "./Verification";
 import { OuvrirLaPiece } from "./OuvrirLaPiece";
 import { RelireLActe, ReprendreLActe } from "./RelireLActe";
@@ -31,6 +32,14 @@ export interface PieceAffichee {
   /** Le déposant : « system » pour ce que la plateforme produit. */
   depose: string | null;
   creeLe: string | null;
+  /**
+   * Le verdict du contrôle automatique, pour une pièce d'identité.
+   *
+   * L'avocat statue sur la pièce : il doit voir ce que la machine a constaté, et
+   * surtout ce qu'elle n'a pas pu constater. Une réserve - une carte prorogée, un nom
+   * qui ne correspond pas - ne bloque rien côté client et se perdrait sans cela.
+   */
+  controle?: Controle | null;
   /**
    * Les versions antérieures de l'acte, de la plus récente à la plus ancienne.
    *
@@ -350,6 +359,59 @@ export function Piece({
       </div>
 
 
+
+      {/*
+        Pourquoi une pièce a été refusée, et ce que le contrôle a relevé.
+
+        Le motif de refus existait en base et ne s'affichait nulle part : la carte
+        prenait un fond rosé, et l'avocat devait ouvrir le fil des messages pour
+        retrouver ce qu'on avait reproché à la pièce - ou, quand le refus venait du
+        contrôle automatique, n'avait aucun moyen de le savoir.
+
+        Les réserves comptent autant. Elles ne retiennent rien côté client - une carte
+        prorogée, un nom qui ne correspond pas au dossier - et c'est précisément
+        pourquoi elles doivent arriver jusqu'ici : c'est la seule personne qui puisse
+        en décider.
+      */}
+      {(piece.motifRejet || piece.controle) && (
+        <div className={piece.motifRejet ? styles.docRejectionInfo : styles.docControle}>
+          {/*
+            La phrase de tête : le motif du refus, ou ce que le contrôle a conclu.
+
+            Le verdict d'une pièce acceptée ne s'affichait pas - le bloc entier exigeait
+            un constat - et l'avocat lisait « Déposé » sans savoir si la machine avait
+            regardé, ni ce qu'elle avait vu. « Pièce reçue, valable jusqu'au 14 juin
+            2032 » lui épargne d'ouvrir le fichier pour y chercher la date.
+          */}
+          <p className={styles.docControlePhrase}>
+            {piece.motifRejet || piece.controle?.resume}
+          </p>
+
+          {piece.controle && piece.controle.constats.length > 0 && (
+            <ul className={styles.docControleListe}>
+              {piece.controle.constats
+                .filter((c) => c.phrase !== (piece.motifRejet || piece.controle?.resume))
+                .map((c) => (
+                  <li key={c.code}>{c.phrase}</li>
+                ))}
+            </ul>
+          )}
+
+          {/*
+            Ce que la machine n'a pas pu constater.
+
+            Cette mention vivait sous la condition ci-dessus, qui réclamait un constat :
+            or une pièce non lue n'en a aucun - c'est tout le problème. Elle ne
+            paraissait donc jamais, et une pièce dont la validité n'avait pas été
+            vérifiée se présentait à l'avocat comme une autre.
+          */}
+          {piece.controle?.lectureIndisponible && (
+            <p className={styles.docControlePhrase}>
+              La pièce n&apos;a pas pu être lue automatiquement : sa validité reste à vérifier.
+            </p>
+          )}
+        </div>
+      )}
 
       {versionsOuvertes && versions.length > 0 && (
         <ListeDesVersions versions={versions} dossier={dossier} />

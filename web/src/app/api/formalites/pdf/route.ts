@@ -6,6 +6,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { fichierLisible } from "@/infrastructure/db/depots/fichiers";
 import { convertirEnPdf, ConversionImpossible } from "@/infrastructure/documents/conversion";
 import { acteSigneAServir } from "@/infrastructure/documents/acte-signe";
+import { pieceCertifieeAServir } from "@/infrastructure/documents/piece-certifiee";
 import { validerParametres } from "@/lib/valider";
 import { route } from "@/lib/reponses";
 
@@ -57,7 +58,10 @@ export const GET = route(async (requete: Request) => {
      * traits vides sous son nom, alors que sa signature était en base.
      */
     const signe = await acteSigneAServir(autorise);
-    const pdf = signe ?? (extension === ".pdf" ? contenu : await convertirEnPdf(contenu));
+    /* Une pièce d'identité s'ouvre avec sa mention : c'est ce qui partira au greffe. */
+    const certifiee = signe ? null : await pieceCertifieeAServir(autorise);
+    const pdf =
+      signe ?? certifiee ?? (extension === ".pdf" ? contenu : await convertirEnPdf(contenu));
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",

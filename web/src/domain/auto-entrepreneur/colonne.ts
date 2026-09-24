@@ -94,13 +94,21 @@ function adresse(declaration: Declaration): string | null {
 export function colonneDeLaDeclaration(
   declaration: Declaration,
   /** Les pièces déjà déposées, par leur type - qui peut manquer en base. */
-  piecesDeposees: { type?: string | null }[] = []
+  piecesDeposees: { type?: string | null; motifRejet?: string | null }[] = []
 ): ColonneDeLaDeclaration {
   const regle = regleActivite(declaration.natureActivite);
 
   const attendues = piecesDeclaration(declaration);
+  /*
+   * Une pièce retenue n'est pas une pièce rendue.
+   *
+   * Le compte ne regardait que le type : une carte refusée - périmée, illisible -
+   * faisait passer « Pièces » à « 2 sur 3 » pendant que la carte, juste à côté,
+   * demandait de la remplacer. Le récapitulatif contredisait le formulaire, et c'est
+   * lui qu'on croit : il a l'air d'un compte rendu.
+   */
   const deposees = attendues.filter((piece) =>
-    piecesDeposees.some((d) => d.type === piece.identifiant)
+    piecesDeposees.some((d) => d.type === piece.identifiant && !d.motifRejet?.trim())
   ).length;
 
   const lignes: LigneDeColonne[] = [

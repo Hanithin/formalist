@@ -51,6 +51,7 @@ import {
 } from "@/domain/modification/recapitulatif";
 import { recapitulatifDesComptes } from "@/domain/comptes/recapitulatif";
 import styles from "../Avocat.module.css";
+import { lireLeControle } from "@/domain/formalite/controle-identite";
 import { ApresLApport } from "@/components/formalite/ApresLApport";
 
 export const metadata: Metadata = {
@@ -454,6 +455,7 @@ export default async function DossierAvocat({ params }: { params: Promise<{ doss
       source: d.source_path,
       depose: d.uploaded_by,
       creeLe: d.created_at?.toISOString() ?? null,
+      controle: lireLeControle(d.controle_json),
       versions: versionsParActe.get(d.name),
     }))
     /*

@@ -1103,8 +1103,16 @@ test.describe("pièces et documents", () => {
   test("un vrai PDF est accepté et enregistré", async ({ page, request }) => {
     await dossierPret(page, request);
 
-    await page.getByLabel("Choisir un fichier").first().setInputFiles({
-      name: "identite.pdf",
+    /*
+     * Le justificatif de domicile, et non la pièce d'identité.
+     *
+     * Ce qu'on éprouve ici est qu'un fichier au bon format est reçu et gardé. Une
+     * pièce d'identité part en plus au contrôle, donc au modèle : l'essai paierait une
+     * lecture à chaque passage pour un faux PDF, et son verdict dépendrait de ce que le
+     * modèle répond ce jour-là. Le contrôle a ses propres essais, hors ligne.
+     */
+    await page.getByLabel("Choisir un fichier").nth(1).setInputFiles({
+      name: "domicile.pdf",
       mimeType: "application/pdf",
       buffer: Buffer.from("%PDF-1.4\nfaux document d'essai"),
     });

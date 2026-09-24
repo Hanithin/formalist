@@ -33,6 +33,7 @@ import {
 } from "@/domain/auto-entrepreneur/offre";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { Pieces } from "@/components/formulaire/Pieces";
+import type { PieceDeposee } from "@/domain/formalite/controle-identite";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import styles from "./AutoEntrepreneur.module.css";
 import partage from "../modification/Modification.module.css";
@@ -51,7 +52,7 @@ interface Props {
   etapeCourante: number;
   declarationInitiale: Donnees;
   /** Ce qui a déjà été remis, pour que les cartes le disent. */
-  piecesDeposees: { type: string | null; nom: string }[];
+  piecesDeposees: PieceDeposee[];
   /** Vrai au retour de Stripe, le temps d'annoncer que c'est réglé. */
   regleALInstant?: boolean;
   /** Vrai quand on revient de Stripe sans avoir payé. */

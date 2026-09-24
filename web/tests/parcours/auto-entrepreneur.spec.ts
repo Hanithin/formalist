@@ -654,8 +654,16 @@ test("les pièces se déposent depuis le parcours", async ({ page, request }) =>
   await expect(page.getByLabel("Choisir un fichier")).toHaveCount(4);
   await expect(page.getByText(/La coiffure/)).toBeVisible();
 
-  await page.getByLabel("Choisir un fichier").first().setInputFiles({
-    name: "identite.pdf",
+  /*
+   * Le justificatif de domicile, et non la pièce d'identité.
+   *
+   * Ce que cet essai éprouve est la liste des pièces attendues, pas leur contenu. Une
+   * pièce d'identité part au contrôle, donc au modèle : l'essai paierait une lecture
+   * à chaque exécution pour un faux PDF, et son verdict dépendrait de ce que le modèle
+   * répond ce jour-là. Le contrôle a ses propres essais, qui se passent de réseau.
+   */
+  await page.getByLabel("Choisir un fichier").nth(2).setInputFiles({
+    name: "domicile.pdf",
     mimeType: "application/pdf",
     buffer: PDF,
   });

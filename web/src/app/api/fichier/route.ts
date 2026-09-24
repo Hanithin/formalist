@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { fichierLisible, estActeProduit } from "@/infrastructure/db/depots/fichiers";
 import { acteSigneAServir } from "@/infrastructure/documents/acte-signe";
+import { pieceCertifieeAServir } from "@/infrastructure/documents/piece-certifiee";
 import { convertirEnPdf, ConversionImpossible } from "@/infrastructure/documents/conversion";
 import { journal } from "@/lib/journal";
 import { route } from "@/lib/reponses";
@@ -81,8 +82,22 @@ export const GET = route(async (requete: Request) => {
    * tel quel.
    */
   const signe = await acteSigneAServir(nom);
+
+  /*
+   * Une pièce d'identité sort avec sa mention de conformité.
+   *
+   * La copie d'une carte d'identité ne vaut que certifiée conforme par son titulaire :
+   * la mention est apposée au moment de la remise, à partir de la signature qu'il a
+   * donnée sur ses statuts. Sans signature au dossier, rien n'est composé et le fichier
+   * déposé repart tel quel.
+   */
+  const certifiee = signe ? null : await pieceCertifieeAServir(nom);
+
   if (signe) {
     contenu = signe;
+    livree = ".pdf";
+  } else if (certifiee) {
+    contenu = certifiee;
     livree = ".pdf";
   } else if (extension === ".docx" && (await estActeProduit(nom))) {
     try {

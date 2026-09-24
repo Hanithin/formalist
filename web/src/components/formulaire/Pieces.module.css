@@ -156,3 +156,90 @@
   font-size: 12px;
   color: #999;
 }
+
+/*
+ * Ce que le contrôle a constaté, sous la zone de dépôt.
+ *
+ * Trois états à distinguer : la pièce est prise, la pièce est prise mais quelque chose
+ * est à vérifier, la pièce est à refaire.
+ *
+ * Le trait suit le fond, et non le rôle. globals.css encadre tout [role="alert"] de
+ * rouge et tout [role="status"] de vert ; le bloc porte bien ces rôles - il faut que la
+ * synthèse vocale annonce ce qui bloque - mais une réserve cerclée de vert dit « c'est
+ * bon » sur une phrase qui dit le contraire. Les trois teintes sont donc redites ici,
+ * comme le fait déjà le bilan des accords d'une modification.
+ */
+.verdict {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.verdictAbouti {
+  border-color: var(--abouti-trait);
+  background: var(--abouti-fond);
+  color: var(--abouti-encre);
+}
+
+.verdictReserve {
+  border-color: var(--attente-trait);
+  background: var(--attente-fond);
+  color: var(--attente-encre);
+}
+
+.verdictBloquant {
+  border-color: var(--critique-trait);
+  background: var(--critique-fond);
+  color: var(--critique-encre);
+}
+
+/* Ce qui bloque se lit avant le reste : c'est le seul endroit où la graisse change. */
+.verdictPhrase {
+  margin: 0;
+}
+
+.verdictBloquant .verdictPhrase {
+  font-weight: 500;
+}
+
+/*
+ * Le détail et la note se rangent sous la phrase, dans sa teinte atténuée.
+ *
+ * Un gris fixe y perdait toute lisibilité sur le fond ambre d'une réserve : la couleur
+ * est celle du bloc, et c'est l'opacité qui les met au second plan.
+ */
+.verdictDetail {
+  margin: 6px 0 0;
+  padding: 0 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+.verdictNote {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+/*
+ * La pièce est là, mais elle ne compte pas : elle attend son remplacement.
+ *
+ * Elle ne peut pas porter le vert du dépôt réussi - le client la lirait comme acquise
+ * et n'y reviendrait pas - ni retomber à la bordure pointillée du vide, puisqu'un
+ * fichier existe bel et bien. Un trait plein et neutre dit les deux : quelque chose est
+ * arrivé, ce n'est pas terminé.
+ */
+.docRetenue {
+  border-style: solid;
+  border-color: #ddd;
+  background: transparent;
+}
+
+.docRetenue .docIcone {
+  background: #f5f5f5;
+}

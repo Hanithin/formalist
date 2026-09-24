@@ -68,6 +68,7 @@ import { remonterEnHaut } from "@/lib/defilement";
 import { memoriserEtape } from "@/lib/etape-dans-l-adresse";
 import { qualitesDuRepresentant } from "@/domain/formalite/formes";
 import { Pieces } from "@/components/formulaire/Pieces";
+import type { PieceDeposee } from "@/domain/formalite/controle-identite";
 import { ETAPES_MODIFICATION } from "@/domain/formalite/etapes";
 import { gardeDeBoucle } from "@/components/formulaire/garde-de-boucle";
 import { lieuAvecCode } from "@/domain/formalite/communes";
@@ -210,7 +211,7 @@ interface Props {
   /** Les actes déjà produits, relus par le serveur à chaque affichage de la page. */
   actesInitiaux: ActeProduit[];
   /** Les justificatifs déjà remis : l'étape du règlement en dépend pour laisser payer. */
-  piecesDeposees: { type: string; nom: string }[];
+  piecesDeposees: PieceDeposee[];
   /**
    * Le parcours vit dans une fenêtre, non sur sa page.
    *
@@ -4093,7 +4094,7 @@ function EtapeReglement({
       qui en a besoin pour la barre du bas. */
   pieces: PieceAFournir[];
   manquantes: PieceAFournir[];
-  piecesDeposees: { type: string; nom: string }[];
+  piecesDeposees: PieceDeposee[];
   payer: () => void;
   enCoursDeReglement: boolean;
   refusDuReglement: string | null;

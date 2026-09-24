@@ -38,6 +38,7 @@ import {
   type Manque,
 } from "@/domain/guichet/creation";
 import type { Brouillon } from "@/domain/formalite/parcours";
+import { pieceIdentiteCertifiee } from "@/infrastructure/documents/piece-certifiee";
 
 /**
  * Déposer une création au guichet unique, d'un seul geste.
@@ -159,9 +160,16 @@ function estUnPdf(contenu: Buffer): boolean {
  * Les pièces du client, telles qu'il les a déposées.
  *
  * Elles ne se convertissent pas : notre conversion passe par LibreOffice et ne sait
- * traiter que du Word. Une attestation scannée en PDF part telle quelle ; une carte
- * d'identité photographiée est écartée, nommément, plutôt que refusée par le guichet au
- * milieu de la série.
+ * traiter que du Word. Une attestation scannée en PDF part telle quelle ; un
+ * justificatif de domicile photographié est écarté, nommément, plutôt que refusé par le
+ * guichet au milieu de la série.
+ *
+ * La pièce d'identité fait exception depuis qu'elle se certifie. Sa mise en conformité
+ * la pose sur une page de PDF pour y apposer la mention, si bien qu'une carte
+ * photographiée au téléphone - le cas de loin le plus fréquent, et celui qui restait
+ * jusqu'ici à joindre à la main - part maintenant avec la série. Ce n'est pas un effet
+ * de bord qu'on subit : c'est la même pièce, dans le seul état où elle vaut quelque
+ * chose au greffe.
  */
 async function piecesDuClient(
   dossierId: number,
@@ -186,6 +194,33 @@ async function piecesDuClient(
   for (const [type, code] of attendues) {
     const fichier = await lirePieceDeposee(dossierId, type);
     if (!fichier) continue;
+
+    /*
+     * La pièce d'identité part certifiée conforme, ou pas du tout sous cette forme.
+     *
+     * Une copie de carte d'identité sans la mention du titulaire ne vaut rien : la
+     * joindre nue au dépôt, c'est joindre une photographie. La composition échoue tant
+     * que personne n'a signé - le dépôt n'a alors pas lieu d'être non plus.
+     */
+    if (type === "identite") {
+      try {
+        const certifiee = await pieceIdentiteCertifiee(dossierId);
+        if (certifiee) {
+          pieces.push({ nom: fichier.nom, type: code, pdf: certifiee });
+          continue;
+        }
+      } catch (e) {
+        /*
+         * Une pièce qui ne se compose pas n'emporte pas le dépôt.
+         *
+         * Un PDF tronqué, un format que nous ne décodons pas : la mention ne se pose
+         * pas, et la règle habituelle reprend la main juste en dessous - la pièce part
+         * si c'est un PDF, elle est écartée nommément sinon. Laisser remonter l'erreur
+         * ferait échouer le dépôt entier sur une seule pièce.
+         */
+        journal.warn({ dossier: dossierId, err: e }, "Pièce d'identité non certifiée au dépôt");
+      }
+    }
 
     if (!estUnPdf(fichier.contenu)) {
       ecartees.push({

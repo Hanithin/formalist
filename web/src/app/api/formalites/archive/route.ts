@@ -7,6 +7,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { fichierLisible } from "@/infrastructure/db/depots/fichiers";
 import { convertirEnPdf, ConversionImpossible } from "@/infrastructure/documents/conversion";
 import { acteSigneAServir } from "@/infrastructure/documents/acte-signe";
+import { pieceCertifieeAServir } from "@/infrastructure/documents/piece-certifiee";
 import { journal } from "@/lib/journal";
 import { route } from "@/lib/reponses";
 
@@ -96,8 +97,14 @@ export const GET = route(async (requete: Request) => {
 
     /* L'archive porte les actes tels qu'ils sont signés, comme le reste de ce qu'on remet. */
     const signe = await acteSigneAServir(nom);
+    /* Et les pièces d'identité avec leur mention de conformité, pour la même raison. */
+    const certifiee = signe ? null : await pieceCertifieeAServir(nom);
+
     if (signe) {
       contenu = signe;
+      extension = ".pdf";
+    } else if (certifiee) {
+      contenu = certifiee;
       extension = ".pdf";
     } else if (extension === ".docx") {
       /*

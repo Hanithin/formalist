@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { ouvrirBrouillon } from "@/infrastructure/db/depots/brouillons";
 import { deposerPiece } from "@/infrastructure/documents/depot";
+import { controlerLaPieceDIdentite } from "@/infrastructure/documents/controle-identite";
+import { estUnePieceDIdentite } from "@/domain/formalite/controle-identite";
+import { personneDuDirigeant } from "@/domain/formalite/gabarit";
 import { produireLesActes, DossierIncomplet } from "@/infrastructure/documents/actes";
 import { TYPE_ATTESTATION_CAPITAL } from "@/infrastructure/db/depots/suivi";
 import { piecesAttendues } from "@/domain/formalite/documents";
@@ -11,7 +14,7 @@ import { piecesDesComptes } from "@/domain/comptes/pieces";
 import { lireModification } from "@/infrastructure/db/depots/modifications";
 import { lireComptes } from "@/infrastructure/db/depots/comptes";
 import { lireDeclaration } from "@/infrastructure/db/depots/auto-entrepreneur";
-import { DepotRefuse } from "@/lib/fichiers";
+import { DepotRefuse, extensionDe } from "@/lib/fichiers";
 import { route } from "@/lib/reponses";
 
 export const POST = route(async (requete: Request) => {
@@ -95,6 +98,43 @@ export const POST = route(async (requete: Request) => {
     );
 
     /*
+     * Une pièce d'identité est regardée avant d'être comptée comme reçue.
+     *
+     * Elle ne l'était que sur sa forme - extension, taille, signature binaire - et une
+     * carte périmée, un cliché flou ou un coin coupé qui mange la date de validité
+     * passaient tous. Le défaut se découvrait au refus du greffe, des semaines plus
+     * tard, sur un dossier déjà réglé et transmis : le client était alors sorti de
+     * l'application, et la formalité attendait qu'il y revienne.
+     *
+     * Le contrôle est fait ici, en ligne, plutôt qu'en tâche de fond, parce que le seul
+     * moment où l'on peut demander une autre photographie est celui où la personne a
+     * encore sa carte en main.
+     */
+    let controle = null;
+    if (estUnePieceDIdentite(attendue.identifiant)) {
+      /*
+       * Le nom attendu n'est connu que de la création.
+       *
+       * C'est le seul parcours où le dossier désigne sans ambiguïté le titulaire de la
+       * pièce - son dirigeant. L'auto-entreprise et la modification en nomment d'autres
+       * selon ce qui est décidé, et rapprocher le mauvais nom produirait une réserve
+       * fausse sur une pièce juste : mieux vaut ne pas comparer que comparer à tort.
+       */
+      const nomAttendu =
+        ligne.type === "creation" || ligne.type === null
+          ? (personneDuDirigeant((brouillon.dirigeants ?? [])[0], brouillon.associes ?? []).nom ??
+            null)
+          : null;
+
+      const resultat = await controlerLaPieceDIdentite(
+        depose.id,
+        { contenu: Buffer.from(await fichier.arrayBuffer()), extension: extensionDe(fichier.name) },
+        { nomAttendu }
+      );
+      controle = resultat.controle;
+    }
+
+    /*
      * L'attestation de dépôt de capital re-date les actes.
      *
      * La banque la délivre après le versement, et c'est ce jour-là qu'on signe les
@@ -129,7 +169,7 @@ export const POST = route(async (requete: Request) => {
       }
     }
 
-    return NextResponse.json({ ok: true, document: depose, redates }, { status: 201 });
+    return NextResponse.json({ ok: true, document: depose, redates, controle }, { status: 201 });
   } catch (e) {
     if (e instanceof DepotRefuse) {
       return NextResponse.json({ error: e.message }, { status: 400 });

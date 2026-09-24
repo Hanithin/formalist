@@ -38,6 +38,7 @@ import { useSauvegardeContinue } from "./sauvegarde";
 import { piecesAttendues, PIECE_DEPOT_CAPITAL } from "@/domain/formalite/documents";
 import { offre } from "@/domain/formalite/offres";
 import { Pieces } from "@/components/formulaire/Pieces";
+import type { PieceDeposee } from "@/domain/formalite/controle-identite";
 import styles from "./Parcours.module.css";
 
 interface Props {
@@ -46,7 +47,7 @@ interface Props {
   etapes: Etape[];
   etapeCourante: number;
   brouillonInitial: Brouillon;
-  piecesDeposees: { type: string | null; nom: string }[];
+  piecesDeposees: PieceDeposee[];
   actesProduits: ActeProduit[];
   /** Ce que le cabinet a écrit en dernier, et ce qui reste à lire. */
   dernierMot: DernierMot;

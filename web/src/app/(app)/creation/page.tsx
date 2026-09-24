@@ -20,6 +20,7 @@ import { adresseDuDossier } from "@/domain/formalite/liste";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import styles from "./Parcours.module.css";
+import { enPieceDeposee } from "@/domain/formalite/controle-identite";
 
 export const metadata: Metadata = {
   title: "Créer une société - Formalist",
@@ -227,7 +228,7 @@ export default async function Creation({
           etapes={ETAPES}
           etapeCourante={courante}
           brouillonInitial={brouillon}
-          piecesDeposees={deposees.map((d) => ({ type: d.type, nom: d.name }))}
+          piecesDeposees={deposees.map(enPieceDeposee)}
           actesProduits={[
             ...actes.map((d) => ({
               id: d.id,

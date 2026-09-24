@@ -6,6 +6,7 @@ import { exigerUtilisateur } from "@/infrastructure/db/utilisateur-courant";
 import { listerDocuments } from "@/infrastructure/db/depots/documents";
 import { titreDeSociete, type DocumentRange } from "@/domain/document/bibliotheque";
 import { acteSigneAServir } from "@/infrastructure/documents/acte-signe";
+import { pieceCertifieeAServir } from "@/infrastructure/documents/piece-certifiee";
 import { journal } from "@/lib/journal";
 import { route } from "@/lib/reponses";
 
@@ -80,9 +81,12 @@ export const GET = route(async (requete: Request) => {
     try {
       /* Un acte signé entre dans l'archive avec ses signatures, jamais dans sa version vierge. */
       const signe = await acteSigneAServir(document.fichier!);
+      /* Une pièce d'identité y entre certifiée conforme, jamais dans sa copie nue. */
+      const certifiee = signe ? null : await pieceCertifieeAServir(document.fichier!);
+      const compose = signe ?? certifiee;
       const contenu =
-        signe ?? (await readFile(path.join(DEPOT, path.basename(document.fichier!))));
-      const extension = signe ? ".pdf" : path.extname(document.fichier!).toLowerCase();
+        compose ?? (await readFile(path.join(DEPOT, path.basename(document.fichier!))));
+      const extension = compose ? ".pdf" : path.extname(document.fichier!).toLowerCase();
       zip.file(sansDoublon(pris, nomAcceptable(document.nom, extension)), contenu);
       ajoutes++;
     } catch {

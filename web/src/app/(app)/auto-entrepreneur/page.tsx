@@ -10,6 +10,7 @@ import { documentsDuDossier } from "@/infrastructure/db/depots/documents";
 import { etatDuDossier } from "@/infrastructure/db/depots/suivi";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import styles from "./AutoEntrepreneur.module.css";
+import { enPieceDeposee } from "@/domain/formalite/controle-identite";
 
 export const metadata: Metadata = {
   title: "Créer une auto-entreprise - Formalist",
@@ -96,7 +97,7 @@ export default async function AutoEntrepreneur({
           etapes={ETAPES}
           etapeCourante={courante}
           declarationInitiale={declaration}
-          piecesDeposees={deposees.map((d) => ({ type: d.type, nom: d.name }))}
+          piecesDeposees={deposees.map(enPieceDeposee)}
           regleALInstant={regleALInstant}
           paiementAnnule={paiement === "annule"}
           quand={new Date()}

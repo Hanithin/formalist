@@ -104,6 +104,11 @@ model documents {
   rejected_at      DateTime?  @db.Timestamptz(6)
   /// Word source d'un acte livré en PDF : la signature s'y appose avant conversion.
   source_path      String?
+  /// Le verdict du contrôle automatique d'une pièce d'identité, tel qu'il a été rendu.
+  ///
+  /// Gardé plutôt que recalculé : la lecture n'est pas reproductible, et ce que
+  /// l'avocat relit doit être ce qui a été constaté au dépôt.
+  controle_json    String?
   formalites       formalites @relation(fields: [formalite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 

@@ -22,6 +22,7 @@ import {
 import { FilDuDossier, type MessageDuFil } from "@/components/formalite/FilDuDossier";
 import { derniereDemandeDeCorrections } from "@/infrastructure/db/depots/avocat";
 import styles from "./Modification.module.css";
+import { enPieceDeposee } from "@/domain/formalite/controle-identite";
 
 export const metadata: Metadata = {
   title: "Modifier ma société - Formalist",
@@ -376,7 +377,7 @@ export default async function Modification({
            */
           piecesDeposees={(await documentsDuDossier(utilisateur, dossierId))
             .filter((d) => d.type)
-            .map((d) => ({ type: d.type as string, nom: d.name }))}
+            .map(enPieceDeposee)}
         />
       </div>
     </main>

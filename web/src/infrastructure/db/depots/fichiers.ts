@@ -207,3 +207,29 @@ export async function fichierLisible(
 
   return null;
 }
+
+/**
+ * La pièce du client qui porte ce fichier, et ce qu'il faut pour la certifier.
+ *
+ * Symétrique de `acteProduit`, pour ce que la plateforme ne produit pas. Un acte se
+ * reconnaît à son déposant - « system » - et se recompose depuis son Word ; une pièce
+ * déposée n'a pas de source, et c'est son type qui dit ce qu'elle est : « identite »,
+ * « depot-capital ». Le dossier est rendu avec, parce que la mention de conformité se
+ * date de la signature recueillie sur ce dossier-là.
+ *
+ * Une pièce refusée est rendue comme les autres : elle reste consultable - c'est même
+ * la première chose qu'on fait quand on refuse une pièce, la rouvrir - et c'est le
+ * dépôt au guichet qui l'écarte, non la lecture.
+ */
+export async function pieceDeposee(
+  nomFichier: string
+): Promise<{ id: number; dossierId: number; type: string | null } | null> {
+  const nom = path.basename(nomFichier || "");
+  if (!nom) return null;
+
+  const piece = await prisma.documents.findFirst({
+    where: { file_path: { endsWith: nom }, uploaded_by: { not: "system" } },
+    select: { id: true, formalite_id: true, type: true },
+  });
+  return piece ? { id: piece.id, dossierId: piece.formalite_id, type: piece.type } : null;
+}

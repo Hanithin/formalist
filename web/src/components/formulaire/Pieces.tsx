@@ -15,7 +15,21 @@ export interface PieceAttendue {
   description: string;
   formats: string[];
 }
+import type { Controle, PieceDeposee } from "@/domain/formalite/controle-identite";
 import styles from "./Pieces.module.css";
+
+/**
+ * Ce qui s'affiche sous une carte après un dépôt.
+ *
+ * Le verdict du contrôle d'identité s'y ajoute quand il y en a un : « Pièce
+ * enregistrée » ne suffit pas à dire qu'une carte est périmée, et le client repart
+ * alors en croyant son dossier complet.
+ */
+interface MessageDeDepot {
+  ok: boolean;
+  texte: string;
+  controle?: Controle | null;
+}
 
 /**
  * Le dépôt des pièces justificatives.
@@ -59,11 +73,11 @@ function Icone({ depose }: { depose: boolean }) {
 interface Props {
   dossierId: number;
   pieces: PieceAttendue[];
-  deposees: { type: string | null; nom: string }[];
+  deposees: PieceDeposee[];
 }
 
 export function Pieces({ dossierId, pieces, deposees }: Props) {
-  const [messages, setMessages] = useState<Record<string, { ok: boolean; texte: string }>>({});
+  const [messages, setMessages] = useState<Record<string, MessageDeDepot>>({});
   const [survolee, setSurvolee] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const champs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -81,10 +95,24 @@ export function Pieces({ dossierId, pieces, deposees }: Props) {
       const reponse = await fetch("/api/formalites/pieces", { method: "POST", body: donnees });
       const corps = await reponse.json().catch(() => ({}));
 
+      /*
+       * Le verdict du contrôle prend la place de « Pièce enregistrée ».
+       *
+       * Le dépôt d'une carte périmée réussit - elle est reçue, stockée, et retenue - si
+       * bien que la réponse est un succès au sens du protocole. Annoncer « Pièce
+       * enregistrée » sur cette réponse-là ferait repartir le client en croyant son
+       * dossier complet, et c'est justement ce que ce contrôle existe pour éviter.
+       */
+      const controle: Controle | null = corps.controle ?? null;
+
       setMessages((m) => ({
         ...m,
         [piece.identifiant]: reponse.ok
-          ? { ok: true, texte: "Pièce enregistrée" }
+          ? {
+              ok: controle?.gravite !== "refusee",
+              texte: controle?.resume ?? "Pièce enregistrée",
+              controle,
+            }
           : { ok: false, texte: corps.error ?? "Dépôt interrompu" },
       }));
 
@@ -99,12 +127,50 @@ export function Pieces({ dossierId, pieces, deposees }: Props) {
         const message = messages[piece.identifiant];
         const glisse = survolee === piece.identifiant;
 
+        /*
+         * Une pièce retenue n'est pas une pièce acquise.
+         *
+         * La carte passait au vert dès qu'un fichier existait, motif de refus compris :
+         * le client voyait « déposé » sur la pièce même qu'on lui demandait de
+         * remplacer, et n'avait aucune raison d'y revenir.
+         */
+        const retenue = !!dejaLa?.motifRejet?.trim();
+        const verdict = message?.controle ?? dejaLa?.controle ?? null;
+        /*
+         * Au rechargement, le message du dépôt a disparu : le verdict gardé le remplace.
+         *
+         * Seul le motif de refus prenait le relais, et une pièce acceptée avec réserve
+         * n'en a pas : une carte prorogée, un nom qui ne correspond pas au dossier, une
+         * image peu définie s'affichaient au dépôt puis disparaissaient dès qu'on
+         * revenait sur la page. Ce qui a été constaté est pourtant gardé en base, et
+         * arrive jusqu'ici.
+         */
+        const phrase =
+          message?.texte ?? verdict?.resume ?? (retenue ? dejaLa!.motifRejet! : null);
+        const bloquant = message ? !message.ok : retenue;
+
+        /*
+         * Le ton suit la gravité, non le rôle d'accessibilité.
+         *
+         * globals.css encadre tout [role="alert"] de rouge et tout [role="status"] de
+         * vert. Le bloc porte bien ces rôles - il faut que la synthèse vocale annonce ce
+         * qui bloque - mais une réserve cerclée de vert dit « c'est bon » sur une phrase
+         * qui dit le contraire. La teinte est donc redite ici, comme le fait déjà le
+         * bilan des accords.
+         */
+        const ton = bloquant
+          ? styles.verdictBloquant
+          : verdict?.gravite === "reserve"
+            ? styles.verdictReserve
+            : styles.verdictAbouti;
+
         return (
           <div
             key={piece.identifiant}
             className={[
               styles.docCard,
-              dejaLa ? styles.docDepose : "",
+              dejaLa && !retenue ? styles.docDepose : "",
+              retenue ? styles.docRetenue : "",
               glisse ? styles.docGlisse : "",
             ]
               .filter(Boolean)
@@ -123,7 +189,7 @@ export function Pieces({ dossierId, pieces, deposees }: Props) {
           >
             <div className={styles.docHeader}>
               <span className={styles.docIcone} aria-hidden="true">
-                <Icone depose={!!dejaLa} />
+                <Icone depose={!!dejaLa && !retenue} />
               </span>
 
               <div className={styles.docInfo}>
@@ -199,10 +265,46 @@ export function Pieces({ dossierId, pieces, deposees }: Props) {
                   Formats acceptés : {piece.formats.join(", ")}
                 </p>
 
-                {message && (
-                  <p role={message.ok ? "status" : "alert"} aria-live="polite">
-                    {message.texte}
-                  </p>
+                {phrase && (
+                  <div
+                    className={styles.verdict + " " + ton}
+                    role={bloquant ? "alert" : "status"}
+                    aria-live="polite"
+                  >
+                    <p className={styles.verdictPhrase}>{phrase}</p>
+
+                    {/*
+                      Le détail ne se répète pas.
+
+                      Le résumé reprend déjà le constat qui bloque, mot pour mot : le
+                      lister à nouveau juste en dessous donnait deux fois la même phrase.
+                      On n'écrit donc que ce que le résumé n'a pas dit - et rien du tout
+                      quand il a tout dit.
+                    */}
+                    {verdict && verdict.constats.length > 1 && (
+                      <ul className={styles.verdictDetail}>
+                        {verdict.constats
+                          .filter((c) => c.phrase !== phrase)
+                          .map((c) => (
+                            <li key={c.code}>{c.phrase}</li>
+                          ))}
+                      </ul>
+                    )}
+
+                    {/*
+                      Une pièce non lue se dit, plutôt que de passer pour vérifiée.
+
+                      Quand le service de lecture manque, seules les mesures ont joué :
+                      la carte peut être périmée sans que rien ne l'ait vu. Le taire
+                      donnerait au client une assurance que nous n'avons pas.
+                    */}
+                    {verdict?.lectureIndisponible && (
+                      <p className={styles.verdictNote}>
+                        La validité n&apos;a pas pu être vérifiée automatiquement : l&apos;avocat
+                        la contrôlera.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

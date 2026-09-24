@@ -9,7 +9,7 @@ import type { Declaration } from "@/domain/auto-entrepreneur/declaration";
 function ligne(
   declaration: Declaration,
   cle: string,
-  pieces: { type?: string | null }[] = []
+  pieces: { type?: string | null; motifRejet?: string | null }[] = []
 ): string | null | undefined {
   return colonneDeLaDeclaration(declaration, pieces).lignes.find((l) => l.cle === cle)?.valeur;
 }
@@ -155,6 +155,26 @@ describe("le compte des pièces", () => {
     expect(ligne({ ...CLAIRE, reponseReglementation: "je ne sais pas" }, "pieces")).toBe(
       "0 sur 3"
     );
+  });
+
+  it("ne compte pas une pièce retenue", () => {
+    /*
+     * Une carte refusée par le contrôle - périmée, illisible - faisait passer le compte
+     * à « 2 sur 3 » pendant que la carte, juste à côté, demandait de la remplacer. Le
+     * récapitulatif contredisait le formulaire, et c'est lui qu'on croit.
+     */
+    const deposees = [
+      { type: "identite-recto" },
+      { type: "identite-verso", motifRejet: "L'image est floue." },
+      { type: "domicile" },
+    ];
+    expect(ligne(CLAIRE, "pieces", deposees)).toBe("2 sur 3");
+  });
+
+  it("un motif vide ne retient rien", () => {
+    // La colonne existe en base et vaut souvent la chaîne vide : la lire comme un refus
+    // ferait disparaître du compte des pièces parfaitement reçues.
+    expect(ligne(CLAIRE, "pieces", [{ type: "domicile", motifRejet: "  " }])).toBe("1 sur 3");
   });
 
   it("un dépôt sans type ne compte pour rien", () => {
