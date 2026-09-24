@@ -31,6 +31,8 @@ import {
   MODIFICATIONS,
   qualitesDuSignataire,
   pourquoiUnSeulSignataire,
+  representantPeutEtreUneSociete,
+  pourquoiPasDeSocieteRepresentante,
   champVisible,
   definitions,
   valeursParDefautDesChamps,
@@ -1084,6 +1086,15 @@ function EtapeSociete({
     });
   }
 
+  /*
+   * La forme admet-elle un représentant légal personne morale ?
+   *
+   * Une SARL est gérée par des personnes physiques, une SA aussi : le choix n'a pas à
+   * leur être offert. Ailleurs il l'est, et il est même courant.
+   */
+  const societeAdmise = representantPeutEtreUneSociete(etat.societe.forme);
+  const motifDuRefus = pourquoiPasDeSocieteRepresentante(etat.societe.forme);
+
   const natureDuSignataire =
     texteDe(etat.valeurs.signataireNature) === "morale" ? "morale" : "physique";
   const signataireMoral = natureDuSignataire === "morale";
@@ -1331,17 +1342,30 @@ function EtapeSociete({
         {pourquoiUnSeulSignataire(etat.societe.forme)}
       </p>
       {/*
-        Un dirigeant peut être une société.
+        Un dirigeant peut être une société - mais pas dans toutes les formes.
 
-        Une SAS est souvent présidée par une holding, et rien n'interdit à une SARL
-        d'avoir un gérant personne morale. Le pouvoir doit alors désigner cette société
-        - sa forme, son capital, son siège, son numéro - puis nommer qui la représente
-        elle-même. Le formulaire n'offrait qu'une personne physique : on y saisissait le
-        dirigeant de la holding, et le pouvoir le donnait en son nom propre.
+        Une SAS est souvent présidée par une holding, et une personne morale peut gérer
+        une société civile ou une société en nom collectif. Le pouvoir désigne alors cette
+        société - sa forme, son capital, son siège, son numéro - puis nomme qui la
+        représente elle-même.
+
+        Le commentaire d'ici affirmait que « rien n'interdit à une SARL d'avoir un gérant
+        personne morale ». C'est faux : elle « est gérée par une ou plusieurs personnes
+        physiques » (L. 223-18), et la société anonyme n'en laisse pas davantage. Le choix
+        était pourtant offert partout, et un client l'a pris sur une SARL.
+
+        Il reste visible pour un dossier qui l'a déjà pris : le faire disparaître
+        emporterait la saisie sans un mot, et le refus nommé vaut mieux qu'un écran qui
+        se rétracte.
       */}
       <div className={styles.natureEtRecherche}>
         <div className={styles.natures}>
-          {(["physique", "morale"] as const).map((nature) => (
+          {(societeAdmise
+            ? (["physique", "morale"] as const)
+            : signataireMoral
+              ? (["physique", "morale"] as const)
+              : (["physique"] as const)
+          ).map((nature) => (
             <label
               key={nature}
               className={
@@ -1360,6 +1384,16 @@ function EtapeSociete({
             </label>
           ))}
         </div>
+
+        {/*
+          Ce que la loi interdit, dit là où l'on aurait cherché l'option.
+
+          Une option qui disparaît sans un mot fait chercher ce qu'on a mal fait. Le motif
+          paraît donc à sa place, et il vaut aussi pour le dossier qui l'a déjà prise.
+        */}
+        {motifDuRefus && (
+          <p className={styles.devisPrecision}>{motifDuRefus}</p>
+        )}
 
         {/* La recherche n'a de sens que pour une société : elle paraît avec elle. */}
         {signataireMoral && (
@@ -1466,7 +1500,17 @@ function EtapeSociete({
           {/* Qualité dans votre société : c'est la société qui préside, non la
               personne qui la représente. */}
           <div className={styles.champ}>
-            <label htmlFor="signataire-qualite">Qualité dans votre société</label>
+            {/*
+              Le libellé nomme la société, il ne dit plus « la vôtre ».
+              
+              Le champ suit la forme de la société modifiée, et il est posé sous la forme,
+              le SIREN et le siège de la société représentante : « votre société » s'y
+              lisait comme celle qu'on venait de saisir, et l'on s'étonnait qu'une SAS se
+              voie proposer « gérant ».
+            */}
+            <label htmlFor="signataire-qualite">
+              {"Sa qualité dans " + (etat.societe.denomination?.trim() || "la société que vous modifiez")}
+            </label>
             <ChampChoix
               id="signataire-qualite"
               valeur={texteDe(etat.valeurs.signataireQualite)}

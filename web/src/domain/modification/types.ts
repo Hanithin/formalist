@@ -228,6 +228,39 @@ export const QUALITES_DU_SIGNATAIRE = [
  * pour une personne morale dirigeante, et elle ne dépend d'aucune forme.
  */
 /**
+ * Le représentant légal peut-il être une société ?
+ *
+ * Pas partout, et le formulaire l'offrait partout. « La société à responsabilité limitée
+ * est gérée par une ou plusieurs personnes physiques » : l'article L. 223-18 du code de
+ * commerce ne laisse aucune marge, et la société anonyme n'en laisse pas davantage - son
+ * président comme son directeur général doivent être des personnes physiques (L. 225-47
+ * et L. 225-51-1). Ailleurs c'est permis, et même courant : une holding préside une SAS
+ * (L. 227-7), une personne morale gère une société civile ou une société en nom collectif.
+ *
+ * Une forme inconnue ne se voit rien retrancher : c'est l'état de tout dossier dont la
+ * société n'est pas encore identifiée, et l'on n'y devine pas une interdiction.
+ */
+export function representantPeutEtreUneSociete(forme: string | null | undefined): boolean {
+  if (!formeConnue(forme)) return true;
+  const regime = natureDeLaForme(forme).regime;
+  return regime !== "sarl" && regime !== "sa";
+}
+
+/** Ce qui l'interdit, dit à celui qui aurait cherché l'option. */
+export function pourquoiPasDeSocieteRepresentante(forme: string | null | undefined): string | null {
+  if (representantPeutEtreUneSociete(forme)) return null;
+
+  const nature = natureDeLaForme(forme);
+  return nature.regime === "sarl"
+    ? "Une " +
+        (nature.code || "SARL") +
+        " est gérée par une ou plusieurs personnes physiques : son gérant ne peut pas être une société (article L. 223-18 du code de commerce)."
+    : "Dans une " +
+        (nature.code || "SA") +
+        ", le président comme le directeur général doivent être des personnes physiques : le représentant légal ne peut pas être une société.";
+}
+
+/**
  * Pourquoi un seul signataire suffit, quelle que soit la direction en place.
  *
  * Le bloc du représentant légal ne décrit pas la direction de la société : il désigne

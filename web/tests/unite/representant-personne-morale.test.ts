@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { donneesDuGabarit } from "@/domain/modification/gabarit";
 import { verifierLeRepresentant } from "@/domain/modification/verification";
+import {
+  representantPeutEtreUneSociete,
+  pourquoiPasDeSocieteRepresentante,
+} from "@/domain/modification/types";
 
 /**
  * Le représentant légal peut être une société.
@@ -130,6 +134,61 @@ describe("ce que le dossier exige avant de produire le pouvoir", () => {
   });
 
   it("ne réclame plus rien quand tout est là", () => {
+    expect(verifierLeRepresentant(HOLDING)).toEqual([]);
+  });
+});
+
+/**
+ * Mais pas dans toutes les formes.
+ *
+ * Le choix était offert partout, et un client l'a pris sur une SARL. « La société à
+ * responsabilité limitée est gérée par une ou plusieurs personnes physiques » : l'article
+ * L. 223-18 ne laisse aucune marge, et la société anonyme n'en laisse pas davantage - son
+ * président comme son directeur général doivent être des personnes physiques.
+ */
+describe("les formes qui admettent un représentant personne morale", () => {
+  it("l'admettent là où la loi le permet", () => {
+    // Une holding présidente de SAS est le cas courant ; une personne morale peut gérer
+    // une société civile ou une société en nom collectif.
+    for (const forme of ["SAS", "SASU", "SCI", "SNC", "SCA"]) {
+      expect(representantPeutEtreUneSociete(forme)).toBe(true);
+      expect(pourquoiPasDeSocieteRepresentante(forme)).toBeNull();
+    }
+  });
+
+  it("le refusent à la SARL et à la SA", () => {
+    for (const forme of ["SARL", "EURL", "SELARL"]) {
+      expect(representantPeutEtreUneSociete(forme)).toBe(false);
+      expect(pourquoiPasDeSocieteRepresentante(forme)).toContain("L. 223-18");
+    }
+
+    expect(representantPeutEtreUneSociete("SA")).toBe(false);
+    /* L'article de la SARL n'est pas celui de la SA : le motif ne le cite pas. */
+    expect(pourquoiPasDeSocieteRepresentante("SA")).toMatch(/personnes physiques/);
+    expect(pourquoiPasDeSocieteRepresentante("SA")).not.toContain("223-18");
+  });
+
+  it("ne devinent rien tant que la forme est inconnue", () => {
+    // C'est l'état de tout dossier dont la société n'est pas encore identifiée : on n'y
+    // suppose pas une interdiction.
+    for (const forme of [null, undefined, "", "GMBH"]) {
+      expect(representantPeutEtreUneSociete(forme)).toBe(true);
+    }
+  });
+
+  it("font refuser la société représentante là où la loi l'interdit", () => {
+    const manques = verifierLeRepresentant(HOLDING, "SARL");
+    expect(manques.map((m) => m.champ)).toContain("signataireNature");
+    expect(manques.find((m) => m.champ === "signataireNature")?.message).toContain("L. 223-18");
+  });
+
+  it("la laissent passer là où la loi la permet", () => {
+    expect(verifierLeRepresentant(HOLDING, "SAS")).toEqual([]);
+  });
+
+  it("ne refusent rien quand la forme ne leur est pas dite", () => {
+    /* L'appelant qui ne connaît pas la société ne doit pas voir un reproche qu'il ne
+       peut pas situer. */
     expect(verifierLeRepresentant(HOLDING)).toEqual([]);
   });
 });

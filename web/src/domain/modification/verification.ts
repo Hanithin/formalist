@@ -2,6 +2,7 @@ import {
   champObligatoire,
   champsASaisir,
   definitions,
+  pourquoiPasDeSocieteRepresentante,
   type Cosignataire,
   type Valeurs,
 } from "./types";
@@ -87,7 +88,11 @@ export function verifierSociete(societe: Societe): Anomalie[] {
  * mention par défaut assumée ailleurs dans le produit. Le reste n'a pas de défaut
  * possible - on n'invente ni une date de naissance ni un domicile.
  */
-export function verifierLeRepresentant(valeurs: Valeurs): Anomalie[] {
+export function verifierLeRepresentant(
+  valeurs: Valeurs,
+  /** La forme de la société : elle décide de ce qu'un représentant peut être. */
+  forme?: string | null
+): Anomalie[] {
   const anomalies: Anomalie[] = [];
   const vide = (champ: string) => {
     const valeur = valeurs[champ];
@@ -98,6 +103,17 @@ export function verifierLeRepresentant(valeurs: Valeurs): Anomalie[] {
   };
 
   if ((valeurs.signataireNature ?? "physique") === "morale") {
+    /*
+     * Toutes les formes ne l'admettent pas.
+     *
+     * Une SARL est gérée par des personnes physiques (L. 223-18), une SA aussi. Le choix
+     * était offert partout et des dossiers l'ont pris : le refus les nomme plutôt que de
+     * laisser partir un pouvoir signé par qui ne peut pas l'être.
+     */
+    const interdit = pourquoiPasDeSocieteRepresentante(forme);
+    if (interdit) anomalies.push({ champ: "signataireNature", message: interdit });
+
+
     exiger(
       "signataireSocieteDenomination",
       "La dénomination de la société représentante est requise"
@@ -395,7 +411,7 @@ export function verifierModification(
     return [
       { champ: "modifications", message: "Choisissez au moins une modification" },
       ...verifierSociete(societe),
-      ...verifierLeRepresentant(valeurs),
+      ...verifierLeRepresentant(valeurs, societe.forme),
       ...verifierLesCosignataires(cosignataires),
     ];
   }
@@ -413,7 +429,7 @@ export function verifierModification(
      * formulaire. Le règlement et la production des actes passent par ici, et n'en
      * voyaient rien - c'est aussi ce qui faisait diverger les deux jugements.
      */
-    ...verifierLeRepresentant(valeurs),
+    ...verifierLeRepresentant(valeurs, societe.forme),
     ...verifierLesCosignataires(cosignataires),
     ...verifierChamps(codes, valeurs, societe.forme),
     ...verifierCoherence(codes, valeurs, societe.forme),

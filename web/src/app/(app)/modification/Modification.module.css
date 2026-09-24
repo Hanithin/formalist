@@ -2180,11 +2180,24 @@
  * quand il n'y a plus rien à en faire. Repliés en tête, ils s'annoncent avant la
  * saisie, disent combien ils sont, et s'ouvrent d'un clic.
  */
+/*
+ * Ce que la loi prévoit : un panneau de référence, non un avertissement.
+ *
+ * Le bloc portait l'ambre que l'application réserve à ce qui cloche - le même fond, le
+ * même brun, le même pictogramme orangé qu'un acte non reproduit ou un règlement refusé.
+ * Le triangle d'alerte avait déjà cédé la place à une balance ; la couleur, elle, était
+ * restée, et l'on ouvrait le bloc en s'attendant à un problème à régler. Il n'en annonce
+ * aucun : il dit ce que la loi prévoit pour les changements décidés.
+ *
+ * L'encre neutre le rend à ce qu'il est. Il se distingue de l'encadré d'information
+ * bleu, posé juste en dessous sur le même écran, par ce qu'il a de propre - sa pastille,
+ * son « Afficher », son repli - et non par une couleur de plus.
+ */
 .obligations {
   margin: 0 0 20px;
-  border: 1px solid #fde9c8;
+  border: 1px solid #e5e5e7;
   border-radius: 12px;
-  background: #fffbeb;
+  background: #fafafa;
 }
 
 .obligationsTete {
@@ -2194,7 +2207,7 @@
   padding: 11px 14px;
   font-size: 13px;
   font-weight: 600;
-  color: #92400e;
+  color: #3f3f46;
   cursor: pointer;
   list-style: none;
 }
@@ -2212,7 +2225,7 @@
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  color: #d97706;
+  color: #71717a;
 }
 
 .obligationsQuoi {
@@ -2231,8 +2244,8 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 20px;
-  background: #fde9c8;
-  color: #92400e;
+  background: #ececef;
+  color: #52525b;
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -2244,7 +2257,7 @@
   flex-shrink: 0;
   font-size: 12.5px;
   font-weight: 500;
-  color: #b45309;
+  color: #52525b;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -2267,7 +2280,7 @@
 .obligations li {
   font-size: 13.5px;
   line-height: 1.5;
-  color: #78350f;
+  color: #52525b;
 }
 
 .obligations li + li {
