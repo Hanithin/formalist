@@ -47,6 +47,13 @@ const BENEFICIAIRE = {
 };
 
 const APPORT = {
+  /* Le représentant légal signe le pouvoir : un dossier complet en a un. */
+  signataireCivilite: "Monsieur",
+  signatairePrenom: "Paul",
+  signataireNom: "DURAND",
+  signataireNeLe: "1985-03-14",
+  signataireNeA: "Paris 12e (75012)",
+  signataireAdresse: "3 rue de Lyon, 75012 Paris",
   apporteeDenomination: "STORYFILMS",
   apporteeForme: "SAS",
   apporteeSiren: "841862907",

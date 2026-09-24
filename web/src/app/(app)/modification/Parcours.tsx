@@ -24,7 +24,7 @@ import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { DepotFichier } from "@/components/formulaire/DepotFichier";
 import { Cessions } from "./Cessions";
-import { verifierCessions, type Cession } from "@/domain/modification/cession";
+import type { Cession } from "@/domain/modification/cession";
 import { phraseDAttente, type Progression } from "@/domain/modification/lecture";
 import { Editeur } from "./Editeur";
 import {
@@ -38,11 +38,7 @@ import {
   type Valeurs,
 } from "@/domain/modification/types";
 import {
-  verifierSociete,
-  verifierLeRepresentant,
-  verifierLesCosignataires,
-  verifierChamps,
-  verifierCoherence,
+  verifierModification,
   type Societe,
 } from "@/domain/modification/verification";
 import {
@@ -52,10 +48,8 @@ import {
   obligationsParticulieres,
   statutsAMettreAJour,
 } from "@/domain/modification/formalites";
-import { anomaliesDuPvAge } from "@/domain/modification/pv-age";
-import { anomaliesDuTraite, paritéDeLApport } from "@/domain/modification/traite-apport";
+import { paritéDeLApport } from "@/domain/modification/traite-apport";
 import { nominaleDeduite } from "@/domain/modification/apport";
-import { anomaliesDeLActeDeCession } from "@/domain/modification/acte-cession";
 import { devis, montantLisible, PRESTATIONS, DELAI } from "@/domain/modification/offre";
 import type { Retouche, Zone } from "@/domain/modification/edition";
 import type { ActeProduit } from "@/domain/document/publication";
@@ -143,6 +137,8 @@ function estDeLAssemblee(champ: string): boolean {
  */
 function etapeDe(champ: string): number {
   if (CHAMPS_DE_SOCIETE.includes(champ)) return 1;
+  /* Le représentant légal et ceux qui signent avec lui : première étape, avec la société. */
+  if (champ.startsWith("signataire") || champ.startsWith("cosignataire-")) return 1;
   if (champ === "codes" || champ === "modifications") return 2;
   if (estDeLAssemblee(champ)) return 4;
   return 3;
@@ -309,50 +305,35 @@ export function Parcours({
   const racine = useRef<HTMLDivElement>(null);
 
   /*
-   * Les incohérences du procès-verbal se lisent ici, pas à la génération.
+   * Un seul jugement, celui que la route de paiement portera.
    *
-   * Elles ne portent pas sur un champ vide mais sur deux valeurs qui ne s'accordent
-   * pas - un capital de départ qui n'est pas celui de la société, un nouveau capital
-   * que le nombre de titres ne donne pas. Laissées à la production des actes, elles
-   * arrêtaient un dossier déjà réglé.
+   * L'écran assemblait sa propre liste de contrôles, et la route de paiement la sienne.
+   * Deux contrôles ne figuraient que du côté serveur - la constatation d'augmentation,
+   * et les cessions hors du garde-fou de l'étape 3 : le bouton « Régler » s'activait sur
+   * un dossier que la route refusait ensuite, avec une phrase qui ne disait pas quoi.
+   *
+   * La même fonction, avec les mêmes arguments, des deux côtés : la divergence n'est plus
+   * possible, au lieu d'être réparée à chaque contrôle qu'on ajoute d'un seul côté.
    */
-  const anomalies = [
-    ...verifierChamps(etat.codes, etat.valeurs, etat.societe.forme),
-    ...verifierCoherence(etat.codes, etat.valeurs, etat.societe.forme),
-    ...anomaliesDuPvAge({
-      societe: etat.societe,
-      assemblee: etat.assemblee,
-      codes: etat.codes,
-      valeurs: etat.valeurs,
-      cessions: etat.cessions,
-    }),
-    ...(etat.codes.includes("apport_titres")
-      ? anomaliesDuTraite({
-          societe: etat.societe,
-          assemblee: etat.assemblee,
-          codes: etat.codes,
-          valeurs: etat.valeurs,
-          cessions: etat.cessions,
-        })
-      : []),
-    ...(etat.codes.includes("cession_parts")
-      ? anomaliesDeLActeDeCession({
-          societe: etat.societe,
-          assemblee: etat.assemblee,
-          codes: etat.codes,
-          valeurs: etat.valeurs,
-          cessions: etat.cessions,
-        })
-      : []),
-  ];
-  /* Le pouvoir se signe : sans représentant identifié, il sort avec des trous et le
-     guichet le refuse. Les deux jeux de manques se posent à la même étape. */
-  const anomaliesSociete = [
-    ...verifierSociete(etat.societe),
-    ...verifierLeRepresentant(etat.valeurs),
-    /* Ceux qui signent avec lui : le pouvoir les identifie de la même façon. */
-    ...verifierLesCosignataires(etat.cosignataires),
-  ];
+  const manquesDuDossier = verifierModification(
+    etat.codes,
+    etat.valeurs,
+    etat.societe,
+    etat.assemblee,
+    etat.cessions,
+    etat.air,
+    etat.cosignataires
+  );
+
+  /*
+   * Rangés par l'étape qui les répare.
+   *
+   * La carte du règlement les nomme tous ; les étapes, elles, ne marquent que les leurs -
+   * « Aucun associé n'est inscrit » n'a rien à faire sous un champ de l'étape 3, et l'on
+   * ne pouvait plus atteindre l'étape 4 pour y répondre.
+   */
+  const anomaliesSociete = manquesDuDossier.filter((a) => etapeDe(a.champ) === 1);
+  const anomalies = manquesDuDossier.filter((a) => etapeDe(a.champ) !== 1);
 
   /* Voir `garde-de-boucle` : le parcours porte l'état que le dépôt met à jour. */
   gardeDeBoucle("Le parcours de modification");
@@ -430,19 +411,14 @@ export function Parcours({
        * l'étape suivante, qu'on ne pouvait donc pas atteindre. Le dossier n'était plus
        * récupérable autrement qu'en tapant `?etape=4` dans l'adresse.
        */
-      const desDetails = anomalies.filter((a) => !estDeLAssemblee(a.champ));
-
-      return etat.codes.includes("cession_parts")
-        ? [
-            ...desDetails,
-            ...verifierCessions(
-              etat.assemblee.associes ?? [],
-              etat.cessions ?? [],
-              etat.societe.forme,
-              typeof etat.valeurs.agrementRequis === "string" ? etat.valeurs.agrementRequis : ""
-            ),
-          ]
-        : desDetails;
+      /*
+       * Les cessions viennent avec le reste, elles ne se recomptent plus ici.
+       *
+       * `verifierCessions` était appelée à part parce que la liste de l'écran ne la
+       * portait pas. Elle est désormais dans le jugement commun, et la rappeler ici
+       * écrirait chaque manque deux fois.
+       */
+      return anomalies.filter((a) => !estDeLAssemblee(a.champ));
     }
     /*
      * L'assemblée : tout le capital doit être représenté.
@@ -481,6 +457,20 @@ export function Parcours({
    * « Continuer » - continuer vers quoi, quand l'étape suivante attend d'être payée ?
    */
   const [reglementRefuse, setReglementRefuse] = useState<string | null>(null);
+  /*
+   * Ce que la route de paiement reproche, quand elle refuse.
+   *
+   * Elle renvoie la liste des manques ; on n'en gardait que la phrase générique
+   * « Complétez votre dossier avant de le confier », et l'on cherchait quoi compléter
+   * sur un écran qui disait par ailleurs que tout était là.
+   *
+   * L'écran porte désormais le même jugement qu'elle, et cette liste devrait rester
+   * vide. Elle est le filet : si un écart réapparaît, il se lit et se répare d'un clic
+   * au lieu de se deviner.
+   */
+  const [manquesDuServeur, setManquesDuServeur] = useState<{ champ: string; message: string }[]>(
+    []
+  );
   const [reglementEnCours, demarrerReglement] = useTransition();
 
   const piecesDuDossier = piecesAFournir(etat.codes, etat.valeurs);
@@ -495,6 +485,7 @@ export function Parcours({
 
   function reglerLaFormalite() {
     setReglementRefuse(null);
+    setManquesDuServeur([]);
     demarrerReglement(async () => {
       const reponse = await fetch("/api/formalites/modification/paiement", {
         method: "POST",
@@ -505,6 +496,7 @@ export function Parcours({
 
       if (!reponse.ok || !corps.adresse) {
         setReglementRefuse(corps.error ?? "Le règlement n'a pas pu être ouvert");
+        setManquesDuServeur(Array.isArray(corps.manques) ? corps.manques : []);
         return;
       }
       window.location.href = corps.adresse;
@@ -747,7 +739,14 @@ export function Parcours({
         {etape === 6 && (
           <EtapeReglement
             etat={etat}
-            anomalies={[...anomaliesSociete, ...anomalies]}
+            /*
+              Ce que l'écran voit, et ce que la route a répondu.
+
+              Les deux portent le même jugement depuis qu'ils appellent la même fonction.
+              La seconde liste est le filet : si un écart réapparaît, il se lit dans la
+              carte et se répare par son bouton, au lieu de se deviner sous une phrase.
+            */
+            anomalies={[...anomaliesSociete, ...anomalies, ...manquesDuServeur]}
             dossier={dossier}
             pieces={piecesDuDossier}
             manquantes={piecesManquantes}

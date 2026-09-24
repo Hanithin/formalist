@@ -73,6 +73,15 @@ describe("chaque changement, une fois rempli, est complet", () => {
     capital: 50000,
   };
 
+  const REPRESENTANT = {
+    signataireCivilite: "Monsieur",
+    signatairePrenom: "Paul",
+    signataireNom: "DURAND",
+    signataireNeLe: "1985-03-14",
+    signataireNeA: "Paris 12e (75012)",
+    signataireAdresse: "3 rue de Lyon, 75012 Paris",
+  };
+
   /** Une valeur plausible pour chaque type, de quoi remplir sans réfléchir. */
   function valeurPour(champ: { type: string; options?: string[] }): string | number {
     if (champ.type === "nombre") return 10;
@@ -90,7 +99,15 @@ describe("chaque changement, une fois rempli, est complet", () => {
        * On remplit en deux passes : les champs conditionnels n'apparaissent qu'une
        * fois leur condition satisfaite par la première.
        */
-      const valeurs: Record<string, string | number> = {};
+      /*
+       * Le représentant légal ne relève d'aucun changement, et le dossier en a besoin.
+       *
+       * Il se saisit à l'étape de la société, comme elle, et `verifierModification` le
+       * réclame pour tous : c'est lui qui signe le pouvoir. Le jeu d'essai le fournit
+       * donc au même titre que SOCIETE, faute de quoi chaque changement se verrait
+       * reprocher cinq cases qui ne sont pas les siennes.
+       */
+      const valeurs: Record<string, string | number> = { ...REPRESENTANT };
       for (let passe = 0; passe < 2; passe += 1) {
         for (const champ of champsASaisir([definition.code], valeurs)) {
           if (valeurs[champ.identifiant] === undefined) {
@@ -106,7 +123,10 @@ describe("chaque changement, une fois rempli, est complet", () => {
        * désigne une case que l'écran n'affiche pas : elle est alors impossible à
        * corriger, et le dossier ne peut plus avancer.
        */
-      const affiches = new Set(definition.champs.map((c) => c.identifiant));
+      const affiches = new Set([
+        ...definition.champs.map((c) => c.identifiant),
+        ...Object.keys(REPRESENTANT),
+      ]);
       const introuvables = verifierModification([definition.code], valeurs, SOCIETE)
         .map((m) => m.champ)
         .filter((champ) => !affiches.has(champ));

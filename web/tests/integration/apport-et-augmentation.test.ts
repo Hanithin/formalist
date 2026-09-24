@@ -60,6 +60,13 @@ const ASSEMBLEE = {
 
 /** Le capital passe de 20 000 à 50 000, puis l'apport de 100 000 le porte à 150 000. */
 const VALEURS: Record<string, string> = {
+  /* Le représentant légal signe le pouvoir : un dossier complet en a un. */
+  signataireCivilite: "Monsieur",
+  signatairePrenom: "Paul",
+  signataireNom: "DURAND",
+  signataireNeLe: "1985-03-14",
+  signataireNeA: "Paris 12e (75012)",
+  signataireAdresse: "3 rue de Lyon, 75012 Paris",
   capitalActuelAugm: "20000",
   nouveauCapitalAugm: "50000",
   modeAugmentation: "Apport en numéraire",

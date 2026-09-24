@@ -389,6 +389,15 @@ export function verifierModification(
 
   return [
     ...verifierSociete(societe),
+    /*
+     * Le représentant légal, qui ne se vérifiait que dans l'écran de saisie.
+     *
+     * Le pouvoir l'identifie comme le ferait un notaire, et il était possible d'aller
+     * jusqu'aux actes sans lui : le contrôle existait, il n'était branché que sur le
+     * formulaire. Le règlement et la production des actes passent par ici, et n'en
+     * voyaient rien - c'est aussi ce qui faisait diverger les deux jugements.
+     */
+    ...verifierLeRepresentant(valeurs),
     ...verifierLesCosignataires(cosignataires),
     ...verifierChamps(codes, valeurs, societe.forme),
     ...verifierCoherence(codes, valeurs, societe.forme),

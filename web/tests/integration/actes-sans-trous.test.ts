@@ -111,6 +111,13 @@ const COMPLET = {
   },
   codes: ["apport_titres", "cession_parts"],
   valeurs: {
+    /* Le représentant légal signe le pouvoir : un dossier complet en a un. */
+    signataireCivilite: "Monsieur",
+    signatairePrenom: "Paul",
+    signataireNom: "DURAND",
+    signataireNeLe: "1985-03-14",
+    signataireNeA: "Paris 12e (75012)",
+    signataireAdresse: "3 rue de Lyon, 75012 Paris",
     /* L'apport de titres */
     apporteeDenomination: "CIBLE",
     apporteeForme: "SARL",

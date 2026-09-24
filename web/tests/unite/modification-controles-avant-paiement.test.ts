@@ -47,6 +47,13 @@ const AUGMENTATION = {
   dateDepotFonds: "2026-09-10",
   /* Le rapport du président est dû pour toute augmentation : R. 225-113. */
   motifsAugmentation: "financer le second atelier",
+  /* Le représentant légal signe le pouvoir : un dossier complet en a un. */
+  signataireCivilite: "Monsieur",
+  signatairePrenom: "Paul",
+  signataireNom: "DURAND",
+  signataireNeLe: "1985-03-14",
+  signataireNeA: "Paris 12e (75012)",
+  signataireAdresse: "3 rue de Lyon, 75012 Paris",
 };
 
 function anomalies(valeurs: Record<string, string>) {
