@@ -34,13 +34,28 @@ const SOCIETE = z.object({
  * fonds est associé. L'acte la désigne alors par sa forme, son capital, son siège et
  * son numéro, non par un prénom.
  */
-const ASSOCIE = z.object({
+/* Exportés pour que les essais comparent ce qu'ils acceptent à ce que le domaine déclare. */
+export const ASSOCIE = z.object({
   nature: z.enum(["physique", "morale"]).nullable().optional(),
   parts: z.number().int().nonnegative().max(100_000_000).nullable().optional(),
 
   civilite: z.string().trim().max(20).optional(),
   prenom: z.string().trim().max(120).optional(),
   nom: z.string().trim().max(120).optional(),
+
+  /*
+   * L'état civil, que le schéma retirait en silence.
+   *
+   * L'acte de cession est présenté à l'enregistrement au service des impôts : il
+   * identifie chaque associé comme le ferait un notaire, et l'écran les demande depuis
+   * l'étape des cessions. Le schéma ne les portait pas, et zod écarte ce qu'il ne
+   * déclare pas : douze champs remplis sous les yeux du client disparaissaient à
+   * l'enregistrement, et l'écran du règlement les réclamait ensuite un à un.
+   */
+  neLe: z.string().trim().max(40).nullable().optional(),
+  neA: z.string().trim().max(160).nullable().optional(),
+  nationalite: z.string().trim().max(80).nullable().optional(),
+  adresse: z.string().trim().max(300).nullable().optional(),
 
   denomination: z.string().trim().max(200).optional(),
   forme: z.string().trim().max(20).optional(),
@@ -55,7 +70,7 @@ const ASSOCIE = z.object({
  * Une cession désigne des associés par leur rang dans la liste, non par un nom : c'est
  * ce qui empêche de céder les parts de quelqu'un qui n'est pas associé.
  */
-const CESSION = z.object({
+export const CESSION = z.object({
   cedant: z.number().int().min(0).max(19).nullable(),
   parts: z.number().int().min(0).max(100_000_000).nullable(),
   prix: z.number().min(0).max(1_000_000_000).nullable(),
@@ -64,6 +79,30 @@ const CESSION = z.object({
   cessionnaire: z.number().int().min(0).max(19).nullable().optional(),
   nom: z.string().trim().max(200).nullable().optional(),
   adresse: z.string().trim().max(300).nullable().optional(),
+
+  /*
+   * L'acquéreur, tel que l'acte l'identifie - dix champs que le schéma écartait.
+   *
+   * Un acte de cession se présente à l'enregistrement au service des impôts : il nomme
+   * l'acquéreur comme le ferait un notaire, état civil pour une personne, forme, capital,
+   * siège et immatriculation pour une société. L'écran les demande, la recherche au
+   * registre en remplit cinq d'un coup - et zod, qui écarte ce qu'il ne déclare pas, les
+   * retirait tous à l'enregistrement. On les retapait sans jamais les garder.
+   *
+   * La nature partait avec le reste, et c'est elle qui décide de l'affichage : le bloc de
+   * la société disparaissait au rechargement, emportant la question autant que la réponse.
+   */
+  nature: z.enum(["physique", "morale"]).optional(),
+  neLe: z.string().trim().max(40).nullable().optional(),
+  neA: z.string().trim().max(160).nullable().optional(),
+  nationalite: z.string().trim().max(80).nullable().optional(),
+  forme: z.string().trim().max(40).nullable().optional(),
+  capital: z.number().nonnegative().max(1_000_000_000).nullable().optional(),
+  siren: z.string().trim().max(20).nullable().optional(),
+  villeRcs: z.string().trim().max(120).nullable().optional(),
+  representant: z.string().trim().max(200).nullable().optional(),
+  /* D'où le cédant tient ses titres : l'article « Origine de propriété » de l'acte. */
+  origine: z.string().trim().max(200).nullable().optional(),
 });
 
 const ENREGISTREMENT = z.object({
