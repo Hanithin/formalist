@@ -179,6 +179,34 @@ function apporteurEnTroisChamps(valeurs: Modification["valeurs"]): Modification[
   };
 }
 
+/**
+ * Le cessionnaire, en trois champs.
+ *
+ * Son identité tenait dans une seule case - « Civilité, prénom et nom » - où l'on tapait
+ * ce qu'on voulait, dans l'ordre qu'on voulait. Le formulaire en demande trois depuis
+ * que l'acte a besoin de savoir où finit le prénom, comme pour l'apporteur avant lui.
+ *
+ * Un dossier saisi avant porte la ligne entière : on la découpe à la lecture, plutôt que
+ * de rendre un formulaire vide à qui l'avait déjà rempli. Le découpage est celui des
+ * autres listes de noms - la casse tranche le nom du prénom - et il ne s'applique qu'aux
+ * personnes : une société n'a qu'une dénomination.
+ */
+function cessionnairesEnTroisChamps(cessions: Cession[] | undefined): Cession[] | undefined {
+  if (!cessions) return cessions;
+
+  return cessions.map((cession) => {
+    if (cession.nature === "morale") return cession;
+    if (cession.prenom || cession.civilite) return cession;
+
+    const ancien = (cession.nom ?? "").trim();
+    if (!ancien.includes(" ")) return cession;
+
+    const { civilite, prenom, nom } = separerLIdentite(ancien);
+    /* Sans capitales pour trancher, le dernier mot fait le nom : mieux vaut ça que rien. */
+    return { ...cession, civilite, prenom, nom: nom || prenom };
+  });
+}
+
 export function lireModification(dataJson: string | null): Modification {
   if (!dataJson) return { ...VIDE };
   try {
@@ -191,6 +219,7 @@ export function lireModification(dataJson: string | null): Modification {
       codes: (lu.codes ?? []).filter(estUnTypeConnu),
       societe: lu.societe ?? {},
       valeurs: apporteurEnTroisChamps(lu.valeurs ?? {}),
+      cessions: cessionnairesEnTroisChamps(lu.cessions),
       assemblee: lu.assemblee ?? {},
     };
   } catch {

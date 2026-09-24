@@ -33,7 +33,9 @@ const cession = (modifications: Partial<Cession> = {}): Cession => ({
   prix: 10000,
   date: "2026-09-15",
   vers: "tiers",
-  nom: "Paul BERNARD",
+  civilite: "Monsieur",
+  prenom: "Paul",
+  nom: "BERNARD",
   ...modifications,
 });
 
@@ -71,11 +73,35 @@ describe("la répartition après cession", () => {
   it("deux cessions au même acquéreur ne font qu'un associé", () => {
     const lignes = repartitionApres(ASSOCIES, [
       cession({ parts: 100 }),
-      cession({ cedant: 1, parts: 50, nom: "paul bernard" }),
+      cession({ cedant: 1, parts: 50, prenom: "paul", nom: "bernard" }),
     ]);
     const paul = lignes.filter((l) => l.entrant);
     expect(paul).toHaveLength(1);
     expect(paul[0].apres).toBe(150);
+  });
+
+  it("garde l'acquéreur pas encore nommé, et ses parts avec", () => {
+    /*
+     * Sa ligne était écartée tant que le champ restait vide, et le compte affiché
+     * dessous démentait la phrase qui le suit : « Total après cession : 0 sur 2000
+     * parts. Une cession n'en crée ni n'en supprime. »
+     */
+    const lignes = repartitionApres(ASSOCIES, [
+      cession({ parts: 100, civilite: "", prenom: "", nom: "" }),
+    ]);
+    const entrant = lignes.find((l) => l.entrant);
+
+    expect(entrant).toMatchObject({ nom: "Le cessionnaire", apres: 100, anonyme: true });
+    expect(lignes.reduce((t, l) => t + l.apres, 0)).toBe(totalDesParts(ASSOCIES));
+  });
+
+  it("ne confond pas deux acquéreurs encore anonymes", () => {
+    const lignes = repartitionApres(ASSOCIES, [
+      cession({ parts: 100, civilite: "", prenom: "", nom: "" }),
+      cession({ cedant: 1, parts: 50, civilite: "", prenom: "", nom: "" }),
+    ]);
+
+    expect(lignes.filter((l) => l.entrant)).toHaveLength(2);
   });
 
   it("un associé qui cède tout est signalé comme sortant", () => {

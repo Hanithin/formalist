@@ -1,7 +1,7 @@
 import { natureDeLaForme, fonctionsDuDirigeant } from "@/domain/formalite/formes";
 import { toutesDesFemmes } from "@/domain/formalite/etat-civil";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
-import { agrementDeDroit, cessionsRedigees, nomDeLAssocie, type Cession } from "./cession";
+import { identiteDuTiers, agrementDeDroit, cessionsRedigees, nomDeLAssocie, type Cession } from "./cession";
 import { formeEnToutesLettres, avecMajusculeInitiale } from "./annonce";
 import { identificationDeLAssocie, sirenEspace } from "./pv-age";
 import { nomDeJeuneFille } from "@/domain/formalite/gabarit";
@@ -2264,7 +2264,7 @@ export function actesAProduire(
         cessions.map((cession) =>
           cession.vers === "associe"
             ? "associe:" + String(cession.cessionnaire ?? "")
-            : "tiers:" + (cession.nom ?? "").trim().toLowerCase()
+            : "tiers:" + identiteDuTiers(cession).toLowerCase()
         )
       ),
     ];

@@ -1022,12 +1022,15 @@ test("une cession se compose à partir des associés, et sa répartition se voit
    * dans la seconde branche, sans l'avoir choisie.
    */
   await page.getByRole("radio", { name: "un tiers, qui entre au capital" }).check();
-  await page.getByLabel("Civilité, prénom et nom").fill("Paul BERNARD");
+  /* Et il se nomme en trois champs, comme l'apporteur : l'acte de cession part à
+     l'enregistrement, qui attend le prénom et le nom séparément. */
+  await page.getByLabel("Prénom").fill("Paul");
+  await page.getByLabel("Nom", { exact: true }).fill("BERNARD");
   await page.getByLabel("Prix de cession, en euros").fill("20000");
   await expect(page.getByText("soit 100 € la part")).toBeVisible();
 
   // La répartition d'après se calcule à mesure : c'est elle qui rend les erreurs visibles.
-  const apres = page.locator("[class*='repartitionListe']");
+  const apres = page.locator("[class*='apresCessionListe']");
   await expect(apres).toContainText("Paul BERNARD");
   await expect(apres.locator("li").first()).toContainText("300");
   await expect(page.getByText("entre", { exact: true })).toBeVisible();

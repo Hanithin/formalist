@@ -1,4 +1,5 @@
 import { natureDeLaForme } from "@/domain/formalite/formes";
+import { identiteSurUneLigne } from "@/domain/formalite/noms";
 import type { AssociePresent } from "./gabarit";
 import { designationDeLAssocie } from "./gabarit";
 
@@ -27,8 +28,19 @@ export interface Cession {
   vers: "associe" | "tiers";
   /** Le rang du cessionnaire, quand c'est un associé. */
   cessionnaire?: number | null;
-  /** Son identité, quand c'est un tiers. */
+  /**
+   * Le nom de famille d'une personne, ou la dénomination d'une société.
+   *
+   * Il portait la ligne entière - « Monsieur Paul DURAND » - saisie dans un champ libre.
+   * On y tapait ce qu'on voulait, dans l'ordre qu'on voulait, et l'acte devait deviner
+   * où finit le prénom : la séparation se faisait sur les capitales, et « monsieur jean
+   * dupont » lui échappait. L'acte de cession se présente à l'enregistrement au service
+   * des impôts ; il ne peut pas nommer une partie de travers.
+   */
   nom?: string | null;
+  /** La civilité d'un cessionnaire personne physique : elle accorde les actes. */
+  civilite?: string | null;
+  prenom?: string | null;
   adresse?: string | null;
 
   /*
@@ -123,13 +135,43 @@ export function nomDeLAssocie(associe: AssociePresent | undefined, rang: number)
   return nom || "Associé " + (rang + 1);
 }
 
+/**
+ * La ligne entière d'un cessionnaire tiers, composée de ses morceaux.
+ *
+ * Une société n'a qu'une dénomination ; une personne a une civilité, un prénom et un
+ * nom, saisis séparément. C'est ici, et nulle part ailleurs, qu'ils se rejoignent : dix
+ * lectures attendaient la ligne entière, et autant de compositions auraient divergé.
+ */
+export function identiteDuTiers(cession: Cession): string {
+  if (cession.nature === "morale") return (cession.nom ?? "").trim();
+
+  return identiteSurUneLigne({
+    civilite: cession.civilite ?? "",
+    prenom: cession.prenom ?? "",
+    nom: cession.nom ?? "",
+  });
+}
+
+/**
+ * Le même, tel qu'un écran le nomme : sans civilité.
+ *
+ * Les listes de l'écran - la répartition du capital, les menus de cédants - nomment un
+ * associé « Jean DUPONT ». Un tiers qui entre y figure à côté d'eux : l'y écrire
+ * « Monsieur Paul DURAND » ferait deux conventions dans la même colonne. La civilité
+ * appartient aux actes, où elle se lit dans une phrase.
+ */
+export function nomDuTiers(cession: Cession): string {
+  if (cession.nature === "morale") return (cession.nom ?? "").trim();
+  return identiteSurUneLigne({ prenom: cession.prenom ?? "", nom: cession.nom ?? "" });
+}
+
 /** Le nom du bénéficiaire d'une cession, associé ou tiers. */
 export function nomDuCessionnaire(cession: Cession, associes: AssociePresent[]): string {
   if (cession.vers === "associe") {
     const rang = cession.cessionnaire ?? -1;
     return rang >= 0 ? nomDeLAssocie(associes[rang], rang) : "";
   }
-  return (cession.nom ?? "").trim();
+  return nomDuTiers(cession);
 }
 
 /** Le prix d'une part, quand les deux nombres sont connus. */
@@ -144,6 +186,8 @@ export interface LigneDeRepartition {
   nom: string;
   avant: number;
   apres: number;
+  /** Il entre au capital sans être encore nommé : la ligne l'annonce sans le désigner. */
+  anonyme?: boolean;
   /** Il n'était pas associé avant : il le devient. */
   entrant: boolean;
   /** Il ne l'est plus après : il sort. */
@@ -175,9 +219,9 @@ export function repartitionApres(
 
   const entrants = new Map<string, LigneDeRepartition>();
 
-  for (const cession of cessions) {
+  cessions.forEach((cession, rang) => {
     const parts = cession.parts ?? 0;
-    if (parts <= 0) continue;
+    if (parts <= 0) return;
 
     const cedant = cession.cedant !== null ? lignes[cession.cedant] : undefined;
     if (cedant) cedant.apres -= parts;
@@ -187,28 +231,40 @@ export function repartitionApres(
         ? lignes[cession.cessionnaire]
         : undefined;
       if (beneficiaire) beneficiaire.apres += parts;
-      continue;
+      return;
     }
 
-    const nom = (cession.nom ?? "").trim();
-    if (!nom) continue;
+    /*
+     * L'acquéreur qu'on n'a pas encore nommé compte quand même.
+     *
+     * Sa ligne était écartée tant que le champ restait vide, et ses parts avec : un
+     * cédant qui cède tout laissait « Total après cession : 0 sur 2000 parts » juste
+     * sous la phrase qui affirme qu'une cession n'en crée ni n'en supprime. Le compte
+     * démentait le texte à côté de lui, au moment précis où l'on remplit le formulaire.
+     *
+     * Chaque cession sans nom garde donc sa ligne, et son propre rang : deux acquéreurs
+     * encore anonymes ne sont pas le même.
+     */
+    const nom = nomDuTiers(cession);
+    const cle = nom ? nom.toLowerCase() : "sans-nom:" + rang;
 
-    const deja = entrants.get(nom.toLowerCase());
+    const deja = entrants.get(cle);
     if (deja) {
       deja.apres += parts;
     } else {
       const ligne: LigneDeRepartition = {
         rang: -1,
-        nom,
+        nom: nom || "Le cessionnaire",
         avant: 0,
         apres: parts,
         entrant: true,
         sortant: false,
+        anonyme: !nom,
       };
-      entrants.set(nom.toLowerCase(), ligne);
+      entrants.set(cle, ligne);
       lignes.push(ligne);
     }
-  }
+  });
 
   for (const ligne of lignes) ligne.sortant = ligne.avant > 0 && ligne.apres <= 0;
   return lignes;
@@ -353,8 +409,37 @@ export function verifierCessions(
           message: "Le cédant et le cessionnaire sont la même personne",
         });
       }
-    } else if (!(cession.nom ?? "").trim()) {
-      anomalies.push({ champ: prefixe + "nom", message: "Nommez le cessionnaire" });
+    } else if (cession.nature === "morale") {
+      if (!(cession.nom ?? "").trim()) {
+        anomalies.push({
+          champ: prefixe + "nom",
+          message: "Indiquez la dénomination du cessionnaire",
+        });
+      }
+    } else {
+      /*
+       * Trois champs, trois exigences.
+       *
+       * Une seule - « nommez le cessionnaire » - se satisfaisait du prénom, depuis que
+       * l'identité ne tient plus dans une case unique : l'acte partait alors à
+       * l'enregistrement avec une partie à demi nommée, et le greffe attend les deux
+       * morceaux séparément. Chaque manque est désigné là où il se comble.
+       */
+      if (!(cession.civilite ?? "").trim()) {
+        anomalies.push({
+          champ: prefixe + "civilite",
+          message: "Choisissez la civilité du cessionnaire",
+        });
+      }
+      if (!(cession.prenom ?? "").trim()) {
+        anomalies.push({
+          champ: prefixe + "prenom",
+          message: "Indiquez le prénom du cessionnaire",
+        });
+      }
+      if (!(cession.nom ?? "").trim()) {
+        anomalies.push({ champ: prefixe + "nom", message: "Indiquez le nom du cessionnaire" });
+      }
     }
 
     if (cession.prix === null || cession.prix === undefined || cession.prix < 0) {
@@ -416,7 +501,7 @@ export function cessionsRedigees(
       cession.cessionnaire !== undefined &&
       associes[cession.cessionnaire]
         ? designationDeLAssocie(associes[cession.cessionnaire])
-        : (cession.nom ?? "").trim(),
+        : identiteDuTiers(cession),
     CESSIONNAIRE_TYPE: cession.vers === "tiers" ? "Tiers" : "Associé",
     ADRESSE: (cession.adresse ?? "").trim(),
     PARTS: cession.parts ?? 0,

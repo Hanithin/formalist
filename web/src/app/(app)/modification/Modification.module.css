@@ -5962,15 +5962,22 @@
  * C'est elle qui rend visibles les erreurs qu'un formulaire plat laisse passer : un
  * total qui ne retombe pas, un associé qui passe en négatif, un tiers qui entre pour
  * rien.
+ *
+ * Elle s'est appelée « repartition », et le dépôt des comptes - qui importe la même
+ * feuille - a plus tard donné ce nom à sa barre de compte, une ligne horizontale sans
+ * bordure. La dernière règle l'emportait : le titre partait à gauche, la liste se
+ * tassait à droite sur deux cents pixels, l'encadré perdait son trait. Deux écrans
+ * dans un seul fichier de sept mille lignes se croisent ainsi sans se voir ; le nom dit
+ * maintenant lequel des deux.
  */
-.repartition {
+.apresCession {
   padding: 18px 20px;
   border: 1px solid #e8e8ea;
   border-radius: 14px;
   background: #fcfcfd;
 }
 
-.repartitionListe {
+.apresCessionListe {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -5979,20 +5986,31 @@
   list-style: none;
 }
 
-.repartitionLigne {
+/*
+ * Une liste de comptes, pas une pile de cartes.
+ *
+ * « main section > ul > li » habille en carte blanche bordée toute ligne d'une liste
+ * posée dans une section - ce qui convient partout ailleurs. Ici, quatre associés et
+ * leurs nombres se lisent en colonne : la classe ne reprenait que la bordure basse, et
+ * le tour comme l'arrondi restaient. Elle les écarte donc tous les trois.
+ */
+.apresCessionLigne {
   display: flex;
   align-items: baseline;
   gap: 10px;
   padding: 7px 0;
+  border: none;
   border-bottom: 1px solid #f2f2f4;
+  border-radius: 0;
+  background: none;
   font-size: 13px;
 }
 
-.repartitionLigne:last-child {
+.apresCessionLigne:last-child {
   border-bottom: none;
 }
 
-.repartitionNom {
+.apresCessionNom {
   flex: 1;
   min-width: 0;
   color: #3f3f46;
@@ -6001,22 +6019,22 @@
   white-space: nowrap;
 }
 
-.repartitionAvant {
+.apresCessionAvant {
   color: #a1a1aa;
 }
 
-.repartitionFleche {
+.apresCessionFleche {
   color: #c9c9cf;
 }
 
-.repartitionApres {
+.apresCessionApres {
   min-width: 44px;
   font-weight: 600;
   color: #111;
   text-align: right;
 }
 
-.repartitionMarque {
+.apresCessionMarque {
   padding: 2px 8px;
   border-radius: 100px;
   font-size: 10.5px;
@@ -6024,17 +6042,28 @@
   letter-spacing: 0;
 }
 
-.repartitionEntrant .repartitionMarque {
+.apresCessionEntrant .apresCessionMarque {
   background: #dcfce7;
   color: #15803d;
 }
 
-.repartitionSortant .repartitionMarque {
+.apresCessionSortant .apresCessionMarque {
   background: #fef2f2;
   color: #b91c1c;
 }
 
-.repartitionSortant .repartitionNom {
+/*
+ * L'acquéreur qui n'a pas encore de nom.
+ *
+ * Sa ligne compte dans le total - sans quoi le compte dément la phrase qui le suit -
+ * mais elle ne désigne personne : le gris dit qu'il reste quelque chose à écrire.
+ */
+.apresCessionAnonyme {
+  color: #a1a1aa;
+  font-style: italic;
+}
+
+.apresCessionSortant .apresCessionNom {
   color: #a1a1aa;
   text-decoration: line-through;
 }

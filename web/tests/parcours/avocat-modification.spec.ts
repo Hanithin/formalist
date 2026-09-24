@@ -53,7 +53,28 @@ const DONNEES = {
 
 const semes: number[] = [];
 
-async function dossierDeModification(sousPhase = "5a") {
+/**
+ * Le représentant légal, avec l'état civil que le pouvoir lui demande.
+ *
+ * Le pouvoir nomme son mandant comme un acte nomme une partie - « né le … à …,
+ * demeurant … » - et le dossier ne peut plus produire ses actes sans lui. Il n'est
+ * ajouté qu'aux essais qui vont jusqu'à la production : les autres décrivent un
+ * dossier à mi-chemin, ce qu'un dossier est la plupart du temps.
+ */
+const REPRESENTANT = {
+  signataireCivilite: "Monsieur",
+  signatairePrenom: "Lucas",
+  signataireNom: "LARÉGINIE",
+  signataireNeLe: "1990-03-04",
+  signataireNeA: "Lyon 3e (69003)",
+  signataireAdresse: "5 rue des Fleurs, 69003 Lyon",
+  signataireQualite: "président",
+};
+
+async function dossierDeModification(
+  sousPhase = "5a",
+  valeursEnPlus: Record<string, string> = {}
+) {
   // Le compte exact : « admin-parcours@exemple.test » contient lui aussi « parcours »,
   // et la recherche approchante rendait tantôt l'un, tantôt l'autre.
   const client = await prisma.users.findUniqueOrThrow({ where: { email: COMPTE.email } });
@@ -76,7 +97,10 @@ async function dossierDeModification(sousPhase = "5a") {
       status: "en_attente_validation",
       phase: 5,
       business_sub_phase: sousPhase,
-      data_json: JSON.stringify(DONNEES),
+      data_json: JSON.stringify({
+        ...DONNEES,
+        valeurs: { ...DONNEES.valeurs, ...valeursEnPlus },
+      }),
     },
   });
   semes.push(dossier.id);
@@ -319,7 +343,7 @@ test("la publication se déclare, et le suivi du client avance", async ({ page }
 });
 
 test("l'avocat produit les actes depuis le fil de travail", async ({ page }) => {
-  const dossier = await dossierDeModification();
+  const dossier = await dossierDeModification("5a", REPRESENTANT);
   await page.goto("/avocat/" + dossier);
 
   await page.getByRole("button", { name: /Voir l'étape|suivantes/ }).click();
@@ -451,8 +475,17 @@ test("sans statuts au dossier, la page le dit au lieu de planter", async ({ page
   await page.getByRole("link", { name: "Mettre à jour les statuts" }).click();
   await page.waitForURL(/\/avocat\/\d+\/statuts$/);
 
-  // Le signaleur de navigation de Next porte aussi role="alert", vide : on vise le refus.
-  await expect(page.getByRole("alert").filter({ hasText: /statuts/i })).toBeVisible();
+  /*
+   * Le manque se dit dans le panneau du dépôt, avec le geste qui le comble.
+   *
+   * Il tenait dans une alerte ; il a rejoint le panneau qui offre de déposer le PDF,
+   * ce qui vaut mieux - il n'y a rien de fautif à ne pas encore avoir les statuts du
+   * greffe, et le refus séparé laissait chercher quoi en faire.
+   */
+  await expect(page.getByRole("heading", { name: /statuts en vigueur manquent/i })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Déposer les statuts en vigueur/i })
+  ).toBeVisible();
   /* Et la sortie reste offerte : un écran sans issue n'est pas un écran. */
   await expect(page.getByRole("link", { name: "Revenir au dossier" })).toBeVisible();
 });
@@ -512,7 +545,7 @@ test("le cabinet peut déposer les statuts lui-même", async ({ page }) => {
   const dossier = await dossierDeModification();
 
   await page.goto("/avocat/" + dossier + "/statuts");
-  await expect(page.getByRole("alert").filter({ hasText: /statuts/i }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: /statuts en vigueur manquent/i })).toBeVisible();
 
   const document = await PDFDocument.create();
   const police = await document.embedFont(StandardFonts.Helvetica);

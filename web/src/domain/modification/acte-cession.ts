@@ -1,7 +1,7 @@
 import { natureDeLaForme } from "@/domain/formalite/formes";
 import { dateEnFrancais, nombreEnFrancais } from "@/domain/formalite/lettres";
 import { formeEnToutesLettres } from "./annonce";
-import { agrementDeDroit, nomDeLAssocie, type Cession, phraseDeLOrigine } from "./cession";
+import { identiteDuTiers, agrementDeDroit, nomDeLAssocie, type Cession, phraseDeLOrigine } from "./cession";
 import { adresseLisible, enCapitaleInitiale, type ContexteGabarit } from "./gabarit";
 import { montant, sirenEspace } from "./pv-age";
 import { courDAppel } from "./traite-apport";
@@ -78,7 +78,7 @@ export function motsDeLaCession(forme: string | null | undefined): MotsDeLaCessi
 
 /** L'identité d'un acquéreur tiers, telle qu'un acte enregistré la porte. */
 export function identificationDuTiers(cession: Cession): string {
-  const nom = texte(cession.nom);
+  const nom = identiteDuTiers(cession);
   const adresse = adresseLisible(texte(cession.adresse));
 
   if (cession.nature === "morale") {
@@ -213,12 +213,12 @@ export function actesDeCession(contexte: ContexteGabarit): ActeDeCession[] {
     const cle =
       cession.vers === "associe"
         ? "associe:" + String(cession.cessionnaire ?? "")
-        : "tiers:" + texte(cession.nom).toLowerCase();
+        : "tiers:" + identiteDuTiers(cession).toLowerCase();
 
     const acquereur =
       cession.vers === "associe"
         ? nomDeLAssocie(associes[cession.cessionnaire ?? -1], cession.cessionnaire ?? 0)
-        : texte(cession.nom);
+        : identiteDuTiers(cession);
 
     const groupe = groupes.get(cle);
     if (groupe) groupe.cessions.push(cession);
@@ -283,7 +283,7 @@ export function verifierLActeDeCession(contexte: ContexteGabarit): AlerteDeCessi
   /* Un acquéreur tiers non nommé laisse l'acte sans partie. */
   for (const [rang, cession] of cessions.entries()) {
     if (cession.vers !== "tiers") continue;
-    if (!texte(cession.nom)) {
+    if (!identiteDuTiers(cession)) {
       alertes.push({
         gravite: "bloquant",
         champ: "cession-" + rang + "-nom",
@@ -537,9 +537,15 @@ export function donneesDeLActeDeCession(
       "désigné",
       acquereurEstAssocie
         ? feminin(associes[premiere?.cessionnaire ?? -1])
-        : /* Un tiers : une société se désigne au féminin, une personne selon son nom. */
+        : /*
+           * Un tiers : une société se désigne au féminin, une personne selon sa civilité.
+           *
+           * L'accord se lisait au début de la ligne entière - « commence-t-elle par
+           * Madame ? ». La civilité est saisie à part depuis qu'on ne tape plus l'identité
+           * d'un trait, et elle le dit sans avoir à deviner.
+           */
           premiere?.nature === "morale" ||
-          (premiere?.nom ?? "").trim().startsWith("Madame")
+          (premiere?.civilite ?? "").trim().toLowerCase().startsWith("mad")
     ),
 
     intervenants_presents: intervenants.length > 0,

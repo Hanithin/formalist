@@ -13,7 +13,12 @@ import {
   ORIGINES_DE_PROPRIETE,
 } from "@/domain/modification/cession";
 import type { AssociePresent } from "@/domain/modification/gabarit";
-import { identiteSurUneLigne, separerLIdentite, type Identite } from "@/domain/formalite/noms";
+import {
+  identiteCollee,
+  identiteSurUneLigne,
+  separerLIdentite,
+  type Identite,
+} from "@/domain/formalite/noms";
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { AdresseUneLigne } from "@/components/formulaire/Adresse";
@@ -186,6 +191,32 @@ export function Cessions({
     });
   }
 
+  /**
+   * L'identité entière tapée dans une seule case, rangée à la sortie du champ.
+   *
+   * Le cessionnaire tenait sur une ligne jusqu'ici, et l'habitude survit au
+   * formulaire : « Monsieur Paul DURAND » atterrit dans le prénom. Le reprocher serait
+   * gratuit quand la saisie se lit sans ambiguïté - on la répartit, et l'écran montre
+   * lui-même où chaque morceau est allé.
+   *
+   * Rien ne s'écrase : ce qui est déjà rempli ailleurs reste, faute de quoi corriger un
+   * prénom effacerait un nom saisi juste avant.
+   */
+  function ranger(rang: number, champ: "prenom" | "nom", saisi: string) {
+    const decoupe = identiteCollee(saisi);
+    if (!decoupe) return;
+
+    const cession = cessions[rang];
+    const changement: Partial<Cession> = { civilite: decoupe.civilite };
+    const pose = (cle: "prenom" | "nom", valeur: string) => {
+      if (cle === champ || (valeur && !(cession[cle] ?? "").trim())) changement[cle] = valeur;
+    };
+    pose("prenom", decoupe.prenom);
+    pose("nom", decoupe.nom || decoupe.prenom);
+
+    modifier(rang, changement);
+  }
+
   return (
     <div className={styles.cessions}>
       {/* ---------- Qui détient quoi aujourd'hui ---------- */}
@@ -329,7 +360,7 @@ export function Cessions({
                       )}
                     </div>
 
-                    <div className={styles.champ}>
+                    <div className={`${styles.champ} ${styles.colonnes2}`}>
                       <label htmlFor={"associe-" + rang + "-nationalite"}>Nationalité</label>
                       <ChampListe
                         id={"associe-" + rang + "-nationalite"}
@@ -343,7 +374,7 @@ export function Cessions({
                       )}
                     </div>
 
-                    <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                    <div className={`${styles.champ} ${styles.colonnes4}`}>
                       <label htmlFor={"associe-" + rang + "-adresse"}>Adresse personnelle</label>
                       <AdresseUneLigne
                         id={"associe-" + rang + "-adresse"}
@@ -465,6 +496,48 @@ export function Cessions({
               </div>
             </div>
 
+            {/*
+              Une personne ou une société : la même question que la précédente, posée du
+              même geste.
+
+              Elle se choisissait dans un menu déroulant, apparié dans la grille à la
+              civilité - deux questions sans rapport sur la même ligne, et « Le
+              cessionnaire est » écrit deux fois de suite, l'un au-dessus de l'autre.
+            */}
+            {cession.vers === "tiers" && (
+              <div className={styles.destinataire}>
+                <span className={styles.destinataireLibelle}>Ce tiers est</span>
+                <div className={styles.natures}>
+                  {(["physique", "morale"] as const).map((nature) => (
+                    <label
+                      key={nature}
+                      className={
+                        (cession.nature ?? "physique") === nature
+                          ? `${styles.nature} ${styles.natureChoisie}`
+                          : styles.nature
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name={"nature-" + rang}
+                        checked={(cession.nature ?? "physique") === nature}
+                        onChange={() => modifier(rang, { nature })}
+                      />
+                      {nature === "physique" ? "une personne" : "une société"}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/*
+              L'acquéreur d'abord, entier ; les termes de l'accord ensuite.
+
+              Les champs se suivaient dans l'ordre où ils avaient été ajoutés : le prix
+              tombait entre le nom et l'adresse, la date trois champs plus bas, et la
+              moitié d'entre eux occupait une demi-ligne pour lui seul. On lisait une
+              colonne trouée plutôt que deux questions.
+            */}
             <div className={styles.champs}>
               {cession.vers === "associe" ? (
                 <div className={styles.champ}>
@@ -488,21 +561,8 @@ export function Cessions({
                     <p role="alert">{refus("cession-" + rang + "-cessionnaire")}</p>
                   )}
                 </div>
-              ) : (
+              ) : cession.nature === "morale" ? (
                 <>
-                  <div className={styles.champ}>
-                    <label htmlFor={"cession-nature-" + rang}>Le cessionnaire est</label>
-                    <ChampChoix
-                      id={"cession-nature-" + rang}
-                      valeur={cession.nature ?? "physique"}
-                      options={[
-                        { valeur: "physique", libelle: "Une personne" },
-                        { valeur: "morale", libelle: "Une société" },
-                      ]}
-                      surChangement={(v) => modifier(rang, { nature: v as "physique" | "morale" })}
-                    />
-                  </div>
-
                   {/*
                     La société qui entre au capital se cherche, elle ne se tape pas.
 
@@ -513,55 +573,47 @@ export function Cessions({
                     de l'assemblée, la société apportée et les trois autres parcours ont
                     cette recherche depuis longtemps.
                   */}
-                  {cession.nature === "morale" && (
-                    <div className={`${styles.champ} ${styles.pleineLargeur}`}>
-                      <RechercheAuRegistre
-                        id={"cession-recherche-" + rang}
-                        surSelection={async ({ denomination, forme, siren, siege, codePostal, commune }) => {
-                          modifier(rang, { nom: denomination, forme, siren, adresse: siege });
+                  <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                    <RechercheAuRegistre
+                      id={"cession-recherche-" + rang}
+                      surSelection={async ({ denomination, forme, siren, siege, codePostal, commune }) => {
+                        modifier(rang, { nom: denomination, forme, siren, adresse: siege });
 
-                          /*
-                           * Le capital et le greffe arrivent après, chacun par sa source.
-                           *
-                           * L'annuaire public ne publie ni l'un ni l'autre : le capital vient
-                           * du registre national par notre relais, et le greffe compétent
-                           * n'est pas la commune du siège - Argenteuil relève de Pontoise, et
-                           * la table des exceptions vit derrière /api/rcs. Une panne de l'un
-                           * n'empêche rien : les champs restent saisissables.
-                           */
-                          const capital = await capitalAuRegistre(siren);
-                          if (capital !== null) modifier(rang, { capital });
+                        /*
+                         * Le capital et le greffe arrivent après, chacun par sa source.
+                         *
+                         * L'annuaire public ne publie ni l'un ni l'autre : le capital vient
+                         * du registre national par notre relais, et le greffe compétent
+                         * n'est pas la commune du siège - Argenteuil relève de Pontoise, et
+                         * la table des exceptions vit derrière /api/rcs. Une panne de l'un
+                         * n'empêche rien : les champs restent saisissables.
+                         */
+                        const capital = await capitalAuRegistre(siren);
+                        if (capital !== null) modifier(rang, { capital });
 
-                          if (codePostal) {
-                            const reponse = await fetch(
-                              "/api/rcs?codePostal=" +
-                                encodeURIComponent(codePostal) +
-                                "&ville=" +
-                                encodeURIComponent(commune)
-                            ).catch(() => null);
-                            const greffe: { villeRcs?: string } | null = reponse?.ok
-                              ? await reponse.json().catch(() => null)
-                              : null;
-                            /* À défaut de table, la commune du siège : c'est vrai la plupart
-                               du temps, et mieux qu'un champ laissé vide. */
-                            modifier(rang, { villeRcs: greffe?.villeRcs || commune });
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
+                        if (codePostal) {
+                          const reponse = await fetch(
+                            "/api/rcs?codePostal=" +
+                              encodeURIComponent(codePostal) +
+                              "&ville=" +
+                              encodeURIComponent(commune)
+                          ).catch(() => null);
+                          const greffe: { villeRcs?: string } | null = reponse?.ok
+                            ? await reponse.json().catch(() => null)
+                            : null;
+                          /* À défaut de table, la commune du siège : c'est vrai la plupart
+                             du temps, et mieux qu'un champ laissé vide. */
+                          modifier(rang, { villeRcs: greffe?.villeRcs || commune });
+                        }
+                      }}
+                    />
+                  </div>
 
-                  <div className={styles.champ}>
-                    <label htmlFor={"cession-nom-" + rang}>
-                      {cession.nature === "morale" ? "Dénomination" : "Civilité, prénom et nom"}
-                    </label>
+                  <div className={`${styles.champ} ${styles.colonnes4}`}>
+                    <label htmlFor={"cession-nom-" + rang}>Dénomination</label>
                     <input
                       id={"cession-nom-" + rang}
-                      placeholder={
-                        cession.nature === "morale"
-                          ? "MERCIER PARTICIPATIONS"
-                          : "Monsieur Paul DURAND"
-                      }
+                      placeholder="MERCIER PARTICIPATIONS"
                       value={cession.nom ?? ""}
                       onChange={(e) => modifier(rang, { nom: e.target.value })}
                     />
@@ -569,55 +621,133 @@ export function Cessions({
                       <p role="alert">{refus("cession-" + rang + "-nom")}</p>
                     )}
                   </div>
+
+                  <div className={`${styles.champ} ${styles.colonnes2}`}>
+                    <label htmlFor={"cession-forme-" + rang}>Forme juridique</label>
+                    <input
+                      id={"cession-forme-" + rang}
+                      placeholder="SASU"
+                      value={cession.forme ?? ""}
+                      onChange={(e) => modifier(rang, { forme: e.target.value })}
+                    />
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.colonnes2}`}>
+                    <label htmlFor={"cession-siren-" + rang}>SIREN</label>
+                    <input
+                      id={"cession-siren-" + rang}
+                      inputMode="numeric"
+                      maxLength={9}
+                      placeholder="9 chiffres"
+                      value={cession.siren ?? ""}
+                      onChange={(e) => modifier(rang, { siren: e.target.value.replace(/\D/g, "") })}
+                    />
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.colonnes2}`}>
+                    <label htmlFor={"cession-capital-" + rang}>Capital social, en euros</label>
+                    <ChampNombre
+                      id={"cession-capital-" + rang}
+                      valeur={cession.capital ?? ""}
+                      decimales
+                      surChangement={(n) => modifier(rang, { capital: n === "" ? null : n })}
+                    />
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.colonnes2}`}>
+                    <label htmlFor={"cession-rcs-" + rang}>Ville du RCS</label>
+                    <input
+                      id={"cession-rcs-" + rang}
+                      placeholder="Lyon"
+                      value={cession.villeRcs ?? ""}
+                      onChange={(e) => modifier(rang, { villeRcs: e.target.value })}
+                    />
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                    <label htmlFor={"cession-adresse-" + rang}>Siège social</label>
+                    {/* L'acte nomme le cessionnaire par son adresse complète : elle se
+                        cherche, comme les autres, plutôt que de se taper de mémoire. */}
+                    <AdresseUneLigne
+                      id={"cession-adresse-" + rang}
+                      valeur={cession.adresse ?? ""}
+                      surChangement={(adresse) => modifier(rang, { adresse })}
+                    />
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                    <label htmlFor={"cession-representant-" + rang}>Représentée par</label>
+                    <input
+                      id={"cession-representant-" + rang}
+                      placeholder="son Président, Monsieur Paul DURAND"
+                      value={cession.representant ?? ""}
+                      onChange={(e) => modifier(rang, { representant: e.target.value })}
+                    />
+                  </div>
                 </>
-              )}
-
-              <div className={styles.champ}>
-                <label htmlFor={"cession-prix-" + rang}>Prix de cession, en euros</label>
-                <ChampNombre
-                  id={"cession-prix-" + rang}
-                  valeur={cession.prix ?? ""}
-                  decimales
-                  surChangement={(nombre) =>
-                    modifier(rang, { prix: nombre === "" ? null : nombre })
-                  }
-                />
-                {unitaire !== null && (
-                  <p className={styles.devisPrecision}>
-                    soit {unitaire.toLocaleString("fr-FR")} € la part
-                  </p>
-                )}
-                {refus("cession-" + rang + "-prix") && (
-                  <p role="alert">{refus("cession-" + rang + "-prix")}</p>
-                )}
-              </div>
-
-              {cession.vers === "tiers" && (
-                <div className={`${styles.champ} ${styles.pleineLargeur}`}>
-                  <label htmlFor={"cession-adresse-" + rang}>
-                    {cession.nature === "morale" ? "Siège social" : "Adresse personnelle"}
-                  </label>
-                  {/* L'acte nomme le cessionnaire par son adresse complète : elle se
-                      cherche, comme les autres, plutôt que de se taper de mémoire. */}
-                  <AdresseUneLigne
-                    id={"cession-adresse-" + rang}
-                    valeur={cession.adresse ?? ""}
-                    surChangement={(adresse) => modifier(rang, { adresse })}
-                  />
-                </div>
-              )}
-
-              {/*
-                L'état civil du tiers qui entre au capital.
-
-                Un nom et une adresse suffisaient tant que l'acte se contentait de
-                désigner les parties. Un acte de cession se présente à l'enregistrement
-                au service des impôts, et il identifie l'acquéreur comme le ferait un
-                notaire : état civil pour une personne, immatriculation et représentant
-                pour une société.
-              */}
-              {cession.vers === "tiers" && cession.nature !== "morale" && (
+              ) : (
                 <>
+                  {/*
+                    Trois champs pour une personne, un seul pour une société.
+
+                    « Civilité, prénom et nom » tenait dans une case libre : on y tapait ce
+                    qu'on voulait, dans l'ordre qu'on voulait, et l'acte devait deviner où
+                    finit le prénom - la séparation se faisait sur les capitales, et
+                    « monsieur jean dupont » lui échappait. L'apporteur et le dirigeant
+                    nommé demandent leurs trois champs depuis longtemps ; le cessionnaire
+                    était resté en arrière, alors que l'acte de cession se présente à
+                    l'enregistrement au service des impôts.
+                  */}
+                  <div className={`${styles.champ} ${styles.colonnes2}`}>
+                    <label htmlFor={"cession-civilite-" + rang}>Civilité</label>
+                    <ChampChoix
+                      id={"cession-civilite-" + rang}
+                      valeur={cession.civilite ?? ""}
+                      options={["Monsieur", "Madame"]}
+                      surChangement={(civilite) => modifier(rang, { civilite })}
+                    />
+                    {refus("cession-" + rang + "-civilite") && (
+                      <p role="alert">{refus("cession-" + rang + "-civilite")}</p>
+                    )}
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.colonnes2}`}>
+                    <label htmlFor={"cession-prenom-" + rang}>Prénom</label>
+                    <input
+                      id={"cession-prenom-" + rang}
+                      placeholder="Paul"
+                      value={cession.prenom ?? ""}
+                      onChange={(e) => modifier(rang, { prenom: e.target.value })}
+                      onBlur={(e) => ranger(rang, "prenom", e.target.value)}
+                    />
+                    {refus("cession-" + rang + "-prenom") && (
+                      <p role="alert">{refus("cession-" + rang + "-prenom")}</p>
+                    )}
+                  </div>
+
+                  <div className={`${styles.champ} ${styles.colonnes2}`}>
+                    <label htmlFor={"cession-nom-" + rang}>Nom</label>
+                    <input
+                      id={"cession-nom-" + rang}
+                      placeholder="DURAND"
+                      value={cession.nom ?? ""}
+                      onChange={(e) => modifier(rang, { nom: e.target.value })}
+                      onBlur={(e) => ranger(rang, "nom", e.target.value)}
+                    />
+                    {refus("cession-" + rang + "-nom") && (
+                      <p role="alert">{refus("cession-" + rang + "-nom")}</p>
+                    )}
+                  </div>
+
+                  {/*
+                    L'état civil du tiers qui entre au capital.
+
+                    Un nom et une adresse suffisaient tant que l'acte se contentait de
+                    désigner les parties. Un acte de cession se présente à l'enregistrement
+                    au service des impôts, et il identifie l'acquéreur comme le ferait un
+                    notaire : état civil pour une personne, immatriculation et représentant
+                    pour une société.
+                  */}
                   <div className={styles.champ}>
                     <label htmlFor={"cession-ne-le-" + rang}>Né(e) le</label>
                     <ChampDate
@@ -640,7 +770,7 @@ export function Cessions({
                     />
                   </div>
 
-                  <div className={styles.champ}>
+                  <div className={`${styles.champ} ${styles.colonnes2}`}>
                     <label htmlFor={"cession-nationalite-" + rang}>Nationalité</label>
                     <ChampListe
                       id={"cession-nationalite-" + rang}
@@ -650,64 +780,52 @@ export function Cessions({
                       surChangement={(nationalite) => modifier(rang, { nationalite })}
                     />
                   </div>
-                </>
-              )}
 
-              {cession.vers === "tiers" && cession.nature === "morale" && (
-                <>
-                  <div className={styles.champ}>
-                    <label htmlFor={"cession-forme-" + rang}>Forme juridique</label>
-                    <input
-                      id={"cession-forme-" + rang}
-                      placeholder="SASU"
-                      value={cession.forme ?? ""}
-                      onChange={(e) => modifier(rang, { forme: e.target.value })}
-                    />
-                  </div>
-
-                  <div className={styles.champ}>
-                    <label htmlFor={"cession-capital-" + rang}>Capital social, en euros</label>
-                    <ChampNombre
-                      id={"cession-capital-" + rang}
-                      valeur={cession.capital ?? ""}
-                      decimales
-                      surChangement={(n) => modifier(rang, { capital: n === "" ? null : n })}
-                    />
-                  </div>
-
-                  <div className={styles.champ}>
-                    <label htmlFor={"cession-siren-" + rang}>SIREN</label>
-                    <input
-                      id={"cession-siren-" + rang}
-                      inputMode="numeric"
-                      maxLength={9}
-                      placeholder="9 chiffres"
-                      value={cession.siren ?? ""}
-                      onChange={(e) => modifier(rang, { siren: e.target.value.replace(/\D/g, "") })}
-                    />
-                  </div>
-
-                  <div className={styles.champ}>
-                    <label htmlFor={"cession-rcs-" + rang}>Ville du RCS</label>
-                    <input
-                      id={"cession-rcs-" + rang}
-                      placeholder="Lyon"
-                      value={cession.villeRcs ?? ""}
-                      onChange={(e) => modifier(rang, { villeRcs: e.target.value })}
-                    />
-                  </div>
-
-                  <div className={`${styles.champ} ${styles.pleineLargeur}`}>
-                    <label htmlFor={"cession-representant-" + rang}>Représentée par</label>
-                    <input
-                      id={"cession-representant-" + rang}
-                      placeholder="son Président, Monsieur Paul DURAND"
-                      value={cession.representant ?? ""}
-                      onChange={(e) => modifier(rang, { representant: e.target.value })}
+                  <div className={`${styles.champ} ${styles.colonnes4}`}>
+                    <label htmlFor={"cession-adresse-" + rang}>Adresse personnelle</label>
+                    {/* L'acte nomme le cessionnaire par son adresse complète : elle se
+                        cherche, comme les autres, plutôt que de se taper de mémoire. */}
+                    <AdresseUneLigne
+                      id={"cession-adresse-" + rang}
+                      valeur={cession.adresse ?? ""}
+                      surChangement={(adresse) => modifier(rang, { adresse })}
                     />
                   </div>
                 </>
               )}
+
+              {/* Le prix et le jour : les deux termes du même accord, sur la même ligne. */}
+              <div className={styles.champ}>
+                <label htmlFor={"cession-prix-" + rang}>Prix de cession, en euros</label>
+                <ChampNombre
+                  id={"cession-prix-" + rang}
+                  valeur={cession.prix ?? ""}
+                  decimales
+                  surChangement={(nombre) =>
+                    modifier(rang, { prix: nombre === "" ? null : nombre })
+                  }
+                />
+                {unitaire !== null && (
+                  <p className={styles.devisPrecision}>
+                    soit {unitaire.toLocaleString("fr-FR")} € la part
+                  </p>
+                )}
+                {refus("cession-" + rang + "-prix") && (
+                  <p role="alert">{refus("cession-" + rang + "-prix")}</p>
+                )}
+              </div>
+
+              <div className={styles.champ}>
+                <label htmlFor={"cession-date-" + rang}>Date de cession</label>
+                <ChampDate
+                  id={"cession-date-" + rang}
+                  valeur={cession.date ?? ""}
+                  surChangement={(iso) => modifier(rang, { date: iso })}
+                />
+                {refus("cession-" + rang + "-date") && (
+                  <p role="alert">{refus("cession-" + rang + "-date")}</p>
+                )}
+              </div>
 
               {/*
                 D'où le cédant tient ses titres.
@@ -727,18 +845,6 @@ export function Cessions({
                   }))}
                   surChangement={(origine) => modifier(rang, { origine })}
                 />
-              </div>
-
-              <div className={styles.champ}>
-                <label htmlFor={"cession-date-" + rang}>Date de cession</label>
-                <ChampDate
-                  id={"cession-date-" + rang}
-                  valeur={cession.date ?? ""}
-                  surChangement={(iso) => modifier(rang, { date: iso })}
-                />
-                {refus("cession-" + rang + "-date") && (
-                  <p role="alert">{refus("cession-" + rang + "-date")}</p>
-                )}
               </div>
             </div>
 
@@ -922,7 +1028,9 @@ export function Cessions({
             </p>
           </div>
 
-          <div className={styles.champ}>
+          {/* Un nom de ville en fin de bloc : au tiers, sa case ne promet pas ce qu’elle
+              n’attend pas. */}
+          <div className={`${styles.champ} ${styles.colonnes2}`}>
             <label htmlFor="cession-lieu">Lieu de signature</label>
             <input
               id="cession-lieu"
@@ -956,30 +1064,38 @@ export function Cessions({
 
       {/* ---------- La répartition qui en résulte ---------- */}
       {total > 0 && cessions.some((c) => (c.parts ?? 0) > 0) && (
-        <section className={styles.repartition}>
+        <section className={styles.apresCession}>
           <h4 className={styles.capitalTitre}>
-            <span className={styles.etapeNum}>3</span> Après la cession
+            <span className={styles.etapeNum}>4</span> Après la cession
           </h4>
-          <ul className={styles.repartitionListe}>
+          <ul className={styles.apresCessionListe}>
             {repartition.map((ligne, i) => (
               <li
                 key={i}
                 className={
                   ligne.entrant
-                    ? `${styles.repartitionLigne} ${styles.repartitionEntrant}`
+                    ? `${styles.apresCessionLigne} ${styles.apresCessionEntrant}`
                     : ligne.sortant
-                      ? `${styles.repartitionLigne} ${styles.repartitionSortant}`
-                      : styles.repartitionLigne
+                      ? `${styles.apresCessionLigne} ${styles.apresCessionSortant}`
+                      : styles.apresCessionLigne
                 }
               >
-                <span className={styles.repartitionNom}>{ligne.nom}</span>
-                <span className={styles.repartitionAvant}>{ligne.avant}</span>
-                <span className={styles.repartitionFleche} aria-hidden="true">
+                <span
+                  className={
+                    ligne.anonyme
+                      ? `${styles.apresCessionNom} ${styles.apresCessionAnonyme}`
+                      : styles.apresCessionNom
+                  }
+                >
+                  {ligne.nom}
+                </span>
+                <span className={styles.apresCessionAvant}>{ligne.avant}</span>
+                <span className={styles.apresCessionFleche} aria-hidden="true">
                   →
                 </span>
-                <span className={styles.repartitionApres}>{ligne.apres}</span>
-                {ligne.entrant && <span className={styles.repartitionMarque}>entre</span>}
-                {ligne.sortant && <span className={styles.repartitionMarque}>sort</span>}
+                <span className={styles.apresCessionApres}>{ligne.apres}</span>
+                {ligne.entrant && <span className={styles.apresCessionMarque}>entre</span>}
+                {ligne.sortant && <span className={styles.apresCessionMarque}>sort</span>}
               </li>
             ))}
           </ul>

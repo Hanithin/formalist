@@ -95,3 +95,24 @@ export function identiteSurUneLigne(identite: {
 }): string {
   return [identite.civilite, identite.prenom, identite.nom].filter(Boolean).join(" ");
 }
+
+/**
+ * Une identité entière tombée dans une seule case.
+ *
+ * Le cessionnaire se saisissait sur une ligne ; il a maintenant trois champs, et
+ * l'habitude reste - on tape « Monsieur Paul DURAND » dans le prénom. L'acte sortait
+ * alors « Monsieur Monsieur Paul DURAND, né le... », et le prénom du greffe valait
+ * l'identité entière.
+ *
+ * Plutôt que de le reprocher, on range. Encore faut-il être sûr : une civilité en tête
+ * ne s'écrit pas par accident, là où « Jean Pierre » est un prénom composé qu'il ne faut
+ * surtout pas couper. La redistribution ne se déclenche donc que sur la civilité, et
+ * rend `null` partout ailleurs - la saisie reste telle quelle.
+ */
+export function identiteCollee(saisi: string): Identite | null {
+  const premier = saisi.trim().split(/\s+/)[0] ?? "";
+  if (!CIVILITES[premier.toLowerCase().replace(/,$/, "")]) return null;
+
+  const decoupe = separerLIdentite(saisi);
+  return decoupe.prenom || decoupe.nom ? decoupe : null;
+}

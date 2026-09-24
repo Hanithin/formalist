@@ -93,6 +93,9 @@ export const CESSION = z.object({
    * la société disparaissait au rechargement, emportant la question autant que la réponse.
    */
   nature: z.enum(["physique", "morale"]).optional(),
+  /* L'identité d'une personne, en trois champs : elle ne se tape plus d'un trait. */
+  civilite: z.string().trim().max(20).nullable().optional(),
+  prenom: z.string().trim().max(120).nullable().optional(),
   neLe: z.string().trim().max(40).nullable().optional(),
   neA: z.string().trim().max(160).nullable().optional(),
   nationalite: z.string().trim().max(80).nullable().optional(),
