@@ -172,9 +172,18 @@ export function Cessions({
   }
 
   function modifier(rang: number, changement: Partial<Cession>) {
-    majCessions((precedentes) =>
-      precedentes.map((c, i) => (i === rang ? { ...c, ...changement } : c))
-    );
+    majCessions((precedentes) => {
+      /*
+       * La première ligne n'existe pas encore en base : l'écran la dessine seule.
+       *
+       * `cessions` ci-dessus la complète pour l'affichage - « jamais zéro ligne » - et
+       * l'écriture doit repartir de la même liste. Écrite sur le tableau du dossier, qui
+       * est vide, elle ne trouvait aucun rang à modifier : choisir un cédant ne posait
+       * rien, et le champ restait sur « Choisir » sans que rien ne le dise.
+       */
+      const base = precedentes.length > 0 ? precedentes : [cessionVide()];
+      return base.map((c, i) => (i === rang ? { ...c, ...changement } : c));
+    });
   }
 
   return (

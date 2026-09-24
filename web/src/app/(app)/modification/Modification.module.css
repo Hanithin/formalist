@@ -5935,9 +5935,20 @@
   letter-spacing: 0;
 }
 
+/*
+ * Deux états, aucun ennui : le poids les distingue, non l'alarme.
+ *
+ * « Agrément requis » portait l'ambre que l'application emploie pour ce qui cloche, et
+ * « non requis » le gris neutre : l'un des deux paraissait anormal alors que les deux
+ * sont ordinaires. Pour une cession de parts de SARL à un tiers, « requis » est même la
+ * situation courante - c'est la loi, non un défaut du dossier.
+ *
+ * L'encre foncée est celle des pastilles actives du produit, « Une personne » quand elle
+ * est choisie : elle dit « ceci s'applique à vous » sans rien annoncer de fâcheux.
+ */
 .agrementOui {
-  background: #fef3c7;
-  color: #92400e;
+  background: #111;
+  color: #fff;
 }
 
 .agrementNon {
