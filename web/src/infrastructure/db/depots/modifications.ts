@@ -4,7 +4,14 @@ import { exigerDossierModifiable } from "./dossiers";
 import { Interdit } from "../utilisateur-courant";
 import { proposerAuxAvocats } from "./avocat";
 import { relirePaiement } from "@/infrastructure/paiement/stripe";
-import { estUnTypeConnu, type TypeModification, type Valeurs } from "@/domain/modification/types";
+import {
+  estUnTypeConnu,
+  type Cosignataire,
+  type TypeModification,
+  type Valeurs,
+} from "@/domain/modification/types";
+
+export type { Cosignataire };
 import type { AssociePresent, SocieteModifiee } from "@/domain/modification/gabarit";
 import type { Retouche } from "@/domain/modification/edition";
 import type { ContratAir } from "@/domain/modification/air";
@@ -108,6 +115,18 @@ export interface Modification {
   avisPublies?: boolean;
   paiementRef?: string;
   paye?: boolean;
+  /**
+   * Ceux qui signent le pouvoir avec le représentant légal.
+   *
+   * À l'égard des tiers, chaque gérant engage seul la société : un pouvoir signé par un
+   * seul suffit, et c'est le cas de presque tous les dossiers. Mais les statuts peuvent
+   * répartir les pouvoirs entre gérants, et une banque ou un greffe réclame alors deux
+   * signatures.
+   *
+   * Hors de `valeurs`, qui ne porte que des chaînes et des nombres : c'est une liste
+   * de personnes, comme les associés de l'assemblée ou les cessions.
+   */
+  cosignataires?: Cosignataire[];
   /**
    * Le dossier ouvert pour la société dont les titres sont apportés.
    *

@@ -40,6 +40,7 @@ import {
 import {
   verifierSociete,
   verifierLeRepresentant,
+  verifierLesCosignataires,
   verifierChamps,
   verifierCoherence,
   type Societe,
@@ -76,6 +77,7 @@ import { gardeDeBoucle } from "@/components/formulaire/garde-de-boucle";
 import { lieuAvecCode } from "@/domain/formalite/communes";
 import { effetDeLaDivision } from "@/domain/modification/air";
 import { ChampListe } from "@/components/formulaire/ChampListe";
+import type { Cosignataire } from "@/infrastructure/db/depots/modifications";
 import { useInscrireLEnregistrement } from "@/components/formulaire/enregistrement-du-parcours";
 import { ApresLApport } from "@/components/formalite/ApresLApport";
 import { NATIONALITES } from "@/domain/formalite/pays";
@@ -197,6 +199,8 @@ export interface EtatDuDossier {
   paye?: boolean;
   /** Le dossier ouvert pour la société dont les titres sont apportés, s'il l'a été. */
   dossierSocieteApportee?: number;
+  /** Ceux qui signent le pouvoir avec le représentant légal, quand les statuts l'exigent. */
+  cosignataires?: Cosignataire[];
 }
 
 interface Props {
@@ -346,6 +350,8 @@ export function Parcours({
   const anomaliesSociete = [
     ...verifierSociete(etat.societe),
     ...verifierLeRepresentant(etat.valeurs),
+    /* Ceux qui signent avec lui : le pouvoir les identifie de la même façon. */
+    ...verifierLesCosignataires(etat.cosignataires),
   ];
 
   /* Voir `garde-de-boucle` : le parcours porte l'état que le dépôt met à jour. */
@@ -537,6 +543,8 @@ export function Parcours({
         valeurs: etat.valeurs,
         assemblee: assembleeAEcrire,
         cessions: etat.cessions,
+        /* Ceux qui signent le pouvoir avec le représentant légal, quand ils sont plusieurs. */
+        cosignataires: etat.cosignataires,
       }),
     });
 
@@ -1026,6 +1034,14 @@ function EtapeSociete({
   }
 
   const refus = (champ: string) => anomalies.find((a) => a.champ === champ)?.message;
+
+  const cosignataires = etat.cosignataires ?? [];
+
+  function majCosignataire(rang: number, changement: Partial<Cosignataire>) {
+    changer({
+      cosignataires: cosignataires.map((p, i) => (i === rang ? { ...p, ...changement } : p)),
+    });
+  }
 
   const natureDuSignataire =
     texteDe(etat.valeurs.signataireNature) === "morale" ? "morale" : "physique";
@@ -1574,6 +1590,143 @@ function EtapeSociete({
           </>
         )}
       </div>
+
+      {/*
+        Ceux qui signent avec lui, quand les statuts l'exigent.
+
+        À l'égard des tiers, chaque gérant engage seul la société : un pouvoir signé par
+        un seul est valable, et c'est le cas de presque tous les dossiers. Mais les
+        statuts peuvent répartir les pouvoirs entre gérants, et une banque ou un greffe
+        réclame alors deux signatures - on ne pouvait pas les leur donner.
+
+        La liste reste repliée sur un bouton : ouverte d'emblée, elle inviterait à saisir
+        des cogérants dont le pouvoir n'a que faire, et ferait croire qu'il les faut.
+      */}
+      {!signataireMoral && (
+        <>
+          {cosignataires.map((personne, rang) => (
+            <fieldset key={rang} className={styles.personne}>
+              <legend>
+                Cosignataire {rang + 1}
+                {[personne.prenom, personne.nom].filter(Boolean).join(" ") &&
+                  " - " + [personne.prenom, personne.nom].filter(Boolean).join(" ")}
+              </legend>
+
+              <button
+                type="button"
+                className={styles.retirerPersonne}
+                aria-label={"Retirer le cosignataire " + (rang + 1)}
+                title="Retirer ce cosignataire"
+                onClick={() =>
+                  changer({ cosignataires: cosignataires.filter((_, i) => i !== rang) })
+                }
+              >
+                ×
+              </button>
+
+              <div className={styles.champs}>
+                <div className={styles.champ}>
+                  <label htmlFor={"cosignataire-civilite-" + rang}>Civilité</label>
+                  <ChampChoix
+                    id={"cosignataire-civilite-" + rang}
+                    valeur={personne.civilite ?? ""}
+                    options={["Monsieur", "Madame"]}
+                    surChangement={(v) => majCosignataire(rang, { civilite: v })}
+                  />
+                </div>
+
+                <div className={styles.champ}>
+                  <label htmlFor={"cosignataire-prenom-" + rang}>Prénom</label>
+                  <input
+                    id={"cosignataire-prenom-" + rang}
+                    value={personne.prenom ?? ""}
+                    onChange={(e) => majCosignataire(rang, { prenom: e.target.value })}
+                  />
+                </div>
+
+                <div className={styles.champ}>
+                  <label htmlFor={"cosignataire-nom-" + rang}>Nom</label>
+                  <input
+                    id={"cosignataire-nom-" + rang}
+                    value={personne.nom ?? ""}
+                    onChange={(e) => majCosignataire(rang, { nom: e.target.value })}
+                  />
+                </div>
+
+                <div className={styles.champ}>
+                  <label htmlFor={"cosignataire-ne-le-" + rang}>Né le</label>
+                  <ChampDate
+                    id={"cosignataire-ne-le-" + rang}
+                    valeur={personne.neLe ?? ""}
+                    surChangement={(iso) => majCosignataire(rang, { neLe: iso })}
+                  />
+                </div>
+
+                <div className={styles.champ}>
+                  <label htmlFor={"cosignataire-ne-a-" + rang}>À</label>
+                  <Ville
+                    id={"cosignataire-ne-a-" + rang}
+                    valeur={personne.neA ?? ""}
+                    placeholder="Lyon 3e (69003)"
+                    surChangement={(ville) => majCosignataire(rang, { neA: ville })}
+                    surCompletion={(codePostal, ville) =>
+                      majCosignataire(rang, { neA: lieuAvecCode(ville, codePostal) })
+                    }
+                  />
+                </div>
+
+                <div className={styles.champ}>
+                  <label htmlFor={"cosignataire-nationalite-" + rang}>Nationalité</label>
+                  <ChampListe
+                    id={"cosignataire-nationalite-" + rang}
+                    placeholder="Française"
+                    valeur={personne.nationalite ?? ""}
+                    options={NATIONALITES}
+                    surChangement={(nationalite) => majCosignataire(rang, { nationalite })}
+                  />
+                </div>
+
+                <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                  <label htmlFor={"cosignataire-adresse-" + rang}>Adresse personnelle</label>
+                  <Adresse
+                    id={"cosignataire-adresse-" + rang}
+                    valeur={personne.adresse ?? ""}
+                    surChangement={(voie) => majCosignataire(rang, { adresse: voie })}
+                    surCompletion={(codePostal, ville) =>
+                      majCosignataire(rang, {
+                        adresse: (personne.adresse ?? "") + ", " + codePostal + " " + ville,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </fieldset>
+          ))}
+
+          <button
+            type="button"
+            className={styles.ajouterAssocie}
+            onClick={() => changer({ cosignataires: [...cosignataires, {}] })}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Ajouter un cosignataire
+          </button>
+          <p className={styles.devisPrecision}>
+            À n&apos;ajouter que si vos statuts imposent une signature conjointe.
+          </p>
+        </>
+      )}
     </>
   );
 }

@@ -115,6 +115,46 @@ export const OBJETS: Record<ObjetDuPouvoir, string> = {
   fermeture: "la dissolution et la liquidation",
 };
 
+/**
+ * La qualité au pluriel, quand ils signent à plusieurs.
+ *
+ * Une règle en « s » écrirait « représentant légals ». Les qualités que les parcours
+ * proposent forment une liste fermée : on l'écrit plutôt que de la deviner, et ce qui
+ * n'y figure pas reste au singulier - mieux vaut une qualité juste au singulier qu'un
+ * pluriel inventé dans un acte.
+ */
+const QUALITES_AU_PLURIEL: Record<string, string> = {
+  gérant: "gérants",
+  gérante: "gérantes",
+  cogérant: "cogérants",
+  cogérante: "cogérantes",
+  président: "présidents",
+  présidente: "présidentes",
+  "directeur général": "directeurs généraux",
+  "directrice générale": "directrices générales",
+  "représentant légal": "représentants légaux",
+  "représentante légale": "représentantes légales",
+  fondateur: "fondateurs",
+  fondatrice: "fondatrices",
+  liquidateur: "liquidateurs",
+  liquidatrice: "liquidatrices",
+};
+
+export function qualiteAuPluriel(qualite: string): string {
+  return QUALITES_AU_PLURIEL[qualite.trim().toLowerCase()] ?? qualite.trim();
+}
+
+/**
+ * Les noms d'une liste, séparés comme on les lit.
+ *
+ * « X et Y » à deux, « X, Y et Z » au-delà : une virgule avant le dernier ferait une
+ * énumération de liste, là où l'acte nomme des parties.
+ */
+function enumerer(morceaux: string[]): string {
+  if (morceaux.length <= 1) return morceaux[0] ?? TIRET;
+  return morceaux.slice(0, -1).join(", ") + " et " + morceaux[morceaux.length - 1];
+}
+
 export interface ContextePouvoir {
   /*
    * Le mandant, déjà écrit.
@@ -126,6 +166,18 @@ export interface ContextePouvoir {
    * composeur emploient `etatCivil`, exporté juste au-dessus.
    */
   mandant: { identite: string; nom: string };
+  /**
+   * Ceux qui signent avec lui, quand les statuts l'exigent.
+   *
+   * À l'égard des tiers, chaque gérant engage seul la société : un pouvoir signé par un
+   * seul est valable, et c'est le cas de presque tous les dossiers. Mais les statuts
+   * peuvent répartir les pouvoirs entre gérants, et une banque ou un greffe réclame
+   * alors deux signatures - on ne pouvait pas le leur donner.
+   *
+   * Absente, la liste ne change rien : le document reste au mot près celui que les trois
+   * parcours produisent depuis toujours.
+   */
+  cosignataires?: { identite: string; nom: string }[];
   /** « fondateur », « gérant », « président », « liquidateur ». */
   qualite: string;
   objet: ObjetDuPouvoir;
@@ -165,15 +217,35 @@ export interface ContextePouvoir {
  */
 export function donneesDuPouvoir(
   contexte: ContextePouvoir
-): Record<string, string | boolean> {
+): Record<string, string | boolean | { NOM: string }[]> {
   const siege = contexte.societe.siege?.trim();
   const greffe = contexte.societe.greffe?.trim();
   const siren = contexte.societe.siren?.trim();
 
+  /*
+   * Un mandant, ou plusieurs.
+   *
+   * Tout ce qui suit retombe exactement sur l'ancien texte quand la liste est vide :
+   * c'est le cas de tous les dossiers d'avant, et de la création comme de la fermeture,
+   * qui n'en envoient jamais.
+   */
+  const tous = [contexte.mandant, ...(contexte.cosignataires ?? [])];
+  const plusieurs = tous.length > 1;
+
   return {
-    POUVOIR_MANDANT: contexte.mandant.identite.trim() || TIRET,
+    POUVOIR_MANDANT: enumerer(tous.map((m) => m.identite.trim()).filter(Boolean)),
+    /* Gardée pour les gabarits qui la liraient encore ; la signature passe par la liste. */
     POUVOIR_MANDANT_NOM: contexte.mandant.nom.trim() || TIRET,
-    POUVOIR_QUALITE: contexte.qualite.trim() || TIRET,
+    POUVOIR_SIGNATAIRES: tous.map((m) => ({ NOM: m.nom.trim() || TIRET })),
+    POUVOIR_TITRE_SIGNATURE: plusieurs ? "Les Mandants" : "Le Mandant",
+    POUVOIR_LE_MANDANT: plusieurs ? "les « Mandants »" : "le « Mandant »",
+    POUVOIR_DU_MANDANT: plusieurs ? "des Mandants" : "du Mandant",
+    POUVOIR_EN_SON_NOM: plusieurs
+      ? "en leur nom et pour leur compte"
+      : "en son nom et pour son compte",
+    POUVOIR_QUALITE: plusieurs
+      ? qualiteAuPluriel(contexte.qualite) || TIRET
+      : contexte.qualite.trim() || TIRET,
     POUVOIR_SOCIETE: ou(contexte.societe.denomination),
     POUVOIR_SOCIETE_FORME: ou(contexte.societe.formeEtCapital),
     /*

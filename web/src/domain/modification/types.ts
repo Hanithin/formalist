@@ -252,6 +252,27 @@ export function pourquoiUnSeulSignataire(forme: string | null | undefined): stri
   return "Un seul suffit, même si la société compte plusieurs gérants : chacun engage seul la société (article L. 223-18 du code de commerce). Indiquez celui qui signera le pouvoir.";
 }
 
+/**
+ * Un cosignataire du pouvoir : le même état civil que le représentant légal.
+ *
+ * Le pouvoir identifie qui le signe comme le ferait un notaire - c'est ce qui distingue
+ * un homonyme, et le guichet unique le vérifie. Un nom seul ne suffirait pas.
+ *
+ * Il vit dans le domaine et non avec le dossier qui le porte : la vérification comme la
+ * rédaction des actes le lisent, et ni l'une ni l'autre n'a le droit de remonter jusqu'à
+ * l'infrastructure.
+ */
+export interface Cosignataire {
+  civilite?: string | null;
+  prenom?: string | null;
+  nom?: string | null;
+  /** Date de naissance au format ISO. */
+  neLe?: string | null;
+  neA?: string | null;
+  nationalite?: string | null;
+  adresse?: string | null;
+}
+
 export function qualitesDuSignataire(forme: string | null | undefined): string[] {
   /*
    * Tant que la forme est inconnue, on ne retranche rien.

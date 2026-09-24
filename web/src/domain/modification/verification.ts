@@ -1,4 +1,10 @@
-import { champObligatoire, champsASaisir, definitions, type Valeurs } from "./types";
+import {
+  champObligatoire,
+  champsASaisir,
+  definitions,
+  type Cosignataire,
+  type Valeurs,
+} from "./types";
 import { regimeDeLAugmentation } from "./souscription";
 import { verifierApport } from "./apport";
 import { anomaliesDuPvAge } from "./pv-age";
@@ -126,6 +132,49 @@ export function verifierLeRepresentant(valeurs: Valeurs): Anomalie[] {
   exiger("signataireNeLe", "La date de naissance du représentant légal est requise");
   exiger("signataireNeA", "Le lieu de naissance du représentant légal est requis");
   exiger("signataireAdresse", "L'adresse du représentant légal est requise");
+  return anomalies;
+}
+
+/**
+ * Ceux qui signent le pouvoir avec lui.
+ *
+ * Le même acte, les mêmes exigences : il les identifie comme le ferait un notaire, et
+ * un cosignataire à moitié saisi donne « Valentin MARIE, né le - à - » sur un document
+ * que le guichet refuse. La civilité y est exigée là où elle ne l'est pas pour le
+ * premier - lui garde un défaut à « Monsieur », posé pour les dossiers d'avant qui
+ * n'avaient pas la case ; une ligne qu'on vient d'ajouter n'a pas cette excuse, et
+ * c'est elle qui accorde « né » ou « née ».
+ *
+ * Une ligne entièrement vide ne compte pas : c'est un ajout qu'on n'a pas rempli, et
+ * l'on s'en débarrasse par sa croix, non par six reproches.
+ */
+export function verifierLesCosignataires(cosignataires: Cosignataire[] = []): Anomalie[] {
+  const anomalies: Anomalie[] = [];
+
+  cosignataires.forEach((personne, rang) => {
+    const lu = (cle: keyof Cosignataire) => (personne[cle] ?? "").trim();
+    const entierementVide = (
+      ["civilite", "prenom", "nom", "neLe", "neA", "nationalite", "adresse"] as const
+    ).every((cle) => !lu(cle));
+    if (entierementVide) return;
+
+    const exiger = (cle: keyof Cosignataire, quoi: string) => {
+      if (!lu(cle)) {
+        anomalies.push({
+          champ: "cosignataire-" + rang + "-" + cle,
+          message: quoi + " du cosignataire " + (rang + 1) + " est requis" ,
+        });
+      }
+    };
+
+    exiger("civilite", "La civilité");
+    exiger("prenom", "Le prénom");
+    exiger("nom", "Le nom");
+    exiger("neLe", "La date de naissance");
+    exiger("neA", "Le lieu de naissance");
+    exiger("adresse", "L'adresse");
+  });
+
   return anomalies;
 }
 
@@ -322,7 +371,14 @@ export function verifierModification(
    * les actes annoncent un capital que rien ne fonde. L'appelant qui ne les connaît pas
    * ne s'en voit rien reprocher - le paramètre est facultatif.
    */
-  air?: ContratAir[]
+  air?: ContratAir[],
+  /**
+   * Ceux qui signent le pouvoir avec le représentant légal.
+   *
+   * Facultatif comme les accords : un appelant qui ne les connaît pas ne doit pas se
+   * voir reprocher leur absence - elle est le cas normal.
+   */
+  cosignataires?: Cosignataire[]
 ): Anomalie[] {
   if (codes.length === 0) {
     return [{ champ: "modifications", message: "Choisissez au moins une modification" }];
@@ -333,6 +389,7 @@ export function verifierModification(
 
   return [
     ...verifierSociete(societe),
+    ...verifierLesCosignataires(cosignataires),
     ...verifierChamps(codes, valeurs, societe.forme),
     ...verifierCoherence(codes, valeurs, societe.forme),
     ...verifierLaConstatation(codes, valeurs, air),

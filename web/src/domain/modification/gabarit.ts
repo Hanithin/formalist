@@ -235,6 +235,13 @@ export interface ContexteGabarit {
    * créer ne se lit qu'en les résolvant ensemble.
    */
   air?: ContratAir[];
+  /**
+   * Ceux qui signent le pouvoir avec le représentant légal.
+   *
+   * Vide dans la quasi-totalité des dossiers : chaque gérant engage seul la société, et
+   * un pouvoir signé par un seul est valable. Les statuts peuvent en décider autrement.
+   */
+  cosignataires?: Mandant[];
 }
 
 function ou(valeur: string | null | undefined, defaut = TIRET): string {
@@ -890,6 +897,16 @@ export function donneesDuGabarit(contexte: ContexteGabarit): Record<string, unkn
         identite: etatCivilDuSignataire(valeurs),
         nom: nomDuSignataire(valeurs),
       },
+      /*
+       * Ceux qui signent avec lui, quand les statuts l'exigent.
+       *
+       * Ils passent par le même composeur d'état civil : le pouvoir les identifie tous
+       * de la même façon, et deux rédactions auraient divergé à la première correction.
+       */
+      cosignataires: (contexte.cosignataires ?? []).map((personne) => ({
+        identite: etatCivil(personne),
+        nom: nommer(personne),
+      })),
       qualite: qualiteDuSignataire(valeurs, societe.forme),
       objet: "modification",
       societe: {

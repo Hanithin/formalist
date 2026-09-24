@@ -87,7 +87,8 @@ export async function produireLesActesDeLaModification(
     modification.societe,
     modification.assemblee,
     modification.cessions,
-    modification.air
+    modification.air,
+    modification.cosignataires
   );
   if (manques.length > 0) throw new DossierIncompletPourLesActes(manques);
 
@@ -106,6 +107,8 @@ export async function produireLesActesDeLaModification(
     cessions: modification.cessions,
     /* Les accords convertis : c'est d'eux que sortent le tableau et le capital d'après. */
     air: modification.air,
+    /* Ceux qui signent le pouvoir avec le représentant légal, quand ils sont plusieurs. */
+    cosignataires: modification.cosignataires,
     villeRcsNouvelle: villeDuRcs(
       typeof modification.valeurs.nouveauCodePostal === "string"
         ? modification.valeurs.nouveauCodePostal

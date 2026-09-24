@@ -86,6 +86,26 @@ const ENREGISTREMENT = z.object({
   // Une assemblée décide rarement plus de quelques cessions ; au-delà, c'est un
   // registre de mouvements, qui n'a pas sa place dans un formulaire.
   cessions: z.array(CESSION).max(20).optional(),
+  /*
+   * Ceux qui signent le pouvoir avec le représentant légal.
+   *
+   * Quatre au plus : au-delà, ce n'est plus une signature conjointe imposée par des
+   * statuts mais une liste de dirigeants, que le pouvoir n'a pas à porter.
+   */
+  cosignataires: z
+    .array(
+      z.object({
+        civilite: z.string().trim().max(20).optional(),
+        prenom: z.string().trim().max(120).optional(),
+        nom: z.string().trim().max(120).optional(),
+        neLe: z.string().trim().max(40).nullable().optional(),
+        neA: z.string().trim().max(160).optional(),
+        nationalite: z.string().trim().max(80).optional(),
+        adresse: z.string().trim().max(300).optional(),
+      })
+    )
+    .max(4)
+    .optional(),
   assemblee: z
     .object({
       date: z.string().trim().max(40).nullable().optional(),
