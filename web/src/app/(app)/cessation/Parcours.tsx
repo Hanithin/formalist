@@ -1,6 +1,7 @@
 "use client";
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
+import { useEnregistrementAuRepos } from "@/components/formulaire/enregistrement-au-repos";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Champ } from "../modification/Parcours";
@@ -82,6 +83,46 @@ export function Parcours({
 
   const manquesCourants = manquesDe(etape);
 
+  /*
+   * Ce qui part au serveur, et lui seul.
+   *
+   * Un état plus large ferait partir une écriture chaque fois qu'une autre route touche
+   * au dossier, pour renvoyer ce qui n'a pas bougé.
+   */
+  const aEcrire = {
+    entreprise: etat.entreprise,
+    entrepreneur: etat.entrepreneur,
+    valeurs: etat.valeurs,
+  };
+
+  /**
+   * Écrit l'état courant du dossier, sans rien décider d'autre.
+   *
+   * Extraite du changement d'étape : le parcours n'écrivait que là, et tout ce qui était
+   * tapé depuis le dernier « Continuer » disparaissait à la moindre actualisation.
+   */
+  async function ecrireLeDossier(etapeAEcrire = etape, enPartant = false): Promise<boolean> {
+    const reponse = await fetch("/api/formalites/cessation", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      /* Quand la page se ferme, une requête ordinaire est abandonnée avec elle. */
+      keepalive: enPartant,
+      /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
+      body: JSON.stringify({ dossier, etape: etapeAEcrire, ...aEcrire }),
+    });
+
+    if (!reponse.ok) {
+      const corps = await reponse.json().catch(() => ({}));
+      setErreur(corps.error ?? "L'enregistrement n'a pas abouti");
+      return false;
+    }
+
+    return true;
+  }
+
+  /* La saisie se garde au fil de la frappe, et quand la page s'en va. */
+  useEnregistrementAuRepos(aEcrire, (enPartant) => ecrireLeDossier(etape, enPartant));
+
   function aller(vers: number) {
     setErreur(null);
     if (vers > etape && manquesDe(etape).length > 0) {
@@ -91,24 +132,7 @@ export function Parcours({
     setTentative(false);
 
     demarrer(async () => {
-      const reponse = await fetch("/api/formalites/cessation", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dossier,
-          /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
-          etape: vers,
-          entreprise: etat.entreprise,
-          entrepreneur: etat.entrepreneur,
-          valeurs: etat.valeurs,
-        }),
-      });
-
-      if (!reponse.ok) {
-        const corps = await reponse.json().catch(() => ({}));
-        setErreur(corps.error ?? "L'enregistrement n'a pas abouti");
-        return;
-      }
+      if (!(await ecrireLeDossier(vers))) return;
 
       setEtape(vers);
       memoriserEtape(dossier, vers);

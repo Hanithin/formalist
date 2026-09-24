@@ -50,6 +50,23 @@ const SOCIETE = {
   capital: 15000,
 };
 
+/**
+ * Le représentant légal, que tout dossier complet porte.
+ *
+ * C'est lui qui signe le pouvoir donné au cabinet, et l'acte l'identifie comme le ferait
+ * un notaire. Le contrôle ne tournait que dans le formulaire ; depuis qu'il tourne aussi
+ * à la production des actes et au règlement, un jeu d'essai qui l'omet décrit un dossier
+ * que l'application refuse - à juste titre.
+ */
+const REPRESENTANT = {
+  signataireCivilite: "Monsieur",
+  signatairePrenom: "Jean",
+  signataireNom: "DUPONT",
+  signataireNeLe: "1985-03-14",
+  signataireNeA: "Paris 12e (75012)",
+  signataireAdresse: "3 rue de Lyon, 75012 Paris",
+};
+
 test("un dossier s'ouvre sans société, et la société se choisit ensuite", async ({ request }) => {
   /*
    * C'est le point d'entrée qui manquait : la version précédente ne listait que les
@@ -85,6 +102,8 @@ test("les actes portent la société et les résolutions décidées", async ({ r
       societe: SOCIETE,
       codes: ["transfert_siege", "denomination"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "5 avenue Victor Hugo",
         nouvelleVille: "Lyon",
         nouveauCodePostal: "69003",
@@ -142,6 +161,8 @@ test("une augmentation qui diminue le capital est refusée", async ({ request })
       societe: SOCIETE,
       codes: ["augmentation_capital"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         capitalActuelAugm: 15000,
         nouveauCapitalAugm: 5000,
         modeAugmentation: "Apport en numéraire",
@@ -216,6 +237,8 @@ test("le devis compte deux annonces quand le siège change de département", asy
       societe: SOCIETE,
       codes: ["transfert_siege"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "5 avenue Victor Hugo",
         nouvelleVille: "Lyon",
         nouveauCodePostal: "69003",
@@ -384,6 +407,8 @@ test("le prix et le règlement se voient sans descendre", async ({ page, request
       societe: SOCIETE,
       codes: ["transfert_siege"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "5 avenue Victor Hugo",
         nouvelleVille: "Lyon",
         nouveauCodePostal: "69003",
@@ -509,6 +534,8 @@ test("un dossier réglé montre ses documents, comme une création", async ({ pa
       societe: SOCIETE,
       codes: ["transfert_siege"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "5 avenue Victor Hugo",
         nouvelleVille: "Lyon",
         nouveauCodePostal: "69003",
@@ -583,6 +610,8 @@ test("des actes publiés mais aucun reconnu : le client désigne ses statuts", a
       societe: SOCIETE,
       codes: ["transfert_siege"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "5 avenue Victor Hugo",
         nouvelleVille: "Lyon",
         nouveauCodePostal: "69003",
@@ -632,6 +661,8 @@ test("la pièce qui retient le règlement se trouve sans la chercher", async ({ 
       societe: SOCIETE,
       codes: ["transfert_siege"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "5 avenue Victor Hugo",
         nouvelleVille: "Lyon",
         nouveauCodePostal: "69003",
@@ -676,7 +707,15 @@ test("une étape incomplète ne laisse pas passer à la suivante", async ({ page
   await page.goto("/modification?dossier=" + dossier + "&etape=1");
 
   await page.getByRole("button", { name: "Continuer" }).click();
-  await expect(page.getByRole("alert").first()).toContainText(/requis/);
+  /*
+   * Les refus du formulaire, non tous les role="alert" de la page.
+   *
+   * Le signaleur de navigation de Next en est un, vide, et il apparaît après le rendu :
+   * viser le premier de la page fait lire une chaîne vide selon l'ordre d'arrivée. Le
+   * test voisin porte déjà cette réserve.
+   */
+  const carteDeLEtape = page.locator("[class*='contenu']").first();
+  await expect(carteDeLEtape.getByRole("alert").first()).toContainText(/requis/);
   // On est resté sur place.
   /*
    * La frise dit l'étape, la pastille ne la redit plus.
@@ -921,20 +960,25 @@ test("le message de ce qui manque suit ce qu'on remplit", async ({ page, request
   await page.goto("/modification?dossier=" + dossier + "&etape=1");
 
   await page.getByRole("button", { name: "Continuer" }).click();
-  // Le récapitulatif, non les refus posés sous chaque champ.
+  /*
+   * Le récapitulatif, non les refus posés sous chaque champ.
+   *
+   * Dix manques, non cinq : l'étape porte la société et le représentant légal qui
+   * signera le pouvoir, et l'essai comptait encore la seule société.
+   */
   const alerte = page.locator("[class*='manques']");
-  await expect(alerte).toContainText("Il reste 5 champs");
+  await expect(alerte).toContainText("Il reste 10 champs");
 
   // Un champ rempli, un de moins annoncé.
   await page.getByLabel("Dénomination sociale").fill("ESSAI VIVANT");
-  await expect(alerte).toContainText("Il reste 4 champs");
+  await expect(alerte).toContainText("Il reste 9 champs");
   await expect(alerte).not.toContainText("La dénomination est requise");
 
   await page.getByLabel("SIREN", { exact: true }).fill("899979934");
   await page.getByLabel("Adresse du siège").fill("12 rue des Lilas");
   await page.getByLabel("Code postal").fill("75011");
   await expect(alerte).toContainText("La forme juridique est requise");
-  await expect(alerte).not.toContainText("Il reste");
+  await expect(alerte).toContainText("Il reste 6 champs");
 });
 
 test("une cession se compose à partir des associés, et sa répartition se voit", async ({
@@ -1088,6 +1132,8 @@ test("une étape 3 remplie mène à l'assemblée, même sans associé inscrit", 
       societe: SOCIETE,
       codes: ["transfert_siege"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "3 rue de la Forge",
         nouveauCodePostal: "69003",
         nouvelleVille: "Lyon",
@@ -1163,6 +1209,8 @@ test("l'assemblée ne se franchit pas sans le nombre de parts", async ({ page, r
       societe: SOCIETE,
       codes: ["transfert_siege"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "3 rue de la Forge",
         nouveauCodePostal: "69003",
         nouvelleVille: "Lyon",
@@ -1206,6 +1254,8 @@ test("« Corriger » mène à l'étape où le manque se répare", async ({ page,
       societe: SOCIETE,
       codes: ["transfert_siege"],
       valeurs: {
+      ...REPRESENTANT,
+        ...REPRESENTANT,
         nouvelleAdresse: "3 rue de la Forge",
         nouveauCodePostal: "69003",
         nouvelleVille: "Lyon",

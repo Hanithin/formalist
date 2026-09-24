@@ -380,8 +380,24 @@ export function verifierModification(
    */
   cosignataires?: Cosignataire[]
 ): Anomalie[] {
+  /*
+   * Sans changement coché, le dossier n'est pas vide pour autant.
+   *
+   * Le court-circuit ne rendait que « Choisissez au moins une modification », et taisait
+   * ce que la société et son représentant réclament - eux ne dépendent d'aucun code.
+   * L'écran, qui porte désormais le même jugement, cessait du coup de signaler quoi que
+   * ce soit à sa première étape tant qu'on n'avait rien coché.
+   *
+   * Le second court-circuit, lui, reste entier : un code inconnu ferait travailler la
+   * suite sur une définition qui n'existe pas.
+   */
   if (codes.length === 0) {
-    return [{ champ: "modifications", message: "Choisissez au moins une modification" }];
+    return [
+      { champ: "modifications", message: "Choisissez au moins une modification" },
+      ...verifierSociete(societe),
+      ...verifierLeRepresentant(valeurs),
+      ...verifierLesCosignataires(cosignataires),
+    ];
   }
   if (definitions(codes).length !== codes.length) {
     return [{ champ: "modifications", message: "Une modification demandée n'existe pas" }];

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
+import { useEnregistrementAuRepos } from "@/components/formulaire/enregistrement-au-repos";
 import { natureDeLaForme } from "@/domain/formalite/formes";
 import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { NATURES_PROPOSEES, fonctionsDuDirigeant } from "@/domain/formalite/formes";
@@ -161,6 +162,50 @@ export function Parcours({
    * la recalculerait à chaque enregistrement et effacerait le dividende qu'on vient de
    * décider.
    */
+  /*
+   * Ce qui part au serveur, et lui seul.
+   *
+   * Un état plus large ferait partir une écriture chaque fois qu'une autre route touche
+   * au dossier, pour renvoyer ce qui n'a pas bougé.
+   */
+  const aEcrire = {
+    societe: etat.societe,
+    associes: etat.associes,
+    valeurs: etat.valeurs,
+    affectation: etat.affectation,
+    conventions: etat.conventions,
+    exclusions: etat.exclusions,
+    demandeLaConfidentialite: etat.demandeLaConfidentialite,
+  };
+
+  /**
+   * Écrit l'état courant du dossier, sans rien décider d'autre.
+   *
+   * Extraite du changement d'étape : le parcours n'écrivait que là, et tout ce qui était
+   * tapé depuis le dernier « Continuer » disparaissait à la moindre actualisation.
+   */
+  async function ecrireLeDossier(etapeAEcrire = etape, enPartant = false): Promise<boolean> {
+    const reponse = await fetch("/api/formalites/comptes", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      /* Quand la page se ferme, une requête ordinaire est abandonnée avec elle. */
+      keepalive: enPartant,
+      /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
+      body: JSON.stringify({ dossier, etape: etapeAEcrire, ...aEcrire }),
+    });
+
+    if (!reponse.ok) {
+      const corps = await reponse.json().catch(() => ({}));
+      setErreur(corps.error ?? "L'enregistrement n'a pas abouti");
+      return false;
+    }
+
+    return true;
+  }
+
+  /* La saisie se garde au fil de la frappe, et quand la page s'en va. */
+  useEnregistrementAuRepos(aEcrire, (enPartant) => ecrireLeDossier(etape, enPartant));
+
   function aller(vers: number) {
     setErreur(null);
 
@@ -171,28 +216,7 @@ export function Parcours({
     setTentative(false);
 
     demarrer(async () => {
-      const reponse = await fetch("/api/formalites/comptes", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dossier,
-          /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
-          etape: vers,
-          societe: etat.societe,
-          associes: etat.associes,
-          valeurs: etat.valeurs,
-          affectation: etat.affectation,
-          conventions: etat.conventions,
-          exclusions: etat.exclusions,
-          demandeLaConfidentialite: etat.demandeLaConfidentialite,
-        }),
-      });
-
-      if (!reponse.ok) {
-        const corps = await reponse.json().catch(() => ({}));
-        setErreur(corps.error ?? "L'enregistrement n'a pas abouti");
-        return;
-      }
+      if (!(await ecrireLeDossier(vers))) return;
 
       setEtape(vers);
       memoriserEtape(dossier, vers);

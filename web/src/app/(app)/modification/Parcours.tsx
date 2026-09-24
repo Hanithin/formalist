@@ -73,6 +73,7 @@ import { effetDeLaDivision } from "@/domain/modification/air";
 import { ChampListe } from "@/components/formulaire/ChampListe";
 import type { Cosignataire } from "@/infrastructure/db/depots/modifications";
 import { useInscrireLEnregistrement } from "@/components/formulaire/enregistrement-du-parcours";
+import { useEnregistrementAuRepos } from "@/components/formulaire/enregistrement-au-repos";
 import { ApresLApport } from "@/components/formalite/ApresLApport";
 import { NATIONALITES } from "@/domain/formalite/pays";
 
@@ -521,11 +522,20 @@ export function Parcours({
    */
   async function ecrireLeDossier(
     etapeAEcrire: number,
-    assembleeAEcrire: EtatDuDossier["assemblee"] = etat.assemblee
+    assembleeAEcrire: EtatDuDossier["assemblee"] = etat.assemblee,
+    /*
+     * L'envoi doit-il survivre au document ?
+     *
+     * Quand la page se ferme, une requête ordinaire est abandonnée avec elle et la
+     * dernière frappe se perd - c'est-à-dire celle dont on se souvient. `keepalive` la
+     * porte au-delà, au prix d'une limite de taille que le cas courant n'a pas à subir.
+     */
+    enPartant = false
   ): Promise<boolean> {
     const reponse = await fetch("/api/formalites/modification", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+      keepalive: enPartant,
       body: JSON.stringify({
         dossier,
         /* L'étape part avec le reste : c'est elle que le tableau de bord relit. */
@@ -548,6 +558,38 @@ export function Parcours({
 
     return true;
   }
+
+  /*
+   * Ce qui part au serveur, et lui seul.
+   *
+   * Un état plus large ferait partir une écriture chaque fois qu'une autre route touche
+   * au dossier - un accord déposé, des statuts repris au registre - pour renvoyer ce qui
+   * n'a pas bougé.
+   */
+  const aEcrire = {
+    etape,
+    codes: etat.codes,
+    societe: etat.societe,
+    valeurs: etat.valeurs,
+    assemblee: etat.assemblee,
+    cessions: etat.cessions,
+    cosignataires: etat.cosignataires,
+  };
+
+  /*
+   * La saisie se garde sans attendre « Continuer ».
+   *
+   * Le parcours n'écrivait qu'au changement d'étape : tout ce qui était tapé depuis le
+   * dernier « Continuer » disparaissait à la moindre actualisation, et il fallait tout
+   * retaper. Dans la fenêtre de correction de l'avocat, l'écriture reste commandée par
+   * son bouton - c'est lui qui décide du moment, et deux sources d'écriture s'y
+   * marcheraient dessus.
+   */
+  useEnregistrementAuRepos(
+    aEcrire,
+    (enPartant) => ecrireLeDossier(etape, etat.assemblee, enPartant),
+    !dansUneFenetre
+  );
 
   /*
    * Dans la fenêtre de l'avocat, c'est elle qui fait écrire avant de reproduire.
