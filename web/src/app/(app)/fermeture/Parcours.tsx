@@ -5,7 +5,11 @@ import { natureDeLaForme } from "@/domain/formalite/formes";
 import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { NATURES_PROPOSEES } from "@/domain/formalite/formes";
 import { Fragment, useMemo, useState, useTransition } from "react";
-import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
+import { Champ } from "../modification/Parcours";
+import {
+  RechercheAuRegistre,
+  type SocieteTrouvee,
+} from "@/components/formulaire/RechercheAuRegistre";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { montantLisible } from "@/domain/modification/offre";

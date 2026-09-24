@@ -197,6 +197,16 @@ export const CHANGEMENTS_DIRIGEANT = ["Nomination", "Révocation", "Démission"]
 export const QUALITES_DU_SIGNATAIRE = [
   "gérant",
   "gérante",
+  /*
+   * La co-gérance s'écrit, elle ne se déduit pas.
+   *
+   * Des statuts qui instituent plusieurs gérants les nomment « cogérants », et c'est
+   * cette qualité que le pouvoir doit porter mot pour mot : il identifie son signataire
+   * comme le ferait un notaire. Le menu n'offrait que « gérant », et l'on signait sous
+   * une qualité qui n'est pas celle des statuts.
+   */
+  "cogérant",
+  "cogérante",
   "président",
   "présidente",
   "directeur général",
@@ -217,6 +227,31 @@ export const QUALITES_DU_SIGNATAIRE = [
  * « Représentant légal » reste proposé partout : c'est la qualité de celui qui signe
  * pour une personne morale dirigeante, et elle ne dépend d'aucune forme.
  */
+/**
+ * Pourquoi un seul signataire suffit, quelle que soit la direction en place.
+ *
+ * Le bloc du représentant légal ne décrit pas la direction de la société : il désigne
+ * qui signera le pouvoir donné au cabinet. Devant trois cogérants, on cherche pourtant
+ * où saisir les deux autres, et l'on croit le formulaire incomplet - c'est un dossier
+ * réel qui l'a signalé.
+ *
+ * La réponse n'est pas la même selon la forme. Dans une société à parts sociales, elle
+ * tient à un texte : chaque gérant détient séparément les pouvoirs, et à l'égard des
+ * tiers il engage seul la société - l'opposition d'un autre gérant y est même sans
+ * effet. Dans une société par actions, la question ne se pose pas dans les mêmes termes :
+ * il n'y a qu'un président, et l'on cite alors ce qui est vrai sans invoquer un article
+ * qui ne s'y applique pas.
+ */
+export function pourquoiUnSeulSignataire(forme: string | null | undefined): string {
+  const parActions = formeConnue(forme) && natureDeLaForme(forme).titreDirigeant === "Président";
+
+  if (parActions) {
+    return "Une seule signature suffit : indiquez celui qui signera le pouvoir, même si la direction compte plusieurs personnes.";
+  }
+
+  return "Un seul suffit, même si la société compte plusieurs gérants : chacun engage seul la société (article L. 223-18 du code de commerce). Indiquez celui qui signera le pouvoir.";
+}
+
 export function qualitesDuSignataire(forme: string | null | undefined): string[] {
   /*
    * Tant que la forme est inconnue, on ne retranche rien.
@@ -238,7 +273,14 @@ export function qualitesDuSignataire(forme: string | null | undefined): string[]
         "représentant légal",
         "représentante légale",
       ]
-    : ["gérant", "gérante", "représentant légal", "représentante légale"];
+    : [
+        "gérant",
+        "gérante",
+        "cogérant",
+        "cogérante",
+        "représentant légal",
+        "représentante légale",
+      ];
 }
 
 export const MODIFICATIONS: DefinitionModification[] = [

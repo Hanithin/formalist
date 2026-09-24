@@ -9,6 +9,13 @@ import {
 import { dateEnFrancais, elider } from "@/domain/formalite/lettres";
 import { phraseDesAnomalies } from "@/domain/formalite/anomalies";
 import { formeDeLaCategorie, libelleDeLaCategorie } from "@/domain/formalite/categories-juridiques";
+import {
+  RechercheAuRegistre,
+  capitalAuRegistre,
+  chercherAuRegistre,
+  type SocieteTrouvee,
+  type ResultatRecherche,
+} from "@/components/formulaire/RechercheAuRegistre";
 import { Fragment, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -23,6 +30,7 @@ import { Editeur } from "./Editeur";
 import {
   MODIFICATIONS,
   qualitesDuSignataire,
+  pourquoiUnSeulSignataire,
   champVisible,
   definitions,
   valeursParDefautDesChamps,
@@ -69,6 +77,7 @@ import { lieuAvecCode } from "@/domain/formalite/communes";
 import { effetDeLaDivision } from "@/domain/modification/air";
 import { ChampListe } from "@/components/formulaire/ChampListe";
 import { useInscrireLEnregistrement } from "@/components/formulaire/enregistrement-du-parcours";
+import { ApresLApport } from "@/components/formalite/ApresLApport";
 import { NATIONALITES } from "@/domain/formalite/pays";
 
 /**
@@ -186,6 +195,8 @@ export interface EtatDuDossier {
   retouches?: Retouche[];
   statutsAJour?: boolean;
   paye?: boolean;
+  /** Le dossier ouvert pour la société dont les titres sont apportés, s'il l'a été. */
+  dossierSocieteApportee?: number;
 }
 
 interface Props {
@@ -354,6 +365,21 @@ export function Parcours({
    */
   function majValeurs(maj: (valeurs: Valeurs) => Valeurs) {
     setEtat((precedent) => avecCeQuiSeDeduit({ ...precedent, valeurs: maj(precedent.valeurs) }));
+  }
+
+  /**
+   * Les cessions, mises à jour depuis l'état le plus récent.
+   *
+   * Écrire une cession depuis le tableau qu'un rendu a capturé va bien tant qu'on écrit
+   * une fois. La recherche au registre écrit quatre champs, puis le capital qui arrive
+   * du relais, puis le greffe : chaque écriture bâtie sur le tableau d'origine efface
+   * les précédentes, et il ne restait que la dernière. C'est la même précaution que
+   * `majValeurs` au-dessus.
+   */
+  function majCessions(maj: (cessions: Cession[]) => Cession[]) {
+    setEtat((precedent) =>
+      avecCeQuiSeDeduit({ ...precedent, cessions: maj(precedent.cessions ?? []) })
+    );
   }
 
   function majSociete(maj: (societe: EtatDuDossier["societe"]) => EtatDuDossier["societe"]) {
@@ -699,6 +725,7 @@ export function Parcours({
             anomalies={manquesCourants.filter((a) => manquesVus.includes(a.champ))}
             restants={manquesCourants}
             majValeurs={majValeurs}
+            majCessions={majCessions}
             changer={changer}
           />
         )}
@@ -819,75 +846,6 @@ export function Parcours({
 
 /* -------------------------------------------------------------- Le fil */
 
-/**
- * Interroge l'annuaire public des entreprises.
- *
- * L'annuaire ne cherche que des mots entiers : « gremlins commu » ne trouve rien,
- * quand « gremlins communication » trouve la société. Personne ne tape un nom complet
- * avant d'attendre une suggestion - c'est tout l'intérêt d'en proposer.
- *
- * On retente donc sans le dernier mot, celui qu'on est en train d'écrire : la liste
- * se remplit dès les premières lettres, et se resserre à mesure qu'on les termine.
- */
-async function chercherAuRegistre(
-  terme: string,
-  signal: AbortSignal
-): Promise<ResultatRecherche[]> {
-  async function interroger(question: string, combien: number): Promise<ResultatRecherche[]> {
-    const reponse = await fetch(
-      "https://recherche-entreprises.api.gouv.fr/search?q=" +
-        encodeURIComponent(question) +
-        "&per_page=" +
-        combien +
-        "&page=1",
-      { signal }
-    );
-    if (!reponse.ok) return [];
-    const donnees = (await reponse.json()) as { results?: ResultatRecherche[] };
-    return donnees.results ?? [];
-  }
-
-  const propre = terme.trim().replace(/\s+/g, " ");
-  const trouves = await interroger(propre, MONTREES);
-  if (trouves.length > 0) return trouves;
-
-  const mots = propre.split(" ");
-  if (mots.length < 2) return [];
-
-  /*
-   * Le repli remonte large, puis remet en ordre.
-   *
-   * « gremlins commu » cherché sur « gremlins » seul rend d'abord les trois « LES
-   * GREMLINS », et « GREMLINS COMMUNICATION » - celui qu'on est en train d'écrire -
-   * se perd au-delà du sixième. On en demande vingt et l'on fait remonter ceux dont
-   * le nom porte le mot commencé.
-   */
-  const amorce = normaliser(mots[mots.length - 1]);
-  const larges = await interroger(mots.slice(0, -1).join(" "), 20);
-
-  return larges
-    .map((r, rang) => ({
-      r,
-      /* Le rang de l'annuaire départage ceux qui répondent aussi bien. */
-      score: normaliser(r.nom_complet ?? r.nom_raison_sociale ?? "").includes(amorce) ? -1 : 0,
-      rang,
-    }))
-    .sort((a, b) => a.score - b.score || a.rang - b.rang)
-    .slice(0, MONTREES)
-    .map((x) => x.r);
-}
-
-/** Le nombre de suggestions affichées : au-delà, la liste couvre le formulaire. */
-const MONTREES = 6;
-
-/** Sans accents ni casse : « communication » se reconnaît dans « COMMUNICATION ». */
-function normaliser(texte: string): string {
-  return texte
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
 function Frise({
   etape,
   atteinte,
@@ -944,249 +902,6 @@ function Frise({
 
 /* ------------------------------------------------------- 1. La société */
 
-interface ResultatRecherche {
-  siren?: string;
-  nom_complet?: string;
-  nom_raison_sociale?: string;
-  nature_juridique?: string;
-  siege?: { adresse?: string; code_postal?: string; libelle_commune?: string };
-}
-
-/**
- * La recherche au registre, partagée.
- *
- * La société du dossier et les associés personnes morales se cherchent au même
- * endroit : l'annuaire public des entreprises, gratuit et sans clé. Recopier une
- * dénomination, un SIREN et un siège à la main dans un acte est exactement là où
- * l'erreur se glisse, et elle se paie au greffe.
- */
-export interface SocieteTrouvee {
-  denomination: string;
-  /**
-   * La forme, si la catégorie du registre en désigne une.
-   *
-   * Vide sinon - une société étrangère, un GIE, une association n'en ont pas au sens de
-   * nos actes. Vide ne veut pas dire « garde la précédente » : c'est ce contresens qui
-   * faisait porter à une SELAS la forme de la société cherchée juste avant.
-   */
-  forme: string;
-  /** Le code à quatre chiffres du registre, tel quel. */
-  categorie: string;
-  /** Ce que ce code veut dire, en toutes lettres, pour pouvoir le montrer. */
-  libelleCategorie: string;
-  siren: string;
-  /** Le siège sur une ligne, tel qu'un acte l'écrit. */
-  siege: string;
-  /** Les deux morceaux, pour qui doit en déduire le greffe compétent. */
-  codePostal: string;
-  commune: string;
-}
-
-/**
- * Le siège sur une ligne, sans le répéter.
- *
- * L'annuaire rend une adresse déjà complète - « 34 RUE LAUGIER 75017 PARIS » - et,
- * à côté, le code postal et la commune séparément. On collait les trois : le siège
- * d'un associé s'écrivait « 34 RUE LAUGIER 75017 PARIS 75017 PARIS », et partait tel
- * quel dans l'acte.
- */
-/**
- * Le capital d'une société, au registre national.
- *
- * L'annuaire public ne le publie pas ; le relais `/api/societe/{siren}` interroge
- * l'INPI, qui exige un compte connecté. Une panne de ce côté ne doit rien empêcher :
- * le champ reste saisissable, et l'on rend simplement « on ne sait pas ».
- */
-async function capitalAuRegistre(siren: string): Promise<number | null> {
-  const propre = (siren ?? "").replace(/\s/g, "");
-  if (!/^\d{9}$/.test(propre)) return null;
-
-  try {
-    const reponse = await fetch("/api/societe/" + encodeURIComponent(propre));
-    if (!reponse.ok) return null;
-    const donnees = (await reponse.json()) as { societe?: { capital?: number | null } };
-    return typeof donnees.societe?.capital === "number" ? donnees.societe.capital : null;
-  } catch {
-    return null;
-  }
-}
-
-function siegeSurUneLigne(siege: {
-  adresse?: string;
-  code_postal?: string;
-  libelle_commune?: string;
-}): string {
-  const complete = (siege.adresse ?? "").trim();
-  const codePostal = (siege.code_postal ?? "").trim();
-
-  // L'adresse porte déjà le code postal : elle porte donc aussi la commune.
-  if (codePostal && complete.includes(codePostal)) return complete;
-
-  return [complete, codePostal, siege.libelle_commune].filter(Boolean).join(" ").trim();
-}
-
-export function RechercheAuRegistre({
-  id,
-  libelle = "Chercher la société au registre",
-  valeur,
-  surSaisie,
-  surSelection,
-  compacte = false,
-}: {
-  id: string;
-  libelle?: string;
-  /**
-   * Posée en bout de ligne plutôt qu'en tête de fiche.
-   *
-   * Dans la fiche d'un associé, la recherche prenait une rangée entière pour un champ
-   * qu'on n'utilise qu'une fois, au tout début. Compacte, elle tient à droite des deux
-   * onglets, là où il n'y avait rien - et son intitulé passe au placeholder, l'étiquette
-   * restant lisible aux lecteurs d'écran.
-   */
-  compacte?: boolean;
-  /*
-   * Contrôlé depuis l'extérieur quand on le lui demande.
-   *
-   * La recherche gardait son terme dans son propre état : rouvrir un dossier
-   * réaffichait un champ vide au-dessus de données déjà remplies, et l'on ne savait
-   * plus quelle société avait été retenue. Sans `valeur`, elle se gère comme avant.
-   */
-  valeur?: string;
-  surSaisie?: (terme: string) => void;
-  surSelection: (societe: SocieteTrouvee) => void;
-}) {
-  const [interne, setInterne] = useState("");
-  const controle = valeur !== undefined;
-  const terme = controle ? valeur : interne;
-  const setTerme = (v: string) => {
-    if (controle) surSaisie?.(v);
-    else setInterne(v);
-  };
-  const [resultats, setResultats] = useState<ResultatRecherche[]>([]);
-  const [ouvert, setOuvert] = useState(false);
-  const [remarque, setRemarque] = useState<string | null>(null);
-  const frappe = useRef(false);
-
-  useEffect(() => {
-    if (!frappe.current) return;
-    frappe.current = false;
-    if (terme.trim().length < 3) return;
-
-    const abandon = new AbortController();
-    const minuteur = setTimeout(async () => {
-      try {
-        setResultats(await chercherAuRegistre(terme, abandon.signal));
-        setOuvert(true);
-      } catch {
-        // Annuaire injoignable : les champs restent saisissables à la main.
-      }
-    }, 280);
-
-    return () => {
-      clearTimeout(minuteur);
-      abandon.abort();
-    };
-  }, [terme]);
-
-  function retenir(resultat: ResultatRecherche) {
-    const nom = resultat.nom_complet ?? resultat.nom_raison_sociale ?? "";
-    const siege = resultat.siege ?? {};
-
-    setTerme(nom);
-    setOuvert(false);
-    setResultats([]);
-
-    const categorie = resultat.nature_juridique ?? "";
-    const forme = formeDeLaCategorie(categorie) ?? "";
-    const libelleCategorie = libelleDeLaCategorie(categorie) ?? "";
-
-    /*
-     * Dire ce qu'on a lu quand on ne sait pas le traduire.
-     *
-     * Une catégorie sans forme correspondante laissait le champ vide, sans rien dire :
-     * on ne pouvait pas savoir si le registre n'avait rien répondu ou si sa réponse
-     * n'avait pas été comprise. La nommer permet de choisir en connaissance de cause.
-     */
-    setRemarque(
-      forme || !libelleCategorie
-        ? null
-        : "Le registre indique « " +
-            libelleCategorie +
-            " » : choisissez la forme à écrire dans les actes."
-    );
-
-    surSelection({
-      denomination: nom,
-      forme,
-      categorie,
-      libelleCategorie,
-      siren: resultat.siren ?? "",
-      siege: siegeSurUneLigne(siege),
-      codePostal: siege.code_postal ?? "",
-      commune: siege.libelle_commune ?? "",
-    });
-  }
-
-  return (
-    <div
-      className={compacte ? `${styles.recherche} ${styles.rechercheCompacte}` : styles.recherche}
-    >
-      <label htmlFor={id} className={compacte ? styles.invisible : undefined}>
-        {libelle}
-      </label>
-      <input
-        id={id}
-        value={terme}
-        autoComplete="off"
-        placeholder={compacte ? "Rechercher une société" : "Nom ou SIREN"}
-        onChange={(e) => {
-          frappe.current = true;
-          setTerme(e.target.value);
-        }}
-        onBlur={() => setTimeout(() => setOuvert(false), 150)}
-      />
-
-      {ouvert && resultats.length > 0 && (
-        <ul className={styles.resultats}>
-          {resultats.map((r) => (
-            <li key={r.siren}>
-              <button type="button" className={styles.resultat} onMouseDown={() => retenir(r)}>
-                <span className={styles.resultatNom}>{r.nom_complet ?? r.nom_raison_sociale}</span>
-                <span className={styles.resultatDetail}>
-                  {r.siren} - {r.siege?.libelle_commune ?? ""}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/*
-        Rien trouvé : on le dit.
-
-        La liste ne s'affichait que si elle avait quelque chose à montrer : sur un nom
-        introuvable, l'écran ne répondait rien, et l'on ne savait pas si la recherche
-        tournait, si l'annuaire était en panne, ou si la société n'y était pas.
-      */}
-      {ouvert && resultats.length === 0 && (
-        <p className={styles.resultatVide}>
-          Aucune société de ce nom au registre. Vérifiez l&apos;orthographe, essayez le SIREN, ou
-          remplissez les champs à la main.
-        </p>
-      )}
-
-      {/*
-        La catégorie lue, quand elle ne désigne aucune de nos formes.
-
-        Le champ restait vide sans rien dire : on ne pouvait pas distinguer une réponse
-        absente d'une réponse incomprise. Le registre parle en codes à quatre chiffres,
-        et tous ne désignent pas une société - un GIE, une association, une société
-        étrangère n'ont pas de forme au sens de nos actes.
-      */}
-      {remarque && <p className={styles.resultatVide}>{remarque}</p>}
-    </div>
-  );
-}
 
 /** Les qualités de la forme, plus celle déjà choisie si elle n'en est pas. */
 function qualitesProposees(forme: string | null | undefined, choisie: string): string[] {
@@ -1539,12 +1254,25 @@ function EtapeSociete({
         d'aucun changement : le même gérant signe, qu'on transfère le siège ou qu'on
         change la dénomination.
       */}
+      {/*
+        Un seul, et le dire avant qu'on cherche où mettre les autres.
+
+        Le bloc ne décrit pas la direction de la société : il désigne qui signe le
+        pouvoir. Mais le titre au singulier, sur un seul jeu de champs, se lit comme
+        « déclarez votre direction » - devant trois cogérants, on cherche forcément où
+        mettre les deux autres, et l'on croit le formulaire incomplet.
+
+        Rien d'autre dans le dossier n'en demande plus d'un : le procès-verbal nomme les
+        associés présents et un seul président de séance, l'état des sièges antérieurs
+        reprend le même signataire, et le dépôt au guichet n'envoie pas la liste des
+        dirigeants pour une modification qui ne les change pas.
+      */}
       <h3 className={styles.sousTitre}>Le représentant légal</h3>
       <p className={styles.description}>
         L&apos;avocat dépose la formalité en votre nom : pour cela, il lui faut un pouvoir signé par
-        la société. C&apos;est cette personne qui le signera.
+        la société. C&apos;est cette personne qui le signera.{" "}
+        {pourquoiUnSeulSignataire(etat.societe.forme)}
       </p>
-
       {/*
         Un dirigeant peut être une société.
 
@@ -2012,6 +1740,7 @@ function EtapeDetails({
   anomalies,
   restants,
   majValeurs,
+  majCessions,
   changer,
 }: {
   /** Le dépôt des accords passe par sa propre route : elle a besoin du dossier. */
@@ -2021,6 +1750,8 @@ function EtapeDetails({
   /** Tout ce qui manque, montré ou non : le sommaire s'en sert pour cocher. */
   restants: { champ: string; message: string }[];
   majValeurs: (maj: (valeurs: Valeurs) => Valeurs) => void;
+  /** Les cessions, écrites depuis l'état le plus récent : voir `majCessions` plus haut. */
+  majCessions: (maj: (cessions: Cession[]) => Cession[]) => void;
   changer: (c: Partial<EtatDuDossier>) => void;
 }) {
   function valeur(identifiant: string, v: string | number) {
@@ -2271,6 +2002,7 @@ function EtapeDetails({
                     changer({ assemblee: { ...etat.assemblee, associes } })
                   }
                   surCessions={(cessions) => changer({ cessions })}
+                  majCessions={majCessions}
                   valeurs={etat.valeurs}
                   surAgrementStatutaire={(reponse) =>
                     majValeurs((valeurs) => ({ ...valeurs, agrementRequis: reponse }))
@@ -2494,6 +2226,30 @@ function EtapeDetails({
                       </Fragment>
                     ))}
                 </div>
+              )}
+
+              {/*
+            L'autre société, que le parcours ne nommait que pour la décrire.
+
+            Les champs qui précèdent la désignent - sa forme, son capital, ses titres -
+            et le dossier s'arrêtait là : on repartait avec une holding au capital
+            augmenté et une société dont les registres nommaient toujours l'apporteur.
+            Le bloc dit ce qu'elle doit, et quand, dès que sa forme est connue : c'est
+            elle qui décide si les associés doivent agréer et s'il y a des statuts à
+            redéposer.
+          */}
+              {definition.code === "apport_titres" && (
+                <ApresLApport
+                  contexte={{
+                    apporteeForme: texteDe(etat.valeurs.apporteeForme),
+                    apporteeDenomination: texteDe(etat.valeurs.apporteeDenomination),
+                    apportNbTitres: nombreLu(etat.valeurs.apportNbTitres),
+                    apporteeNbTitres: nombreLu(etat.valeurs.apporteeNbTitres),
+                  }}
+                  nomHolding={etat.societe.denomination}
+                  dossier={dossier}
+                  dossierApportee={etat.dossierSocieteApportee}
+                />
               )}
 
               {/*
@@ -3001,6 +2757,43 @@ function EtapeAssemblee({
           </legend>
 
           {/*
+            Le retrait appartient à l'associé qu'il retire.
+
+            Il vivait au bas de la liste, en une ligne seule : « Supprimer l'associé 3 »,
+            en ambre, sans bordure ni fond, juste après le message qui valide la
+            répartition et juste avant « Continuer ». À cet endroit et sous cette forme,
+            ce n'était plus un bouton mais une phrase à l'impératif - un client l'a lu
+            comme une consigne et a cherché ce qu'il avait mal rempli, alors que ses trois
+            associés étaient justes et que rien ne bloquait.
+
+            Et l'on ne pouvait retirer que le dernier : pour ôter le deuxième sur trois,
+            il fallait supprimer le troisième, puis le deuxième, puis le retaper. La croix
+            par carte règle les deux, et c'est déjà le geste de la liste des cessions.
+          */}
+          {montres.length > 1 && (
+            <button
+              type="button"
+              className={styles.retirerPersonne}
+              aria-label={
+                "Retirer l'associé " +
+                (rang + 1) +
+                (nomDeLAssocie(associe) ? " - " + nomDeLAssocie(associe) : "")
+              }
+              title="Retirer cet associé"
+              onClick={() =>
+                changer({
+                  assemblee: {
+                    ...etat.assemblee,
+                    associes: montres.filter((_, i) => i !== rang),
+                  },
+                })
+              }
+            >
+              ×
+            </button>
+          )}
+
+          {/*
             Un associé peut être une société : une SCI détenue par une holding, une
             SAS dont un fonds est associé. L'acte doit alors la désigner par sa forme,
             son capital, son siège et son numéro, non par un prénom.
@@ -3256,13 +3049,14 @@ function EtapeAssemblee({
       )}
 
       {/*
-        Ajouter se voit, supprimer se cherche.
+        L'ajout est le seul geste qui reste en bas de liste.
 
-        Les deux gestes portaient le même bouton blanc, côte à côte, de la même taille :
-        celui qui ajoute est le plus courant, celui qui retire est irréversible d'un
-        clic. L'ajout devient une zone en pointillé sur toute la largeur - la forme d'un
-        emplacement vide qui attend d'être rempli ; la suppression, un lien rouge
-        discret, à droite, avec sa corbeille.
+        Les deux portaient le même bouton blanc, côte à côte : celui qui ajoute est le
+        plus courant, celui qui retire est irréversible d'un clic. L'ajout a pris la
+        forme d'un emplacement vide qui attend d'être rempli - une zone en pointillé sur
+        toute la largeur. Le retrait, lui, a quitté cette place : posé ici en une phrase
+        à l'impératif, entre la répartition validée et « Continuer », il se lisait comme
+        la consigne suivante. Il appartient désormais à la carte qu'il retire.
       */}
       <button
         type="button"
@@ -3287,37 +3081,6 @@ function EtapeAssemblee({
         </svg>
         Ajouter un associé
       </button>
-
-      {/* Le premier ne se supprime pas : une assemblée sans associé n'existe pas. */}
-      {montres.length > 1 && (
-        <div className={styles.retirerLigne}>
-          <button
-            type="button"
-            className={styles.retirerAssocie}
-            onClick={() =>
-              changer({
-                assemblee: { ...etat.assemblee, associes: montres.slice(0, -1) },
-              })
-            }
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-            </svg>
-            Supprimer l&apos;associé {montres.length}
-          </button>
-        </div>
-      )}
     </>
   );
 }

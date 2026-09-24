@@ -17,6 +17,8 @@
  * réunis, ce qui est le comportement voulu : c'est bien la même société en projet.
  */
 
+import type { ApportDuDossier } from "./suites-de-lapport";
+
 export interface DossierDeSociete {
   id: number;
   type: string | null;
@@ -33,6 +35,14 @@ export interface DossierDeSociete {
   /** Les échéances que ce dossier porte, quand il en a. */
   limiteDepot?: string | null;
   termeDuMandat?: string | null;
+  /**
+   * L'apport de titres que ce dossier a réalisé, quand c'en est un.
+   *
+   * Il ouvre des délais que la société seule ne permet pas de deviner : trente jours
+   * pour les bénéficiaires effectifs, un mois pour les statuts de l'autre société, et
+   * une déclaration annuelle qui court des années.
+   */
+  apport?: ApportDuDossier | null;
   /**
    * L'exercice qu'un dépôt des comptes déclare, par sa date de clôture.
    *

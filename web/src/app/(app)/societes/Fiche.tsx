@@ -14,6 +14,7 @@ import {
   ditQuelqueChose,
 } from "@/domain/formalite/journal";
 import { obligationsDeLaSociete } from "@/domain/societe/obligations";
+import { suitesDeLApport } from "@/domain/societe/suites-de-lapport";
 import { CeQuiVousAttend, type AVenir } from "./CeQuiVousAttend";
 import styles from "./Societes.module.css";
 
@@ -121,6 +122,18 @@ export async function Fiche({ cle }: { cle: string }) {
       lien: e.lien,
     })),
     ...obligationsDeLaSociete(societe),
+    /*
+     * Et ce qu'un apport de titres a laissé derrière lui.
+     *
+     * Les deux premières sources se déduisent de la société et de ses dossiers ouverts ;
+     * celle-ci d'un acte passé. Un apport referme son dossier et ouvre trois horloges
+     * que plus rien ne portait - trente jours pour les bénéficiaires effectifs des deux
+     * sociétés, un mois pour les statuts de l'autre, et une déclaration annuelle.
+     */
+    ...suitesDeLApport(
+      societe.dossiers.map((d) => d.apport).filter((a) => a != null),
+      societe.cle
+    ),
   ].sort((a, b) => (a.limite ?? "9999").localeCompare(b.limite ?? "9999"));
 
   const recherche = encodeURIComponent(societe.denomination);

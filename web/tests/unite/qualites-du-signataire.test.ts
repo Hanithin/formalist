@@ -2,10 +2,20 @@ import { describe, it, expect } from "vitest";
 import { qualitesDuSignataire } from "@/domain/modification/types";
 
 describe("les qualités du signataire", () => {
-  it("n'offre que le gérant à une société par parts", () => {
+  it("n'offre que la gérance à une société par parts", () => {
+    /*
+     * La co-gérance en fait partie.
+     *
+     * Des statuts qui instituent plusieurs gérants les nomment « cogérants », et le
+     * pouvoir porte cette qualité mot pour mot : il identifie son signataire comme le
+     * ferait un notaire. Le menu ne l'offrait pas, et l'on signait sous une qualité qui
+     * n'est pas celle des statuts.
+     */
     expect(qualitesDuSignataire("SARL")).toEqual([
       "gérant",
       "gérante",
+      "cogérant",
+      "cogérante",
       "représentant légal",
       "représentante légale",
     ]);

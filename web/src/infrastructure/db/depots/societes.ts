@@ -13,6 +13,7 @@ import { dateLimiteApprobation, dateLimiteDepot } from "@/domain/comptes/regles"
 import { termeDuMandat } from "@/domain/fermeture/delais";
 import { premiereEtapeIncomplete, type Brouillon } from "@/domain/formalite/parcours";
 import type { UtilisateurConnecte } from "../sessions";
+import type { ApportDuDossier } from "@/domain/societe/suites-de-lapport";
 
 /**
  * Le portefeuille de sociétés.
@@ -101,6 +102,41 @@ function echeancesDu(
   return { limiteDepot: null, termeDuMandat: null };
 }
 
+/**
+ * L'apport de titres que porte un dossier de modification, quand il en porte un.
+ *
+ * Rien n'est rendu pour les autres parcours, ni pour une modification sans apport : les
+ * délais qui en découlent n'existent que parce que l'acte a eu lieu, et les annoncer
+ * autrement ferait douter de tous les autres.
+ */
+function apportDuDossier(
+  type: string | null,
+  dataJson: string | null
+): ApportDuDossier | null {
+  if (type !== "modification" || !dataJson) return null;
+
+  try {
+    const lu: unknown = JSON.parse(dataJson);
+    if (!lu || typeof lu !== "object") return null;
+    const objet = lu as { codes?: unknown; valeurs?: Record<string, unknown> };
+    if (!Array.isArray(objet.codes) || !objet.codes.includes("apport_titres")) return null;
+
+    const valeurs = objet.valeurs ?? {};
+    const texte = (cle: string) =>
+      typeof valeurs[cle] === "string" ? (valeurs[cle] as string) : null;
+
+    return {
+      dateEffet: texte("apportDateEffet"),
+      apporteeForme: texte("apporteeForme"),
+      apporteeDenomination: texte("apporteeDenomination"),
+      /* Le contrôle décide du régime : report avec, sursis sans. Seul le report se déclare. */
+      sousControle: texte("apportControle") === "Oui",
+    };
+  } catch {
+    return null;
+  }
+}
+
 function lireBrouillon(dataJson: string | null): Brouillon {
   try {
     return dataJson ? (JSON.parse(dataJson) as Brouillon) : ({} as Brouillon);
@@ -150,6 +186,7 @@ export async function mesSocietes(utilisateur: UtilisateurConnecte): Promise<Soc
         clotureDeclaree:
           typeof valeurs.dateCloture === "string" ? (valeurs.dateCloture as string) : null,
         ...echeancesDu(d.type, formeRetenue, valeurs),
+        apport: apportDuDossier(d.type, d.data_json),
       };
     });
 

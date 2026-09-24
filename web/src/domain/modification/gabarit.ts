@@ -17,7 +17,7 @@ import {
   regimeApport,
   REMPLOI,
 } from "./apport";
-import { nomDeLApporteur } from "./traite-apport";
+import { nomDeLApporteur, doubleRepresentation } from "./traite-apport";
 import {
   augmentationSouscrite,
   lignesDesSouscripteurs,
@@ -103,6 +103,15 @@ export const MODELE_AIR_ATTESTATION_COMPTE = "modif-air-attestation-compte.docx"
  * reportent.
  */
 export const MODELE_AIR_REGISTRE_TITRES = "modif-air-registre-titres.docx";
+
+/**
+ * L'ordre de mouvement de la société dont les titres sont apportés.
+ *
+ * Il ne se confond pas avec celui de la conversion des bons ci-dessus : celui-là porte
+ * des actions créées au capital de la société qui édite le registre, celui-ci un
+ * transfert entre deux titulaires, dans une société qui n'est pas celle du dossier.
+ */
+export const MODELE_APPORT_REGISTRE_TITRES = "modif-apport-registre-titres.docx";
 /**
  * La feuille de présence, que le procès-verbal cite depuis toujours.
  *
@@ -1835,6 +1844,20 @@ function donneesDeLApport(
     APPORT_LIEU_SIGNATURE: ou(texte(valeurs.apportLieuSignature)),
     APPORT_DATE_SIGNATURE_FR: dateEnFrancais(texteBrut(valeurs.apportDateSignature)),
     APPORT_COUR_APPEL: ou(texte(valeurs.apportCourAppel)),
+
+    /*
+     * Qui signe pour la société qui reçoit les titres.
+     *
+     * Le traité le calcule déjà : quand l'apporteur est lui-même le représentant légal
+     * de la holding, il signe des deux côtés et le formulaire ne redemande pas son nom.
+     * L'ordre de mouvement porte les mêmes deux signatures que le traité - les faire
+     * diverger donnerait deux actes du même jour signés par deux personnes différentes.
+     */
+    APPORT_SIGNATAIRE_BENEFICIAIRE: ou(
+      doubleRepresentation(valeurs)
+        ? nomDeLApporteur(valeurs) + ", en sa qualité de représentant légal"
+        : texte(valeurs.beneficiaireRepresentant)
+    ),
   };
 }
 
@@ -2257,6 +2280,26 @@ export function actesAProduire(
       gabarit: MODELE_TRAITE,
       moteur: "traite-apport",
     });
+
+    /*
+     * Ce qui transfère réellement les titres, et que le dossier ne produisait pas.
+     *
+     * Dans une société par actions, la propriété résulte de l'inscription au compte de
+     * l'acquéreur : tant qu'elle n'est pas portée, la holding n'est actionnaire de rien,
+     * quoi que dise le traité signé le même jour. Le dossier se terminait donc sur un
+     * capital augmenté d'un côté et des registres inchangés de l'autre.
+     *
+     * L'acte ne concerne que les sociétés par actions. Dans une société à parts
+     * sociales, il n'y a pas de registre de mouvements : c'est la répartition inscrite
+     * aux statuts qui fait foi, et ce sont eux qu'il faut reprendre - le bloc des
+     * démarches le dit, et la mise à jour se mène comme une cession de parts.
+     */
+    if (natureDeLaForme(texte(valeurs.apporteeForme)).titres === "actions") {
+      actes.push({
+        titre: "Ordre de mouvement - " + (texte(valeurs.apporteeDenomination) || "société apportée"),
+        gabarit: MODELE_APPORT_REGISTRE_TITRES,
+      });
+    }
   }
 
   /*

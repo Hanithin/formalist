@@ -1,6 +1,7 @@
 import { prisma } from "../client";
 import { separerLIdentite } from "@/domain/formalite/noms";
 import { exigerDossierModifiable } from "./dossiers";
+import { Interdit } from "../utilisateur-courant";
 import { proposerAuxAvocats } from "./avocat";
 import { relirePaiement } from "@/infrastructure/paiement/stripe";
 import { estUnTypeConnu, type TypeModification, type Valeurs } from "@/domain/modification/types";
@@ -107,6 +108,15 @@ export interface Modification {
   avisPublies?: boolean;
   paiementRef?: string;
   paye?: boolean;
+  /**
+   * Le dossier ouvert pour la société dont les titres sont apportés.
+   *
+   * Un apport en appelle un second : la holding voit son capital augmenter, mais c'est
+   * l'autre société qui change d'associé, et ses registres ou ses statuts doivent le
+   * dire. Le lien est gardé ici pour deux raisons - ne pas rouvrir un dossier à chaque
+   * clic, et pouvoir y renvoyer depuis les deux écrans qui parlent de l'apport.
+   */
+  dossierSocieteApportee?: number;
 }
 
 const VIDE: Modification = {
@@ -235,6 +245,139 @@ export async function commencerModification(
   });
 
   return dossier.id;
+}
+
+/**
+ * Ouvre le dossier de la société dont les titres sont apportés, et le relie au premier.
+ *
+ * L'apport ne se termine pas quand la holding a son capital augmenté : l'autre société
+ * change d'associé, et ses registres ou ses statuts doivent le dire. Le parcours ne le
+ * disait pas, et l'opération se refermait sur deux sociétés dont l'une contredisait
+ * l'autre.
+ *
+ * Un second dossier plutôt qu'une extension du premier : ce sont deux sociétés, deux
+ * greffes possibles, deux jeux d'actes, et le dépôt au guichet se fait pour l'une puis
+ * pour l'autre. Les fondre reviendrait à déposer les statuts de l'une sous le numéro de
+ * l'autre.
+ *
+ * Il n'est pas ouvert d'office. Le client vient acheter un apport, pas deux formalités :
+ * un second montant découvert à l'écran de paiement se lit comme un piège. C'est un
+ * geste, et le lien retenu ici empêche d'en ouvrir deux.
+ *
+ * Le dossier arrive rempli de ce que l'apport sait déjà : la société, l'apporteur en
+ * associé cédant, la holding en cessionnaire, le nombre de titres et leur valeur. Il
+ * reste à le compléter - les autres associés, la date - ce que personne ne pouvait
+ * deviner depuis le premier dossier.
+ */
+export async function ouvrirLeDossierDeLaSocieteApportee(
+  utilisateur: UtilisateurConnecte,
+  dossierSource: number
+): Promise<{ dossier: number; deja: boolean }> {
+  const { dossier, modification } = await ouvrirModification(utilisateur, dossierSource);
+
+  if (!modification.codes.includes("apport_titres")) {
+    throw new Interdit("Ce dossier n'est pas un apport de titres");
+  }
+
+  /*
+   * Deux clics ne font pas deux dossiers.
+   *
+   * On vérifie que celui qu'on a retenu existe encore : un dossier supprimé laisserait
+   * un lien mort, et le bouton ne rouvrirait jamais rien.
+   */
+  if (modification.dossierSocieteApportee) {
+    const existe = await prisma.formalites.findFirst({
+      where: { id: modification.dossierSocieteApportee, user_id: dossier.user_id },
+      select: { id: true },
+    });
+    if (existe) return { dossier: existe.id, deja: true };
+  }
+
+  const v = modification.valeurs;
+  const lu = (cle: string): string =>
+    typeof v[cle] === "number" ? String(v[cle]) : typeof v[cle] === "string" ? v[cle].trim() : "";
+  const nombre = (cle: string): number | null => {
+    const n = Number(lu(cle).replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+
+  const titres = nombre("apportNbTitres");
+
+  /*
+   * L'apporteur devient l'associé cédant, et la holding le cessionnaire.
+   *
+   * La cession désigne les associés par leur rang dans la liste : l'apporteur y entre
+   * donc en premier, et c'est son rang zéro que la cession vise. Les autres associés
+   * restent à saisir - le dossier d'apport ne les connaît pas.
+   */
+  const depart: Modification = {
+    ...VIDE,
+    codes: ["cession_parts"],
+    etape: 1,
+    societe: {
+      denomination: lu("apporteeDenomination"),
+      forme: lu("apporteeForme"),
+      siren: lu("apporteeSiren"),
+      capital: nombre("apporteeCapital"),
+      villeRcs: lu("apporteeRcs"),
+      dateStatuts: lu("apporteeDateStatuts") || null,
+    },
+    valeurs: {},
+    assemblee: {
+      totalParts: nombre("apporteeNbTitres"),
+      associes: [
+        {
+          nature: "physique",
+          civilite: lu("apporteurCivilite"),
+          prenom: lu("apporteurPrenom"),
+          nom: lu("apporteurNom"),
+          parts: titres,
+        },
+      ],
+    },
+    cessions: [
+      {
+        cedant: 0,
+        parts: titres,
+        prix: nombre("apportValeur"),
+        date: lu("apportDateEffet") || null,
+        /* La holding est une personne distincte : pour cette société, c'est un tiers. */
+        vers: "tiers",
+        cessionnaire: null,
+        nom: dossier.societe === SOCIETE_A_IDENTIFIER ? "" : dossier.societe,
+        adresse: null,
+      },
+    ],
+  };
+
+  const equipe = await prisma.team_members.findFirst({
+    where: { user_id: dossier.user_id },
+    select: { team_id: true },
+  });
+
+  const ouvert = await prisma.formalites.create({
+    data: {
+      user_id: dossier.user_id,
+      team_id: equipe?.team_id ?? null,
+      type: "modification",
+      forme: depart.societe.forme ?? "",
+      societe: depart.societe.denomination || SOCIETE_A_IDENTIFIER,
+      status: "en_cours",
+      phase: 1,
+      data_json: JSON.stringify(depart),
+    },
+  });
+
+  /* Le lien s'écrit dans le dossier d'apport : c'est lui qui porte le bouton. */
+  await prisma.formalites.update({
+    where: { id: dossierSource },
+    data: {
+      data_json: JSON.stringify({ ...modification, dossierSocieteApportee: ouvert.id }),
+      updated_at: new Date(),
+    },
+  });
+
+  return { dossier: ouvert.id, deja: false };
 }
 
 export async function ouvrirModification(utilisateur: UtilisateurConnecte, dossierId: number) {

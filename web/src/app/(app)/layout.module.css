@@ -36,7 +36,22 @@
   position: relative;
   height: 100vh;
   height: 100dvh;
-  overflow: hidden;
+  /*
+   * `clip` et non `hidden` : la coquille découpe, elle ne défile pas.
+   *
+   * `hidden` cache la barre de défilement sans retirer le défilement lui-même. Un
+   * descendant qui dépasse rend donc la coquille glissante, et le navigateur la fait
+   * glisser dès qu'il veut montrer un élément qui y prend le focus - sans qu'aucun
+   * geste ne puisse la remettre en place, faute de barre.
+   *
+   * C'est arrivé deux fois, avec deux contrôles masqués en absolu : l'entrée de
+   * fichier du fil de discussion, puis le radio « Une personne / Une société » du
+   * représentant légal. Au clic, l'application entière montait de trois cent
+   * quatre-vingt-cinq pixels et la colonne du récapitulatif se retrouvait coupée en
+   * haut. Les deux sont réparés à leur source ; `clip` fait que le prochain ne
+   * rouvrira pas le même trou - il ne crée pas de zone défilante du tout.
+   */
+  overflow: clip;
   background: #f5f5f5;
 }
 

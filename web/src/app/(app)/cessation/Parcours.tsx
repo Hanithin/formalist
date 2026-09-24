@@ -3,7 +3,11 @@
 import { ChampChoix } from "@/components/formulaire/ChampChoix";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { Champ, RechercheAuRegistre, type SocieteTrouvee } from "../modification/Parcours";
+import { Champ } from "../modification/Parcours";
+import {
+  RechercheAuRegistre,
+  type SocieteTrouvee,
+} from "@/components/formulaire/RechercheAuRegistre";
 import { Adresse, Ville } from "@/components/formulaire/Adresse";
 import { montantLisible } from "@/domain/modification/offre";
 import { phraseDesAnomalies } from "@/domain/formalite/anomalies";

@@ -313,6 +313,8 @@ export default async function Modification({
     retouches: modification.retouches,
     statutsAJour: modification.statutsAJour,
     paye: modification.paye,
+    /* Le second dossier, quand il a été ouvert : le bloc de l'apport y renvoie. */
+    dossierSocieteApportee: modification.dossierSocieteApportee,
   };
 
   const demandee = Number(etape);

@@ -1,0 +1,276 @@
+/*
+ * Ce que l'apport appelle, de chaque côté.
+ *
+ * La carte reprend la mesure des autres blocs du dossier - un filet gris, seize pixels
+ * de rayon, vingt-quatre de rembourrage - parce qu'elle se pose à côté d'eux et qu'un
+ * cadre de plus, dessiné autrement, ferait croire à un encart publicitaire.
+ */
+
+.bloc {
+  margin: 24px 0 0;
+  padding: 24px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  background: #fff;
+  letter-spacing: 0;
+}
+
+.titre {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0;
+}
+
+.introduction {
+  margin: 6px 0 0;
+  max-width: 68ch;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+/*
+ * Le rail du temps.
+ *
+ * Les moments se suivent, et c'est la seule chose à lire avant le détail : un agrément
+ * qui vient après la signature ne répare rien. Le trait vertical tient cet ordre sans
+ * qu'on ait à numéroter - « 1, 2, 3 » ferait croire à des étapes qu'on coche.
+ */
+.moments {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.moment {
+  position: relative;
+  padding: 0 0 20px 26px;
+}
+
+.moment::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: #e8e8ea;
+}
+
+.moment:last-child {
+  padding-bottom: 0;
+}
+
+.moment:last-child::before {
+  display: none;
+}
+
+.momentTete {
+  display: flex;
+  gap: 0;
+}
+
+/*
+ * La pastille marque le rang, non un état.
+ *
+ * Elle est pleine et de la même encre partout : aucun de ces moments n'est facultatif,
+ * et les teinter en ferait passer certains pour des avertissements et d'autres pour des
+ * détails.
+ */
+.pastille {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 100px;
+  background: #111;
+}
+
+.momentQuand {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+.momentDetail {
+  margin: 2px 0 0;
+  max-width: 62ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8a8a92;
+}
+
+.demarches {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.demarche {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.demarcheTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.demarcheQuoi {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+/*
+ * Qui tient la plume.
+ *
+ * Une étiquette discrète, en gris, sauf pour ce qui reste au client : c'est la seule
+ * ligne sur laquelle il a quelque chose à faire, et elle doit se retrouver d'un coup
+ * d'œil dans une liste de huit.
+ */
+.porteur {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #111;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.porteurNous {
+  background: #f0f0f2;
+  color: #71717a;
+}
+
+.demarchePourquoi {
+  margin: 5px 0 0;
+  max-width: 68ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #52525b;
+}
+
+.demarcheFondement {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9a9aa2;
+}
+
+/*
+ * Ce qui n'est pas dû, détaché du reste.
+ *
+ * Mêlé à la liste, il se lisait comme une démarche de plus - on ajoutait une annonce
+ * légale à un dossier qui n'en appelle aucune, ce que la phrase disait précisément
+ * d'éviter.
+ */
+.pasDu {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f4f7f4;
+}
+
+.pasDuTitre {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3f6b46;
+}
+
+.pasDuLigne {
+  margin: 4px 0 0;
+  max-width: 68ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #4b6b50;
+}
+
+/* Sous six cents pixels, l'étiquette passe sous l'intitulé plutôt que de l'écraser. */
+@media (max-width: 600px) {
+  .bloc {
+    padding: 18px 16px;
+  }
+
+  .demarcheTete {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/*
+ * Le geste, au pied de la liste.
+ *
+ * Il ne se range pas parmi les démarches : celles-ci se lisent, celui-ci se fait. Mêlé
+ * à elles, le bouton se serait perdu au milieu de huit encadrés gris, et l'on aurait
+ * refermé l'écran en croyant n'avoir rien à cliquer.
+ */
+.geste {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.gesteQuoi {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.gestePourquoi {
+  margin: 4px 0 0;
+  max-width: 60ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+.gesteBouton {
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 100px;
+  background: #111;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0;
+}
+
+.gesteBouton:hover:not(:disabled) {
+  background: #2a2a2a;
+}
+
+.gesteBouton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.gesteRefus {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12.5px;
+  color: #b91c1c;
+}

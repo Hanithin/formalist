@@ -40,6 +40,15 @@ export interface AVenir {
   cle: string;
   intitule: string;
   limite: string | null;
+  /**
+   * Ce qui tient lieu de date quand il n'y en a pas.
+   *
+   * Toutes les obligations sans date ne sont pas datées par les statuts. L'approbation
+   * des comptes d'une société civile l'est ; le rappel annuel d'un report d'imposition
+   * suit la déclaration de revenus, dont la date change chaque année. Écrire « selon vos
+   * statuts » sous un rappel fiscal enverrait chercher une réponse là où elle n'est pas.
+   */
+  quandSansDate?: string;
   explication?: string;
   fondement?: string;
   bouton: string;
@@ -66,8 +75,16 @@ export function CeQuiVousAttend({ obligations }: { obligations: AVenir[] }) {
             <span className={styles.attendDelai}>{delaiLisible(premiere.limite)}</span>
           </>
         ) : (
-          // Sans date légale - une société civile - on ne fabrique pas d'urgence.
-          <span className={styles.attendDate}>À la date que fixent vos statuts</span>
+          /*
+            Sans date légale, on ne fabrique pas d'urgence - mais on dit ce qui la fixe.
+            
+            « À la date que fixent vos statuts » vaut pour l'approbation des comptes
+            d'une société civile, et pour elle seule. Sous un rappel fiscal, elle
+            enverrait chercher une réponse là où elle n'est pas.
+          */
+          <span className={styles.attendDate}>
+            {premiere.quandSansDate ?? "À la date que fixent vos statuts"}
+          </span>
         )}
       </p>
 
@@ -93,7 +110,7 @@ export function CeQuiVousAttend({ obligations }: { obligations: AVenir[] }) {
             <li key={o.cle}>
               <span>{o.intitule}</span>
               <span className={styles.attendSuiteQuand}>
-                {o.limite ? dateLisible(o.limite) : "selon vos statuts"}
+                {o.limite ? dateLisible(o.limite) : (o.quandSansDate ?? "selon vos statuts")}
               </span>
             </li>
           ))}

@@ -10,6 +10,7 @@ import { echeancesDesDossiers } from "@/domain/formalite/accueil";
 import { sirenLisible } from "@/domain/modification/annonce";
 import { EnTetePage } from "@/components/page/EnTetePage";
 import { delaiLisible, obligationsDeLaSociete } from "@/domain/societe/obligations";
+import { suitesDeLApport } from "@/domain/societe/suites-de-lapport";
 import { Vide } from "@/components/liste/Vide";
 import { Fiche } from "./Fiche";
 import { Registre, type LigneDuRegistre } from "./Registre";
@@ -81,7 +82,14 @@ export default async function Societes() {
       }))
     ).map((e) => ({ intitule: e.intitule, limite: e.limite }));
 
-    const deLaSociete = obligationsDeLaSociete(societe)
+    /* Les suites d'un apport comptent comme les autres : c'est la plus proche qui s'affiche. */
+    const deLaSociete = [
+      ...obligationsDeLaSociete(societe),
+      ...suitesDeLApport(
+        societe.dossiers.map((d) => d.apport).filter((a) => a != null),
+        societe.cle
+      ),
+    ]
       .filter((o) => o.limite)
       .map((o) => ({ intitule: o.intituleCourt, limite: o.limite! }));
 

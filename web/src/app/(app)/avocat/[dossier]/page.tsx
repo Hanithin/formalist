@@ -51,6 +51,7 @@ import {
 } from "@/domain/modification/recapitulatif";
 import { recapitulatifDesComptes } from "@/domain/comptes/recapitulatif";
 import styles from "../Avocat.module.css";
+import { ApresLApport } from "@/components/formalite/ApresLApport";
 
 export const metadata: Metadata = {
   title: "Dossier - Espace avocat - Formalist",
@@ -111,6 +112,7 @@ function etatDeLaModification(donnees: Record<string, unknown> | null): EtatDuDo
     retouches: modification.retouches,
     statutsAJour: modification.statutsAJour,
     paye: modification.paye,
+    dossierSocieteApportee: modification.dossierSocieteApportee,
   };
 }
 
@@ -160,6 +162,29 @@ export default async function DossierAvocat({ params }: { params: Promise<{ doss
     : dossier.type === "comptes"
       ? recapitulatifDesComptes(donnees)
       : null;
+
+  /*
+   * Ce qu'il faut de l'apport pour dire les démarches de l'autre société.
+   *
+   * Sa forme d'abord : c'est elle qui décide si les associés doivent agréer et s'il y a
+   * des statuts à redéposer. Les deux nombres de titres disent si la holding prend tout,
+   * auquel cas la société n'a plus qu'un associé et le registre doit le porter.
+   */
+  const apport = estUneModification(donnees)
+    ? (() => {
+        const etat = etatDeLaModification(donnees);
+        if (!etat.codes.includes("apport_titres")) return null;
+        const { valeurs } = etat;
+        return {
+          apporteeForme: valeurs.apporteeForme as string | undefined,
+          apporteeDenomination: valeurs.apporteeDenomination as string | undefined,
+          apportNbTitres: valeurs.apportNbTitres as string | number | undefined,
+          apporteeNbTitres: valeurs.apporteeNbTitres as string | number | undefined,
+          dossierLie: lireModification(donnees ? JSON.stringify(donnees) : null)
+            .dossierSocieteApportee,
+        };
+      })()
+    : null;
 
   const renseignes = CHAMPS.filter((c) => {
     const valeur = donnees[c.cle];
@@ -700,6 +725,32 @@ export default async function DossierAvocat({ params }: { params: Promise<{ doss
                 console au reste.
               */
             apresLaTacheDuMoment={
+              <>
+              {/*
+                L'autre société du dossier, et ce qu'elle doit.
+
+                Le dossier porte le nom de la holding : c'est son capital qu'on augmente,
+                ses actes qu'on relit, son dépôt qu'on prépare. La société dont les titres
+                sont apportés n'apparaissait nulle part sur cet écran, alors que c'est
+                elle qui change d'associé - et que l'agrément de ses associés doit être
+                acquis avant la signature du traité que l'avocat s'apprête à relire.
+
+                Le bloc est celui du client, mot pour mot : ce qu'on lui a promis et ce
+                que l'avocat vérifie ne peuvent pas être deux textes différents.
+              */}
+              {apport && (
+                <section key="apport" id="apport" className={styles.sectionDuDossier}>
+                  <ApresLApport
+                    contexte={apport}
+                    nomHolding={dossier.societe}
+                    dossier={dossier.id}
+                    dossierApportee={apport.dossierLie}
+                    titre="Les deux côtés de l'apport"
+                    introduction="Le dossier ne porte que la holding. Voici ce que l'opération appelle aussi du côté de la société dont les titres sont apportés, dans l'ordre où cela se fait."
+                  />
+                </section>
+              )}
+
               <section key="documents" id="documents" className={styles.sectionDuDossier}>
                 {/*
                 Un seul titre pour une seule liste.
@@ -932,6 +983,7 @@ export default async function DossierAvocat({ params }: { params: Promise<{ doss
             le même fil - la même table, le même point d'entrée.
           */}
               </section>
+              </>
             }
             dossier={dossier.id}
             taches={taches}

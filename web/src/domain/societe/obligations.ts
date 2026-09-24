@@ -20,7 +20,20 @@ import { etatDeLaSociete, natureDuDossier, type Societe } from "./portefeuille";
  * vraies.
  */
 
-export type NatureObligation = "approbation" | "depot";
+/**
+ * D'où vient l'obligation.
+ *
+ * Les deux premières se déduisent de la société elle-même : sa forme et la clôture de
+ * son exercice suffisent. Les suivantes naissent d'un acte - un apport de titres - et
+ * n'existent que parce qu'il a eu lieu. Le champ ne sert à aucun écran ; il sert à
+ * relire la liste et à savoir laquelle regarder quand une date se discute.
+ */
+export type NatureObligation =
+  | "approbation"
+  | "depot"
+  | "beneficiaires-effectifs"
+  | "statuts-societe-apportee"
+  | "report-imposition";
 
 export interface Obligation {
   cle: string;
@@ -31,8 +44,21 @@ export interface Obligation {
   intituleCourt: string;
   /** La date limite en ISO, ou null quand seuls les statuts la fixent. */
   limite: string | null;
-  /** L'exercice concerné, par son année de clôture. */
-  exercice: number;
+  /**
+   * L'exercice concerné, par son année de clôture.
+   *
+   * Absent pour ce qui ne suit pas l'exercice : les suites d'un apport comptent en jours
+   * depuis l'acte, non en exercices.
+   */
+  exercice?: number;
+  /**
+   * Ce qui tient lieu de date quand il n'y en a pas.
+   *
+   * Toutes les obligations sans date ne sont pas datées par les statuts : le rappel
+   * annuel d'un report d'imposition suit la déclaration de revenus. L'écran retombe sur
+   * les statuts quand rien n'est dit, ce qui reste juste pour l'approbation des comptes.
+   */
+  quandSansDate?: string;
   /** Ce que c'est, en français courant. */
   explication: string;
   /** Le texte qui l'impose, repris de `delaisDe`. */

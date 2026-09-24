@@ -617,6 +617,9 @@
  * du clic, et la navigation au clavier continue de fonctionner.
  */
 .carteRole {
+  /* Son radio est masqué en absolu : sans cela il s'échappe jusqu'à la coquille - voir
+     `.natures .nature` dans Modification.module.css, qui a fait glisser l'application. */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 3px;

@@ -794,6 +794,8 @@
 }
 
 .personne {
+  /* Le retrait se pose dans l'en-tête de la carte : c'est elle qui le situe. */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2315,40 +2317,57 @@
 }
 
 /* La suppression se range à droite, sous l'ajout : elle ne se propose pas, elle se trouve. */
-.retirerLigne {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 10px;
-}
-
-.retirerAssocie {
+/*
+ * Le retrait d'un associé, dans l'en-tête de sa carte.
+ *
+ * Il tenait une ligne à lui au bas de la liste : « Supprimer l'associé 3 », en ambre,
+ * sans bordure ni fond, entre le message qui valide la répartition et « Continuer ». À
+ * cet endroit et sous cette forme, ce n'était plus un bouton mais une phrase à
+ * l'impératif : un client l'a lu comme une consigne et a cherché ce qu'il avait mal
+ * rempli, alors que ses trois associés étaient justes.
+ *
+ * Il ne retirait d'ailleurs que le dernier : pour ôter le deuxième sur trois, il fallait
+ * supprimer le troisième, puis le deuxième, puis le retaper.
+ */
+.retirerPersonne {
+  /*
+   * Dans le coin de la carte, non sur son filet.
+   *
+   * Le caler sur la légende demanderait un décalage négatif égal à sa hauteur : dans un
+   * fieldset, un élément absolu se place sous la légende, et la valeur changerait au
+   * premier ajustement de corps. Le coin intérieur ne dépend de rien et dit la même
+   * chose - c'est le geste de la carte, pas une ligne du formulaire.
+   */
+  position: absolute;
+  top: 10px;
+  right: 10px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  margin: 0;
-  padding: 6px 10px;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: none;
   font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #b45309;
+  font-size: 16px;
+  line-height: 1;
+  color: #a1a1aa;
   cursor: pointer;
   transition:
     background 0.15s ease,
     color 0.15s ease;
 }
 
-.retirerAssocie svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.retirerAssocie:hover {
+.retirerPersonne:hover {
   background: #fef2f2;
   color: #dc2626;
+}
+
+.retirerPersonne:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 1px;
 }
 
 /* Le compte des parts, sous la liste des associés. */
@@ -3583,6 +3602,16 @@
 }
 
 .natures .nature {
+  /*
+   * La pastille tient son radio, qui est masqué mais reste un élément.
+   *
+   * Posé en absolu sans ancêtre positionné, il se calait sur la coquille de
+   * l'application et venait se poser des centaines de pixels sous son bord. La coquille
+   * découpe, mais `overflow: hidden` n'empêche pas de défiler : au clic, le navigateur
+   * faisait glisser toute l'application pour montrer un radio invisible, et la colonne
+   * de droite se retrouvait coupée en haut sans que rien ne la remette en place.
+   */
+  position: relative;
   display: inline-flex;
   align-items: center;
   margin: 0;

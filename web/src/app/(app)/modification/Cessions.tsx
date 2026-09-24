@@ -17,6 +17,10 @@ import { identiteSurUneLigne, separerLIdentite, type Identite } from "@/domain/f
 import { ChampDate } from "@/components/formulaire/ChampDate";
 import { ChampNombre } from "@/components/formulaire/ChampNombre";
 import { AdresseUneLigne } from "@/components/formulaire/Adresse";
+import {
+  RechercheAuRegistre,
+  capitalAuRegistre,
+} from "@/components/formulaire/RechercheAuRegistre";
 import styles from "./Modification.module.css";
 import { Ville } from "@/components/formulaire/Adresse";
 import { ChampListe } from "@/components/formulaire/ChampListe";
@@ -122,6 +126,13 @@ interface Props {
   valeurs: Record<string, string | number | boolean | null | undefined>;
   surAssocies: (associes: AssociePresent[]) => void;
   surCessions: (cessions: Cession[]) => void;
+  /**
+   * La même écriture, mais depuis l'état le plus récent.
+   *
+   * Quatre champs posés d'un coup puis deux qui arrivent d'un aller-retour : bâtis sur
+   * le tableau de ce rendu, les seconds effaceraient les premiers.
+   */
+  majCessions: (maj: (cessions: Cession[]) => Cession[]) => void;
   surAgrementStatutaire: (reponse: string) => void;
   surValeur: (champ: string, valeur: string) => void;
 }
@@ -135,6 +146,7 @@ export function Cessions({
   valeurs,
   surAssocies,
   surCessions,
+  majCessions,
   surAgrementStatutaire,
   surValeur,
 }: Props) {
@@ -160,7 +172,9 @@ export function Cessions({
   }
 
   function modifier(rang: number, changement: Partial<Cession>) {
-    surCessions(cessions.map((c, i) => (i === rang ? { ...c, ...changement } : c)));
+    majCessions((precedentes) =>
+      precedentes.map((c, i) => (i === rang ? { ...c, ...changement } : c))
+    );
   }
 
   return (
@@ -479,6 +493,54 @@ export function Cessions({
                       surChangement={(v) => modifier(rang, { nature: v as "physique" | "morale" })}
                     />
                   </div>
+
+                  {/*
+                    La société qui entre au capital se cherche, elle ne se tape pas.
+
+                    C'était le seul endroit du parcours où l'on saisissait une identité de
+                    société entièrement à la main : dénomination, forme, capital, SIREN,
+                    ville du RCS et siège, six champs de mémoire ou depuis un extrait, dans
+                    un acte qui part ensuite à l'enregistrement. L'associé personne morale
+                    de l'assemblée, la société apportée et les trois autres parcours ont
+                    cette recherche depuis longtemps.
+                  */}
+                  {cession.nature === "morale" && (
+                    <div className={`${styles.champ} ${styles.pleineLargeur}`}>
+                      <RechercheAuRegistre
+                        id={"cession-recherche-" + rang}
+                        surSelection={async ({ denomination, forme, siren, siege, codePostal, commune }) => {
+                          modifier(rang, { nom: denomination, forme, siren, adresse: siege });
+
+                          /*
+                           * Le capital et le greffe arrivent après, chacun par sa source.
+                           *
+                           * L'annuaire public ne publie ni l'un ni l'autre : le capital vient
+                           * du registre national par notre relais, et le greffe compétent
+                           * n'est pas la commune du siège - Argenteuil relève de Pontoise, et
+                           * la table des exceptions vit derrière /api/rcs. Une panne de l'un
+                           * n'empêche rien : les champs restent saisissables.
+                           */
+                          const capital = await capitalAuRegistre(siren);
+                          if (capital !== null) modifier(rang, { capital });
+
+                          if (codePostal) {
+                            const reponse = await fetch(
+                              "/api/rcs?codePostal=" +
+                                encodeURIComponent(codePostal) +
+                                "&ville=" +
+                                encodeURIComponent(commune)
+                            ).catch(() => null);
+                            const greffe: { villeRcs?: string } | null = reponse?.ok
+                              ? await reponse.json().catch(() => null)
+                              : null;
+                            /* À défaut de table, la commune du siège : c'est vrai la plupart
+                               du temps, et mieux qu'un champ laissé vide. */
+                            modifier(rang, { villeRcs: greffe?.villeRcs || commune });
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
 
                   <div className={styles.champ}>
                     <label htmlFor={"cession-nom-" + rang}>

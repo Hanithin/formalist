@@ -1,4 +1,5 @@
 import { definitions, type TypeModification, type Valeurs } from "./types";
+import { demarchesDeLApport } from "./societe-apportee";
 import { VOIES_DU_DROIT_PREFERENTIEL } from "./souscription";
 import { REMPLOI, reserveSurLaDispense } from "./apport";
 
@@ -543,6 +544,27 @@ export function obligationsParticulieres(
     dits.push(
       "L'enregistrement du traité d'apport auprès des impôts ne coûte rien : cette formalité est gratuite (article 810-I du code général des impôts)."
     );
+
+    /*
+     * Ce qui doit être acquis avant la signature, dit avant la signature.
+     *
+     * Le reste des démarches de la société apportée se lit dans son bloc, à l'étape des
+     * détails, où l'on a le temps. Celles-ci n'attendent pas : un agrément recueilli
+     * après coup ne répare rien, et le conjoint peut demander la nullité pendant deux
+     * ans. Elles ont donc aussi leur place ici, dans le rappel qui s'ouvre en tête.
+     *
+     * Le texte vient du même endroit que le bloc : deux rédactions auraient divergé au
+     * premier changement de loi, et c'est la matière où elles ne doivent pas.
+     */
+    for (const demarche of demarchesDeLApport(valeurs)) {
+      if (demarche.moment !== "avant") continue;
+      dits.push(
+        demarche.intitule +
+          " : " +
+          demarche.explication +
+          (demarche.fondement ? " " + demarche.fondement : "")
+      );
+    }
   }
 
   return dits;
